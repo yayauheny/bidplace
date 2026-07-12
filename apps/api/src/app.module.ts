@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AuctionsModule } from './auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './core/database';
 import { HealthModule } from './core/health';
@@ -15,6 +16,7 @@ import { SellersModule } from './sellers/sellers.module';
     AuthModule,
     SellersModule,
     LotsModule,
+    AuctionsModule,
   ],
 })
 export class AppModule {}

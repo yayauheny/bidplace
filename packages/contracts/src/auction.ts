@@ -56,8 +56,15 @@ export const auctionPublishRequestSchema = z.object({}).strict();
 
 export const auctionDetailSchema = auctionSchema;
 
+export const auctionResponseSchema = z
+  .object({
+    auction: auctionSchema,
+  })
+  .strict();
+
 export type Auction = z.infer<typeof auctionSchema>;
 export type AuctionCreateRequest = z.infer<typeof auctionCreateRequestSchema>;
 export type AuctionPublishRequest = z.infer<
   typeof auctionPublishRequestSchema
 >;
+export type AuctionResponse = z.infer<typeof auctionResponseSchema>;
