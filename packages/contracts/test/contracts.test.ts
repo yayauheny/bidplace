@@ -11,6 +11,7 @@ import {
   loginRequestSchema,
   registerRequestSchema,
   sellerProfileCreateRequestSchema,
+  sellerProfileResponseSchema,
 } from '../src';
 
 describe('shared contracts', () => {
@@ -43,6 +44,27 @@ describe('shared contracts', () => {
       contactPreference: 'telegram',
       socialLink: 'https://example.com',
       shortDescription: 'Short bio',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts seller profile responses', () => {
+    const result = sellerProfileResponseSchema.safeParse({
+      sellerProfile: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        userId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+        slug: 'demo-store',
+        sellerType: 'creator',
+        storeName: 'Demo Store',
+        country: 'BY',
+        contactPreference: 'telegram',
+        socialLink: 'https://example.com',
+        shortDescription: 'Short bio',
+        status: 'active',
+        createdAt: '2026-07-13T12:00:00.000Z',
+        updatedAt: '2026-07-13T12:00:00.000Z',
+      },
     });
 
     expect(result.success).toBe(true);

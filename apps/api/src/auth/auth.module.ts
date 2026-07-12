@@ -29,6 +29,6 @@ import { DatabaseModule } from '../core/database';
       },
     },
   ],
-  exports: [AuthService],
+  exports: [AuthService, BearerAuthGuard],
 })
 export class AuthModule {}

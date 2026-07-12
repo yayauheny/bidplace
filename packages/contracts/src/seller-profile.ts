@@ -35,10 +35,19 @@ export const sellerProfileCreateRequestSchema = z
 export const sellerProfileUpdateRequestSchema =
   sellerProfileCreateRequestSchema.partial().strict();
 
+export const sellerProfileResponseSchema = z
+  .object({
+    sellerProfile: sellerProfileSchema,
+  })
+  .strict();
+
 export type SellerProfile = z.infer<typeof sellerProfileSchema>;
 export type SellerProfileCreateRequest = z.infer<
   typeof sellerProfileCreateRequestSchema
 >;
 export type SellerProfileUpdateRequest = z.infer<
   typeof sellerProfileUpdateRequestSchema
+>;
+export type SellerProfileResponse = z.infer<
+  typeof sellerProfileResponseSchema
 >;

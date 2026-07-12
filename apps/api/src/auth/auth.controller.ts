@@ -6,10 +6,10 @@ import {
 } from '@bidplace/contracts';
 import { Body, Controller, Get, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 
-import { parseBody } from './auth.helpers';
 import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
 import { CurrentUser } from './current-user.decorator';
+import { parseBody } from '../core/validation';
 
 @Controller('auth')
 export class AuthController {
