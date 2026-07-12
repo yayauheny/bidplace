@@ -5,6 +5,7 @@ import {
   auctionEndedEventPayloadSchema,
   auctionStatusSchema,
   auctionUpdatedEventPayloadSchema,
+  authResponseSchema,
   bidCreateRequestSchema,
   bidPlacedEventPayloadSchema,
   loginRequestSchema,
@@ -42,6 +43,23 @@ describe('shared contracts', () => {
       contactPreference: 'telegram',
       socialLink: 'https://example.com',
       shortDescription: 'Short bio',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts auth responses with an access token', () => {
+    const result = authResponseSchema.safeParse({
+      user: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        email: 'seller@example.com',
+        phone: '+15555550123',
+        displayName: 'Demo Seller',
+        role: 'user',
+        createdAt: '2026-07-13T12:00:00.000Z',
+        updatedAt: '2026-07-13T12:00:00.000Z',
+      },
+      accessToken: 'token-value',
     });
 
     expect(result.success).toBe(true);

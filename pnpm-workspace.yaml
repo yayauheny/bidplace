@@ -2,9 +2,12 @@ packages:
   - 'apps/*'
   - 'packages/*'
 allowBuilds:
-  - '@nestjs/core'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - prisma
-  - sharp
-  - unrs-resolver
+  '0': '@nestjs/core'
+  '1': '@prisma/client'
+  '2': '@prisma/engines'
+  '3': prisma
+  '4': sharp
+  '5': unrs-resolver
+  '@prisma/client': true
+  argon2: true
+  prisma: true

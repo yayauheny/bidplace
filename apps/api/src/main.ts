@@ -9,6 +9,8 @@ async function bootstrap() {
   const serverEnv = loadServerEnv();
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api');
+
   if (serverEnv.CORS_ORIGIN) {
     app.enableCors({
       origin: serverEnv.CORS_ORIGIN,

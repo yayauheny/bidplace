@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  ignorePatterns: ['dist'],
+  ignorePatterns: ['dist', 'src/**/*.spec.ts', 'vitest.config.ts'],
   extends: ['../../packages/eslint-config'],
   parserOptions: {
     project: ['./tsconfig.json'],
