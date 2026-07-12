@@ -9,6 +9,8 @@ import {
   authResponseSchema,
   bidCreateRequestSchema,
   bidPlacedEventPayloadSchema,
+  bidHistoryResponseSchema,
+  bidPlacementResponseSchema,
   lotCreateRequestSchema,
   lotResponseSchema,
   loginRequestSchema,
@@ -166,6 +168,59 @@ describe('shared contracts', () => {
 
   it('rejects invalid bid amounts', () => {
     expect(bidCreateRequestSchema.safeParse({ amount: 0 }).success).toBe(false);
+  });
+
+  it('accepts bid placement responses', () => {
+    const result = bidPlacementResponseSchema.safeParse({
+      bid: {
+        id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
+        auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+        amount: 125,
+        status: 'winning',
+        createdAt: '2026-07-13T12:10:00.000Z',
+        updatedAt: '2026-07-13T12:10:00.000Z',
+      },
+      auction: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        lotId: '7d8f8d40-0cf6-4af1-b353-cc0c4fa7b7d6',
+        sellerProfileId: '9a1bc5ce-2c2b-4b08-9d12-4ccdb0d78c73',
+        slug: 'demo-auction',
+        startPrice: 100,
+        reservePrice: 150,
+        currentPrice: 125,
+        currency: 'USD',
+        bidStep: 5,
+        startsAt: '2026-07-13T12:00:00.000Z',
+        endsAt: '2026-07-14T12:00:00.000Z',
+        status: 'active',
+        bidCount: 1,
+        winnerBidId: null,
+        buyNowPrice: null,
+        createdAt: '2026-07-13T12:00:00.000Z',
+        updatedAt: '2026-07-13T12:10:00.000Z',
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts bid history responses', () => {
+    const result = bidHistoryResponseSchema.safeParse({
+      bids: [
+        {
+          id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
+          auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+          amount: 125,
+          status: 'winning',
+          createdAt: '2026-07-13T12:10:00.000Z',
+          updatedAt: '2026-07-13T12:10:00.000Z',
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
   });
 
   it('accepts websocket auction update payloads', () => {

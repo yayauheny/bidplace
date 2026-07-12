@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { auctionSchema } from './auction';
 import { bidStatusSchema } from './enums';
 import { isoDateTimeSchema, moneyAmountSchema, uuidSchema } from './primitives';
 
@@ -25,5 +26,20 @@ export const bidCreateRequestSchema = z
     path: ['amount'],
   });
 
+export const bidPlacementResponseSchema = z
+  .object({
+    bid: bidSchema,
+    auction: auctionSchema,
+  })
+  .strict();
+
+export const bidHistoryResponseSchema = z
+  .object({
+    bids: z.array(bidSchema),
+  })
+  .strict();
+
 export type Bid = z.infer<typeof bidSchema>;
 export type BidCreateRequest = z.infer<typeof bidCreateRequestSchema>;
+export type BidPlacementResponse = z.infer<typeof bidPlacementResponseSchema>;
+export type BidHistoryResponse = z.infer<typeof bidHistoryResponseSchema>;

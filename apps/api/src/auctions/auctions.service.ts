@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { calculateBidStep } from '../core/auction';
 import { PrismaService } from '../core/database';
 
 type NumericLike = number | { toNumber(): number };
@@ -43,26 +44,6 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
     'code' in error &&
     (error as { code?: unknown }).code === 'P2002'
   );
-}
-
-export function calculateBidStep(amount: number): number {
-  if (amount < 25) {
-    return 0.5;
-  }
-
-  if (amount < 100) {
-    return 1;
-  }
-
-  if (amount < 500) {
-    return 5;
-  }
-
-  if (amount < 1000) {
-    return 10;
-  }
-
-  return 25;
 }
 
 function toNumber(value: NumericLike): number {
@@ -280,3 +261,5 @@ export class AuctionsService {
     };
   }
 }
+
+export { calculateBidStep };
