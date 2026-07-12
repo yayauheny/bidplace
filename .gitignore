@@ -1,0 +1,15 @@
+node_modules
+.next
+dist
+.turbo
+coverage
+*.tsbuildinfo
+.DS_Store
+.claude/
+.codex/
+outputs/
+package-lock.json
+.env
+.env.local
+.env.*.local
+*.log
