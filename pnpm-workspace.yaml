@@ -5,6 +5,6 @@ allowBuilds:
   - '@nestjs/core'
   - '@prisma/client'
   - '@prisma/engines'
-  - 'prisma'
-  - 'sharp'
-  - 'unrs-resolver'
+  - prisma
+  - sharp
+  - unrs-resolver
