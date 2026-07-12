@@ -6,12 +6,16 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../core/database';
+import { RealtimeEventsService } from '../core/realtime';
 
 type NumericLike = number | { toNumber(): number };
 
 type AuctionClosingRecord = {
   id: string;
   reservePrice: NumericLike;
+  currentPrice: NumericLike;
+  bidCount: number;
+  winnerBidId: string | null;
   status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
   endsAt: Date;
 };
@@ -27,7 +31,10 @@ function toNumber(value: NumericLike): number {
 
 @Injectable()
 export class AuctionClosingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtimeEventsService: RealtimeEventsService,
+  ) {}
 
   async closeExpiredAuctions(now = new Date()): Promise<AuctionEndedEventPayload[]> {
     const auctions = await this.prisma.auction.findMany({
@@ -68,6 +75,9 @@ export class AuctionClosingService {
           select: {
             id: true,
             reservePrice: true,
+            currentPrice: true,
+            bidCount: true,
+            winnerBidId: true,
             status: true,
             endsAt: true,
           },
@@ -132,12 +142,26 @@ export class AuctionClosingService {
             },
           });
 
-          return auctionEndedEventPayloadSchema.parse({
+          const payload = auctionEndedEventPayloadSchema.parse({
             auctionId,
             status: 'sold',
             winnerBidId: winningBid.id,
             reserveReached: true,
           });
+
+          this.realtimeEventsService.publishAuctionUpdated({
+            auctionId,
+            currentPrice: toNumber(winningBid.amount),
+            bidCount: auction.bidCount,
+            status: 'sold',
+            endsAt: auction.endsAt.toISOString(),
+            winnerBidId: winningBid.id,
+            reserveReached: true,
+          });
+
+          this.realtimeEventsService.publishAuctionEnded(payload);
+
+          return payload;
         }
 
         const updatedAuction = await tx.auction.updateMany({
@@ -167,12 +191,26 @@ export class AuctionClosingService {
           },
         });
 
-        return auctionEndedEventPayloadSchema.parse({
+        const payload = auctionEndedEventPayloadSchema.parse({
           auctionId,
           status: 'failed',
           winnerBidId: null,
           reserveReached: false,
         });
+
+        this.realtimeEventsService.publishAuctionUpdated({
+          auctionId,
+          currentPrice: toNumber(auction.currentPrice),
+          bidCount: auction.bidCount,
+          status: 'failed',
+          endsAt: auction.endsAt.toISOString(),
+          winnerBidId: null,
+          reserveReached: false,
+        });
+
+        this.realtimeEventsService.publishAuctionEnded(payload);
+
+        return payload;
       },
     );
   }

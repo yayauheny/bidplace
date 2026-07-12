@@ -1,0 +1,11 @@
+import { Global, Module } from '@nestjs/common';
+
+import { RealtimeEventsService } from './realtime-events.service';
+import { RealtimeGateway } from './realtime.gateway';
+
+@Global()
+@Module({
+  providers: [RealtimeGateway, RealtimeEventsService],
+  exports: [RealtimeEventsService],
+})
+export class RealtimeModule {}

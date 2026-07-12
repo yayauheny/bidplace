@@ -112,8 +112,15 @@ describe('BidsService', () => {
     },
     $transaction: vi.fn(),
   };
+  const realtimeEventsService = {
+    publishBidPlaced: vi.fn(),
+    publishAuctionUpdated: vi.fn(),
+  };
 
-  const service = new BidsService(prisma as unknown as PrismaService);
+  const service = new BidsService(
+    prisma as unknown as PrismaService,
+    realtimeEventsService as never,
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -164,6 +171,21 @@ describe('BidsService', () => {
     expect(result.bid.status).toBe('winning');
     expect(result.auction.currentPrice).toBe(120);
     expect(result.auction.bidCount).toBe(1);
+    expect(realtimeEventsService.publishBidPlaced).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      bid: result.bid,
+      currentPrice: 120,
+      bidCount: 1,
+    });
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 120,
+      bidCount: 1,
+      status: 'active',
+      endsAt: '2026-07-14T13:00:00.000Z',
+      winnerBidId: null,
+      reserveReached: false,
+    });
   });
 
   it('rejects self-bidding', async () => {
@@ -198,6 +220,7 @@ describe('BidsService', () => {
         amount: 120,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(realtimeEventsService.publishBidPlaced).not.toHaveBeenCalled();
   });
 
   it('returns bid history in reverse chronological order for the seller', async () => {

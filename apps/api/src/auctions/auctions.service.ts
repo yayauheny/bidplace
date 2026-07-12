@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 import { calculateBidStep } from '../core/auction';
 import { PrismaService } from '../core/database';
+import { RealtimeEventsService } from '../core/realtime';
 
 type NumericLike = number | { toNumber(): number };
 
@@ -56,7 +57,10 @@ function resolveAuctionStatus(startsAt: Date, now: Date): Auction['status'] {
 
 @Injectable()
 export class AuctionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtimeEventsService: RealtimeEventsService,
+  ) {}
 
   async createAuction(
     userId: string,
@@ -233,9 +237,22 @@ export class AuctionsService {
       },
     );
 
-    return auctionResponseSchema.parse({
+    const response = auctionResponseSchema.parse({
       auction: this.toContractAuction(updatedAuction),
     });
+
+    this.realtimeEventsService.publishAuctionUpdated({
+      auctionId: response.auction.id,
+      currentPrice: response.auction.currentPrice,
+      bidCount: response.auction.bidCount,
+      status: response.auction.status,
+      endsAt: response.auction.endsAt,
+      winnerBidId: response.auction.winnerBidId,
+      reserveReached:
+        response.auction.currentPrice >= response.auction.reservePrice,
+    });
+
+    return response;
   }
 
   private toContractAuction(auction: AuctionRecord): Auction {

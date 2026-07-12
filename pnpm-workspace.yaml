@@ -8,6 +8,7 @@ allowBuilds:
   '3': prisma
   '4': sharp
   '5': unrs-resolver
+  '@nestjs/core': true
   '@prisma/client': true
   argon2: true
   prisma: true

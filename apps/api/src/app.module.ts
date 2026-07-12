@@ -6,6 +6,7 @@ import { BidsModule } from './bids/bids.module';
 import { DatabaseModule } from './core/database';
 import { HealthModule } from './core/health';
 import { LoggerModule } from './core/logger';
+import { RealtimeModule } from './core/realtime';
 import { LotsModule } from './lots/lots.module';
 import { SellersModule } from './sellers/sellers.module';
 
@@ -14,6 +15,7 @@ import { SellersModule } from './sellers/sellers.module';
     HealthModule,
     LoggerModule,
     BidsModule,
+    RealtimeModule,
     DatabaseModule,
     AuthModule,
     SellersModule,

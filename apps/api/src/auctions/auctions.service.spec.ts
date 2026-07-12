@@ -82,8 +82,14 @@ describe('AuctionsService', () => {
     },
     $transaction: vi.fn(),
   };
+  const realtimeEventsService = {
+    publishAuctionUpdated: vi.fn(),
+  };
 
-  const service = new AuctionsService(prisma as unknown as PrismaService);
+  const service = new AuctionsService(
+    prisma as unknown as PrismaService,
+    realtimeEventsService as never,
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -140,6 +146,7 @@ describe('AuctionsService', () => {
     });
     expect(result.auction.status).toBe('draft');
     expect(result.auction.bidStep).toBe(5);
+    expect(realtimeEventsService.publishAuctionUpdated).not.toHaveBeenCalled();
   });
 
   it('rejects auction creation when the lot already has an auction', async () => {
@@ -206,6 +213,15 @@ describe('AuctionsService', () => {
       },
     });
     expect(result.auction.status).toBe('scheduled');
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 100,
+      bidCount: 0,
+      status: 'scheduled',
+      endsAt: '2026-07-14T13:00:00.000Z',
+      winnerBidId: null,
+      reserveReached: false,
+    });
   });
 
   it('publishes a draft auction as active when it already started', async () => {
@@ -239,6 +255,15 @@ describe('AuctionsService', () => {
     );
 
     expect(result.auction.status).toBe('active');
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 100,
+      bidCount: 0,
+      status: 'active',
+      endsAt: '2026-07-14T13:00:00.000Z',
+      winnerBidId: null,
+      reserveReached: false,
+    });
   });
 
   it('rejects publishing an auction that is not draft', async () => {

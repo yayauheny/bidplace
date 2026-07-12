@@ -15,6 +15,7 @@ import { Prisma } from '@prisma/client';
 
 import { calculateBidStep } from '../core/auction';
 import { PrismaService } from '../core/database';
+import { RealtimeEventsService } from '../core/realtime';
 
 type NumericLike = number | { toNumber(): number };
 
@@ -69,7 +70,10 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
 
 @Injectable()
 export class BidsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtimeEventsService: RealtimeEventsService,
+  ) {}
 
   async placeBid(
     userId: string,
@@ -223,10 +227,30 @@ export class BidsService {
         },
       );
 
-      return bidPlacementResponseSchema.parse({
+      const response = bidPlacementResponseSchema.parse({
         bid: this.toContractBid(result.bid),
         auction: this.toContractAuction(result.auction),
       });
+
+      this.realtimeEventsService.publishBidPlaced({
+        auctionId: response.auction.id,
+        bid: response.bid,
+        currentPrice: response.auction.currentPrice,
+        bidCount: response.auction.bidCount,
+      });
+
+      this.realtimeEventsService.publishAuctionUpdated({
+        auctionId: response.auction.id,
+        currentPrice: response.auction.currentPrice,
+        bidCount: response.auction.bidCount,
+        status: response.auction.status,
+        endsAt: response.auction.endsAt,
+        winnerBidId: response.auction.winnerBidId,
+        reserveReached:
+          response.auction.currentPrice >= response.auction.reservePrice,
+      });
+
+      return response;
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
         throw new ConflictException('Bid could not be placed');

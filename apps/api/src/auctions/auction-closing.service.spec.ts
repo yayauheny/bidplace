@@ -6,6 +6,9 @@ import { AuctionClosingService } from './auction-closing.service';
 type AuctionRecord = {
   id: string;
   reservePrice: number;
+  currentPrice: number;
+  bidCount: number;
+  winnerBidId: string | null;
   status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
   endsAt: Date;
 };
@@ -21,6 +24,9 @@ function createAuctionRecord(
   return {
     id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
     reservePrice: 150,
+    currentPrice: 100,
+    bidCount: 1,
+    winnerBidId: null,
     status: 'active',
     endsAt: new Date('2026-07-13T12:00:00.000Z'),
     ...overrides,
@@ -49,8 +55,15 @@ describe('AuctionClosingService', () => {
     },
     $transaction: vi.fn(),
   };
+  const realtimeEventsService = {
+    publishAuctionUpdated: vi.fn(),
+    publishAuctionEnded: vi.fn(),
+  };
 
-  const service = new AuctionClosingService(prisma as unknown as PrismaService);
+  const service = new AuctionClosingService(
+    prisma as unknown as PrismaService,
+    realtimeEventsService as never,
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -105,6 +118,21 @@ describe('AuctionClosingService', () => {
         status: 'won',
       },
     });
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 160,
+      bidCount: 1,
+      status: 'sold',
+      endsAt: '2026-07-13T12:00:00.000Z',
+      winnerBidId: 'a1111111-1111-4111-8111-111111111111',
+      reserveReached: true,
+    });
+    expect(realtimeEventsService.publishAuctionEnded).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      status: 'sold',
+      winnerBidId: 'a1111111-1111-4111-8111-111111111111',
+      reserveReached: true,
+    });
     expect(result).toEqual([
       {
         auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -152,6 +180,21 @@ describe('AuctionClosingService', () => {
       data: {
         status: 'lost',
       },
+    });
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 100,
+      bidCount: 1,
+      status: 'failed',
+      endsAt: '2026-07-13T12:00:00.000Z',
+      winnerBidId: null,
+      reserveReached: false,
+    });
+    expect(realtimeEventsService.publishAuctionEnded).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      status: 'failed',
+      winnerBidId: null,
+      reserveReached: false,
     });
     expect(result).toEqual([
       {
