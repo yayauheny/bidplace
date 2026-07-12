@@ -4,9 +4,17 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './core/database';
 import { HealthModule } from './core/health';
 import { LoggerModule } from './core/logger';
+import { LotsModule } from './lots/lots.module';
 import { SellersModule } from './sellers/sellers.module';
 
 @Module({
-  imports: [HealthModule, LoggerModule, DatabaseModule, AuthModule, SellersModule],
+  imports: [
+    HealthModule,
+    LoggerModule,
+    DatabaseModule,
+    AuthModule,
+    SellersModule,
+    LotsModule,
+  ],
 })
 export class AppModule {}

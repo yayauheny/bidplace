@@ -1,0 +1,99 @@
+import {
+  type Lot,
+  type LotCreateRequest,
+  type LotResponse,
+  lotResponseSchema,
+} from '@bidplace/contracts';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { PrismaService } from '../core/database';
+
+type LotRecord = {
+  id: string;
+  sellerProfileId: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  condition: string;
+  images: string[];
+  status: Lot['status'];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+@Injectable()
+export class LotsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createLot(
+    userId: string,
+    input: LotCreateRequest,
+    images: readonly string[],
+  ): Promise<LotResponse> {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    if (sellerProfile.status !== 'active') {
+      throw new ForbiddenException('Seller profile is not active');
+    }
+
+    const category = await this.prisma.category.findUnique({
+      where: {
+        id: input.categoryId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    const lot = await this.prisma.lot.create({
+      data: {
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: input.title,
+        description: input.description,
+        condition: input.condition,
+        images: [...images],
+        status: 'draft',
+      },
+    });
+
+    return lotResponseSchema.parse({
+      lot: this.toContractLot(lot),
+    });
+  }
+
+  private toContractLot(lot: LotRecord): Lot {
+    return {
+      id: lot.id,
+      sellerProfileId: lot.sellerProfileId,
+      categoryId: lot.categoryId,
+      title: lot.title,
+      description: lot.description,
+      condition: lot.condition,
+      images: lot.images,
+      status: lot.status,
+      createdAt: lot.createdAt.toISOString(),
+      updatedAt: lot.updatedAt.toISOString(),
+    };
+  }
+}

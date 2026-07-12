@@ -24,12 +24,18 @@ export const lotCreateRequestSchema = z
     title: z.string().trim().min(1),
     description: z.string().trim().min(1),
     condition: z.string().trim().min(1),
-    images: z.array(z.string().min(1)).optional().default([]),
   })
   .strict();
 
 export const lotUpdateRequestSchema = lotCreateRequestSchema.partial().strict();
 
+export const lotResponseSchema = z
+  .object({
+    lot: lotSchema,
+  })
+  .strict();
+
 export type Lot = z.infer<typeof lotSchema>;
 export type LotCreateRequest = z.infer<typeof lotCreateRequestSchema>;
 export type LotUpdateRequest = z.infer<typeof lotUpdateRequestSchema>;
+export type LotResponse = z.infer<typeof lotResponseSchema>;
