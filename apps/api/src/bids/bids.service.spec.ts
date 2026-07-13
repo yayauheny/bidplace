@@ -230,6 +230,23 @@ describe('BidsService', () => {
     expect(realtimeEventsService.publishBidPlaced).not.toHaveBeenCalled();
   });
 
+  it('rejects bids when the auction price changes during placement', async () => {
+    prisma.auction.findUnique.mockResolvedValueOnce(createAuctionRecord());
+    prisma.auction.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.placeBid(
+        'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+        '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        {
+          amount: 120,
+        },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.bid.create).not.toHaveBeenCalled();
+    expect(realtimeEventsService.publishBidPlaced).not.toHaveBeenCalled();
+  });
+
   it('returns bid history in reverse chronological order for the seller', async () => {
     prisma.auction.findUnique.mockResolvedValueOnce(createAuctionRecord());
     prisma.bid.findMany.mockResolvedValue([

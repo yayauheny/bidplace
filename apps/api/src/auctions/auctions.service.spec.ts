@@ -161,6 +161,15 @@ function createPublicAuctionDetailRecord(
   };
 }
 
+function createUniqueConstraintError(target: string[]) {
+  return {
+    code: 'P2002',
+    meta: {
+      target,
+    },
+  };
+}
+
 describe('calculateBidStep', () => {
   it.each([
     [0, 0.5],
@@ -185,6 +194,7 @@ describe('AuctionsService', () => {
     lot: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     auction: {
       findMany: vi.fn(),
@@ -192,6 +202,7 @@ describe('AuctionsService', () => {
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
     $transaction: vi.fn(),
   };
@@ -363,7 +374,6 @@ describe('AuctionsService', () => {
       sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
       status: 'draft',
     });
-    prisma.auction.findFirst.mockResolvedValue(null);
     prisma.auction.create.mockResolvedValue(createAuctionRecord());
 
     const result = await service.createAuction(
@@ -412,7 +422,36 @@ describe('AuctionsService', () => {
       sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
       status: 'draft',
     });
-    prisma.auction.findFirst.mockResolvedValue({ id: 'existing' });
+    prisma.auction.create.mockRejectedValue(
+      createUniqueConstraintError(['lot_id']),
+    );
+
+    await expect(
+      service.createAuction('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', {
+        lotId: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
+        slug: 'demo-auction',
+        startPrice: 100,
+        reservePrice: 150,
+        currency: 'USD',
+        startsAt: '2026-07-13T13:00:00.000Z',
+        endsAt: '2026-07-14T13:00:00.000Z',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects auction creation when the slug is already used', async () => {
+    prisma.sellerProfile.findUnique.mockResolvedValue({
+      id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      status: 'active',
+    });
+    prisma.lot.findUnique.mockResolvedValue({
+      id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
+      sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      status: 'draft',
+    });
+    prisma.auction.create.mockRejectedValue(
+      createUniqueConstraintError(['slug']),
+    );
 
     await expect(
       service.createAuction('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', {
@@ -432,7 +471,7 @@ describe('AuctionsService', () => {
       id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
       status: 'active',
     });
-    prisma.auction.findUnique.mockResolvedValue(
+    prisma.auction.findUnique.mockResolvedValueOnce(
       createAuctionRecord({
         startsAt: new Date('2026-07-13T13:00:00.000Z'),
         status: 'draft',
@@ -442,14 +481,16 @@ describe('AuctionsService', () => {
       id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
       status: 'draft',
     });
-    prisma.auction.update.mockResolvedValue(
+    prisma.auction.updateMany.mockResolvedValue({
+      count: 1,
+    });
+    prisma.auction.findUnique.mockResolvedValueOnce(
       createAuctionRecord({
         status: 'scheduled',
       }),
     );
-    prisma.lot.update.mockResolvedValue({
-      id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
-      status: 'published',
+    prisma.lot.updateMany.mockResolvedValue({
+      count: 1,
     });
 
     const result = await service.publishAuction(
@@ -457,12 +498,22 @@ describe('AuctionsService', () => {
       '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
     );
 
-    expect(prisma.lot.update).toHaveBeenCalledWith({
+    expect(prisma.lot.updateMany).toHaveBeenCalledWith({
       where: {
         id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
+        status: 'draft',
       },
       data: {
         status: 'published',
+      },
+    });
+    expect(prisma.auction.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        status: 'draft',
+      },
+      data: {
+        status: 'scheduled',
       },
     });
     expect(result.auction.status).toBe('scheduled');
@@ -482,7 +533,7 @@ describe('AuctionsService', () => {
       id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
       status: 'active',
     });
-    prisma.auction.findUnique.mockResolvedValue(
+    prisma.auction.findUnique.mockResolvedValueOnce(
       createAuctionRecord({
         startsAt: new Date('2026-07-13T11:00:00.000Z'),
         status: 'draft',
@@ -492,14 +543,16 @@ describe('AuctionsService', () => {
       id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
       status: 'draft',
     });
-    prisma.auction.update.mockResolvedValue(
+    prisma.auction.updateMany.mockResolvedValue({
+      count: 1,
+    });
+    prisma.auction.findUnique.mockResolvedValueOnce(
       createAuctionRecord({
         status: 'active',
       }),
     );
-    prisma.lot.update.mockResolvedValue({
-      id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
-      status: 'published',
+    prisma.lot.updateMany.mockResolvedValue({
+      count: 1,
     });
 
     const result = await service.publishAuction(
@@ -529,6 +582,32 @@ describe('AuctionsService', () => {
         status: 'scheduled',
       }),
     );
+
+    await expect(
+      service.publishAuction(
+        '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects publishing when the lot changed during publication', async () => {
+    prisma.sellerProfile.findUnique.mockResolvedValue({
+      id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      status: 'active',
+    });
+    prisma.auction.findUnique.mockResolvedValueOnce(
+      createAuctionRecord({
+        status: 'draft',
+      }),
+    );
+    prisma.lot.findUnique.mockResolvedValue({
+      id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
+      status: 'draft',
+    });
+    prisma.lot.updateMany.mockResolvedValue({
+      count: 0,
+    });
 
     await expect(
       service.publishAuction(

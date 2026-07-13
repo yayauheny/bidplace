@@ -6,7 +6,7 @@ import { useAppThemePalette } from '../../theme/palette';
 import { FormField } from './FormField';
 import { Input } from 'tamagui';
 
-type AppInputProps = {
+export type AppInputProps = {
   label: string;
   description?: string;
   error?: string;

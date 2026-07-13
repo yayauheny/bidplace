@@ -23,16 +23,12 @@ function getToneStyles(
         backgroundColor: palette.surface,
         borderColor: palette.border,
         color: palette.text,
-        pressBackgroundColor: palette.surfaceMuted,
-        pressBorderColor: palette.borderStrong,
       };
     case 'subtle':
       return {
         backgroundColor: 'transparent',
         borderColor: 'transparent',
         color: palette.text,
-        pressBackgroundColor: palette.surfaceMuted,
-        pressBorderColor: palette.surfaceMuted,
       };
     case 'primary':
     default:
@@ -40,8 +36,6 @@ function getToneStyles(
         backgroundColor: palette.primary,
         borderColor: palette.primary,
         color: palette.onPrimary,
-        pressBackgroundColor: palette.primaryPressed,
-        pressBorderColor: palette.primaryPressed,
       };
   }
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { SellerProfile } from '@bidplace/contracts';
 
-import { AppButton, AppCard, AppInput, FormField } from '../../components/ui';
+import { AppButton, AppCard, ControlledAppInput, FormField } from '../../components/ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
@@ -20,6 +20,16 @@ import {
 type SellerProfileFormProps = {
   profile?: SellerProfile | null;
 };
+
+function parseOptionalText(value: string) {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === '') {
+    return null;
+  }
+
+  return value;
+}
 
 export function SellerProfileForm({ profile }: SellerProfileFormProps) {
   const router = useRouter();
@@ -90,13 +100,14 @@ export function SellerProfileForm({ profile }: SellerProfileFormProps) {
         </YStack>
 
         <YStack style={{ gap: mobileSpacing[3] }}>
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="slug"
             label="Slug"
             description="Используется в публичной ссылке профиля."
             autoCapitalize="none"
             autoCorrect={false}
             placeholder="demo-store"
-            {...form.register('slug')}
             error={form.formState.errors.slug?.message}
           />
 
@@ -122,52 +133,55 @@ export function SellerProfileForm({ profile }: SellerProfileFormProps) {
             </XStack>
           </FormField>
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="storeName"
             label="Название магазина"
             placeholder="Demo Store"
-            {...form.register('storeName')}
             error={form.formState.errors.storeName?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="country"
             label="Страна"
             placeholder="BY"
             autoCapitalize="characters"
-            {...form.register('country')}
             error={form.formState.errors.country?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="contactPreference"
             label="Контакт"
             description="Например, Telegram, email или WhatsApp."
             placeholder="telegram"
-            {...form.register('contactPreference')}
             error={form.formState.errors.contactPreference?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="socialLink"
             label="Ссылка"
             description="Опционально."
             placeholder="https://example.com"
             autoCapitalize="none"
             autoCorrect={false}
-            {...form.register('socialLink', {
-              setValueAs: (value) => (value === '' ? null : value),
-            })}
-            error={form.formState.errors.socialLink?.message as string | undefined}
+            parseValue={parseOptionalText}
+            error={form.formState.errors.socialLink?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="shortDescription"
             label="Описание"
             description="Опционально."
             placeholder="Коротко о магазине"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
-            {...form.register('shortDescription', {
-              setValueAs: (value) => (value === '' ? null : value),
-            })}
-            error={form.formState.errors.shortDescription?.message as string | undefined}
+            parseValue={parseOptionalText}
+            error={form.formState.errors.shortDescription?.message}
           />
 
           {submitError ? (

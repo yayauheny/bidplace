@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { AppButton, AppCard, AppInput, EmptyState, ErrorState, FormField, LoadingState } from '../../components/ui';
+import { AppButton, AppCard, ControlledAppInput, EmptyState, ErrorState, FormField, LoadingState } from '../../components/ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
@@ -159,27 +159,30 @@ export function LotCreateForm() {
             </YStack>
           </FormField>
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="title"
             label="Название"
             placeholder="Signed Ceramic Vase"
-            {...form.register('title')}
             error={form.formState.errors.title?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="description"
             label="Описание"
             placeholder="Handmade ceramic vase."
             multiline
             numberOfLines={4}
             textAlignVertical="top"
-            {...form.register('description')}
             error={form.formState.errors.description?.message}
           />
 
-          <AppInput
+          <ControlledAppInput
+            control={form.control}
+            name="condition"
             label="Состояние"
             placeholder="excellent"
-            {...form.register('condition')}
             error={form.formState.errors.condition?.message}
           />
 

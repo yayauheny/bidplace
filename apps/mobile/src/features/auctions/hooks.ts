@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { BidCreateRequest, PaginationQuery } from '@bidplace/contracts';
+import { ApiClientError } from '@bidplace/api-client';
 
 import { useApiClient } from '../../providers/api-provider';
 
@@ -43,17 +44,23 @@ export function useSellerPublicProfileQuery(slug: string) {
 export function usePlaceBidMutation(auctionId: string, slug: string) {
   const api = useApiClient();
   const queryClient = useQueryClient();
+  const invalidateAuction = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: auctionKeys.detail(slug),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: auctionKeys.all,
+    });
+  };
 
   return useMutation({
     mutationFn: (input: BidCreateRequest) =>
       api.auctions.placeBid(auctionId, input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: auctionKeys.detail(slug),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: auctionKeys.all,
-      });
+    onSuccess: invalidateAuction,
+    onError: async (error) => {
+      if (error instanceof ApiClientError && error.status === 409) {
+        await invalidateAuction();
+      }
     },
   });
 }

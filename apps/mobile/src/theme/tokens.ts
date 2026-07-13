@@ -34,6 +34,8 @@ export const lightTheme = {
   focusRing: colors.accentStrong,
 } as const;
 
+export type AppThemePalette = Record<keyof typeof lightTheme, string>;
+
 export const darkTheme = {
   background: colors.darkBackground,
   surface: colors.darkSurface,
@@ -57,6 +59,6 @@ export const darkTheme = {
   overlay: colors.darkOverlay,
   shadowColor: colors.darkOverlay,
   focusRing: colors.darkAccent,
-} as const;
+} as const satisfies AppThemePalette;
 
 export const typographyTokens = typography;

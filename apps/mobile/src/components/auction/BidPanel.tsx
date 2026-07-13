@@ -6,7 +6,7 @@ import type { Auction } from '@bidplace/contracts';
 import { useRouter } from 'expo-router';
 
 import { formatCurrencyAmount } from '../../lib/formatters';
-import { AppButton, AppInput, AppCard, ErrorState } from '../ui';
+import { AppButton, AppCard, ControlledAppInput, ErrorState } from '../ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { useAuth } from '../../providers/auth-provider';
 import { usePlaceBidMutation } from '../../features/auctions/hooks';
@@ -24,6 +24,24 @@ function createBidSchema(minimumBid: number) {
       .positive()
       .min(minimumBid, `Минимальная ставка ${formatCurrencyAmount(minimumBid)}`),
   });
+}
+
+function formatBidAmount(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '';
+  }
+
+  return String(value);
+}
+
+function parseBidAmount(value: string) {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === '') {
+    return Number.NaN;
+  }
+
+  return Number(trimmedValue);
 }
 
 type BidPanelProps = {
@@ -102,16 +120,16 @@ export function BidPanel({ auction }: BidPanelProps) {
         <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
           Минимальная ставка {formatCurrencyAmount(minimumBid, auction.currency)}
         </Text>
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="amount"
           label="Сумма ставки"
-          type="number"
           inputMode="decimal"
-          step="0.01"
-          min={minimumBid}
           keyboardType="decimal-pad"
           autoComplete="off"
           editable={!mutation.isPending}
-          {...form.register('amount')}
+          formatValue={formatBidAmount}
+          parseValue={parseBidAmount}
           error={form.formState.errors.amount?.message}
         />
         {submitError ? (

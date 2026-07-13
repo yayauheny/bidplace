@@ -91,7 +91,9 @@ type PublicAuctionDetailRecord = PublicAuctionListRecord & {
   }>;
 };
 
-function isUniqueConstraintError(error: unknown): error is { code: string } {
+function isUniqueConstraintError(
+  error: unknown,
+): error is { code: string; meta?: { target?: unknown } } {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -268,19 +270,6 @@ export class AuctionsService {
       throw new ConflictException('Lot is not available for auction');
     }
 
-    const existingAuction = await this.prisma.auction.findFirst({
-      where: {
-        lotId: input.lotId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (existingAuction) {
-      throw new ConflictException('Lot already has an auction');
-    }
-
     try {
       const auction = await this.prisma.auction.create({
         data: {
@@ -306,6 +295,10 @@ export class AuctionsService {
       });
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
+        if (uniqueConstraintIncludes(error, 'lot')) {
+          throw new ConflictException('Lot already has an auction');
+        }
+
         throw new ConflictException('Auction slug already in use');
       }
 
@@ -378,23 +371,45 @@ export class AuctionsService {
 
     const updatedAuction = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        await tx.lot.update({
+        const updatedLot = await tx.lot.updateMany({
           where: {
             id: auction.lotId,
+            status: 'draft',
           },
           data: {
             status: 'published',
           },
         });
 
-        return tx.auction.update({
+        if (updatedLot.count !== 1) {
+          throw new ConflictException('Lot is not available for publication');
+        }
+
+        const publishedAuction = await tx.auction.updateMany({
           where: {
             id: auctionId,
+            status: 'draft',
           },
           data: {
             status,
           },
         });
+
+        if (publishedAuction.count !== 1) {
+          throw new ConflictException('Auction cannot be published');
+        }
+
+        const latestAuction = await tx.auction.findUnique({
+          where: {
+            id: auctionId,
+          },
+        });
+
+        if (!latestAuction) {
+          throw new NotFoundException('Auction not found');
+        }
+
+        return latestAuction;
       },
     );
 
@@ -514,3 +529,20 @@ export class AuctionsService {
 }
 
 export { calculateBidStep };
+
+function uniqueConstraintIncludes(
+  error: { meta?: { target?: unknown } },
+  fieldName: string,
+): boolean {
+  const target = error.meta?.target;
+
+  if (!Array.isArray(target)) {
+    return false;
+  }
+
+  return target.some(
+    (value) =>
+      typeof value === 'string' &&
+      value.toLowerCase().includes(fieldName.toLowerCase()),
+  );
+}

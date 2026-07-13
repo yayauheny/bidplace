@@ -2,6 +2,7 @@ export * from './AppButton';
 export * from './AppCard';
 export * from './AppInput';
 export * from './AppSheet';
+export * from './ControlledAppInput';
 export * from './EmptyState';
 export * from './ErrorState';
 export * from './FormField';

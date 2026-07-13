@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { AppButton, AppCard, AppInput, EmptyState, ErrorState, LoadingState, FormField } from '../../components/ui';
+import { AppButton, AppCard, ControlledAppInput, EmptyState, ErrorState, LoadingState, FormField } from '../../components/ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
@@ -16,6 +16,34 @@ import { auctionFormSchema, type AuctionFormValues } from './schemas';
 
 function toIsoInput(value: Date) {
   return value.toISOString();
+}
+
+function formatNumberInput(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '';
+  }
+
+  return String(value);
+}
+
+function parseRequiredNumberInput(value: string) {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === '') {
+    return Number.NaN;
+  }
+
+  return Number(trimmedValue);
+}
+
+function parseOptionalNumberInput(value: string) {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue === '') {
+    return null;
+  }
+
+  return Number(trimmedValue);
 }
 
 export function AuctionCreateForm() {
@@ -159,76 +187,83 @@ export function AuctionCreateForm() {
           </YStack>
         </FormField>
 
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="slug"
           label="Slug"
           placeholder="demo-auction"
           autoCapitalize="none"
           autoCorrect={false}
-          {...form.register('slug')}
           error={form.formState.errors.slug?.message}
         />
 
         <XStack style={{ gap: mobileSpacing[2], flexWrap: 'wrap' }}>
-        <AppInput
-          label="Start price"
-          placeholder="100"
-          keyboardType="decimal-pad"
-          inputMode="decimal"
-          {...form.register('startPrice', {
-            setValueAs: (value) => Number(value),
-          })}
-          error={form.formState.errors.startPrice?.message}
-        />
-        <AppInput
-          label="Reserve price"
-          placeholder="150"
-          keyboardType="decimal-pad"
-          inputMode="decimal"
-          {...form.register('reservePrice', {
-            setValueAs: (value) => Number(value),
-          })}
-          error={form.formState.errors.reservePrice?.message}
-        />
+          <ControlledAppInput
+            control={form.control}
+            name="startPrice"
+            label="Start price"
+            placeholder="100"
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            formatValue={formatNumberInput}
+            parseValue={parseRequiredNumberInput}
+            error={form.formState.errors.startPrice?.message}
+          />
+          <ControlledAppInput
+            control={form.control}
+            name="reservePrice"
+            label="Reserve price"
+            placeholder="150"
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            formatValue={formatNumberInput}
+            parseValue={parseRequiredNumberInput}
+            error={form.formState.errors.reservePrice?.message}
+          />
         </XStack>
 
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="currency"
           label="Currency"
           placeholder="USD"
           autoCapitalize="characters"
-          {...form.register('currency')}
           error={form.formState.errors.currency?.message}
         />
 
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="startsAt"
           label="Starts at"
           description="ISO date-time, for example 2026-07-13T13:00:00.000Z"
           placeholder="2026-07-13T13:00:00.000Z"
           autoCapitalize="none"
           autoCorrect={false}
-          {...form.register('startsAt')}
           error={form.formState.errors.startsAt?.message}
         />
 
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="endsAt"
           label="Ends at"
           description="ISO date-time, for example 2026-07-14T13:00:00.000Z"
           placeholder="2026-07-14T13:00:00.000Z"
           autoCapitalize="none"
           autoCorrect={false}
-          {...form.register('endsAt')}
           error={form.formState.errors.endsAt?.message}
         />
 
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="buyNowPrice"
           label="Buy now price"
           description="Опционально."
           placeholder="200"
           keyboardType="decimal-pad"
           inputMode="decimal"
-          {...form.register('buyNowPrice', {
-            setValueAs: (value) => (value === '' ? null : Number(value)),
-          })}
-          error={form.formState.errors.buyNowPrice?.message as string | undefined}
+          formatValue={formatNumberInput}
+          parseValue={parseOptionalNumberInput}
+          error={form.formState.errors.buyNowPrice?.message}
         />
 
         {submitError ? (

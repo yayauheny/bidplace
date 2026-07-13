@@ -118,14 +118,14 @@ model Lot {
   updatedAt       DateTime      @updatedAt @map("updated_at")
   sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Restrict)
   category        Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  auctions        Auction[]
+  auction         Auction?
 
   @@map("lots")
 }
 
 model Auction {
   id              String        @id @default(uuid()) @db.Uuid
-  lotId           String        @map("lot_id") @db.Uuid
+  lotId           String        @unique @map("lot_id") @db.Uuid
   sellerProfileId String        @map("seller_profile_id") @db.Uuid
   slug            String        @unique @db.VarChar(160)
   startPrice      Decimal       @map("start_price") @db.Decimal(12, 2)

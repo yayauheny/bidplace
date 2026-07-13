@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { AppButton, AppCard, AppInput } from '../../components/ui';
+import { AppButton, AppCard, ControlledAppInput } from '../../components/ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { useAuth } from '../../providers/auth-provider';
 import {
@@ -84,20 +84,22 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: string }) {
       description="Используйте email и пароль для доступа к seller и admin зонам."
     >
       <YStack style={{ gap: mobileSpacing[3] }}>
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="email"
           label="Email"
           placeholder="name@example.com"
           autoComplete="email"
           keyboardType="email-address"
-          {...form.register('email')}
           error={form.formState.errors.email?.message}
         />
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="password"
           label="Пароль"
           placeholder="••••••••"
           autoComplete="current-password"
           secureTextEntry
-          {...form.register('password')}
           error={form.formState.errors.password?.message}
         />
         {submitError ? (
@@ -159,35 +161,39 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: string }) {
       description="Создайте аккаунт, чтобы открыть seller и admin сценарии."
     >
       <YStack style={{ gap: mobileSpacing[3] }}>
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="displayName"
           label="Имя"
           placeholder="Иван Иванов"
           autoComplete="name"
-          {...form.register('displayName')}
           error={form.formState.errors.displayName?.message}
         />
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="email"
           label="Email"
           placeholder="name@example.com"
           autoComplete="email"
           keyboardType="email-address"
-          {...form.register('email')}
           error={form.formState.errors.email?.message}
         />
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="phone"
           label="Телефон"
           placeholder="+375..."
           autoComplete="tel"
           keyboardType="phone-pad"
-          {...form.register('phone')}
           error={form.formState.errors.phone?.message}
         />
-        <AppInput
+        <ControlledAppInput
+          control={form.control}
+          name="password"
           label="Пароль"
           placeholder="••••••••"
           autoComplete="new-password"
           secureTextEntry
-          {...form.register('password')}
           error={form.formState.errors.password?.message}
         />
         {submitError ? (
