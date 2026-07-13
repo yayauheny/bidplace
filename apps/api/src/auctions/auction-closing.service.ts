@@ -17,6 +17,7 @@ type AuctionClosingRecord = {
   bidCount: number;
   winnerBidId: string | null;
   status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
+  startsAt: Date;
   endsAt: Date;
 };
 
@@ -35,6 +36,32 @@ export class AuctionClosingService {
     private readonly prisma: PrismaService,
     private readonly realtimeEventsService: RealtimeEventsService,
   ) {}
+
+  async activateScheduledAuctions(now = new Date()): Promise<string[]> {
+    const auctions = await this.prisma.auction.findMany({
+      where: {
+        status: 'scheduled',
+        startsAt: {
+          lte: now,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const activatedAuctionIds: string[] = [];
+
+    for (const auction of auctions) {
+      const activatedAuctionId = await this.activateAuctionById(auction.id, now);
+
+      if (activatedAuctionId) {
+        activatedAuctionIds.push(activatedAuctionId);
+      }
+    }
+
+    return activatedAuctionIds;
+  }
 
   async closeExpiredAuctions(now = new Date()): Promise<AuctionEndedEventPayload[]> {
     const auctions = await this.prisma.auction.findMany({
@@ -213,5 +240,62 @@ export class AuctionClosingService {
         return payload;
       },
     );
+  }
+
+  private async activateAuctionById(
+    auctionId: string,
+    now = new Date(),
+  ): Promise<string | null> {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const auction = (await tx.auction.findUnique({
+        where: {
+          id: auctionId,
+        },
+        select: {
+          id: true,
+          reservePrice: true,
+          currentPrice: true,
+          bidCount: true,
+          winnerBidId: true,
+          status: true,
+          startsAt: true,
+          endsAt: true,
+        },
+      })) as AuctionClosingRecord | null;
+
+      if (!auction || auction.status !== 'scheduled' || auction.startsAt > now) {
+        return null;
+      }
+
+      const updatedAuction = await tx.auction.updateMany({
+        where: {
+          id: auctionId,
+          status: 'scheduled',
+          startsAt: {
+            lte: now,
+          },
+        },
+        data: {
+          status: 'active',
+        },
+      });
+
+      if (updatedAuction.count !== 1) {
+        return null;
+      }
+
+      this.realtimeEventsService.publishAuctionUpdated({
+        auctionId,
+        currentPrice: toNumber(auction.currentPrice),
+        bidCount: auction.bidCount,
+        status: 'active',
+        endsAt: auction.endsAt.toISOString(),
+        winnerBidId: auction.winnerBidId,
+        reserveReached:
+          toNumber(auction.currentPrice) >= toNumber(auction.reservePrice),
+      });
+
+      return auctionId;
+    });
   }
 }

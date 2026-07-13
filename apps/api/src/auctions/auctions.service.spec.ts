@@ -225,7 +225,7 @@ describe('AuctionsService', () => {
       }),
     ]);
 
-    const result = await service.listPublicAuctions();
+    const result = await service.listPublicAuctions({ page: 2, limit: 10 });
 
     expect(prisma.auction.findMany).toHaveBeenCalledWith({
       where: {
@@ -243,9 +243,9 @@ describe('AuctionsService', () => {
         lot: true,
         sellerProfile: true,
       },
-      orderBy: {
-        endsAt: 'asc',
-      },
+      skip: 10,
+      take: 10,
+      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
     });
     expect(result.auctions).toHaveLength(2);
     expect(result.auctions[0].auction.id).toBe(
@@ -282,7 +282,10 @@ describe('AuctionsService', () => {
       }),
     );
 
-    const result = await service.getPublicAuction('demo-auction');
+    const result = await service.getPublicAuction('demo-auction', {
+      page: 3,
+      limit: 5,
+    });
 
     expect(prisma.auction.findFirst).toHaveBeenCalledWith({
       where: {
@@ -301,9 +304,9 @@ describe('AuctionsService', () => {
         lot: true,
         sellerProfile: true,
         bids: {
-          orderBy: {
-            createdAt: 'desc',
-          },
+          skip: 10,
+          take: 5,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
       },
     });

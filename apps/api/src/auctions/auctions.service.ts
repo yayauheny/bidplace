@@ -3,6 +3,7 @@ import {
   type AuctionCreateRequest,
   type Bid,
   type Lot,
+  type PaginationQuery,
   type AuctionResponse,
   type SellerProfile,
   auctionListResponseSchema,
@@ -112,7 +113,9 @@ export class AuctionsService {
     private readonly realtimeEventsService: RealtimeEventsService,
   ) {}
 
-  async listPublicAuctions() {
+  async listPublicAuctions(
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ) {
     const auctions = (await this.prisma.auction.findMany({
       where: {
         status: {
@@ -129,9 +132,9 @@ export class AuctionsService {
         lot: true,
         sellerProfile: true,
       },
-      orderBy: {
-        endsAt: 'asc',
-      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
     })) as PublicAuctionListRecord[];
 
     return auctionListResponseSchema.parse({
@@ -143,7 +146,10 @@ export class AuctionsService {
     });
   }
 
-  async getPublicAuction(slug: string) {
+  async getPublicAuction(
+    slug: string,
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ) {
     const auction = (await this.prisma.auction.findFirst({
       where: {
         slug,
@@ -161,9 +167,9 @@ export class AuctionsService {
         lot: true,
         sellerProfile: true,
         bids: {
-          orderBy: {
-            createdAt: 'desc',
-          },
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
       },
     })) as PublicAuctionDetailRecord | null;

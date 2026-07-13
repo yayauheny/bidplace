@@ -5,6 +5,7 @@ import {
   type AdminUsersResponse,
   type Auction,
   type BidHistoryResponse,
+  type PaginationQuery,
   type User,
   adminAuctionResponseSchema,
   adminAuctionsResponseSchema,
@@ -70,11 +71,13 @@ function toNumber(value: NumericLike): number {
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listUsers(): Promise<AdminUsersResponse> {
+  async listUsers(
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ): Promise<AdminUsersResponse> {
     const users = (await this.prisma.user.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     })) as PrismaUser[];
 
     return adminUsersResponseSchema.parse({
@@ -107,11 +110,14 @@ export class AdminService {
     });
   }
 
-  async listAuctions(): Promise<AdminAuctionsResponse> {
+  async listAuctions({
+    page,
+    limit,
+  }: PaginationQuery = { page: 1, limit: 20 }): Promise<AdminAuctionsResponse> {
     const auctions = (await this.prisma.auction.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     })) as PrismaAuction[];
 
     return adminAuctionsResponseSchema.parse({
@@ -144,7 +150,10 @@ export class AdminService {
     });
   }
 
-  async listAuctionBids(auctionId: string): Promise<BidHistoryResponse> {
+  async listAuctionBids(
+    auctionId: string,
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ): Promise<BidHistoryResponse> {
     const auction = await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
@@ -162,9 +171,9 @@ export class AdminService {
       where: {
         auctionId,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     })) as PrismaBid[];
 
     return bidHistoryResponseSchema.parse({

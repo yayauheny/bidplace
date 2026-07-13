@@ -1,6 +1,7 @@
 export type StoredFile = {
   buffer: Buffer;
   originalname: string;
+  mimetype: string;
 };
 
 export abstract class FileStorageService {

@@ -17,6 +17,7 @@ import {
   lotCreateRequestSchema,
   lotResponseSchema,
   loginRequestSchema,
+  paginationQuerySchema,
   publicAuctionDetailResponseSchema,
   registerRequestSchema,
   sellerProfileCreateRequestSchema,
@@ -305,6 +306,16 @@ describe('shared contracts', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('accepts pagination queries with defaults', () => {
+    const result = paginationQuerySchema.safeParse({});
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.page).toBe(1);
+      expect(result.data.limit).toBe(20);
+    }
   });
 
   it('accepts valid lot create payloads', () => {

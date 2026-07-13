@@ -74,6 +74,49 @@ describe('AuctionClosingService', () => {
     );
   });
 
+  it('activates scheduled auctions that have reached their start time', async () => {
+    prisma.auction.findMany.mockResolvedValue([
+      {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      },
+    ]);
+    prisma.auction.findUnique.mockResolvedValue(
+      createAuctionRecord({
+        status: 'scheduled',
+        startsAt: new Date('2026-07-13T12:00:00.000Z'),
+        endsAt: new Date('2026-07-13T13:00:00.000Z'),
+      }),
+    );
+    prisma.auction.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.activateScheduledAuctions();
+
+    expect(prisma.auction.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        status: 'scheduled',
+        startsAt: {
+          lte: new Date('2026-07-13T12:30:00.000Z'),
+        },
+      },
+      data: {
+        status: 'active',
+      },
+    });
+    expect(realtimeEventsService.publishAuctionUpdated).toHaveBeenCalledWith({
+      auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      currentPrice: 100,
+      bidCount: 1,
+      status: 'active',
+      endsAt: '2026-07-13T13:00:00.000Z',
+      winnerBidId: null,
+      reserveReached: false,
+    });
+    expect(result).toEqual([
+      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+    ]);
+  });
+
   it('closes active auctions with reserve met as sold and marks bids accordingly', async () => {
     prisma.auction.findMany.mockResolvedValue([
       {

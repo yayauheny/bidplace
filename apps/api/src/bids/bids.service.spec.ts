@@ -243,8 +243,17 @@ describe('BidsService', () => {
     const result = await service.listAuctionBids(
       '9d5e8f46-5f7d-4c1a-9f7c-3d4c8d7a1111',
       '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      { page: 2, limit: 10 },
     );
 
+    expect(prisma.bid.findMany).toHaveBeenCalledWith({
+      where: {
+        auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      },
+      skip: 10,
+      take: 10,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
     expect(result.bids).toHaveLength(2);
     expect(result.bids[0].id).toBe('c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c001');
     expect(result.bids[1].id).toBe('c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c002');
@@ -263,6 +272,7 @@ describe('BidsService', () => {
       service.listAuctionBids(
         '9d5e8f46-5f7d-4c1a-9f7c-3d4c8d7a1111',
         '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        { page: 1, limit: 20 },
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });

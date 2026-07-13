@@ -3,12 +3,14 @@ import {
   adminAuctionsResponseSchema,
   adminUserResponseSchema,
   adminUsersResponseSchema,
+  paginationQuerySchema,
 } from '@bidplace/contracts';
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 
 import { BearerAuthGuard } from '../auth';
 import { AdminGuard } from './admin.guard';
 import { AdminService } from './admin.service';
+import { parseQuery } from '../core/validation';
 
 @Controller('admin')
 @UseGuards(BearerAuthGuard, AdminGuard)
@@ -16,8 +18,10 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('users')
-  async listUsers() {
-    return adminUsersResponseSchema.parse(await this.adminService.listUsers());
+  async listUsers(@Query() query: unknown) {
+    return adminUsersResponseSchema.parse(
+      await this.adminService.listUsers(parseQuery(paginationQuerySchema, query)),
+    );
   }
 
   @Patch('users/:userId/ban')
@@ -26,9 +30,9 @@ export class AdminController {
   }
 
   @Get('auctions')
-  async listAuctions() {
+  async listAuctions(@Query() query: unknown) {
     return adminAuctionsResponseSchema.parse(
-      await this.adminService.listAuctions(),
+      await this.adminService.listAuctions(parseQuery(paginationQuerySchema, query)),
     );
   }
 
@@ -40,7 +44,10 @@ export class AdminController {
   }
 
   @Get('auctions/:auctionId/bids')
-  async listAuctionBids(@Param('auctionId') auctionId: string) {
-    return this.adminService.listAuctionBids(auctionId);
+  async listAuctionBids(@Param('auctionId') auctionId: string, @Query() query: unknown) {
+    return this.adminService.listAuctionBids(
+      auctionId,
+      parseQuery(paginationQuerySchema, query),
+    );
   }
 }

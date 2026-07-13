@@ -7,6 +7,7 @@ export * from './enums';
 export * from './events';
 export * from './lot';
 export * from './public-auction';
+export * from './pagination';
 export * from './primitives';
 export * from './seller-profile';
 export * from './user';

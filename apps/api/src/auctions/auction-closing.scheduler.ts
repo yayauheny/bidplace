@@ -12,6 +12,7 @@ export class AuctionClosingScheduler implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     this.intervalId = setInterval(() => {
+      void this.auctionClosingService.activateScheduledAuctions();
       void this.auctionClosingService.closeExpiredAuctions();
     }, 60_000);
   }

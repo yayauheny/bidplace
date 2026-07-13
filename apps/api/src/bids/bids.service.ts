@@ -1,6 +1,7 @@
 import {
   type Bid,
   type BidCreateRequest,
+  type PaginationQuery,
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
 } from '@bidplace/contracts';
@@ -260,7 +261,11 @@ export class BidsService {
     }
   }
 
-  async listAuctionBids(userId: string, auctionId: string) {
+  async listAuctionBids(
+    userId: string,
+    auctionId: string,
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ) {
     const auction = await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
@@ -283,9 +288,9 @@ export class BidsService {
       where: {
         auctionId,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     })) as BidRecord[];
 
     return bidHistoryResponseSchema.parse({

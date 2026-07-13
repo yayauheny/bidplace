@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
@@ -10,6 +10,21 @@ function sanitizeFileName(fileName: string): string {
   const trimmed = normalized.replace(/-+/g, '-').replace(/^-|-$/g, '');
 
   return trimmed.length > 0 ? trimmed.toLowerCase() : 'file';
+}
+
+function imageExtensionForMimeType(mimetype: string): string {
+  switch (mimetype) {
+    case 'image/jpeg':
+      return '.jpg';
+    case 'image/png':
+      return '.png';
+    case 'image/webp':
+      return '.webp';
+    case 'image/gif':
+      return '.gif';
+    default:
+      throw new BadRequestException('Unsupported image type');
+  }
 }
 
 @Injectable()
@@ -31,7 +46,7 @@ export class LocalFileStorageService extends FileStorageService {
         const originalBaseName = sanitizeFileName(
           basename(file.originalname, extname(file.originalname)),
         );
-        const extension = extname(file.originalname).toLowerCase() || '.bin';
+        const extension = imageExtensionForMimeType(file.mimetype);
         const fileName = `${randomUUID()}-${originalBaseName}${extension}`;
         const absolutePath = join(directory, fileName);
 
