@@ -1,8 +1,13 @@
 import {
   type Auction,
   type AuctionCreateRequest,
+  type Bid,
+  type Lot,
   type AuctionResponse,
+  type SellerProfile,
+  auctionListResponseSchema,
   auctionResponseSchema,
+  publicAuctionDetailResponseSchema,
 } from '@bidplace/contracts';
 import {
   ConflictException,
@@ -38,6 +43,51 @@ type AuctionRecord = {
   updatedAt: Date;
 };
 
+type LotRecord = {
+  id: string;
+  sellerProfileId: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  condition: string;
+  images: string[];
+  status: Lot['status'];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type SellerProfileRecord = {
+  id: string;
+  userId: string;
+  slug: string;
+  sellerType: SellerProfile['sellerType'];
+  storeName: string;
+  country: string;
+  contactPreference: string;
+  socialLink: string | null;
+  shortDescription: string | null;
+  status: SellerProfile['status'];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type PublicAuctionListRecord = AuctionRecord & {
+  lot: LotRecord;
+  sellerProfile: SellerProfileRecord;
+};
+
+type PublicAuctionDetailRecord = PublicAuctionListRecord & {
+  bids: Array<{
+    id: string;
+    auctionId: string;
+    bidderUserId: string;
+    amount: NumericLike;
+    status: Bid['status'];
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
 function isUniqueConstraintError(error: unknown): error is { code: string } {
   return (
     typeof error === 'object' &&
@@ -61,6 +111,74 @@ export class AuctionsService {
     private readonly prisma: PrismaService,
     private readonly realtimeEventsService: RealtimeEventsService,
   ) {}
+
+  async listPublicAuctions() {
+    const auctions = (await this.prisma.auction.findMany({
+      where: {
+        status: {
+          in: ['scheduled', 'active'],
+        },
+        lot: {
+          status: 'published',
+        },
+        sellerProfile: {
+          status: 'active',
+        },
+      },
+      include: {
+        lot: true,
+        sellerProfile: true,
+      },
+      orderBy: {
+        endsAt: 'asc',
+      },
+    })) as PublicAuctionListRecord[];
+
+    return auctionListResponseSchema.parse({
+      auctions: auctions.map((auction) => ({
+        auction: this.toContractAuction(auction),
+        lot: this.toContractLot(auction.lot),
+        sellerProfile: this.toContractSellerProfile(auction.sellerProfile),
+      })),
+    });
+  }
+
+  async getPublicAuction(slug: string) {
+    const auction = (await this.prisma.auction.findFirst({
+      where: {
+        slug,
+        status: {
+          in: ['scheduled', 'active', 'ended', 'sold', 'failed'],
+        },
+        lot: {
+          status: 'published',
+        },
+        sellerProfile: {
+          status: 'active',
+        },
+      },
+      include: {
+        lot: true,
+        sellerProfile: true,
+        bids: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    })) as PublicAuctionDetailRecord | null;
+
+    if (!auction) {
+      throw new NotFoundException('Auction not found');
+    }
+
+    return publicAuctionDetailResponseSchema.parse({
+      auction: this.toContractAuction(auction),
+      lot: this.toContractLot(auction.lot),
+      sellerProfile: this.toContractSellerProfile(auction.sellerProfile),
+      bids: auction.bids.map((bid) => this.toContractBid(bid)),
+    });
+  }
 
   async createAuction(
     userId: string,
@@ -275,6 +393,60 @@ export class AuctionsService {
         auction.buyNowPrice === null ? null : toNumber(auction.buyNowPrice),
       createdAt: auction.createdAt.toISOString(),
       updatedAt: auction.updatedAt.toISOString(),
+    };
+  }
+
+  private toContractLot(lot: LotRecord): Lot {
+    return {
+      id: lot.id,
+      sellerProfileId: lot.sellerProfileId,
+      categoryId: lot.categoryId,
+      title: lot.title,
+      description: lot.description,
+      condition: lot.condition,
+      images: lot.images,
+      status: lot.status,
+      createdAt: lot.createdAt.toISOString(),
+      updatedAt: lot.updatedAt.toISOString(),
+    };
+  }
+
+  private toContractSellerProfile(
+    sellerProfile: SellerProfileRecord,
+  ): SellerProfile {
+    return {
+      id: sellerProfile.id,
+      userId: sellerProfile.userId,
+      slug: sellerProfile.slug,
+      sellerType: sellerProfile.sellerType,
+      storeName: sellerProfile.storeName,
+      country: sellerProfile.country,
+      contactPreference: sellerProfile.contactPreference,
+      socialLink: sellerProfile.socialLink,
+      shortDescription: sellerProfile.shortDescription,
+      status: sellerProfile.status,
+      createdAt: sellerProfile.createdAt.toISOString(),
+      updatedAt: sellerProfile.updatedAt.toISOString(),
+    };
+  }
+
+  private toContractBid(bid: {
+    id: string;
+    auctionId: string;
+    bidderUserId: string;
+    amount: NumericLike;
+    status: Bid['status'];
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: bid.id,
+      auctionId: bid.auctionId,
+      bidderUserId: bid.bidderUserId,
+      amount: toNumber(bid.amount),
+      status: bid.status,
+      createdAt: bid.createdAt.toISOString(),
+      updatedAt: bid.updatedAt.toISOString(),
     };
   }
 }

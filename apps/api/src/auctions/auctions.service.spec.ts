@@ -24,6 +24,51 @@ type AuctionRecord = {
   updatedAt: Date;
 };
 
+type LotRecord = {
+  id: string;
+  sellerProfileId: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  condition: string;
+  images: string[];
+  status: 'draft' | 'published' | 'sold' | 'hidden' | 'archived';
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type SellerProfileRecord = {
+  id: string;
+  userId: string;
+  slug: string;
+  sellerType: 'creator' | 'influencer';
+  storeName: string;
+  country: string;
+  contactPreference: string;
+  socialLink: string | null;
+  shortDescription: string | null;
+  status: 'draft' | 'active' | 'restricted' | 'suspended';
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type PublicAuctionRecord = AuctionRecord & {
+  lot: LotRecord;
+  sellerProfile: SellerProfileRecord;
+};
+
+type PublicAuctionDetailRecord = PublicAuctionRecord & {
+  bids: Array<{
+    id: string;
+    auctionId: string;
+    bidderUserId: string;
+    amount: number;
+    status: 'active' | 'winning' | 'outbid' | 'won' | 'lost' | 'cancelled' | 'invalid';
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
 function createAuctionRecord(
   overrides: Partial<AuctionRecord> = {},
 ): AuctionRecord {
@@ -45,6 +90,73 @@ function createAuctionRecord(
     buyNowPrice: null,
     createdAt: new Date('2026-07-13T12:00:00.000Z'),
     updatedAt: new Date('2026-07-13T12:00:00.000Z'),
+    ...overrides,
+  };
+}
+
+function createLotRecord(overrides: Partial<LotRecord> = {}): LotRecord {
+  return {
+    id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
+    sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+    categoryId: 'b8d7d079-f07e-4cd0-b1e2-1f3a8c1d8f5b',
+    title: 'Signed Ceramic Vase',
+    description: 'Handmade ceramic vase.',
+    condition: 'excellent',
+    images: ['/uploads/lots/vase.jpg'],
+    status: 'published',
+    createdAt: new Date('2026-07-13T10:00:00.000Z'),
+    updatedAt: new Date('2026-07-13T10:00:00.000Z'),
+    ...overrides,
+  };
+}
+
+function createSellerProfileRecord(
+  overrides: Partial<SellerProfileRecord> = {},
+): SellerProfileRecord {
+  return {
+    id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+    userId: '9d5e8f46-5f7d-4c1a-9f7c-3d4c8d7a1111',
+    slug: 'demo-store',
+    sellerType: 'creator',
+    storeName: 'Demo Store',
+    country: 'BY',
+    contactPreference: 'telegram',
+    socialLink: 'https://example.com',
+    shortDescription: 'Short bio',
+    status: 'active',
+    createdAt: new Date('2026-07-13T10:00:00.000Z'),
+    updatedAt: new Date('2026-07-13T10:00:00.000Z'),
+    ...overrides,
+  };
+}
+
+function createPublicAuctionRecord(
+  overrides: Partial<PublicAuctionRecord> = {},
+): PublicAuctionRecord {
+  return {
+    ...createAuctionRecord(),
+    lot: createLotRecord(),
+    sellerProfile: createSellerProfileRecord(),
+    ...overrides,
+  };
+}
+
+function createPublicAuctionDetailRecord(
+  overrides: Partial<PublicAuctionDetailRecord> = {},
+): PublicAuctionDetailRecord {
+  return {
+    ...createPublicAuctionRecord(),
+    bids: [
+      {
+        id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
+        auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+        amount: 125,
+        status: 'winning',
+        createdAt: new Date('2026-07-13T12:10:00.000Z'),
+        updatedAt: new Date('2026-07-13T12:10:00.000Z'),
+      },
+    ],
     ...overrides,
   };
 }
@@ -75,6 +187,7 @@ describe('AuctionsService', () => {
       update: vi.fn(),
     },
     auction: {
+      findMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -97,6 +210,115 @@ describe('AuctionsService', () => {
     vi.setSystemTime(new Date('2026-07-13T12:30:00.000Z'));
     prisma.$transaction.mockImplementation(async (callback: unknown) =>
       (callback as (tx: typeof prisma) => Promise<unknown>)(prisma),
+    );
+  });
+
+  it('lists public auctions in ending order', async () => {
+    prisma.auction.findMany.mockResolvedValue([
+      createPublicAuctionRecord({
+        id: '22222222-2222-2222-2222-222222222222',
+        endsAt: new Date('2026-07-14T12:00:00.000Z'),
+      }),
+      createPublicAuctionRecord({
+        id: '11111111-1111-1111-1111-111111111111',
+        endsAt: new Date('2026-07-14T13:00:00.000Z'),
+      }),
+    ]);
+
+    const result = await service.listPublicAuctions();
+
+    expect(prisma.auction.findMany).toHaveBeenCalledWith({
+      where: {
+        status: {
+          in: ['scheduled', 'active'],
+        },
+        lot: {
+          status: 'published',
+        },
+        sellerProfile: {
+          status: 'active',
+        },
+      },
+      include: {
+        lot: true,
+        sellerProfile: true,
+      },
+      orderBy: {
+        endsAt: 'asc',
+      },
+    });
+    expect(result.auctions).toHaveLength(2);
+    expect(result.auctions[0].auction.id).toBe(
+      '22222222-2222-2222-2222-222222222222',
+    );
+    expect(result.auctions[1].auction.id).toBe(
+      '11111111-1111-1111-1111-111111111111',
+    );
+  });
+
+  it('returns a public auction detail with bid history', async () => {
+    prisma.auction.findFirst.mockResolvedValue(
+      createPublicAuctionDetailRecord({
+        bids: [
+          {
+            id: 'c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c001',
+            auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
+            amount: 140,
+            status: 'winning',
+            createdAt: new Date('2026-07-13T12:20:00.000Z'),
+            updatedAt: new Date('2026-07-13T12:20:00.000Z'),
+          },
+          {
+            id: 'c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c002',
+            auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            bidderUserId: '7f0e0d11-3e3c-4ec0-9d7d-6de9a91a2222',
+            amount: 120,
+            status: 'outbid',
+            createdAt: new Date('2026-07-13T12:10:00.000Z'),
+            updatedAt: new Date('2026-07-13T12:10:00.000Z'),
+          },
+        ],
+      }),
+    );
+
+    const result = await service.getPublicAuction('demo-auction');
+
+    expect(prisma.auction.findFirst).toHaveBeenCalledWith({
+      where: {
+        slug: 'demo-auction',
+        status: {
+          in: ['scheduled', 'active', 'ended', 'sold', 'failed'],
+        },
+        lot: {
+          status: 'published',
+        },
+        sellerProfile: {
+          status: 'active',
+        },
+      },
+      include: {
+        lot: true,
+        sellerProfile: true,
+        bids: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+    expect(result.bids).toHaveLength(2);
+    expect(result.bids[0].id).toBe('c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c001');
+    expect(result.bids[1].id).toBe('c1e3d3a3-4d91-4c9e-8d5f-8ebd8c10c002');
+    expect(result.lot.title).toBe('Signed Ceramic Vase');
+    expect(result.sellerProfile.slug).toBe('demo-store');
+  });
+
+  it('rejects missing public auctions', async () => {
+    prisma.auction.findFirst.mockResolvedValue(null);
+
+    await expect(service.getPublicAuction('missing-auction')).rejects.toBeInstanceOf(
+      NotFoundException,
     );
   });
 
