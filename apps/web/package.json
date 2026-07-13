@@ -11,15 +11,17 @@
     "clean": "rm -rf .next dist"
   },
   "dependencies": {
+    "@bidplace/api-client": "workspace:*",
     "@bidplace/config": "workspace:*",
     "@bidplace/contracts": "workspace:*",
-    "@bidplace/api-client": "workspace:*",
     "@bidplace/design-tokens": "workspace:*",
     "@hookform/resolvers": "5.4.0",
     "@tamagui/config": "2.4.5",
+    "@tamagui/core": "2.4.5",
     "@tamagui/lucide-icons-2": "2.4.5",
     "@tamagui/next-theme": "2.4.5",
     "@tamagui/react-native-svg": "2.4.5",
+    "@tamagui/web": "2.4.5",
     "@tanstack/react-query": "5.101.2",
     "next": "^15.1.0",
     "react": "^18.3.1",

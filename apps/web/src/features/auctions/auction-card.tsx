@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 import type { AuctionListItem } from '@bidplace/contracts';
 
@@ -21,21 +22,20 @@ export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
       <Card>
         <YStack gap={spacing[3]}>
           <YStack
+            position="relative"
             borderRadius={radius.lg}
             overflow="hidden"
             minHeight={220}
             backgroundColor="$backgroundMuted"
           >
             {image ? (
-              <img
+              <Image
                 src={resolveMediaUrl(image)}
                 alt={lot.title}
-                style={{
-                  width: '100%',
-                  height: 220,
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 100vw, 384px"
+                style={{ objectFit: 'cover' }}
               />
             ) : (
               <YStack flex={1} />

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 import { formatCurrencyAmount, formatDateTime, formatNumber } from '../../lib/formatters';
 import { resolveMediaUrl } from '../../lib/media';
@@ -101,21 +102,20 @@ export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
         <YStack flex={1} minWidth={320} gap={spacing[4]}>
           <Card>
             <YStack
+              position="relative"
               borderRadius={radius.lg}
               overflow="hidden"
               minHeight={320}
               backgroundColor="$backgroundMuted"
             >
               {image ? (
-                <img
+                <Image
                   src={resolveMediaUrl(image)}
                   alt={lot.title}
-                  style={{
-                    width: '100%',
-                    height: 320,
-                    objectFit: 'cover',
-                    display: 'block',
-                  }}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 720px"
+                  style={{ objectFit: 'cover' }}
                 />
               ) : null}
             </YStack>

@@ -10,6 +10,7 @@ type BoxProps = Omit<HTMLAttributes<HTMLDivElement>, 'color' | 'style'> & {
   flexWrap?: CSSProperties['flexWrap'];
   flex?: CSSProperties['flex'];
   flexGrow?: CSSProperties['flexGrow'];
+  position?: CSSProperties['position'];
   width?: CSSProperties['width'];
   maxWidth?: CSSProperties['maxWidth'];
   minWidth?: CSSProperties['minWidth'];
@@ -89,6 +90,7 @@ function Box({
   flexWrap,
   flex,
   flexGrow,
+  position,
   width,
   maxWidth,
   minWidth,
@@ -124,6 +126,7 @@ function Box({
       style={{
         display: 'flex',
         flexDirection: flexDirection ?? defaultDirection,
+        position,
         gap: toCssValue(gap),
         alignItems,
         justifyContent,

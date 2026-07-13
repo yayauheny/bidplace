@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -91,11 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [api]);
 
-  const syncSession = async (response: AuthResponse) => {
+  const syncSession = useCallback(async (response: AuthResponse) => {
     writeAccessToken(response.accessToken);
     setState(buildState('authenticated', response.user, response.accessToken));
     await queryClient.invalidateQueries();
-  };
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -132,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState(buildState('authenticated', response.user, token));
       },
     }),
-    [api, queryClient, state.accessToken, state.status, state.user],
+    [api, queryClient, state.accessToken, state.status, state.user, syncSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

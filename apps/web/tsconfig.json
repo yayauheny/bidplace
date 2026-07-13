@@ -2,7 +2,7 @@
   "extends": "../../packages/tsconfig/next.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "lib": [
       "ES2022",
       "DOM",
