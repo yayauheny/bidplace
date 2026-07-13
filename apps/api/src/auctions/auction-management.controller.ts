@@ -1,18 +1,33 @@
 import {
   auctionCreateRequestSchema,
   auctionResponseSchema,
+  sellerAuctionListResponseSchema,
+  paginationQuerySchema,
   type AuthTokenPayload,
 } from '@bidplace/contracts';
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { AuctionsService } from './auctions.service';
-import { parseBody } from '../core/validation';
+import { parseBody, parseQuery } from '../core/validation';
 
 @Controller('seller/auctions')
 @UseGuards(BearerAuthGuard)
 export class AuctionManagementController {
   constructor(private readonly auctionsService: AuctionsService) {}
+
+  @Get()
+  async listMyAuctions(
+    @CurrentUser() auth: AuthTokenPayload,
+    @Query() query: unknown,
+  ) {
+    return sellerAuctionListResponseSchema.parse(
+      await this.auctionsService.listMyAuctions(
+        auth.sub,
+        parseQuery(paginationQuerySchema, query),
+      ),
+    );
+  }
 
   @Post()
   async createAuction(

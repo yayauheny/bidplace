@@ -152,6 +152,20 @@ describe('SellersService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('returns the current seller profile even when it is not public', async () => {
+    prisma.sellerProfile.findUnique.mockResolvedValue(
+      createSellerProfileRecord({
+        status: 'draft',
+      }),
+    );
+
+    const result = await service.getMyProfile(
+      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+    );
+
+    expect(result.sellerProfile.status).toBe('draft');
+  });
+
   it('returns public active seller profiles by slug', async () => {
     prisma.sellerProfile.findUnique.mockResolvedValue(
       createSellerProfileRecord(),

@@ -11,6 +11,7 @@ import {
   bidCreateRequestSchema,
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
+  categoryListResponseSchema,
   loginRequestSchema,
   lotCreateRequestSchema,
   lotResponseSchema,
@@ -21,6 +22,8 @@ import {
   sellerProfileCreateRequestSchema,
   sellerProfileResponseSchema,
   sellerProfileUpdateRequestSchema,
+  sellerAuctionListResponseSchema,
+  sellerLotListResponseSchema,
   type AdminAuctionResponse,
   type AdminAuctionsResponse,
   type AdminUserResponse,
@@ -39,9 +42,12 @@ import {
   type PaginationQuery,
   type PublicAuctionDetailResponse,
   type RegisterRequest,
+  type CategoryListResponse,
   type SellerProfileCreateRequest,
   type SellerProfileResponse,
   type SellerProfileUpdateRequest,
+  type SellerAuctionListResponse,
+  type SellerLotListResponse,
 } from '@bidplace/contracts';
 import { z, type ZodType } from 'zod';
 
@@ -119,9 +125,18 @@ export type ApiClient = {
     ) => Promise<LotResponse>;
   };
   readonly sellers: {
+    getMyProfile: () => Promise<SellerProfileResponse>;
     getPublic: (slug: string) => Promise<SellerProfileResponse>;
-    createProfile: (input: SellerProfileCreateRequest) => Promise<SellerProfileResponse>;
-    updateProfile: (input: SellerProfileUpdateRequest) => Promise<SellerProfileResponse>;
+    createProfile: (
+      input: SellerProfileCreateRequest,
+    ) => Promise<SellerProfileResponse>;
+    updateProfile: (
+      input: SellerProfileUpdateRequest,
+    ) => Promise<SellerProfileResponse>;
+    listLots: (query?: PaginationQuery) => Promise<SellerLotListResponse>;
+    listAuctions: (
+      query?: PaginationQuery,
+    ) => Promise<SellerAuctionListResponse>;
     listAuctionBids: (
       auctionId: string,
       query?: PaginationQuery,
@@ -136,6 +151,9 @@ export type ApiClient = {
       auctionId: string,
       query?: PaginationQuery,
     ) => Promise<BidHistoryResponse>;
+  };
+  readonly categories: {
+    list: () => Promise<CategoryListResponse>;
   };
 };
 
@@ -454,7 +472,29 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         );
       },
     },
+    categories: {
+      list() {
+        return requestJson(
+          fetchImpl,
+          baseUrl,
+          getAccessToken,
+          credentials,
+          '/api/categories',
+          categoryListResponseSchema,
+        );
+      },
+    },
     sellers: {
+      getMyProfile() {
+        return requestJson(
+          fetchImpl,
+          baseUrl,
+          getAccessToken,
+          credentials,
+          '/api/seller/profile',
+          sellerProfileResponseSchema,
+        );
+      },
       getPublic(slug: string) {
         return requestJson(
           fetchImpl,
@@ -490,6 +530,32 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           {
             method: 'PATCH',
             body: sellerProfileUpdateRequestSchema.parse(input),
+          },
+        );
+      },
+      listLots(query?: PaginationQuery) {
+        return requestJson(
+          fetchImpl,
+          baseUrl,
+          getAccessToken,
+          credentials,
+          '/api/seller/lots',
+          sellerLotListResponseSchema,
+          {
+            query: paginationQuerySchema.parse(query ?? {}),
+          },
+        );
+      },
+      listAuctions(query?: PaginationQuery) {
+        return requestJson(
+          fetchImpl,
+          baseUrl,
+          getAccessToken,
+          credentials,
+          '/api/seller/auctions',
+          sellerAuctionListResponseSchema,
+          {
+            query: paginationQuerySchema.parse(query ?? {}),
           },
         );
       },

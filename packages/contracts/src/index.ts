@@ -3,6 +3,7 @@ export * from './auth';
 export * from './admin';
 export * from './bid';
 export * from './category';
+export * from './dashboard';
 export * from './enums';
 export * from './events';
 export * from './lot';

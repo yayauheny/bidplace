@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { AdminModule } from './admin/admin.module';
 import { AuctionsModule } from './auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
+import { CategoriesModule } from './categories/categories.module';
 import { BidsModule } from './bids/bids.module';
 import { DatabaseModule } from './core/database';
 import { HealthModule } from './core/health';
@@ -16,6 +17,7 @@ import { SellersModule } from './sellers/sellers.module';
     HealthModule,
     LoggerModule,
     AdminModule,
+    CategoriesModule,
     DatabaseModule,
     AuthModule,
     SellersModule,

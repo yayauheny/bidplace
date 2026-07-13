@@ -256,6 +256,34 @@ describe('AuctionsService', () => {
     );
   });
 
+  it('lists only auctions owned by the current seller', async () => {
+    prisma.sellerProfile.findUnique.mockResolvedValue({
+      id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+    });
+    prisma.auction.findMany.mockResolvedValue([
+      createAuctionRecord({
+        id: '11111111-1111-1111-1111-111111111111',
+        slug: 'seller-auction',
+      }),
+    ]);
+
+    const result = await service.listMyAuctions(
+      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      { page: 1, limit: 10 },
+    );
+
+    expect(prisma.auction.findMany).toHaveBeenCalledWith({
+      where: {
+        sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      },
+      skip: 0,
+      take: 10,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    expect(result.auctions).toHaveLength(1);
+    expect(result.auctions[0].slug).toBe('seller-auction');
+  });
+
   it('returns a public auction detail with bid history', async () => {
     prisma.auction.findFirst.mockResolvedValue(
       createPublicAuctionDetailRecord({

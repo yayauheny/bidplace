@@ -27,8 +27,7 @@
 Монорепо нужно, чтобы держать в одном месте:
 
 - backend API;
-- web-клиент;
-- mobile-клиент на будущее;
+- Expo Router mobile/web client;
 - общие контракты;
 - общие design tokens;
 - общие конфигурации.
@@ -38,8 +37,7 @@
 ### `apps`
 
 - `apps/api` — NestJS backend, Prisma, auth, доменная логика, WebSocket, cron jobs.
-- `apps/web` — web MVP, публичные страницы, seller page, admin section.
-- `apps/mobile` — будущий mobile client после проверки web MVP.
+- `apps/mobile` — единый frontend на Expo Router для web, iOS и Android.
 
 ### `packages`
 
@@ -73,32 +71,25 @@ Backend остаётся источником истины для:
 
 - описывать входные/выходные данные API;
 - хранить enum-ы и validation schemas;
-- задавать единый формат для web/mobile;
+- задавать единый формат для frontend;
 - не тащить persistence-детали наружу.
 
-### Web
+### Frontend
 
-`apps/web` отвечает за:
+`apps/mobile` отвечает за:
 
 - список аукционов;
 - карточку аукциона;
 - seller page;
-- создание аукциона;
-- минимальную admin-панель;
-- future i18n structure.
+- seller dashboard;
+- admin section;
+- создание лота и аукциона;
+- auth flows.
 
-### Mobile
+### Mobile and web runtime
 
-На MVP не входит в delivery scope.
-
-На текущем этапе шарим только:
-
-- contracts;
-- design tokens;
-- бизнес-решения;
-- при необходимости чистую domain-логику без UI.
-
-Общий cross-platform UI kit сейчас не строим.
+Expo Router используется как единый frontend-слой для web, iOS и Android.
+Route guards улучшают UX, но реальная проверка доступа остаётся на NestJS.
 
 ## Доменные модули backend
 
@@ -120,13 +111,13 @@ Backend остаётся источником истины для:
 
 ## Базовые архитектурные решения
 
-- PostgreSQL — основная БД.
-- Prisma — ORM и миграции.
-- UUID — primary key во всех основных сущностях.
-- REST API без `/v1` на MVP, префикс `/api`.
-- WebSocket для realtime-обновлений ставок и статусов.
-- Cron внутри `apps/api` для закрытия аукционов на MVP.
-- Локальное файловое хранилище в dev, абстракция под S3 на будущее.
+- PostgreSQL — основная БД;
+- Prisma — ORM и миграции;
+- UUID — primary key во всех основных сущностях;
+- REST API без `/v1` на MVP, префикс `/api`;
+- WebSocket для realtime-обновлений ставок и статусов;
+- Cron внутри `apps/api` для закрытия аукционов на MVP;
+- Локальное файловое хранилище в dev, абстракция под S3 на будущее;
 - i18n-структура закладывается сразу, контент MVP сначала на русском.
 
 ## Cron vs jobs infrastructure
@@ -177,7 +168,4 @@ Backend остаётся источником истины для:
 - comments/likes/social feed;
 - встроенные платежи;
 - встроенная доставка;
-- analytics dashboards;
-- recommendations engine;
-- live auctions;
-- universal mobile/web UI library.
+- analytics dashboards.

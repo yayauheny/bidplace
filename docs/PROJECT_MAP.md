@@ -5,9 +5,9 @@
 Этот файл нужен как практическая карта репозитория:
 
 - где лежит backend;
-- где лежит web/frontend;
+- где лежит frontend;
 - какие папки являются рабочими, а какие служебными;
-- какие файлы во frontend отвечают за экран, стили, тему, формы и API.
+- какие файлы отвечают за экран, стили, тему, формы и API.
 
 Если нужно быстро войти в проект, лучше читать в таком порядке:
 
@@ -22,7 +22,7 @@
 - `apps/` — приложения.
 - `packages/` — общие пакеты, которые переиспользуют приложения.
 - `docs/` — документация по продукту и архитектуре.
-- `node_modules/`, `.turbo/`, `dist/`, `.next/` — служебные и сгенерированные директории, их обычно не изучают для понимания логики.
+- `node_modules/`, `.turbo/`, `dist/` — служебные и сгенерированные директории.
 
 ## Папка `apps`
 
@@ -49,15 +49,19 @@ NestJS backend. Это главный источник истины для по�
 3. соответствующие DTO и contracts
 4. Prisma-схему
 
-### `apps/web`
-
-Основной frontend на Next.js. Здесь находятся публичные страницы, seller-раздел и admin-раздел.
-
-Это самая важная часть для входа во frontend, поэтому ниже она разобрана отдельно и подробно.
-
 ### `apps/mobile`
 
-Заготовка под mobile/Expo. Для текущего web MVP это не главный рабочий контур.
+Единый Expo Router frontend для web, iOS и Android.
+
+Это основной frontend-контур. Здесь находятся:
+
+- `src/app/` — маршруты и layout;
+- `src/features/` — экраны, формы, hooks и flow-логика;
+- `src/components/ui/` — базовые UI primitives;
+- `src/components/auction/` — доменные auction-компоненты;
+- `src/components/shared/` — общие композиции;
+- `src/providers/` — auth, theme, api, query providers;
+- `src/theme/` — токены, palette и layout values.
 
 ## Папка `packages`
 
@@ -96,7 +100,7 @@ Frontend не должен собирать URL и payload вручную по �
 
 - `prisma/schema.prisma` — доменная модель базы;
 - `prisma/migrations/` — миграции;
-- `prisma/seed.ts` — сиды.
+- `prisma/seed.js` — сиды.
 
 Если надо понять, какие сущности реально существуют в системе, начинать стоит отсюда.
 
@@ -112,16 +116,16 @@ Frontend не должен собирать URL и payload вручную по �
 
 Общие TypeScript-конфиги.
 
-## Frontend подробно: `apps/web`
+## Frontend подробно: `apps/mobile`
 
 ## С чего начать чтение frontend
 
 Если открыть frontend с нуля, самый полезный маршрут чтения такой:
 
-1. `apps/web/app/layout.tsx`
-2. `apps/web/src/providers/app-providers.tsx`
-3. нужную страницу в `apps/web/app/...`
-4. соответствующий экран или форму в `apps/web/src/features/...`
+1. `apps/mobile/src/app/_layout.tsx`
+2. `apps/mobile/src/providers/app-providers.tsx`
+3. нужную страницу в `apps/mobile/src/app/...`
+4. соответствующий экран или форму в `apps/mobile/src/features/...`
 5. hooks этого feature
 6. `packages/api-client` и `packages/contracts`, если нужно понять данные
 
@@ -129,31 +133,25 @@ Frontend не должен собирать URL и payload вручную по �
 
 `route -> screen/form -> hooks -> api client -> backend`
 
-## Как устроен web по слоям
+## Как устроен mobile по слоям
 
-### `apps/web/app/`
+### `apps/mobile/src/app/`
 
-Это App Router Next.js.
-Здесь лежит маршрутизация и сборка страниц, но не основная бизнес-логика.
+Expo Router routes и layout.
+Здесь лежит маршрутизация и сборка экранов, но не основная бизнес-логика.
 
 Главные файлы:
 
-- `app/layout.tsx` — корневой layout всего приложения:
-  - подключает глобальные стили Tamagui;
-  - инициализирует providers;
-  - рендерит общий shell и `SiteHeader`.
-- `app/page.tsx` — главная публичная страница.
-- `app/login/page.tsx` — вход.
-- `app/register/page.tsx` — регистрация.
-- `app/auctions/[slug]/page.tsx` — страница аукциона.
-- `app/sellers/[slug]/page.tsx` — публичная страница продавца.
-- `app/seller/...` — приватный seller-раздел.
-- `app/admin/...` — admin-раздел.
+- `app/_layout.tsx` — корневой layout всего приложения;
+- `app/(public)/...` — публичные страницы;
+- `app/(auth)/...` — вход и регистрация;
+- `app/(seller)/...` — seller-раздел;
+- `app/(admin)/...` — admin-раздел.
 
 Практическое правило:
-если нужно изменить логику страницы, обычно сам файл в `app/` почти не трогают, а идут в `src/features/...`.
+если нужно изменить логику экрана, обычно сам файл в `app/` почти не трогают, а идут в `src/features/...`.
 
-### `apps/web/src/features/`
+### `apps/mobile/src/features/`
 
 Это главный слой бизнес-UI.
 Здесь лежат экраны, формы и feature-specific hooks.
@@ -173,435 +171,55 @@ Frontend не должен собирать URL и payload вручную по �
 
 #### `src/features/auctions/`
 
-Основной доменный блок web.
+Основной доменный блок frontend.
 
 Главные файлы:
 
-- `auction-list-screen.tsx` — список аукционов на публичной витрине.
-- `auction-detail-screen.tsx` — страница конкретного аукциона:
-  - основная информация;
-  - изображения;
-  - текущая ставка;
-  - история ставок;
-  - блок ставки;
-  - связанные seller-данные;
-  - realtime-обновления.
-- `auction-create-form.tsx` — создание и публикация аукциона продавцом.
-- `hooks.ts` — React Query hooks и cache keys для аукционов.
+- `auction-list-screen.tsx` — список аукционов на публичной витрине;
+- `auction-detail-screen.tsx` — страница конкретного аукциона;
+- `hooks.ts` — React Query hooks и cache keys для аукционов;
+- `utils.ts` — маппинг статусов и helper-логика.
 
-Когда менять:
+#### `src/features/seller/`
 
-- каталог/карточки/детальную страницу — здесь;
-- загрузку и обновление данных аукционов — `hooks.ts`.
-
-#### `src/features/lots/`
-
-- `lot-create-form.tsx` — создание лота и работа с изображениями.
-
-Если нужно менять сценарий создания предмета до аукциона, смотреть сюда.
-
-#### `src/features/sellers/`
-
-- `seller-profile-form.tsx` — редактирование профиля продавца.
-- `public-seller-screen.tsx` — публичная seller-page с аукционами продавца.
+- `seller-dashboard-screen.tsx` — seller dashboard;
+- `seller-profile-form.tsx` — создание и редактирование seller profile;
+- `lot-create-form.tsx` — создание лота;
+- `auction-create-form.tsx` — создание аукциона;
+- `hooks.ts` — seller-related data hooks;
+- `schemas.ts` — формы и валидация.
 
 #### `src/features/admin/`
 
-- `admin-screens.tsx` — экраны админки.
-- `hooks.ts` — получение данных для admin-раздела.
+- `admin-dashboard-screen.tsx` — moderation dashboard;
+- `hooks.ts` — получение данных и mutation hooks для admin-раздела.
 
-### `apps/web/src/components/`
+### `apps/mobile/src/components/`
 
 Это слой переиспользуемых компонентов.
 
 Он делится на два уровня:
 
 - `src/components/ui/` — базовые строительные блоки интерфейса;
-- `src/components/shared/` — общие композиции, которые уже знают про структуру приложения.
+- `src/components/auction/` — доменные auction-компоненты.
 
-## Основные UI-компоненты и на что они влияют
+## `src/providers/`, `src/theme/`, `src/lib/`
 
-### `src/components/ui/layout.tsx`
+- `src/providers/` — api, query, auth и theme providers;
+- `src/theme/` — color palette, spacing, radius, semantic layout values;
+- `src/lib/` — environment helpers, API client wrapper, formatters и media helpers.
 
-Базовая раскладка страниц и типографика.
+## Порядок чтения, если нужно быстро менять экран
 
-Обычно здесь находятся компоненты вроде:
+1. соответствующий route в `apps/mobile/src/app/...`
+2. screen в `src/features/...`
+3. hooks для данных и mutations
+4. `src/components/ui/...` или `src/components/auction/...`
+5. `packages/api-client`
+6. `packages/contracts`
 
-- контейнера страницы;
-- секций;
-- заголовков;
-- обычного текста;
-- inline/layout-обвязок.
+## Что не делать
 
-На что влияет:
-
-- ширина контента;
-- отступы секций;
-- вертикальный ритм;
-- общий вид заголовков и текстовых блоков.
-
-Если страница “смотрится не так”, очень часто причина именно здесь.
-
-### `src/components/ui/stack.tsx`
-
-Низкоуровневый layout-слой на flex/grid-подобных примитивах.
-
-Это один из самых важных файлов во frontend, потому что он:
-
-- превращает пропсы компонента в реальные CSS-стили;
-- управляет spacing и alignment;
-- подмешивает surface/background/border-токены;
-- задаёт общую механику компоновки UI.
-
-На что влияет:
-
-- как компоненты стоят по колонкам и строкам;
-- какие у них gap/padding;
-- как подставляются цвета поверхности, рамки и фоновые варианты.
-
-Если в проекте “всё верстается через одни и те же примитивы”, то этот файл является центральным.
-
-### `src/components/ui/controls.tsx`
-
-Формы и действия:
-
-- кнопки;
-- инпуты;
-- textarea;
-- select-подобные контролы;
-- состояния `disabled`, `loading`, `focus`.
-
-На что влияет:
-
-- внешний вид форм во всём приложении;
-- размер и плотность контролов;
-- фокус-стили;
-- интерактивные состояния.
-
-Если нужно визуально изменить все формы сразу, почти всегда правки начинаются здесь.
-
-### `src/components/ui/surfaces.tsx`
-
-Поверхности интерфейса:
-
-- карточки;
-- плашки;
-- бейджи;
-- статусные элементы.
-
-На что влияет:
-
-- как выглядят карточки аукционов;
-- как оформляются вторичные блоки;
-- какие статусы заметны визуально.
-
-### `src/components/ui/states.tsx`
-
-Служебные состояния UI:
-
-- loading;
-- empty;
-- error;
-- placeholder-сценарии.
-
-На что влияет:
-
-- единообразие поведения экранов, когда данных нет или они ещё грузятся.
-
-### `src/components/ui/time.tsx`
-
-Компоненты, связанные со временем аукциона:
-
-- таймеры;
-- обратный отсчёт;
-- статус по времени.
-
-На что влияет:
-
-- как пользователь понимает, скоро ли закончится аукцион;
-- как визуально подаётся urgency.
-
-### `src/components/shared/site-header.tsx`
-
-Общий header приложения.
-
-Обычно меняется, если нужно:
-
-- обновить навигацию;
-- добавить ссылку на seller/admin-раздел;
-- поменять верхнюю панель целиком.
-
-### `src/components/shared/protected-route.tsx`
-
-Компонент-обёртка для приватных разделов.
-
-На что влияет:
-
-- кто может зайти в seller/admin-страницы;
-- что показывается, если сессии нет или роль не подходит.
-
-## Где во frontend лежат стили
-
-Во frontend стили не собраны в один `styles.css`, а распределены по уровням.
-
-### 1. Дизайн-токены
-
-Главный источник:
-
-- `packages/design-tokens/src/index.ts`
-
-Это глобальные значения, из которых собирается тема:
-
-- палитра;
-- отступы;
-- радиусы;
-- размеры текста;
-- тени.
-
-Если нужно поменять “характер” интерфейса, обычно правят именно токены.
-
-### 2. Адаптер токенов для web
-
-- `apps/web/src/theme/tokens.ts`
-
-Этот файл подтягивает и переиспользует shared design tokens внутри web-приложения.
-
-Он важен как мост между общим пакетом токенов и реальными web-компонентами.
-
-### 3. Tamagui-конфиг
-
-- `apps/web/tamagui.config.ts`
-
-Этот файл собирает тему для UI-слоя:
-
-- объявляет токены;
-- описывает light/dark theme;
-- пробрасывает значения в Tamagui runtime.
-
-На что влияет:
-
-- какие значения доступны UI-компонентам как theme tokens;
-- как тема переключается между светлой и тёмной;
-- как единообразно применяются spacing/colors/radius.
-
-### 4. Провайдер темы
-
-- `apps/web/src/providers/theme-provider.tsx`
-
-Это runtime-слой темы.
-Он подключает Tamagui и синхронизирует тему приложения.
-
-На что влияет:
-
-- какая тема активна сейчас;
-- где хранится пользовательский выбор темы;
-- какие CSS-классы и theme values реально попадают в DOM.
-
-### 5. Сгенерированные стили Tamagui
-
-- `apps/web/public/tamagui.generated.css`
-
-Это не место для ручных изменений.
-Файл генерируется инструментами и подключается в `app/layout.tsx`.
-
-### 6. Стили внутри компонентов
-
-Большая часть визуального поведения задаётся прямо в компонентах из:
-
-- `src/components/ui/*`
-- `src/features/*`
-
-То есть конкретный экран часто настраивает локальные отступы, порядок блоков и композицию, но использует общие primitives и tokens.
-
-## Провайдеры и инфраструктура frontend
-
-### `src/providers/app-providers.tsx`
-
-Главная сборка всех providers frontend.
-
-Обычно сюда подключаются:
-
-- theme provider;
-- React Query provider;
-- API provider;
-- auth provider.
-
-Если приложение “в целом” не видит тему, кэш, API или сессию, смотреть нужно сначала сюда.
-
-### `src/providers/theme-provider.tsx`
-
-Управляет темой.
-
-### `src/providers/query-provider.tsx`
-
-Поднимает React Query client.
-
-На что влияет:
-
-- серверный кэш;
-- refetch;
-- invalidation;
-- поведение загрузки данных во feature hooks.
-
-### `src/providers/api-provider.tsx`
-
-Даёт доступ к API client внутри React-дерева.
-
-### `src/providers/auth-provider.tsx`
-
-Хранит состояние текущего пользователя и сессии.
-
-На что влияет:
-
-- логин/регистрация/логаут;
-- `me`;
-- доступ к приватным разделам;
-- реакция UI на истечение сессии.
-
-## `src/lib/` во frontend
-
-Это инфраструктурные утилиты, не привязанные к конкретному экрану.
-
-Важные файлы:
-
-- `formatters.ts` — форматирование денег, дат и человекочитаемых значений.
-- `query-client.ts` — конфигурация React Query client.
-- `api.ts` или похожие файлы — создание клиентских API-объектов.
-- realtime/media/env helpers — вспомогательная инфраструктура.
-
-Практическое правило:
-
-- бизнес-экран живёт в `features`;
-- визуальная база живёт в `components/ui`;
-- сквозные технические хелперы живут в `lib`.
-
-## Что настраивают ключевые frontend-файлы
-
-### `apps/web/app/layout.tsx`
-
-Настраивает:
-
-- общий shell приложения;
-- подключение глобальных стилей;
-- providers;
-- header;
-- базовый контейнер страницы.
-
-### `apps/web/src/env.ts`
-
-Настраивает чтение публичных frontend-переменных окружения, например API URL.
-
-Если frontend “ходит не туда”, это один из первых файлов для проверки.
-
-### `apps/web/next.config.ts`
-
-Настраивает интеграцию Next.js с монорепой:
-
-- transpile общих пакетов;
-- алиасы;
-- особенности сборки.
-
-### `apps/web/scripts/build.mjs`
-
-Служебный build-скрипт под сборку web + Tamagui.
-Обычно его не меняют при фиче, но полезно знать, что он участвует в production build.
-
-## Быстрые сценарии: что открывать для типовых задач
-
-### Нужно поменять шапку сайта
-
-Открывать:
-
-- `apps/web/src/components/shared/site-header.tsx`
-
-### Нужно поменять глобальные цвета, радиусы или spacing
-
-Открывать:
-
-- `packages/design-tokens/src/index.ts`
-- `apps/web/tamagui.config.ts`
-
-### Нужно поменять внешний вид всех кнопок и инпутов
-
-Открывать:
-
-- `apps/web/src/components/ui/controls.tsx`
-
-### Нужно поменять сетку и отступы на многих страницах
-
-Открывать:
-
-- `apps/web/src/components/ui/stack.tsx`
-- `apps/web/src/components/ui/layout.tsx`
-
-### Нужно поменять каталог аукционов
-
-Открывать:
-
-- `apps/web/src/features/auctions/auction-list-screen.tsx`
-- `apps/web/src/features/auctions/hooks.ts`
-
-### Нужно поменять страницу аукциона
-
-Открывать:
-
-- `apps/web/src/features/auctions/auction-detail-screen.tsx`
-
-### Нужно поменять создание аукциона
-
-Открывать:
-
-- `apps/web/src/features/auctions/auction-create-form.tsx`
-
-### Нужно поменять создание лота
-
-Открывать:
-
-- `apps/web/src/features/lots/lot-create-form.tsx`
-
-### Нужно поменять авторизацию
-
-Открывать:
-
-- `apps/web/src/features/auth/auth-form.tsx`
-- `apps/web/src/providers/auth-provider.tsx`
-- `apps/api/src/auth/`
-
-## Backend: короткая карта для ориентира
-
-Если нужно понять, что делает backend без глубокого погружения:
-
-- `apps/api/src/main.ts` — запуск сервера.
-- `apps/api/src/app.module.ts` — карта модулей.
-- `apps/api/src/auth/` — сессия и доступ.
-- `apps/api/src/auctions/` — жизненный цикл аукциона.
-- `apps/api/src/bids/` — ставки.
-- `apps/api/src/lots/` — предметы/изображения.
-- `apps/api/src/sellers/` — продавцы.
-- `apps/api/src/admin/` — админский контур.
-- `packages/database/prisma/schema.prisma` — реальная модель данных.
-
-## Что важно помнить при изучении проекта
-
-- `app/` во frontend — это в основном маршрутизация и композиция страниц, а не место основной логики.
-- Основная логика web лежит в `src/features/`.
-- Общая визуальная система web лежит в `src/components/ui/` + `packages/design-tokens/`.
-- Общие данные и формы API надо искать не только во frontend, но и в `packages/contracts/`.
-- Источник истины по данным всегда backend + Prisma schema.
-
-## Если хочется разобраться ещё быстрее
-
-Для первого прохода достаточно открыть эти файлы:
-
-1. `apps/api/src/app.module.ts`
-2. `packages/database/prisma/schema.prisma`
-3. `apps/web/app/layout.tsx`
-4. `apps/web/src/providers/app-providers.tsx`
-5. `apps/web/src/components/ui/controls.tsx`
-6. `apps/web/src/components/ui/layout.tsx`
-7. `apps/web/src/components/ui/stack.tsx`
-8. `apps/web/src/features/auctions/auction-list-screen.tsx`
-9. `apps/web/src/features/auctions/auction-detail-screen.tsx`
-10. `apps/web/src/features/auth/auth-form.tsx`
-
-После этого структура проекта уже обычно становится понятной.
+- не дублировать API-клиент по экранам;
+- не писать бизнес-логику в route-файлах;
+- не добавлять новый frontend-контур без сильной причины.

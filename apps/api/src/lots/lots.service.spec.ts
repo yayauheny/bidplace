@@ -42,6 +42,7 @@ describe('LotsService', () => {
       findUnique: vi.fn(),
     },
     lot: {
+      findMany: vi.fn(),
       create: vi.fn(),
     },
   };
@@ -144,5 +145,34 @@ describe('LotsService', () => {
         [],
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('lists only lots owned by the current seller', async () => {
+    prisma.sellerProfile.findUnique.mockResolvedValue({
+      id: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      status: 'active',
+    });
+    prisma.lot.findMany.mockResolvedValue([
+      createLotRecord({
+        id: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a3333',
+        title: 'Seller Lot',
+      }),
+    ]);
+
+    const result = await service.listMyLots(
+      '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      { page: 1, limit: 10 },
+    );
+
+    expect(prisma.lot.findMany).toHaveBeenCalledWith({
+      where: {
+        sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
+      },
+      skip: 0,
+      take: 10,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    expect(result.lots).toHaveLength(1);
+    expect(result.lots[0].title).toBe('Seller Lot');
   });
 });

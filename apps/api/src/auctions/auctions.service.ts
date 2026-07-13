@@ -10,6 +10,7 @@ import {
   auctionListResponseSchema,
   auctionResponseSchema,
   publicAuctionDetailResponseSchema,
+  sellerAuctionListResponseSchema,
 } from '@bidplace/contracts';
 import {
   ConflictException,
@@ -117,6 +118,37 @@ export class AuctionsService {
     private readonly prisma: PrismaService,
     private readonly realtimeEventsService: RealtimeEventsService,
   ) {}
+
+  async listMyAuctions(
+    userId: string,
+    { page, limit }: PaginationQuery = { page: 1, limit: 20 },
+  ) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const auctions = (await this.prisma.auction.findMany({
+      where: {
+        sellerProfileId: sellerProfile.id,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })) as AuctionRecord[];
+
+    return sellerAuctionListResponseSchema.parse({
+      auctions: auctions.map((auction) => this.toContractAuction(auction)),
+    });
+  }
 
   async listPublicAuctions(
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },

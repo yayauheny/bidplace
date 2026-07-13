@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { LotsController } from './lots.controller';
+import { SellerLotsController } from './seller-lots.controller';
 import { LotsService } from './lots.service';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../core/database';
@@ -9,7 +10,7 @@ import { StorageModule } from '../core/storage';
 
 @Module({
   imports: [AuthModule, DatabaseModule, RateLimitModule, StorageModule],
-  controllers: [LotsController],
+  controllers: [LotsController, SellerLotsController],
   providers: [LotsService],
   exports: [LotsService],
 })

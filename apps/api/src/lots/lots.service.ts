@@ -1,8 +1,10 @@
 import {
+  type PaginationQuery,
   type Lot,
   type LotCreateRequest,
   type LotResponse,
   lotResponseSchema,
+  sellerLotListResponseSchema,
 } from '@bidplace/contracts';
 import {
   ForbiddenException,
@@ -28,6 +30,34 @@ type LotRecord = {
 @Injectable()
 export class LotsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listMyLots(userId: string, { page, limit }: PaginationQuery = { page: 1, limit: 20 }) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: {
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const lots = (await this.prisma.lot.findMany({
+      where: {
+        sellerProfileId: sellerProfile.id,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })) as LotRecord[];
+
+    return sellerLotListResponseSchema.parse({
+      lots: lots.map((lot) => this.toContractLot(lot)),
+    });
+  }
 
   async createLot(
     userId: string,

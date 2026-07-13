@@ -54,7 +54,8 @@ Creator-first аукционная площадка для продажи физ
 - Turborepo
 - pnpm workspaces
 - NestJS
-- Next.js
+- Expo Router
+- React Native
 - PostgreSQL
 - Prisma
 - Zod
@@ -67,8 +68,7 @@ Creator-first аукционная площадка для продажи физ
 ```txt
 apps/
   api/        # backend API, domain logic, realtime, cron jobs
-  web/        # web MVP и admin section
-  mobile/     # future mobile client
+  mobile/     # Expo Router frontend for web, iOS and Android
 
 packages/
   api-client/

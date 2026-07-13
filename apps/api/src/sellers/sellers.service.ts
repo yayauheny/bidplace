@@ -128,6 +128,22 @@ export class SellersService {
     }
   }
 
+  async getMyProfile(userId: string): Promise<SellerProfileResponse> {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: {
+        userId,
+      },
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    return sellerProfileResponseSchema.parse({
+      sellerProfile: this.toContractProfile(sellerProfile),
+    });
+  }
+
   async getPublicProfile(slug: string): Promise<SellerProfileResponse> {
     const sellerProfile = await this.prisma.sellerProfile.findUnique({
       where: {
