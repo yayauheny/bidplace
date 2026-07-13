@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -11,11 +13,13 @@ import { Card, StatusBadge } from '../../components/ui/surfaces';
 import { TimeframeFrame } from '../../components/ui/time';
 import { getAuctionStatusLabel, getAuctionStatusTone } from './utils';
 import { XStack, YStack } from '../../components/ui/stack';
+import { usePublicApiUrl } from '../../providers/api-provider';
 
 type AuctionCardProps = AuctionListItem;
 
 export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
   const image = lot.images[0];
+  const baseUrl = usePublicApiUrl();
 
   return (
     <Link href={`/auctions/${auction.slug}`}>
@@ -30,7 +34,7 @@ export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
           >
             {image ? (
               <Image
-                src={resolveMediaUrl(image)}
+                src={resolveMediaUrl(image, baseUrl)}
                 alt={lot.title}
                 fill
                 unoptimized

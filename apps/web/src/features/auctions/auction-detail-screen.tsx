@@ -20,6 +20,7 @@ import {
   getBidStatusTone,
 } from './utils';
 import { XStack, YStack } from '../../components/ui/stack';
+import { usePublicApiUrl } from '../../providers/api-provider';
 
 type AuctionDetailScreenProps = {
   slug: string;
@@ -28,6 +29,7 @@ type AuctionDetailScreenProps = {
 export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
   const query = usePublicAuctionQuery(slug);
   useAuctionRealtime(query.data?.auction.id);
+  const baseUrl = usePublicApiUrl();
 
   if (query.isLoading) {
     return (
@@ -109,8 +111,8 @@ export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
               backgroundColor="$backgroundMuted"
             >
               {image ? (
-                <Image
-                  src={resolveMediaUrl(image)}
+              <Image
+                  src={resolveMediaUrl(image, baseUrl)}
                   alt={lot.title}
                   fill
                   unoptimized

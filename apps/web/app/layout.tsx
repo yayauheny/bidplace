@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" suppressHydrationWarning>
       <body data-api-url={publicEnv.NEXT_PUBLIC_API_URL}>
-        <AppProviders>
+        <AppProviders baseUrl={publicEnv.NEXT_PUBLIC_API_URL}>
           <Screen>
             <SiteHeader />
             {children}

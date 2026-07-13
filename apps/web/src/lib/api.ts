@@ -1,11 +1,10 @@
 import { createApiClient } from '@bidplace/api-client';
 
 import { readAccessToken } from './auth-storage';
-import { getPublicApiUrl } from './public-env';
 
-export function createWebApiClient() {
+export function createWebApiClient(baseUrl: string) {
   return createApiClient({
-    baseUrl: getPublicApiUrl(),
+    baseUrl,
     getAccessToken: readAccessToken,
   });
 }

@@ -1,5 +1,13 @@
-import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from 'react';
-import { cloneElement, forwardRef, isValidElement, useId } from 'react';
+import type {
+  ComponentPropsWithoutRef,
+  CSSProperties,
+  FocusEvent,
+  FocusEventHandler,
+  MouseEventHandler,
+  ReactElement,
+  ReactNode,
+} from 'react';
+import { cloneElement, forwardRef, isValidElement, useId, useState } from 'react';
 
 import { radius, spacing, typography } from '../../theme/tokens';
 import { Text } from './layout';
@@ -15,6 +23,67 @@ type AppButtonProps = Omit<ComponentPropsWithoutRef<'button'>, 'children'> & {
   accessibilityLabel?: string | undefined;
   size?: string | undefined;
 };
+
+type ChildControlProps = {
+  style?: CSSProperties | undefined;
+  tabIndex?: number | undefined;
+  onClick?: MouseEventHandler<HTMLElement> | undefined;
+  onFocus?: FocusEventHandler<HTMLElement> | undefined;
+  onBlur?: FocusEventHandler<HTMLElement> | undefined;
+  'aria-label'?: string | undefined;
+  'aria-disabled'?: boolean | undefined;
+};
+
+type A11yFieldState = {
+  controlId: string;
+  descriptionId?: string | undefined;
+  errorId?: string | undefined;
+  describedBy?: string | undefined;
+};
+
+function composeHandlers<T extends HTMLElement>(
+  first?: FocusEventHandler<T>,
+  second?: FocusEventHandler<T>,
+) {
+  return (event: FocusEvent<T>) => {
+    first?.(event);
+    second?.(event);
+  };
+}
+
+function useFocusableStyle() {
+  const [focused, setFocused] = useState(false);
+
+  return {
+    focusStyle: {
+      outline: focused ? '2px solid var(--focusRing)' : '2px solid transparent',
+      outlineOffset: 2,
+    },
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+  };
+}
+
+function useFieldA11y(
+  id: string | undefined,
+  description: string | undefined,
+  error: string | undefined,
+): A11yFieldState {
+  const generatedId = useId();
+  const controlId = id ?? generatedId;
+
+  return {
+    controlId,
+    descriptionId: description ? `${controlId}-description` : undefined,
+    errorId: error ? `${controlId}-error` : undefined,
+    describedBy:
+      description || error
+        ? [description ? `${controlId}-description` : undefined, error ? `${controlId}-error` : undefined]
+            .filter(Boolean)
+            .join(' ')
+        : undefined,
+  };
+}
 
 function ButtonContent({
   isLoading,
@@ -49,6 +118,9 @@ function AppButton({
   ...props
 }: AppButtonProps) {
   void size;
+  const disabledState = disabled || isLoading;
+  const { focusStyle, onFocus, onBlur } = useFocusableStyle();
+  const buttonProps = props as ComponentPropsWithoutRef<'button'>;
   const toneStyles =
     tone === 'secondary'
       ? {
@@ -89,17 +161,33 @@ function AppButton({
     lineHeight: `${typography.bodyStrong.lineHeight}px`,
     fontWeight: 600,
     cursor: 'pointer',
-    opacity: disabled || isLoading ? 0.55 : 1,
-    transition: 'opacity 120ms ease, border-color 120ms ease',
+    opacity: disabledState ? 0.55 : 1,
+    transition: 'opacity 120ms ease, border-color 120ms ease, outline-color 120ms ease',
     ...toneStyles,
     ...style,
+    ...focusStyle,
   } as const;
 
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement, {
+    const child = children as ReactElement<ChildControlProps>;
+
+    return cloneElement(child, {
       'aria-label': accessibilityLabel,
+      'aria-disabled': disabledState || undefined,
+      tabIndex: disabledState ? -1 : child.props.tabIndex,
+      onClick: (event) => {
+        if (disabledState) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
+        child.props.onClick?.(event);
+      },
+      onFocus: composeHandlers(child.props.onFocus, onFocus),
+      onBlur: composeHandlers(child.props.onBlur, onBlur),
       style: {
-        ...(children.props as { style?: Record<string, unknown> }).style,
+        ...(child.props as { style?: Record<string, unknown> }).style,
         ...buttonStyle,
       },
     });
@@ -107,10 +195,12 @@ function AppButton({
 
   return (
     <button
-      {...props}
+      {...buttonProps}
       onClick={onPress}
+      onFocus={composeHandlers(buttonProps.onFocus as FocusEventHandler<HTMLButtonElement> | undefined, onFocus)}
+      onBlur={composeHandlers(buttonProps.onBlur as FocusEventHandler<HTMLButtonElement> | undefined, onBlur)}
       aria-label={accessibilityLabel}
-      disabled={disabled || isLoading}
+      disabled={disabledState}
       aria-busy={isLoading}
       style={buttonStyle}
     >
@@ -133,6 +223,8 @@ type FieldProps = {
   error?: string | undefined;
   required?: boolean | undefined;
   htmlFor?: string | undefined;
+  descriptionId?: string | undefined;
+  errorId?: string | undefined;
   children: ReactNode;
 };
 
@@ -142,6 +234,8 @@ export function FormField({
   description,
   error,
   required,
+  descriptionId,
+  errorId,
   children,
 }: FieldProps) {
   return (
@@ -160,12 +254,12 @@ export function FormField({
       </label>
       {children}
       {description ? (
-        <Text size="caption" tone="muted">
+        <Text id={descriptionId} size="caption" tone="muted">
           {description}
         </Text>
       ) : null}
       {error ? (
-        <Text size="caption" tone="danger">
+        <Text id={errorId} size="caption" tone="danger" role="alert" aria-live="polite">
           {error}
         </Text>
       ) : null}
@@ -200,18 +294,31 @@ export const TextField = forwardRef<HTMLInputElement, BaseInputProps>(function T
   { label, description, error, style, id, ...props },
   ref,
 ) {
-  const generatedId = useId();
-  const controlId = id ?? generatedId;
+  const { controlId, descriptionId, errorId, describedBy } = useFieldA11y(id, description, error);
+  const { focusStyle, onFocus, onBlur } = useFocusableStyle();
+  const inputProps = props as ComponentPropsWithoutRef<'input'>;
 
   return (
-    <FormField label={label} htmlFor={controlId} description={description} error={error}>
+    <FormField
+      label={label}
+      htmlFor={controlId}
+      description={description}
+      error={error}
+      descriptionId={descriptionId}
+      errorId={errorId}
+    >
       <input
-        {...props}
+        {...inputProps}
         id={controlId}
         ref={ref}
+        aria-describedby={describedBy}
+        aria-invalid={error ? true : inputProps['aria-invalid']}
+        onFocus={composeHandlers(inputProps.onFocus as FocusEventHandler<HTMLInputElement> | undefined, onFocus)}
+        onBlur={composeHandlers(inputProps.onBlur as FocusEventHandler<HTMLInputElement> | undefined, onBlur)}
         style={{
           ...baseFieldStyle,
           ...(style ?? {}),
+          ...focusStyle,
         }}
       />
     </FormField>
@@ -226,20 +333,33 @@ type TextAreaFieldProps = Omit<ComponentPropsWithoutRef<'textarea'>, 'children'>
 
 export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
   function TextAreaField({ label, description, error, style, id, ...props }, ref) {
-    const generatedId = useId();
-    const controlId = id ?? generatedId;
+    const { controlId, descriptionId, errorId, describedBy } = useFieldA11y(id, description, error);
+    const { focusStyle, onFocus, onBlur } = useFocusableStyle();
+    const textAreaProps = props as ComponentPropsWithoutRef<'textarea'>;
 
     return (
-      <FormField label={label} htmlFor={controlId} description={description} error={error}>
+      <FormField
+        label={label}
+        htmlFor={controlId}
+        description={description}
+        error={error}
+        descriptionId={descriptionId}
+        errorId={errorId}
+      >
         <textarea
-          {...props}
+          {...textAreaProps}
           id={controlId}
           ref={ref}
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : textAreaProps['aria-invalid']}
+          onFocus={composeHandlers(textAreaProps.onFocus as FocusEventHandler<HTMLTextAreaElement> | undefined, onFocus)}
+          onBlur={composeHandlers(textAreaProps.onBlur as FocusEventHandler<HTMLTextAreaElement> | undefined, onBlur)}
           style={{
             ...baseFieldStyle,
             minHeight: 136,
             resize: 'vertical',
             ...(style ?? {}),
+            ...focusStyle,
           }}
         />
       </FormField>
@@ -261,7 +381,18 @@ const selectStyle = {
 
 export const NativeSelect = forwardRef<HTMLSelectElement, ComponentPropsWithoutRef<'select'>>(
   function NativeSelect(props, ref) {
-    return <select ref={ref} {...props} style={{ ...selectStyle, ...(props.style ?? {}) }} />;
+    const { focusStyle, onFocus, onBlur } = useFocusableStyle();
+    const selectProps = props as ComponentPropsWithoutRef<'select'>;
+
+    return (
+      <select
+        ref={ref}
+        {...selectProps}
+        onFocus={composeHandlers(selectProps.onFocus as FocusEventHandler<HTMLSelectElement> | undefined, onFocus)}
+        onBlur={composeHandlers(selectProps.onBlur as FocusEventHandler<HTMLSelectElement> | undefined, onBlur)}
+        style={{ ...selectStyle, ...(selectProps.style ?? {}), ...focusStyle }}
+      />
+    );
   },
 );
 
@@ -269,12 +400,24 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
   { label, description, error, children, id, ...props },
   ref,
 ) {
-  const generatedId = useId();
-  const controlId = id ?? generatedId;
+  const { controlId, descriptionId, errorId, describedBy } = useFieldA11y(id, description, error);
 
   return (
-    <FormField label={label} htmlFor={controlId} description={description} error={error}>
-      <NativeSelect id={controlId} ref={ref} {...props}>
+    <FormField
+      label={label}
+      htmlFor={controlId}
+      description={description}
+      error={error}
+      descriptionId={descriptionId}
+      errorId={errorId}
+    >
+      <NativeSelect
+        id={controlId}
+        ref={ref}
+        {...props}
+        aria-describedby={describedBy}
+        aria-invalid={error ? true : props['aria-invalid']}
+      >
         {children}
       </NativeSelect>
     </FormField>

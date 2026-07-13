@@ -10,6 +10,10 @@ vi.mock('./hooks', () => ({
   usePublicAuctionsQuery: () => usePublicAuctionsQueryMock(),
 }));
 
+vi.mock('../../providers/api-provider', () => ({
+  usePublicApiUrl: () => 'http://localhost:3001',
+}));
+
 describe('AuctionListScreen', () => {
   it('renders public auctions from the query', () => {
     usePublicAuctionsQueryMock.mockReturnValue({

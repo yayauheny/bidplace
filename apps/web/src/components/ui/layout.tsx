@@ -55,6 +55,7 @@ export function Section({ children, ...props }: StackProps) {
 }
 
 type HeadingLevel = 'display' | 'h1' | 'h2' | 'h3';
+type HeadingTag = 'h1' | 'h2' | 'h3';
 
 const headingTokens: Record<
   HeadingLevel,
@@ -105,9 +106,10 @@ export function Heading({
   ...props
 }: HeadingProps) {
   const tokens = headingTokens[level];
+  const HeadingTag: HeadingTag = level === 'display' ? 'h1' : level;
 
   return (
-    <div
+    <HeadingTag
       {...props}
       style={{
         color: 'var(--color)',
@@ -121,7 +123,7 @@ export function Heading({
       }}
     >
       {children}
-    </div>
+    </HeadingTag>
   );
 }
 

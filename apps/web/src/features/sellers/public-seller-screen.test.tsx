@@ -12,6 +12,10 @@ vi.mock('../auctions/hooks', () => ({
   usePublicAuctionsQuery: () => usePublicAuctionsQueryMock(),
 }));
 
+vi.mock('../../providers/api-provider', () => ({
+  usePublicApiUrl: () => 'http://localhost:3001',
+}));
+
 describe('PublicSellerScreen', () => {
   it('keeps the auctions section in loading state while auctions are loading', () => {
     useSellerPublicProfileQueryMock.mockReturnValue({

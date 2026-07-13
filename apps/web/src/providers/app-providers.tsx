@@ -7,11 +7,17 @@ import { AuthProvider } from './auth-provider';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({
+  children,
+  baseUrl,
+}: {
+  children: ReactNode;
+  baseUrl: string;
+}) {
   return (
     <ThemeProvider>
       <QueryProvider>
-        <ApiProvider>
+        <ApiProvider baseUrl={baseUrl}>
           <AuthProvider>{children}</AuthProvider>
         </ApiProvider>
       </QueryProvider>

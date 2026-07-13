@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "tamagui build --target web ./app ./src -- next build",
+    "build": "node ./scripts/build.mjs",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",

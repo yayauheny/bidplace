@@ -14,13 +14,5 @@ export type PublicEnv = z.infer<typeof publicEnvSchema>;
 export function loadPublicEnv(env: NodeJS.ProcessEnv = process.env): PublicEnv {
   const rootEnvPath = resolve(process.cwd(), '../../.env');
 
-  try {
-    return parseEnv(publicEnvSchema, createEnvInput(rootEnvPath, env));
-  } catch {
-    return {
-      NEXT_PUBLIC_API_URL: env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001',
-      NEXT_PUBLIC_TELEGRAM_BOT_USERNAME:
-        env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? 'bidplace_bot',
-    };
-  }
+  return parseEnv(publicEnvSchema, createEnvInput(rootEnvPath, env));
 }
