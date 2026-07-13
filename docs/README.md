@@ -8,6 +8,7 @@
 - `IMPLEMENTATION_PLAN.md` — порядок внедрения по шагам без избыточной детализации
 - `ARCHITECTURE.md` — текущая архитектурная рамка монорепы и backend/web/mobile boundaries
 - `API_CONTRACTS.md` — целевой API surface для MVP
+- `PROJECT_MAP.md` — практическая карта репозитория: что где лежит, с отдельным разбором frontend
 
 ## Порядок чтения
 
@@ -16,7 +17,8 @@
 3. `FUTURE_ROADMAP.md`
 4. `IMPLEMENTATION_PLAN.md`
 5. `ARCHITECTURE.md`
-6. `API_CONTRACTS.md`
+6. `PROJECT_MAP.md`
+7. `API_CONTRACTS.md`
 
 ## Назначение
 
