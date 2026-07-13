@@ -1,6 +1,7 @@
 import type { AuthTokenPayload } from '@bidplace/contracts';
 import {
   CanActivate,
+  Inject,
   ExecutionContext,
   HttpException,
   HttpStatus,
@@ -29,11 +30,14 @@ type RateLimitedRequest = {
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   constructor(
-    private readonly reflector: Reflector,
+    @Inject(Reflector)
+    private readonly reflector: Pick<Reflector, 'getAllAndOverride'>,
     private readonly rateLimitService: RateLimitService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(
+    context: Pick<ExecutionContext, 'getHandler' | 'getClass' | 'switchToHttp'>,
+  ): boolean {
     const options = this.reflector.getAllAndOverride<RateLimitOptions | undefined>(
       RATE_LIMIT_METADATA_KEY,
       [context.getHandler(), context.getClass()],

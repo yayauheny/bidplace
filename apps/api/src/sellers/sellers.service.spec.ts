@@ -1,8 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
-import { SellersService } from './sellers.service';
+import { SellersService, type SellersRepository } from './sellers.service';
 
 type SellerProfileRecord = {
   id: string;
@@ -46,9 +45,9 @@ describe('SellersService', () => {
       create: vi.fn(),
       update: vi.fn(),
     },
-  };
+  } satisfies SellersRepository;
 
-  const service = new SellersService(prisma as unknown as PrismaService);
+  const service = new SellersService(prisma);
 
   beforeEach(() => {
     vi.clearAllMocks();

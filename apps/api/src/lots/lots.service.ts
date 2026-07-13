@@ -8,6 +8,7 @@ import {
 } from '@bidplace/contracts';
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -27,9 +28,22 @@ type LotRecord = {
   updatedAt: Date;
 };
 
+export interface LotsRepository {
+  sellerProfile: {
+    findUnique: PrismaService['sellerProfile']['findUnique'];
+  };
+  category: {
+    findUnique: PrismaService['category']['findUnique'];
+  };
+  lot: {
+    findMany: PrismaService['lot']['findMany'];
+    create: PrismaService['lot']['create'];
+  };
+}
+
 @Injectable()
 export class LotsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: LotsRepository) {}
 
   async listMyLots(userId: string, { page, limit }: PaginationQuery = { page: 1, limit: 20 }) {
     const sellerProfile = await this.prisma.sellerProfile.findUnique({

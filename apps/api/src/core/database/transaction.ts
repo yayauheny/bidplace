@@ -4,8 +4,12 @@ import { PrismaService } from './prisma.service';
 
 const SERIALIZABLE_RETRYABLE_ERROR_CODE = 'P2034';
 
+type SerializableTransactionClient = {
+  $transaction: PrismaService['$transaction'];
+};
+
 export async function runSerializableTransaction<T>(
-  prisma: PrismaService,
+  prisma: SerializableTransactionClient,
   callback: (tx: Prisma.TransactionClient) => Promise<T>,
   attempts = 3,
 ): Promise<T> {
@@ -13,7 +17,7 @@ export async function runSerializableTransaction<T>(
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-        return await prisma.$transaction(callback, {
+      return await prisma.$transaction(callback, {
         isolationLevel: 'Serializable',
       });
     } catch (error) {

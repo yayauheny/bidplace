@@ -1,10 +1,10 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
+import { type AuthRepository } from './auth.service';
 
 type PrismaUser = {
   id: string;
@@ -43,7 +43,7 @@ describe('AuthService', () => {
       findUnique: vi.fn(),
       update: vi.fn(),
     },
-  };
+  } satisfies AuthRepository;
 
   const passwordHasher = {
     hash: vi.fn(),
@@ -56,9 +56,9 @@ describe('AuthService', () => {
   } satisfies Pick<AuthTokenService, 'sign' | 'verify'>;
 
   const service = new AuthService(
-    prisma as unknown as PrismaService,
-    passwordHasher as unknown as PasswordHasherService,
-    authTokenService as unknown as AuthTokenService,
+    prisma,
+    passwordHasher,
+    authTokenService,
   );
 
   beforeEach(() => {

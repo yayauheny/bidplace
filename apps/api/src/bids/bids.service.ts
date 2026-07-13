@@ -109,6 +109,24 @@ type BidContractRecord = {
   updatedAt: Date;
 };
 
+export interface BidsRepository {
+  auction: {
+    findUnique: PrismaService['auction']['findUnique'];
+    updateMany: PrismaService['auction']['updateMany'];
+  };
+  bid: {
+    updateMany: PrismaService['bid']['updateMany'];
+    create: PrismaService['bid']['create'];
+    findMany: PrismaService['bid']['findMany'];
+  };
+  $transaction: PrismaService['$transaction'];
+}
+
+export interface BidsRealtimePublisher {
+  publishBidPlaced: RealtimeEventsService['publishBidPlaced'];
+  publishAuctionUpdated: RealtimeEventsService['publishAuctionUpdated'];
+}
+
 function isUniqueConstraintError(error: unknown): error is { code: string } {
   return (
     typeof error === 'object' &&
@@ -132,8 +150,9 @@ function isAuctionOpenForBidding(
 @Injectable()
 export class BidsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    @Inject(PrismaService) private readonly prisma: BidsRepository,
+    @Inject(RealtimeEventsService)
+    private readonly realtimeEventsService: BidsRealtimePublisher,
     @Inject(Clock) private readonly clock: Clock,
   ) {}
 

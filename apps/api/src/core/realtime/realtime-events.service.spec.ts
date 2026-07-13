@@ -7,7 +7,7 @@ describe('RealtimeEventsService', () => {
     emitToAuction: vi.fn(),
   };
 
-  const service = new RealtimeEventsService(realtimeGateway as never);
+  const service = new RealtimeEventsService(realtimeGateway);
 
   beforeEach(() => {
     vi.clearAllMocks();

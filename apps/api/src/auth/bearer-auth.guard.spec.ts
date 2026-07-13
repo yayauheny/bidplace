@@ -12,7 +12,7 @@ describe('BearerAuthGuard', () => {
       findUnique: vi.fn(),
     },
   };
-  const guard = new BearerAuthGuard(authTokenService as never, prisma as never);
+  const guard = new BearerAuthGuard(authTokenService, prisma);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,11 +38,13 @@ describe('BearerAuthGuard', () => {
       },
     };
 
-    const result = await guard.canActivate({
+    const context = {
       switchToHttp: () => ({
         getRequest: () => request,
       }),
-    } as never);
+    } satisfies Parameters<BearerAuthGuard['canActivate']>[0];
+
+    const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
     expect(request).toMatchObject({
@@ -75,7 +77,7 @@ describe('BearerAuthGuard', () => {
             },
           }),
         }),
-      } as never),
+      }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

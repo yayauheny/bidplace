@@ -5,6 +5,7 @@ import {
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -39,6 +40,15 @@ type PrismaUser = {
   updatedAt: Date;
 };
 
+export interface AuthRepository {
+  user: {
+    findFirst: PrismaService['user']['findFirst'];
+    create: PrismaService['user']['create'];
+    findUnique: PrismaService['user']['findUnique'];
+    update: PrismaService['user']['update'];
+  };
+}
+
 export type AuthSessionResult = {
   accessToken: string;
   user: ContractUser;
@@ -47,7 +57,7 @@ export type AuthSessionResult = {
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: AuthRepository,
     private readonly passwordHasher: PasswordHasherService,
     private readonly authTokenService: AuthTokenService,
   ) {}

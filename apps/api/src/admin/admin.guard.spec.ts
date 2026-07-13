@@ -7,14 +7,14 @@ describe('AdminGuard', () => {
   const guard = new AdminGuard();
 
   it('rejects non-admin users', () => {
-    expect(() =>
-      guard.canActivate({
-        switchToHttp: () => ({
-          getRequest: () => ({
-            auth: { role: 'user' },
-          }),
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          auth: { role: 'user' },
         }),
-      } as never),
-    ).toThrow(ForbiddenException);
+      }),
+    } satisfies Pick<Parameters<AdminGuard['canActivate']>[0], 'switchToHttp'>;
+
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 });

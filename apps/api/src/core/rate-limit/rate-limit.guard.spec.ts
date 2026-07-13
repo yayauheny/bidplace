@@ -16,10 +16,7 @@ describe('RateLimitGuard', () => {
         resourceParam: 'auctionId',
       }),
     } satisfies Pick<Reflector, 'getAllAndOverride'>;
-    const guard = new RateLimitGuard(
-      reflector as Reflector,
-      new RateLimitService(),
-    );
+    const guard = new RateLimitGuard(reflector, new RateLimitService());
     const createContext = () =>
       ({
         getHandler: () => null,
@@ -35,7 +32,7 @@ describe('RateLimitGuard', () => {
             headers: {},
           }),
         }),
-      }) as never;
+      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
 
     expect(guard.canActivate(createContext())).toBe(true);
     try {

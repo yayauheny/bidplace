@@ -1,5 +1,5 @@
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { Clock } from '../core/time';
 import { AuctionLifecycleService } from './auction-closing.service';
@@ -9,7 +9,11 @@ export class AuctionLifecycleScheduler {
   private readonly logger = new Logger(AuctionLifecycleScheduler.name);
 
   constructor(
-    private readonly auctionLifecycleService: AuctionLifecycleService,
+    @Inject(AuctionLifecycleService)
+    private readonly auctionLifecycleService: Pick<
+      AuctionLifecycleService,
+      'runLifecycleCycle'
+    >,
     private readonly clock: Clock,
   ) {}
 

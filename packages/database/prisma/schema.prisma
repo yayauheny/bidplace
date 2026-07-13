@@ -146,6 +146,7 @@ model Auction {
   winnerBid       Bid?          @relation("AuctionWinnerBid", fields: [winnerBidId], references: [id], onDelete: SetNull)
   bids            Bid[]
 
+  @@index([status, startsAt])
   @@index([status, endsAt])
   @@map("auctions")
 }
@@ -162,6 +163,7 @@ model Bid {
   bidderUser     User      @relation(fields: [bidderUserId], references: [id], onDelete: Restrict)
   winningAuction Auction?  @relation("AuctionWinnerBid")
 
+  @@index([auctionId, status, amount, createdAt, id])
   @@index([auctionId, createdAt])
   @@map("bids")
 }

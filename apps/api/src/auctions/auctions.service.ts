@@ -21,7 +21,12 @@ import {
 } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
 
-import { calculateBidStep, resolvePublishedAuctionStatus, reserveReached, toDecimalAmount } from '../core/auction';
+import {
+  calculateBidStep,
+  resolvePublishedAuctionStatus,
+  reserveReached,
+  toDecimalAmount,
+} from '../core/auction';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { Clock } from '../core/time';
 import { RealtimeEventsService, mapAuctionUpdatedEventPayload } from '../core/realtime';
@@ -161,6 +166,30 @@ type PublicAuctionDetailRecord = PublicAuctionListRecord & {
   bids: PublicBidRecord[];
 };
 
+export interface AuctionsRepository {
+  sellerProfile: {
+    findUnique: PrismaService['sellerProfile']['findUnique'];
+  };
+  lot: {
+    findUnique: PrismaService['lot']['findUnique'];
+    update: PrismaService['lot']['update'];
+    updateMany: PrismaService['lot']['updateMany'];
+  };
+  auction: {
+    findMany: PrismaService['auction']['findMany'];
+    findFirst: PrismaService['auction']['findFirst'];
+    findUnique: PrismaService['auction']['findUnique'];
+    create: PrismaService['auction']['create'];
+    update: PrismaService['auction']['update'];
+    updateMany: PrismaService['auction']['updateMany'];
+  };
+  $transaction: PrismaService['$transaction'];
+}
+
+export interface AuctionsRealtimePublisher {
+  publishAuctionUpdated: RealtimeEventsService['publishAuctionUpdated'];
+}
+
 function isUniqueConstraintError(
   error: unknown,
 ): error is { code: string; meta?: { target?: unknown } } {
@@ -175,8 +204,9 @@ function isUniqueConstraintError(
 @Injectable()
 export class AuctionsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    @Inject(PrismaService) private readonly prisma: AuctionsRepository,
+    @Inject(RealtimeEventsService)
+    private readonly realtimeEventsService: AuctionsRealtimePublisher,
     @Inject(Clock) private readonly clock: Clock,
   ) {}
 

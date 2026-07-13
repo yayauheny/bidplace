@@ -2,9 +2,12 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { eligibleBidStatuses } from '../core/auction';
-import { PrismaService } from '../core/database';
 import { Clock } from '../core/time';
-import { AuctionLifecycleService } from './auction-closing.service';
+import {
+  AuctionLifecycleService,
+  type AuctionLifecyclePublisher,
+  type AuctionLifecycleRepository,
+} from './auction-closing.service';
 
 type AuctionRecord = {
   id: string;
@@ -65,11 +68,11 @@ describe('AuctionLifecycleService', () => {
       update: vi.fn(),
     },
     $transaction: vi.fn(),
-  };
+  } satisfies AuctionLifecycleRepository;
   const realtimeEventsService = {
     publishAuctionUpdated: vi.fn(),
     publishAuctionEnded: vi.fn(),
-  };
+  } satisfies AuctionLifecyclePublisher;
 
   class TestClock extends Clock {
     now = vi.fn(() => new Date('2026-07-13T12:30:00.000Z'));
@@ -78,8 +81,8 @@ describe('AuctionLifecycleService', () => {
   const clock = new TestClock();
 
   const service = new AuctionLifecycleService(
-    prisma as unknown as PrismaService,
-    realtimeEventsService as never,
+    prisma,
+    realtimeEventsService,
     clock,
   );
 

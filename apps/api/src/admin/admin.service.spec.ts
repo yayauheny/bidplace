@@ -1,8 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
-import { AdminService } from './admin.service';
+import { AdminService, type AdminRepository } from './admin.service';
 
 describe('AdminService', () => {
   const prisma = {
@@ -19,9 +18,9 @@ describe('AdminService', () => {
     bid: {
       findMany: vi.fn(),
     },
-  };
+  } satisfies AdminRepository;
 
-  const service = new AdminService(prisma as unknown as PrismaService);
+  const service = new AdminService(prisma);
 
   beforeEach(() => {
     vi.clearAllMocks();

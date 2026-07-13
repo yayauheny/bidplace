@@ -12,7 +12,9 @@ type AuthenticatedRequest = {
 
 @Injectable()
 export class AdminGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(
+    context: Pick<ExecutionContext, 'switchToHttp'>,
+  ): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     if (request.auth?.role !== 'admin') {

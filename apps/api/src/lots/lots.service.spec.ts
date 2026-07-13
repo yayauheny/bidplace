@@ -1,8 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
-import { LotsService } from './lots.service';
+import { LotsService, type LotsRepository } from './lots.service';
 
 type LotRecord = {
   id: string;
@@ -45,9 +44,9 @@ describe('LotsService', () => {
       findMany: vi.fn(),
       create: vi.fn(),
     },
-  };
+  } satisfies LotsRepository;
 
-  const service = new LotsService(prisma as unknown as PrismaService);
+  const service = new LotsService(prisma);
 
   beforeEach(() => {
     vi.clearAllMocks();

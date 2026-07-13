@@ -15,6 +15,7 @@ import {
 } from '@bidplace/contracts';
 import {
   Injectable,
+  Inject,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -63,13 +64,29 @@ type PrismaBid = {
   updatedAt: Date;
 };
 
+export interface AdminRepository {
+  user: {
+    findMany: PrismaService['user']['findMany'];
+    findUnique: PrismaService['user']['findUnique'];
+    update: PrismaService['user']['update'];
+  };
+  auction: {
+    findMany: PrismaService['auction']['findMany'];
+    findUnique: PrismaService['auction']['findUnique'];
+    update: PrismaService['auction']['update'];
+  };
+  bid: {
+    findMany: PrismaService['bid']['findMany'];
+  };
+}
+
 function toNumber(value: NumericLike): number {
   return typeof value === 'number' ? value : value.toNumber();
 }
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: AdminRepository) {}
 
   async listUsers(
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },

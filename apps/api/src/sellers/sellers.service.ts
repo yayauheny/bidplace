@@ -7,6 +7,7 @@ import {
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -28,6 +29,14 @@ type SellerProfileRecord = {
   updatedAt: Date;
 };
 
+export interface SellersRepository {
+  sellerProfile: {
+    findUnique: PrismaService['sellerProfile']['findUnique'];
+    create: PrismaService['sellerProfile']['create'];
+    update: PrismaService['sellerProfile']['update'];
+  };
+}
+
 function isUniqueConstraintError(error: unknown): error is { code: string } {
   return (
     typeof error === 'object' &&
@@ -39,7 +48,7 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
 
 @Injectable()
 export class SellersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: SellersRepository) {}
 
   async createProfile(
     userId: string,

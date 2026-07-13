@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { Clock } from '../core/time';
+import { AuctionLifecycleService } from './auction-closing.service';
 import { AuctionLifecycleScheduler } from './auction-closing.scheduler';
 
 describe('AuctionLifecycleScheduler', () => {
@@ -10,10 +11,10 @@ describe('AuctionLifecycleScheduler', () => {
   const clock = new TestClock();
   const auctionLifecycleService = {
     runLifecycleCycle: vi.fn(),
-  };
+  } satisfies Pick<AuctionLifecycleService, 'runLifecycleCycle'>;
 
   const scheduler = new AuctionLifecycleScheduler(
-    auctionLifecycleService as never,
+    auctionLifecycleService,
     clock,
   );
 

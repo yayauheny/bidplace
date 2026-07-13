@@ -7,6 +7,7 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:integration": "DATABASE_URL=postgresql://auction:auction@127.0.0.1:5432/bidplace vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

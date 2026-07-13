@@ -2,10 +2,13 @@ import { BadRequestException, ConflictException, ForbiddenException, NotFoundExc
 import { Decimal } from '@prisma/client/runtime/library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
 import { Clock } from '../core/time';
 import { calculateBidStep } from '../core/auction';
-import { BidsService } from './bids.service';
+import {
+  BidsService,
+  type BidsRealtimePublisher,
+  type BidsRepository,
+} from './bids.service';
 
 type AuctionRecord = {
   id: string;
@@ -119,19 +122,19 @@ describe('BidsService', () => {
       findMany: vi.fn(),
     },
     $transaction: vi.fn(),
-  };
+  } satisfies BidsRepository;
   const realtimeEventsService = {
     publishBidPlaced: vi.fn(),
     publishAuctionUpdated: vi.fn(),
-  };
+  } satisfies BidsRealtimePublisher;
   class TestClock extends Clock {
     now = vi.fn(() => new Date('2026-07-13T12:30:00.000Z'));
   }
   const clock = new TestClock();
 
   const service = new BidsService(
-    prisma as unknown as PrismaService,
-    realtimeEventsService as never,
+    prisma,
+    realtimeEventsService,
     clock,
   );
 

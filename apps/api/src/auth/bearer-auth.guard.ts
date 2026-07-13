@@ -26,7 +26,9 @@ export class BearerAuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  async canActivate(
+    context: Pick<ExecutionContext, 'switchToHttp'>,
+  ): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     try {

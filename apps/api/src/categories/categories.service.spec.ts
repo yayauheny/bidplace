@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PrismaService } from '../core/database';
-import { CategoriesService } from './categories.service';
+import { CategoriesService, type CategoriesRepository } from './categories.service';
 
 describe('CategoriesService', () => {
   const prisma = {
     category: {
       findMany: vi.fn(),
     },
-  };
+  } satisfies CategoriesRepository;
 
-  const service = new CategoriesService(prisma as unknown as PrismaService);
+  const service = new CategoriesService(prisma);
 
   beforeEach(() => {
     vi.clearAllMocks();

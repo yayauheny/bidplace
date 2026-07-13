@@ -58,6 +58,25 @@ type LifecycleBidRecord = {
   createdAt: Date;
 };
 
+export interface AuctionLifecycleRepository {
+  auction: {
+    findMany: PrismaService['auction']['findMany'];
+    findUnique: PrismaService['auction']['findUnique'];
+    updateMany: PrismaService['auction']['updateMany'];
+  };
+  bid: {
+    findMany: PrismaService['bid']['findMany'];
+    updateMany: PrismaService['bid']['updateMany'];
+    update: PrismaService['bid']['update'];
+  };
+  $transaction: PrismaService['$transaction'];
+}
+
+export interface AuctionLifecyclePublisher {
+  publishAuctionUpdated: RealtimeEventsService['publishAuctionUpdated'];
+  publishAuctionEnded: RealtimeEventsService['publishAuctionEnded'];
+}
+
 const LIFECYCLE_BATCH_SIZE = 100;
 
 @Injectable()
@@ -65,8 +84,9 @@ export class AuctionLifecycleService {
   private readonly logger = new Logger(AuctionLifecycleService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    @Inject(PrismaService) private readonly prisma: AuctionLifecycleRepository,
+    @Inject(RealtimeEventsService)
+    private readonly realtimeEventsService: AuctionLifecyclePublisher,
     @Inject(Clock) private readonly clock: Clock,
   ) {}
 
