@@ -27,20 +27,6 @@ module.exports = {
   rules: {
     'import/no-duplicates': 'error',
     'import/no-unresolved': 'error',
-    'import/order': [
-      'error',
-      {
-        alphabetize: {
-          order: 'asc',
-          caseInsensitive: true,
-        },
-        'newlines-between': 'always',
-        groups: [
-          ['builtin', 'external'],
-          ['internal'],
-          ['parent', 'sibling', 'index'],
-        ],
-      },
-    ],
+    'import/order': 'off',
   },
 };

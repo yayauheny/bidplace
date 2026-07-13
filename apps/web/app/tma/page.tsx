@@ -1,8 +1,15 @@
+import { PageContainer, Heading, Text } from '../../src/components/ui/layout';
+import { Card } from '../../src/components/ui/surfaces';
+
 export default function TelegramMiniAppPage() {
   return (
-    <main>
-      <h1>Telegram Mini App</h1>
-      <p>Placeholder for the future Telegram Mini App surface.</p>
-    </main>
+    <PageContainer>
+      <Card>
+        <Heading level="display">Telegram Mini App</Heading>
+        <Text tone="muted">
+          Этот экран подготовлен для будущей mobile-friendly оболочки BidPlace.
+        </Text>
+      </Card>
+    </PageContainer>
   );
 }

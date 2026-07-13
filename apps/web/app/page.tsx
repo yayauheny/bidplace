@@ -1,8 +1,5 @@
+import { AuctionListScreen } from '../src/features/auctions/auction-list-screen';
+
 export default function HomePage() {
-  return (
-    <main>
-      <h1>Auction Platform</h1>
-      <p>Web scaffold is ready.</p>
-    </main>
-  );
+  return <AuctionListScreen />;
 }
