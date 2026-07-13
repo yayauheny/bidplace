@@ -15,7 +15,7 @@ import { parseBody } from '../core/validation';
 export class SellerProfileController {
   constructor(private readonly sellersService: SellersService) {}
 
-  @Get()
+  @Get('profile')
   async getMyProfile(@CurrentUser() auth: AuthTokenPayload) {
     return sellerProfileResponseSchema.parse(
       await this.sellersService.getMyProfile(auth.sub),

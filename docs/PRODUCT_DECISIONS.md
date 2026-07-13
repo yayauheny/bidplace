@@ -280,7 +280,7 @@ Future:
 - internationalization;
 - shipping integrations;
 - payments and payouts;
-- mobile app.
+- native app store release.
 
 ## 15. Что берём из старого проекта `art-market`
 

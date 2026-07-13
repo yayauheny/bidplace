@@ -50,7 +50,7 @@
 - recommendations;
 - full moderation UI;
 - AI moderation;
-- mobile app.
+- native app store release.
 
 ## 5. Минимальная модель данных
 

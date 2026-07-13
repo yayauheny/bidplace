@@ -138,7 +138,7 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 
 - минимальный корректный scope;
 - без лишних абстракций;
-- backend, web и shared packages остаются слабо связанными;
+- backend, mobile/frontend и shared packages остаются слабо связанными;
 - contracts отделены от database entities;
 - бизнес-логика не уходит в controllers и UI;
 - future expansion учитывается в модели, но не реализуется раньше времени.
@@ -154,7 +154,7 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 - watchlist
 - chat
 - analytics
-- mobile app
+- native app store release
 
 ## Что дальше
 
@@ -165,4 +165,4 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 - auth;
 - auction domain logic;
 - tests;
-- затем web MVP поверх готового backend.
+- затем развивать единый Expo frontend поверх готового backend.
