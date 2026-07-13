@@ -242,3 +242,10 @@ Roadmap делится:
 - future chat не должен требовать переделки user/seller identity
 - future multi-currency должна опираться на конфиг шагов ставок
 - future relist flow должен работать с `failed` auctions
+
+## 8. Backend hardening after MVP
+
+- заменить offset pagination на cursor-based pagination для длинных списков и bid history;
+- разделить public/private DTOs, чтобы скрыть внутренние IDs (`userId`, `bidderUserId`) на публичных страницах, если privacy policy станет строже;
+- вынести image processing и storage normalization в отдельный pipeline, если локального `FileStorageService` станет недостаточно;
+- добавить более строгие server-side limits для admin/public list endpoints по мере роста таблиц.

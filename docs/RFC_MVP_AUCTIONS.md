@@ -341,3 +341,5 @@ Future:
 - anti-fraud heuristics по устройствам и IP;
 - AI moderation;
 - unified UI layer для web/mobile.
+- offset pagination для list/history endpoints оставляем на MVP, cursor pagination добавим позже;
+- public/private DTO пока могут содержать внутренние IDs, но при ужесточении privacy policy вынесем отдельные public shapes без `userId`/`bidderUserId`.
