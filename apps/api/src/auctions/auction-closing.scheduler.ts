@@ -1,26 +1,32 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, Logger } from '@nestjs/common';
 
-import { AuctionClosingService } from './auction-closing.service';
+import { Clock } from '../core/time';
+import { AuctionLifecycleService } from './auction-closing.service';
 
 @Injectable()
-export class AuctionClosingScheduler implements OnModuleInit, OnModuleDestroy {
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+export class AuctionLifecycleScheduler {
+  private readonly logger = new Logger(AuctionLifecycleScheduler.name);
 
   constructor(
-    private readonly auctionClosingService: AuctionClosingService,
+    private readonly auctionLifecycleService: AuctionLifecycleService,
+    private readonly clock: Clock,
   ) {}
 
-  onModuleInit() {
-    this.intervalId = setInterval(() => {
-      void this.auctionClosingService.activateScheduledAuctions();
-      void this.auctionClosingService.closeExpiredAuctions();
-    }, 60_000);
-  }
+  @Cron(CronExpression.EVERY_30_SECONDS, {
+    waitForCompletion: true,
+  })
+  async runLifecycleCycle(): Promise<void> {
+    const now = this.clock.now();
 
-  onModuleDestroy() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    try {
+      await this.auctionLifecycleService.runLifecycleCycle(now);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown scheduler error';
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(`Auction lifecycle cycle failed: ${message}`, stack);
     }
   }
 }

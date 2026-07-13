@@ -1,102 +1,168 @@
 import {
+  type Auction,
   type AuctionEndedEventPayload,
+  type Bid,
   auctionEndedEventPayloadSchema,
 } from '@bidplace/contracts';
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Decimal } from '@prisma/client/runtime/library';
 
-import { PrismaService } from '../core/database';
-import { RealtimeEventsService } from '../core/realtime';
+import {
+  canActivateAuction,
+  canCloseAuction,
+  eligibleBidStatuses,
+  findHighestEligibleBid,
+  reserveReached,
+} from '../core/auction';
+import { PrismaService, runSerializableTransaction } from '../core/database';
+import { Clock } from '../core/time';
+import {
+  mapAuctionEndedEventPayload,
+  mapAuctionUpdatedEventPayload,
+  RealtimeEventsService,
+} from '../core/realtime';
 
-type NumericLike = number | { toNumber(): number };
+const lifecycleAuctionSelect = {
+  id: true,
+  reservePrice: true,
+  currentPrice: true,
+  bidCount: true,
+  winnerBidId: true,
+  status: true,
+  startsAt: true,
+  endsAt: true,
+};
 
-type AuctionClosingRecord = {
+type LifecycleAuctionRecord = {
   id: string;
-  reservePrice: NumericLike;
-  currentPrice: NumericLike;
+  reservePrice: Decimal;
+  currentPrice: Decimal;
   bidCount: number;
   winnerBidId: string | null;
-  status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
+  status: Auction['status'];
   startsAt: Date;
   endsAt: Date;
 };
 
-type ClosingBidRecord = {
+const lifecycleBidSelect = {
+  id: true,
+  amount: true,
+  status: true,
+  createdAt: true,
+};
+
+type LifecycleBidRecord = {
   id: string;
-  amount: NumericLike;
+  amount: Decimal;
+  status: Bid['status'];
+  createdAt: Date;
 };
 
-function toNumber(value: NumericLike): number {
-  return typeof value === 'number' ? value : value.toNumber();
-}
-
-function toMinorUnits(value: number): number {
-  return Math.round(value * 100);
-}
-
-type AuctionRealtimePublication = {
-  auctionId: string;
-  currentPrice: number;
-  bidCount: number;
-  status: 'active' | 'sold' | 'failed';
-  endsAt: string;
-  winnerBidId: string | null;
-  reserveReached: boolean;
-};
+const LIFECYCLE_BATCH_SIZE = 100;
 
 @Injectable()
-export class AuctionClosingService {
+export class AuctionLifecycleService {
+  private readonly logger = new Logger(AuctionLifecycleService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly realtimeEventsService: RealtimeEventsService,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
-  async activateScheduledAuctions(now = new Date()): Promise<string[]> {
-    const auctions = await this.prisma.auction.findMany({
-      where: {
-        status: 'scheduled',
-        startsAt: {
-          lte: now,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
+  async runLifecycleCycle(now = this.clock.now()): Promise<void> {
+    await this.closeExpiredAuctions(now);
+    await this.activateScheduledAuctions(now);
+  }
 
+  async activateScheduledAuctions(now = this.clock.now()): Promise<string[]> {
     const activatedAuctionIds: string[] = [];
+    let hasMore = true;
 
-    for (const auction of auctions) {
-      const activatedAuctionId = await this.activateAuctionById(auction.id, now);
+    while (hasMore) {
+      const auctions = await this.prisma.auction.findMany({
+        where: {
+          status: 'scheduled',
+          startsAt: {
+            lte: now,
+          },
+          endsAt: {
+            gt: now,
+          },
+        },
+        select: {
+          id: true,
+        },
+        take: LIFECYCLE_BATCH_SIZE,
+        orderBy: [{ startsAt: 'asc' }, { endsAt: 'asc' }, { id: 'asc' }],
+      });
 
-      if (activatedAuctionId) {
-        activatedAuctionIds.push(activatedAuctionId);
+      if (auctions.length === 0) {
+        break;
+      }
+
+      for (const auction of auctions) {
+        try {
+          const activatedAuctionId = await this.activateAuctionById(
+            auction.id,
+            now,
+          );
+
+          if (activatedAuctionId) {
+            activatedAuctionIds.push(activatedAuctionId);
+          }
+        } catch (error) {
+          this.logAuctionError('activate', auction.id, error);
+        }
+      }
+
+      if (auctions.length < LIFECYCLE_BATCH_SIZE) {
+        hasMore = false;
       }
     }
 
     return activatedAuctionIds;
   }
 
-  async closeExpiredAuctions(now = new Date()): Promise<AuctionEndedEventPayload[]> {
-    const auctions = await this.prisma.auction.findMany({
-      where: {
-        status: 'active',
-        endsAt: {
-          lte: now,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
+  async closeExpiredAuctions(now = this.clock.now()): Promise<AuctionEndedEventPayload[]> {
     const endedAuctions: AuctionEndedEventPayload[] = [];
+    let hasMore = true;
 
-    for (const auction of auctions) {
-      const endedAuction = await this.closeAuctionById(auction.id, now);
+    while (hasMore) {
+      const auctions = await this.prisma.auction.findMany({
+        where: {
+          status: {
+            in: ['scheduled', 'active'],
+          },
+          endsAt: {
+            lte: now,
+          },
+        },
+        select: {
+          id: true,
+        },
+        take: LIFECYCLE_BATCH_SIZE,
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+      });
 
-      if (endedAuction) {
-        endedAuctions.push(endedAuction);
+      if (auctions.length === 0) {
+        break;
+      }
+
+      for (const auction of auctions) {
+        try {
+          const endedAuction = await this.closeAuctionById(auction.id, now);
+
+          if (endedAuction) {
+            endedAuctions.push(endedAuction);
+          }
+        } catch (error) {
+          this.logAuctionError('close', auction.id, error);
+        }
+      }
+
+      if (auctions.length < LIFECYCLE_BATCH_SIZE) {
+        hasMore = false;
       }
     }
 
@@ -105,150 +171,116 @@ export class AuctionClosingService {
 
   async closeAuctionById(
     auctionId: string,
-    now = new Date(),
+    now = this.clock.now(),
   ): Promise<AuctionEndedEventPayload | null> {
-    const result = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const auction = (await tx.auction.findUnique({
-          where: {
-            id: auctionId,
+    const result = await runSerializableTransaction(this.prisma, async (tx) => {
+      const auction: LifecycleAuctionRecord | null = await tx.auction.findUnique({
+        where: {
+          id: auctionId,
+        },
+        select: lifecycleAuctionSelect,
+      });
+
+      if (!auction || !canCloseAuction(auction.status, auction.endsAt, now)) {
+        return null;
+      }
+
+      const eligibleBids: LifecycleBidRecord[] = await tx.bid.findMany({
+        where: {
+          auctionId,
+          status: {
+            in: eligibleBidStatuses,
           },
-          select: {
-            id: true,
-            reservePrice: true,
-            currentPrice: true,
-            bidCount: true,
-            winnerBidId: true,
-            status: true,
-            endsAt: true,
+        },
+        select: lifecycleBidSelect,
+        orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      });
+
+      const winningBid = findHighestEligibleBid(eligibleBids);
+      const closingPrice = winningBid?.amount ?? auction.currentPrice;
+      const reserveMet = reserveReached(closingPrice, auction.reservePrice);
+      const sold = reserveMet && winningBid !== null;
+
+      const updatedAuction = await tx.auction.updateMany({
+        where: {
+          id: auctionId,
+          status: {
+            in: ['scheduled', 'active'],
           },
-        })) as AuctionClosingRecord | null;
-
-        if (!auction || auction.status !== 'active' || auction.endsAt > now) {
-          return null;
-        }
-
-        const winningBid = (await tx.bid.findFirst({
-          where: {
-            auctionId,
+          endsAt: {
+            lte: now,
           },
-          orderBy: [{ amount: 'desc' }, { createdAt: 'desc' }],
-          select: {
-            id: true,
-            amount: true,
-          },
-        })) as ClosingBidRecord | null;
+        },
+        data: {
+          status: sold ? 'sold' : 'failed',
+          winnerBidId: sold && winningBid ? winningBid.id : null,
+        },
+      });
 
-        const reserveReached =
-          winningBid !== null &&
-          toMinorUnits(toNumber(winningBid.amount)) >=
-            toMinorUnits(toNumber(auction.reservePrice));
+      if (updatedAuction.count !== 1) {
+        return null;
+      }
 
-        if (reserveReached && winningBid) {
-          const updatedAuction = await tx.auction.updateMany({
-            where: {
-              id: auctionId,
-              status: 'active',
-              endsAt: {
-                lte: now,
-              },
-            },
-            data: {
-              status: 'sold',
-              winnerBidId: winningBid.id,
-            },
-          });
-
-          if (updatedAuction.count !== 1) {
-            return null;
-          }
-
-          await tx.bid.updateMany({
-            where: {
-              auctionId,
-              id: {
-                not: winningBid.id,
-              },
-            },
-            data: {
-              status: 'lost',
-            },
-          });
-
-          await tx.bid.update({
-            where: {
-              id: winningBid.id,
-            },
-            data: {
-              status: 'won',
-            },
-          });
-
-          return {
-            endedPayload: auctionEndedEventPayloadSchema.parse({
-              auctionId,
-              status: 'sold',
-              winnerBidId: winningBid.id,
-              reserveReached: true,
-            }),
-            auctionUpdate: {
-              auctionId,
-              currentPrice: toNumber(winningBid.amount),
-              bidCount: auction.bidCount,
-              status: 'sold',
-              endsAt: auction.endsAt.toISOString(),
-              winnerBidId: winningBid.id,
-              reserveReached: true,
-            } satisfies AuctionRealtimePublication,
-          };
-        }
-
-        const updatedAuction = await tx.auction.updateMany({
-          where: {
-            id: auctionId,
-            status: 'active',
-            endsAt: {
-              lte: now,
-            },
-          },
-          data: {
-            status: 'failed',
-            winnerBidId: null,
-          },
-        });
-
-        if (updatedAuction.count !== 1) {
-          return null;
-        }
-
+      if (sold && winningBid) {
         await tx.bid.updateMany({
           where: {
             auctionId,
+            status: {
+              in: eligibleBidStatuses,
+            },
+            id: {
+              not: winningBid.id,
+            },
           },
           data: {
             status: 'lost',
           },
         });
 
-        return {
-          endedPayload: auctionEndedEventPayloadSchema.parse({
+        await tx.bid.update({
+          where: {
+            id: winningBid.id,
+          },
+          data: {
+            status: 'won',
+          },
+        });
+      } else {
+        await tx.bid.updateMany({
+          where: {
             auctionId,
-            status: 'failed',
-            winnerBidId: null,
-            reserveReached: false,
+            status: {
+              in: eligibleBidStatuses,
+            },
+          },
+          data: {
+            status: 'lost',
+          },
+        });
+      }
+
+      return {
+        endedPayload: auctionEndedEventPayloadSchema.parse(
+          mapAuctionEndedEventPayload({
+            auctionId,
+            status: sold ? 'sold' : 'failed',
+            winnerBidId: sold && winningBid ? winningBid.id : null,
+            reserveReached: reserveMet,
           }),
-          auctionUpdate: {
-            auctionId,
-            currentPrice: toNumber(auction.currentPrice),
+        ),
+        auctionUpdate: mapAuctionUpdatedEventPayload(
+          {
+            id: auctionId,
+            currentPrice: sold && winningBid ? winningBid.amount.toNumber() : auction.currentPrice.toNumber(),
             bidCount: auction.bidCount,
-            status: 'failed',
+            status: sold ? 'sold' : 'failed',
             endsAt: auction.endsAt.toISOString(),
-            winnerBidId: null,
-            reserveReached: false,
-          } satisfies AuctionRealtimePublication,
-        };
-      },
-    );
+            winnerBidId: sold && winningBid ? winningBid.id : null,
+          },
+          reserveMet,
+        ),
+      };
+    });
 
     if (!result) {
       return null;
@@ -262,26 +294,20 @@ export class AuctionClosingService {
 
   private async activateAuctionById(
     auctionId: string,
-    now = new Date(),
+    now = this.clock.now(),
   ): Promise<string | null> {
-    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const auction = (await tx.auction.findUnique({
+    const result = await runSerializableTransaction(this.prisma, async (tx) => {
+      const auction: LifecycleAuctionRecord | null = await tx.auction.findUnique({
         where: {
           id: auctionId,
         },
-        select: {
-          id: true,
-          reservePrice: true,
-          currentPrice: true,
-          bidCount: true,
-          winnerBidId: true,
-          status: true,
-          startsAt: true,
-          endsAt: true,
-        },
-      })) as AuctionClosingRecord | null;
+        select: lifecycleAuctionSelect,
+      });
 
-      if (!auction || auction.status !== 'scheduled' || auction.startsAt > now) {
+      if (
+        !auction ||
+        !canActivateAuction(auction.status, auction.startsAt, auction.endsAt, now)
+      ) {
         return null;
       }
 
@@ -291,6 +317,9 @@ export class AuctionClosingService {
           status: 'scheduled',
           startsAt: {
             lte: now,
+          },
+          endsAt: {
+            gt: now,
           },
         },
         data: {
@@ -304,17 +333,17 @@ export class AuctionClosingService {
 
       return {
         auctionId,
-        auctionUpdate: {
-          auctionId,
-          currentPrice: toNumber(auction.currentPrice),
-          bidCount: auction.bidCount,
-          status: 'active',
-          endsAt: auction.endsAt.toISOString(),
-          winnerBidId: auction.winnerBidId,
-          reserveReached:
-            toMinorUnits(toNumber(auction.currentPrice)) >=
-            toMinorUnits(toNumber(auction.reservePrice)),
-        } satisfies AuctionRealtimePublication,
+        auctionUpdate: mapAuctionUpdatedEventPayload(
+          {
+            id: auctionId,
+            currentPrice: auction.currentPrice.toNumber(),
+            bidCount: auction.bidCount,
+            status: 'active',
+            endsAt: auction.endsAt.toISOString(),
+            winnerBidId: auction.winnerBidId,
+          },
+          reserveReached(auction.currentPrice, auction.reservePrice),
+        ),
       };
     });
 
@@ -325,5 +354,20 @@ export class AuctionClosingService {
     this.realtimeEventsService.publishAuctionUpdated(result.auctionUpdate);
 
     return result.auctionId;
+  }
+
+  private logAuctionError(
+    action: 'activate' | 'close',
+    auctionId: string,
+    error: unknown,
+  ): void {
+    const message =
+      error instanceof Error ? error.message : 'Unknown lifecycle error';
+    const stack = error instanceof Error ? error.stack : undefined;
+
+    this.logger.error(
+      `Failed to ${action} auction ${auctionId}: ${message}`,
+      stack,
+    );
   }
 }

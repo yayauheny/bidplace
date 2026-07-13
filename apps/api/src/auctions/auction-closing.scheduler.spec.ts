@@ -1,36 +1,43 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { AuctionClosingScheduler } from './auction-closing.scheduler';
+import { Clock } from '../core/time';
+import { AuctionLifecycleScheduler } from './auction-closing.scheduler';
 
-describe('AuctionClosingScheduler', () => {
-  const auctionClosingService = {
-    activateScheduledAuctions: vi.fn(),
-    closeExpiredAuctions: vi.fn(),
+describe('AuctionLifecycleScheduler', () => {
+  class TestClock extends Clock {
+    now = vi.fn(() => new Date('2026-07-13T12:30:00.000Z'));
+  }
+  const clock = new TestClock();
+  const auctionLifecycleService = {
+    runLifecycleCycle: vi.fn(),
   };
 
-  const scheduler = new AuctionClosingScheduler(
-    auctionClosingService as never,
+  const scheduler = new AuctionLifecycleScheduler(
+    auctionLifecycleService as never,
+    clock,
   );
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
+    vi.resetAllMocks();
+    clock.now.mockReturnValue(new Date('2026-07-13T12:30:00.000Z'));
   });
 
-  it('runs the close cycle on a fixed interval', async () => {
-    auctionClosingService.activateScheduledAuctions.mockResolvedValue([]);
-    auctionClosingService.closeExpiredAuctions.mockResolvedValue([]);
+  it('runs one awaited lifecycle cycle using a single clock value', async () => {
+    auctionLifecycleService.runLifecycleCycle.mockResolvedValue(undefined);
 
-    scheduler.onModuleInit();
-    await vi.advanceTimersByTimeAsync(60_000);
+    await scheduler.runLifecycleCycle();
 
-    expect(auctionClosingService.activateScheduledAuctions).toHaveBeenCalledTimes(1);
-    expect(auctionClosingService.closeExpiredAuctions).toHaveBeenCalledTimes(1);
+    expect(clock.now).toHaveBeenCalledTimes(1);
+    expect(auctionLifecycleService.runLifecycleCycle).toHaveBeenCalledWith(
+      new Date('2026-07-13T12:30:00.000Z'),
+    );
+  });
 
-    scheduler.onModuleDestroy();
-    await vi.advanceTimersByTimeAsync(60_000);
+  it('swallows lifecycle errors after logging them', async () => {
+    auctionLifecycleService.runLifecycleCycle.mockRejectedValue(
+      new Error('boom'),
+    );
 
-    expect(auctionClosingService.activateScheduledAuctions).toHaveBeenCalledTimes(1);
-    expect(auctionClosingService.closeExpiredAuctions).toHaveBeenCalledTimes(1);
+    await expect(scheduler.runLifecycleCycle()).resolves.toBeUndefined();
   });
 });

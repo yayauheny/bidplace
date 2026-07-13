@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
-import { AuctionClosingScheduler } from './auction-closing.scheduler';
-import { AuctionClosingService } from './auction-closing.service';
+import { AuctionLifecycleScheduler } from './auction-closing.scheduler';
+import { AuctionLifecycleService } from './auction-closing.service';
 import { AuctionManagementController } from './auction-management.controller';
 import { AuctionPublicController } from './auction-public.controller';
 import { AuctionsService } from './auctions.service';
@@ -14,9 +14,9 @@ import { RealtimeModule } from '../core/realtime';
   controllers: [AuctionManagementController, AuctionPublicController],
   providers: [
     AuctionsService,
-    AuctionClosingService,
-    AuctionClosingScheduler,
+    AuctionLifecycleService,
+    AuctionLifecycleScheduler,
   ],
-  exports: [AuctionsService, AuctionClosingService],
+  exports: [AuctionsService, AuctionLifecycleService],
 })
 export class AuctionsModule {}

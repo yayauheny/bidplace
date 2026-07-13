@@ -1,19 +1,7 @@
-export function calculateBidStep(amount: number): number {
-  if (amount < 25) {
-    return 0.5;
-  }
+import { Decimal } from '@prisma/client/runtime/library';
 
-  if (amount < 100) {
-    return 1;
-  }
+import { calculateBidStep as calculateBidStepPolicy } from './pricing-policy';
 
-  if (amount < 500) {
-    return 5;
-  }
-
-  if (amount < 1000) {
-    return 10;
-  }
-
-  return 25;
+export function calculateBidStep(amount: Decimal): Decimal {
+  return calculateBidStepPolicy(amount);
 }

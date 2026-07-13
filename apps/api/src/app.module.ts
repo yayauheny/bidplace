@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AdminModule } from './admin/admin.module';
 import { AuctionsModule } from './auctions/auctions.module';
@@ -9,13 +10,16 @@ import { DatabaseModule } from './core/database';
 import { HealthModule } from './core/health';
 import { LoggerModule } from './core/logger';
 import { RealtimeModule } from './core/realtime';
+import { ClockModule } from './core/time';
 import { LotsModule } from './lots/lots.module';
 import { SellersModule } from './sellers/sellers.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     HealthModule,
     LoggerModule,
+    ClockModule,
     AdminModule,
     CategoriesModule,
     DatabaseModule,

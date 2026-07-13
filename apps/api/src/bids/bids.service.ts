@@ -1,6 +1,8 @@
 import {
+  type Auction,
   type Bid,
   type BidCreateRequest,
+  type Lot,
   type PaginationQuery,
   type PublicBid,
   bidHistoryResponseSchema,
@@ -10,64 +12,102 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
-import { calculateBidStep } from '../core/auction';
-import { PrismaService } from '../core/database';
-import { RealtimeEventsService } from '../core/realtime';
+import {
+  calculateBidStep,
+  eligibleBidStatuses,
+  resolveMinimumNextBid,
+  reserveReached,
+  toDecimalAmount,
+} from '../core/auction';
+import { PrismaService, runSerializableTransaction } from '../core/database';
+import { Clock } from '../core/time';
+import {
+  mapAuctionUpdatedEventPayload,
+  mapBidPlacedEventPayload,
+  RealtimeEventsService,
+} from '../core/realtime';
 
-type NumericLike = number | { toNumber(): number };
+const auctionBidSelect = {
+  id: true,
+  lotId: true,
+  sellerProfileId: true,
+  slug: true,
+  startPrice: true,
+  reservePrice: true,
+  currentPrice: true,
+  currency: true,
+  bidStep: true,
+  startsAt: true,
+  endsAt: true,
+  status: true,
+  bidCount: true,
+  winnerBidId: true,
+  buyNowPrice: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerProfile: {
+    select: {
+      userId: true,
+    },
+  },
+  lot: {
+    select: {
+      status: true,
+    },
+  },
+};
 
 type AuctionForBidRecord = {
   id: string;
   lotId: string;
   sellerProfileId: string;
   slug: string;
-  startPrice: NumericLike;
-  reservePrice: NumericLike;
-  currentPrice: NumericLike;
+  startPrice: Decimal;
+  reservePrice: Decimal;
+  currentPrice: Decimal;
   currency: string;
-  bidStep: NumericLike;
+  bidStep: Decimal;
   startsAt: Date;
   endsAt: Date;
-  status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
+  status: Auction['status'];
   bidCount: number;
   winnerBidId: string | null;
-  buyNowPrice: NumericLike | null;
+  buyNowPrice: Decimal | null;
   createdAt: Date;
   updatedAt: Date;
   sellerProfile: {
     userId: string;
   };
   lot: {
-    status: 'draft' | 'published' | 'sold' | 'hidden' | 'archived';
+    status: Lot['status'];
   };
 };
 
-type BidRecord = {
+const bidContractSelect = {
+  id: true,
+  auctionId: true,
+  bidderUserId: true,
+  amount: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+type BidContractRecord = {
   id: string;
   auctionId: string;
   bidderUserId: string;
-  amount: NumericLike;
+  amount: Decimal;
   status: Bid['status'];
   createdAt: Date;
   updatedAt: Date;
 };
-
-function toNumber(value: NumericLike): number {
-  return typeof value === 'number' ? value : value.toNumber();
-}
-
-function toMinorUnits(value: number): number {
-  return Math.round(value * 100);
-}
-
-function fromMinorUnits(value: number): number {
-  return value / 100;
-}
 
 function isUniqueConstraintError(error: unknown): error is { code: string } {
   return (
@@ -78,11 +118,23 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
   );
 }
 
+function isAuctionOpenForBidding(
+  auction: AuctionForBidRecord,
+  now: Date,
+): boolean {
+  return (
+    auction.status === 'active' &&
+    auction.startsAt <= now &&
+    auction.endsAt > now
+  );
+}
+
 @Injectable()
 export class BidsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly realtimeEventsService: RealtimeEventsService,
+    @Inject(Clock) private readonly clock: Clock,
   ) {}
 
   async placeBid(
@@ -90,177 +142,128 @@ export class BidsService {
     auctionId: string,
     input: BidCreateRequest,
   ) {
-    const now = new Date();
-    const auction = await this.prisma.auction.findUnique({
-      where: {
-        id: auctionId,
-      },
-      select: {
-        id: true,
-        lotId: true,
-        sellerProfileId: true,
-        slug: true,
-        startPrice: true,
-        reservePrice: true,
-        currentPrice: true,
-        currency: true,
-        bidStep: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        bidCount: true,
-        winnerBidId: true,
-        buyNowPrice: true,
-        createdAt: true,
-        updatedAt: true,
-        sellerProfile: {
-          select: {
-            userId: true,
-          },
-        },
-        lot: {
-          select: {
-            status: true,
-          },
-        },
-      },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Auction not found');
-    }
-
-    if (auction.sellerProfile.userId === userId) {
-      throw new ForbiddenException('Cannot bid on your own auction');
-    }
-
-    if (
-      auction.status !== 'active' ||
-      auction.startsAt > now ||
-      auction.endsAt <= now
-    ) {
-      throw new ConflictException('Auction is not active');
-    }
-
-    if (auction.lot.status !== 'published') {
-      throw new ConflictException('Auction is not open for bidding');
-    }
-
-    const currentPrice = toNumber(auction.currentPrice);
-    const minimumBid = fromMinorUnits(
-      toMinorUnits(currentPrice) + toMinorUnits(calculateBidStep(currentPrice)),
-    );
-
-    if (input.amount < minimumBid) {
-      throw new BadRequestException(
-        `Bid must be at least ${minimumBid.toFixed(2)}`,
-      );
-    }
+    const now = this.clock.now();
+    const amount = toDecimalAmount(input.amount);
 
     try {
-      const result = await this.prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
-          const updatedAuction = await tx.auction.updateMany({
-            where: {
-              id: auctionId,
-              status: 'active',
-              currentPrice: auction.currentPrice,
-              endsAt: {
-                gt: now,
-              },
-            },
-            data: {
-              currentPrice: input.amount,
-              bidCount: {
-                increment: 1,
-              },
-              bidStep: calculateBidStep(input.amount),
-            },
-          });
+      const result = await runSerializableTransaction(this.prisma, async (tx) => {
+        const auction = await tx.auction.findUnique({
+          where: {
+            id: auctionId,
+          },
+          select: auctionBidSelect,
+        });
 
-          if (updatedAuction.count !== 1) {
-            throw new ConflictException('Auction changed while placing bid');
-          }
+        if (!auction) {
+          throw new NotFoundException('Auction not found');
+        }
 
-          await tx.bid.updateMany({
-            where: {
-              auctionId,
-              status: {
-                in: ['active', 'winning'],
-              },
-            },
-            data: {
-              status: 'outbid',
-            },
-          });
+        if (auction.sellerProfile.userId === userId) {
+          throw new ForbiddenException('Cannot bid on your own auction');
+        }
 
-          const bid = await tx.bid.create({
-            data: {
-              auctionId,
-              bidderUserId: userId,
-              amount: input.amount,
-              status: 'winning',
-            },
-          });
+        if (!isAuctionOpenForBidding(auction, now)) {
+          throw new ConflictException('Auction is not active');
+        }
 
-          const latestAuction = await tx.auction.findUnique({
-            where: {
-              id: auctionId,
-            },
-            select: {
-              id: true,
-              lotId: true,
-              sellerProfileId: true,
-              slug: true,
-              startPrice: true,
-              reservePrice: true,
-              currentPrice: true,
-              currency: true,
-              bidStep: true,
-              startsAt: true,
-              endsAt: true,
-              status: true,
-              bidCount: true,
-              winnerBidId: true,
-              buyNowPrice: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          });
+        if (auction.lot.status !== 'published') {
+          throw new ConflictException('Auction is not open for bidding');
+        }
 
-          if (!latestAuction) {
-            throw new NotFoundException('Auction not found');
-          }
+        const minimumBid = resolveMinimumNextBid(auction.currentPrice);
 
-          return {
-            bid,
-            auction: latestAuction,
-          };
-        },
-      );
+        if (amount.lt(minimumBid)) {
+          throw new BadRequestException(
+            `Bid must be at least ${minimumBid.toFixed(2)}`,
+          );
+        }
+
+        const updatedAuction = await tx.auction.updateMany({
+          where: {
+            id: auctionId,
+            status: 'active',
+            currentPrice: auction.currentPrice,
+            endsAt: {
+              gt: now,
+            },
+          },
+          data: {
+            currentPrice: amount,
+            bidCount: {
+              increment: 1,
+            },
+            bidStep: calculateBidStep(amount),
+          },
+        });
+
+        if (updatedAuction.count !== 1) {
+          throw new ConflictException('Auction changed while placing bid');
+        }
+
+        await tx.bid.updateMany({
+          where: {
+            auctionId,
+            status: {
+              in: eligibleBidStatuses,
+            },
+          },
+          data: {
+            status: 'outbid',
+          },
+        });
+
+        const bid = await tx.bid.create({
+          data: {
+            auctionId,
+            bidderUserId: userId,
+            amount,
+            status: 'winning',
+          },
+          select: bidContractSelect,
+        });
+
+        const latestAuction = await tx.auction.findUnique({
+          where: {
+            id: auctionId,
+          },
+          select: auctionBidSelect,
+        });
+
+        if (!latestAuction) {
+          throw new NotFoundException('Auction not found');
+        }
+
+        return {
+          bid,
+          auction: latestAuction,
+        };
+      });
 
       const response = bidPlacementResponseSchema.parse({
         bid: this.toContractBid(result.bid),
         auction: this.toContractAuction(result.auction),
       });
 
-      this.realtimeEventsService.publishBidPlaced({
-        auctionId: response.auction.id,
-        bid: this.toPublicBid(response.bid),
-        currentPrice: response.auction.currentPrice,
-        bidCount: response.auction.bidCount,
-      });
+      const reserveMet = reserveReached(
+        result.auction.currentPrice,
+        result.auction.reservePrice,
+      );
 
-      this.realtimeEventsService.publishAuctionUpdated({
-        auctionId: response.auction.id,
-        currentPrice: response.auction.currentPrice,
-        bidCount: response.auction.bidCount,
-        status: response.auction.status,
-        endsAt: response.auction.endsAt,
-        winnerBidId: response.auction.winnerBidId,
-        reserveReached:
-          response.auction.currentPrice >= response.auction.reservePrice,
-      });
+      this.realtimeEventsService.publishBidPlaced(
+        mapBidPlacedEventPayload(
+          response.auction.id,
+          this.toPublicBid(response.bid),
+          response.auction.currentPrice,
+          response.auction.bidCount,
+        ),
+      );
+
+      this.realtimeEventsService.publishAuctionUpdated(
+        mapAuctionUpdatedEventPayload(
+          response.auction,
+          reserveMet,
+        ),
+      );
 
       return response;
     } catch (error: unknown) {
@@ -295,26 +298,27 @@ export class BidsService {
       throw new NotFoundException('Auction not found');
     }
 
-    const bids = (await this.prisma.bid.findMany({
+    const bids: BidContractRecord[] = await this.prisma.bid.findMany({
       where: {
         auctionId,
       },
+      select: bidContractSelect,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as BidRecord[];
+    });
 
     return bidHistoryResponseSchema.parse({
       bids: bids.map((bid) => this.toContractBid(bid)),
     });
   }
 
-  private toContractBid(bid: BidRecord): Bid {
+  private toContractBid(bid: BidContractRecord): Bid {
     return {
       id: bid.id,
       auctionId: bid.auctionId,
       bidderUserId: bid.bidderUserId,
-      amount: toNumber(bid.amount),
+      amount: bid.amount.toNumber(),
       status: bid.status,
       createdAt: bid.createdAt.toISOString(),
       updatedAt: bid.updatedAt.toISOString(),
@@ -338,18 +342,18 @@ export class BidsService {
       lotId: auction.lotId,
       sellerProfileId: auction.sellerProfileId,
       slug: auction.slug,
-      startPrice: toNumber(auction.startPrice),
-      reservePrice: toNumber(auction.reservePrice),
-      currentPrice: toNumber(auction.currentPrice),
+      startPrice: auction.startPrice.toNumber(),
+      reservePrice: auction.reservePrice.toNumber(),
+      currentPrice: auction.currentPrice.toNumber(),
       currency: auction.currency,
-      bidStep: toNumber(auction.bidStep),
+      bidStep: auction.bidStep.toNumber(),
       startsAt: auction.startsAt.toISOString(),
       endsAt: auction.endsAt.toISOString(),
       status: auction.status,
       bidCount: auction.bidCount,
       winnerBidId: auction.winnerBidId,
       buyNowPrice:
-        auction.buyNowPrice === null ? null : toNumber(auction.buyNowPrice),
+        auction.buyNowPrice === null ? null : auction.buyNowPrice.toNumber(),
       createdAt: auction.createdAt.toISOString(),
       updatedAt: auction.updatedAt.toISOString(),
     };

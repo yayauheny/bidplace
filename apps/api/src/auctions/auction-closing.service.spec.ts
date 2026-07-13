@@ -1,12 +1,15 @@
+import { Decimal } from '@prisma/client/runtime/library';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { eligibleBidStatuses } from '../core/auction';
 import { PrismaService } from '../core/database';
-import { AuctionClosingService } from './auction-closing.service';
+import { Clock } from '../core/time';
+import { AuctionLifecycleService } from './auction-closing.service';
 
 type AuctionRecord = {
   id: string;
-  reservePrice: number;
-  currentPrice: number;
+  reservePrice: Decimal;
+  currentPrice: Decimal;
   bidCount: number;
   winnerBidId: string | null;
   status: 'draft' | 'scheduled' | 'active' | 'ended' | 'sold' | 'cancelled' | 'failed' | 'hidden';
@@ -15,16 +18,21 @@ type AuctionRecord = {
 
 type BidRecord = {
   id: string;
-  amount: number;
+  amount: Decimal;
+  status: 'active' | 'winning' | 'outbid' | 'won' | 'lost' | 'cancelled' | 'invalid';
+  createdAt: Date;
+  updatedAt: Date;
 };
+
+const d = (value: number | string) => new Decimal(value);
 
 function createAuctionRecord(
   overrides: Partial<AuctionRecord> = {},
 ): AuctionRecord {
   return {
     id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-    reservePrice: 150,
-    currentPrice: 100,
+    reservePrice: d(150),
+    currentPrice: d(100),
     bidCount: 1,
     winnerBidId: null,
     status: 'active',
@@ -36,12 +44,15 @@ function createAuctionRecord(
 function createBidRecord(overrides: Partial<BidRecord> = {}): BidRecord {
   return {
     id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
-    amount: 160,
+    amount: d(160),
+    status: 'winning',
+    createdAt: new Date('2026-07-13T12:10:00.000Z'),
+    updatedAt: new Date('2026-07-13T12:10:00.000Z'),
     ...overrides,
   };
 }
 
-describe('AuctionClosingService', () => {
+describe('AuctionLifecycleService', () => {
   const prisma = {
     auction: {
       findMany: vi.fn(),
@@ -49,7 +60,7 @@ describe('AuctionClosingService', () => {
       updateMany: vi.fn(),
     },
     bid: {
-      findFirst: vi.fn(),
+      findMany: vi.fn(),
       updateMany: vi.fn(),
       update: vi.fn(),
     },
@@ -60,15 +71,27 @@ describe('AuctionClosingService', () => {
     publishAuctionEnded: vi.fn(),
   };
 
-  const service = new AuctionClosingService(
+  class TestClock extends Clock {
+    now = vi.fn(() => new Date('2026-07-13T12:30:00.000Z'));
+  }
+
+  const clock = new TestClock();
+
+  const service = new AuctionLifecycleService(
     prisma as unknown as PrismaService,
     realtimeEventsService as never,
+    clock,
   );
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-13T12:30:00.000Z'));
+    vi.resetAllMocks();
+    prisma.auction.findMany.mockReset();
+    prisma.auction.findUnique.mockReset();
+    prisma.auction.updateMany.mockReset();
+    prisma.bid.findMany.mockReset();
+    prisma.bid.updateMany.mockReset();
+    prisma.bid.update.mockReset();
+    clock.now.mockReturnValue(new Date('2026-07-13T12:30:00.000Z'));
     prisma.$transaction.mockImplementation(async (callback: unknown) =>
       (callback as (tx: typeof prisma) => Promise<unknown>)(prisma),
     );
@@ -98,6 +121,9 @@ describe('AuctionClosingService', () => {
         startsAt: {
           lte: new Date('2026-07-13T12:30:00.000Z'),
         },
+        endsAt: {
+          gt: new Date('2026-07-13T12:30:00.000Z'),
+        },
       },
       data: {
         status: 'active',
@@ -123,17 +149,18 @@ describe('AuctionClosingService', () => {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },
     ]);
-    prisma.auction.findUnique.mockResolvedValue(
+    prisma.auction.findUnique.mockImplementation(async () =>
       createAuctionRecord({
+        currentPrice: d(160),
         endsAt: new Date('2026-07-13T12:00:00.000Z'),
       }),
     );
-    prisma.bid.findFirst.mockResolvedValue(
+    prisma.bid.findMany.mockImplementation(async () => [
       createBidRecord({
         id: 'a1111111-1111-4111-8111-111111111111',
-        amount: 160,
+        amount: d(160),
       }),
-    );
+    ]);
     prisma.auction.updateMany.mockResolvedValue({ count: 1 });
     prisma.bid.updateMany.mockResolvedValue({ count: 1 });
     prisma.bid.update.mockResolvedValue({});
@@ -143,7 +170,9 @@ describe('AuctionClosingService', () => {
     expect(prisma.auction.updateMany).toHaveBeenCalledWith({
       where: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        status: 'active',
+        status: {
+          in: ['scheduled', 'active'],
+        },
         endsAt: {
           lte: new Date('2026-07-13T12:30:00.000Z'),
         },
@@ -193,11 +222,11 @@ describe('AuctionClosingService', () => {
       },
     ]);
     prisma.auction.findUnique.mockResolvedValue(createAuctionRecord());
-    prisma.bid.findFirst.mockResolvedValue(
+    prisma.bid.findMany.mockResolvedValue([
       createBidRecord({
-        amount: 120,
+        amount: d(120),
       }),
-    );
+    ]);
     prisma.auction.updateMany.mockResolvedValue({ count: 1 });
     prisma.bid.updateMany.mockResolvedValue({ count: 1 });
 
@@ -206,7 +235,9 @@ describe('AuctionClosingService', () => {
     expect(prisma.auction.updateMany).toHaveBeenCalledWith({
       where: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        status: 'active',
+        status: {
+          in: ['scheduled', 'active'],
+        },
         endsAt: {
           lte: new Date('2026-07-13T12:30:00.000Z'),
         },
@@ -219,6 +250,9 @@ describe('AuctionClosingService', () => {
     expect(prisma.bid.updateMany).toHaveBeenCalledWith({
       where: {
         auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        status: {
+          in: eligibleBidStatuses,
+        },
       },
       data: {
         status: 'lost',
