@@ -2,9 +2,9 @@
   "name": "@bidplace/database",
   "private": true,
   "scripts": {
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "node prisma/seed.js"
+    "db:generate": "node --env-file ../../.env ./node_modules/prisma/build/index.js generate",
+    "db:migrate": "node --env-file ../../.env ./node_modules/prisma/build/index.js migrate deploy",
+    "db:seed": "node --env-file ../../.env prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "6.19.3"

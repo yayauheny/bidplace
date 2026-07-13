@@ -13,6 +13,15 @@ Apply these rules to every task in this repository.
 - Remove only code made unused by your own changes.
 - Never claim success without running the relevant checks.
 
+## Change Workflow
+
+- Before editing code, first identify the problem, list candidate fixes, and compare trade-offs.
+- Label each candidate explicitly as a durable fix, acceptable workaround, or hack.
+- Prefer a durable fix by default.
+- Do not start code edits until the chosen solution is clear.
+- If the issue is ambiguous, stop and ask instead of guessing.
+- Do not use workaround-only patches such as `suppressHydrationWarning`, `any`, `@ts-ignore`, empty catches, or silent fallbacks unless they are explicitly accepted as temporary and documented as such.
+
 ## Skill Selection
 
 Use the most specific skill for the task:

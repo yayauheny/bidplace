@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
 import { PasswordHasherService } from './password-hasher.service';
+import { loadServerEnv } from '../core/config';
 import { DatabaseModule } from '../core/database';
 import { RateLimitModule } from '../core/rate-limit';
 
@@ -19,15 +20,7 @@ import { RateLimitModule } from '../core/rate-limit';
     PasswordHasherService,
     {
       provide: AUTH_TOKEN_SECRET,
-      useFactory: () => {
-        const secret = process.env.JWT_SECRET;
-
-        if (!secret) {
-          throw new Error('JWT_SECRET is required');
-        }
-
-        return secret;
-      },
+      useFactory: () => loadServerEnv().JWT_SECRET,
     },
   ],
   exports: [AuthService, BearerAuthGuard],
