@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { auctionStatusSchema } from './enums';
-import { bidSchema } from './bid';
+import { publicBidSchema } from './bid';
 import { isoDateTimeSchema, moneyAmountSchema, uuidSchema } from './primitives';
 
 export const realtimeEventNameSchema = z.enum([
@@ -25,7 +25,7 @@ export const auctionUpdatedEventPayloadSchema = z
 export const bidPlacedEventPayloadSchema = z
   .object({
     auctionId: uuidSchema,
-    bid: bidSchema,
+    bid: publicBidSchema,
     currentPrice: moneyAmountSchema,
     bidCount: z.number().int().nonnegative(),
   })

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 
 import { FileStorageService, type StoredFile } from './file-storage.service';
@@ -53,6 +53,21 @@ export class LocalFileStorageService extends FileStorageService {
         await writeFile(absolutePath, file.buffer);
 
         return `/uploads/lots/${fileName}`;
+      }),
+    );
+  }
+
+  async deleteFiles(paths: readonly string[]): Promise<void> {
+    await Promise.all(
+      paths.map(async (storedPath) => {
+        if (!storedPath.startsWith('/uploads/')) {
+          return;
+        }
+
+        const relativePath = storedPath.replace('/uploads/', '');
+        const absolutePath = join(this.rootDir, relativePath);
+
+        await rm(absolutePath, { force: true });
       }),
     );
   }

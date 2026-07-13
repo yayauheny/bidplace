@@ -7,7 +7,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { AUTH_TOKEN_TTL_SECONDS, AUTH_TOKEN_SECRET } from './auth.constants';
 
-type AuthTokenClaims = Pick<AuthTokenPayload, 'sub' | 'email' | 'role'>;
+type AuthTokenClaims = Pick<AuthTokenPayload, 'sub' | 'email' | 'role' | 'sessionVersion'>;
 
 const tokenHeader = {
   alg: 'HS256',

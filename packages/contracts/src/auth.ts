@@ -7,7 +7,6 @@ import { userSchema } from './user';
 export const authResponseSchema = z
   .object({
     user: userSchema,
-    accessToken: z.string().min(1),
   })
   .strict();
 
@@ -16,6 +15,7 @@ export const authTokenPayloadSchema = z
     sub: uuidSchema,
     email: z.string().email(),
     role: userRoleSchema,
+    sessionVersion: z.number().int().nonnegative(),
     iat: z.number().int().nonnegative(),
     exp: z.number().int().positive(),
   })

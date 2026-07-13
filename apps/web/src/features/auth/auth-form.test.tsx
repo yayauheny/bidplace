@@ -36,7 +36,6 @@ describe('auth forms', () => {
   it('submits login credentials and redirects', async () => {
     const user = userEvent.setup();
     loginMock.mockResolvedValue({
-      accessToken: 'token',
       user: { id: '1', email: 'user@example.com', displayName: 'User', role: 'buyer', status: 'active' },
     });
 
@@ -58,7 +57,6 @@ describe('auth forms', () => {
   it('submits registration data and redirects', async () => {
     const user = userEvent.setup();
     registerMock.mockResolvedValue({
-      accessToken: 'token',
       user: { id: '2', email: 'new@example.com', displayName: 'New User', role: 'buyer', status: 'active' },
     });
 

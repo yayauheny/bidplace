@@ -66,6 +66,7 @@ model User {
   displayName   String         @map("display_name") @db.VarChar(120)
   role          UserRole       @default(user)
   status        UserStatus     @default(active)
+  sessionVersion Int           @default(0) @map("session_version")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   sellerProfile SellerProfile?

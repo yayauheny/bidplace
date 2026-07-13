@@ -30,6 +30,20 @@ function toNumber(value: NumericLike): number {
   return typeof value === 'number' ? value : value.toNumber();
 }
 
+function toMinorUnits(value: number): number {
+  return Math.round(value * 100);
+}
+
+type AuctionRealtimePublication = {
+  auctionId: string;
+  currentPrice: number;
+  bidCount: number;
+  status: 'active' | 'sold' | 'failed';
+  endsAt: string;
+  winnerBidId: string | null;
+  reserveReached: boolean;
+};
+
 @Injectable()
 export class AuctionClosingService {
   constructor(
@@ -93,7 +107,7 @@ export class AuctionClosingService {
     auctionId: string,
     now = new Date(),
   ): Promise<AuctionEndedEventPayload | null> {
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const auction = (await tx.auction.findUnique({
           where: {
@@ -127,7 +141,8 @@ export class AuctionClosingService {
 
         const reserveReached =
           winningBid !== null &&
-          toNumber(winningBid.amount) >= toNumber(auction.reservePrice);
+          toMinorUnits(toNumber(winningBid.amount)) >=
+            toMinorUnits(toNumber(auction.reservePrice));
 
         if (reserveReached && winningBid) {
           const updatedAuction = await tx.auction.updateMany({
@@ -169,26 +184,23 @@ export class AuctionClosingService {
             },
           });
 
-          const payload = auctionEndedEventPayloadSchema.parse({
-            auctionId,
-            status: 'sold',
-            winnerBidId: winningBid.id,
-            reserveReached: true,
-          });
-
-          this.realtimeEventsService.publishAuctionUpdated({
-            auctionId,
-            currentPrice: toNumber(winningBid.amount),
-            bidCount: auction.bidCount,
-            status: 'sold',
-            endsAt: auction.endsAt.toISOString(),
-            winnerBidId: winningBid.id,
-            reserveReached: true,
-          });
-
-          this.realtimeEventsService.publishAuctionEnded(payload);
-
-          return payload;
+          return {
+            endedPayload: auctionEndedEventPayloadSchema.parse({
+              auctionId,
+              status: 'sold',
+              winnerBidId: winningBid.id,
+              reserveReached: true,
+            }),
+            auctionUpdate: {
+              auctionId,
+              currentPrice: toNumber(winningBid.amount),
+              bidCount: auction.bidCount,
+              status: 'sold',
+              endsAt: auction.endsAt.toISOString(),
+              winnerBidId: winningBid.id,
+              reserveReached: true,
+            } satisfies AuctionRealtimePublication,
+          };
         }
 
         const updatedAuction = await tx.auction.updateMany({
@@ -218,35 +230,41 @@ export class AuctionClosingService {
           },
         });
 
-        const payload = auctionEndedEventPayloadSchema.parse({
-          auctionId,
-          status: 'failed',
-          winnerBidId: null,
-          reserveReached: false,
-        });
-
-        this.realtimeEventsService.publishAuctionUpdated({
-          auctionId,
-          currentPrice: toNumber(auction.currentPrice),
-          bidCount: auction.bidCount,
-          status: 'failed',
-          endsAt: auction.endsAt.toISOString(),
-          winnerBidId: null,
-          reserveReached: false,
-        });
-
-        this.realtimeEventsService.publishAuctionEnded(payload);
-
-        return payload;
+        return {
+          endedPayload: auctionEndedEventPayloadSchema.parse({
+            auctionId,
+            status: 'failed',
+            winnerBidId: null,
+            reserveReached: false,
+          }),
+          auctionUpdate: {
+            auctionId,
+            currentPrice: toNumber(auction.currentPrice),
+            bidCount: auction.bidCount,
+            status: 'failed',
+            endsAt: auction.endsAt.toISOString(),
+            winnerBidId: null,
+            reserveReached: false,
+          } satisfies AuctionRealtimePublication,
+        };
       },
     );
+
+    if (!result) {
+      return null;
+    }
+
+    this.realtimeEventsService.publishAuctionUpdated(result.auctionUpdate);
+    this.realtimeEventsService.publishAuctionEnded(result.endedPayload);
+
+    return result.endedPayload;
   }
 
   private async activateAuctionById(
     auctionId: string,
     now = new Date(),
   ): Promise<string | null> {
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const auction = (await tx.auction.findUnique({
         where: {
           id: auctionId,
@@ -284,18 +302,28 @@ export class AuctionClosingService {
         return null;
       }
 
-      this.realtimeEventsService.publishAuctionUpdated({
+      return {
         auctionId,
-        currentPrice: toNumber(auction.currentPrice),
-        bidCount: auction.bidCount,
-        status: 'active',
-        endsAt: auction.endsAt.toISOString(),
-        winnerBidId: auction.winnerBidId,
-        reserveReached:
-          toNumber(auction.currentPrice) >= toNumber(auction.reservePrice),
-      });
-
-      return auctionId;
+        auctionUpdate: {
+          auctionId,
+          currentPrice: toNumber(auction.currentPrice),
+          bidCount: auction.bidCount,
+          status: 'active',
+          endsAt: auction.endsAt.toISOString(),
+          winnerBidId: auction.winnerBidId,
+          reserveReached:
+            toMinorUnits(toNumber(auction.currentPrice)) >=
+            toMinorUnits(toNumber(auction.reservePrice)),
+        } satisfies AuctionRealtimePublication,
+      };
     });
+
+    if (!result) {
+      return null;
+    }
+
+    this.realtimeEventsService.publishAuctionUpdated(result.auctionUpdate);
+
+    return result.auctionId;
   }
 }

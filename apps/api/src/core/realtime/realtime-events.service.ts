@@ -17,7 +17,7 @@ export class RealtimeEventsService {
   publishAuctionUpdated(payload: AuctionUpdatedEventPayload) {
     const parsed = auctionUpdatedEventPayloadSchema.parse(payload);
 
-    this.realtimeGateway.emit('auction.updated', parsed);
+    this.realtimeGateway.emitToAuction(parsed.auctionId, 'auction.updated', parsed);
 
     return parsed;
   }
@@ -25,7 +25,7 @@ export class RealtimeEventsService {
   publishBidPlaced(payload: BidPlacedEventPayload) {
     const parsed = bidPlacedEventPayloadSchema.parse(payload);
 
-    this.realtimeGateway.emit('bid.placed', parsed);
+    this.realtimeGateway.emitToAuction(parsed.auctionId, 'bid.placed', parsed);
 
     return parsed;
   }
@@ -33,7 +33,7 @@ export class RealtimeEventsService {
   publishAuctionEnded(payload: AuctionEndedEventPayload) {
     const parsed = auctionEndedEventPayloadSchema.parse(payload);
 
-    this.realtimeGateway.emit('auction.ended', parsed);
+    this.realtimeGateway.emitToAuction(parsed.auctionId, 'auction.ended', parsed);
 
     return parsed;
   }

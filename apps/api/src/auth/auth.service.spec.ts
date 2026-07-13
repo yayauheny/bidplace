@@ -14,6 +14,7 @@ type PrismaUser = {
   displayName: string;
   role: 'admin' | 'user';
   status: 'active' | 'banned';
+  sessionVersion: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -27,6 +28,7 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     displayName: 'Demo Seller',
     role: 'user',
     status: 'active',
+    sessionVersion: 0,
     createdAt: new Date('2026-07-13T12:00:00.000Z'),
     updatedAt: new Date('2026-07-13T12:00:00.000Z'),
     ...overrides,
@@ -39,6 +41,7 @@ describe('AuthService', () => {
       findFirst: vi.fn(),
       create: vi.fn(),
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
   };
 
@@ -87,7 +90,14 @@ describe('AuthService', () => {
         displayName: 'Demo Seller',
         passwordHash: 'hashed-value',
         status: 'active',
+        sessionVersion: 0,
       },
+    });
+    expect(authTokenService.sign).toHaveBeenCalledWith({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'new-seller@example.com',
+      role: 'user',
+      sessionVersion: 0,
     });
     expect(result).toEqual({
       accessToken: 'signed-token',
@@ -147,6 +157,12 @@ describe('AuthService', () => {
       'hashed-login-password',
       'super-secret',
     );
+    expect(authTokenService.sign).toHaveBeenCalledWith({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'login@example.com',
+      role: 'user',
+      sessionVersion: 0,
+    });
     expect(result).toEqual({
       accessToken: 'signed-token',
       user: {
@@ -195,5 +211,22 @@ describe('AuthService', () => {
         password: 'super-secret',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('invalidates existing sessions on logout', async () => {
+    prisma.user.update.mockResolvedValue({});
+
+    await service.logout('2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1');
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      },
+      data: {
+        sessionVersion: {
+          increment: 1,
+        },
+      },
+    });
   });
 });

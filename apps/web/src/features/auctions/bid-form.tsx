@@ -40,7 +40,7 @@ export function BidForm({ auction }: BidFormProps) {
     [auction.currentPrice, auction.bidStep],
   );
   const schema = useMemo(() => createBidSchema(minimumBid), [minimumBid]);
-  const mutation = usePlaceBidMutation(auction.id);
+  const mutation = usePlaceBidMutation(auction.id, auction.slug);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -55,9 +55,9 @@ export function BidForm({ auction }: BidFormProps) {
     setSubmitError(null);
 
     try {
-      await mutation.mutateAsync(values);
+      const response = await mutation.mutateAsync(values);
       form.reset({
-        amount: values.amount + auction.bidStep,
+        amount: response.auction.currentPrice + response.auction.bidStep,
       });
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Не удалось поставить ставку');

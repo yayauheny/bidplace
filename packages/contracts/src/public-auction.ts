@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { auctionSchema } from './auction';
-import { bidSchema } from './bid';
+import { publicBidSchema } from './bid';
 import { lotSchema } from './lot';
 import { sellerProfileSchema } from './seller-profile';
 
@@ -24,7 +24,7 @@ export const publicAuctionDetailResponseSchema = z
     auction: auctionSchema,
     lot: lotSchema,
     sellerProfile: sellerProfileSchema,
-    bids: z.array(bidSchema),
+    bids: z.array(publicBidSchema),
   })
   .strict();
 

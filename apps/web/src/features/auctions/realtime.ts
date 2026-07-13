@@ -7,16 +7,19 @@ import { useApiClient } from '../../providers/api-provider';
 import { createRealtimeSocket } from '../../lib/realtime';
 import { auctionKeys } from './hooks';
 
-export function useAuctionRealtime(auctionId?: string | null) {
+export function useAuctionRealtime(
+  auctionId?: string | null,
+  slug?: string | null,
+) {
   const api = useApiClient();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!auctionId) {
+    if (!auctionId || !slug) {
       return;
     }
 
-    const socket = createRealtimeSocket(api.baseUrl);
+    const socket = createRealtimeSocket(api.baseUrl, auctionId);
 
     const handleUpdate = (payload: { auctionId: string }) => {
       if (payload.auctionId !== auctionId) {
@@ -25,7 +28,7 @@ export function useAuctionRealtime(auctionId?: string | null) {
 
       void queryClient.invalidateQueries({ queryKey: auctionKeys.all });
       void queryClient.invalidateQueries({
-        queryKey: auctionKeys.detail(auctionId),
+        queryKey: auctionKeys.detail(slug),
       });
     };
 
@@ -40,5 +43,5 @@ export function useAuctionRealtime(auctionId?: string | null) {
       socket.off('auction.ended', handleUpdate);
       socket.disconnect();
     };
-  }, [api.baseUrl, auctionId, queryClient]);
+  }, [api.baseUrl, auctionId, queryClient, slug]);
 }

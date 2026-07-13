@@ -6,13 +6,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import { AUTH_TOKEN_COOKIE_NAME } from './auth.constants';
 import { AuthTokenService } from './auth-token.service';
-import { extractBearerToken } from './auth.helpers';
+import { extractBearerToken, readCookie } from './auth.helpers';
 import { PrismaService } from '../core/database';
 
 type AuthenticatedRequest = {
   headers: {
     authorization?: string;
+    cookie?: string;
   };
   auth?: AuthTokenPayload;
 };
@@ -28,7 +30,8 @@ export class BearerAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     try {
-      const token = extractBearerToken(request.headers.authorization);
+      const token =
+        this.extractToken(request.headers.authorization, request.headers.cookie);
       const auth = this.authTokenService.verify(token);
       const user = await this.prisma.user.findUnique({
         where: {
@@ -36,10 +39,15 @@ export class BearerAuthGuard implements CanActivate {
         },
         select: {
           status: true,
+          sessionVersion: true,
         },
       });
 
-      if (!user || user.status !== 'active') {
+      if (
+        !user ||
+        user.status !== 'active' ||
+        user.sessionVersion !== auth.sessionVersion
+      ) {
         throw new UnauthorizedException('User is not active');
       }
 
@@ -48,5 +56,22 @@ export class BearerAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException('Invalid bearer token');
     }
+  }
+
+  private extractToken(
+    authorization: string | null | undefined,
+    cookieHeader: string | null | undefined,
+  ): string {
+    if (authorization) {
+      return extractBearerToken(authorization);
+    }
+
+    const cookieToken = readCookie(cookieHeader, AUTH_TOKEN_COOKIE_NAME);
+
+    if (!cookieToken) {
+      throw new Error('Missing auth token');
+    }
+
+    return cookieToken;
   }
 }

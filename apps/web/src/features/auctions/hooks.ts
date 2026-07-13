@@ -39,13 +39,13 @@ export function usePublicAuctionQuery(slug: string, query?: PaginationQuery) {
   });
 }
 
-export function usePlaceBidMutation(slug: string) {
+export function usePlaceBidMutation(auctionId: string, slug: string) {
   const api = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: BidCreateRequest) =>
-      api.auctions.placeBid(slug, input),
+      api.auctions.placeBid(auctionId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: auctionKeys.detail(slug),

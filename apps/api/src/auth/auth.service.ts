@@ -1,5 +1,4 @@
 import {
-  type AuthResponse,
   type LoginRequest,
   type RegisterRequest,
   type User as ContractUser,
@@ -35,8 +34,14 @@ type PrismaUser = {
   displayName: string;
   role: ContractUser['role'];
   status: ContractUser['status'];
+  sessionVersion: number;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type AuthSessionResult = {
+  accessToken: string;
+  user: ContractUser;
 };
 
 @Injectable()
@@ -47,7 +52,7 @@ export class AuthService {
     private readonly authTokenService: AuthTokenService,
   ) {}
 
-  async register(input: RegisterRequest): Promise<AuthResponse> {
+  async register(input: RegisterRequest): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
 
     const existingUser = await this.prisma.user.findFirst({
@@ -70,6 +75,7 @@ export class AuthService {
           displayName: input.displayName,
           passwordHash,
           status: 'active',
+          sessionVersion: 0,
         },
       });
 
@@ -83,7 +89,7 @@ export class AuthService {
     }
   }
 
-  async login(input: LoginRequest): Promise<AuthResponse> {
+  async login(input: LoginRequest): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
     const user = await this.prisma.user.findUnique({
       where: {
@@ -125,12 +131,26 @@ export class AuthService {
     return this.toContractUser(user);
   }
 
-  private createAuthResponse(user: PrismaUser): AuthResponse {
+  async logout(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        sessionVersion: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  private createAuthResponse(user: PrismaUser): AuthSessionResult {
     return {
       accessToken: this.authTokenService.sign({
         sub: user.id,
         email: user.email,
         role: user.role,
+        sessionVersion: user.sessionVersion,
       }),
       user: this.toContractUser(user),
     };

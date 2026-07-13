@@ -2,6 +2,7 @@ import {
   type Bid,
   type BidCreateRequest,
   type PaginationQuery,
+  type PublicBid,
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
 } from '@bidplace/contracts';
@@ -58,6 +59,14 @@ type BidRecord = {
 
 function toNumber(value: NumericLike): number {
   return typeof value === 'number' ? value : value.toNumber();
+}
+
+function toMinorUnits(value: number): number {
+  return Math.round(value * 100);
+}
+
+function fromMinorUnits(value: number): number {
+  return value / 100;
 }
 
 function isUniqueConstraintError(error: unknown): error is { code: string } {
@@ -138,7 +147,9 @@ export class BidsService {
     }
 
     const currentPrice = toNumber(auction.currentPrice);
-    const minimumBid = currentPrice + calculateBidStep(currentPrice);
+    const minimumBid = fromMinorUnits(
+      toMinorUnits(currentPrice) + toMinorUnits(calculateBidStep(currentPrice)),
+    );
 
     if (input.amount < minimumBid) {
       throw new BadRequestException(
@@ -235,7 +246,7 @@ export class BidsService {
 
       this.realtimeEventsService.publishBidPlaced({
         auctionId: response.auction.id,
-        bid: response.bid,
+        bid: this.toPublicBid(response.bid),
         currentPrice: response.auction.currentPrice,
         bidCount: response.auction.bidCount,
       });
@@ -307,6 +318,17 @@ export class BidsService {
       status: bid.status,
       createdAt: bid.createdAt.toISOString(),
       updatedAt: bid.updatedAt.toISOString(),
+    };
+  }
+
+  private toPublicBid(bid: Bid): PublicBid {
+    return {
+      id: bid.id,
+      auctionId: bid.auctionId,
+      amount: bid.amount,
+      status: bid.status,
+      createdAt: bid.createdAt,
+      updatedAt: bid.updatedAt,
     };
   }
 

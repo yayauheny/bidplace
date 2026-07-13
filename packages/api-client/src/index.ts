@@ -43,7 +43,7 @@ import {
   type SellerProfileResponse,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 type FetchLike = typeof fetch;
 
@@ -67,6 +67,7 @@ export type ApiClientOptions = {
   baseUrl: string;
   getAccessToken?: () => string | null | undefined;
   fetchImpl?: FetchLike;
+  credentials?: RequestCredentials;
 };
 
 type RequestOptions = {
@@ -96,6 +97,7 @@ export type ApiClient = {
     register: (input: RegisterRequest) => Promise<AuthResponse>;
     login: (input: LoginRequest) => Promise<AuthResponse>;
     me: () => Promise<MeResponse>;
+    logout: () => Promise<{ ok: true }>;
   };
   readonly auctions: {
     list: (query?: PaginationQuery) => Promise<AuctionListResponse>;
@@ -192,6 +194,7 @@ async function requestJson<T>(
   fetchImpl: FetchLike,
   baseUrl: string,
   getAccessToken: (() => string | null | undefined) | undefined,
+  credentials: RequestCredentials | undefined,
   path: string,
   schema: ZodType<T>,
   options: RequestOptions = {},
@@ -256,6 +259,10 @@ async function requestJson<T>(
     headers,
   };
 
+  if (credentials) {
+    init.credentials = credentials;
+  }
+
   if (body !== undefined) {
     init.body = body;
   }
@@ -287,11 +294,23 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const fetchImpl = options.fetchImpl ?? fetch;
   const getAccessToken = options.getAccessToken;
+  const credentials = options.credentials;
+  const logoutResponseSchema = z.object({
+    ok: z.literal(true),
+  });
 
   return {
     baseUrl,
     request(path, schema, options) {
-      return requestJson(fetchImpl, baseUrl, getAccessToken, path, schema, options);
+      return requestJson(
+        fetchImpl,
+        baseUrl,
+        getAccessToken,
+        credentials,
+        path,
+        schema,
+        options,
+      );
     },
     auth: {
       register(input: RegisterRequest) {
@@ -299,6 +318,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/auth/register',
           authResponseSchema,
           {
@@ -312,6 +332,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/auth/login',
           authResponseSchema,
           {
@@ -325,8 +346,22 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/auth/me',
           meResponseSchema,
+        );
+      },
+      logout() {
+        return requestJson(
+          fetchImpl,
+          baseUrl,
+          getAccessToken,
+          credentials,
+          '/api/auth/logout',
+          logoutResponseSchema,
+          {
+            method: 'POST',
+          },
         );
       },
     },
@@ -336,6 +371,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/auctions',
           auctionListResponseSchema,
           {
@@ -348,6 +384,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/auctions/${slug}`,
           publicAuctionDetailResponseSchema,
           {
@@ -360,6 +397,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/auctions/${auctionId}/bids`,
           bidPlacementResponseSchema,
           {
@@ -373,6 +411,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/seller/auctions',
           auctionResponseSchema,
           {
@@ -386,6 +425,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/seller/auctions/${auctionId}/publish`,
           auctionResponseSchema,
           {
@@ -403,6 +443,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/lots',
           lotResponseSchema,
           {
@@ -419,6 +460,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/sellers/${slug}`,
           sellerProfileResponseSchema,
         );
@@ -428,6 +470,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/seller/profile',
           sellerProfileResponseSchema,
           {
@@ -441,6 +484,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/seller/profile',
           sellerProfileResponseSchema,
           {
@@ -454,6 +498,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/seller/auctions/${auctionId}/bids`,
           bidHistoryResponseSchema,
           {
@@ -468,6 +513,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/admin/users',
           adminUsersResponseSchema,
           {
@@ -480,6 +526,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/admin/users/${userId}/ban`,
           adminUserResponseSchema,
           {
@@ -492,6 +539,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           '/api/admin/auctions',
           adminAuctionsResponseSchema,
           {
@@ -504,6 +552,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/admin/auctions/${auctionId}/hide`,
           adminAuctionResponseSchema,
           {
@@ -516,6 +565,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
           fetchImpl,
           baseUrl,
           getAccessToken,
+          credentials,
           `/api/admin/auctions/${auctionId}/bids`,
           bidHistoryResponseSchema,
           {

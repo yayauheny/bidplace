@@ -5,9 +5,10 @@ import { BidsService } from './bids.service';
 import { SellerAuctionBidsController } from './seller-auction-bids.controller';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../core/database';
+import { RateLimitModule } from '../core/rate-limit';
 
 @Module({
-  imports: [AuthModule, DatabaseModule],
+  imports: [AuthModule, DatabaseModule, RateLimitModule],
   controllers: [AuctionBidsController, SellerAuctionBidsController],
   providers: [BidsService],
   exports: [BidsService],

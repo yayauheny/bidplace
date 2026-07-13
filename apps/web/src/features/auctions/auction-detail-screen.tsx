@@ -28,7 +28,7 @@ type AuctionDetailScreenProps = {
 
 export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
   const query = usePublicAuctionQuery(slug);
-  useAuctionRealtime(query.data?.auction.id);
+  useAuctionRealtime(query.data?.auction.id, query.data?.auction.slug);
   const baseUrl = usePublicApiUrl();
 
   if (query.isLoading) {

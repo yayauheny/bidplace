@@ -4,6 +4,7 @@ import {
   type Bid,
   type Lot,
   type PaginationQuery,
+  type PublicBid,
   type AuctionResponse,
   type SellerProfile,
   auctionListResponseSchema,
@@ -102,6 +103,10 @@ function toNumber(value: NumericLike): number {
   return typeof value === 'number' ? value : value.toNumber();
 }
 
+function toMinorUnits(value: number): number {
+  return Math.round(value * 100);
+}
+
 function resolveAuctionStatus(startsAt: Date, now: Date): Auction['status'] {
   return startsAt <= now ? 'active' : 'scheduled';
 }
@@ -182,7 +187,7 @@ export class AuctionsService {
       auction: this.toContractAuction(auction),
       lot: this.toContractLot(auction.lot),
       sellerProfile: this.toContractSellerProfile(auction.sellerProfile),
-      bids: auction.bids.map((bid) => this.toContractBid(bid)),
+      bids: auction.bids.map((bid) => this.toPublicBid(bid)),
     });
   }
 
@@ -373,7 +378,8 @@ export class AuctionsService {
       endsAt: response.auction.endsAt,
       winnerBidId: response.auction.winnerBidId,
       reserveReached:
-        response.auction.currentPrice >= response.auction.reservePrice,
+        toMinorUnits(response.auction.currentPrice) >=
+        toMinorUnits(response.auction.reservePrice),
     });
 
     return response;
@@ -449,6 +455,24 @@ export class AuctionsService {
       id: bid.id,
       auctionId: bid.auctionId,
       bidderUserId: bid.bidderUserId,
+      amount: toNumber(bid.amount),
+      status: bid.status,
+      createdAt: bid.createdAt.toISOString(),
+      updatedAt: bid.updatedAt.toISOString(),
+    };
+  }
+
+  private toPublicBid(bid: {
+    id: string;
+    auctionId: string;
+    amount: NumericLike;
+    status: Bid['status'];
+    createdAt: Date;
+    updatedAt: Date;
+  }): PublicBid {
+    return {
+      id: bid.id,
+      auctionId: bid.auctionId,
       amount: toNumber(bid.amount),
       status: bid.status,
       createdAt: bid.createdAt.toISOString(),

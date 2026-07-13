@@ -18,6 +18,7 @@ import { CurrentUser, BearerAuthGuard } from '../auth';
 import { LotsService } from './lots.service';
 import { FileStorageService } from '../core/storage';
 import { parseBody } from '../core/validation';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
 const allowedImageMimeTypes = new Set([
   'image/jpeg',
@@ -48,6 +49,13 @@ export class LotsController {
   ) {}
 
   @Post()
+  @UseGuards(RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'lots:create',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('images', 8, {
       limits: {
@@ -63,13 +71,16 @@ export class LotsController {
     @UploadedFiles()
     files: Array<{ buffer: Buffer; originalname: string; mimetype: string }> = [],
   ) {
+    const input = parseBody(lotCreateRequestSchema, body);
     const storedImages = await this.fileStorageService.storeImages(files);
-    const lot = await this.lotsService.createLot(
-      auth.sub,
-      parseBody(lotCreateRequestSchema, body),
-      storedImages,
-    );
 
-    return lotResponseSchema.parse(lot);
+    try {
+      const lot = await this.lotsService.createLot(auth.sub, input, storedImages);
+
+      return lotResponseSchema.parse(lot);
+    } catch (error: unknown) {
+      await this.fileStorageService.deleteFiles(storedImages);
+      throw error;
+    }
   }
 }

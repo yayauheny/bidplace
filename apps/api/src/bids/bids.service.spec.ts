@@ -173,7 +173,14 @@ describe('BidsService', () => {
     expect(result.auction.bidCount).toBe(1);
     expect(realtimeEventsService.publishBidPlaced).toHaveBeenCalledWith({
       auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-      bid: result.bid,
+      bid: {
+        id: result.bid.id,
+        auctionId: result.bid.auctionId,
+        amount: result.bid.amount,
+        status: result.bid.status,
+        createdAt: result.bid.createdAt,
+        updatedAt: result.bid.updatedAt,
+      },
       currentPrice: 120,
       bidCount: 1,
     });

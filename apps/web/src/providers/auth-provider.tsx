@@ -20,8 +20,6 @@ import type {
   User,
 } from '@bidplace/contracts';
 
-import { clearAccessToken, readAccessToken, writeAccessToken } from '../lib/auth-storage';
-
 type AuthStatus = 'loading' | 'anonymous' | 'authenticated';
 
 type AuthContextValue = {
@@ -33,7 +31,7 @@ type AuthContextValue = {
   readonly ready: boolean;
   readonly login: (input: LoginRequest) => Promise<AuthResponse>;
   readonly register: (input: RegisterRequest) => Promise<AuthResponse>;
-  readonly logout: () => void;
+  readonly logout: () => Promise<void>;
   readonly refreshSession: () => Promise<void>;
 };
 
@@ -61,13 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const token = readAccessToken();
-
-    if (!token) {
-      setState(buildState('anonymous', null, null));
-      return;
-    }
-
     let active = true;
 
     api.auth
@@ -77,11 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setState(buildState('authenticated', user, token));
+        setState(buildState('authenticated', user, null));
       })
       .catch(() => {
-        clearAccessToken();
-
         if (active) {
           setState(buildState('anonymous', null, null));
         }
@@ -93,8 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [api]);
 
   const syncSession = useCallback(async (response: AuthResponse) => {
-    writeAccessToken(response.accessToken);
-    setState(buildState('authenticated', response.user, response.accessToken));
+    setState(buildState('authenticated', response.user, null));
     await queryClient.invalidateQueries();
   }, [queryClient]);
 
@@ -102,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status: state.status,
       user: state.user,
-      accessToken: state.accessToken,
+      accessToken: null,
       isAuthenticated: state.status === 'authenticated' && state.user !== null,
       isAdmin: state.user?.role === 'admin',
       ready: state.status !== 'loading',
@@ -116,24 +104,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await syncSession(response);
         return response;
       },
-      logout: () => {
-        clearAccessToken();
+      logout: async () => {
+        try {
+          await api.auth.logout();
+        } catch {
+          // Clearing local state is still correct if the server cookie is already gone.
+        }
+
         queryClient.clear();
         setState(buildState('anonymous', null, null));
       },
       refreshSession: async () => {
-        const token = readAccessToken();
-
-        if (!token) {
-          setState(buildState('anonymous', null, null));
-          return;
-        }
-
         const response = await api.auth.me();
-        setState(buildState('authenticated', response.user, token));
+        setState(buildState('authenticated', response.user, null));
       },
     }),
-    [api, queryClient, state.accessToken, state.status, state.user, syncSession],
+    [api, queryClient, state.status, state.user, syncSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

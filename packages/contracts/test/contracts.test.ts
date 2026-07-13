@@ -80,7 +80,7 @@ describe('shared contracts', () => {
     expect(result.success).toBe(true);
   });
 
-  it('accepts auth responses with an access token', () => {
+  it('accepts auth responses with a user payload', () => {
     const result = authResponseSchema.safeParse({
       user: {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -92,7 +92,6 @@ describe('shared contracts', () => {
         createdAt: '2026-07-13T12:00:00.000Z',
         updatedAt: '2026-07-13T12:00:00.000Z',
       },
-      accessToken: 'token-value',
     });
 
     expect(result.success).toBe(true);
@@ -296,7 +295,6 @@ describe('shared contracts', () => {
         {
           id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
           auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-          bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
           amount: 125,
           status: 'winning',
           createdAt: '2026-07-13T12:10:00.000Z',
@@ -306,6 +304,21 @@ describe('shared contracts', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('rejects money amounts with more than two decimal places', () => {
+    expect(bidCreateRequestSchema.safeParse({ amount: 10.001 }).success).toBe(false);
+    expect(
+      auctionCreateRequestSchema.safeParse({
+        lotId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        slug: 'demo-auction',
+        startPrice: 100.001,
+        reservePrice: 150,
+        currency: 'USD',
+        startsAt: '2026-07-13T12:00:00.000Z',
+        endsAt: '2026-07-14T12:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts pagination queries with defaults', () => {
@@ -427,7 +440,6 @@ describe('shared contracts', () => {
       bid: {
         id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
         auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
         amount: 125,
         status: 'active',
         createdAt: '2026-07-13T12:10:00.000Z',

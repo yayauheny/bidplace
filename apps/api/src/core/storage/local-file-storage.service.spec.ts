@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -44,5 +44,27 @@ describe('LocalFileStorageService', () => {
         },
       ]),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deletes previously stored files', async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), 'bidplace-storage-'));
+    const service = new LocalFileStorageService(rootDir);
+
+    const [storedPath] = await service.storeImages([
+      {
+        buffer: Buffer.from('image-bytes'),
+        originalname: 'Signed Vase.JPG',
+        mimetype: 'image/jpeg',
+      },
+    ]);
+
+    await service.deleteFiles([storedPath]);
+
+    const absolutePath = join(
+      rootDir,
+      storedPath.replace('/uploads/', ''),
+    );
+
+    await expect(access(absolutePath)).rejects.toThrow();
   });
 });

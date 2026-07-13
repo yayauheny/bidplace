@@ -16,6 +16,10 @@ export const bidSchema = z
   })
   .strict();
 
+export const publicBidSchema = bidSchema.omit({
+  bidderUserId: true,
+});
+
 export const bidCreateRequestSchema = z
   .object({
     amount: moneyAmountSchema,
@@ -40,6 +44,7 @@ export const bidHistoryResponseSchema = z
   .strict();
 
 export type Bid = z.infer<typeof bidSchema>;
+export type PublicBid = z.infer<typeof publicBidSchema>;
 export type BidCreateRequest = z.infer<typeof bidCreateRequestSchema>;
 export type BidPlacementResponse = z.infer<typeof bidPlacementResponseSchema>;
 export type BidHistoryResponse = z.infer<typeof bidHistoryResponseSchema>;
