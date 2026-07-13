@@ -34,6 +34,7 @@ type PrismaUser = {
   phone: string;
   displayName: string;
   role: ContractUser['role'];
+  status: ContractUser['status'];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -68,6 +69,7 @@ export class AuthService {
           phone: input.phone,
           displayName: input.displayName,
           passwordHash,
+          status: 'active',
         },
       });
 
@@ -90,6 +92,10 @@ export class AuthService {
     });
 
     if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.status !== 'active') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -137,6 +143,7 @@ export class AuthService {
       phone: user.phone,
       displayName: user.displayName,
       role: user.role,
+      status: user.status,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };

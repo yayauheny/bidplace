@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const userRoleSchema = z.enum(['admin', 'user']);
+export const userStatusSchema = z.enum(['active', 'banned']);
 export const sellerTypeSchema = z.enum(['creator', 'influencer']);
 export const sellerStatusSchema = z.enum([
   'draft',

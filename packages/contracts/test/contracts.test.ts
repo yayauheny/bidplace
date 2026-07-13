@@ -5,6 +5,8 @@ import {
   auctionEndedEventPayloadSchema,
   auctionStatusSchema,
   auctionUpdatedEventPayloadSchema,
+  adminAuctionsResponseSchema,
+  adminUsersResponseSchema,
   auctionResponseSchema,
   authResponseSchema,
   bidCreateRequestSchema,
@@ -83,10 +85,58 @@ describe('shared contracts', () => {
         phone: '+15555550123',
         displayName: 'Demo Seller',
         role: 'user',
+        status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
         updatedAt: '2026-07-13T12:00:00.000Z',
       },
       accessToken: 'token-value',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts admin user list responses', () => {
+    const result = adminUsersResponseSchema.safeParse({
+      users: [
+        {
+          id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          email: 'seller@example.com',
+          phone: '+15555550123',
+          displayName: 'Demo Seller',
+          role: 'user',
+          status: 'active',
+          createdAt: '2026-07-13T12:00:00.000Z',
+          updatedAt: '2026-07-13T12:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts admin auction list responses', () => {
+    const result = adminAuctionsResponseSchema.safeParse({
+      auctions: [
+        {
+          id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          lotId: '7d8f8d40-0cf6-4af1-b353-cc0c4fa7b7d6',
+          sellerProfileId: '9a1bc5ce-2c2b-4b08-9d12-4ccdb0d78c73',
+          slug: 'demo-auction',
+          startPrice: 100,
+          reservePrice: 150,
+          currentPrice: 100,
+          currency: 'USD',
+          bidStep: 5,
+          startsAt: '2026-07-13T12:00:00.000Z',
+          endsAt: '2026-07-14T12:00:00.000Z',
+          status: 'active',
+          bidCount: 0,
+          winnerBidId: null,
+          buyNowPrice: null,
+          createdAt: '2026-07-13T12:00:00.000Z',
+          updatedAt: '2026-07-13T12:00:00.000Z',
+        },
+      ],
     });
 
     expect(result.success).toBe(true);

@@ -1,5 +1,6 @@
 export * from './auction';
 export * from './auth';
+export * from './admin';
 export * from './bid';
 export * from './category';
 export * from './enums';

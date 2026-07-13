@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AdminModule } from './admin/admin.module';
 import { AuctionsModule } from './auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { BidsModule } from './bids/bids.module';
@@ -14,12 +15,13 @@ import { SellersModule } from './sellers/sellers.module';
   imports: [
     HealthModule,
     LoggerModule,
-    BidsModule,
-    RealtimeModule,
+    AdminModule,
     DatabaseModule,
     AuthModule,
     SellersModule,
     LotsModule,
+    BidsModule,
+    RealtimeModule,
     AuctionsModule,
   ],
 })

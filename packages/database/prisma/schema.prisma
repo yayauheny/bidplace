@@ -12,6 +12,11 @@ enum UserRole {
   user
 }
 
+enum UserStatus {
+  active
+  banned
+}
+
 enum SellerType {
   creator
   influencer
@@ -60,6 +65,7 @@ model User {
   phone         String         @unique @db.VarChar(32)
   displayName   String         @map("display_name") @db.VarChar(120)
   role          UserRole       @default(user)
+  status        UserStatus     @default(active)
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   sellerProfile SellerProfile?

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { userRoleSchema } from './enums';
+import { userRoleSchema, userStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
 export const userSchema = z
@@ -10,6 +10,7 @@ export const userSchema = z
     phone: z.string().trim().min(1),
     displayName: z.string().trim().min(1),
     role: userRoleSchema,
+    status: userStatusSchema,
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })

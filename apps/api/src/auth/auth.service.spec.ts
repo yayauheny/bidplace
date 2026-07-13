@@ -13,6 +13,7 @@ type PrismaUser = {
   phone: string;
   displayName: string;
   role: 'admin' | 'user';
+  status: 'active' | 'banned';
   createdAt: Date;
   updatedAt: Date;
 };
@@ -25,6 +26,7 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     phone: '+15555550123',
     displayName: 'Demo Seller',
     role: 'user',
+    status: 'active',
     createdAt: new Date('2026-07-13T12:00:00.000Z'),
     updatedAt: new Date('2026-07-13T12:00:00.000Z'),
     ...overrides,
@@ -84,6 +86,7 @@ describe('AuthService', () => {
         phone: '+15555550123',
         displayName: 'Demo Seller',
         passwordHash: 'hashed-value',
+        status: 'active',
       },
     });
     expect(result).toEqual({
@@ -94,6 +97,7 @@ describe('AuthService', () => {
         phone: '+15555550123',
         displayName: 'Demo Seller',
         role: 'user',
+        status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
         updatedAt: '2026-07-13T12:00:00.000Z',
       },
@@ -151,6 +155,7 @@ describe('AuthService', () => {
         phone: '+15555550123',
         displayName: 'Demo Seller',
         role: 'user',
+        status: 'active',
         createdAt: '2026-07-13T12:00:00.000Z',
         updatedAt: '2026-07-13T12:00:00.000Z',
       },
@@ -170,8 +175,25 @@ describe('AuthService', () => {
       phone: '+15555550123',
       displayName: 'Demo Seller',
       role: 'user',
+      status: 'active',
       createdAt: '2026-07-13T12:00:00.000Z',
       updatedAt: '2026-07-13T12:00:00.000Z',
     });
+  });
+
+  it('rejects banned users on login', async () => {
+    prisma.user.findUnique.mockResolvedValue(
+      createPrismaUser({
+        email: 'banned@example.com',
+        status: 'banned',
+      }),
+    );
+
+    await expect(
+      service.login({
+        email: 'banned@example.com',
+        password: 'super-secret',
+      }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
