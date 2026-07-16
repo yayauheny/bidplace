@@ -17,7 +17,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { type RawAuthUserRecord, toContractUser } from '../auth/auth.mapper';
+import { authUserContractSelect, toContractUser } from '../auth/auth.mapper';
 import {
   auctionContractSelect,
   toContractAuction,
@@ -48,11 +48,12 @@ export class AdminService {
   async listUsers(
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },
   ): Promise<AdminUsersResponse> {
-    const users = (await this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       skip: (page - 1) * limit,
       take: limit,
+      select: authUserContractSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawAuthUserRecord[];
+    });
 
     return adminUsersResponseSchema.parse({
       users: users.map((user) => toContractUser(user)),
@@ -60,24 +61,26 @@ export class AdminService {
   }
 
   async banUser(userId: string): Promise<AdminUserResponse> {
-    const user = (await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
       },
-    })) as RawAuthUserRecord | null;
+      select: authUserContractSelect,
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const updatedUser = (await this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: {
         id: userId,
       },
       data: {
         status: 'banned',
       },
-    })) as RawAuthUserRecord;
+      select: authUserContractSelect,
+    });
 
     return adminUserResponseSchema.parse({
       user: toContractUser(updatedUser),

@@ -1,6 +1,7 @@
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { authCredentialsSelect, authUserContractSelect } from './auth.mapper';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth-token.service';
 import { PasswordHasherService } from './password-hasher.service';
@@ -92,6 +93,7 @@ describe('AuthService', () => {
         status: 'active',
         sessionVersion: 0,
       },
+      select: authCredentialsSelect,
     });
     expect(authTokenService.sign).toHaveBeenCalledWith({
       sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -194,6 +196,12 @@ describe('AuthService', () => {
       status: 'active',
       createdAt: '2026-07-13T12:00:00.000Z',
       updatedAt: '2026-07-13T12:00:00.000Z',
+    });
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      },
+      select: authUserContractSelect,
     });
   });
 

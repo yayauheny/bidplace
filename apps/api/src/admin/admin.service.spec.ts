@@ -3,6 +3,7 @@ import { Decimal } from '@bidplace/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminService, type AdminRepository } from './admin.service';
+import { authUserContractSelect } from '../auth/auth.mapper';
 import { auctionContractSelect } from '../auctions/auction.mapper';
 import { bidContractSelect } from '../bids/bid.mapper';
 
@@ -48,6 +49,7 @@ describe('AdminService', () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       skip: 5,
       take: 5,
+      select: authUserContractSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
 

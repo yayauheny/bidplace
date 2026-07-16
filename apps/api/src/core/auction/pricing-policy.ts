@@ -1,11 +1,12 @@
 import { Decimal } from '@bidplace/database';
 
 import { type Bid } from '@bidplace/contracts';
-import { type DecimalLike } from '../mapping/decimal-like';
+
+export type DecimalAmountInput = Decimal | number | string;
 
 export type AuctionBidLike = {
   id: string;
-  amount: DecimalLike;
+  amount: DecimalAmountInput;
   status: Bid['status'];
   createdAt: Date;
 };
@@ -29,7 +30,7 @@ export function isEligibleBidStatus(status: Bid['status']): boolean {
   return (eligibleBidStatuses as readonly Bid['status'][]).includes(status);
 }
 
-export function calculateBidStep(amount: DecimalLike): Decimal {
+export function calculateBidStep(amount: DecimalAmountInput): Decimal {
   const decimalAmount = toDecimalAmount(amount);
 
   for (const rule of BID_STEP_RULES) {
@@ -41,22 +42,22 @@ export function calculateBidStep(amount: DecimalLike): Decimal {
   return new Decimal(25);
 }
 
-export function resolveMinimumNextBid(currentPrice: DecimalLike): Decimal {
+export function resolveMinimumNextBid(currentPrice: DecimalAmountInput): Decimal {
   const decimalCurrentPrice = toDecimalAmount(currentPrice);
 
   return decimalCurrentPrice.add(calculateBidStep(decimalCurrentPrice));
 }
 
 export function resolveCurrentPrice(
-  startPrice: DecimalLike,
+  startPrice: DecimalAmountInput,
   highestEligibleBid: Decimal | null,
 ): Decimal {
   return highestEligibleBid ?? toDecimalAmount(startPrice);
 }
 
 export function reserveReached(
-  currentPrice: DecimalLike,
-  reservePrice: DecimalLike,
+  currentPrice: DecimalAmountInput,
+  reservePrice: DecimalAmountInput,
 ): boolean {
   return toDecimalAmount(currentPrice).gte(toDecimalAmount(reservePrice));
 }
@@ -104,19 +105,15 @@ export function findHighestEligibleBid<T extends AuctionBidLike>(
 }
 
 export function toDecimalAmount(
-  value: number | string | Decimal | { toNumber(): number },
+  value: DecimalAmountInput,
 ): Decimal {
   if (value instanceof Decimal) {
     return value;
   }
 
-  if (typeof value === 'object' && value !== null && 'toNumber' in value) {
-    return new Decimal(value.toNumber());
-  }
-
   return new Decimal(value);
 }
 
-export function isPositiveDecimal(value: DecimalLike): boolean {
+export function isPositiveDecimal(value: DecimalAmountInput): boolean {
   return toDecimalAmount(value).gt(ZERO_DECIMAL);
 }

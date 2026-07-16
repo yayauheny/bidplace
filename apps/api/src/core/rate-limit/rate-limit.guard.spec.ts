@@ -45,4 +45,75 @@ describe('RateLimitGuard', () => {
       );
     }
   });
+
+  it('ignores X-Forwarded-For when trust proxy is disabled', () => {
+    const reflector = {
+      getAllAndOverride: () => ({
+        keyPrefix: 'auth:login',
+        limit: 1,
+        windowMs: 60_000,
+        scope: 'ip',
+      }),
+    } satisfies Pick<Reflector, 'getAllAndOverride'>;
+    const guard = new RateLimitGuard(
+      reflector,
+      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      false,
+    );
+    const createContext = (forwardedFor: string) =>
+      ({
+        getHandler: () => null,
+        getClass: () => null,
+        switchToHttp: () => ({
+          getRequest: () => ({
+            params: {},
+            headers: {
+              'x-forwarded-for': forwardedFor,
+            },
+            socket: {
+              remoteAddress: '10.0.0.1',
+            },
+          }),
+        }),
+      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+
+    expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
+    expect(() => guard.canActivate(createContext('198.51.100.2'))).toThrow(
+      HttpException,
+    );
+  });
+
+  it('uses proxied request.ip when trust proxy is enabled', () => {
+    const reflector = {
+      getAllAndOverride: () => ({
+        keyPrefix: 'auth:login',
+        limit: 1,
+        windowMs: 60_000,
+        scope: 'ip',
+      }),
+    } satisfies Pick<Reflector, 'getAllAndOverride'>;
+    const guard = new RateLimitGuard(
+      reflector,
+      new RateLimitService({ maxBuckets: 10, cleanupIntervalMs: 1_000 }),
+      true,
+    );
+    const createContext = (ip: string) =>
+      ({
+        getHandler: () => null,
+        getClass: () => null,
+        switchToHttp: () => ({
+          getRequest: () => ({
+            ip,
+            params: {},
+            headers: {},
+            socket: {
+              remoteAddress: '10.0.0.1',
+            },
+          }),
+        }),
+      }) satisfies Parameters<RateLimitGuard['canActivate']>[0];
+
+    expect(guard.canActivate(createContext('203.0.113.1'))).toBe(true);
+    expect(guard.canActivate(createContext('198.51.100.2'))).toBe(true);
+  });
 });

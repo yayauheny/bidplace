@@ -14,6 +14,7 @@ import {
   type RateLimitOptions,
 } from './rate-limit.decorator';
 import { RateLimitService } from './rate-limit.service';
+import { loadServerEnv } from '../config';
 
 type RateLimitedRequest = {
   auth?: AuthTokenPayload;
@@ -33,6 +34,7 @@ export class RateLimitGuard implements CanActivate {
     @Inject(Reflector)
     private readonly reflector: Pick<Reflector, 'getAllAndOverride'>,
     private readonly rateLimitService: RateLimitService,
+    private readonly trustProxy = loadServerEnv().TRUST_PROXY,
   ) {}
 
   canActivate(
@@ -77,12 +79,18 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private resolveIp(request: RateLimitedRequest): string {
-    const forwardedFor = request.headers['x-forwarded-for'];
+    if (this.trustProxy) {
+      const forwardedFor = request.headers['x-forwarded-for'];
 
-    if (forwardedFor) {
-      return forwardedFor.split(',')[0]?.trim() || 'unknown';
+      if (request.ip) {
+        return request.ip;
+      }
+
+      if (forwardedFor) {
+        return forwardedFor.split(',')[0]?.trim() || 'unknown';
+      }
     }
 
-    return request.ip ?? request.socket?.remoteAddress ?? 'unknown';
+    return request.socket?.remoteAddress ?? request.ip ?? 'unknown';
   }
 }

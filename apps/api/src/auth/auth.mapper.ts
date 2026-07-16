@@ -1,21 +1,34 @@
 import { type User as ContractUser } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 
 import { parseUserRole, parseUserStatus } from '../core/contracts';
 
-export type RawAuthUserRecord = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  phone: string;
-  displayName: string;
-  role: string;
-  status: string;
-  sessionVersion: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export const authUserContractSelect = {
+  id: true,
+  email: true,
+  phone: true,
+  displayName: true,
+  role: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
 
-export function toContractUser(user: RawAuthUserRecord): ContractUser {
+export type AuthUserContractRecord = Prisma.UserGetPayload<{
+  select: typeof authUserContractSelect;
+}>;
+
+export const authCredentialsSelect = {
+  ...authUserContractSelect,
+  passwordHash: true,
+  sessionVersion: true,
+} satisfies Prisma.UserSelect;
+
+export type AuthCredentialsRecord = Prisma.UserGetPayload<{
+  select: typeof authCredentialsSelect;
+}>;
+
+export function toContractUser(user: AuthUserContractRecord): ContractUser {
   return {
     id: user.id,
     email: user.email,

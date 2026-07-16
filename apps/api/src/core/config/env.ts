@@ -1,6 +1,12 @@
 import { createEnvInput, parseEnv } from '@bidplace/config';
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { z } from 'zod';
+
+const booleanEnvSchema = z
+  .enum(['true', 'false'])
+  .optional()
+  .transform((value) => value === 'true');
 
 const serverEnvSchema = z
   .object({
@@ -12,6 +18,13 @@ const serverEnvSchema = z
     API_PORT: z.coerce.number().int().positive().default(3001),
     API_URL: z.string().url().optional(),
     CORS_ORIGIN: z.string().url().optional(),
+    TRUST_PROXY: booleanEnvSchema,
+    RATE_LIMIT_MAX_BUCKETS: z.coerce.number().int().positive().default(10_000),
+    RATE_LIMIT_CLEANUP_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60_000),
     LOT_IMAGE_MAX_FILES: z.coerce.number().int().positive().default(8),
     LOT_IMAGE_MAX_FILE_BYTES: z.coerce
       .number()
@@ -38,8 +51,43 @@ const serverEnvSchema = z
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
-export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
-  const rootEnvPath = resolve(process.cwd(), '../../.env');
+type ResolveServerEnvFilePathOptions = {
+  moduleDir?: string;
+  envOverride?: string | undefined;
+  fileExists?: (filePath: string) => boolean;
+};
 
-  return parseEnv(serverEnvSchema, createEnvInput(rootEnvPath, env));
+export function resolveServerEnvFilePath(
+  options: ResolveServerEnvFilePathOptions = {},
+): string {
+  const envOverride = options.envOverride ?? process.env.BIDPLACE_ENV_FILE;
+
+  if (envOverride) {
+    return isAbsolute(envOverride) ? envOverride : resolve(envOverride);
+  }
+
+  const fileExists = options.fileExists ?? existsSync;
+  let currentDirectory = options.moduleDir ?? __dirname;
+
+  while (true) {
+    const candidate = resolve(currentDirectory, '.env');
+
+    if (fileExists(candidate)) {
+      return candidate;
+    }
+
+    const parentDirectory = dirname(currentDirectory);
+
+    if (parentDirectory === currentDirectory) {
+      return candidate;
+    }
+
+    currentDirectory = parentDirectory;
+  }
+}
+
+export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
+  const envFilePath = resolveServerEnvFilePath();
+
+  return parseEnv(serverEnvSchema, createEnvInput(envFilePath, env));
 }

@@ -11,6 +11,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
+  if (serverEnv.TRUST_PROXY) {
+    app.getHttpAdapter().getInstance().set('trust proxy', true);
+  }
+
   if (serverEnv.CORS_ORIGIN) {
     app.enableCors({
       origin: serverEnv.CORS_ORIGIN,
