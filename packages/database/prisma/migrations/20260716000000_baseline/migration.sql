@@ -5,6 +5,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "UserRole" AS ENUM ('admin', 'user');
 
 -- CreateEnum
+CREATE TYPE "UserStatus" AS ENUM ('active', 'banned');
+
+-- CreateEnum
 CREATE TYPE "SellerType" AS ENUM ('creator', 'influencer');
 
 -- CreateEnum
@@ -27,6 +30,8 @@ CREATE TABLE "users" (
     "phone" VARCHAR(32) NOT NULL,
     "display_name" VARCHAR(120) NOT NULL,
     "role" "UserRole" NOT NULL DEFAULT 'user',
+    "status" "UserStatus" NOT NULL DEFAULT 'active',
+    "session_version" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -132,10 +137,19 @@ CREATE UNIQUE INDEX "categories_slug_key" ON "categories"("slug");
 CREATE UNIQUE INDEX "auctions_slug_key" ON "auctions"("slug");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "auctions_lot_id_key" ON "auctions"("lot_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "auctions_winner_bid_id_key" ON "auctions"("winner_bid_id");
 
 -- CreateIndex
+CREATE INDEX "auctions_status_starts_at_idx" ON "auctions"("status", "starts_at");
+
+-- CreateIndex
 CREATE INDEX "auctions_status_ends_at_idx" ON "auctions"("status", "ends_at");
+
+-- CreateIndex
+CREATE INDEX "bids_auction_id_status_amount_created_at_id_idx" ON "bids"("auction_id", "status", "amount", "created_at", "id");
 
 -- CreateIndex
 CREATE INDEX "bids_auction_id_created_at_idx" ON "bids"("auction_id", "created_at");
