@@ -4,8 +4,8 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { beforeAll, afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { Decimal } from '@prisma/client/runtime/library';
-import type { PrismaClient } from '@prisma/client';
+import { Decimal } from '@bidplace/database';
+import type { PrismaClient } from '@bidplace/database';
 
 import { AuctionLifecycleService } from '../../src/auctions/auction-closing.service';
 import { BidsService } from '../../src/bids/bids.service';

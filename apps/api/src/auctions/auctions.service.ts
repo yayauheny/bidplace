@@ -19,7 +19,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@bidplace/database';
 
 import {
   calculateBidStep,

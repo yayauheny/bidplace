@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@bidplace/database';
 
 import { calculateBidStep as calculateBidStepPolicy } from './pricing-policy';
 

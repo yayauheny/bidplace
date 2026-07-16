@@ -5,7 +5,7 @@ import {
   auctionEndedEventPayloadSchema,
 } from '@bidplace/contracts';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@bidplace/database';
 
 import {
   canActivateAuction,
@@ -205,14 +205,14 @@ export class AuctionLifecycleService {
         return null;
       }
 
-      const eligibleBids: LifecycleBidRecord[] = await tx.bid.findMany({
-        where: {
-          auctionId,
-          status: {
-            in: eligibleBidStatuses,
+        const eligibleBids: LifecycleBidRecord[] = await tx.bid.findMany({
+          where: {
+            auctionId,
+            status: {
+              in: [...eligibleBidStatuses],
+            },
           },
-        },
-        select: lifecycleBidSelect,
+          select: lifecycleBidSelect,
         orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
       });
 
@@ -246,7 +246,7 @@ export class AuctionLifecycleService {
           where: {
             auctionId,
             status: {
-              in: eligibleBidStatuses,
+              in: [...eligibleBidStatuses],
             },
             id: {
               not: winningBid.id,
@@ -270,7 +270,7 @@ export class AuctionLifecycleService {
           where: {
             auctionId,
             status: {
-              in: eligibleBidStatuses,
+              in: [...eligibleBidStatuses],
             },
           },
           data: {

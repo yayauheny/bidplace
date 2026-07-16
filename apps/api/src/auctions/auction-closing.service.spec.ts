@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@bidplace/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { eligibleBidStatuses } from '../core/auction';

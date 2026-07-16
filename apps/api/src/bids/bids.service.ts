@@ -16,7 +16,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@bidplace/database';
 
 import {
   calculateBidStep,
@@ -223,7 +223,7 @@ export class BidsService {
           where: {
             auctionId,
             status: {
-              in: eligibleBidStatuses,
+              in: [...eligibleBidStatuses],
             },
           },
           data: {

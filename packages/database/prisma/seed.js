@@ -1,4 +1,4 @@
-const { Prisma, PrismaClient } = require('@prisma/client');
+const { Prisma, PrismaClient } = require('@bidplace/database');
 
 const prisma = new PrismaClient();
 

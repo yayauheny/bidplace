@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@bidplace/database';
 
 import { PrismaService } from './prisma.service';
 

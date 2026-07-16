@@ -11,6 +11,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@bidplace/database';
 
 import { PrismaService } from '../core/database';
 
@@ -106,23 +107,41 @@ export class SellersService {
     }
 
     try {
+      const data: Prisma.SellerProfileUpdateInput = {};
+
+      if (input.slug !== undefined) {
+        data.slug = input.slug;
+      }
+
+      if (input.sellerType !== undefined) {
+        data.sellerType = input.sellerType;
+      }
+
+      if (input.storeName !== undefined) {
+        data.storeName = input.storeName;
+      }
+
+      if (input.country !== undefined) {
+        data.country = input.country;
+      }
+
+      if (input.contactPreference !== undefined) {
+        data.contactPreference = input.contactPreference;
+      }
+
+      if (input.socialLink !== undefined) {
+        data.socialLink = input.socialLink;
+      }
+
+      if (input.shortDescription !== undefined) {
+        data.shortDescription = input.shortDescription;
+      }
+
       const sellerProfile = await this.prisma.sellerProfile.update({
         where: {
           userId,
         },
-        data: {
-          slug: input.slug,
-          sellerType: input.sellerType,
-          storeName: input.storeName,
-          country: input.country,
-          contactPreference: input.contactPreference,
-          socialLink:
-            input.socialLink === undefined ? undefined : input.socialLink,
-          shortDescription:
-            input.shortDescription === undefined
-              ? undefined
-              : input.shortDescription,
-        },
+        data,
       });
 
       return sellerProfileResponseSchema.parse({
