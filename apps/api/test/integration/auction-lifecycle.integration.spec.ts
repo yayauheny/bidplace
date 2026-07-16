@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 import { beforeAll, afterAll, afterEach, describe, expect, it, vi } from 'vitest';
-import { Decimal } from '@bidplace/database';
-import type { PrismaClient } from '@bidplace/database';
+import { Decimal, PrismaClient } from '@bidplace/database';
 
 import { AuctionLifecycleService } from '../../src/auctions/auction-closing.service';
 import { BidsService } from '../../src/bids/bids.service';
@@ -15,6 +11,10 @@ import { Clock } from '../../src/core/time';
 import { type AuctionsRealtimePublisher } from '../../src/auctions/auctions.service';
 import { type AuctionLifecyclePublisher } from '../../src/auctions/auction-closing.service';
 import { type BidsRealtimePublisher } from '../../src/bids/bids.service';
+import {
+  createIntegrationDatabaseContext,
+  type IntegrationDatabaseContext,
+} from './test-database';
 
 const now = new Date('2026-07-13T12:30:00.000Z');
 
@@ -36,6 +36,7 @@ const realtimeEventsService = {
 let prisma: PrismaClient;
 let auctionLifecycleService: AuctionLifecycleService;
 let bidsService: BidsService;
+let integrationDatabaseContext: IntegrationDatabaseContext;
 
 const d = (value: number | string) => new Decimal(value);
 
@@ -46,28 +47,6 @@ async function resetDatabase() {
   await prisma.sellerProfile.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
-}
-
-function resolveGeneratedClientPath(): string {
-  const pnpmStoreRoot = resolve(process.cwd(), '../../node_modules/.pnpm');
-  const clientDir = readdirSync(pnpmStoreRoot).find(
-    (entry) =>
-      entry.startsWith('@prisma+client@6.19.3_prisma@6.19.3_typescript@6.0.3') &&
-      entry.endsWith('__typescript@6.0.3'),
-  );
-
-  if (!clientDir) {
-    throw new Error('Generated Prisma client was not found');
-  }
-
-  return resolve(
-    pnpmStoreRoot,
-    clientDir,
-    'node_modules',
-    '@prisma',
-    'client',
-    'index.js',
-  );
 }
 
 async function createUser(displayName: string) {
@@ -161,17 +140,14 @@ async function createAuctionWithLot(options: {
 }
 
 beforeAll(async () => {
-  const { PrismaClient } = await import(
-    pathToFileURL(resolveGeneratedClientPath()).href
-  );
-  prisma = new PrismaClient();
+  integrationDatabaseContext = await createIntegrationDatabaseContext();
+  prisma = integrationDatabaseContext.prisma;
   auctionLifecycleService = new AuctionLifecycleService(
     prisma,
     realtimeEventsService,
     clock,
   );
   bidsService = new BidsService(prisma, realtimeEventsService, clock);
-  await prisma.$connect();
 });
 
 afterEach(async () => {
@@ -180,7 +156,7 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  await integrationDatabaseContext.cleanup();
 });
 
 describe('auction lifecycle integration', () => {
