@@ -13,7 +13,6 @@ import { catalogueKeys } from '../../lib/query-cache';
 
 export const sellerKeys = {
   profile: ['seller', 'profile'] as const,
-  categories: ['seller', 'categories'] as const,
   lots: (query?: PaginationQuery) => ['seller', 'lots', query ?? {}] as const,
   auctions: (query?: PaginationQuery) => ['seller', 'auctions', query ?? {}] as const,
 };
