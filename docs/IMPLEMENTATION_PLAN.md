@@ -170,9 +170,7 @@
 - `typecheck`
 - `test`
 - `test:api`
-- `db:generate`
-- `db:migrate`
-- `db:seed`
+- `db`
 - `db:studio`
 
 ### `apps/api`
@@ -184,9 +182,6 @@
 - `test`
 - `test:watch`
 - `test:cov`
-- `prisma:generate`
-- `prisma:migrate`
-- `seed`
 
 ## 5. Минимальный technical baseline
 

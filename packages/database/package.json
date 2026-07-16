@@ -4,15 +4,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "node --env-file ../../.env ./node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma",
-    "db:generate": "pnpm run generate",
-    "migrate": "node --env-file ../../.env ./node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma",
-    "db:migrate": "pnpm run migrate",
-    "seed": "pnpm run build && node --env-file ../../.env prisma/seed.js",
-    "db:seed": "pnpm run seed",
-    "build": "pnpm run generate && tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "db": "node ./scripts/db.mjs",
+    "build": "node ./scripts/db.mjs build",
+    "typecheck": "node ./scripts/db.mjs typecheck",
+    "clean": "node ./scripts/db.mjs clean"
   },
   "dependencies": {
     "@prisma/client": "6.19.3"
