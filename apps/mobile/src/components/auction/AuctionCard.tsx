@@ -1,5 +1,7 @@
 import { useRouter } from 'expo-router';
-import { Image, Pressable } from 'react-native';
+import { Image } from 'expo-image';
+import { useState } from 'react';
+import { Pressable } from 'react-native';
 import type { AuctionListItem } from '@bidplace/contracts';
 
 import { formatNumber } from '../../lib/formatters';
@@ -19,6 +21,7 @@ export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
   const api = useApiClient();
   const palette = useAppThemePalette();
   const image = lot.images[0];
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <Pressable
@@ -38,12 +41,15 @@ export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
               backgroundColor: palette.surfaceMuted,
             }}
           >
-            {image ? (
+            {image && !imageFailed ? (
               <Image
                 source={{ uri: resolveMediaUrl(image, api.baseUrl) }}
-                alt={lot.title}
+                accessibilityLabel={lot.title}
                 style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={150}
+                onError={() => setImageFailed(true)}
               />
             ) : null}
           </YStack>

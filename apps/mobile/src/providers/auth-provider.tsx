@@ -14,9 +14,13 @@ import type {
   RegisterRequest,
   User,
 } from '@bidplace/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useApiClient } from './api-provider';
-import { useQueryClient } from '@tanstack/react-query';
+import {
+  clearAuthScopedQueries,
+  invalidateAuthScopedQueries,
+} from '../lib/query-cache';
 
 type AuthStatus = 'anonymous' | 'authenticated';
 
@@ -77,9 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const syncSession = useCallback(
     async (response: AuthResponse) => {
+      await clearAuthScopedQueries(queryClient);
       setUser(response.user);
       setStatus('authenticated');
-      await queryClient.invalidateQueries();
+      await invalidateAuthScopedQueries(queryClient);
     },
     [queryClient],
   );
@@ -113,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           await api.auth.logout();
         } finally {
-          queryClient.clear();
+          await clearAuthScopedQueries(queryClient);
           clearSession();
         }
       },
@@ -123,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(response.user);
           setStatus('authenticated');
         } catch {
-          queryClient.clear();
+          await clearAuthScopedQueries(queryClient);
           clearSession();
         }
       },

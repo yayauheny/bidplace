@@ -5,16 +5,46 @@ const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 });
 
-export function formatCurrencyAmount(value: number, currency = 'USD') {
-  return new Intl.NumberFormat('ru-RU', {
+const numberFormatter = new Intl.NumberFormat('ru-RU');
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyFormatter(
+  locale: string,
+  currency: string,
+  maximumFractionDigits: number,
+) {
+  const cacheKey = `${locale}:${currency}:${maximumFractionDigits}`;
+  const cachedFormatter = currencyFormatterCache.get(cacheKey);
+
+  if (cachedFormatter) {
+    return cachedFormatter;
+  }
+
+  const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-    maximumFractionDigits: 2,
-  }).format(value);
+    maximumFractionDigits,
+  });
+
+  currencyFormatterCache.set(cacheKey, formatter);
+
+  return formatter;
+}
+
+export function formatCurrencyAmount(value: number, currency = 'USD') {
+  return getCurrencyFormatter('ru-RU', currency, 2).format(value);
+}
+
+export function formatDisplayPrice(
+  value: number,
+  currency = 'USD',
+  locale = 'en-US',
+) {
+  return getCurrencyFormatter(locale, currency, 0).format(value);
 }
 
 export function formatNumber(value: number) {
-  return new Intl.NumberFormat('ru-RU').format(value);
+  return numberFormatter.format(value);
 }
 
 export function formatDateTime(value: string | Date) {

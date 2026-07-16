@@ -1,4 +1,6 @@
 import { Text } from 'tamagui';
+
+import { formatDisplayPrice } from '../../lib/formatters';
 import { useAppThemePalette } from '../../theme/palette';
 
 type PriceProps = {
@@ -15,11 +17,7 @@ export function Price({
   tone = 'default',
 }: PriceProps) {
   const palette = useAppThemePalette();
-  const formatted = new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+  const formatted = formatDisplayPrice(value, currency, locale);
 
   const color = tone === 'accent' ? palette.primary : tone === 'muted' ? palette.textMuted : palette.text;
 

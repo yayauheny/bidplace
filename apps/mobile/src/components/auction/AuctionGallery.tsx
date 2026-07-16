@@ -1,5 +1,8 @@
-import { Image } from 'react-native';
+import { Image } from 'expo-image';
+import { useState } from 'react';
 
+import { resolveMediaUrl } from '../../lib/media';
+import { useApiClient } from '../../providers/api-provider';
 import { mobileRadius } from '../../theme/tokens';
 import { EmptyState } from '../ui';
 import { YStack } from 'tamagui';
@@ -11,10 +14,12 @@ type AuctionGalleryProps = {
 };
 
 export function AuctionGallery({ title, imageUrls }: AuctionGalleryProps) {
+  const api = useApiClient();
   const palette = useAppThemePalette();
   const image = imageUrls[0];
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (!image) {
+  if (!image || imageFailed) {
     return (
       <EmptyState
         title="Изображение отсутствует"
@@ -33,10 +38,13 @@ export function AuctionGallery({ title, imageUrls }: AuctionGalleryProps) {
       }}
     >
       <Image
-        source={{ uri: image }}
+        source={{ uri: resolveMediaUrl(image, api.baseUrl) }}
         accessibilityLabel={title}
         style={{ width: '100%', height: '100%' }}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={150}
+        onError={() => setImageFailed(true)}
       />
     </YStack>
   );

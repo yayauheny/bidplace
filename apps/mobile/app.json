@@ -9,7 +9,8 @@
     "scheme": "bidplace",
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

@@ -138,6 +138,19 @@ async function createAuctionWithLot(options: {
   });
 }
 
+async function getAuctionState(auctionId: string) {
+  return prisma.auction.findUnique({
+    where: {
+      id: auctionId,
+    },
+    include: {
+      bids: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      },
+    },
+  });
+}
+
 beforeAll(async () => {
   integrationDatabaseContext = await createIntegrationDatabaseContext();
   prisma = integrationDatabaseContext.prisma;
@@ -159,6 +172,75 @@ afterAll(async () => {
 });
 
 describe('auction lifecycle integration', () => {
+  it('rejects bids before the auction start without changing database state', async () => {
+    const { sellerProfile, buyerOne, category } = await createSellerFixture();
+    const auction = await createAuctionWithLot({
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      currentPrice: d(100),
+      reservePrice: d(150),
+      startsAt: new Date('2026-07-13T12:45:00.000Z'),
+      endsAt: new Date('2026-07-13T13:45:00.000Z'),
+      status: 'active',
+    });
+
+    await expect(
+      bidsService.placeBid(buyerOne.id, auction.id, { amount: 120 }),
+    ).rejects.toThrow('Auction is not active');
+
+    const unchangedAuction = await getAuctionState(auction.id);
+
+    expect(unchangedAuction?.currentPrice.toNumber()).toBe(100);
+    expect(unchangedAuction?.bidCount).toBe(0);
+    expect(unchangedAuction?.bids).toHaveLength(0);
+  });
+
+  it('rejects seller self-bids without changing database state', async () => {
+    const { seller, sellerProfile, category } = await createSellerFixture();
+    const auction = await createAuctionWithLot({
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      currentPrice: d(100),
+      reservePrice: d(150),
+      startsAt: new Date('2026-07-13T12:00:00.000Z'),
+      endsAt: new Date('2026-07-13T13:00:00.000Z'),
+      status: 'active',
+    });
+
+    await expect(
+      bidsService.placeBid(seller.id, auction.id, { amount: 120 }),
+    ).rejects.toThrow('Cannot bid on your own auction');
+
+    const unchangedAuction = await getAuctionState(auction.id);
+
+    expect(unchangedAuction?.currentPrice.toNumber()).toBe(100);
+    expect(unchangedAuction?.bidCount).toBe(0);
+    expect(unchangedAuction?.bids).toHaveLength(0);
+  });
+
+  it('rejects bids below the minimum step without changing database state', async () => {
+    const { sellerProfile, buyerOne, category } = await createSellerFixture();
+    const auction = await createAuctionWithLot({
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      currentPrice: d(100),
+      reservePrice: d(150),
+      startsAt: new Date('2026-07-13T12:00:00.000Z'),
+      endsAt: new Date('2026-07-13T13:00:00.000Z'),
+      status: 'active',
+    });
+
+    await expect(
+      bidsService.placeBid(buyerOne.id, auction.id, { amount: 104 }),
+    ).rejects.toThrow('Bid must be at least 105.00');
+
+    const unchangedAuction = await getAuctionState(auction.id);
+
+    expect(unchangedAuction?.currentPrice.toNumber()).toBe(100);
+    expect(unchangedAuction?.bidCount).toBe(0);
+    expect(unchangedAuction?.bids).toHaveLength(0);
+  });
+
   it('keeps the highest bid after two concurrent placements', async () => {
     const { sellerProfile, buyerOne, buyerTwo, category } = await createSellerFixture();
     const auction = await createAuctionWithLot({
@@ -182,10 +264,7 @@ describe('auction lifecycle integration', () => {
 
     expect(fulfilledResults.length).toBeGreaterThan(0);
 
-    const updatedAuction = await prisma.auction.findUnique({
-      where: { id: auction.id },
-      include: { bids: true },
-    });
+    const updatedAuction = await getAuctionState(auction.id);
 
     expect(updatedAuction).not.toBeNull();
     const highestSuccessfulBid = Math.max(
@@ -196,6 +275,7 @@ describe('auction lifecycle integration', () => {
     expect(updatedAuction?.bidCount).toBe(fulfilledResults.length);
     expect(updatedAuction?.bids).toHaveLength(fulfilledResults.length);
     expect(updatedAuction?.bids.some((bid) => bid.status === 'winning')).toBe(true);
+    expect(updatedAuction?.bids.at(-1)?.amount.toNumber()).toBe(highestSuccessfulBid);
   });
 
   it('closes a due auction and rejects a bid raced against the close', async () => {
@@ -228,13 +308,13 @@ describe('auction lifecycle integration', () => {
     expect(closeResult.status).toBe('fulfilled');
     expect(bidResult.status).toBe('rejected');
 
-    const closedAuction = await prisma.auction.findUnique({
-      where: { id: auction.id },
-      include: { bids: true },
-    });
+    const closedAuction = await getAuctionState(auction.id);
 
     expect(closedAuction?.status).toBe('sold');
     expect(closedAuction?.winnerBidId).toBe(winningBid.id);
+    expect(closedAuction?.currentPrice.toNumber()).toBe(260);
+    expect(closedAuction?.bidCount).toBe(1);
+    expect(closedAuction?.bids).toHaveLength(1);
     expect(closedAuction?.bids.find((bid) => bid.id === winningBid.id)?.status).toBe('won');
   });
 
@@ -264,9 +344,76 @@ describe('auction lifecycle integration', () => {
     const secondClose = auctionLifecycleService.closeAuctionById(auction.id, now);
 
     const results = await Promise.all([firstClose, secondClose]);
+    const closedAuction = await getAuctionState(auction.id);
 
     expect(results.filter((result) => result !== null)).toHaveLength(1);
     expect(results.filter((result) => result === null)).toHaveLength(1);
+    expect(closedAuction?.status).toBe('sold');
+    expect(closedAuction?.bidCount).toBe(1);
+  });
+
+  it('marks reserve-met auctions as sold with a winner', async () => {
+    const { sellerProfile, buyerOne, category } = await createSellerFixture();
+    const auction = await createAuctionWithLot({
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      currentPrice: d(180),
+      reservePrice: d(150),
+      startsAt: new Date('2026-07-13T11:00:00.000Z'),
+      endsAt: now,
+      status: 'active',
+      bidCount: 1,
+    });
+    const winningBid = await prisma.bid.create({
+      data: {
+        auctionId: auction.id,
+        bidderUserId: buyerOne.id,
+        amount: d(180),
+        status: 'winning',
+      },
+    });
+
+    const result = await auctionLifecycleService.closeAuctionById(auction.id, now);
+    const closedAuction = await getAuctionState(auction.id);
+
+    expect(result?.status).toBe('sold');
+    expect(result?.winnerBidId).toBe(winningBid.id);
+    expect(closedAuction?.status).toBe('sold');
+    expect(closedAuction?.winnerBidId).toBe(winningBid.id);
+    expect(closedAuction?.currentPrice.toNumber()).toBe(180);
+    expect(closedAuction?.bids.find((bid) => bid.id === winningBid.id)?.status).toBe('won');
+  });
+
+  it('marks reserve-unmet auctions as failed without a winner', async () => {
+    const { sellerProfile, buyerOne, category } = await createSellerFixture();
+    const auction = await createAuctionWithLot({
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      currentPrice: d(140),
+      reservePrice: d(150),
+      startsAt: new Date('2026-07-13T11:00:00.000Z'),
+      endsAt: now,
+      status: 'active',
+      bidCount: 1,
+    });
+    const lastBid = await prisma.bid.create({
+      data: {
+        auctionId: auction.id,
+        bidderUserId: buyerOne.id,
+        amount: d(140),
+        status: 'winning',
+      },
+    });
+
+    const result = await auctionLifecycleService.closeAuctionById(auction.id, now);
+    const closedAuction = await getAuctionState(auction.id);
+
+    expect(result?.status).toBe('failed');
+    expect(result?.winnerBidId).toBeNull();
+    expect(closedAuction?.status).toBe('failed');
+    expect(closedAuction?.winnerBidId).toBeNull();
+    expect(closedAuction?.currentPrice.toNumber()).toBe(140);
+    expect(closedAuction?.bids.find((bid) => bid.id === lastBid.id)?.status).toBe('lost');
   });
 
   it('rolls back when a serializable transaction throws', async () => {

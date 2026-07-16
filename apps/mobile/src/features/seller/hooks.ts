@@ -9,6 +9,7 @@ import type {
 } from '@bidplace/contracts';
 
 import { useApiClient } from '../../providers/api-provider';
+import { catalogueKeys } from '../../lib/query-cache';
 
 export const sellerKeys = {
   profile: ['seller', 'profile'] as const,
@@ -31,7 +32,7 @@ export function useSellerCategoriesQuery(enabled = true) {
   const api = useApiClient();
 
   return useQuery({
-    queryKey: sellerKeys.categories,
+    queryKey: catalogueKeys.categories,
     queryFn: () => api.categories.list(),
     enabled,
   });

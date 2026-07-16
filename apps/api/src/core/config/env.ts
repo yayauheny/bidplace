@@ -68,14 +68,9 @@ export function resolveServerEnvFilePath(
 
   const fileExists = options.fileExists ?? existsSync;
   let currentDirectory = options.moduleDir ?? __dirname;
+  let candidate = resolve(currentDirectory, '.env');
 
-  while (true) {
-    const candidate = resolve(currentDirectory, '.env');
-
-    if (fileExists(candidate)) {
-      return candidate;
-    }
-
+  while (!fileExists(candidate)) {
     const parentDirectory = dirname(currentDirectory);
 
     if (parentDirectory === currentDirectory) {
@@ -83,7 +78,10 @@ export function resolveServerEnvFilePath(
     }
 
     currentDirectory = parentDirectory;
+    candidate = resolve(currentDirectory, '.env');
   }
+
+  return candidate;
 }
 
 export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
