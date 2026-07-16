@@ -2,6 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BearerAuthGuard } from './bearer-auth.guard';
+import { InvalidPersistenceValueError } from '../core/contracts';
 
 describe('BearerAuthGuard', () => {
   const authTokenService = {
@@ -79,5 +80,32 @@ describe('BearerAuthGuard', () => {
         }),
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('propagates invalid persistence user status values', async () => {
+    authTokenService.verify.mockReturnValue({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'seller@example.com',
+      role: 'user',
+      sessionVersion: 2,
+      iat: 1,
+      exp: 2_000_000_000,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      status: 'corrupted',
+      sessionVersion: 2,
+    });
+
+    await expect(
+      guard.canActivate({
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              cookie: 'bidplace_session=session-cookie-token',
+            },
+          }),
+        }),
+      }),
+    ).rejects.toBeInstanceOf(InvalidPersistenceValueError);
   });
 });

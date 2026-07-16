@@ -19,10 +19,10 @@ import {
 
 import { type RawAuthUserRecord, toContractUser } from '../auth/auth.mapper';
 import {
-  type RawAuctionRecord,
+  auctionContractSelect,
   toContractAuction,
 } from '../auctions/auction.mapper';
-import { type RawBidRecord, toContractBid } from '../bids/bid.mapper';
+import { bidContractSelect, toContractBid } from '../bids/bid.mapper';
 import { PrismaService } from '../core/database';
 
 export interface AdminRepository {
@@ -88,11 +88,12 @@ export class AdminService {
     page,
     limit,
   }: PaginationQuery = { page: 1, limit: 20 }): Promise<AdminAuctionsResponse> {
-    const auctions = (await this.prisma.auction.findMany({
+    const auctions = await this.prisma.auction.findMany({
       skip: (page - 1) * limit,
       take: limit,
+      select: auctionContractSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawAuctionRecord[];
+    });
 
     return adminAuctionsResponseSchema.parse({
       auctions: auctions.map((auction) => toContractAuction(auction)),
@@ -100,24 +101,26 @@ export class AdminService {
   }
 
   async hideAuction(auctionId: string): Promise<AdminAuctionResponse> {
-    const auction = (await this.prisma.auction.findUnique({
+    const auction = await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
       },
-    })) as RawAuctionRecord | null;
+      select: auctionContractSelect,
+    });
 
     if (!auction) {
       throw new NotFoundException('Auction not found');
     }
 
-    const updatedAuction = (await this.prisma.auction.update({
+    const updatedAuction = await this.prisma.auction.update({
       where: {
         id: auctionId,
       },
       data: {
         status: 'hidden',
       },
-    })) as RawAuctionRecord;
+      select: auctionContractSelect,
+    });
 
     return adminAuctionResponseSchema.parse({
       auction: toContractAuction(updatedAuction),
@@ -141,14 +144,15 @@ export class AdminService {
       throw new NotFoundException('Auction not found');
     }
 
-    const bids = (await this.prisma.bid.findMany({
+    const bids = await this.prisma.bid.findMany({
       where: {
         auctionId,
       },
+      select: bidContractSelect,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawBidRecord[];
+    });
 
     return bidHistoryResponseSchema.parse({
       bids: bids.map((bid) => toContractBid(bid)),

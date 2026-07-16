@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { lotContractSelect } from './lot.mapper';
 import { LotsService, type LotsRepository } from './lots.service';
 
 type LotRecord = {
@@ -83,6 +84,7 @@ describe('LotsService', () => {
         images: ['/uploads/lots/vase.jpg'],
         status: 'draft',
       },
+      select: lotContractSelect,
     });
     expect(result.lot.status).toBe('draft');
     expect(result.lot.images).toHaveLength(1);
@@ -167,6 +169,7 @@ describe('LotsService', () => {
       where: {
         sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
       },
+      select: lotContractSelect,
       skip: 0,
       take: 10,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

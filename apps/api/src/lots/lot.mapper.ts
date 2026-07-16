@@ -1,21 +1,26 @@
 import { type Lot } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 
 import { parseLotStatus } from '../core/contracts';
 
-export type RawLotRecord = {
-  id: string;
-  sellerProfileId: string;
-  categoryId: string;
-  title: string;
-  description: string;
-  condition: string;
-  images: string[];
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export const lotContractSelect = {
+  id: true,
+  sellerProfileId: true,
+  categoryId: true,
+  title: true,
+  description: true,
+  condition: true,
+  images: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.LotSelect;
 
-export function toContractLot(lot: RawLotRecord): Lot {
+export type LotContractRecord = Prisma.LotGetPayload<{
+  select: typeof lotContractSelect;
+}>;
+
+export function toContractLot(lot: LotContractRecord): Lot {
   return {
     id: lot.id,
     sellerProfileId: lot.sellerProfileId,

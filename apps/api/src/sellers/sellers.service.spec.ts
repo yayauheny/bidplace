@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { sellerProfileContractSelect } from './seller-profile.mapper';
 import { SellersService, type SellersRepository } from './sellers.service';
 
 type SellerProfileRecord = {
@@ -86,6 +87,7 @@ describe('SellersService', () => {
         shortDescription: 'Short bio',
         status: 'active',
       },
+      select: sellerProfileContractSelect,
     });
     expect(result.sellerProfile.slug).toBe('new-seller');
     expect(result.sellerProfile.status).toBe('active');
@@ -130,13 +132,9 @@ describe('SellersService', () => {
       },
       data: {
         slug: 'updated-seller',
-        sellerType: undefined,
         storeName: 'Updated Store',
-        country: undefined,
-        contactPreference: undefined,
-        socialLink: undefined,
-        shortDescription: undefined,
       },
+      select: sellerProfileContractSelect,
     });
     expect(result.sellerProfile.slug).toBe('updated-seller');
   });

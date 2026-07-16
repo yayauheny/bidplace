@@ -1,4 +1,5 @@
 import type { AuthTokenPayload } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 import {
   CanActivate,
   ExecutionContext,
@@ -20,6 +21,11 @@ type AuthenticatedRequest = {
   auth?: AuthTokenPayload;
 };
 
+const authGuardUserSelect = {
+  status: true,
+  sessionVersion: true,
+} satisfies Prisma.UserSelect;
+
 @Injectable()
 export class BearerAuthGuard implements CanActivate {
   constructor(
@@ -32,33 +38,33 @@ export class BearerAuthGuard implements CanActivate {
   ): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    try {
-      const token =
-        this.extractToken(request.headers.authorization, request.headers.cookie);
-      const auth = this.authTokenService.verify(token);
-      const user = await this.prisma.user.findUnique({
-        where: {
-          id: auth.sub,
-        },
-        select: {
-          status: true,
-          sessionVersion: true,
-        },
-      });
-
-      if (
-        !user ||
-        parseUserStatus(user.status, auth.sub) !== 'active' ||
-        user.sessionVersion !== auth.sessionVersion
-      ) {
-        throw new UnauthorizedException('User is not active');
+    const auth = (() => {
+      try {
+        const token =
+          this.extractToken(request.headers.authorization, request.headers.cookie);
+        return this.authTokenService.verify(token);
+      } catch {
+        throw new UnauthorizedException('Invalid bearer token');
       }
+    })();
 
-      request.auth = auth;
-      return true;
-    } catch {
-      throw new UnauthorizedException('Invalid bearer token');
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: auth.sub,
+      },
+      select: authGuardUserSelect,
+    });
+
+    if (
+      !user ||
+      parseUserStatus(user.status, auth.sub) !== 'active' ||
+      user.sessionVersion !== auth.sessionVersion
+    ) {
+      throw new UnauthorizedException('User is not active');
     }
+
+    request.auth = auth;
+    return true;
   }
 
   private extractToken(

@@ -1,27 +1,32 @@
 import { type SellerProfile } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 
 import {
   parseSellerStatus,
   parseSellerType,
 } from '../core/contracts';
 
-export type RawSellerProfileRecord = {
-  id: string;
-  userId: string;
-  slug: string;
-  sellerType: string;
-  storeName: string;
-  country: string;
-  contactPreference: string;
-  socialLink: string | null;
-  shortDescription: string | null;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export const sellerProfileContractSelect = {
+  id: true,
+  userId: true,
+  slug: true,
+  sellerType: true,
+  storeName: true,
+  country: true,
+  contactPreference: true,
+  socialLink: true,
+  shortDescription: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.SellerProfileSelect;
+
+export type SellerProfileContractRecord = Prisma.SellerProfileGetPayload<{
+  select: typeof sellerProfileContractSelect;
+}>;
 
 export function toContractSellerProfile(
-  sellerProfile: RawSellerProfileRecord,
+  sellerProfile: SellerProfileContractRecord,
 ): SellerProfile {
   return {
     id: sellerProfile.id,

@@ -1,7 +1,10 @@
 import { NotFoundException } from '@nestjs/common';
+import { Decimal } from '@bidplace/database';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminService, type AdminRepository } from './admin.service';
+import { auctionContractSelect } from '../auctions/auction.mapper';
+import { bidContractSelect } from '../bids/bid.mapper';
 
 describe('AdminService', () => {
   const prisma = {
@@ -58,11 +61,11 @@ describe('AdminService', () => {
         lotId: '6c9f1dd1-6d40-4b4a-8ef1-8e9b6c0a1111',
         sellerProfileId: '8b6b2d28-6ad7-4e75-844d-7d3b3e5f5711',
         slug: 'demo-auction',
-        startPrice: 100,
-        reservePrice: 150,
-        currentPrice: 100,
+        startPrice: new Decimal(100),
+        reservePrice: new Decimal(150),
+        currentPrice: new Decimal(100),
         currency: 'USD',
-        bidStep: 5,
+        bidStep: new Decimal(5),
         startsAt: new Date('2026-07-13T12:00:00.000Z'),
         endsAt: new Date('2026-07-14T12:00:00.000Z'),
         status: 'active',
@@ -79,6 +82,7 @@ describe('AdminService', () => {
     expect(prisma.auction.findMany).toHaveBeenCalledWith({
       skip: 14,
       take: 7,
+      select: auctionContractSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     expect(result.auctions[0].slug).toBe('demo-auction');
@@ -130,7 +134,7 @@ describe('AdminService', () => {
         id: 'd61f66d2-8866-4b4c-b77d-6a09d1f82f9a',
         auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         bidderUserId: 'e1e0ecb2-5d35-4d8e-8c22-47e89b3a2b9e',
-        amount: 125,
+        amount: new Decimal(125),
         status: 'winning',
         createdAt: new Date('2026-07-13T12:10:00.000Z'),
         updatedAt: new Date('2026-07-13T12:10:00.000Z'),
@@ -146,6 +150,7 @@ describe('AdminService', () => {
       where: {
         auctionId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       },
+      select: bidContractSelect,
       skip: 4,
       take: 4,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

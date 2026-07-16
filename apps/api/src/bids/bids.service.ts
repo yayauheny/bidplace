@@ -5,6 +5,7 @@ import {
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
 } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 import {
   BadRequestException,
   ConflictException,
@@ -30,33 +31,17 @@ import {
   RealtimeEventsService,
 } from '../core/realtime';
 import {
-  type RawAuctionRecord as RawAuctionContractRecord,
+  auctionContractSelect,
   toContractAuction,
 } from '../auctions/auction.mapper';
 import {
-  type RawBidRecord,
+  bidContractSelect,
   toContractBid,
   toPublicBid,
 } from './bid.mapper';
 
 const auctionBidSelect = {
-  id: true,
-  lotId: true,
-  sellerProfileId: true,
-  slug: true,
-  startPrice: true,
-  reservePrice: true,
-  currentPrice: true,
-  currency: true,
-  bidStep: true,
-  startsAt: true,
-  endsAt: true,
-  status: true,
-  bidCount: true,
-  winnerBidId: true,
-  buyNowPrice: true,
-  createdAt: true,
-  updatedAt: true,
+  ...auctionContractSelect,
   sellerProfile: {
     select: {
       userId: true,
@@ -67,31 +52,29 @@ const auctionBidSelect = {
       status: true,
     },
   },
-};
+} satisfies Prisma.AuctionSelect;
 
-type AuctionForBidRecord = RawAuctionContractRecord & {
+type AuctionBidRecord = Prisma.AuctionGetPayload<{
+  select: typeof auctionBidSelect;
+}>;
+
+const sellerAuctionOwnerSelect = {
+  id: true,
   sellerProfile: {
-    userId: string;
-  };
-  lot: {
-    status: string;
-  };
-};
+    select: {
+      userId: true,
+    },
+  },
+} satisfies Prisma.AuctionSelect;
+
+type SellerAuctionOwnerRecord = Prisma.AuctionGetPayload<{
+  select: typeof sellerAuctionOwnerSelect;
+}>;
 
 type AuctionBiddingState = {
   status: Auction['status'];
   startsAt: Date;
   endsAt: Date;
-};
-
-const bidContractSelect = {
-  id: true,
-  auctionId: true,
-  bidderUserId: true,
-  amount: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
 };
 
 export interface BidsRepository {
@@ -122,7 +105,7 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
 }
 
 function toAuctionBiddingState(
-  auction: AuctionForBidRecord,
+  auction: AuctionBidRecord,
 ): AuctionBiddingState {
   return {
     status: parseAuctionStatus(auction.status, auction.id),
@@ -161,12 +144,12 @@ export class BidsService {
 
     try {
       const result = await runSerializableTransaction(this.prisma, async (tx) => {
-        const auction = (await tx.auction.findUnique({
+        const auction = await tx.auction.findUnique({
           where: {
             id: auctionId,
           },
           select: auctionBidSelect,
-        })) as AuctionForBidRecord | null;
+        });
 
         if (!auction) {
           throw new NotFoundException('Auction not found');
@@ -228,7 +211,7 @@ export class BidsService {
           },
         });
 
-        const bid = (await tx.bid.create({
+        const bid = await tx.bid.create({
           data: {
             auctionId,
             bidderUserId: userId,
@@ -236,14 +219,14 @@ export class BidsService {
             status: 'winning',
           },
           select: bidContractSelect,
-        })) as RawBidRecord;
+        });
 
-        const latestAuction = (await tx.auction.findUnique({
+        const latestAuction = await tx.auction.findUnique({
           where: {
             id: auctionId,
           },
           select: auctionBidSelect,
-        })) as AuctionForBidRecord | null;
+        });
 
         if (!latestAuction) {
           throw new NotFoundException('Auction not found');
@@ -293,25 +276,19 @@ export class BidsService {
     auctionId: string,
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },
   ) {
-    const auction = (await this.prisma.auction.findUnique({
+    const auction: SellerAuctionOwnerRecord | null =
+      await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
       },
-      select: {
-        id: true,
-        sellerProfile: {
-          select: {
-            userId: true,
-          },
-        },
-      },
-    })) as { id: string; sellerProfile: { userId: string } } | null;
+      select: sellerAuctionOwnerSelect,
+    });
 
     if (!auction || auction.sellerProfile.userId !== userId) {
       throw new NotFoundException('Auction not found');
     }
 
-    const bids = (await this.prisma.bid.findMany({
+    const bids = await this.prisma.bid.findMany({
       where: {
         auctionId,
       },
@@ -319,7 +296,7 @@ export class BidsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawBidRecord[];
+    });
 
     return bidHistoryResponseSchema.parse({
       bids: bids.map((bid) => toContractBid(bid)),

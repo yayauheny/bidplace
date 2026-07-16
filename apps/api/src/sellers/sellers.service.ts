@@ -13,7 +13,7 @@ import {
 import { Prisma } from '@bidplace/database';
 
 import {
-  type RawSellerProfileRecord,
+  sellerProfileContractSelect,
   toContractSellerProfile,
 } from './seller-profile.mapper';
 import { parseSellerStatus } from '../core/contracts';
@@ -55,7 +55,7 @@ export class SellersService {
     }
 
     try {
-      const sellerProfile = (await this.prisma.sellerProfile.create({
+      const sellerProfile = await this.prisma.sellerProfile.create({
         data: {
           userId,
           slug: input.slug,
@@ -67,7 +67,8 @@ export class SellersService {
           shortDescription: input.shortDescription ?? null,
           status: 'active',
         },
-      })) as RawSellerProfileRecord;
+        select: sellerProfileContractSelect,
+      });
 
       return sellerProfileResponseSchema.parse({
         sellerProfile: toContractSellerProfile(sellerProfile),
@@ -126,12 +127,13 @@ export class SellersService {
         data.shortDescription = input.shortDescription;
       }
 
-      const sellerProfile = (await this.prisma.sellerProfile.update({
+      const sellerProfile = await this.prisma.sellerProfile.update({
         where: {
           userId,
         },
         data,
-      })) as RawSellerProfileRecord;
+        select: sellerProfileContractSelect,
+      });
 
       return sellerProfileResponseSchema.parse({
         sellerProfile: toContractSellerProfile(sellerProfile),
@@ -146,11 +148,12 @@ export class SellersService {
   }
 
   async getMyProfile(userId: string): Promise<SellerProfileResponse> {
-    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
-    })) as RawSellerProfileRecord | null;
+      select: sellerProfileContractSelect,
+    });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -164,11 +167,12 @@ export class SellersService {
   }
 
   async getPublicProfile(slug: string): Promise<SellerProfileResponse> {
-    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
       where: {
         slug,
       },
-    })) as RawSellerProfileRecord | null;
+      select: sellerProfileContractSelect,
+    });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');

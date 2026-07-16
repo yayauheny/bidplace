@@ -7,6 +7,7 @@ import {
   publicAuctionDetailResponseSchema,
   sellerAuctionListResponseSchema,
 } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 import {
   ConflictException,
   ForbiddenException,
@@ -27,8 +28,9 @@ import {
   toDecimalAmount,
 } from '../core/auction';
 import {
-  type RawAuctionListItemRecord,
-  type RawAuctionRecord,
+  auctionContractSelect,
+  publicAuctionDetailSelect,
+  publicAuctionListSelect,
   toAuctionDetailItem,
   toAuctionListItem,
   toContractAuction,
@@ -37,125 +39,45 @@ import { PrismaService, runSerializableTransaction } from '../core/database';
 import { Clock } from '../core/time';
 import { RealtimeEventsService, mapAuctionUpdatedEventPayload } from '../core/realtime';
 
-const auctionContractSelect = {
+const sellerProfileStatusSelect = {
+  id: true,
+  status: true,
+} satisfies Prisma.SellerProfileSelect;
+
+type SellerProfileStatusRecord = Prisma.SellerProfileGetPayload<{
+  select: typeof sellerProfileStatusSelect;
+}>;
+
+const lotOwnershipStatusSelect = {
+  id: true,
+  sellerProfileId: true,
+  status: true,
+} satisfies Prisma.LotSelect;
+
+type LotOwnershipStatusRecord = Prisma.LotGetPayload<{
+  select: typeof lotOwnershipStatusSelect;
+}>;
+
+const auctionPublicationSelect = {
   id: true,
   lotId: true,
   sellerProfileId: true,
-  slug: true,
-  startPrice: true,
-  reservePrice: true,
-  currentPrice: true,
-  currency: true,
-  bidStep: true,
   startsAt: true,
-  endsAt: true,
   status: true,
-  bidCount: true,
-  winnerBidId: true,
-  buyNowPrice: true,
-  createdAt: true,
-  updatedAt: true,
-};
+} satisfies Prisma.AuctionSelect;
 
-const lotContractSelect = {
+type AuctionPublicationRecord = Prisma.AuctionGetPayload<{
+  select: typeof auctionPublicationSelect;
+}>;
+
+const lotPublicationSelect = {
   id: true,
-  sellerProfileId: true,
-  categoryId: true,
-  title: true,
-  description: true,
-  condition: true,
-  images: true,
   status: true,
-  createdAt: true,
-  updatedAt: true,
-};
+} satisfies Prisma.LotSelect;
 
-const sellerProfileContractSelect = {
-  id: true,
-  userId: true,
-  slug: true,
-  sellerType: true,
-  storeName: true,
-  country: true,
-  contactPreference: true,
-  socialLink: true,
-  shortDescription: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-};
-
-const publicBidSelect = {
-  id: true,
-  auctionId: true,
-  bidderUserId: true,
-  amount: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-};
-
-const publicAuctionListSelect = {
-  ...auctionContractSelect,
-  lot: {
-    select: lotContractSelect,
-  },
-  sellerProfile: {
-    select: sellerProfileContractSelect,
-  },
-};
-
-type SellerProfileStatusRecord = {
-  id: string;
-  status: string;
-};
-
-type LotStatusRecord = {
-  id: string;
-  sellerProfileId: string;
-  status: string;
-};
-
-type PublishedAuctionRecord = RawAuctionRecord & {
-  lot: {
-    id: string;
-    sellerProfileId: string;
-    categoryId: string;
-    title: string;
-    description: string;
-    condition: string;
-    images: string[];
-    status: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-  sellerProfile: {
-    id: string;
-    userId: string;
-    slug: string;
-    sellerType: string;
-    storeName: string;
-    country: string;
-    contactPreference: string;
-    socialLink: string | null;
-    shortDescription: string | null;
-    status: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-};
-
-type PublishedAuctionDetailRecord = PublishedAuctionRecord & {
-  bids: Array<{
-    id: string;
-    auctionId: string;
-    bidderUserId: string;
-    amount: number | { toNumber(): number };
-    status: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }>;
-};
+type LotPublicationRecord = Prisma.LotGetPayload<{
+  select: typeof lotPublicationSelect;
+}>;
 
 export interface AuctionsRepository {
   sellerProfile: {
@@ -218,7 +140,7 @@ export class AuctionsService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    const auctions = (await this.prisma.auction.findMany({
+    const auctions = await this.prisma.auction.findMany({
       where: {
         sellerProfileId: sellerProfile.id,
       },
@@ -226,7 +148,7 @@ export class AuctionsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawAuctionRecord[];
+    });
 
     return sellerAuctionListResponseSchema.parse({
       auctions: auctions.map((auction) => toContractAuction(auction)),
@@ -236,7 +158,7 @@ export class AuctionsService {
   async listPublicAuctions(
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },
   ) {
-    const auctions = (await this.prisma.auction.findMany({
+    const auctions = await this.prisma.auction.findMany({
       where: {
         status: {
           in: ['scheduled', 'active'],
@@ -252,7 +174,7 @@ export class AuctionsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
-    })) as RawAuctionListItemRecord[];
+    });
 
     return auctionListResponseSchema.parse({
       auctions: auctions.map((auction) => toAuctionListItem(auction)),
@@ -263,7 +185,7 @@ export class AuctionsService {
     slug: string,
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },
   ) {
-    const auction = (await this.prisma.auction.findFirst({
+    const auction = await this.prisma.auction.findFirst({
       where: {
         slug,
         status: {
@@ -277,15 +199,15 @@ export class AuctionsService {
         },
       },
       select: {
-        ...publicAuctionListSelect,
+        ...publicAuctionDetailSelect,
         bids: {
-          select: publicBidSelect,
+          ...publicAuctionDetailSelect.bids,
           skip: (page - 1) * limit,
           take: limit,
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
       },
-    })) as PublishedAuctionDetailRecord | null;
+    });
 
     if (!auction) {
       throw new NotFoundException('Auction not found');
@@ -300,15 +222,13 @@ export class AuctionsService {
     userId: string,
     input: AuctionCreateRequest,
   ): Promise<AuctionResponse> {
-    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
+    const sellerProfile: SellerProfileStatusRecord | null =
+      await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
-      select: {
-        id: true,
-        status: true,
-      },
-    })) as SellerProfileStatusRecord | null;
+      select: sellerProfileStatusSelect,
+      });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -318,16 +238,12 @@ export class AuctionsService {
       throw new ForbiddenException('Seller profile is not active');
     }
 
-    const lot = (await this.prisma.lot.findUnique({
+    const lot: LotOwnershipStatusRecord | null = await this.prisma.lot.findUnique({
       where: {
         id: input.lotId,
       },
-      select: {
-        id: true,
-        sellerProfileId: true,
-        status: true,
-      },
-    })) as LotStatusRecord | null;
+      select: lotOwnershipStatusSelect,
+    });
 
     if (!lot) {
       throw new NotFoundException('Lot not found');
@@ -342,7 +258,7 @@ export class AuctionsService {
     }
 
     try {
-      const auction = (await this.prisma.auction.create({
+      const auction = await this.prisma.auction.create({
         data: {
           lotId: input.lotId,
           sellerProfileId: sellerProfile.id,
@@ -363,7 +279,7 @@ export class AuctionsService {
               : toDecimalAmount(input.buyNowPrice),
         },
         select: auctionContractSelect,
-      })) as RawAuctionRecord;
+      });
 
       return auctionResponseSchema.parse({
         auction: toContractAuction(auction),
@@ -385,15 +301,13 @@ export class AuctionsService {
     userId: string,
     auctionId: string,
   ): Promise<AuctionResponse> {
-    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
+    const sellerProfile: SellerProfileStatusRecord | null =
+      await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
-      select: {
-        id: true,
-        status: true,
-      },
-    })) as SellerProfileStatusRecord | null;
+      select: sellerProfileStatusSelect,
+      });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -403,24 +317,13 @@ export class AuctionsService {
       throw new ForbiddenException('Seller profile is not active');
     }
 
-    const auction = (await this.prisma.auction.findUnique({
+    const auction: AuctionPublicationRecord | null =
+      await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
       },
-      select: {
-        id: true,
-        lotId: true,
-        sellerProfileId: true,
-        startsAt: true,
-        status: true,
-      },
-    })) as {
-      id: string;
-      lotId: string;
-      sellerProfileId: string;
-      startsAt: Date;
-      status: string;
-    } | null;
+      select: auctionPublicationSelect,
+      });
 
     if (!auction || auction.sellerProfileId !== sellerProfile.id) {
       throw new NotFoundException('Auction not found');
@@ -430,15 +333,12 @@ export class AuctionsService {
       throw new ConflictException('Auction cannot be published');
     }
 
-    const lot = (await this.prisma.lot.findUnique({
+    const lot: LotPublicationRecord | null = await this.prisma.lot.findUnique({
       where: {
         id: auction.lotId,
       },
-      select: {
-        id: true,
-        status: true,
-      },
-    })) as { id: string; status: string } | null;
+      select: lotPublicationSelect,
+    });
 
     if (!lot) {
       throw new NotFoundException('Lot not found');
@@ -491,7 +391,7 @@ export class AuctionsService {
         throw new NotFoundException('Auction not found');
       }
 
-      return latestAuction as RawAuctionRecord;
+      return latestAuction;
     });
 
     const response = auctionResponseSchema.parse({

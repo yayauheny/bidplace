@@ -12,7 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { type RawLotRecord, toContractLot } from './lot.mapper';
+import { lotContractSelect, toContractLot } from './lot.mapper';
 import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
 
@@ -47,14 +47,15 @@ export class LotsService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    const lots = (await this.prisma.lot.findMany({
+    const lots = await this.prisma.lot.findMany({
       where: {
         sellerProfileId: sellerProfile.id,
       },
+      select: lotContractSelect,
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as RawLotRecord[];
+    });
 
     return sellerLotListResponseSchema.parse({
       lots: lots.map((lot) => toContractLot(lot)),
@@ -97,7 +98,7 @@ export class LotsService {
       throw new NotFoundException('Category not found');
     }
 
-    const lot = (await this.prisma.lot.create({
+    const lot = await this.prisma.lot.create({
       data: {
         sellerProfileId: sellerProfile.id,
         categoryId: category.id,
@@ -107,7 +108,8 @@ export class LotsService {
         images: [...images],
         status: 'draft',
       },
-    })) as RawLotRecord;
+      select: lotContractSelect,
+    });
 
     return lotResponseSchema.parse({
       lot: toContractLot(lot),
