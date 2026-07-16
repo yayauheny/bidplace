@@ -37,7 +37,10 @@ type LotRecord = {
   title: string;
   description: string;
   condition: string;
-  images: string[];
+  lotImages: Array<{
+    id: string;
+    position: number;
+  }>;
   status: 'draft' | 'published' | 'sold' | 'hidden' | 'archived';
   createdAt: Date;
   updatedAt: Date;
@@ -110,7 +113,7 @@ function createLotRecord(overrides: Partial<LotRecord> = {}): LotRecord {
     title: 'Signed Ceramic Vase',
     description: 'Handmade ceramic vase.',
     condition: 'excellent',
-    images: ['/uploads/lots/vase.jpg'],
+    lotImages: [{ id: '9cb88056-f0dc-4309-84e4-090af8ace1e2', position: 0 }],
     status: 'published',
     createdAt: new Date('2026-07-13T10:00:00.000Z'),
     updatedAt: new Date('2026-07-13T10:00:00.000Z'),

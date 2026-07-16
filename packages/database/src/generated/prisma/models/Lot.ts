@@ -55,7 +55,6 @@ export type LotCountAggregateOutputType = {
   title: number
   description: number
   condition: number
-  images: number
   status: number
   createdAt: number
   updatedAt: number
@@ -94,7 +93,6 @@ export type LotCountAggregateInputType = {
   title?: true
   description?: true
   condition?: true
-  images?: true
   status?: true
   createdAt?: true
   updatedAt?: true
@@ -180,7 +178,6 @@ export type LotGroupByOutputType = {
   title: string
   description: string
   condition: string
-  images: string[]
   status: string
   createdAt: Date
   updatedAt: Date
@@ -214,13 +211,13 @@ export type LotWhereInput = {
   title?: Prisma.StringFilter<"Lot"> | string
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
-  images?: Prisma.StringNullableListFilter<"Lot">
   status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileScalarRelationFilter, Prisma.SellerProfileWhereInput>
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   auction?: Prisma.XOR<Prisma.AuctionNullableScalarRelationFilter, Prisma.AuctionWhereInput> | null
+  lotImages?: Prisma.LotImageListRelationFilter
 }
 
 export type LotOrderByWithRelationInput = {
@@ -230,13 +227,13 @@ export type LotOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   condition?: Prisma.SortOrder
-  images?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sellerProfile?: Prisma.SellerProfileOrderByWithRelationInput
   category?: Prisma.CategoryOrderByWithRelationInput
   auction?: Prisma.AuctionOrderByWithRelationInput
+  lotImages?: Prisma.LotImageOrderByRelationAggregateInput
 }
 
 export type LotWhereUniqueInput = Prisma.AtLeast<{
@@ -249,13 +246,13 @@ export type LotWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"Lot"> | string
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
-  images?: Prisma.StringNullableListFilter<"Lot">
   status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileScalarRelationFilter, Prisma.SellerProfileWhereInput>
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   auction?: Prisma.XOR<Prisma.AuctionNullableScalarRelationFilter, Prisma.AuctionWhereInput> | null
+  lotImages?: Prisma.LotImageListRelationFilter
 }, "id">
 
 export type LotOrderByWithAggregationInput = {
@@ -265,7 +262,6 @@ export type LotOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   condition?: Prisma.SortOrder
-  images?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -284,7 +280,6 @@ export type LotScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   description?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   condition?: Prisma.StringWithAggregatesFilter<"Lot"> | string
-  images?: Prisma.StringNullableListFilter<"Lot">
   status?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Lot"> | Date | string
@@ -295,13 +290,13 @@ export type LotCreateInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
   category: Prisma.CategoryCreateNestedOneWithoutLotsInput
   auction?: Prisma.AuctionCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageCreateNestedManyWithoutLotInput
 }
 
 export type LotUncheckedCreateInput = {
@@ -311,11 +306,11 @@ export type LotUncheckedCreateInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageUncheckedCreateNestedManyWithoutLotInput
 }
 
 export type LotUpdateInput = {
@@ -323,13 +318,13 @@ export type LotUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutLotsNestedInput
   auction?: Prisma.AuctionUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateInput = {
@@ -339,11 +334,11 @@ export type LotUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUncheckedUpdateManyWithoutLotNestedInput
 }
 
 export type LotCreateManyInput = {
@@ -353,7 +348,6 @@ export type LotCreateManyInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -364,7 +358,6 @@ export type LotUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -377,7 +370,6 @@ export type LotUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -393,14 +385,6 @@ export type LotOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type StringNullableListFilter<$PrismaModel = never> = {
-  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
-  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
-  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
-  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
-  isEmpty?: boolean
-}
-
 export type LotCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sellerProfileId?: Prisma.SortOrder
@@ -408,7 +392,6 @@ export type LotCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   condition?: Prisma.SortOrder
-  images?: Prisma.SortOrder
   status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -527,13 +510,18 @@ export type LotUncheckedUpdateManyWithoutCategoryNestedInput = {
   deleteMany?: Prisma.LotScalarWhereInput | Prisma.LotScalarWhereInput[]
 }
 
-export type LotCreateimagesInput = {
-  set: string[]
+export type LotCreateNestedOneWithoutLotImagesInput = {
+  create?: Prisma.XOR<Prisma.LotCreateWithoutLotImagesInput, Prisma.LotUncheckedCreateWithoutLotImagesInput>
+  connectOrCreate?: Prisma.LotCreateOrConnectWithoutLotImagesInput
+  connect?: Prisma.LotWhereUniqueInput
 }
 
-export type LotUpdateimagesInput = {
-  set?: string[]
-  push?: string | string[]
+export type LotUpdateOneRequiredWithoutLotImagesNestedInput = {
+  create?: Prisma.XOR<Prisma.LotCreateWithoutLotImagesInput, Prisma.LotUncheckedCreateWithoutLotImagesInput>
+  connectOrCreate?: Prisma.LotCreateOrConnectWithoutLotImagesInput
+  upsert?: Prisma.LotUpsertWithoutLotImagesInput
+  connect?: Prisma.LotWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.LotUpdateToOneWithWhereWithoutLotImagesInput, Prisma.LotUpdateWithoutLotImagesInput>, Prisma.LotUncheckedUpdateWithoutLotImagesInput>
 }
 
 export type LotCreateNestedOneWithoutAuctionInput = {
@@ -555,12 +543,12 @@ export type LotCreateWithoutSellerProfileInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.CategoryCreateNestedOneWithoutLotsInput
   auction?: Prisma.AuctionCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageCreateNestedManyWithoutLotInput
 }
 
 export type LotUncheckedCreateWithoutSellerProfileInput = {
@@ -569,11 +557,11 @@ export type LotUncheckedCreateWithoutSellerProfileInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageUncheckedCreateNestedManyWithoutLotInput
 }
 
 export type LotCreateOrConnectWithoutSellerProfileInput = {
@@ -612,7 +600,6 @@ export type LotScalarWhereInput = {
   title?: Prisma.StringFilter<"Lot"> | string
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
-  images?: Prisma.StringNullableListFilter<"Lot">
   status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
@@ -623,12 +610,12 @@ export type LotCreateWithoutCategoryInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
   auction?: Prisma.AuctionCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageCreateNestedManyWithoutLotInput
 }
 
 export type LotUncheckedCreateWithoutCategoryInput = {
@@ -637,11 +624,11 @@ export type LotUncheckedCreateWithoutCategoryInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
+  lotImages?: Prisma.LotImageUncheckedCreateNestedManyWithoutLotInput
 }
 
 export type LotCreateOrConnectWithoutCategoryInput = {
@@ -670,17 +657,85 @@ export type LotUpdateManyWithWhereWithoutCategoryInput = {
   data: Prisma.XOR<Prisma.LotUpdateManyMutationInput, Prisma.LotUncheckedUpdateManyWithoutCategoryInput>
 }
 
-export type LotCreateWithoutAuctionInput = {
+export type LotCreateWithoutLotImagesInput = {
   id?: string
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
   category: Prisma.CategoryCreateNestedOneWithoutLotsInput
+  auction?: Prisma.AuctionCreateNestedOneWithoutLotInput
+}
+
+export type LotUncheckedCreateWithoutLotImagesInput = {
+  id?: string
+  sellerProfileId: string
+  categoryId: string
+  title: string
+  description: string
+  condition: string
+  status?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
+}
+
+export type LotCreateOrConnectWithoutLotImagesInput = {
+  where: Prisma.LotWhereUniqueInput
+  create: Prisma.XOR<Prisma.LotCreateWithoutLotImagesInput, Prisma.LotUncheckedCreateWithoutLotImagesInput>
+}
+
+export type LotUpsertWithoutLotImagesInput = {
+  update: Prisma.XOR<Prisma.LotUpdateWithoutLotImagesInput, Prisma.LotUncheckedUpdateWithoutLotImagesInput>
+  create: Prisma.XOR<Prisma.LotCreateWithoutLotImagesInput, Prisma.LotUncheckedCreateWithoutLotImagesInput>
+  where?: Prisma.LotWhereInput
+}
+
+export type LotUpdateToOneWithWhereWithoutLotImagesInput = {
+  where?: Prisma.LotWhereInput
+  data: Prisma.XOR<Prisma.LotUpdateWithoutLotImagesInput, Prisma.LotUncheckedUpdateWithoutLotImagesInput>
+}
+
+export type LotUpdateWithoutLotImagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  condition?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutLotsNestedInput
+  auction?: Prisma.AuctionUpdateOneWithoutLotNestedInput
+}
+
+export type LotUncheckedUpdateWithoutLotImagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerProfileId?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  condition?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
+}
+
+export type LotCreateWithoutAuctionInput = {
+  id?: string
+  title: string
+  description: string
+  condition: string
+  status?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
+  category: Prisma.CategoryCreateNestedOneWithoutLotsInput
+  lotImages?: Prisma.LotImageCreateNestedManyWithoutLotInput
 }
 
 export type LotUncheckedCreateWithoutAuctionInput = {
@@ -690,10 +745,10 @@ export type LotUncheckedCreateWithoutAuctionInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  lotImages?: Prisma.LotImageUncheckedCreateNestedManyWithoutLotInput
 }
 
 export type LotCreateOrConnectWithoutAuctionInput = {
@@ -717,12 +772,12 @@ export type LotUpdateWithoutAuctionInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutLotsNestedInput
+  lotImages?: Prisma.LotImageUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateWithoutAuctionInput = {
@@ -732,10 +787,10 @@ export type LotUncheckedUpdateWithoutAuctionInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lotImages?: Prisma.LotImageUncheckedUpdateManyWithoutLotNestedInput
 }
 
 export type LotCreateManySellerProfileInput = {
@@ -744,7 +799,6 @@ export type LotCreateManySellerProfileInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -755,12 +809,12 @@ export type LotUpdateWithoutSellerProfileInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.CategoryUpdateOneRequiredWithoutLotsNestedInput
   auction?: Prisma.AuctionUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateWithoutSellerProfileInput = {
@@ -769,11 +823,11 @@ export type LotUncheckedUpdateWithoutSellerProfileInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUncheckedUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateManyWithoutSellerProfileInput = {
@@ -782,7 +836,6 @@ export type LotUncheckedUpdateManyWithoutSellerProfileInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -794,7 +847,6 @@ export type LotCreateManyCategoryInput = {
   title: string
   description: string
   condition: string
-  images?: Prisma.LotCreateimagesInput | string[]
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -805,12 +857,12 @@ export type LotUpdateWithoutCategoryInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
   auction?: Prisma.AuctionUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateWithoutCategoryInput = {
@@ -819,11 +871,11 @@ export type LotUncheckedUpdateWithoutCategoryInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
+  lotImages?: Prisma.LotImageUncheckedUpdateManyWithoutLotNestedInput
 }
 
 export type LotUncheckedUpdateManyWithoutCategoryInput = {
@@ -832,12 +884,40 @@ export type LotUncheckedUpdateManyWithoutCategoryInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.LotUpdateimagesInput | string[]
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type LotCountOutputType
+ */
+
+export type LotCountOutputType = {
+  lotImages: number
+}
+
+export type LotCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lotImages?: boolean | LotCountOutputTypeCountLotImagesArgs
+}
+
+/**
+ * LotCountOutputType without action
+ */
+export type LotCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the LotCountOutputType
+   */
+  select?: Prisma.LotCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * LotCountOutputType without action
+ */
+export type LotCountOutputTypeCountLotImagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.LotImageWhereInput
+}
 
 
 export type LotSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -847,13 +927,14 @@ export type LotSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   title?: boolean
   description?: boolean
   condition?: boolean
-  images?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sellerProfile?: boolean | Prisma.SellerProfileDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   auction?: boolean | Prisma.Lot$auctionArgs<ExtArgs>
+  lotImages?: boolean | Prisma.Lot$lotImagesArgs<ExtArgs>
+  _count?: boolean | Prisma.LotCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["lot"]>
 
 export type LotSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -863,7 +944,6 @@ export type LotSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   title?: boolean
   description?: boolean
   condition?: boolean
-  images?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -878,7 +958,6 @@ export type LotSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   title?: boolean
   description?: boolean
   condition?: boolean
-  images?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -893,17 +972,18 @@ export type LotSelectScalar = {
   title?: boolean
   description?: boolean
   condition?: boolean
-  images?: boolean
   status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type LotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sellerProfileId" | "categoryId" | "title" | "description" | "condition" | "images" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["lot"]>
+export type LotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sellerProfileId" | "categoryId" | "title" | "description" | "condition" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["lot"]>
 export type LotInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sellerProfile?: boolean | Prisma.SellerProfileDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   auction?: boolean | Prisma.Lot$auctionArgs<ExtArgs>
+  lotImages?: boolean | Prisma.Lot$lotImagesArgs<ExtArgs>
+  _count?: boolean | Prisma.LotCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type LotIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sellerProfile?: boolean | Prisma.SellerProfileDefaultArgs<ExtArgs>
@@ -920,6 +1000,7 @@ export type $LotPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     sellerProfile: Prisma.$SellerProfilePayload<ExtArgs>
     category: Prisma.$CategoryPayload<ExtArgs>
     auction: Prisma.$AuctionPayload<ExtArgs> | null
+    lotImages: Prisma.$LotImagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -928,7 +1009,6 @@ export type $LotPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     title: string
     description: string
     condition: string
-    images: string[]
     status: string
     createdAt: Date
     updatedAt: Date
@@ -1329,6 +1409,7 @@ export interface Prisma__LotClient<T, Null = never, ExtArgs extends runtime.Type
   sellerProfile<T extends Prisma.SellerProfileDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SellerProfileDefaultArgs<ExtArgs>>): Prisma.Prisma__SellerProfileClient<runtime.Types.Result.GetResult<Prisma.$SellerProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   auction<T extends Prisma.Lot$auctionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Lot$auctionArgs<ExtArgs>>): Prisma.Prisma__AuctionClient<runtime.Types.Result.GetResult<Prisma.$AuctionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  lotImages<T extends Prisma.Lot$lotImagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Lot$lotImagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LotImagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1364,7 +1445,6 @@ export interface LotFieldRefs {
   readonly title: Prisma.FieldRef<"Lot", 'String'>
   readonly description: Prisma.FieldRef<"Lot", 'String'>
   readonly condition: Prisma.FieldRef<"Lot", 'String'>
-  readonly images: Prisma.FieldRef<"Lot", 'String[]'>
   readonly status: Prisma.FieldRef<"Lot", 'String'>
   readonly createdAt: Prisma.FieldRef<"Lot", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Lot", 'DateTime'>
@@ -1780,6 +1860,30 @@ export type Lot$auctionArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
    */
   include?: Prisma.AuctionInclude<ExtArgs> | null
   where?: Prisma.AuctionWhereInput
+}
+
+/**
+ * Lot.lotImages
+ */
+export type Lot$lotImagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the LotImage
+   */
+  select?: Prisma.LotImageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the LotImage
+   */
+  omit?: Prisma.LotImageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LotImageInclude<ExtArgs> | null
+  where?: Prisma.LotImageWhereInput
+  orderBy?: Prisma.LotImageOrderByWithRelationInput | Prisma.LotImageOrderByWithRelationInput[]
+  cursor?: Prisma.LotImageWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.LotImageScalarFieldEnum | Prisma.LotImageScalarFieldEnum[]
 }
 
 /**

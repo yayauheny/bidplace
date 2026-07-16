@@ -38,6 +38,11 @@ export type Category = Prisma.CategoryModel
  */
 export type Lot = Prisma.LotModel
 /**
+ * Model LotImage
+ * 
+ */
+export type LotImage = Prisma.LotImageModel
+/**
  * Model Auction
  * 
  */

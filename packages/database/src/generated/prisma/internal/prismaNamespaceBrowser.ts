@@ -53,6 +53,7 @@ export const ModelName = {
   SellerProfile: 'SellerProfile',
   Category: 'Category',
   Lot: 'Lot',
+  LotImage: 'LotImage',
   Auction: 'Auction',
   Bid: 'Bid'
 } as const
@@ -124,13 +125,26 @@ export const LotScalarFieldEnum = {
   title: 'title',
   description: 'description',
   condition: 'condition',
-  images: 'images',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type LotScalarFieldEnum = (typeof LotScalarFieldEnum)[keyof typeof LotScalarFieldEnum]
+
+
+export const LotImageScalarFieldEnum = {
+  id: 'id',
+  lotId: 'lotId',
+  position: 'position',
+  mimeType: 'mimeType',
+  byteLength: 'byteLength',
+  data: 'data',
+  checksum: 'checksum',
+  createdAt: 'createdAt'
+} as const
+
+export type LotImageScalarFieldEnum = (typeof LotImageScalarFieldEnum)[keyof typeof LotImageScalarFieldEnum]
 
 
 export const AuctionScalarFieldEnum = {

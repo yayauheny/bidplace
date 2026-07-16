@@ -116,7 +116,6 @@ async function createAuctionWithLot(options: {
       description: 'Integration test lot',
       condition: 'excellent',
       status: 'published',
-      images: [],
     },
   });
 

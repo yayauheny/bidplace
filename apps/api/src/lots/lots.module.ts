@@ -6,10 +6,9 @@ import { LotsService } from './lots.service';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../core/database';
 import { RateLimitModule } from '../core/rate-limit';
-import { StorageModule } from '../core/storage';
 
 @Module({
-  imports: [AuthModule, DatabaseModule, RateLimitModule, StorageModule],
+  imports: [AuthModule, DatabaseModule, RateLimitModule],
   controllers: [LotsController, SellerLotsController],
   providers: [LotsService],
   exports: [LotsService],

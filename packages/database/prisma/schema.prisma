@@ -62,15 +62,31 @@ model Lot {
   title           String        @db.VarChar(200)
   description     String        @db.Text
   condition       String        @db.VarChar(120)
-  images          String[]      @default([])
   status          String        @default("draft")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Restrict)
   category        Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   auction         Auction?
+  lotImages       LotImage[]
 
   @@map("lots")
+}
+
+model LotImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  lotId      String   @map("lot_id") @db.Uuid
+  position   Int
+  mimeType   String   @map("mime_type") @db.VarChar(100)
+  byteLength Int      @map("byte_length")
+  data       Bytes
+  checksum   String   @db.Char(64)
+  createdAt  DateTime @default(now()) @map("created_at")
+  lot        Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@index([lotId])
+  @@unique([lotId, position])
+  @@map("lot_images")
 }
 
 model Auction {

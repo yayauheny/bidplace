@@ -11,7 +11,10 @@ type LotRecord = {
   title: string;
   description: string;
   condition: string;
-  images: string[];
+  lotImages: Array<{
+    id: string;
+    position: number;
+  }>;
   status: 'draft' | 'published' | 'sold' | 'hidden' | 'archived';
   createdAt: Date;
   updatedAt: Date;
@@ -25,7 +28,7 @@ function createLotRecord(overrides: Partial<LotRecord> = {}): LotRecord {
     title: 'Signed Ceramic Vase',
     description: 'Handmade ceramic vase.',
     condition: 'excellent',
-    images: ['/uploads/lots/vase.jpg'],
+    lotImages: [{ id: '9cb88056-f0dc-4309-84e4-090af8ace1e2', position: 0 }],
     status: 'draft',
     createdAt: new Date('2026-07-13T12:00:00.000Z'),
     updatedAt: new Date('2026-07-13T12:00:00.000Z'),
@@ -71,7 +74,12 @@ describe('LotsService', () => {
         description: 'Handmade ceramic vase.',
         condition: 'excellent',
       },
-      ['/uploads/lots/vase.jpg'],
+      [
+        {
+          buffer: Buffer.from('image-bytes'),
+          mimetype: 'image/jpeg',
+        },
+      ],
     );
 
     expect(prisma.lot.create).toHaveBeenCalledWith({
@@ -81,13 +89,25 @@ describe('LotsService', () => {
         title: 'Signed Ceramic Vase',
         description: 'Handmade ceramic vase.',
         condition: 'excellent',
-        images: ['/uploads/lots/vase.jpg'],
+        lotImages: {
+          create: [
+            {
+              position: 0,
+              mimeType: 'image/jpeg',
+              byteLength: 11,
+              data: Uint8Array.from(Buffer.from('image-bytes')),
+              checksum:
+                '2c8648d103e3dd7ad87660da0f126a1443b6d21ac1bd3ec000c5e24e2373a90c',
+            },
+          ],
+        },
         status: 'draft',
       },
       select: lotContractSelect,
     });
     expect(result.lot.status).toBe('draft');
     expect(result.lot.images).toHaveLength(1);
+    expect(result.lot.images[0]).toBe('/api/images/9cb88056-f0dc-4309-84e4-090af8ace1e2');
   });
 
   it('rejects lot creation when the seller profile is missing', async () => {

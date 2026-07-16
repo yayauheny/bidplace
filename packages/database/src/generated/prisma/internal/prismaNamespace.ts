@@ -394,6 +394,7 @@ export const ModelName = {
   SellerProfile: 'SellerProfile',
   Category: 'Category',
   Lot: 'Lot',
+  LotImage: 'LotImage',
   Auction: 'Auction',
   Bid: 'Bid'
 } as const
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "sellerProfile" | "category" | "lot" | "auction" | "bid"
+    modelProps: "user" | "sellerProfile" | "category" | "lot" | "lotImage" | "auction" | "bid"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -711,6 +712,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    LotImage: {
+      payload: Prisma.$LotImagePayload<ExtArgs>
+      fields: Prisma.LotImageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LotImageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LotImageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        findFirst: {
+          args: Prisma.LotImageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LotImageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        findMany: {
+          args: Prisma.LotImageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>[]
+        }
+        create: {
+          args: Prisma.LotImageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        createMany: {
+          args: Prisma.LotImageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.LotImageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>[]
+        }
+        delete: {
+          args: Prisma.LotImageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        update: {
+          args: Prisma.LotImageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        deleteMany: {
+          args: Prisma.LotImageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LotImageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.LotImageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>[]
+        }
+        upsert: {
+          args: Prisma.LotImageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LotImagePayload>
+        }
+        aggregate: {
+          args: Prisma.LotImageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLotImage>
+        }
+        groupBy: {
+          args: Prisma.LotImageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LotImageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LotImageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LotImageCountAggregateOutputType> | number
+        }
+      }
+    }
     Auction: {
       payload: Prisma.$AuctionPayload<ExtArgs>
       fields: Prisma.AuctionFieldRefs
@@ -949,13 +1024,26 @@ export const LotScalarFieldEnum = {
   title: 'title',
   description: 'description',
   condition: 'condition',
-  images: 'images',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type LotScalarFieldEnum = (typeof LotScalarFieldEnum)[keyof typeof LotScalarFieldEnum]
+
+
+export const LotImageScalarFieldEnum = {
+  id: 'id',
+  lotId: 'lotId',
+  position: 'position',
+  mimeType: 'mimeType',
+  byteLength: 'byteLength',
+  data: 'data',
+  checksum: 'checksum',
+  createdAt: 'createdAt'
+} as const
+
+export type LotImageScalarFieldEnum = (typeof LotImageScalarFieldEnum)[keyof typeof LotImageScalarFieldEnum]
 
 
 export const AuctionScalarFieldEnum = {
@@ -1063,6 +1151,20 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Bytes'
+ */
+export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
+    
+
+
+/**
+ * Reference to a field of type 'Bytes[]'
+ */
+export type ListBytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes[]'>
     
 
 
@@ -1184,6 +1286,7 @@ export type GlobalOmitConfig = {
   sellerProfile?: Prisma.SellerProfileOmit
   category?: Prisma.CategoryOmit
   lot?: Prisma.LotOmit
+  lotImage?: Prisma.LotImageOmit
   auction?: Prisma.AuctionOmit
   bid?: Prisma.BidOmit
 }

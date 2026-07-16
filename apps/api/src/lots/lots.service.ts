@@ -5,6 +5,10 @@ import {
   lotResponseSchema,
   sellerLotListResponseSchema,
 } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
+import {
+  createHash,
+} from 'node:crypto';
 import {
   ForbiddenException,
   Inject,
@@ -16,6 +20,11 @@ import { lotContractSelect, toContractLot } from './lot.mapper';
 import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
 
+export type LotImageUpload = {
+  buffer: Buffer;
+  mimetype: string;
+};
+
 export interface LotsRepository {
   sellerProfile: {
     findUnique: PrismaService['sellerProfile']['findUnique'];
@@ -26,6 +35,23 @@ export interface LotsRepository {
   lot: {
     findMany: PrismaService['lot']['findMany'];
     create: PrismaService['lot']['create'];
+  };
+}
+
+function createLotImageChecksum(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
+function toLotImageCreateData(
+  image: LotImageUpload,
+  position: number,
+): Prisma.LotImageUncheckedCreateWithoutLotInput {
+  return {
+    position,
+    mimeType: image.mimetype,
+    byteLength: image.buffer.byteLength,
+    data: Uint8Array.from(image.buffer),
+    checksum: createLotImageChecksum(image.buffer),
   };
 }
 
@@ -65,7 +91,7 @@ export class LotsService {
   async createLot(
     userId: string,
     input: LotCreateRequest,
-    images: readonly string[],
+    images: readonly LotImageUpload[],
   ): Promise<LotResponse> {
     const sellerProfile = (await this.prisma.sellerProfile.findUnique({
       where: {
@@ -98,16 +124,23 @@ export class LotsService {
       throw new NotFoundException('Category not found');
     }
 
+    const lotCreateData: Prisma.LotUncheckedCreateInput = {
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      title: input.title,
+      description: input.description,
+      condition: input.condition,
+      status: 'draft',
+    };
+
+    if (images.length > 0) {
+      lotCreateData.lotImages = {
+        create: images.map((image, index) => toLotImageCreateData(image, index)),
+      };
+    }
+
     const lot = await this.prisma.lot.create({
-      data: {
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: input.title,
-        description: input.description,
-        condition: input.condition,
-        images: [...images],
-        status: 'draft',
-      },
+      data: lotCreateData,
       select: lotContractSelect,
     });
 

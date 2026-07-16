@@ -15,8 +15,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 
 import { CurrentUser, BearerAuthGuard } from '../auth';
-import { LotsService } from './lots.service';
-import { FileStorageService } from '../core/storage';
+import { LotsService, type LotImageUpload } from './lots.service';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
@@ -43,10 +42,7 @@ function imageFileFilter(
 @Controller('lots')
 @UseGuards(BearerAuthGuard)
 export class LotsController {
-  constructor(
-    private readonly lotsService: LotsService,
-    private readonly fileStorageService: FileStorageService,
-  ) {}
+  constructor(private readonly lotsService: LotsService) {}
 
   @Post()
   @UseGuards(RateLimitGuard)
@@ -69,18 +65,11 @@ export class LotsController {
     @CurrentUser() auth: AuthTokenPayload,
     @Body() body: unknown,
     @UploadedFiles()
-    files: Array<{ buffer: Buffer; originalname: string; mimetype: string }> = [],
+    files: LotImageUpload[] = [],
   ) {
     const input = parseBody(lotCreateRequestSchema, body);
-    const storedImages = await this.fileStorageService.storeImages(files);
+    const lot = await this.lotsService.createLot(auth.sub, input, files);
 
-    try {
-      const lot = await this.lotsService.createLot(auth.sub, input, storedImages);
-
-      return lotResponseSchema.parse(lot);
-    } catch (error: unknown) {
-      await this.fileStorageService.deleteFiles(storedImages);
-      throw error;
-    }
+    return lotResponseSchema.parse(lot);
   }
 }
