@@ -29,6 +29,19 @@ export const lotCreateRequestSchema = z
 
 export const lotUpdateRequestSchema = lotCreateRequestSchema.partial().strict();
 
+export const lotImageReorderRequestSchema = z
+  .object({
+    imageIds: z.array(uuidSchema).min(1),
+  })
+  .strict()
+  .refine(
+    ({ imageIds }) => new Set(imageIds).size === imageIds.length,
+    {
+      message: 'imageIds must not contain duplicates',
+      path: ['imageIds'],
+    },
+  );
+
 export const lotResponseSchema = z
   .object({
     lot: lotSchema,
@@ -38,4 +51,5 @@ export const lotResponseSchema = z
 export type Lot = z.infer<typeof lotSchema>;
 export type LotCreateRequest = z.infer<typeof lotCreateRequestSchema>;
 export type LotUpdateRequest = z.infer<typeof lotUpdateRequestSchema>;
+export type LotImageReorderRequest = z.infer<typeof lotImageReorderRequestSchema>;
 export type LotResponse = z.infer<typeof lotResponseSchema>;

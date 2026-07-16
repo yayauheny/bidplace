@@ -77,7 +77,7 @@ describe('LotsService', () => {
       [
         {
           buffer: Buffer.from('image-bytes'),
-          mimetype: 'image/jpeg',
+          mimeType: 'image/jpeg',
         },
       ],
     );

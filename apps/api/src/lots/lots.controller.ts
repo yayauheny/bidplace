@@ -15,23 +15,25 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 
 import { CurrentUser, BearerAuthGuard } from '../auth';
-import { LotsService, type LotImageUpload } from './lots.service';
+import { LotsService } from './lots.service';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
-
-const allowedImageMimeTypes = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-]);
+import {
+  lotImageUploadLimits,
+  supportedImageMimeTypes,
+  type RawImageUpload,
+  validateLotImageUploads,
+} from '../images/image-policy';
 
 function imageFileFilter(
   _request: unknown,
   file: { mimetype?: string },
   callback: (error: Error | null, acceptFile: boolean) => void,
 ) {
-  if (!file.mimetype || !allowedImageMimeTypes.has(file.mimetype)) {
+  if (
+    file.mimetype &&
+    !supportedImageMimeTypes.some((mimeType) => mimeType === file.mimetype)
+  ) {
     callback(new BadRequestException('Unsupported image type'), false);
     return;
   }
@@ -53,10 +55,11 @@ export class LotsController {
     scope: 'user',
   })
   @UseInterceptors(
-    FilesInterceptor('images', 8, {
+    FilesInterceptor('images', lotImageUploadLimits.maxFiles, {
       limits: {
-        files: 8,
-        fileSize: 5 * 1024 * 1024,
+        files: lotImageUploadLimits.maxFiles,
+        fileSize: lotImageUploadLimits.maxFileBytes,
+        parts: lotImageUploadLimits.maxFiles + 10,
       },
       fileFilter: imageFileFilter,
     }),
@@ -65,10 +68,14 @@ export class LotsController {
     @CurrentUser() auth: AuthTokenPayload,
     @Body() body: unknown,
     @UploadedFiles()
-    files: LotImageUpload[] = [],
+    files: RawImageUpload[] = [],
   ) {
     const input = parseBody(lotCreateRequestSchema, body);
-    const lot = await this.lotsService.createLot(auth.sub, input, files);
+    const lot = await this.lotsService.createLot(
+      auth.sub,
+      input,
+      validateLotImageUploads(files),
+    );
 
     return lotResponseSchema.parse(lot);
   }

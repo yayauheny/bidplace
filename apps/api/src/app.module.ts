@@ -11,6 +11,7 @@ import { HealthModule } from './core/health';
 import { LoggerModule } from './core/logger';
 import { RealtimeModule } from './core/realtime';
 import { ClockModule } from './core/time';
+import { ImagesModule } from './images/images.module';
 import { LotsModule } from './lots/lots.module';
 import { SellersModule } from './sellers/sellers.module';
 
@@ -26,6 +27,7 @@ import { SellersModule } from './sellers/sellers.module';
     AuthModule,
     SellersModule,
     LotsModule,
+    ImagesModule,
     BidsModule,
     RealtimeModule,
     AuctionsModule,

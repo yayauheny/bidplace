@@ -19,11 +19,7 @@ import {
 import { lotContractSelect, toContractLot } from './lot.mapper';
 import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
-
-export type LotImageUpload = {
-  buffer: Buffer;
-  mimetype: string;
-};
+import { type ValidatedImageUpload } from '../images/image-policy';
 
 export interface LotsRepository {
   sellerProfile: {
@@ -43,12 +39,12 @@ function createLotImageChecksum(buffer: Buffer): string {
 }
 
 function toLotImageCreateData(
-  image: LotImageUpload,
+  image: ValidatedImageUpload,
   position: number,
 ): Prisma.LotImageUncheckedCreateWithoutLotInput {
   return {
     position,
-    mimeType: image.mimetype,
+    mimeType: image.mimeType,
     byteLength: image.buffer.byteLength,
     data: Uint8Array.from(image.buffer),
     checksum: createLotImageChecksum(image.buffer),
@@ -91,7 +87,7 @@ export class LotsService {
   async createLot(
     userId: string,
     input: LotCreateRequest,
-    images: readonly LotImageUpload[],
+    images: readonly ValidatedImageUpload[],
   ): Promise<LotResponse> {
     const sellerProfile = (await this.prisma.sellerProfile.findUnique({
       where: {

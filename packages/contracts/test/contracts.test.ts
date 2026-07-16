@@ -16,6 +16,7 @@ import {
   bidPlacementResponseSchema,
   categoryListResponseSchema,
   lotCreateRequestSchema,
+  lotImageReorderRequestSchema,
   lotResponseSchema,
   loginRequestSchema,
   paginationQuerySchema,
@@ -147,6 +148,28 @@ describe('shared contracts', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it('accepts lot image reorder payloads', () => {
+    const result = lotImageReorderRequestSchema.safeParse({
+      imageIds: [
+        '9cb88056-f0dc-4309-84e4-090af8ace1e2',
+        '497d0f80-12eb-43c4-931f-816225c92c8b',
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects duplicate lot image ids during reorder', () => {
+    const result = lotImageReorderRequestSchema.safeParse({
+      imageIds: [
+        '9cb88056-f0dc-4309-84e4-090af8ace1e2',
+        '9cb88056-f0dc-4309-84e4-090af8ace1e2',
+      ],
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it('accepts auth responses with a user payload', () => {
