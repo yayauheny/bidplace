@@ -7,6 +7,7 @@ import {
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Decimal } from '@bidplace/database';
 
+import { parseAuctionStatus, parseBidStatus } from '../core/contracts';
 import {
   canActivateAuction,
   canCloseAuction,
@@ -39,6 +40,17 @@ type LifecycleAuctionRecord = {
   currentPrice: Decimal;
   bidCount: number;
   winnerBidId: string | null;
+  status: string;
+  startsAt: Date;
+  endsAt: Date;
+};
+
+type LifecycleAuctionState = {
+  id: string;
+  reservePrice: Decimal;
+  currentPrice: Decimal;
+  bidCount: number;
+  winnerBidId: string | null;
   status: Auction['status'];
   startsAt: Date;
   endsAt: Date;
@@ -52,6 +64,13 @@ const lifecycleBidSelect = {
 };
 
 type LifecycleBidRecord = {
+  id: string;
+  amount: Decimal;
+  status: string;
+  createdAt: Date;
+};
+
+type LifecycleBidState = {
   id: string;
   amount: Decimal;
   status: Bid['status'];
@@ -78,6 +97,30 @@ export interface AuctionLifecyclePublisher {
 }
 
 const LIFECYCLE_BATCH_SIZE = 100;
+
+function toLifecycleAuctionState(
+  auction: LifecycleAuctionRecord,
+): LifecycleAuctionState {
+  return {
+    id: auction.id,
+    reservePrice: auction.reservePrice,
+    currentPrice: auction.currentPrice,
+    bidCount: auction.bidCount,
+    winnerBidId: auction.winnerBidId,
+    status: parseAuctionStatus(auction.status, auction.id),
+    startsAt: auction.startsAt,
+    endsAt: auction.endsAt,
+  };
+}
+
+function toLifecycleBidState(bid: LifecycleBidRecord): LifecycleBidState {
+  return {
+    id: bid.id,
+    amount: bid.amount,
+    status: parseBidStatus(bid.status, bid.id),
+    createdAt: bid.createdAt,
+  };
+}
 
 @Injectable()
 export class AuctionLifecycleService {
@@ -194,31 +237,38 @@ export class AuctionLifecycleService {
     now = this.clock.now(),
   ): Promise<AuctionEndedEventPayload | null> {
     const result = await runSerializableTransaction(this.prisma, async (tx) => {
-    const auction = (await tx.auction.findUnique({
-      where: {
-        id: auctionId,
-      },
-      select: lifecycleAuctionSelect,
-    })) as LifecycleAuctionRecord | null;
+      const auction = (await tx.auction.findUnique({
+        where: {
+          id: auctionId,
+        },
+        select: lifecycleAuctionSelect,
+      })) as LifecycleAuctionRecord | null;
 
-      if (!auction || !canCloseAuction(auction.status, auction.endsAt, now)) {
+      if (!auction) {
         return null;
       }
 
-        const eligibleBids = (await tx.bid.findMany({
-          where: {
-            auctionId,
-            status: {
-              in: [...eligibleBidStatuses],
-            },
+      const lifecycleAuction = toLifecycleAuctionState(auction);
+
+      if (!canCloseAuction(lifecycleAuction.status, lifecycleAuction.endsAt, now)) {
+        return null;
+      }
+
+      const eligibleBids = (await tx.bid.findMany({
+        where: {
+          auctionId,
+          status: {
+            in: [...eligibleBidStatuses],
           },
-          select: lifecycleBidSelect,
+        },
+        select: lifecycleBidSelect,
         orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
       })) as LifecycleBidRecord[];
 
-      const winningBid = findHighestEligibleBid(eligibleBids);
-      const closingPrice = winningBid?.amount ?? auction.currentPrice;
-      const reserveMet = reserveReached(closingPrice, auction.reservePrice);
+      const parsedEligibleBids = eligibleBids.map((bid) => toLifecycleBidState(bid));
+      const winningBid = findHighestEligibleBid(parsedEligibleBids);
+      const closingPrice = winningBid?.amount ?? lifecycleAuction.currentPrice;
+      const reserveMet = reserveReached(closingPrice, lifecycleAuction.reservePrice);
       const sold = reserveMet && winningBid !== null;
 
       const updatedAuction = await tx.auction.updateMany({
@@ -291,10 +341,13 @@ export class AuctionLifecycleService {
         auctionUpdate: mapAuctionUpdatedEventPayload(
           {
             id: auctionId,
-            currentPrice: sold && winningBid ? winningBid.amount.toNumber() : auction.currentPrice.toNumber(),
-            bidCount: auction.bidCount,
+            currentPrice:
+              sold && winningBid
+                ? winningBid.amount.toNumber()
+                : lifecycleAuction.currentPrice.toNumber(),
+            bidCount: lifecycleAuction.bidCount,
             status: sold ? 'sold' : 'failed',
-            endsAt: auction.endsAt.toISOString(),
+            endsAt: lifecycleAuction.endsAt.toISOString(),
             winnerBidId: sold && winningBid ? winningBid.id : null,
           },
           reserveMet,
@@ -324,9 +377,19 @@ export class AuctionLifecycleService {
         select: lifecycleAuctionSelect,
       })) as LifecycleAuctionRecord | null;
 
+      if (!auction) {
+        return null;
+      }
+
+      const lifecycleAuction = toLifecycleAuctionState(auction);
+
       if (
-        !auction ||
-        !canActivateAuction(auction.status, auction.startsAt, auction.endsAt, now)
+        !canActivateAuction(
+          lifecycleAuction.status,
+          lifecycleAuction.startsAt,
+          lifecycleAuction.endsAt,
+          now,
+        )
       ) {
         return null;
       }
@@ -356,13 +419,16 @@ export class AuctionLifecycleService {
         auctionUpdate: mapAuctionUpdatedEventPayload(
           {
             id: auctionId,
-            currentPrice: auction.currentPrice.toNumber(),
-            bidCount: auction.bidCount,
+            currentPrice: lifecycleAuction.currentPrice.toNumber(),
+            bidCount: lifecycleAuction.bidCount,
             status: 'active',
-            endsAt: auction.endsAt.toISOString(),
-            winnerBidId: auction.winnerBidId,
+            endsAt: lifecycleAuction.endsAt.toISOString(),
+            winnerBidId: lifecycleAuction.winnerBidId,
           },
-          reserveReached(auction.currentPrice, auction.reservePrice),
+          reserveReached(
+            lifecycleAuction.currentPrice,
+            lifecycleAuction.reservePrice,
+          ),
         ),
       };
     });

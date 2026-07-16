@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { AuthTokenService } from './auth-token.service';
+import { type RawAuthUserRecord, toContractUser } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
 import { PrismaService } from '../core/database';
 
@@ -26,19 +27,6 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
     (error as { code?: unknown }).code === 'P2002'
   );
 }
-
-type PrismaUser = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  phone: string;
-  displayName: string;
-  role: ContractUser['role'];
-  status: ContractUser['status'];
-  sessionVersion: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export interface AuthRepository {
   user: {
@@ -87,7 +75,7 @@ export class AuthService {
           status: 'active',
           sessionVersion: 0,
         },
-      })) as PrismaUser;
+      })) as RawAuthUserRecord;
 
       return this.createAuthResponse(user);
     } catch (error: unknown) {
@@ -105,13 +93,15 @@ export class AuthService {
       where: {
         email,
       },
-    })) as PrismaUser | null;
+    })) as RawAuthUserRecord | null;
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.status !== 'active') {
+    const contractUser = toContractUser(user);
+
+    if (contractUser.status !== 'active') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -132,13 +122,13 @@ export class AuthService {
       where: {
         id: userId,
       },
-    })) as PrismaUser | null;
+    })) as RawAuthUserRecord | null;
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    return this.toContractUser(user);
+    return toContractUser(user);
   }
 
   async logout(userId: string): Promise<void> {
@@ -154,28 +144,17 @@ export class AuthService {
     });
   }
 
-  private createAuthResponse(user: PrismaUser): AuthSessionResult {
+  private createAuthResponse(user: RawAuthUserRecord): AuthSessionResult {
+    const contractUser = toContractUser(user);
+
     return {
       accessToken: this.authTokenService.sign({
         sub: user.id,
         email: user.email,
-        role: user.role,
+        role: contractUser.role,
         sessionVersion: user.sessionVersion,
       }),
-      user: this.toContractUser(user),
-    };
-  }
-
-  private toContractUser(user: PrismaUser): ContractUser {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
+      user: contractUser,
     };
   }
 }

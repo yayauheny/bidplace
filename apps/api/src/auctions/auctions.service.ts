@@ -1,12 +1,7 @@
 import {
-  type Auction,
   type AuctionCreateRequest,
   type AuctionResponse,
-  type Bid,
-  type Lot,
   type PaginationQuery,
-  type PublicBid,
-  type SellerProfile,
   auctionListResponseSchema,
   auctionResponseSchema,
   publicAuctionDetailResponseSchema,
@@ -19,14 +14,25 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Decimal } from '@bidplace/database';
 
+import {
+  parseAuctionStatus,
+  parseLotStatus,
+  parseSellerStatus,
+} from '../core/contracts';
 import {
   calculateBidStep,
   resolvePublishedAuctionStatus,
   reserveReached,
   toDecimalAmount,
 } from '../core/auction';
+import {
+  type RawAuctionListItemRecord,
+  type RawAuctionRecord,
+  toAuctionDetailItem,
+  toAuctionListItem,
+  toContractAuction,
+} from './auction.mapper';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { Clock } from '../core/time';
 import { RealtimeEventsService, mapAuctionUpdatedEventPayload } from '../core/realtime';
@@ -51,26 +57,6 @@ const auctionContractSelect = {
   updatedAt: true,
 };
 
-type AuctionContractRecord = {
-  id: string;
-  lotId: string;
-  sellerProfileId: string;
-  slug: string;
-  startPrice: Decimal;
-  reservePrice: Decimal;
-  currentPrice: Decimal;
-  currency: string;
-  bidStep: Decimal;
-  startsAt: Date;
-  endsAt: Date;
-  status: Auction['status'];
-  bidCount: number;
-  winnerBidId: string | null;
-  buyNowPrice: Decimal | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 const lotContractSelect = {
   id: true,
   sellerProfileId: true,
@@ -82,19 +68,6 @@ const lotContractSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
-};
-
-type LotContractRecord = {
-  id: string;
-  sellerProfileId: string;
-  categoryId: string;
-  title: string;
-  description: string;
-  condition: string;
-  images: string[];
-  status: Lot['status'];
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 const sellerProfileContractSelect = {
@@ -112,21 +85,6 @@ const sellerProfileContractSelect = {
   updatedAt: true,
 };
 
-type SellerProfileContractRecord = {
-  id: string;
-  userId: string;
-  slug: string;
-  sellerType: SellerProfile['sellerType'];
-  storeName: string;
-  country: string;
-  contactPreference: string;
-  socialLink: string | null;
-  shortDescription: string | null;
-  status: SellerProfile['status'];
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 const publicBidSelect = {
   id: true,
   auctionId: true,
@@ -135,16 +93,6 @@ const publicBidSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
-};
-
-type PublicBidRecord = {
-  id: string;
-  auctionId: string;
-  bidderUserId: string;
-  amount: Decimal;
-  status: Bid['status'];
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 const publicAuctionListSelect = {
@@ -157,13 +105,56 @@ const publicAuctionListSelect = {
   },
 };
 
-type PublicAuctionListRecord = AuctionContractRecord & {
-  lot: LotContractRecord;
-  sellerProfile: SellerProfileContractRecord;
+type SellerProfileStatusRecord = {
+  id: string;
+  status: string;
 };
 
-type PublicAuctionDetailRecord = PublicAuctionListRecord & {
-  bids: PublicBidRecord[];
+type LotStatusRecord = {
+  id: string;
+  sellerProfileId: string;
+  status: string;
+};
+
+type PublishedAuctionRecord = RawAuctionRecord & {
+  lot: {
+    id: string;
+    sellerProfileId: string;
+    categoryId: string;
+    title: string;
+    description: string;
+    condition: string;
+    images: string[];
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  sellerProfile: {
+    id: string;
+    userId: string;
+    slug: string;
+    sellerType: string;
+    storeName: string;
+    country: string;
+    contactPreference: string;
+    socialLink: string | null;
+    shortDescription: string | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+type PublishedAuctionDetailRecord = PublishedAuctionRecord & {
+  bids: Array<{
+    id: string;
+    auctionId: string;
+    bidderUserId: string;
+    amount: number | { toNumber(): number };
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 };
 
 export interface AuctionsRepository {
@@ -235,10 +226,10 @@ export class AuctionsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as AuctionContractRecord[];
+    })) as RawAuctionRecord[];
 
     return sellerAuctionListResponseSchema.parse({
-      auctions: auctions.map((auction) => this.toContractAuction(auction)),
+      auctions: auctions.map((auction) => toContractAuction(auction)),
     });
   }
 
@@ -261,14 +252,10 @@ export class AuctionsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
-    })) as PublicAuctionListRecord[];
+    })) as RawAuctionListItemRecord[];
 
     return auctionListResponseSchema.parse({
-      auctions: auctions.map((auction) => ({
-        auction: this.toContractAuction(auction),
-        lot: this.toContractLot(auction.lot),
-        sellerProfile: this.toContractSellerProfile(auction.sellerProfile),
-      })),
+      auctions: auctions.map((auction) => toAuctionListItem(auction)),
     });
   }
 
@@ -298,18 +285,15 @@ export class AuctionsService {
           orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
       },
-    })) as PublicAuctionDetailRecord | null;
+    })) as PublishedAuctionDetailRecord | null;
 
     if (!auction) {
       throw new NotFoundException('Auction not found');
     }
 
-    return publicAuctionDetailResponseSchema.parse({
-      auction: this.toContractAuction(auction),
-      lot: this.toContractLot(auction.lot),
-      sellerProfile: this.toContractSellerProfile(auction.sellerProfile),
-      bids: auction.bids.map((bid) => this.toPublicBid(bid)),
-    });
+    const detail = toAuctionDetailItem(auction);
+
+    return publicAuctionDetailResponseSchema.parse(detail);
   }
 
   async createAuction(
@@ -324,13 +308,13 @@ export class AuctionsService {
         id: true,
         status: true,
       },
-    })) as { id: string; status: SellerProfile['status'] } | null;
+    })) as SellerProfileStatusRecord | null;
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
     }
 
-    if (sellerProfile.status !== 'active') {
+    if (parseSellerStatus(sellerProfile.status, sellerProfile.id) !== 'active') {
       throw new ForbiddenException('Seller profile is not active');
     }
 
@@ -343,7 +327,7 @@ export class AuctionsService {
         sellerProfileId: true,
         status: true,
       },
-    })) as { id: string; sellerProfileId: string; status: Lot['status'] } | null;
+    })) as LotStatusRecord | null;
 
     if (!lot) {
       throw new NotFoundException('Lot not found');
@@ -353,7 +337,7 @@ export class AuctionsService {
       throw new ForbiddenException('Lot does not belong to seller');
     }
 
-    if (lot.status !== 'draft') {
+    if (parseLotStatus(lot.status, lot.id) !== 'draft') {
       throw new ConflictException('Lot is not available for auction');
     }
 
@@ -379,10 +363,10 @@ export class AuctionsService {
               : toDecimalAmount(input.buyNowPrice),
         },
         select: auctionContractSelect,
-      })) as AuctionContractRecord;
+      })) as RawAuctionRecord;
 
       return auctionResponseSchema.parse({
-        auction: this.toContractAuction(auction),
+        auction: toContractAuction(auction),
       });
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
@@ -409,13 +393,13 @@ export class AuctionsService {
         id: true,
         status: true,
       },
-    })) as { id: string; status: SellerProfile['status'] } | null;
+    })) as SellerProfileStatusRecord | null;
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
     }
 
-    if (sellerProfile.status !== 'active') {
+    if (parseSellerStatus(sellerProfile.status, sellerProfile.id) !== 'active') {
       throw new ForbiddenException('Seller profile is not active');
     }
 
@@ -435,14 +419,14 @@ export class AuctionsService {
       lotId: string;
       sellerProfileId: string;
       startsAt: Date;
-      status: Auction['status'];
+      status: string;
     } | null;
 
     if (!auction || auction.sellerProfileId !== sellerProfile.id) {
       throw new NotFoundException('Auction not found');
     }
 
-    if (auction.status !== 'draft') {
+    if (parseAuctionStatus(auction.status, auction.id) !== 'draft') {
       throw new ConflictException('Auction cannot be published');
     }
 
@@ -454,13 +438,13 @@ export class AuctionsService {
         id: true,
         status: true,
       },
-    })) as { id: string; status: Lot['status'] } | null;
+    })) as { id: string; status: string } | null;
 
     if (!lot) {
       throw new NotFoundException('Lot not found');
     }
 
-    if (lot.status !== 'draft') {
+    if (parseLotStatus(lot.status, lot.id) !== 'draft') {
       throw new ConflictException('Lot is not available for publication');
     }
 
@@ -507,11 +491,11 @@ export class AuctionsService {
         throw new NotFoundException('Auction not found');
       }
 
-      return latestAuction as AuctionContractRecord;
+      return latestAuction as RawAuctionRecord;
     });
 
     const response = auctionResponseSchema.parse({
-      auction: this.toContractAuction(updatedAuction),
+      auction: toContractAuction(updatedAuction),
     });
 
     const reserveMet = reserveReached(
@@ -520,93 +504,10 @@ export class AuctionsService {
     );
 
     this.realtimeEventsService.publishAuctionUpdated(
-      mapAuctionUpdatedEventPayload(
-        response.auction,
-        reserveMet,
-      ),
+      mapAuctionUpdatedEventPayload(response.auction, reserveMet),
     );
 
     return response;
-  }
-
-  private toContractAuction(auction: AuctionContractRecord): Auction {
-    return {
-      id: auction.id,
-      lotId: auction.lotId,
-      sellerProfileId: auction.sellerProfileId,
-      slug: auction.slug,
-      startPrice: auction.startPrice.toNumber(),
-      reservePrice: auction.reservePrice.toNumber(),
-      currentPrice: auction.currentPrice.toNumber(),
-      currency: auction.currency,
-      bidStep: auction.bidStep.toNumber(),
-      startsAt: auction.startsAt.toISOString(),
-      endsAt: auction.endsAt.toISOString(),
-      status: auction.status,
-      bidCount: auction.bidCount,
-      winnerBidId: auction.winnerBidId,
-      buyNowPrice:
-        auction.buyNowPrice === null ? null : auction.buyNowPrice.toNumber(),
-      createdAt: auction.createdAt.toISOString(),
-      updatedAt: auction.updatedAt.toISOString(),
-    };
-  }
-
-  private toContractLot(lot: LotContractRecord): Lot {
-    return {
-      id: lot.id,
-      sellerProfileId: lot.sellerProfileId,
-      categoryId: lot.categoryId,
-      title: lot.title,
-      description: lot.description,
-      condition: lot.condition,
-      images: lot.images,
-      status: lot.status,
-      createdAt: lot.createdAt.toISOString(),
-      updatedAt: lot.updatedAt.toISOString(),
-    };
-  }
-
-  private toContractSellerProfile(
-    sellerProfile: SellerProfileContractRecord,
-  ): SellerProfile {
-    return {
-      id: sellerProfile.id,
-      userId: sellerProfile.userId,
-      slug: sellerProfile.slug,
-      sellerType: sellerProfile.sellerType,
-      storeName: sellerProfile.storeName,
-      country: sellerProfile.country,
-      contactPreference: sellerProfile.contactPreference,
-      socialLink: sellerProfile.socialLink,
-      shortDescription: sellerProfile.shortDescription,
-      status: sellerProfile.status,
-      createdAt: sellerProfile.createdAt.toISOString(),
-      updatedAt: sellerProfile.updatedAt.toISOString(),
-    };
-  }
-
-  private toContractBid(bid: PublicBidRecord): Bid {
-    return {
-      id: bid.id,
-      auctionId: bid.auctionId,
-      bidderUserId: bid.bidderUserId,
-      amount: bid.amount.toNumber(),
-      status: bid.status,
-      createdAt: bid.createdAt.toISOString(),
-      updatedAt: bid.updatedAt.toISOString(),
-    };
-  }
-
-  private toPublicBid(bid: PublicBidRecord): PublicBid {
-    return {
-      id: bid.id,
-      auctionId: bid.auctionId,
-      amount: bid.amount.toNumber(),
-      status: bid.status,
-      createdAt: bid.createdAt.toISOString(),
-      updatedAt: bid.updatedAt.toISOString(),
-    };
   }
 }
 
@@ -618,13 +519,5 @@ function uniqueConstraintIncludes(
 ): boolean {
   const target = error.meta?.target;
 
-  if (!Array.isArray(target)) {
-    return false;
-  }
-
-  return target.some(
-    (value) =>
-      typeof value === 'string' &&
-      value.toLowerCase().includes(fieldName.toLowerCase()),
-  );
+  return Array.isArray(target) && target.some((field) => field === fieldName);
 }

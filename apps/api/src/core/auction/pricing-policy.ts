@@ -1,10 +1,11 @@
 import { Decimal } from '@bidplace/database';
 
 import { type Bid } from '@bidplace/contracts';
+import { type DecimalLike } from '../mapping/decimal-like';
 
 export type AuctionBidLike = {
   id: string;
-  amount: Decimal;
+  amount: DecimalLike;
   status: Bid['status'];
   createdAt: Date;
 };
@@ -28,9 +29,11 @@ export function isEligibleBidStatus(status: Bid['status']): boolean {
   return (eligibleBidStatuses as readonly Bid['status'][]).includes(status);
 }
 
-export function calculateBidStep(amount: Decimal): Decimal {
+export function calculateBidStep(amount: DecimalLike): Decimal {
+  const decimalAmount = toDecimalAmount(amount);
+
   for (const rule of BID_STEP_RULES) {
-    if (amount.lt(rule.upperBound)) {
+    if (decimalAmount.lt(rule.upperBound)) {
       return rule.step;
     }
   }
@@ -38,22 +41,24 @@ export function calculateBidStep(amount: Decimal): Decimal {
   return new Decimal(25);
 }
 
-export function resolveMinimumNextBid(currentPrice: Decimal): Decimal {
-  return currentPrice.add(calculateBidStep(currentPrice));
+export function resolveMinimumNextBid(currentPrice: DecimalLike): Decimal {
+  const decimalCurrentPrice = toDecimalAmount(currentPrice);
+
+  return decimalCurrentPrice.add(calculateBidStep(decimalCurrentPrice));
 }
 
 export function resolveCurrentPrice(
-  startPrice: Decimal,
+  startPrice: DecimalLike,
   highestEligibleBid: Decimal | null,
 ): Decimal {
-  return highestEligibleBid ?? startPrice;
+  return highestEligibleBid ?? toDecimalAmount(startPrice);
 }
 
 export function reserveReached(
-  currentPrice: Decimal,
-  reservePrice: Decimal,
+  currentPrice: DecimalLike,
+  reservePrice: DecimalLike,
 ): boolean {
-  return currentPrice.gte(reservePrice);
+  return toDecimalAmount(currentPrice).gte(toDecimalAmount(reservePrice));
 }
 
 export function findHighestEligibleBid<T extends AuctionBidLike>(
@@ -69,13 +74,15 @@ export function findHighestEligibleBid<T extends AuctionBidLike>(
 
   for (let index = 1; index < eligibleBids.length; index += 1) {
     const candidate = eligibleBids[index]!;
+    const candidateAmount = toDecimalAmount(candidate.amount);
+    const currentWinnerAmount = toDecimalAmount(currentWinner.amount);
 
-    if (candidate.amount.gt(currentWinner.amount)) {
+    if (candidateAmount.gt(currentWinnerAmount)) {
       currentWinner = candidate;
       continue;
     }
 
-    if (candidate.amount.lt(currentWinner.amount)) {
+    if (candidateAmount.lt(currentWinnerAmount)) {
       continue;
     }
 
@@ -97,11 +104,19 @@ export function findHighestEligibleBid<T extends AuctionBidLike>(
 }
 
 export function toDecimalAmount(
-  value: number | string | Decimal,
+  value: number | string | Decimal | { toNumber(): number },
 ): Decimal {
-  return value instanceof Decimal ? value : new Decimal(value);
+  if (value instanceof Decimal) {
+    return value;
+  }
+
+  if (typeof value === 'object' && value !== null && 'toNumber' in value) {
+    return new Decimal(value.toNumber());
+  }
+
+  return new Decimal(value);
 }
 
-export function isPositiveDecimal(value: Decimal): boolean {
-  return value.gt(ZERO_DECIMAL);
+export function isPositiveDecimal(value: DecimalLike): boolean {
+  return toDecimalAmount(value).gt(ZERO_DECIMAL);
 }

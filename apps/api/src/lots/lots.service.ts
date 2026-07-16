@@ -1,6 +1,5 @@
 import {
   type PaginationQuery,
-  type Lot,
   type LotCreateRequest,
   type LotResponse,
   lotResponseSchema,
@@ -13,20 +12,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { type RawLotRecord, toContractLot } from './lot.mapper';
+import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
-
-type LotRecord = {
-  id: string;
-  sellerProfileId: string;
-  categoryId: string;
-  title: string;
-  description: string;
-  condition: string;
-  images: string[];
-  status: Lot['status'];
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export interface LotsRepository {
   sellerProfile: {
@@ -66,10 +54,10 @@ export class LotsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as LotRecord[];
+    })) as RawLotRecord[];
 
     return sellerLotListResponseSchema.parse({
-      lots: lots.map((lot) => this.toContractLot(lot)),
+      lots: lots.map((lot) => toContractLot(lot)),
     });
   }
 
@@ -92,7 +80,7 @@ export class LotsService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    if (sellerProfile.status !== 'active') {
+    if (parseSellerStatus(sellerProfile.status, sellerProfile.id) !== 'active') {
       throw new ForbiddenException('Seller profile is not active');
     }
 
@@ -119,25 +107,10 @@ export class LotsService {
         images: [...images],
         status: 'draft',
       },
-    })) as LotRecord;
+    })) as RawLotRecord;
 
     return lotResponseSchema.parse({
-      lot: this.toContractLot(lot),
+      lot: toContractLot(lot),
     });
-  }
-
-  private toContractLot(lot: LotRecord): Lot {
-    return {
-      id: lot.id,
-      sellerProfileId: lot.sellerProfileId,
-      categoryId: lot.categoryId,
-      title: lot.title,
-      description: lot.description,
-      condition: lot.condition,
-      images: lot.images,
-      status: lot.status,
-      createdAt: lot.createdAt.toISOString(),
-      updatedAt: lot.updatedAt.toISOString(),
-    };
   }
 }

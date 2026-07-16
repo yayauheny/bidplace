@@ -9,6 +9,7 @@ import {
 import { AUTH_TOKEN_COOKIE_NAME } from './auth.constants';
 import { AuthTokenService } from './auth-token.service';
 import { extractBearerToken, readCookie } from './auth.helpers';
+import { parseUserStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
 
 type AuthenticatedRequest = {
@@ -47,7 +48,7 @@ export class BearerAuthGuard implements CanActivate {
 
       if (
         !user ||
-        user.status !== 'active' ||
+        parseUserStatus(user.status, auth.sub) !== 'active' ||
         user.sessionVersion !== auth.sessionVersion
       ) {
         throw new UnauthorizedException('User is not active');

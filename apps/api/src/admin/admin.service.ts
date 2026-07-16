@@ -3,10 +3,8 @@ import {
   type AdminAuctionsResponse,
   type AdminUserResponse,
   type AdminUsersResponse,
-  type Auction,
   type BidHistoryResponse,
   type PaginationQuery,
-  type User,
   adminAuctionResponseSchema,
   adminAuctionsResponseSchema,
   adminUserResponseSchema,
@@ -14,55 +12,18 @@ import {
   bidHistoryResponseSchema,
 } from '@bidplace/contracts';
 import {
-  Injectable,
   Inject,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
+import { type RawAuthUserRecord, toContractUser } from '../auth/auth.mapper';
+import {
+  type RawAuctionRecord,
+  toContractAuction,
+} from '../auctions/auction.mapper';
+import { type RawBidRecord, toContractBid } from '../bids/bid.mapper';
 import { PrismaService } from '../core/database';
-
-type NumericLike = number | { toNumber(): number };
-
-type PrismaUser = {
-  id: string;
-  email: string;
-  phone: string;
-  displayName: string;
-  role: User['role'];
-  status: User['status'];
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type PrismaAuction = {
-  id: string;
-  lotId: string;
-  sellerProfileId: string;
-  slug: string;
-  startPrice: NumericLike;
-  reservePrice: NumericLike;
-  currentPrice: NumericLike;
-  currency: string;
-  bidStep: NumericLike;
-  startsAt: Date;
-  endsAt: Date;
-  status: Auction['status'];
-  bidCount: number;
-  winnerBidId: string | null;
-  buyNowPrice: NumericLike | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type PrismaBid = {
-  id: string;
-  auctionId: string;
-  bidderUserId: string;
-  amount: NumericLike;
-  status: BidHistoryResponse['bids'][number]['status'];
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export interface AdminRepository {
   user: {
@@ -80,10 +41,6 @@ export interface AdminRepository {
   };
 }
 
-function toNumber(value: NumericLike): number {
-  return typeof value === 'number' ? value : value.toNumber();
-}
-
 @Injectable()
 export class AdminService {
   constructor(@Inject(PrismaService) private readonly prisma: AdminRepository) {}
@@ -95,10 +52,10 @@ export class AdminService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as PrismaUser[];
+    })) as RawAuthUserRecord[];
 
     return adminUsersResponseSchema.parse({
-      users: users.map((user) => this.toContractUser(user)),
+      users: users.map((user) => toContractUser(user)),
     });
   }
 
@@ -107,7 +64,7 @@ export class AdminService {
       where: {
         id: userId,
       },
-    })) as PrismaUser | null;
+    })) as RawAuthUserRecord | null;
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -120,10 +77,10 @@ export class AdminService {
       data: {
         status: 'banned',
       },
-    })) as PrismaUser;
+    })) as RawAuthUserRecord;
 
     return adminUserResponseSchema.parse({
-      user: this.toContractUser(updatedUser),
+      user: toContractUser(updatedUser),
     });
   }
 
@@ -135,10 +92,10 @@ export class AdminService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as PrismaAuction[];
+    })) as RawAuctionRecord[];
 
     return adminAuctionsResponseSchema.parse({
-      auctions: auctions.map((auction) => this.toContractAuction(auction)),
+      auctions: auctions.map((auction) => toContractAuction(auction)),
     });
   }
 
@@ -147,7 +104,7 @@ export class AdminService {
       where: {
         id: auctionId,
       },
-    })) as PrismaAuction | null;
+    })) as RawAuctionRecord | null;
 
     if (!auction) {
       throw new NotFoundException('Auction not found');
@@ -160,10 +117,10 @@ export class AdminService {
       data: {
         status: 'hidden',
       },
-    })) as PrismaAuction;
+    })) as RawAuctionRecord;
 
     return adminAuctionResponseSchema.parse({
-      auction: this.toContractAuction(updatedAuction),
+      auction: toContractAuction(updatedAuction),
     });
   }
 
@@ -191,54 +148,10 @@ export class AdminService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as PrismaBid[];
+    })) as RawBidRecord[];
 
     return bidHistoryResponseSchema.parse({
-      bids: bids.map((bid) => ({
-        id: bid.id,
-        auctionId: bid.auctionId,
-        bidderUserId: bid.bidderUserId,
-        amount: toNumber(bid.amount),
-        status: bid.status,
-        createdAt: bid.createdAt.toISOString(),
-        updatedAt: bid.updatedAt.toISOString(),
-      })),
+      bids: bids.map((bid) => toContractBid(bid)),
     });
-  }
-
-  private toContractUser(user: PrismaUser): User {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role as User['role'],
-      status: user.status as User['status'],
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    };
-  }
-
-  private toContractAuction(auction: PrismaAuction): Auction {
-    return {
-      id: auction.id,
-      lotId: auction.lotId,
-      sellerProfileId: auction.sellerProfileId,
-      slug: auction.slug,
-      startPrice: toNumber(auction.startPrice),
-      reservePrice: toNumber(auction.reservePrice),
-      currentPrice: toNumber(auction.currentPrice),
-      currency: auction.currency,
-      bidStep: toNumber(auction.bidStep),
-      startsAt: auction.startsAt.toISOString(),
-      endsAt: auction.endsAt.toISOString(),
-      status: auction.status as Auction['status'],
-      bidCount: auction.bidCount,
-      winnerBidId: auction.winnerBidId,
-      buyNowPrice:
-        auction.buyNowPrice === null ? null : toNumber(auction.buyNowPrice),
-      createdAt: auction.createdAt.toISOString(),
-      updatedAt: auction.updatedAt.toISOString(),
-    };
   }
 }

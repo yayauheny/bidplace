@@ -1,22 +1,22 @@
 import { z } from 'zod';
 
-export const userRoleSchema = z.enum(['admin', 'user']);
-export const userStatusSchema = z.enum(['active', 'banned']);
-export const sellerTypeSchema = z.enum(['creator', 'influencer']);
-export const sellerStatusSchema = z.enum([
+export const USER_ROLES = ['admin', 'user'] as const;
+export const USER_STATUSES = ['active', 'banned'] as const;
+export const SELLER_TYPES = ['creator', 'influencer'] as const;
+export const SELLER_STATUSES = [
   'draft',
   'active',
   'restricted',
   'suspended',
-]);
-export const lotStatusSchema = z.enum([
+] as const;
+export const LOT_STATUSES = [
   'draft',
   'published',
   'sold',
   'hidden',
   'archived',
-]);
-export const auctionStatusSchema = z.enum([
+] as const;
+export const AUCTION_STATUSES = [
   'draft',
   'scheduled',
   'active',
@@ -25,8 +25,8 @@ export const auctionStatusSchema = z.enum([
   'cancelled',
   'failed',
   'hidden',
-]);
-export const bidStatusSchema = z.enum([
+] as const;
+export const BID_STATUSES = [
   'active',
   'winning',
   'outbid',
@@ -34,12 +34,20 @@ export const bidStatusSchema = z.enum([
   'lost',
   'cancelled',
   'invalid',
-]);
+] as const;
 
-export type UserRole = z.infer<typeof userRoleSchema>;
-export type UserStatus = z.infer<typeof userStatusSchema>;
-export type SellerType = z.infer<typeof sellerTypeSchema>;
-export type SellerStatus = z.infer<typeof sellerStatusSchema>;
-export type LotStatus = z.infer<typeof lotStatusSchema>;
-export type AuctionStatus = z.infer<typeof auctionStatusSchema>;
-export type BidStatus = z.infer<typeof bidStatusSchema>;
+export const userRoleSchema = z.enum(USER_ROLES);
+export const userStatusSchema = z.enum(USER_STATUSES);
+export const sellerTypeSchema = z.enum(SELLER_TYPES);
+export const sellerStatusSchema = z.enum(SELLER_STATUSES);
+export const lotStatusSchema = z.enum(LOT_STATUSES);
+export const auctionStatusSchema = z.enum(AUCTION_STATUSES);
+export const bidStatusSchema = z.enum(BID_STATUSES);
+
+export type UserRole = (typeof USER_ROLES)[number];
+export type UserStatus = (typeof USER_STATUSES)[number];
+export type SellerType = (typeof SELLER_TYPES)[number];
+export type SellerStatus = (typeof SELLER_STATUSES)[number];
+export type LotStatus = (typeof LOT_STATUSES)[number];
+export type AuctionStatus = (typeof AUCTION_STATUSES)[number];
+export type BidStatus = (typeof BID_STATUSES)[number];

@@ -1,10 +1,7 @@
 import {
   type Auction,
-  type Bid,
   type BidCreateRequest,
-  type Lot,
   type PaginationQuery,
-  type PublicBid,
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
 } from '@bidplace/contracts';
@@ -16,8 +13,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Decimal } from '@bidplace/database';
 
+import { parseAuctionStatus, parseLotStatus } from '../core/contracts';
 import {
   calculateBidStep,
   eligibleBidStatuses,
@@ -32,6 +29,15 @@ import {
   mapBidPlacedEventPayload,
   RealtimeEventsService,
 } from '../core/realtime';
+import {
+  type RawAuctionRecord as RawAuctionContractRecord,
+  toContractAuction,
+} from '../auctions/auction.mapper';
+import {
+  type RawBidRecord,
+  toContractBid,
+  toPublicBid,
+} from './bid.mapper';
 
 const auctionBidSelect = {
   id: true,
@@ -63,30 +69,19 @@ const auctionBidSelect = {
   },
 };
 
-type AuctionForBidRecord = {
-  id: string;
-  lotId: string;
-  sellerProfileId: string;
-  slug: string;
-  startPrice: Decimal;
-  reservePrice: Decimal;
-  currentPrice: Decimal;
-  currency: string;
-  bidStep: Decimal;
-  startsAt: Date;
-  endsAt: Date;
-  status: Auction['status'];
-  bidCount: number;
-  winnerBidId: string | null;
-  buyNowPrice: Decimal | null;
-  createdAt: Date;
-  updatedAt: Date;
+type AuctionForBidRecord = RawAuctionContractRecord & {
   sellerProfile: {
     userId: string;
   };
   lot: {
-    status: Lot['status'];
+    status: string;
   };
+};
+
+type AuctionBiddingState = {
+  status: Auction['status'];
+  startsAt: Date;
+  endsAt: Date;
 };
 
 const bidContractSelect = {
@@ -97,16 +92,6 @@ const bidContractSelect = {
   status: true,
   createdAt: true,
   updatedAt: true,
-};
-
-type BidContractRecord = {
-  id: string;
-  auctionId: string;
-  bidderUserId: string;
-  amount: Decimal;
-  status: Bid['status'];
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 export interface BidsRepository {
@@ -136,8 +121,18 @@ function isUniqueConstraintError(error: unknown): error is { code: string } {
   );
 }
 
-function isAuctionOpenForBidding(
+function toAuctionBiddingState(
   auction: AuctionForBidRecord,
+): AuctionBiddingState {
+  return {
+    status: parseAuctionStatus(auction.status, auction.id),
+    startsAt: auction.startsAt,
+    endsAt: auction.endsAt,
+  };
+}
+
+function isAuctionOpenForBidding(
+  auction: AuctionBiddingState,
   now: Date,
 ): boolean {
   return (
@@ -177,15 +172,17 @@ export class BidsService {
           throw new NotFoundException('Auction not found');
         }
 
+        const biddingState = toAuctionBiddingState(auction);
+
         if (auction.sellerProfile.userId === userId) {
           throw new ForbiddenException('Cannot bid on your own auction');
         }
 
-        if (!isAuctionOpenForBidding(auction, now)) {
+        if (!isAuctionOpenForBidding(biddingState, now)) {
           throw new ConflictException('Auction is not active');
         }
 
-        if (auction.lot.status !== 'published') {
+        if (parseLotStatus(auction.lot.status, auction.id) !== 'published') {
           throw new ConflictException('Auction is not open for bidding');
         }
 
@@ -201,7 +198,7 @@ export class BidsService {
           where: {
             id: auctionId,
             status: 'active',
-            currentPrice: auction.currentPrice,
+            currentPrice: toDecimalAmount(auction.currentPrice),
             endsAt: {
               gt: now,
             },
@@ -239,7 +236,7 @@ export class BidsService {
             status: 'winning',
           },
           select: bidContractSelect,
-        })) as BidContractRecord;
+        })) as RawBidRecord;
 
         const latestAuction = (await tx.auction.findUnique({
           where: {
@@ -259,8 +256,8 @@ export class BidsService {
       });
 
       const response = bidPlacementResponseSchema.parse({
-        bid: this.toContractBid(result.bid),
-        auction: this.toContractAuction(result.auction),
+        bid: toContractBid(result.bid),
+        auction: toContractAuction(result.auction),
       });
 
       const reserveMet = reserveReached(
@@ -271,17 +268,14 @@ export class BidsService {
       this.realtimeEventsService.publishBidPlaced(
         mapBidPlacedEventPayload(
           response.auction.id,
-          this.toPublicBid(response.bid),
+          toPublicBid(response.bid),
           response.auction.currentPrice,
           response.auction.bidCount,
         ),
       );
 
       this.realtimeEventsService.publishAuctionUpdated(
-        mapAuctionUpdatedEventPayload(
-          response.auction,
-          reserveMet,
-        ),
+        mapAuctionUpdatedEventPayload(response.auction, reserveMet),
       );
 
       return response;
@@ -325,56 +319,10 @@ export class BidsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    })) as BidContractRecord[];
+    })) as RawBidRecord[];
 
     return bidHistoryResponseSchema.parse({
-      bids: bids.map((bid) => this.toContractBid(bid)),
+      bids: bids.map((bid) => toContractBid(bid)),
     });
-  }
-
-  private toContractBid(bid: BidContractRecord): Bid {
-    return {
-      id: bid.id,
-      auctionId: bid.auctionId,
-      bidderUserId: bid.bidderUserId,
-      amount: bid.amount.toNumber(),
-      status: bid.status as Bid['status'],
-      createdAt: bid.createdAt.toISOString(),
-      updatedAt: bid.updatedAt.toISOString(),
-    };
-  }
-
-  private toPublicBid(bid: Bid): PublicBid {
-    return {
-      id: bid.id,
-      auctionId: bid.auctionId,
-      amount: bid.amount,
-      status: bid.status,
-      createdAt: bid.createdAt,
-      updatedAt: bid.updatedAt,
-    };
-  }
-
-  private toContractAuction(auction: AuctionForBidRecord) {
-    return {
-      id: auction.id,
-      lotId: auction.lotId,
-      sellerProfileId: auction.sellerProfileId,
-      slug: auction.slug,
-      startPrice: auction.startPrice.toNumber(),
-      reservePrice: auction.reservePrice.toNumber(),
-      currentPrice: auction.currentPrice.toNumber(),
-      currency: auction.currency,
-      bidStep: auction.bidStep.toNumber(),
-      startsAt: auction.startsAt.toISOString(),
-      endsAt: auction.endsAt.toISOString(),
-      status: auction.status as Auction['status'],
-      bidCount: auction.bidCount,
-      winnerBidId: auction.winnerBidId,
-      buyNowPrice:
-        auction.buyNowPrice === null ? null : auction.buyNowPrice.toNumber(),
-      createdAt: auction.createdAt.toISOString(),
-      updatedAt: auction.updatedAt.toISOString(),
-    };
   }
 }

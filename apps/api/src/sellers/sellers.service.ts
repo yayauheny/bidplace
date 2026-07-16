@@ -1,5 +1,4 @@
 import {
-  type SellerProfile,
   type SellerProfileCreateRequest,
   type SellerProfileResponse,
   type SellerProfileUpdateRequest,
@@ -13,22 +12,12 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@bidplace/database';
 
+import {
+  type RawSellerProfileRecord,
+  toContractSellerProfile,
+} from './seller-profile.mapper';
+import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
-
-type SellerProfileRecord = {
-  id: string;
-  userId: string;
-  slug: string;
-  sellerType: SellerProfile['sellerType'];
-  storeName: string;
-  country: string;
-  contactPreference: string;
-  socialLink: string | null;
-  shortDescription: string | null;
-  status: SellerProfile['status'];
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export interface SellersRepository {
   sellerProfile: {
@@ -78,10 +67,10 @@ export class SellersService {
           shortDescription: input.shortDescription ?? null,
           status: 'active',
         },
-      })) as SellerProfileRecord;
+      })) as RawSellerProfileRecord;
 
       return sellerProfileResponseSchema.parse({
-        sellerProfile: this.toContractProfile(sellerProfile),
+        sellerProfile: toContractSellerProfile(sellerProfile),
       });
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
@@ -142,10 +131,10 @@ export class SellersService {
           userId,
         },
         data,
-      })) as SellerProfileRecord;
+      })) as RawSellerProfileRecord;
 
       return sellerProfileResponseSchema.parse({
-        sellerProfile: this.toContractProfile(sellerProfile),
+        sellerProfile: toContractSellerProfile(sellerProfile),
       });
     } catch (error: unknown) {
       if (isUniqueConstraintError(error)) {
@@ -161,14 +150,16 @@ export class SellersService {
       where: {
         userId,
       },
-    })) as SellerProfileRecord | null;
+    })) as RawSellerProfileRecord | null;
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
     }
 
+    const contractSellerProfile = toContractSellerProfile(sellerProfile);
+
     return sellerProfileResponseSchema.parse({
-      sellerProfile: this.toContractProfile(sellerProfile),
+      sellerProfile: contractSellerProfile,
     });
   }
 
@@ -177,33 +168,20 @@ export class SellersService {
       where: {
         slug,
       },
-    })) as SellerProfileRecord | null;
+    })) as RawSellerProfileRecord | null;
 
-    if (!sellerProfile || sellerProfile.status !== 'active') {
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const sellerStatus = parseSellerStatus(sellerProfile.status, sellerProfile.id);
+
+    if (sellerStatus !== 'active') {
       throw new NotFoundException('Seller profile not found');
     }
 
     return sellerProfileResponseSchema.parse({
-      sellerProfile: this.toContractProfile(sellerProfile),
+      sellerProfile: toContractSellerProfile(sellerProfile),
     });
-  }
-
-  private toContractProfile(
-    sellerProfile: SellerProfileRecord,
-  ): SellerProfile {
-    return {
-      id: sellerProfile.id,
-      userId: sellerProfile.userId,
-      slug: sellerProfile.slug,
-      sellerType: sellerProfile.sellerType,
-      storeName: sellerProfile.storeName,
-      country: sellerProfile.country,
-      contactPreference: sellerProfile.contactPreference,
-      socialLink: sellerProfile.socialLink,
-      shortDescription: sellerProfile.shortDescription,
-      status: sellerProfile.status,
-      createdAt: sellerProfile.createdAt.toISOString(),
-      updatedAt: sellerProfile.updatedAt.toISOString(),
-    };
   }
 }
