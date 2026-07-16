@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,7 @@ function AuthCard({
   );
 }
 
-export function LoginForm({ redirectTo = '/' }: { redirectTo?: string }) {
+export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   const auth = useAuth();
   const router = useRouter();
   const palette = useAppThemePalette();
@@ -113,7 +113,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: string }) {
   );
 }
 
-export function RegisterForm({ redirectTo = '/' }: { redirectTo?: string }) {
+export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   const auth = useAuth();
   const router = useRouter();
   const palette = useAppThemePalette();
