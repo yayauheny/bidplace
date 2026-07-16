@@ -212,8 +212,8 @@ export class AdminService {
       email: user.email,
       phone: user.phone,
       displayName: user.displayName,
-      role: user.role,
-      status: user.status,
+      role: user.role as User['role'],
+      status: user.status as User['status'],
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };
@@ -232,7 +232,7 @@ export class AdminService {
       bidStep: toNumber(auction.bidStep),
       startsAt: auction.startsAt.toISOString(),
       endsAt: auction.endsAt.toISOString(),
-      status: auction.status,
+      status: auction.status as Auction['status'],
       bidCount: auction.bidCount,
       winnerBidId: auction.winnerBidId,
       buyNowPrice:

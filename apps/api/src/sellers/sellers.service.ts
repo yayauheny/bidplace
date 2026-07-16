@@ -66,7 +66,7 @@ export class SellersService {
     }
 
     try {
-      const sellerProfile = await this.prisma.sellerProfile.create({
+      const sellerProfile = (await this.prisma.sellerProfile.create({
         data: {
           userId,
           slug: input.slug,
@@ -78,7 +78,7 @@ export class SellersService {
           shortDescription: input.shortDescription ?? null,
           status: 'active',
         },
-      });
+      })) as SellerProfileRecord;
 
       return sellerProfileResponseSchema.parse({
         sellerProfile: this.toContractProfile(sellerProfile),
@@ -137,12 +137,12 @@ export class SellersService {
         data.shortDescription = input.shortDescription;
       }
 
-      const sellerProfile = await this.prisma.sellerProfile.update({
+      const sellerProfile = (await this.prisma.sellerProfile.update({
         where: {
           userId,
         },
         data,
-      });
+      })) as SellerProfileRecord;
 
       return sellerProfileResponseSchema.parse({
         sellerProfile: this.toContractProfile(sellerProfile),
@@ -157,11 +157,11 @@ export class SellersService {
   }
 
   async getMyProfile(userId: string): Promise<SellerProfileResponse> {
-    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
-    });
+    })) as SellerProfileRecord | null;
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -173,11 +173,11 @@ export class SellersService {
   }
 
   async getPublicProfile(slug: string): Promise<SellerProfileResponse> {
-    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
       where: {
         slug,
       },
-    });
+    })) as SellerProfileRecord | null;
 
     if (!sellerProfile || sellerProfile.status !== 'active') {
       throw new NotFoundException('Seller profile not found');

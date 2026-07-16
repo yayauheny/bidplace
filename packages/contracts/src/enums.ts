@@ -35,3 +35,11 @@ export const bidStatusSchema = z.enum([
   'cancelled',
   'invalid',
 ]);
+
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type UserStatus = z.infer<typeof userStatusSchema>;
+export type SellerType = z.infer<typeof sellerTypeSchema>;
+export type SellerStatus = z.infer<typeof sellerStatusSchema>;
+export type LotStatus = z.infer<typeof lotStatusSchema>;
+export type AuctionStatus = z.infer<typeof auctionStatusSchema>;
+export type BidStatus = z.infer<typeof bidStatusSchema>;

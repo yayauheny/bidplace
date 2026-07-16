@@ -166,12 +166,12 @@ export class BidsService {
 
     try {
       const result = await runSerializableTransaction(this.prisma, async (tx) => {
-        const auction = await tx.auction.findUnique({
+        const auction = (await tx.auction.findUnique({
           where: {
             id: auctionId,
           },
           select: auctionBidSelect,
-        });
+        })) as AuctionForBidRecord | null;
 
         if (!auction) {
           throw new NotFoundException('Auction not found');
@@ -231,7 +231,7 @@ export class BidsService {
           },
         });
 
-        const bid = await tx.bid.create({
+        const bid = (await tx.bid.create({
           data: {
             auctionId,
             bidderUserId: userId,
@@ -239,14 +239,14 @@ export class BidsService {
             status: 'winning',
           },
           select: bidContractSelect,
-        });
+        })) as BidContractRecord;
 
-        const latestAuction = await tx.auction.findUnique({
+        const latestAuction = (await tx.auction.findUnique({
           where: {
             id: auctionId,
           },
           select: auctionBidSelect,
-        });
+        })) as AuctionForBidRecord | null;
 
         if (!latestAuction) {
           throw new NotFoundException('Auction not found');
@@ -299,7 +299,7 @@ export class BidsService {
     auctionId: string,
     { page, limit }: PaginationQuery = { page: 1, limit: 20 },
   ) {
-    const auction = await this.prisma.auction.findUnique({
+    const auction = (await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
       },
@@ -311,13 +311,13 @@ export class BidsService {
           },
         },
       },
-    });
+    })) as { id: string; sellerProfile: { userId: string } } | null;
 
     if (!auction || auction.sellerProfile.userId !== userId) {
       throw new NotFoundException('Auction not found');
     }
 
-    const bids: BidContractRecord[] = await this.prisma.bid.findMany({
+    const bids = (await this.prisma.bid.findMany({
       where: {
         auctionId,
       },
@@ -325,7 +325,7 @@ export class BidsService {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    });
+    })) as BidContractRecord[];
 
     return bidHistoryResponseSchema.parse({
       bids: bids.map((bid) => this.toContractBid(bid)),
@@ -338,7 +338,7 @@ export class BidsService {
       auctionId: bid.auctionId,
       bidderUserId: bid.bidderUserId,
       amount: bid.amount.toNumber(),
-      status: bid.status,
+      status: bid.status as Bid['status'],
       createdAt: bid.createdAt.toISOString(),
       updatedAt: bid.updatedAt.toISOString(),
     };
@@ -368,7 +368,7 @@ export class BidsService {
       bidStep: auction.bidStep.toNumber(),
       startsAt: auction.startsAt.toISOString(),
       endsAt: auction.endsAt.toISOString(),
-      status: auction.status,
+      status: auction.status as Auction['status'],
       bidCount: auction.bidCount,
       winnerBidId: auction.winnerBidId,
       buyNowPrice:

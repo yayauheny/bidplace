@@ -78,7 +78,7 @@ export class LotsService {
     input: LotCreateRequest,
     images: readonly string[],
   ): Promise<LotResponse> {
-    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
@@ -86,7 +86,7 @@ export class LotsService {
         id: true,
         status: true,
       },
-    });
+    })) as { id: string; status: string } | null;
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -109,7 +109,7 @@ export class LotsService {
       throw new NotFoundException('Category not found');
     }
 
-    const lot = await this.prisma.lot.create({
+    const lot = (await this.prisma.lot.create({
       data: {
         sellerProfileId: sellerProfile.id,
         categoryId: category.id,
@@ -119,7 +119,7 @@ export class LotsService {
         images: [...images],
         status: 'draft',
       },
-    });
+    })) as LotRecord;
 
     return lotResponseSchema.parse({
       lot: this.toContractLot(lot),

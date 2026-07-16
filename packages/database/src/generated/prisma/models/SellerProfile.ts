@@ -28,13 +28,13 @@ export type SellerProfileMinAggregateOutputType = {
   id: string | null
   userId: string | null
   slug: string | null
-  sellerType: $Enums.SellerType | null
+  sellerType: string | null
   storeName: string | null
   country: string | null
   contactPreference: string | null
   socialLink: string | null
   shortDescription: string | null
-  status: $Enums.SellerStatus | null
+  status: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -43,13 +43,13 @@ export type SellerProfileMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   slug: string | null
-  sellerType: $Enums.SellerType | null
+  sellerType: string | null
   storeName: string | null
   country: string | null
   contactPreference: string | null
   socialLink: string | null
   shortDescription: string | null
-  status: $Enums.SellerStatus | null
+  status: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -193,13 +193,13 @@ export type SellerProfileGroupByOutputType = {
   id: string
   userId: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink: string | null
   shortDescription: string | null
-  status: $Enums.SellerStatus
+  status: string
   createdAt: Date
   updatedAt: Date
   _count: SellerProfileCountAggregateOutputType | null
@@ -229,13 +229,13 @@ export type SellerProfileWhereInput = {
   id?: Prisma.UuidFilter<"SellerProfile"> | string
   userId?: Prisma.UuidFilter<"SellerProfile"> | string
   slug?: Prisma.StringFilter<"SellerProfile"> | string
-  sellerType?: Prisma.EnumSellerTypeFilter<"SellerProfile"> | $Enums.SellerType
+  sellerType?: Prisma.StringFilter<"SellerProfile"> | string
   storeName?: Prisma.StringFilter<"SellerProfile"> | string
   country?: Prisma.StringFilter<"SellerProfile"> | string
   contactPreference?: Prisma.StringFilter<"SellerProfile"> | string
   socialLink?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
   shortDescription?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
-  status?: Prisma.EnumSellerStatusFilter<"SellerProfile"> | $Enums.SellerStatus
+  status?: Prisma.StringFilter<"SellerProfile"> | string
   createdAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -268,13 +268,13 @@ export type SellerProfileWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.SellerProfileWhereInput | Prisma.SellerProfileWhereInput[]
   OR?: Prisma.SellerProfileWhereInput[]
   NOT?: Prisma.SellerProfileWhereInput | Prisma.SellerProfileWhereInput[]
-  sellerType?: Prisma.EnumSellerTypeFilter<"SellerProfile"> | $Enums.SellerType
+  sellerType?: Prisma.StringFilter<"SellerProfile"> | string
   storeName?: Prisma.StringFilter<"SellerProfile"> | string
   country?: Prisma.StringFilter<"SellerProfile"> | string
   contactPreference?: Prisma.StringFilter<"SellerProfile"> | string
   socialLink?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
   shortDescription?: Prisma.StringNullableFilter<"SellerProfile"> | string | null
-  status?: Prisma.EnumSellerStatusFilter<"SellerProfile"> | $Enums.SellerStatus
+  status?: Prisma.StringFilter<"SellerProfile"> | string
   createdAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SellerProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -307,13 +307,13 @@ export type SellerProfileScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"SellerProfile"> | string
   userId?: Prisma.UuidWithAggregatesFilter<"SellerProfile"> | string
   slug?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
-  sellerType?: Prisma.EnumSellerTypeWithAggregatesFilter<"SellerProfile"> | $Enums.SellerType
+  sellerType?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   storeName?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   country?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   contactPreference?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   socialLink?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
   shortDescription?: Prisma.StringNullableWithAggregatesFilter<"SellerProfile"> | string | null
-  status?: Prisma.EnumSellerStatusWithAggregatesFilter<"SellerProfile"> | $Enums.SellerStatus
+  status?: Prisma.StringWithAggregatesFilter<"SellerProfile"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SellerProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SellerProfile"> | Date | string
 }
@@ -321,13 +321,13 @@ export type SellerProfileScalarWhereWithAggregatesInput = {
 export type SellerProfileCreateInput = {
   id?: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutSellerProfileInput
@@ -339,13 +339,13 @@ export type SellerProfileUncheckedCreateInput = {
   id?: string
   userId: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   lots?: Prisma.LotUncheckedCreateNestedManyWithoutSellerProfileInput
@@ -355,13 +355,13 @@ export type SellerProfileUncheckedCreateInput = {
 export type SellerProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutSellerProfileNestedInput
@@ -373,13 +373,13 @@ export type SellerProfileUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lots?: Prisma.LotUncheckedUpdateManyWithoutSellerProfileNestedInput
@@ -390,13 +390,13 @@ export type SellerProfileCreateManyInput = {
   id?: string
   userId: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -404,13 +404,13 @@ export type SellerProfileCreateManyInput = {
 export type SellerProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -419,13 +419,13 @@ export type SellerProfileUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -517,16 +517,8 @@ export type SellerProfileUncheckedUpdateOneWithoutUserNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SellerProfileUpdateToOneWithWhereWithoutUserInput, Prisma.SellerProfileUpdateWithoutUserInput>, Prisma.SellerProfileUncheckedUpdateWithoutUserInput>
 }
 
-export type EnumSellerTypeFieldUpdateOperationsInput = {
-  set?: $Enums.SellerType
-}
-
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
-}
-
-export type EnumSellerStatusFieldUpdateOperationsInput = {
-  set?: $Enums.SellerStatus
 }
 
 export type SellerProfileCreateNestedOneWithoutLotsInput = {
@@ -560,13 +552,13 @@ export type SellerProfileUpdateOneRequiredWithoutAuctionsNestedInput = {
 export type SellerProfileCreateWithoutUserInput = {
   id?: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   lots?: Prisma.LotCreateNestedManyWithoutSellerProfileInput
@@ -576,13 +568,13 @@ export type SellerProfileCreateWithoutUserInput = {
 export type SellerProfileUncheckedCreateWithoutUserInput = {
   id?: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   lots?: Prisma.LotUncheckedCreateNestedManyWithoutSellerProfileInput
@@ -608,13 +600,13 @@ export type SellerProfileUpdateToOneWithWhereWithoutUserInput = {
 export type SellerProfileUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lots?: Prisma.LotUpdateManyWithoutSellerProfileNestedInput
@@ -624,13 +616,13 @@ export type SellerProfileUpdateWithoutUserInput = {
 export type SellerProfileUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lots?: Prisma.LotUncheckedUpdateManyWithoutSellerProfileNestedInput
@@ -640,13 +632,13 @@ export type SellerProfileUncheckedUpdateWithoutUserInput = {
 export type SellerProfileCreateWithoutLotsInput = {
   id?: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutSellerProfileInput
@@ -657,13 +649,13 @@ export type SellerProfileUncheckedCreateWithoutLotsInput = {
   id?: string
   userId: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auctions?: Prisma.AuctionUncheckedCreateNestedManyWithoutSellerProfileInput
@@ -688,13 +680,13 @@ export type SellerProfileUpdateToOneWithWhereWithoutLotsInput = {
 export type SellerProfileUpdateWithoutLotsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutSellerProfileNestedInput
@@ -705,13 +697,13 @@ export type SellerProfileUncheckedUpdateWithoutLotsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auctions?: Prisma.AuctionUncheckedUpdateManyWithoutSellerProfileNestedInput
@@ -720,13 +712,13 @@ export type SellerProfileUncheckedUpdateWithoutLotsInput = {
 export type SellerProfileCreateWithoutAuctionsInput = {
   id?: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutSellerProfileInput
@@ -737,13 +729,13 @@ export type SellerProfileUncheckedCreateWithoutAuctionsInput = {
   id?: string
   userId: string
   slug: string
-  sellerType: $Enums.SellerType
+  sellerType: string
   storeName: string
   country: string
   contactPreference: string
   socialLink?: string | null
   shortDescription?: string | null
-  status?: $Enums.SellerStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   lots?: Prisma.LotUncheckedCreateNestedManyWithoutSellerProfileInput
@@ -768,13 +760,13 @@ export type SellerProfileUpdateToOneWithWhereWithoutAuctionsInput = {
 export type SellerProfileUpdateWithoutAuctionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutSellerProfileNestedInput
@@ -785,13 +777,13 @@ export type SellerProfileUncheckedUpdateWithoutAuctionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerType?: Prisma.EnumSellerTypeFieldUpdateOperationsInput | $Enums.SellerType
+  sellerType?: Prisma.StringFieldUpdateOperationsInput | string
   storeName?: Prisma.StringFieldUpdateOperationsInput | string
   country?: Prisma.StringFieldUpdateOperationsInput | string
   contactPreference?: Prisma.StringFieldUpdateOperationsInput | string
   socialLink?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shortDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.EnumSellerStatusFieldUpdateOperationsInput | $Enums.SellerStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lots?: Prisma.LotUncheckedUpdateManyWithoutSellerProfileNestedInput
@@ -928,13 +920,13 @@ export type $SellerProfilePayload<ExtArgs extends runtime.Types.Extensions.Inter
     id: string
     userId: string
     slug: string
-    sellerType: $Enums.SellerType
+    sellerType: string
     storeName: string
     country: string
     contactPreference: string
     socialLink: string | null
     shortDescription: string | null
-    status: $Enums.SellerStatus
+    status: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["sellerProfile"]>
@@ -1366,13 +1358,13 @@ export interface SellerProfileFieldRefs {
   readonly id: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly userId: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly slug: Prisma.FieldRef<"SellerProfile", 'String'>
-  readonly sellerType: Prisma.FieldRef<"SellerProfile", 'SellerType'>
+  readonly sellerType: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly storeName: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly country: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly contactPreference: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly socialLink: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly shortDescription: Prisma.FieldRef<"SellerProfile", 'String'>
-  readonly status: Prisma.FieldRef<"SellerProfile", 'SellerStatus'>
+  readonly status: Prisma.FieldRef<"SellerProfile", 'String'>
   readonly createdAt: Prisma.FieldRef<"SellerProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SellerProfile", 'DateTime'>
 }

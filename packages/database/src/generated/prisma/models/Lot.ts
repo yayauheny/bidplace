@@ -31,7 +31,7 @@ export type LotMinAggregateOutputType = {
   title: string | null
   description: string | null
   condition: string | null
-  status: $Enums.LotStatus | null
+  status: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -43,7 +43,7 @@ export type LotMaxAggregateOutputType = {
   title: string | null
   description: string | null
   condition: string | null
-  status: $Enums.LotStatus | null
+  status: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -181,7 +181,7 @@ export type LotGroupByOutputType = {
   description: string
   condition: string
   images: string[]
-  status: $Enums.LotStatus
+  status: string
   createdAt: Date
   updatedAt: Date
   _count: LotCountAggregateOutputType | null
@@ -215,7 +215,7 @@ export type LotWhereInput = {
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
   images?: Prisma.StringNullableListFilter<"Lot">
-  status?: Prisma.EnumLotStatusFilter<"Lot"> | $Enums.LotStatus
+  status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileScalarRelationFilter, Prisma.SellerProfileWhereInput>
@@ -250,7 +250,7 @@ export type LotWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
   images?: Prisma.StringNullableListFilter<"Lot">
-  status?: Prisma.EnumLotStatusFilter<"Lot"> | $Enums.LotStatus
+  status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   sellerProfile?: Prisma.XOR<Prisma.SellerProfileScalarRelationFilter, Prisma.SellerProfileWhereInput>
@@ -285,7 +285,7 @@ export type LotScalarWhereWithAggregatesInput = {
   description?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   condition?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   images?: Prisma.StringNullableListFilter<"Lot">
-  status?: Prisma.EnumLotStatusWithAggregatesFilter<"Lot"> | $Enums.LotStatus
+  status?: Prisma.StringWithAggregatesFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Lot"> | Date | string
 }
@@ -296,7 +296,7 @@ export type LotCreateInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
@@ -312,7 +312,7 @@ export type LotUncheckedCreateInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
@@ -324,7 +324,7 @@ export type LotUpdateInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
@@ -340,7 +340,7 @@ export type LotUncheckedUpdateInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
@@ -354,7 +354,7 @@ export type LotCreateManyInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -365,7 +365,7 @@ export type LotUpdateManyMutationInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -378,7 +378,7 @@ export type LotUncheckedUpdateManyInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -536,10 +536,6 @@ export type LotUpdateimagesInput = {
   push?: string | string[]
 }
 
-export type EnumLotStatusFieldUpdateOperationsInput = {
-  set?: $Enums.LotStatus
-}
-
 export type LotCreateNestedOneWithoutAuctionInput = {
   create?: Prisma.XOR<Prisma.LotCreateWithoutAuctionInput, Prisma.LotUncheckedCreateWithoutAuctionInput>
   connectOrCreate?: Prisma.LotCreateOrConnectWithoutAuctionInput
@@ -560,7 +556,7 @@ export type LotCreateWithoutSellerProfileInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.CategoryCreateNestedOneWithoutLotsInput
@@ -574,7 +570,7 @@ export type LotUncheckedCreateWithoutSellerProfileInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
@@ -617,7 +613,7 @@ export type LotScalarWhereInput = {
   description?: Prisma.StringFilter<"Lot"> | string
   condition?: Prisma.StringFilter<"Lot"> | string
   images?: Prisma.StringNullableListFilter<"Lot">
-  status?: Prisma.EnumLotStatusFilter<"Lot"> | $Enums.LotStatus
+  status?: Prisma.StringFilter<"Lot"> | string
   createdAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Lot"> | Date | string
 }
@@ -628,7 +624,7 @@ export type LotCreateWithoutCategoryInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
@@ -642,7 +638,7 @@ export type LotUncheckedCreateWithoutCategoryInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   auction?: Prisma.AuctionUncheckedCreateNestedOneWithoutLotInput
@@ -680,7 +676,7 @@ export type LotCreateWithoutAuctionInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
   sellerProfile: Prisma.SellerProfileCreateNestedOneWithoutLotsInput
@@ -695,7 +691,7 @@ export type LotUncheckedCreateWithoutAuctionInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -722,7 +718,7 @@ export type LotUpdateWithoutAuctionInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
@@ -737,7 +733,7 @@ export type LotUncheckedUpdateWithoutAuctionInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -749,7 +745,7 @@ export type LotCreateManySellerProfileInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -760,7 +756,7 @@ export type LotUpdateWithoutSellerProfileInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.CategoryUpdateOneRequiredWithoutLotsNestedInput
@@ -774,7 +770,7 @@ export type LotUncheckedUpdateWithoutSellerProfileInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
@@ -787,7 +783,7 @@ export type LotUncheckedUpdateManyWithoutSellerProfileInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -799,7 +795,7 @@ export type LotCreateManyCategoryInput = {
   description: string
   condition: string
   images?: Prisma.LotCreateimagesInput | string[]
-  status?: $Enums.LotStatus
+  status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -810,7 +806,7 @@ export type LotUpdateWithoutCategoryInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sellerProfile?: Prisma.SellerProfileUpdateOneRequiredWithoutLotsNestedInput
@@ -824,7 +820,7 @@ export type LotUncheckedUpdateWithoutCategoryInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auction?: Prisma.AuctionUncheckedUpdateOneWithoutLotNestedInput
@@ -837,7 +833,7 @@ export type LotUncheckedUpdateManyWithoutCategoryInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   condition?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.LotUpdateimagesInput | string[]
-  status?: Prisma.EnumLotStatusFieldUpdateOperationsInput | $Enums.LotStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -933,7 +929,7 @@ export type $LotPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     description: string
     condition: string
     images: string[]
-    status: $Enums.LotStatus
+    status: string
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["lot"]>
@@ -1369,7 +1365,7 @@ export interface LotFieldRefs {
   readonly description: Prisma.FieldRef<"Lot", 'String'>
   readonly condition: Prisma.FieldRef<"Lot", 'String'>
   readonly images: Prisma.FieldRef<"Lot", 'String[]'>
-  readonly status: Prisma.FieldRef<"Lot", 'LotStatus'>
+  readonly status: Prisma.FieldRef<"Lot", 'String'>
   readonly createdAt: Prisma.FieldRef<"Lot", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Lot", 'DateTime'>
 }

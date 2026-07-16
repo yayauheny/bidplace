@@ -78,7 +78,7 @@ export class AuthService {
     const passwordHash = await this.passwordHasher.hash(input.password);
 
     try {
-      const user = await this.prisma.user.create({
+      const user = (await this.prisma.user.create({
         data: {
           email,
           phone: input.phone,
@@ -87,7 +87,7 @@ export class AuthService {
           status: 'active',
           sessionVersion: 0,
         },
-      });
+      })) as PrismaUser;
 
       return this.createAuthResponse(user);
     } catch (error: unknown) {
@@ -101,11 +101,11 @@ export class AuthService {
 
   async login(input: LoginRequest): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
-    const user = await this.prisma.user.findUnique({
+    const user = (await this.prisma.user.findUnique({
       where: {
         email,
       },
-    });
+    })) as PrismaUser | null;
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -128,11 +128,11 @@ export class AuthService {
   }
 
   async me(userId: string): Promise<ContractUser> {
-    const user = await this.prisma.user.findUnique({
+    const user = (await this.prisma.user.findUnique({
       where: {
         id: userId,
       },
-    });
+    })) as PrismaUser | null;
 
     if (!user) {
       throw new UnauthorizedException('User not found');

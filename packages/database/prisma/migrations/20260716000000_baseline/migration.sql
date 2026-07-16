@@ -1,27 +1,6 @@
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('admin', 'user');
-
--- CreateEnum
-CREATE TYPE "UserStatus" AS ENUM ('active', 'banned');
-
--- CreateEnum
-CREATE TYPE "SellerType" AS ENUM ('creator', 'influencer');
-
--- CreateEnum
-CREATE TYPE "SellerStatus" AS ENUM ('draft', 'active', 'restricted', 'suspended');
-
--- CreateEnum
-CREATE TYPE "LotStatus" AS ENUM ('draft', 'published', 'sold', 'hidden', 'archived');
-
--- CreateEnum
-CREATE TYPE "AuctionStatus" AS ENUM ('draft', 'scheduled', 'active', 'ended', 'sold', 'cancelled', 'failed', 'hidden');
-
--- CreateEnum
-CREATE TYPE "BidStatus" AS ENUM ('active', 'winning', 'outbid', 'won', 'lost', 'cancelled', 'invalid');
-
 -- CreateTable
 CREATE TABLE "users" (
     "id" UUID NOT NULL,
@@ -29,8 +8,8 @@ CREATE TABLE "users" (
     "password_hash" VARCHAR(255) NOT NULL,
     "phone" VARCHAR(32) NOT NULL,
     "display_name" VARCHAR(120) NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'user',
-    "status" "UserStatus" NOT NULL DEFAULT 'active',
+    "role" TEXT NOT NULL DEFAULT 'user',
+    "status" TEXT NOT NULL DEFAULT 'active',
     "session_version" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -43,13 +22,13 @@ CREATE TABLE "seller_profiles" (
     "id" UUID NOT NULL,
     "user_id" UUID NOT NULL,
     "slug" VARCHAR(120) NOT NULL,
-    "seller_type" "SellerType" NOT NULL,
+    "seller_type" TEXT NOT NULL,
     "store_name" VARCHAR(160) NOT NULL,
     "country" VARCHAR(80) NOT NULL,
     "contact_preference" VARCHAR(40) NOT NULL,
     "social_link" VARCHAR(255),
     "short_description" TEXT,
-    "status" "SellerStatus" NOT NULL DEFAULT 'draft',
+    "status" TEXT NOT NULL DEFAULT 'draft',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -75,7 +54,7 @@ CREATE TABLE "lots" (
     "description" TEXT NOT NULL,
     "condition" VARCHAR(120) NOT NULL,
     "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "status" "LotStatus" NOT NULL DEFAULT 'draft',
+    "status" TEXT NOT NULL DEFAULT 'draft',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -95,7 +74,7 @@ CREATE TABLE "auctions" (
     "bid_step" DECIMAL(12,2) NOT NULL,
     "starts_at" TIMESTAMP(3) NOT NULL,
     "ends_at" TIMESTAMP(3) NOT NULL,
-    "status" "AuctionStatus" NOT NULL DEFAULT 'draft',
+    "status" TEXT NOT NULL DEFAULT 'draft',
     "bid_count" INTEGER NOT NULL DEFAULT 0,
     "winner_bid_id" UUID,
     "buy_now_price" DECIMAL(12,2),
@@ -111,7 +90,7 @@ CREATE TABLE "bids" (
     "auction_id" UUID NOT NULL,
     "bidder_user_id" UUID NOT NULL,
     "amount" DECIMAL(12,2) NOT NULL,
-    "status" "BidStatus" NOT NULL DEFAULT 'active',
+    "status" TEXT NOT NULL DEFAULT 'active',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

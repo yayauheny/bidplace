@@ -1039,34 +1039,6 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
- * Reference to a field of type 'UserRole'
- */
-export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole'>
-    
-
-
-/**
- * Reference to a field of type 'UserRole[]'
- */
-export type ListEnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole[]'>
-    
-
-
-/**
- * Reference to a field of type 'UserStatus'
- */
-export type EnumUserStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserStatus'>
-    
-
-
-/**
- * Reference to a field of type 'UserStatus[]'
- */
-export type ListEnumUserStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserStatus[]'>
-    
-
-
-/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -1095,48 +1067,6 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
- * Reference to a field of type 'SellerType'
- */
-export type EnumSellerTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SellerType'>
-    
-
-
-/**
- * Reference to a field of type 'SellerType[]'
- */
-export type ListEnumSellerTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SellerType[]'>
-    
-
-
-/**
- * Reference to a field of type 'SellerStatus'
- */
-export type EnumSellerStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SellerStatus'>
-    
-
-
-/**
- * Reference to a field of type 'SellerStatus[]'
- */
-export type ListEnumSellerStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SellerStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'LotStatus'
- */
-export type EnumLotStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LotStatus'>
-    
-
-
-/**
- * Reference to a field of type 'LotStatus[]'
- */
-export type ListEnumLotStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LotStatus[]'>
-    
-
-
-/**
  * Reference to a field of type 'Decimal'
  */
 export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -1147,34 +1077,6 @@ export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'Decimal[]'
  */
 export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-/**
- * Reference to a field of type 'AuctionStatus'
- */
-export type EnumAuctionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuctionStatus'>
-    
-
-
-/**
- * Reference to a field of type 'AuctionStatus[]'
- */
-export type ListEnumAuctionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuctionStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'BidStatus'
- */
-export type EnumBidStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BidStatus'>
-    
-
-
-/**
- * Reference to a field of type 'BidStatus[]'
- */
-export type ListEnumBidStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BidStatus[]'>
     
 
 

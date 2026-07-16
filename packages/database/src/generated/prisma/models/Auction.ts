@@ -56,7 +56,7 @@ export type AuctionMinAggregateOutputType = {
   bidStep: runtime.Decimal | null
   startsAt: Date | null
   endsAt: Date | null
-  status: $Enums.AuctionStatus | null
+  status: string | null
   bidCount: number | null
   winnerBidId: string | null
   buyNowPrice: runtime.Decimal | null
@@ -76,7 +76,7 @@ export type AuctionMaxAggregateOutputType = {
   bidStep: runtime.Decimal | null
   startsAt: Date | null
   endsAt: Date | null
-  status: $Enums.AuctionStatus | null
+  status: string | null
   bidCount: number | null
   winnerBidId: string | null
   buyNowPrice: runtime.Decimal | null
@@ -283,7 +283,7 @@ export type AuctionGroupByOutputType = {
   bidStep: runtime.Decimal
   startsAt: Date
   endsAt: Date
-  status: $Enums.AuctionStatus
+  status: string
   bidCount: number
   winnerBidId: string | null
   buyNowPrice: runtime.Decimal | null
@@ -326,7 +326,7 @@ export type AuctionWhereInput = {
   bidStep?: Prisma.DecimalFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
   endsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
-  status?: Prisma.EnumAuctionStatusFilter<"Auction"> | $Enums.AuctionStatus
+  status?: Prisma.StringFilter<"Auction"> | string
   bidCount?: Prisma.IntFilter<"Auction"> | number
   winnerBidId?: Prisma.UuidNullableFilter<"Auction"> | string | null
   buyNowPrice?: Prisma.DecimalNullableFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -378,7 +378,7 @@ export type AuctionWhereUniqueInput = Prisma.AtLeast<{
   bidStep?: Prisma.DecimalFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
   endsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
-  status?: Prisma.EnumAuctionStatusFilter<"Auction"> | $Enums.AuctionStatus
+  status?: Prisma.StringFilter<"Auction"> | string
   bidCount?: Prisma.IntFilter<"Auction"> | number
   buyNowPrice?: Prisma.DecimalNullableFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
@@ -429,7 +429,7 @@ export type AuctionScalarWhereWithAggregatesInput = {
   bidStep?: Prisma.DecimalWithAggregatesFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeWithAggregatesFilter<"Auction"> | Date | string
   endsAt?: Prisma.DateTimeWithAggregatesFilter<"Auction"> | Date | string
-  status?: Prisma.EnumAuctionStatusWithAggregatesFilter<"Auction"> | $Enums.AuctionStatus
+  status?: Prisma.StringWithAggregatesFilter<"Auction"> | string
   bidCount?: Prisma.IntWithAggregatesFilter<"Auction"> | number
   winnerBidId?: Prisma.UuidNullableWithAggregatesFilter<"Auction"> | string | null
   buyNowPrice?: Prisma.DecimalNullableWithAggregatesFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -447,7 +447,7 @@ export type AuctionCreateInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -470,7 +470,7 @@ export type AuctionUncheckedCreateInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -489,7 +489,7 @@ export type AuctionUpdateInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -512,7 +512,7 @@ export type AuctionUncheckedUpdateInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -533,7 +533,7 @@ export type AuctionCreateManyInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -551,7 +551,7 @@ export type AuctionUpdateManyMutationInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -570,7 +570,7 @@ export type AuctionUncheckedUpdateManyInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -758,10 +758,6 @@ export type DecimalFieldUpdateOperationsInput = {
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
 }
 
-export type EnumAuctionStatusFieldUpdateOperationsInput = {
-  set?: $Enums.AuctionStatus
-}
-
 export type NullableDecimalFieldUpdateOperationsInput = {
   set?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   increment?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -826,7 +822,7 @@ export type AuctionCreateWithoutSellerProfileInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -847,7 +843,7 @@ export type AuctionUncheckedCreateWithoutSellerProfileInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -897,7 +893,7 @@ export type AuctionScalarWhereInput = {
   bidStep?: Prisma.DecimalFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
   endsAt?: Prisma.DateTimeFilter<"Auction"> | Date | string
-  status?: Prisma.EnumAuctionStatusFilter<"Auction"> | $Enums.AuctionStatus
+  status?: Prisma.StringFilter<"Auction"> | string
   bidCount?: Prisma.IntFilter<"Auction"> | number
   winnerBidId?: Prisma.UuidNullableFilter<"Auction"> | string | null
   buyNowPrice?: Prisma.DecimalNullableFilter<"Auction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -915,7 +911,7 @@ export type AuctionCreateWithoutLotInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -936,7 +932,7 @@ export type AuctionUncheckedCreateWithoutLotInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -971,7 +967,7 @@ export type AuctionUpdateWithoutLotInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -992,7 +988,7 @@ export type AuctionUncheckedUpdateWithoutLotInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1011,7 +1007,7 @@ export type AuctionCreateWithoutBidsInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -1033,7 +1029,7 @@ export type AuctionUncheckedCreateWithoutBidsInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1056,7 +1052,7 @@ export type AuctionCreateWithoutWinnerBidInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -1078,7 +1074,7 @@ export type AuctionUncheckedCreateWithoutWinnerBidInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Date | string
@@ -1112,7 +1108,7 @@ export type AuctionUpdateWithoutBidsInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1134,7 +1130,7 @@ export type AuctionUncheckedUpdateWithoutBidsInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1163,7 +1159,7 @@ export type AuctionUpdateWithoutWinnerBidInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1185,7 +1181,7 @@ export type AuctionUncheckedUpdateWithoutWinnerBidInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1204,7 +1200,7 @@ export type AuctionCreateManySellerProfileInput = {
   bidStep: runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt: Date | string
   endsAt: Date | string
-  status?: $Enums.AuctionStatus
+  status?: string
   bidCount?: number
   winnerBidId?: string | null
   buyNowPrice?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1222,7 +1218,7 @@ export type AuctionUpdateWithoutSellerProfileInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1243,7 +1239,7 @@ export type AuctionUncheckedUpdateWithoutSellerProfileInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1263,7 +1259,7 @@ export type AuctionUncheckedUpdateManyWithoutSellerProfileInput = {
   bidStep?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   startsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endsAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  status?: Prisma.EnumAuctionStatusFieldUpdateOperationsInput | $Enums.AuctionStatus
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   bidCount?: Prisma.IntFieldUpdateOperationsInput | number
   winnerBidId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   buyNowPrice?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
@@ -1432,7 +1428,7 @@ export type $AuctionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     bidStep: runtime.Decimal
     startsAt: Date
     endsAt: Date
-    status: $Enums.AuctionStatus
+    status: string
     bidCount: number
     winnerBidId: string | null
     buyNowPrice: runtime.Decimal | null
@@ -1876,7 +1872,7 @@ export interface AuctionFieldRefs {
   readonly bidStep: Prisma.FieldRef<"Auction", 'Decimal'>
   readonly startsAt: Prisma.FieldRef<"Auction", 'DateTime'>
   readonly endsAt: Prisma.FieldRef<"Auction", 'DateTime'>
-  readonly status: Prisma.FieldRef<"Auction", 'AuctionStatus'>
+  readonly status: Prisma.FieldRef<"Auction", 'String'>
   readonly bidCount: Prisma.FieldRef<"Auction", 'Int'>
   readonly winnerBidId: Prisma.FieldRef<"Auction", 'String'>
   readonly buyNowPrice: Prisma.FieldRef<"Auction", 'Decimal'>

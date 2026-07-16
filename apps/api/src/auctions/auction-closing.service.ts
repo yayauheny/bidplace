@@ -194,18 +194,18 @@ export class AuctionLifecycleService {
     now = this.clock.now(),
   ): Promise<AuctionEndedEventPayload | null> {
     const result = await runSerializableTransaction(this.prisma, async (tx) => {
-      const auction: LifecycleAuctionRecord | null = await tx.auction.findUnique({
-        where: {
-          id: auctionId,
-        },
-        select: lifecycleAuctionSelect,
-      });
+    const auction = (await tx.auction.findUnique({
+      where: {
+        id: auctionId,
+      },
+      select: lifecycleAuctionSelect,
+    })) as LifecycleAuctionRecord | null;
 
       if (!auction || !canCloseAuction(auction.status, auction.endsAt, now)) {
         return null;
       }
 
-        const eligibleBids: LifecycleBidRecord[] = await tx.bid.findMany({
+        const eligibleBids = (await tx.bid.findMany({
           where: {
             auctionId,
             status: {
@@ -214,7 +214,7 @@ export class AuctionLifecycleService {
           },
           select: lifecycleBidSelect,
         orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
-      });
+      })) as LifecycleBidRecord[];
 
       const winningBid = findHighestEligibleBid(eligibleBids);
       const closingPrice = winningBid?.amount ?? auction.currentPrice;
@@ -317,12 +317,12 @@ export class AuctionLifecycleService {
     now = this.clock.now(),
   ): Promise<string | null> {
     const result = await runSerializableTransaction(this.prisma, async (tx) => {
-      const auction: LifecycleAuctionRecord | null = await tx.auction.findUnique({
+      const auction = (await tx.auction.findUnique({
         where: {
           id: auctionId,
         },
         select: lifecycleAuctionSelect,
-      });
+      })) as LifecycleAuctionRecord | null;
 
       if (
         !auction ||
