@@ -140,6 +140,31 @@ export class ImagesService {
     lotId: string,
     imageId: string,
   ): Promise<LotResponse> {
+    const image = await this.getManagedLotImage(lotId, imageId);
+    this.assertLotManagementAccess(image.lot, auth);
+
+    await this.deleteLotImageAndCompactPositions(image);
+
+    return this.getLotResponse(lotId);
+  }
+
+  async reorderLotImages(
+    auth: AuthTokenPayload,
+    lotId: string,
+    input: LotImageReorderRequest,
+  ): Promise<LotResponse> {
+    const lot = await this.getManageableLot(lotId);
+    this.assertLotManagementAccess(lot, auth);
+    this.assertReorderMatchesLotImages(lot, input.imageIds);
+    await this.applyLotImageOrder(input.imageIds, lot.lotImages.length);
+
+    return this.getLotResponse(lotId);
+  }
+
+  private async getManagedLotImage(
+    lotId: string,
+    imageId: string,
+  ) {
     const image = await this.prisma.lotImage.findUnique({
       where: {
         id: imageId,
@@ -151,38 +176,10 @@ export class ImagesService {
       throw new NotFoundException('Image not found');
     }
 
-    this.assertLotManagementAccess(image.lot, auth);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.lotImage.delete({
-        where: {
-          id: image.id,
-        },
-      });
-
-      await tx.lotImage.updateMany({
-        where: {
-          lotId,
-          position: {
-            gt: image.position,
-          },
-        },
-        data: {
-          position: {
-            decrement: 1,
-          },
-        },
-      });
-    });
-
-    return this.getLotResponse(lotId);
+    return image;
   }
 
-  async reorderLotImages(
-    auth: AuthTokenPayload,
-    lotId: string,
-    input: LotImageReorderRequest,
-  ): Promise<LotResponse> {
+  private async getManageableLot(lotId: string): Promise<LotImageManagementRecord> {
     const lot = await this.prisma.lot.findUnique({
       where: {
         id: lotId,
@@ -194,13 +191,43 @@ export class ImagesService {
       throw new NotFoundException('Lot not found');
     }
 
-    this.assertLotManagementAccess(lot, auth);
-    this.assertReorderMatchesLotImages(lot, input.imageIds);
+    return lot;
+  }
 
-    const positionOffset = lot.lotImages.length;
+  private async deleteLotImageAndCompactPositions(
+    image: Prisma.LotImageGetPayload<{ select: typeof imageMutationSelect }>,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.lotImage.delete({
+        where: {
+          id: image.id,
+        },
+      });
+
+      await tx.lotImage.updateMany({
+        where: {
+          lotId: image.lotId,
+          position: {
+            gt: image.position,
+          },
+        },
+        data: {
+          position: {
+            decrement: 1,
+          },
+        },
+      });
+    });
+  }
+
+  private async applyLotImageOrder(
+    imageIds: readonly string[],
+    imageCount: number,
+  ): Promise<void> {
+    const positionOffset = imageCount;
 
     await this.prisma.$transaction(async (tx) => {
-      for (const [index, imageId] of input.imageIds.entries()) {
+      for (const [index, imageId] of imageIds.entries()) {
         await tx.lotImage.update({
           where: {
             id: imageId,
@@ -211,7 +238,7 @@ export class ImagesService {
         });
       }
 
-      for (const [index, imageId] of input.imageIds.entries()) {
+      for (const [index, imageId] of imageIds.entries()) {
         await tx.lotImage.update({
           where: {
             id: imageId,
@@ -222,8 +249,6 @@ export class ImagesService {
         });
       }
     });
-
-    return this.getLotResponse(lotId);
   }
 
   private async getLotResponse(lotId: string): Promise<LotResponse> {

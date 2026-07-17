@@ -5,7 +5,7 @@ import {
   bidHistoryResponseSchema,
   bidPlacementResponseSchema,
 } from '@bidplace/contracts';
-import { type Prisma } from '@bidplace/database';
+import { Decimal, type Prisma } from '@bidplace/database';
 import {
   BadRequestException,
   ConflictException,
@@ -138,123 +138,10 @@ export class BidsService {
     const amount = toDecimalAmount(input.amount);
 
     try {
-      const result = await runSerializableTransaction(this.prisma, async (tx) => {
-        const auction = await tx.auction.findUnique({
-          where: {
-            id: auctionId,
-          },
-          select: auctionBidSelect,
-        });
+      const result = await this.placeBidTransaction(userId, auctionId, amount, now);
+      const response = this.toBidPlacementResponse(result.bid, result.auction);
 
-        if (!auction) {
-          throw new NotFoundException('Auction not found');
-        }
-
-        const biddingState = toAuctionBiddingState(auction);
-
-        if (auction.sellerProfile.userId === userId) {
-          throw new ForbiddenException('Cannot bid on your own auction');
-        }
-
-        if (!isAuctionOpenForBidding(biddingState, now)) {
-          throw new ConflictException('Auction is not active');
-        }
-
-        if (parseLotStatus(auction.lot.status, auction.id) !== 'published') {
-          throw new ConflictException('Auction is not open for bidding');
-        }
-
-        const minimumBid = resolveMinimumNextBid(auction.currentPrice);
-
-        if (amount.lt(minimumBid)) {
-          throw new BadRequestException(
-            `Bid must be at least ${minimumBid.toFixed(2)}`,
-          );
-        }
-
-        const updatedAuction = await tx.auction.updateMany({
-          where: {
-            id: auctionId,
-            status: 'active',
-            currentPrice: toDecimalAmount(auction.currentPrice),
-            endsAt: {
-              gt: now,
-            },
-          },
-          data: {
-            currentPrice: amount,
-            bidCount: {
-              increment: 1,
-            },
-            bidStep: calculateBidStep(amount),
-          },
-        });
-
-        if (updatedAuction.count !== 1) {
-          throw new ConflictException('Auction changed while placing bid');
-        }
-
-        await tx.bid.updateMany({
-          where: {
-            auctionId,
-            status: {
-              in: [...eligibleBidStatuses],
-            },
-          },
-          data: {
-            status: 'outbid',
-          },
-        });
-
-        const bid = await tx.bid.create({
-          data: {
-            auctionId,
-            bidderUserId: userId,
-            amount,
-            status: 'winning',
-          },
-          select: bidContractSelect,
-        });
-
-        const latestAuction = await tx.auction.findUnique({
-          where: {
-            id: auctionId,
-          },
-          select: auctionBidSelect,
-        });
-
-        if (!latestAuction) {
-          throw new NotFoundException('Auction not found');
-        }
-
-        return {
-          bid,
-          auction: latestAuction,
-        };
-      });
-
-      const response = bidPlacementResponseSchema.parse({
-        bid: toContractBid(result.bid),
-        auction: toContractAuction(result.auction),
-      });
-
-      const reserveMet = reserveReached(
-        result.auction.currentPrice,
-        result.auction.reservePrice,
-      );
-
-      this.realtimeEventsService.publishBidPlaced(
-        mapBidPlacedEventPayload(
-          response.auction.id,
-          toPublicBid(response.bid),
-          response.auction.currentPrice,
-          response.auction.bidCount,
-        ),
-      );
-
-      this.realtimeEventsService.publishAuctionUpdated(
-        mapAuctionUpdatedEventPayload(response.auction, reserveMet),
-      );
+      this.publishBidPlacement(response);
 
       return response;
     } catch (error: unknown) {
@@ -296,5 +183,162 @@ export class BidsService {
     return bidHistoryResponseSchema.parse({
       bids: bids.map((bid) => toContractBid(bid)),
     });
+  }
+
+  private async placeBidTransaction(
+    userId: string,
+    auctionId: string,
+    amount: Decimal,
+    now: Date,
+  ) {
+    return runSerializableTransaction(this.prisma, async (tx) => {
+      const auction = await tx.auction.findUnique({
+        where: {
+          id: auctionId,
+        },
+        select: auctionBidSelect,
+      });
+
+      if (!auction) {
+        throw new NotFoundException('Auction not found');
+      }
+
+      this.assertBidCanBePlaced(auction, userId, amount, now);
+      await this.updateAuctionForNewBid(tx, auctionId, auction, amount, now);
+      await this.markExistingBidsAsOutbid(tx, auctionId);
+
+      const bid = await tx.bid.create({
+        data: {
+          auctionId,
+          bidderUserId: userId,
+          amount,
+          status: 'winning',
+        },
+        select: bidContractSelect,
+      });
+      const latestAuction = await tx.auction.findUnique({
+        where: {
+          id: auctionId,
+        },
+        select: auctionBidSelect,
+      });
+
+      if (!latestAuction) {
+        throw new NotFoundException('Auction not found');
+      }
+
+      return {
+        bid,
+        auction: latestAuction,
+      };
+    });
+  }
+
+  private assertBidCanBePlaced(
+    auction: AuctionBidRecord,
+    userId: string,
+    amount: Decimal,
+    now: Date,
+  ): void {
+    const biddingState = toAuctionBiddingState(auction);
+
+    if (auction.sellerProfile.userId === userId) {
+      throw new ForbiddenException('Cannot bid on your own auction');
+    }
+
+    if (!isAuctionOpenForBidding(biddingState, now)) {
+      throw new ConflictException('Auction is not active');
+    }
+
+    if (parseLotStatus(auction.lot.status, auction.id) !== 'published') {
+      throw new ConflictException('Auction is not open for bidding');
+    }
+
+    const minimumBid = resolveMinimumNextBid(auction.currentPrice);
+
+    if (amount.lt(minimumBid)) {
+      throw new BadRequestException(
+        `Bid must be at least ${minimumBid.toFixed(2)}`,
+      );
+    }
+  }
+
+  private async updateAuctionForNewBid(
+    tx: Prisma.TransactionClient,
+    auctionId: string,
+    auction: AuctionBidRecord,
+    amount: Decimal,
+    now: Date,
+  ): Promise<void> {
+    const updatedAuction = await tx.auction.updateMany({
+      where: {
+        id: auctionId,
+        status: 'active',
+        currentPrice: toDecimalAmount(auction.currentPrice),
+        endsAt: {
+          gt: now,
+        },
+      },
+      data: {
+        currentPrice: amount,
+        bidCount: {
+          increment: 1,
+        },
+        bidStep: calculateBidStep(amount),
+      },
+    });
+
+    if (updatedAuction.count !== 1) {
+      throw new ConflictException('Auction changed while placing bid');
+    }
+  }
+
+  private async markExistingBidsAsOutbid(
+    tx: Prisma.TransactionClient,
+    auctionId: string,
+  ): Promise<void> {
+    await tx.bid.updateMany({
+      where: {
+        auctionId,
+        status: {
+          in: [...eligibleBidStatuses],
+        },
+      },
+      data: {
+        status: 'outbid',
+      },
+    });
+  }
+
+  private toBidPlacementResponse(
+    bid: Prisma.BidGetPayload<{ select: typeof bidContractSelect }>,
+    auction: AuctionBidRecord,
+  ) {
+    return bidPlacementResponseSchema.parse({
+      bid: toContractBid(bid),
+      auction: toContractAuction(auction),
+    });
+  }
+
+  private publishBidPlacement(
+    response: ReturnType<BidsService['toBidPlacementResponse']>,
+  ): void {
+    const reserveMet = reserveReached(
+      response.auction.currentPrice,
+      response.auction.reservePrice,
+    );
+
+    this.realtimeEventsService.publishBidPlaced(
+      mapBidPlacedEventPayload(
+        response.auction.id,
+        toPublicBid(response.bid),
+        response.auction.currentPrice,
+        response.auction.bidCount,
+      ),
+    );
+
+    this.realtimeEventsService.publishAuctionUpdated(
+      mapAuctionUpdatedEventPayload(response.auction, reserveMet),
+    );
   }
 }

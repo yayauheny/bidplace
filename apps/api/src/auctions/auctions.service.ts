@@ -215,77 +215,15 @@ export class AuctionsService {
     userId: string,
     input: AuctionCreateRequest,
   ): Promise<AuctionResponse> {
-    const sellerProfile: SellerProfileStatusRecord | null =
-      await this.prisma.sellerProfile.findUnique({
-      where: {
-        userId,
-      },
-      select: sellerProfileStatusSelect,
-      });
-
-    if (!sellerProfile) {
-      throw new NotFoundException('Seller profile not found');
-    }
-
-    if (parseSellerStatus(sellerProfile.status, sellerProfile.id) !== 'active') {
-      throw new ForbiddenException('Seller profile is not active');
-    }
-
-    const lot: LotOwnershipStatusRecord | null = await this.prisma.lot.findUnique({
-      where: {
-        id: input.lotId,
-      },
-      select: lotOwnershipStatusSelect,
-    });
-
-    if (!lot) {
-      throw new NotFoundException('Lot not found');
-    }
-
-    if (lot.sellerProfileId !== sellerProfile.id) {
-      throw new ForbiddenException('Lot does not belong to seller');
-    }
-
-    if (parseLotStatus(lot.status, lot.id) !== 'draft') {
-      throw new ConflictException('Lot is not available for auction');
-    }
+    const sellerProfile = await this.getActiveSellerProfile(userId);
+    const lot = await this.getOwnedDraftLot(input.lotId, sellerProfile.id);
 
     try {
-      const auction = await this.prisma.auction.create({
-        data: {
-          lotId: input.lotId,
-          sellerProfileId: sellerProfile.id,
-          slug: input.slug,
-          startPrice: toDecimalAmount(input.startPrice),
-          reservePrice: toDecimalAmount(input.reservePrice),
-          currentPrice: toDecimalAmount(input.startPrice),
-          currency: input.currency,
-          bidStep: calculateBidStep(toDecimalAmount(input.startPrice)),
-          startsAt: new Date(input.startsAt),
-          endsAt: new Date(input.endsAt),
-          status: 'draft',
-          bidCount: 0,
-          winnerBidId: null,
-          buyNowPrice:
-            input.buyNowPrice === undefined || input.buyNowPrice === null
-              ? null
-              : toDecimalAmount(input.buyNowPrice),
-        },
-        select: auctionContractSelect,
-      });
+      const auction = await this.createDraftAuction(input, sellerProfile.id);
 
-      return auctionResponseSchema.parse({
-        auction: toContractAuction(auction),
-      });
+      return this.toAuctionResponse(auction);
     } catch (error: unknown) {
-      if (isPrismaUniqueConstraintError(error)) {
-        if (uniqueConstraintIncludes(error, 'lot')) {
-          throw new ConflictException('Lot already has an auction');
-        }
-
-        throw new ConflictException('Auction slug already in use');
-      }
-
+      this.throwCreateAuctionConflict(error);
       throw error;
     }
   }
@@ -294,13 +232,36 @@ export class AuctionsService {
     userId: string,
     auctionId: string,
   ): Promise<AuctionResponse> {
+    const sellerProfile = await this.getActiveSellerProfile(userId);
+    const auction = await this.getOwnedDraftAuctionForPublication(
+      auctionId,
+      sellerProfile.id,
+    );
+    const lot = await this.getDraftLotForPublication(auction.lotId);
+    const now = this.clock.now();
+    const status = this.getPublishableAuctionStatus(auction.startsAt, now);
+    const updatedAuction = await this.publishDraftAuction(
+      auction.id,
+      lot.id,
+      status,
+    );
+    const response = this.toAuctionResponse(updatedAuction);
+
+    this.publishAuctionUpdated(response.auction);
+
+    return response;
+  }
+
+  private async getActiveSellerProfile(
+    userId: string,
+  ): Promise<SellerProfileStatusRecord> {
     const sellerProfile: SellerProfileStatusRecord | null =
       await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
       select: sellerProfileStatusSelect,
-      });
+    });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
@@ -310,15 +271,91 @@ export class AuctionsService {
       throw new ForbiddenException('Seller profile is not active');
     }
 
+    return sellerProfile;
+  }
+
+  private async getOwnedDraftLot(
+    lotId: string,
+    sellerProfileId: string,
+  ): Promise<LotOwnershipStatusRecord> {
+    const lot: LotOwnershipStatusRecord | null = await this.prisma.lot.findUnique({
+      where: {
+        id: lotId,
+      },
+      select: lotOwnershipStatusSelect,
+    });
+
+    if (!lot) {
+      throw new NotFoundException('Lot not found');
+    }
+
+    if (lot.sellerProfileId !== sellerProfileId) {
+      throw new ForbiddenException('Lot does not belong to seller');
+    }
+
+    if (parseLotStatus(lot.status, lot.id) !== 'draft') {
+      throw new ConflictException('Lot is not available for auction');
+    }
+
+    return lot;
+  }
+
+  private async createDraftAuction(
+    input: AuctionCreateRequest,
+    sellerProfileId: string,
+  ) {
+    const startPrice = toDecimalAmount(input.startPrice);
+    const reservePrice = toDecimalAmount(input.reservePrice);
+
+    return this.prisma.auction.create({
+      data: {
+        lotId: input.lotId,
+        sellerProfileId,
+        slug: input.slug,
+        startPrice,
+        reservePrice,
+        currentPrice: startPrice,
+        currency: input.currency,
+        bidStep: calculateBidStep(startPrice),
+        startsAt: new Date(input.startsAt),
+        endsAt: new Date(input.endsAt),
+        status: 'draft',
+        bidCount: 0,
+        winnerBidId: null,
+        buyNowPrice:
+          input.buyNowPrice === undefined || input.buyNowPrice === null
+            ? null
+            : toDecimalAmount(input.buyNowPrice),
+      },
+      select: auctionContractSelect,
+    });
+  }
+
+  private throwCreateAuctionConflict(error: unknown): void {
+    if (!isPrismaUniqueConstraintError(error)) {
+      return;
+    }
+
+    if (uniqueConstraintIncludes(error, 'lot')) {
+      throw new ConflictException('Lot already has an auction');
+    }
+
+    throw new ConflictException('Auction slug already in use');
+  }
+
+  private async getOwnedDraftAuctionForPublication(
+    auctionId: string,
+    sellerProfileId: string,
+  ): Promise<AuctionPublicationRecord> {
     const auction: AuctionPublicationRecord | null =
       await this.prisma.auction.findUnique({
       where: {
         id: auctionId,
       },
       select: auctionPublicationSelect,
-      });
+    });
 
-    if (!auction || auction.sellerProfileId !== sellerProfile.id) {
+    if (!auction || auction.sellerProfileId !== sellerProfileId) {
       throw new NotFoundException('Auction not found');
     }
 
@@ -326,9 +363,15 @@ export class AuctionsService {
       throw new ConflictException('Auction cannot be published');
     }
 
+    return auction;
+  }
+
+  private async getDraftLotForPublication(
+    lotId: string,
+  ): Promise<LotPublicationRecord> {
     const lot: LotPublicationRecord | null = await this.prisma.lot.findUnique({
       where: {
-        id: auction.lotId,
+        id: lotId,
       },
       select: lotPublicationSelect,
     });
@@ -341,13 +384,18 @@ export class AuctionsService {
       throw new ConflictException('Lot is not available for publication');
     }
 
-    const now = this.clock.now();
-    const status = resolvePublishedAuctionStatus(auction.startsAt, now);
+    return lot;
+  }
 
-    const updatedAuction = await runSerializableTransaction(this.prisma, async (tx) => {
+  private async publishDraftAuction(
+    auctionId: string,
+    lotId: string,
+    status: 'scheduled' | 'active',
+  ) {
+    return runSerializableTransaction(this.prisma, async (tx) => {
       const updatedLot = await tx.lot.updateMany({
         where: {
-          id: auction.lotId,
+          id: lotId,
           status: 'draft',
         },
         data: {
@@ -386,21 +434,31 @@ export class AuctionsService {
 
       return latestAuction;
     });
+  }
 
-    const response = auctionResponseSchema.parse({
-      auction: toContractAuction(updatedAuction),
+  private toAuctionResponse(auction: Prisma.AuctionGetPayload<{
+    select: typeof auctionContractSelect;
+  }>): AuctionResponse {
+    return auctionResponseSchema.parse({
+      auction: toContractAuction(auction),
     });
+  }
 
-    const reserveMet = reserveReached(
-      updatedAuction.currentPrice,
-      updatedAuction.reservePrice,
-    );
+  private publishAuctionUpdated(auction: AuctionResponse['auction']): void {
+    const reserveMet = reserveReached(auction.currentPrice, auction.reservePrice);
 
     this.realtimeEventsService.publishAuctionUpdated(
-      mapAuctionUpdatedEventPayload(response.auction, reserveMet),
+      mapAuctionUpdatedEventPayload(auction, reserveMet),
     );
+  }
 
-    return response;
+  private getPublishableAuctionStatus(
+    startsAt: Date,
+    now: Date,
+  ): 'scheduled' | 'active' {
+    const status = resolvePublishedAuctionStatus(startsAt, now);
+
+    return status === 'active' ? 'active' : 'scheduled';
   }
 }
 
