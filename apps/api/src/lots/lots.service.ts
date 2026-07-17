@@ -21,6 +21,15 @@ import { parseSellerStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
 import { type ValidatedImageUpload } from '../images/image-policy';
 
+const sellerProfileStatusSelect = {
+  id: true,
+  status: true,
+} satisfies Prisma.SellerProfileSelect;
+
+type SellerProfileStatusRecord = Prisma.SellerProfileGetPayload<{
+  select: typeof sellerProfileStatusSelect;
+}>;
+
 export interface LotsRepository {
   sellerProfile: {
     findUnique: PrismaService['sellerProfile']['findUnique'];
@@ -89,15 +98,13 @@ export class LotsService {
     input: LotCreateRequest,
     images: readonly ValidatedImageUpload[],
   ): Promise<LotResponse> {
-    const sellerProfile = (await this.prisma.sellerProfile.findUnique({
+    const sellerProfile: SellerProfileStatusRecord | null =
+      await this.prisma.sellerProfile.findUnique({
       where: {
         userId,
       },
-      select: {
-        id: true,
-        status: true,
-      },
-    })) as { id: string; status: string } | null;
+      select: sellerProfileStatusSelect,
+    });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');

@@ -1,8 +1,7 @@
 import { Prisma } from '@bidplace/database';
 
 import { PrismaService } from './prisma.service';
-
-const SERIALIZABLE_RETRYABLE_ERROR_CODE = 'P2034';
+import { isPrismaSerializableConflictError } from './prisma-error';
 
 type SerializableTransactionClient = {
   $transaction: PrismaService['$transaction'];
@@ -23,13 +22,7 @@ export async function runSerializableTransaction<T>(
     } catch (error) {
       lastError = error;
 
-      const isRetryable =
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code?: unknown }).code === SERIALIZABLE_RETRYABLE_ERROR_CODE;
-
-      if (!isRetryable || attempt === attempts) {
+      if (!isPrismaSerializableConflictError(error) || attempt === attempts) {
         throw error;
       }
     }

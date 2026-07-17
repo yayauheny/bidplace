@@ -17,7 +17,7 @@ import {
   toContractSellerProfile,
 } from './seller-profile.mapper';
 import { parseSellerStatus } from '../core/contracts';
-import { PrismaService } from '../core/database';
+import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
 
 export interface SellersRepository {
   sellerProfile: {
@@ -27,13 +27,24 @@ export interface SellersRepository {
   };
 }
 
-function isUniqueConstraintError(error: unknown): error is { code: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
+function toSellerProfileUpdateData(
+  input: SellerProfileUpdateRequest,
+): Prisma.SellerProfileUpdateInput {
+  return {
+    ...(input.slug !== undefined ? { slug: input.slug } : {}),
+    ...(input.sellerType !== undefined
+      ? { sellerType: input.sellerType }
+      : {}),
+    ...(input.storeName !== undefined ? { storeName: input.storeName } : {}),
+    ...(input.country !== undefined ? { country: input.country } : {}),
+    ...(input.contactPreference !== undefined
+      ? { contactPreference: input.contactPreference }
+      : {}),
+    ...(input.socialLink !== undefined ? { socialLink: input.socialLink } : {}),
+    ...(input.shortDescription !== undefined
+      ? { shortDescription: input.shortDescription }
+      : {}),
+  };
 }
 
 @Injectable()
@@ -74,7 +85,7 @@ export class SellersService {
         sellerProfile: toContractSellerProfile(sellerProfile),
       });
     } catch (error: unknown) {
-      if (isUniqueConstraintError(error)) {
+      if (isPrismaUniqueConstraintError(error)) {
         throw new ConflictException('Seller slug already in use');
       }
 
@@ -97,41 +108,11 @@ export class SellersService {
     }
 
     try {
-      const data: Prisma.SellerProfileUpdateInput = {};
-
-      if (input.slug !== undefined) {
-        data.slug = input.slug;
-      }
-
-      if (input.sellerType !== undefined) {
-        data.sellerType = input.sellerType;
-      }
-
-      if (input.storeName !== undefined) {
-        data.storeName = input.storeName;
-      }
-
-      if (input.country !== undefined) {
-        data.country = input.country;
-      }
-
-      if (input.contactPreference !== undefined) {
-        data.contactPreference = input.contactPreference;
-      }
-
-      if (input.socialLink !== undefined) {
-        data.socialLink = input.socialLink;
-      }
-
-      if (input.shortDescription !== undefined) {
-        data.shortDescription = input.shortDescription;
-      }
-
       const sellerProfile = await this.prisma.sellerProfile.update({
         where: {
           userId,
         },
-        data,
+        data: toSellerProfileUpdateData(input),
         select: sellerProfileContractSelect,
       });
 
@@ -139,7 +120,7 @@ export class SellersService {
         sellerProfile: toContractSellerProfile(sellerProfile),
       });
     } catch (error: unknown) {
-      if (isUniqueConstraintError(error)) {
+      if (isPrismaUniqueConstraintError(error)) {
         throw new ConflictException('Seller slug already in use');
       }
 

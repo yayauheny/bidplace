@@ -35,7 +35,11 @@ import {
   toAuctionListItem,
   toContractAuction,
 } from './auction.mapper';
-import { PrismaService, runSerializableTransaction } from '../core/database';
+import {
+  PrismaService,
+  isPrismaUniqueConstraintError,
+  runSerializableTransaction,
+} from '../core/database';
 import { Clock } from '../core/time';
 import { RealtimeEventsService, mapAuctionUpdatedEventPayload } from '../core/realtime';
 
@@ -101,17 +105,6 @@ export interface AuctionsRepository {
 
 export interface AuctionsRealtimePublisher {
   publishAuctionUpdated: RealtimeEventsService['publishAuctionUpdated'];
-}
-
-function isUniqueConstraintError(
-  error: unknown,
-): error is { code: string; meta?: { target?: unknown } } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
 }
 
 @Injectable()
@@ -285,7 +278,7 @@ export class AuctionsService {
         auction: toContractAuction(auction),
       });
     } catch (error: unknown) {
-      if (isUniqueConstraintError(error)) {
+      if (isPrismaUniqueConstraintError(error)) {
         if (uniqueConstraintIncludes(error, 'lot')) {
           throw new ConflictException('Lot already has an auction');
         }
@@ -414,10 +407,18 @@ export class AuctionsService {
 export { calculateBidStep };
 
 function uniqueConstraintIncludes(
-  error: { meta?: { target?: unknown } },
+  error: unknown,
   fieldName: string,
 ): boolean {
-  const target = error.meta?.target;
+  if (
+    typeof error !== 'object' ||
+    error === null ||
+    !('meta' in error)
+  ) {
+    return false;
+  }
+
+  const target = (error as { meta?: { target?: unknown } }).meta?.target;
 
   return Array.isArray(target) && target.some((field) => field === fieldName);
 }

@@ -19,19 +19,10 @@ import {
   toContractUser,
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
-import { PrismaService } from '../core/database';
+import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
-}
-
-function isUniqueConstraintError(error: unknown): error is { code: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
 }
 
 export interface AuthRepository {
@@ -91,7 +82,7 @@ export class AuthService {
 
       return this.createAuthResponse(user);
     } catch (error: unknown) {
-      if (isUniqueConstraintError(error)) {
+      if (isPrismaUniqueConstraintError(error)) {
         throw new ConflictException('Email or phone already in use');
       }
 

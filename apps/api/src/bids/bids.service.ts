@@ -23,7 +23,11 @@ import {
   reserveReached,
   toDecimalAmount,
 } from '../core/auction';
-import { PrismaService, runSerializableTransaction } from '../core/database';
+import {
+  PrismaService,
+  isPrismaUniqueConstraintError,
+  runSerializableTransaction,
+} from '../core/database';
 import { Clock } from '../core/time';
 import {
   mapAuctionUpdatedEventPayload,
@@ -93,15 +97,6 @@ export interface BidsRepository {
 export interface BidsRealtimePublisher {
   publishBidPlaced: RealtimeEventsService['publishBidPlaced'];
   publishAuctionUpdated: RealtimeEventsService['publishAuctionUpdated'];
-}
-
-function isUniqueConstraintError(error: unknown): error is { code: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
-  );
 }
 
 function toAuctionBiddingState(
@@ -263,7 +258,7 @@ export class BidsService {
 
       return response;
     } catch (error: unknown) {
-      if (isUniqueConstraintError(error)) {
+      if (isPrismaUniqueConstraintError(error)) {
         throw new ConflictException('Bid could not be placed');
       }
 

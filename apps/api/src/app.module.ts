@@ -10,7 +10,6 @@ import { BidsModule } from './bids/bids.module';
 import { DatabaseModule } from './core/database';
 import { ApiExceptionFilter } from './core/errors';
 import { HealthModule } from './core/health';
-import { LoggerModule } from './core/logger';
 import { RealtimeModule } from './core/realtime';
 import { ClockModule } from './core/time';
 import { ImagesModule } from './images/images.module';
@@ -21,7 +20,6 @@ import { SellersModule } from './sellers/sellers.module';
   imports: [
     ScheduleModule.forRoot(),
     HealthModule,
-    LoggerModule,
     ClockModule,
     AdminModule,
     CategoriesModule,
