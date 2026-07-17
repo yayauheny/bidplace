@@ -10,7 +10,6 @@ import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
 import {
   useCreateLotMutation,
-  useMySellerProfileQuery,
   useSellerCategoriesQuery,
 } from './hooks';
 import {

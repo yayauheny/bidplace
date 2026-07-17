@@ -216,7 +216,7 @@ export class AuctionsService {
     input: AuctionCreateRequest,
   ): Promise<AuctionResponse> {
     const sellerProfile = await this.getActiveSellerProfile(userId);
-    const lot = await this.getOwnedDraftLot(input.lotId, sellerProfile.id);
+    await this.getOwnedDraftLot(input.lotId, sellerProfile.id);
 
     try {
       const auction = await this.createDraftAuction(input, sellerProfile.id);
