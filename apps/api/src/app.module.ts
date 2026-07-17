@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { AdminModule } from './admin/admin.module';
@@ -7,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { BidsModule } from './bids/bids.module';
 import { DatabaseModule } from './core/database';
+import { ApiExceptionFilter } from './core/errors';
 import { HealthModule } from './core/health';
 import { LoggerModule } from './core/logger';
 import { RealtimeModule } from './core/realtime';
@@ -31,6 +33,12 @@ import { SellersModule } from './sellers/sellers.module';
     BidsModule,
     RealtimeModule,
     AuctionsModule,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: ApiExceptionFilter,
+    },
   ],
 })
 export class AppModule {}

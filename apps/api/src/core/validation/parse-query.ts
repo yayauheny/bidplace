@@ -1,5 +1,6 @@
-import { BadRequestException } from '@nestjs/common';
 import { type ZodTypeAny, z } from 'zod';
+
+import { createValidationException } from './validation-exception';
 
 export function parseQuery<T extends ZodTypeAny>(
   schema: T,
@@ -8,7 +9,7 @@ export function parseQuery<T extends ZodTypeAny>(
   const result = schema.safeParse(query);
 
   if (!result.success) {
-    throw new BadRequestException(result.error.flatten());
+    throw createValidationException(result.error);
   }
 
   return result.data;

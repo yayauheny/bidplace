@@ -8,6 +8,7 @@ import { AppButton, AppCard, ControlledAppInput, FormField } from '../../compone
 import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 import {
   sellerProfileFormSchema,
   type SellerProfileFormValues,
@@ -81,7 +82,9 @@ export function SellerProfileForm({ profile }: SellerProfileFormProps) {
       }
       router.back();
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось сохранить профиль');
+      setSubmitError(
+        getUserFacingErrorMessage(error, 'Не удалось сохранить профиль'),
+      );
     }
   });
 

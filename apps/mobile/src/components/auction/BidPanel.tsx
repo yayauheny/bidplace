@@ -13,6 +13,7 @@ import { usePlaceBidMutation } from '../../features/auctions/hooks';
 import { getAuctionStatusLabel } from '../../features/auctions/utils';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 
 function createBidSchema(minimumBid: number) {
   return z.object({
@@ -77,7 +78,9 @@ export function BidPanel({ auction }: BidPanelProps) {
         amount: response.auction.currentPrice + response.auction.bidStep,
       });
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось поставить ставку');
+      setSubmitError(
+        getUserFacingErrorMessage(error, 'Не удалось поставить ставку'),
+      );
     }
   });
 

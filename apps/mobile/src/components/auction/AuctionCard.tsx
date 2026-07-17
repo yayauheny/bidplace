@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
 import type { AuctionListItem } from '@bidplace/contracts';
 
@@ -22,6 +22,10 @@ export function AuctionCard({ auction, lot, sellerProfile }: AuctionCardProps) {
   const palette = useAppThemePalette();
   const image = lot.images[0];
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
 
   return (
     <Pressable

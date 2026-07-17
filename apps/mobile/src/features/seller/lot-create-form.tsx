@@ -13,7 +13,12 @@ import {
   useMySellerProfileQuery,
   useSellerCategoriesQuery,
 } from './hooks';
+import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 import { lotFormSchema, type LotFormValues } from './schemas';
+import { SelectedLotImages } from './selected-lot-images';
 
 async function assetToBlob(asset: ImagePicker.ImagePickerAsset): Promise<Blob | File> {
   if (asset.file) {
@@ -22,6 +27,23 @@ async function assetToBlob(asset: ImagePicker.ImagePickerAsset): Promise<Blob | 
 
   const response = await fetch(asset.uri);
   return response.blob();
+}
+
+function getImageKey(asset: ImagePicker.ImagePickerAsset): string {
+  return asset.assetId ?? asset.uri;
+}
+
+function mergeSelectedImages(
+  currentImages: readonly ImagePicker.ImagePickerAsset[],
+  nextImages: readonly ImagePicker.ImagePickerAsset[],
+): ImagePicker.ImagePickerAsset[] {
+  const mergedImages = new Map<string, ImagePicker.ImagePickerAsset>();
+
+  for (const image of [...currentImages, ...nextImages]) {
+    mergedImages.set(getImageKey(image), image);
+  }
+
+  return [...mergedImages.values()];
 }
 
 export function LotCreateForm() {
@@ -57,7 +79,7 @@ export function LotCreateForm() {
   }
 
   if (profileQuery.isError) {
-    const status = (profileQuery.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(profileQuery.error);
 
     if (status === 404) {
       return (
@@ -71,12 +93,11 @@ export function LotCreateForm() {
     }
 
     return (
-      <ErrorState
-        description={
-          profileQuery.error instanceof Error
-            ? profileQuery.error.message
-            : 'Не удалось проверить seller profile'
-        }
+        <ErrorState
+        description={getUserFacingErrorMessage(
+          profileQuery.error,
+          'Не удалось проверить seller profile',
+        )}
         onAction={() => profileQuery.refetch()}
       />
     );
@@ -94,7 +115,7 @@ export function LotCreateForm() {
       });
       router.back();
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось создать lot');
+      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось создать lot'));
     }
   });
 
@@ -110,9 +131,10 @@ export function LotCreateForm() {
             Категории недоступны
           </Text>
           <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-            {categoriesQuery.error instanceof Error
-              ? categoriesQuery.error.message
-              : 'Не удалось загрузить категории'}
+            {getUserFacingErrorMessage(
+              categoriesQuery.error,
+              'Не удалось загрузить категории',
+            )}
           </Text>
           <AppButton tone="secondary" onPress={() => categoriesQuery.refetch()}>
             Повторить
@@ -198,10 +220,17 @@ export function LotCreateForm() {
                   });
 
                   if (!result.canceled) {
-                    setSelectedImages(result.assets);
+                    setSelectedImages((currentImages) =>
+                      mergeSelectedImages(currentImages, result.assets),
+                    );
                   }
                 } catch (error) {
-                  setImageError(error instanceof Error ? error.message : 'Не удалось выбрать изображения');
+                  setImageError(
+                    getUserFacingErrorMessage(
+                      error,
+                      'Не удалось выбрать изображения',
+                    ),
+                  );
                 }
               }}
             >
@@ -212,9 +241,14 @@ export function LotCreateForm() {
                 {imageError}
               </Text>
             ) : null}
-            <Text style={{ fontSize: 12, lineHeight: 16, color: palette.textMuted }}>
-              Выбрано изображений: {selectedImages.length}
-            </Text>
+            <SelectedLotImages
+              images={selectedImages}
+              onRemove={(imageKey) =>
+                setSelectedImages((currentImages) =>
+                  currentImages.filter((image) => getImageKey(image) !== imageKey),
+                )
+              }
+            />
             {selectedImages.length > 0 ? (
               <AppButton tone="subtle" onPress={() => setSelectedImages([])}>
                 Очистить выбор

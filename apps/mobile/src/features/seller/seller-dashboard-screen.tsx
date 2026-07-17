@@ -5,6 +5,10 @@ import { formatCurrencyAmount, formatNumber } from '../../lib/formatters';
 import { mobileLayout, mobileSpacing } from '../../theme/tokens';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
+import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 import { getAuctionStatusLabel, getAuctionStatusTone } from '../auctions/utils';
 import {
   useMySellerAuctionsQuery,
@@ -28,7 +32,7 @@ export function SellerDashboardScreen() {
   }
 
   if (profileQuery.isError) {
-    const status = (profileQuery.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(profileQuery.error);
     if (status === 404) {
       return (
         <Screen>
@@ -45,11 +49,10 @@ export function SellerDashboardScreen() {
     return (
       <Screen>
         <ErrorState
-          description={
-            profileQuery.error instanceof Error
-              ? profileQuery.error.message
-              : 'Не удалось загрузить seller dashboard'
-          }
+          description={getUserFacingErrorMessage(
+            profileQuery.error,
+            'Не удалось загрузить seller dashboard',
+          )}
           onAction={() => profileQuery.refetch()}
         />
       </Screen>
@@ -121,11 +124,10 @@ export function SellerDashboardScreen() {
             {lotsQuery.isLoading ? <LoadingState label="Загружаем lot-ы" /> : null}
             {lotsQuery.isError ? (
               <ErrorState
-                description={
-                  lotsQuery.error instanceof Error
-                    ? lotsQuery.error.message
-                    : 'Не удалось загрузить lot-ы'
-                }
+                description={getUserFacingErrorMessage(
+                  lotsQuery.error,
+                  'Не удалось загрузить lot-ы',
+                )}
                 onAction={() => lotsQuery.refetch()}
               />
             ) : null}
@@ -170,11 +172,10 @@ export function SellerDashboardScreen() {
             {auctionsQuery.isLoading ? <LoadingState label="Загружаем auction-ы" /> : null}
             {auctionsQuery.isError ? (
               <ErrorState
-                description={
-                  auctionsQuery.error instanceof Error
-                    ? auctionsQuery.error.message
-                    : 'Не удалось загрузить auction-ы'
-                }
+                description={getUserFacingErrorMessage(
+                  auctionsQuery.error,
+                  'Не удалось загрузить auction-ы',
+                )}
                 onAction={() => auctionsQuery.refetch()}
               />
             ) : null}

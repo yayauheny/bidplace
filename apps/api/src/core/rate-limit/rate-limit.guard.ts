@@ -20,9 +20,6 @@ type RateLimitedRequest = {
   auth?: AuthTokenPayload;
   ip?: string;
   params: Record<string, string | undefined>;
-  headers: {
-    'x-forwarded-for'?: string;
-  };
   socket?: {
     remoteAddress?: string;
   };
@@ -80,14 +77,8 @@ export class RateLimitGuard implements CanActivate {
 
   private resolveIp(request: RateLimitedRequest): string {
     if (this.trustProxy) {
-      const forwardedFor = request.headers['x-forwarded-for'];
-
       if (request.ip) {
         return request.ip;
-      }
-
-      if (forwardedFor) {
-        return forwardedFor.split(',')[0]?.trim() || 'unknown';
       }
     }
 

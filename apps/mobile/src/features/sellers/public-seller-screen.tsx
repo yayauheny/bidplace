@@ -7,6 +7,10 @@ import { mobileLayout, mobileSpacing } from '../../theme/tokens';
 import { formatNumber } from '../../lib/formatters';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
+import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 
 type PublicSellerScreenProps = {
   slug: string;
@@ -27,7 +31,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
   }
 
   if (profileQuery.isError) {
-    const status = (profileQuery.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(profileQuery.error);
     if (status === 404) {
       return (
         <Screen>
@@ -44,7 +48,10 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
     return (
       <Screen>
         <ErrorState
-          description={profileQuery.error instanceof Error ? profileQuery.error.message : 'Не удалось загрузить профиль'}
+          description={getUserFacingErrorMessage(
+            profileQuery.error,
+            'Не удалось загрузить профиль',
+          )}
           onAction={() => profileQuery.refetch()}
         />
       </Screen>
@@ -109,7 +116,10 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
           {auctionsQuery.isLoading ? <LoadingState label="Подбираем аукционы" /> : null}
           {auctionsQuery.isError ? (
             <ErrorState
-              description={auctionsQuery.error instanceof Error ? auctionsQuery.error.message : 'Не удалось загрузить аукционы'}
+              description={getUserFacingErrorMessage(
+                auctionsQuery.error,
+                'Не удалось загрузить аукционы',
+              )}
               onAction={() => auctionsQuery.refetch()}
             />
           ) : null}

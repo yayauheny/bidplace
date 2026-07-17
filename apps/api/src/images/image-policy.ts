@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import sharp from 'sharp';
 
 import { loadServerEnv } from '../core/config';
 
@@ -87,9 +88,27 @@ export function detectImageMimeType(
   return null;
 }
 
-export function validateLotImageUploads(
+async function assertDecodableRasterImage(
+  buffer: Buffer,
+  mimeType: SupportedImageMimeType,
+): Promise<void> {
+  try {
+    await sharp(buffer, {
+      animated: true,
+      failOn: 'error',
+    })
+      .raw()
+      .toBuffer();
+  } catch {
+    throw new BadRequestException(
+      `${mimeType} payload is corrupted or not decodable`,
+    );
+  }
+}
+
+export async function validateLotImageUploads(
   files: readonly RawImageUpload[],
-): ValidatedImageUpload[] {
+): Promise<ValidatedImageUpload[]> {
   if (files.length > lotImageUploadLimits.maxFiles) {
     throw new BadRequestException(
       `A lot can have at most ${lotImageUploadLimits.maxFiles} images`,
@@ -98,7 +117,7 @@ export function validateLotImageUploads(
 
   let totalBytes = 0;
 
-  const validatedFiles = files.map((file) => {
+  const validatedFiles = await Promise.all(files.map(async (file) => {
     if (file.mimetype && !supportedImageMimeTypeSet.has(file.mimetype)) {
       throw new BadRequestException('Unsupported image type');
     }
@@ -123,11 +142,13 @@ export function validateLotImageUploads(
       throw new BadRequestException('Image MIME type does not match file contents');
     }
 
+    await assertDecodableRasterImage(file.buffer, detectedMimeType);
+
     return {
       buffer: file.buffer,
       mimeType: detectedMimeType,
     };
-  });
+  }));
 
   if (totalBytes > lotImageUploadLimits.maxTotalBytes) {
     throw new BadRequestException(

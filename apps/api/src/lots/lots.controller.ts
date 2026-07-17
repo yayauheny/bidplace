@@ -74,7 +74,7 @@ export class LotsController {
     const lot = await this.lotsService.createLot(
       auth.sub,
       input,
-      validateLotImageUploads(files),
+      await validateLotImageUploads(files),
     );
 
     return lotResponseSchema.parse(lot);

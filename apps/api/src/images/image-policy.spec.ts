@@ -1,31 +1,45 @@
 import { BadRequestException } from '@nestjs/common';
-import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
   detectImageMimeType,
   validateLotImageUploads,
 } from './image-policy';
 
-const pngBuffer = Buffer.from([
-  0x89, 0x50, 0x4e, 0x47,
-  0x0d, 0x0a, 0x1a, 0x0a,
-  0x00, 0x00, 0x00, 0x00,
+let pngBuffer = Buffer.alloc(0);
+const corruptedPngBuffer = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.alloc(32, 0),
 ]);
+
+beforeAll(async () => {
+  pngBuffer = await sharp({
+    create: {
+      width: 1,
+      height: 1,
+      channels: 3,
+      background: { r: 255, g: 0, b: 0 },
+    },
+  })
+    .png()
+    .toBuffer();
+});
 
 describe('image policy', () => {
   it('detects supported image signatures', () => {
     expect(detectImageMimeType(pngBuffer)).toBe('image/png');
   });
 
-  it('normalizes validated uploads to detected mime types', () => {
-    expect(
+  it('normalizes validated uploads to detected mime types', async () => {
+    await expect(
       validateLotImageUploads([
         {
           buffer: pngBuffer,
           mimetype: 'image/png',
         },
       ]),
-    ).toEqual([
+    ).resolves.toEqual([
       {
         buffer: pngBuffer,
         mimeType: 'image/png',
@@ -33,36 +47,47 @@ describe('image policy', () => {
     ]);
   });
 
-  it('rejects empty uploads', () => {
-    expect(() =>
+  it('rejects empty uploads', async () => {
+    await expect(
       validateLotImageUploads([
         {
           buffer: Buffer.alloc(0),
           mimetype: 'image/png',
         },
       ]),
-    ).toThrow(BadRequestException);
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it('rejects files whose claimed mime type does not match the contents', () => {
-    expect(() =>
+  it('rejects files whose claimed mime type does not match the contents', async () => {
+    await expect(
       validateLotImageUploads([
         {
           buffer: pngBuffer,
           mimetype: 'image/jpeg',
         },
       ]),
-    ).toThrow('Image MIME type does not match file contents');
+    ).rejects.toThrow('Image MIME type does not match file contents');
   });
 
-  it('rejects unsupported signatures such as svg payloads', () => {
-    expect(() =>
+  it('rejects unsupported signatures such as svg payloads', async () => {
+    await expect(
       validateLotImageUploads([
         {
           buffer: Buffer.from('<svg viewBox="0 0 1 1"></svg>'),
           mimetype: 'image/svg+xml',
         },
       ]),
-    ).toThrow('Unsupported image type');
+    ).rejects.toThrow('Unsupported image type');
+  });
+
+  it('rejects corrupted raster payloads even when the signature matches', async () => {
+    await expect(
+      validateLotImageUploads([
+        {
+          buffer: corruptedPngBuffer,
+          mimetype: 'image/png',
+        },
+      ]),
+    ).rejects.toThrow('image/png payload is corrupted or not decodable');
   });
 });

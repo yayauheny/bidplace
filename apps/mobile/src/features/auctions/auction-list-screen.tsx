@@ -7,6 +7,7 @@ import { usePublicAuctionsQuery } from './hooks';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
 import { useAuth } from '../../providers/auth-provider';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 
 export function AuctionListScreen() {
   const router = useRouter();
@@ -26,7 +27,10 @@ export function AuctionListScreen() {
     return (
       <Screen>
         <ErrorState
-          description={query.error instanceof Error ? query.error.message : 'Не удалось загрузить каталог'}
+          description={getUserFacingErrorMessage(
+            query.error,
+            'Не удалось загрузить каталог',
+          )}
           onAction={() => query.refetch()}
         />
       </Screen>

@@ -21,6 +21,7 @@ import {
   clearAuthScopedQueries,
   invalidateAuthScopedQueries,
 } from '../lib/query-cache';
+import { shouldClearSessionForError } from '../lib/errors';
 
 type AuthStatus = 'anonymous' | 'authenticated';
 
@@ -62,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setStatus('authenticated');
       })
-      .catch(() => {
-        if (active) {
+      .catch((error) => {
+        if (active && shouldClearSessionForError(error)) {
           setUser(null);
           setStatus('anonymous');
         }
@@ -127,9 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const response = await api.auth.me();
           setUser(response.user);
           setStatus('authenticated');
-        } catch {
-          await clearAuthScopedQueries(queryClient);
-          clearSession();
+        } catch (error) {
+          if (shouldClearSessionForError(error)) {
+            await clearAuthScopedQueries(queryClient);
+            clearSession();
+            return;
+          }
+
+          throw error;
         }
       },
       clearSession,

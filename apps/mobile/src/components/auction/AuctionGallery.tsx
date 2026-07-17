@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { resolveMediaUrl } from '../../lib/media';
 import { useApiClient } from '../../providers/api-provider';
@@ -18,6 +18,10 @@ export function AuctionGallery({ title, imageUrls }: AuctionGalleryProps) {
   const palette = useAppThemePalette();
   const image = imageUrls[0];
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
 
   if (!image || imageFailed) {
     return (

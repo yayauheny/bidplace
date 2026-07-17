@@ -8,6 +8,10 @@ import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
 import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
+import {
   useCreateAuctionMutation,
   useMySellerLotsQuery,
   useMySellerProfileQuery,
@@ -81,7 +85,7 @@ export function AuctionCreateForm() {
   }
 
   if (profileQuery.isError) {
-    const status = (profileQuery.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(profileQuery.error);
 
     if (status === 404) {
       return (
@@ -95,14 +99,13 @@ export function AuctionCreateForm() {
     }
 
     return (
-      <ErrorState
-        description={
-          profileQuery.error instanceof Error
-            ? profileQuery.error.message
-            : 'Не удалось проверить seller profile'
-        }
-        onAction={() => profileQuery.refetch()}
-      />
+        <ErrorState
+          description={getUserFacingErrorMessage(
+            profileQuery.error,
+            'Не удалось проверить seller profile',
+          )}
+          onAction={() => profileQuery.refetch()}
+        />
     );
   }
 
@@ -125,7 +128,9 @@ export function AuctionCreateForm() {
       });
       router.back();
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось создать auction');
+      setSubmitError(
+        getUserFacingErrorMessage(error, 'Не удалось создать auction'),
+      );
     }
   });
 
@@ -136,7 +141,10 @@ export function AuctionCreateForm() {
   if (lotsQuery.isError) {
     return (
       <ErrorState
-        description={lotsQuery.error instanceof Error ? lotsQuery.error.message : 'Не удалось загрузить lot-ы'}
+        description={getUserFacingErrorMessage(
+          lotsQuery.error,
+          'Не удалось загрузить lot-ы',
+        )}
         onAction={() => lotsQuery.refetch()}
       />
     );

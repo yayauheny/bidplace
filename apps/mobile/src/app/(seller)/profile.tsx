@@ -1,6 +1,10 @@
 import { Screen, LoadingState, ErrorState } from '../../components/ui';
 import { SellerProfileForm } from '../../features/seller/seller-profile-form';
 import { useMySellerProfileQuery } from '../../features/seller/hooks';
+import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 
 export default function SellerProfileScreen() {
   const profileQuery = useMySellerProfileQuery();
@@ -14,17 +18,16 @@ export default function SellerProfileScreen() {
   }
 
   if (profileQuery.isError) {
-    const status = (profileQuery.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(profileQuery.error);
 
     if (status !== 404) {
       return (
         <Screen>
           <ErrorState
-            description={
-              profileQuery.error instanceof Error
-                ? profileQuery.error.message
-                : 'Не удалось загрузить профиль продавца'
-            }
+            description={getUserFacingErrorMessage(
+              profileQuery.error,
+              'Не удалось загрузить профиль продавца',
+            )}
             onAction={() => profileQuery.refetch()}
           />
         </Screen>

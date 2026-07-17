@@ -14,6 +14,10 @@ import { Text, YStack } from 'tamagui';
 import { resolveMediaUrl } from '../../lib/media';
 import { useApiClient } from '../../providers/api-provider';
 import { useAppThemePalette } from '../../theme/palette';
+import {
+  getErrorStatus,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 
 type AuctionDetailScreenProps = {
   slug: string;
@@ -34,7 +38,7 @@ export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
   }
 
   if (query.isError) {
-    const status = (query.error as { status?: number } | null)?.status;
+    const status = getErrorStatus(query.error);
     if (status === 404) {
       return (
         <Screen>
@@ -51,7 +55,10 @@ export function AuctionDetailScreen({ slug }: AuctionDetailScreenProps) {
     return (
       <Screen>
         <ErrorState
-          description={query.error instanceof Error ? query.error.message : 'Не удалось загрузить аукцион'}
+          description={getUserFacingErrorMessage(
+            query.error,
+            'Не удалось загрузить аукцион',
+          )}
           onAction={() => query.refetch()}
         />
       </Screen>

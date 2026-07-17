@@ -5,6 +5,7 @@ import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
 import { getAuctionStatusLabel, getAuctionStatusTone } from '../auctions/utils';
 import { useAdminAuctionsQuery, useAdminUsersQuery, useBanUserMutation, useHideAuctionMutation } from './hooks';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 
 export function AdminDashboardScreen() {
   const palette = useAppThemePalette();
@@ -43,21 +44,19 @@ export function AdminDashboardScreen() {
             />
             {banUserMutation.isError ? (
               <ErrorState
-                description={
-                  banUserMutation.error instanceof Error
-                    ? banUserMutation.error.message
-                    : 'Не удалось заблокировать пользователя'
-                }
+                description={getUserFacingErrorMessage(
+                  banUserMutation.error,
+                  'Не удалось заблокировать пользователя',
+                )}
               />
             ) : null}
             {usersQuery.isLoading ? <LoadingState label="Загружаем пользователей" /> : null}
             {usersQuery.isError ? (
               <ErrorState
-                description={
-                  usersQuery.error instanceof Error
-                    ? usersQuery.error.message
-                    : 'Не удалось загрузить пользователей'
-                }
+                description={getUserFacingErrorMessage(
+                  usersQuery.error,
+                  'Не удалось загрузить пользователей',
+                )}
                 onAction={() => usersQuery.refetch()}
               />
             ) : null}
@@ -103,21 +102,19 @@ export function AdminDashboardScreen() {
             />
             {hideAuctionMutation.isError ? (
               <ErrorState
-                description={
-                  hideAuctionMutation.error instanceof Error
-                    ? hideAuctionMutation.error.message
-                    : 'Не удалось скрыть auction'
-                }
+                description={getUserFacingErrorMessage(
+                  hideAuctionMutation.error,
+                  'Не удалось скрыть auction',
+                )}
               />
             ) : null}
             {auctionsQuery.isLoading ? <LoadingState label="Загружаем auction-ы" /> : null}
             {auctionsQuery.isError ? (
               <ErrorState
-                description={
-                  auctionsQuery.error instanceof Error
-                    ? auctionsQuery.error.message
-                    : 'Не удалось загрузить auction-ы'
-                }
+                description={getUserFacingErrorMessage(
+                  auctionsQuery.error,
+                  'Не удалось загрузить auction-ы',
+                )}
                 onAction={() => auctionsQuery.refetch()}
               />
             ) : null}

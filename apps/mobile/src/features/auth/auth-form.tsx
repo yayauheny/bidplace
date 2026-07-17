@@ -14,6 +14,7 @@ import {
 } from './schemas';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 
 function AuthCard({
   title,
@@ -59,7 +60,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
       await auth.login(values);
       router.replace(redirectTo);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось войти');
+      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
     }
   });
 
@@ -136,7 +137,9 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
       await auth.register(values);
       router.replace(redirectTo);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Не удалось зарегистрироваться');
+      setSubmitError(
+        getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
+      );
     }
   });
 
