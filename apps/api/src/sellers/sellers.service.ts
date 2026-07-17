@@ -1,4 +1,6 @@
 import {
+  publicSellerDetailResponseSchema,
+  type PublicSellerDetailResponse,
   type SellerProfileCreateRequest,
   type SellerProfileResponse,
   type SellerProfileUpdateRequest,
@@ -16,6 +18,10 @@ import {
   sellerProfileContractSelect,
   toContractSellerProfile,
 } from './seller-profile.mapper';
+import {
+  publicAuctionListSelect,
+  toAuctionListItem,
+} from '../auctions/auction.mapper';
 import { parseSellerStatus } from '../core/contracts';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
 
@@ -24,6 +30,9 @@ export interface SellersRepository {
     findUnique: PrismaService['sellerProfile']['findUnique'];
     create: PrismaService['sellerProfile']['create'];
     update: PrismaService['sellerProfile']['update'];
+  };
+  auction: {
+    findMany: PrismaService['auction']['findMany'];
   };
 }
 
@@ -148,6 +157,36 @@ export class SellersService {
   }
 
   async getPublicProfile(slug: string): Promise<SellerProfileResponse> {
+    const sellerProfile = await this.getActivePublicSellerProfile(slug);
+
+    return sellerProfileResponseSchema.parse({
+      sellerProfile: toContractSellerProfile(sellerProfile),
+    });
+  }
+
+  async getPublicDetail(slug: string): Promise<PublicSellerDetailResponse> {
+    const sellerProfile = await this.getActivePublicSellerProfile(slug);
+    const auctions = await this.prisma.auction.findMany({
+      where: {
+        sellerProfileId: sellerProfile.id,
+        status: {
+          in: ['scheduled', 'active'],
+        },
+        lot: {
+          status: 'published',
+        },
+      },
+      select: publicAuctionListSelect,
+      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+    });
+
+    return publicSellerDetailResponseSchema.parse({
+      sellerProfile: toContractSellerProfile(sellerProfile),
+      auctions: auctions.map((auction) => toAuctionListItem(auction)),
+    });
+  }
+
+  private async getActivePublicSellerProfile(slug: string) {
     const sellerProfile = await this.prisma.sellerProfile.findUnique({
       where: {
         slug,
@@ -165,8 +204,6 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    return sellerProfileResponseSchema.parse({
-      sellerProfile: toContractSellerProfile(sellerProfile),
-    });
+    return sellerProfile;
   }
 }

@@ -8,53 +8,31 @@ import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
 import {
-  getErrorStatus,
   getUserFacingErrorMessage,
 } from '../../lib/errors';
 import {
+  formatNumberInput,
+  parseOptionalNumberInput,
+  parseRequiredNumberInput,
+  toIsoInput,
+} from './form-helpers';
+import {
   useCreateAuctionMutation,
   useMySellerLotsQuery,
-  useMySellerProfileQuery,
 } from './hooks';
+import { useSellerProfileRequirement } from './profile-requirement';
 import { auctionFormSchema, type AuctionFormValues } from './schemas';
-
-function toIsoInput(value: Date) {
-  return value.toISOString();
-}
-
-function formatNumberInput(value: unknown) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return '';
-  }
-
-  return String(value);
-}
-
-function parseRequiredNumberInput(value: string) {
-  const trimmedValue = value.trim();
-
-  if (trimmedValue === '') {
-    return Number.NaN;
-  }
-
-  return Number(trimmedValue);
-}
-
-function parseOptionalNumberInput(value: string) {
-  const trimmedValue = value.trim();
-
-  if (trimmedValue === '') {
-    return null;
-  }
-
-  return Number(trimmedValue);
-}
 
 export function AuctionCreateForm() {
   const router = useRouter();
   const palette = useAppThemePalette();
-  const profileQuery = useMySellerProfileQuery();
-  const lotsQuery = useMySellerLotsQuery(undefined, profileQuery.isSuccess);
+  const profileRequirement = useSellerProfileRequirement(
+    'Не удалось проверить seller profile',
+  );
+  const lotsQuery = useMySellerLotsQuery(
+    undefined,
+    profileRequirement.kind === 'ready',
+  );
   const createAuctionMutation = useCreateAuctionMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -80,32 +58,27 @@ export function AuctionCreateForm() {
   const selectedLotId = form.watch('lotId');
   const canSubmit = draftLots.length > 0 && !createAuctionMutation.isPending;
 
-  if (profileQuery.isLoading) {
+  if (profileRequirement.kind === 'loading') {
     return <LoadingState label="Проверяем seller profile" />;
   }
 
-  if (profileQuery.isError) {
-    const status = getErrorStatus(profileQuery.error);
-
-    if (status === 404) {
-      return (
-        <EmptyState
-          title="Сначала создайте профиль продавца"
-          description="Auction creation доступен только после настройки seller profile."
-          actionLabel="Создать профиль"
-          onAction={() => router.push('/profile')}
-        />
-      );
-    }
-
+  if (profileRequirement.kind === 'missing') {
     return (
-        <ErrorState
-          description={getUserFacingErrorMessage(
-            profileQuery.error,
-            'Не удалось проверить seller profile',
-          )}
-          onAction={() => profileQuery.refetch()}
-        />
+      <EmptyState
+        title="Сначала создайте профиль продавца"
+        description="Auction creation доступен только после настройки seller profile."
+        actionLabel="Создать профиль"
+        onAction={() => router.push('/profile')}
+      />
+    );
+  }
+
+  if (profileRequirement.kind === 'error') {
+    return (
+      <ErrorState
+        description={profileRequirement.message}
+        onAction={() => profileRequirement.retry()}
+      />
     );
   }
 

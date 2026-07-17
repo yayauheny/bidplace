@@ -14,42 +14,23 @@ import {
   useSellerCategoriesQuery,
 } from './hooks';
 import {
-  getErrorStatus,
   getUserFacingErrorMessage,
 } from '../../lib/errors';
 import { lotFormSchema, type LotFormValues } from './schemas';
+import {
+  assetToBlob,
+  getImageAssetKey,
+  mergeSelectedImages,
+} from './form-helpers';
+import { useSellerProfileRequirement } from './profile-requirement';
 import { SelectedLotImages } from './selected-lot-images';
-
-async function assetToBlob(asset: ImagePicker.ImagePickerAsset): Promise<Blob | File> {
-  if (asset.file) {
-    return asset.file;
-  }
-
-  const response = await fetch(asset.uri);
-  return response.blob();
-}
-
-function getImageKey(asset: ImagePicker.ImagePickerAsset): string {
-  return asset.assetId ?? asset.uri;
-}
-
-function mergeSelectedImages(
-  currentImages: readonly ImagePicker.ImagePickerAsset[],
-  nextImages: readonly ImagePicker.ImagePickerAsset[],
-): ImagePicker.ImagePickerAsset[] {
-  const mergedImages = new Map<string, ImagePicker.ImagePickerAsset>();
-
-  for (const image of [...currentImages, ...nextImages]) {
-    mergedImages.set(getImageKey(image), image);
-  }
-
-  return [...mergedImages.values()];
-}
 
 export function LotCreateForm() {
   const router = useRouter();
   const palette = useAppThemePalette();
-  const profileQuery = useMySellerProfileQuery();
+  const profileRequirement = useSellerProfileRequirement(
+    'Не удалось проверить seller profile',
+  );
   const categoriesQuery = useSellerCategoriesQuery();
   const createLotMutation = useCreateLotMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -74,31 +55,26 @@ export function LotCreateForm() {
     [categories.length, createLotMutation.isPending],
   );
 
-  if (profileQuery.isLoading) {
+  if (profileRequirement.kind === 'loading') {
     return <LoadingState label="Проверяем seller profile" />;
   }
 
-  if (profileQuery.isError) {
-    const status = getErrorStatus(profileQuery.error);
-
-    if (status === 404) {
-      return (
-        <EmptyState
-          title="Сначала создайте профиль продавца"
-          description="Lot creation доступен только после настройки seller profile."
-          actionLabel="Создать профиль"
-          onAction={() => router.push('/profile')}
-        />
-      );
-    }
-
+  if (profileRequirement.kind === 'missing') {
     return (
-        <ErrorState
-        description={getUserFacingErrorMessage(
-          profileQuery.error,
-          'Не удалось проверить seller profile',
-        )}
-        onAction={() => profileQuery.refetch()}
+      <EmptyState
+        title="Сначала создайте профиль продавца"
+        description="Lot creation доступен только после настройки seller profile."
+        actionLabel="Создать профиль"
+        onAction={() => router.push('/profile')}
+      />
+    );
+  }
+
+  if (profileRequirement.kind === 'error') {
+    return (
+      <ErrorState
+        description={profileRequirement.message}
+        onAction={() => profileRequirement.retry()}
       />
     );
   }
@@ -245,7 +221,9 @@ export function LotCreateForm() {
               images={selectedImages}
               onRemove={(imageKey) =>
                 setSelectedImages((currentImages) =>
-                  currentImages.filter((image) => getImageKey(image) !== imageKey),
+                  currentImages.filter(
+                    (image) => getImageAssetKey(image) !== imageKey,
+                  ),
                 )
               }
             />

@@ -5,6 +5,8 @@ import type { PaginationQuery } from '@bidplace/contracts';
 import { useApiClient } from '../../providers/api-provider';
 
 export const adminKeys = {
+  usersRoot: ['admin', 'users'] as const,
+  auctionsRoot: ['admin', 'auctions'] as const,
   users: (query?: PaginationQuery) => ['admin', 'users', query ?? {}] as const,
   auctions: (query?: PaginationQuery) => ['admin', 'auctions', query ?? {}] as const,
 };
@@ -36,7 +38,7 @@ export function useBanUserMutation() {
   return useMutation({
     mutationFn: (userId: string) => api.admin.banUser(userId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      await queryClient.invalidateQueries({ queryKey: adminKeys.usersRoot });
     },
   });
 }
@@ -48,7 +50,7 @@ export function useHideAuctionMutation() {
   return useMutation({
     mutationFn: (auctionId: string) => api.admin.hideAuction(auctionId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin', 'auctions'] });
+      await queryClient.invalidateQueries({ queryKey: adminKeys.auctionsRoot });
     },
   });
 }

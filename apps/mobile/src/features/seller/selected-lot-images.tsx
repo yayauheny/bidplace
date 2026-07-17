@@ -5,15 +5,12 @@ import { Text, XStack, YStack } from 'tamagui';
 
 import { useAppThemePalette } from '../../theme/palette';
 import { mobileRadius, mobileSpacing } from '../../theme/tokens';
+import { getImageAssetKey } from './form-helpers';
 
 type SelectedLotImagesProps = {
   images: readonly ImagePicker.ImagePickerAsset[];
   onRemove: (imageKey: string) => void;
 };
-
-function getImageKey(asset: ImagePicker.ImagePickerAsset): string {
-  return asset.assetId ?? asset.uri;
-}
 
 export function SelectedLotImages({
   images,
@@ -32,7 +29,7 @@ export function SelectedLotImages({
       </Text>
       <XStack style={{ gap: mobileSpacing[2], flexWrap: 'wrap' }}>
         {images.map((image) => {
-          const imageKey = getImageKey(image);
+          const imageKey = getImageAssetKey(image);
 
           return (
             <YStack

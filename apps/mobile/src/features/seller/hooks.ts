@@ -12,6 +12,9 @@ import { useApiClient } from '../../providers/api-provider';
 import { catalogueKeys } from '../../lib/query-cache';
 
 export const sellerKeys = {
+  profileRoot: ['seller', 'profile'] as const,
+  lotsRoot: ['seller', 'lots'] as const,
+  auctionsRoot: ['seller', 'auctions'] as const,
   profile: ['seller', 'profile'] as const,
   lots: (query?: PaginationQuery) => ['seller', 'lots', query ?? {}] as const,
   auctions: (query?: PaginationQuery) => ['seller', 'auctions', query ?? {}] as const,
@@ -65,7 +68,7 @@ export function useCreateSellerProfileMutation() {
     mutationFn: (input: SellerProfileCreateRequest) =>
       api.sellers.createProfile(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.profile });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.profileRoot });
     },
   });
 }
@@ -78,7 +81,7 @@ export function useUpdateSellerProfileMutation() {
     mutationFn: (input: SellerProfileUpdateRequest) =>
       api.sellers.updateProfile(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.profile });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.profileRoot });
     },
   });
 }
@@ -96,8 +99,8 @@ export function useCreateLotMutation() {
       images: Array<Blob | File>;
     }) => api.lots.create(input, images),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.lots() });
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.auctions() });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.lotsRoot });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.auctionsRoot });
     },
   });
 }
@@ -109,8 +112,8 @@ export function useCreateAuctionMutation() {
   return useMutation({
     mutationFn: (input: AuctionCreateRequest) => api.auctions.create(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.auctions() });
-      await queryClient.invalidateQueries({ queryKey: sellerKeys.lots() });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.auctionsRoot });
+      await queryClient.invalidateQueries({ queryKey: sellerKeys.lotsRoot });
     },
   });
 }

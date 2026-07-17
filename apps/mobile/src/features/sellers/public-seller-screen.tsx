@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 
 import { AuctionCard } from '../../components/auction/AuctionCard';
-import { usePublicAuctionsQuery, useSellerPublicProfileQuery } from '../auctions/hooks';
 import { EmptyState, ErrorState, LoadingState, Screen, SectionHeader, AppCard } from '../../components/ui';
 import { mobileLayout, mobileSpacing } from '../../theme/tokens';
 import { formatNumber } from '../../lib/formatters';
@@ -11,6 +10,7 @@ import {
   getErrorStatus,
   getUserFacingErrorMessage,
 } from '../../lib/errors';
+import { usePublicSellerDetailQuery } from './hooks';
 
 type PublicSellerScreenProps = {
   slug: string;
@@ -18,11 +18,10 @@ type PublicSellerScreenProps = {
 
 export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
   const router = useRouter();
-  const profileQuery = useSellerPublicProfileQuery(slug);
-  const auctionsQuery = usePublicAuctionsQuery();
+  const sellerQuery = usePublicSellerDetailQuery(slug);
   const palette = useAppThemePalette();
 
-  if (profileQuery.isLoading) {
+  if (sellerQuery.isLoading) {
     return (
       <Screen>
         <LoadingState label="Загружаем профиль продавца" />
@@ -30,8 +29,8 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
     );
   }
 
-  if (profileQuery.isError) {
-    const status = getErrorStatus(profileQuery.error);
+  if (sellerQuery.isError) {
+    const status = getErrorStatus(sellerQuery.error);
     if (status === 404) {
       return (
         <Screen>
@@ -49,16 +48,16 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
       <Screen>
         <ErrorState
           description={getUserFacingErrorMessage(
-            profileQuery.error,
+            sellerQuery.error,
             'Не удалось загрузить профиль',
           )}
-          onAction={() => profileQuery.refetch()}
+          onAction={() => sellerQuery.refetch()}
         />
       </Screen>
     );
   }
 
-  if (!profileQuery.data) {
+  if (!sellerQuery.data) {
     return (
       <Screen>
         <EmptyState
@@ -71,9 +70,8 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
     );
   }
 
-  const profile = profileQuery.data.sellerProfile;
-  const relatedAuctions =
-    auctionsQuery.data?.auctions.filter((item) => item.sellerProfile.slug === profile.slug) ?? [];
+  const profile = sellerQuery.data.sellerProfile;
+  const relatedAuctions = sellerQuery.data.auctions;
 
   return (
     <Screen>
@@ -113,30 +111,18 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
             title="Аукционы продавца"
             description={`В каталоге сейчас ${formatNumber(relatedAuctions.length)} предложений.`}
           />
-          {auctionsQuery.isLoading ? <LoadingState label="Подбираем аукционы" /> : null}
-          {auctionsQuery.isError ? (
-            <ErrorState
-              description={getUserFacingErrorMessage(
-                auctionsQuery.error,
-                'Не удалось загрузить аукционы',
-              )}
-              onAction={() => auctionsQuery.refetch()}
+          {relatedAuctions.length === 0 ? (
+            <EmptyState
+              title="Нет публичных аукционов"
+              description="Сейчас у продавца нет активных или запланированных аукционов в каталоге."
             />
-          ) : null}
-          {!auctionsQuery.isLoading && !auctionsQuery.isError ? (
-            relatedAuctions.length === 0 ? (
-              <EmptyState
-                title="Нет публичных аукционов"
-                description="Сейчас у продавца нет активных или запланированных аукционов в каталоге."
-              />
-            ) : (
-              <YStack style={{ gap: mobileSpacing[4] }}>
-                {relatedAuctions.map((item) => (
-                  <AuctionCard key={item.auction.id} {...item} />
-                ))}
-              </YStack>
-            )
-          ) : null}
+          ) : (
+            <YStack style={{ gap: mobileSpacing[4] }}>
+              {relatedAuctions.map((item) => (
+                <AuctionCard key={item.auction.id} {...item} />
+              ))}
+            </YStack>
+          )}
         </YStack>
       </YStack>
     </Screen>

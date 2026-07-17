@@ -5,25 +5,30 @@ import { formatCurrencyAmount, formatNumber } from '../../lib/formatters';
 import { mobileLayout, mobileSpacing } from '../../theme/tokens';
 import { Text, YStack } from 'tamagui';
 import { useAppThemePalette } from '../../theme/palette';
-import {
-  getErrorStatus,
-  getUserFacingErrorMessage,
-} from '../../lib/errors';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 import { getAuctionStatusLabel, getAuctionStatusTone } from '../auctions/utils';
 import {
   useMySellerAuctionsQuery,
   useMySellerLotsQuery,
-  useMySellerProfileQuery,
 } from './hooks';
+import { useSellerProfileRequirement } from './profile-requirement';
 
 export function SellerDashboardScreen() {
   const router = useRouter();
   const palette = useAppThemePalette();
-  const profileQuery = useMySellerProfileQuery();
-  const lotsQuery = useMySellerLotsQuery(undefined, profileQuery.isSuccess);
-  const auctionsQuery = useMySellerAuctionsQuery(undefined, profileQuery.isSuccess);
+  const profileRequirement = useSellerProfileRequirement(
+    'Не удалось загрузить seller dashboard',
+  );
+  const lotsQuery = useMySellerLotsQuery(
+    undefined,
+    profileRequirement.kind === 'ready',
+  );
+  const auctionsQuery = useMySellerAuctionsQuery(
+    undefined,
+    profileRequirement.kind === 'ready',
+  );
 
-  if (profileQuery.isLoading) {
+  if (profileRequirement.kind === 'loading') {
     return (
       <Screen>
         <LoadingState label="Загружаем seller dashboard" />
@@ -31,35 +36,31 @@ export function SellerDashboardScreen() {
     );
   }
 
-  if (profileQuery.isError) {
-    const status = getErrorStatus(profileQuery.error);
-    if (status === 404) {
-      return (
-        <Screen>
-          <EmptyState
-            title="Профиль продавца не создан"
-            description="Создайте seller profile, чтобы открыть lot и auction workflow."
-            actionLabel="Создать профиль"
-            onAction={() => router.push('/profile')}
-          />
-        </Screen>
-      );
-    }
-
+  if (profileRequirement.kind === 'missing') {
     return (
       <Screen>
-        <ErrorState
-          description={getUserFacingErrorMessage(
-            profileQuery.error,
-            'Не удалось загрузить seller dashboard',
-          )}
-          onAction={() => profileQuery.refetch()}
+        <EmptyState
+          title="Профиль продавца не создан"
+          description="Создайте seller profile, чтобы открыть lot и auction workflow."
+          actionLabel="Создать профиль"
+          onAction={() => router.push('/profile')}
         />
       </Screen>
     );
   }
 
-  const profile = profileQuery.data?.sellerProfile;
+  if (profileRequirement.kind === 'error') {
+    return (
+      <Screen>
+        <ErrorState
+          description={profileRequirement.message}
+          onAction={() => profileRequirement.retry()}
+        />
+      </Screen>
+    );
+  }
+
+  const profile = profileRequirement.profile;
   const lots = lotsQuery.data?.lots ?? [];
   const auctions = auctionsQuery.data?.auctions ?? [];
 
