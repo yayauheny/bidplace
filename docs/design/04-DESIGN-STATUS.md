@@ -13,7 +13,7 @@
 | My purchases               | `/me/activity`                                      | Partial                             | Activity API projection and basic screen exist; state-specific copy and visual QA remain.                                                                                                                         |
 | Order                      | `/order/[publicId]`                                 | Partial                             | Authorized Order summary exists; seller/buyer role copy and final mobile QA remain.                                                                                                                               |
 | Seller profile             | `/(seller)/profile`                                 | Implemented without approved design | Canonical SellerProfile create/edit/status flow; loading/error/submission states exist.                                                                                                                           |
-| Product draft              | `/(seller)/products/new`, `/(seller)/products/[id]` | Partial                             | Draft Product creation, later editing of unlocked fields, image review and ProductImage upload work. Image deletion/reordering and device QA remain.                                                              |
+| Product draft              | `/(seller)/products/new`, `/(seller)/products/[id]` | Partial                             | Draft Product creation, later editing of unlocked fields, and ProductImage review/upload/delete/reordering work. Device and accessibility QA remain.                                                              |
 | Listing draft              | `/(seller)/listings/new`                            | Partial                             | Product selection, BYN start price and explicit schedule request exist; date input usability and seller listing management need QA.                                                                               |
 | Admin moderation           | `/(admin)`                                          | Partial                             | Compact SellerProfile/Product review controls and a confirmed manual Order cancellation/replacement flow with anonymous ranked Bids exist. Device and design QA remain.                                           |
 
@@ -26,4 +26,4 @@ The retired public `/auctions/[slug]`, cart, swatches, fake variants, Buy Now an
 - mobile/web keyboard and screen-reader audit for Product, OTP, seller and Order flows;
 - loading, empty, network-error, reconnect and long-content states on pilot devices;
 - approval of visual treatment before marking any screen `Implemented`;
-- admin controls, Product draft image deletion/reordering and image-management flow.
+- admin controls and Product draft image-management flow.

@@ -96,6 +96,18 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
   });
+  const removeImage = useMutation({
+    mutationFn: (imageId: string) =>
+      api.images.remove(existingProduct!.id, imageId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+  });
+  const reorderImages = useMutation({
+    mutationFn: (imageIds: string[]) =>
+      api.images.reorder(existingProduct!.id, imageIds),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+  });
   const chooseImages = async () => {
     if (!existingProduct) return;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -248,13 +260,63 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           <>
             <Text>Изображений: {existingProduct.images.length}/10</Text>
             {existingProduct.images.map((image) => (
-              <Image
-                key={image.id}
-                source={{ uri: `${getApiUrl()}${image.url}` }}
-                style={{ width: '100%', height: 180 }}
-                contentFit="cover"
-                accessibilityLabel={`Изображение Product ${image.position + 1}`}
-              />
+              <YStack key={image.id} gap="$1">
+                <Image
+                  source={{ uri: `${getApiUrl()}${image.url}` }}
+                  style={{ width: '100%', height: 180 }}
+                  contentFit="cover"
+                  accessibilityLabel={`Изображение Product ${image.position + 1}`}
+                />
+                {editable ? (
+                  <>
+                    <AppButton
+                      tone="secondary"
+                      disabled={image.position === 0}
+                      isLoading={reorderImages.isPending}
+                      onPress={() => {
+                        const ids = existingProduct.images.map(
+                          (item) => item.id,
+                        );
+                        const index = ids.indexOf(image.id);
+                        [ids[index - 1], ids[index]] = [
+                          ids[index],
+                          ids[index - 1],
+                        ];
+                        reorderImages.mutate(ids);
+                      }}
+                    >
+                      Переместить выше
+                    </AppButton>
+                    <AppButton
+                      tone="secondary"
+                      disabled={
+                        image.position === existingProduct.images.length - 1
+                      }
+                      isLoading={reorderImages.isPending}
+                      onPress={() => {
+                        const ids = existingProduct.images.map(
+                          (item) => item.id,
+                        );
+                        const index = ids.indexOf(image.id);
+                        [ids[index], ids[index + 1]] = [
+                          ids[index + 1],
+                          ids[index],
+                        ];
+                        reorderImages.mutate(ids);
+                      }}
+                    >
+                      Переместить ниже
+                    </AppButton>
+                    <AppButton
+                      tone="subtle"
+                      isLoading={removeImage.isPending}
+                      onPress={() => removeImage.mutate(image.id)}
+                    >
+                      Удалить изображение
+                    </AppButton>
+                  </>
+                ) : null}
+              </YStack>
             ))}
             {editable ? (
               <AppButton
@@ -267,6 +329,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
             ) : null}
             {upload.isError ? (
               <Text color="$danger">Не удалось загрузить изображения</Text>
+            ) : null}
+            {removeImage.isError || reorderImages.isError ? (
+              <Text color="$danger">Не удалось изменить изображения.</Text>
             ) : null}
           </>
         ) : null}

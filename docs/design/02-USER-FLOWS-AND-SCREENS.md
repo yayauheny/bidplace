@@ -23,12 +23,12 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 
 ## Seller routes
 
-| Экран               | Route                     | Реализованное поведение                                                                                                              | Статус / remaining work                                      |
-| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile and show its status.                                                                                     | Implemented without approved design.                         |
-| New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft.                                                                                                 | Partial: device/accessibility QA remains.                    |
-| Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields, review current images and upload more images. Server blocks locked Product edits and images. | Partial: image delete/reorder flow remains.                  |
-| New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing.                   | Partial: date input and seller Listing-management QA remain. |
+| Экран               | Route                     | Реализованное поведение                                                                                                                     | Статус / remaining work                                      |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile and show its status.                                                                                            | Implemented without approved design.                         |
+| New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft.                                                                                                        | Partial: device/accessibility QA remains.                    |
+| Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields and review, upload, delete or reorder Product images. Server blocks locked Product edits and images. | Partial: device/accessibility QA remains.                    |
+| New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing.                          | Partial: date input and seller Listing-management QA remain. |
 
 ## Admin route
 
@@ -42,7 +42,7 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 - The HTTP Product snapshot is canonical. Listing socket events only trigger refetch; reconnect performs the same authoritative refresh.
 - The Product screen derives participation from `GET /api/me/activity`, never from public Bid identity or event order.
 - A seller or admin does not receive bidder contacts from ranked Bid inspection; contact is only revealed through the authorized active Order.
-- Seller Product edits and image uploads are allowed only while the backend considers the Product unlocked.
+- Seller Product edits and image operations are allowed only while the backend considers the Product unlocked.
 
 ## Required manual QA
 
