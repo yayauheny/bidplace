@@ -15,7 +15,7 @@
 | Seller profile | `/(seller)/profile` | Implemented without approved design | Canonical SellerProfile create/edit/status flow; loading/error/submission states exist. |
 | Product draft | `/(seller)/products/new` | Partial | Draft Product creation and ProductImage upload work; editing an existing draft and approval controls still need a seller workflow screen. |
 | Listing draft | `/(seller)/listings/new` | Partial | Product selection, BYN start price and explicit schedule request exist; date input usability and seller listing management need QA. |
-| Admin moderation | API only | Not started | Admin status/cancellation/replacement APIs exist, but the compact admin UI still needs implementation. |
+| Admin moderation | `/(admin)` | Implemented without approved design | Compact SellerProfile/Product review controls exist; Order cancellation/replacement UI and design QA remain. |
 
 ## Removed routes and promises
 

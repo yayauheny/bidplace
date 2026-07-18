@@ -19,7 +19,7 @@
 
 | Area | Current evidence | Remaining gap |
 | --- | --- | --- |
-| Seller and admin mobile flows | Owner/public Seller APIs and admin mutation endpoints exist. | Functional seller Product/Listing/image forms and compact admin controls are not yet restored after the legacy route removal. |
+| Seller and admin mobile flows | Owner/public Seller APIs, Product/Listing/image draft forms, and compact `/admin` status controls exist. | Existing Product draft editing, image management after the initial create session, and admin Order replacement UI remain incomplete. |
 | Product detail UX | `/product/[publicId]` has images, Listing state, bid history, OTP actions and realtime refetch. | Countdown, own participation state and winner Order link need completion and mobile QA. |
 | Tests | API unit suite and mobile query-cache suite pass; pricing boundaries pass; clean migration and seed were executed manually. | Required PostgreSQL race/idempotency/invariant tests and dedicated Product/Order/Activity/realtime unit tests are still incomplete. |
 | Operations | Single-process scheduler and Socket.IO gateway work for MVP. | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
