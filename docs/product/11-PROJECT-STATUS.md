@@ -14,6 +14,7 @@
 | Phone verification        | `apps/api/src/otp`, `PhoneVerificationCode`: hashed one-time OTP, expiry, retry/cooldown and rate limiting. A production transport remains blocked by an external provider configuration.                                                                             |
 | Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
 | Local reset and seed      | Verified 2026-07-18: `prisma migrate reset` applied the rewritten baseline to local PostgreSQL; `prisma/seed.js` created deterministic admin plus scheduled/live/ended BYN Product Listings.                                                                          |
+| Prisma generated client   | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                         |
 
 ## Partial / needs verification
 

@@ -3,6 +3,7 @@ node_modules
 dist
 .turbo
 coverage
+packages/database/src/generated/prisma/
 *.tsbuildinfo
 .DS_Store
 .claude/

@@ -143,6 +143,8 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 
 Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD_HASH`; реальные production credentials не должны использоваться. Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
 
+Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Перед typecheck или build database package выполните `pnpm --filter @bidplace/database generate`; database build выполняет генерацию автоматически.
+
 ## Принципы разработки
 
 - минимальный корректный scope;
