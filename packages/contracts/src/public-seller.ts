@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-import { auctionListItemSchema } from './public-auction';
+import { publicProductListItemSchema } from './public-product';
 import { sellerProfileSchema } from './seller-profile';
 
 export const publicSellerDetailResponseSchema = z
   .object({
     sellerProfile: sellerProfileSchema,
-    auctions: z.array(auctionListItemSchema),
+    products: z.array(publicProductListItemSchema),
   })
   .strict();
 

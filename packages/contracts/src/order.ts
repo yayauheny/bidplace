@@ -1,0 +1,3 @@
+import { z } from 'zod'; import { orderCancellationReasonSchema, orderStatusSchema } from './enums'; import { isoDateTimeSchema, moneyAmountSchema, uuidSchema } from './primitives';
+export const orderSchema = z.object({ id: uuidSchema, publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/), listingId: uuidSchema, finalAmount: moneyAmountSchema, contactDueAt: isoDateTimeSchema, status: orderStatusSchema, cancellationReason: orderCancellationReasonSchema.nullable(), createdAt: isoDateTimeSchema, updatedAt: isoDateTimeSchema }).strict();
+export const orderResponseSchema = z.object({ order: orderSchema, productSummary: z.object({ publicId: z.string(), title: z.string() }).strict(), buyerPhone: z.string().nullable(), buyerTelegramUsername: z.string().nullable() }).strict();

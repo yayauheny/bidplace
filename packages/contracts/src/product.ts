@@ -1,0 +1,10 @@
+import { z } from 'zod';
+import { productStatusSchema } from './enums';
+import { isoDateTimeSchema, uuidSchema } from './primitives';
+
+const optionalText = z.string().trim().min(1).nullable();
+export const productImageSchema = z.object({ id: uuidSchema, position: z.number().int().nonnegative(), url: z.string().url(), mimeType: z.string(), byteLength: z.number().int().positive(), checksum: z.string().length(64) }).strict();
+export const productSchema = z.object({ id: uuidSchema, publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/), sellerProfileId: uuidSchema, categoryId: uuidSchema.nullable(), title: optionalText, story: optionalText, technique: optionalText, materials: optionalText, dimensions: optionalText, weight: optionalText, year: z.number().int().nullable(), condition: optionalText, uniqueness: optionalText, provenance: optionalText, city: optionalText, deliveryInfo: optionalText, status: productStatusSchema, images: z.array(productImageSchema), createdAt: isoDateTimeSchema, updatedAt: isoDateTimeSchema }).strict();
+export const productWriteRequestSchema = z.object({ categoryId: uuidSchema.optional(), title: z.string().trim().min(1).optional(), story: z.string().trim().min(1).optional(), technique: z.string().trim().min(1).nullable().optional(), materials: z.string().trim().min(1).nullable().optional(), dimensions: z.string().trim().min(1).nullable().optional(), weight: z.string().trim().min(1).nullable().optional(), year: z.number().int().min(0).max(9999).nullable().optional(), condition: z.string().trim().min(1).optional(), uniqueness: z.string().trim().min(1).optional(), provenance: z.string().trim().min(1).optional(), city: z.string().trim().min(1).optional(), deliveryInfo: z.string().trim().min(1).optional() }).strict();
+export const productResponseSchema = z.object({ product: productSchema }).strict();
+export type Product = z.infer<typeof productSchema>; export type ProductWriteRequest = z.infer<typeof productWriteRequestSchema>;

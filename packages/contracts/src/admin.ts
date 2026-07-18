@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { auctionSchema } from './auction';
+import { listingSchema } from './listing';
 import { userSchema } from './user';
 
 export const adminUsersResponseSchema = z
@@ -9,9 +9,9 @@ export const adminUsersResponseSchema = z
   })
   .strict();
 
-export const adminAuctionsResponseSchema = z
+export const adminListingsResponseSchema = z
   .object({
-    auctions: z.array(auctionSchema),
+    listings: z.array(listingSchema),
   })
   .strict();
 
@@ -21,15 +21,15 @@ export const adminUserResponseSchema = z
   })
   .strict();
 
-export const adminAuctionResponseSchema = z
+export const adminListingResponseSchema = z
   .object({
-    auction: auctionSchema,
+    listing: listingSchema,
   })
   .strict();
 
 export type AdminUsersResponse = z.infer<typeof adminUsersResponseSchema>;
-export type AdminAuctionsResponse = z.infer<
-  typeof adminAuctionsResponseSchema
+export type AdminListingsResponse = z.infer<
+  typeof adminListingsResponseSchema
 >;
 export type AdminUserResponse = z.infer<typeof adminUserResponseSchema>;
-export type AdminAuctionResponse = z.infer<typeof adminAuctionResponseSchema>;
+export type AdminListingResponse = z.infer<typeof adminListingResponseSchema>;

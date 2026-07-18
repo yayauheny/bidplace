@@ -1,14 +1,16 @@
 import { type ZodType } from 'zod';
 
 import { createAdminClient } from './admin';
+import { createActivityClient } from './activity';
 import { createAuthClient } from './auth';
-import { createAuctionsClient } from './auctions';
 import { createCategoriesClient } from './categories';
 export {
   ApiClientError,
   type ApiClientErrorKind,
 } from './errors';
-import { createLotsClient } from './lots';
+import { createListingsClient } from './listings';
+import { createOrdersClient } from './orders';
+import { createProductsClient } from './products';
 import {
   createRequestContext,
   requestJson,
@@ -28,8 +30,10 @@ export function createApiClient(options: ApiClientOptions) {
       return requestJson(context, path, schema, requestOptions);
     },
     auth: createAuthClient(context),
-    auctions: createAuctionsClient(context),
-    lots: createLotsClient(context),
+    activity: createActivityClient(context),
+    listings: createListingsClient(context),
+    products: createProductsClient(context),
+    orders: createOrdersClient(context),
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
     categories: createCategoriesClient(context),

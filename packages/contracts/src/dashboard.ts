@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { auctionSchema } from './auction';
 import { categorySchema } from './category';
-import { lotSchema } from './lot';
+import { listingSchema } from './listing';
+import { productSchema } from './product';
 
 export const categoryListResponseSchema = z
   .object({
@@ -10,20 +10,18 @@ export const categoryListResponseSchema = z
   })
   .strict();
 
-export const sellerLotListResponseSchema = z
+export const sellerProductListResponseSchema = z
   .object({
-    lots: z.array(lotSchema),
+    products: z.array(productSchema),
   })
   .strict();
 
-export const sellerAuctionListResponseSchema = z
+export const sellerListingListResponseSchema = z
   .object({
-    auctions: z.array(auctionSchema),
+    listings: z.array(listingSchema),
   })
   .strict();
 
 export type CategoryListResponse = z.infer<typeof categoryListResponseSchema>;
-export type SellerLotListResponse = z.infer<typeof sellerLotListResponseSchema>;
-export type SellerAuctionListResponse = z.infer<
-  typeof sellerAuctionListResponseSchema
->;
+export type SellerProductListResponse = z.infer<typeof sellerProductListResponseSchema>;
+export type SellerListingListResponse = z.infer<typeof sellerListingListResponseSchema>;
