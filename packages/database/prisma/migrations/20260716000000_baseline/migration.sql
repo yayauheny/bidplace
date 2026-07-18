@@ -1,158 +1,117 @@
--- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateTable
+CREATE TYPE "SellerProfileStatus" AS ENUM ('DRAFT', 'APPROVED', 'SUSPENDED');
+CREATE TYPE "ProductStatus" AS ENUM ('DRAFT', 'APPROVED', 'ARCHIVED');
+CREATE TYPE "ListingType" AS ENUM ('AUCTION');
+CREATE TYPE "ListingStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED');
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING_CONTACT', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "OrderCancellationReason" AS ENUM ('BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED');
+
 CREATE TABLE "users" (
-    "id" UUID NOT NULL,
-    "email" VARCHAR(255) NOT NULL,
-    "password_hash" VARCHAR(255) NOT NULL,
-    "phone" VARCHAR(32) NOT NULL,
-    "display_name" VARCHAR(120) NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'user',
-    "status" TEXT NOT NULL DEFAULT 'active',
-    "session_version" INTEGER NOT NULL DEFAULT 0,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+  "id" UUID NOT NULL, "email" VARCHAR(255) NOT NULL, "password_hash" VARCHAR(255) NOT NULL,
+  "phone" VARCHAR(32) NOT NULL, "phone_verified_at" TIMESTAMP(3), "display_name" VARCHAR(120) NOT NULL,
+  "role" TEXT NOT NULL DEFAULT 'user', "status" TEXT NOT NULL DEFAULT 'active',
+  "session_version" INTEGER NOT NULL DEFAULT 0, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP(3) NOT NULL, CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "seller_profiles" (
-    "id" UUID NOT NULL,
-    "user_id" UUID NOT NULL,
-    "slug" VARCHAR(120) NOT NULL,
-    "seller_type" TEXT NOT NULL,
-    "store_name" VARCHAR(160) NOT NULL,
-    "country" VARCHAR(80) NOT NULL,
-    "contact_preference" VARCHAR(40) NOT NULL,
-    "social_link" VARCHAR(255),
-    "short_description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'draft',
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "seller_profiles_pkey" PRIMARY KEY ("id")
+  "id" UUID NOT NULL, "user_id" UUID NOT NULL, "slug" VARCHAR(120) NOT NULL, "seller_type" TEXT NOT NULL,
+  "store_name" VARCHAR(160) NOT NULL, "country" VARCHAR(80) NOT NULL, "contact_preference" VARCHAR(40) NOT NULL,
+  "social_link" VARCHAR(255), "short_description" TEXT, "status" "SellerProfileStatus" NOT NULL DEFAULT 'DRAFT',
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updated_at" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "seller_profiles_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "categories" (
-    "id" UUID NOT NULL,
-    "slug" VARCHAR(120) NOT NULL,
-    "name" VARCHAR(160) NOT NULL,
-    "description" TEXT,
-
-    CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
+  "id" UUID NOT NULL, "slug" VARCHAR(120) NOT NULL, "name" VARCHAR(160) NOT NULL, "description" TEXT,
+  CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "lots" (
-    "id" UUID NOT NULL,
-    "seller_profile_id" UUID NOT NULL,
-    "category_id" UUID NOT NULL,
-    "title" VARCHAR(200) NOT NULL,
-    "description" TEXT NOT NULL,
-    "condition" VARCHAR(120) NOT NULL,
-    "images" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "status" TEXT NOT NULL DEFAULT 'draft',
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "lots_pkey" PRIMARY KEY ("id")
+CREATE TABLE "products" (
+  "id" UUID NOT NULL, "public_id" VARCHAR(16) NOT NULL, "seller_profile_id" UUID NOT NULL, "category_id" UUID,
+  "title" VARCHAR(200), "story" TEXT, "technique" TEXT, "materials" TEXT, "dimensions" VARCHAR(240),
+  "weight" VARCHAR(120), "year" INTEGER, "condition" VARCHAR(120), "uniqueness" VARCHAR(240),
+  "provenance" TEXT, "city" VARCHAR(160), "delivery_info" TEXT,
+  "status" "ProductStatus" NOT NULL DEFAULT 'DRAFT', "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP(3) NOT NULL, CONSTRAINT "products_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "auctions" (
-    "id" UUID NOT NULL,
-    "lot_id" UUID NOT NULL,
-    "seller_profile_id" UUID NOT NULL,
-    "slug" VARCHAR(160) NOT NULL,
-    "start_price" DECIMAL(12,2) NOT NULL,
-    "reserve_price" DECIMAL(12,2) NOT NULL,
-    "current_price" DECIMAL(12,2) NOT NULL,
-    "currency" CHAR(3) NOT NULL,
-    "bid_step" DECIMAL(12,2) NOT NULL,
-    "starts_at" TIMESTAMP(3) NOT NULL,
-    "ends_at" TIMESTAMP(3) NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'draft',
-    "bid_count" INTEGER NOT NULL DEFAULT 0,
-    "winner_bid_id" UUID,
-    "buy_now_price" DECIMAL(12,2),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "auctions_pkey" PRIMARY KEY ("id")
+CREATE TABLE "product_images" (
+  "id" UUID NOT NULL, "product_id" UUID NOT NULL, "position" INTEGER NOT NULL, "mime_type" VARCHAR(100) NOT NULL,
+  "byte_length" INTEGER NOT NULL, "data" BYTEA NOT NULL, "checksum" CHAR(64) NOT NULL,
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "product_images_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
+CREATE TABLE "listings" (
+  "id" UUID NOT NULL, "product_id" UUID NOT NULL, "type" "ListingType" NOT NULL DEFAULT 'AUCTION',
+  "status" "ListingStatus" NOT NULL DEFAULT 'DRAFT', "currency" CHAR(3) NOT NULL DEFAULT 'BYN',
+  "starts_at" TIMESTAMP(3) NOT NULL, "original_ends_at" TIMESTAMP(3) NOT NULL, "ends_at" TIMESTAMP(3) NOT NULL,
+  "current_price" DECIMAL(12,2) NOT NULL, "bid_count" INTEGER NOT NULL DEFAULT 0, "closed_at" TIMESTAMP(3),
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updated_at" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "listings_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "auction_rules" (
+  "listing_id" UUID NOT NULL, "start_price" DECIMAL(12,2) NOT NULL,
+  "increment_policy_code" VARCHAR(40) NOT NULL DEFAULT 'MVP_BYN_V1',
+  "soft_close_window_seconds" INTEGER NOT NULL DEFAULT 60, "soft_close_extension_seconds" INTEGER NOT NULL DEFAULT 60,
+  "soft_close_max_total_seconds" INTEGER NOT NULL DEFAULT 600, CONSTRAINT "auction_rules_pkey" PRIMARY KEY ("listing_id")
+);
+
 CREATE TABLE "bids" (
-    "id" UUID NOT NULL,
-    "auction_id" UUID NOT NULL,
-    "bidder_user_id" UUID NOT NULL,
-    "amount" DECIMAL(12,2) NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'active',
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "bids_pkey" PRIMARY KEY ("id")
+  "id" UUID NOT NULL, "listing_id" UUID NOT NULL, "bidder_user_id" UUID NOT NULL,
+  "idempotency_key" VARCHAR(80) NOT NULL, "amount" DECIMAL(12,2) NOT NULL,
+  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "bids_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
+CREATE TABLE "orders" (
+  "id" UUID NOT NULL, "public_id" VARCHAR(16) NOT NULL, "listing_id" UUID NOT NULL, "seller_id" UUID NOT NULL,
+  "buyer_id" UUID NOT NULL, "source_bid_id" UUID NOT NULL, "final_amount" DECIMAL(12,2) NOT NULL,
+  "contact_due_at" TIMESTAMP(3) NOT NULL, "status" "OrderStatus" NOT NULL DEFAULT 'PENDING_CONTACT',
+  "cancellation_reason" "OrderCancellationReason", "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP(3) NOT NULL, CONSTRAINT "orders_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "phone_verification_codes" (
+  "id" UUID NOT NULL, "user_id" UUID NOT NULL, "code_hash" CHAR(64) NOT NULL, "expires_at" TIMESTAMP(3) NOT NULL,
+  "used_at" TIMESTAMP(3), "attempts" INTEGER NOT NULL DEFAULT 0, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "phone_verification_codes_pkey" PRIMARY KEY ("id")
+);
+
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
-
--- CreateIndex
 CREATE UNIQUE INDEX "seller_profiles_user_id_key" ON "seller_profiles"("user_id");
-
--- CreateIndex
 CREATE UNIQUE INDEX "seller_profiles_slug_key" ON "seller_profiles"("slug");
-
--- CreateIndex
 CREATE UNIQUE INDEX "categories_slug_key" ON "categories"("slug");
+CREATE UNIQUE INDEX "products_public_id_key" ON "products"("public_id");
+CREATE INDEX "products_seller_profile_id_status_idx" ON "products"("seller_profile_id", "status");
+CREATE INDEX "product_images_product_id_idx" ON "product_images"("product_id");
+CREATE UNIQUE INDEX "product_images_product_id_position_key" ON "product_images"("product_id", "position");
+CREATE INDEX "listings_status_starts_at_idx" ON "listings"("status", "starts_at");
+CREATE INDEX "listings_status_ends_at_idx" ON "listings"("status", "ends_at");
+CREATE UNIQUE INDEX "one_active_listing_per_product" ON "listings"("product_id") WHERE "status" IN ('SCHEDULED', 'LIVE');
+CREATE UNIQUE INDEX "bids_bidder_user_id_idempotency_key_key" ON "bids"("bidder_user_id", "idempotency_key");
+CREATE INDEX "bids_listing_id_amount_created_at_id_idx" ON "bids"("listing_id", "amount", "created_at", "id");
+CREATE INDEX "bids_listing_id_created_at_idx" ON "bids"("listing_id", "created_at");
+CREATE UNIQUE INDEX "orders_public_id_key" ON "orders"("public_id");
+CREATE UNIQUE INDEX "orders_source_bid_id_key" ON "orders"("source_bid_id");
+CREATE INDEX "orders_listing_id_idx" ON "orders"("listing_id");
+CREATE INDEX "orders_seller_id_status_idx" ON "orders"("seller_id", "status");
+CREATE INDEX "orders_buyer_id_status_idx" ON "orders"("buyer_id", "status");
+CREATE UNIQUE INDEX "one_active_order_per_listing" ON "orders"("listing_id") WHERE "status" <> 'CANCELLED';
+CREATE INDEX "phone_verification_codes_user_id_created_at_idx" ON "phone_verification_codes"("user_id", "created_at");
 
--- CreateIndex
-CREATE UNIQUE INDEX "auctions_slug_key" ON "auctions"("slug");
-
--- CreateIndex
-CREATE UNIQUE INDEX "auctions_lot_id_key" ON "auctions"("lot_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "auctions_winner_bid_id_key" ON "auctions"("winner_bid_id");
-
--- CreateIndex
-CREATE INDEX "auctions_status_starts_at_idx" ON "auctions"("status", "starts_at");
-
--- CreateIndex
-CREATE INDEX "auctions_status_ends_at_idx" ON "auctions"("status", "ends_at");
-
--- CreateIndex
-CREATE INDEX "bids_auction_id_status_amount_created_at_id_idx" ON "bids"("auction_id", "status", "amount", "created_at", "id");
-
--- CreateIndex
-CREATE INDEX "bids_auction_id_created_at_idx" ON "bids"("auction_id", "created_at");
-
--- AddForeignKey
 ALTER TABLE "seller_profiles" ADD CONSTRAINT "seller_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "lots" ADD CONSTRAINT "lots_seller_profile_id_fkey" FOREIGN KEY ("seller_profile_id") REFERENCES "seller_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "lots" ADD CONSTRAINT "lots_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "auctions" ADD CONSTRAINT "auctions_lot_id_fkey" FOREIGN KEY ("lot_id") REFERENCES "lots"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "auctions" ADD CONSTRAINT "auctions_seller_profile_id_fkey" FOREIGN KEY ("seller_profile_id") REFERENCES "seller_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "auctions" ADD CONSTRAINT "auctions_winner_bid_id_fkey" FOREIGN KEY ("winner_bid_id") REFERENCES "bids"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "bids" ADD CONSTRAINT "bids_auction_id_fkey" FOREIGN KEY ("auction_id") REFERENCES "auctions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
+ALTER TABLE "products" ADD CONSTRAINT "products_seller_profile_id_fkey" FOREIGN KEY ("seller_profile_id") REFERENCES "seller_profiles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "products" ADD CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "product_images" ADD CONSTRAINT "product_images_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "listings" ADD CONSTRAINT "listings_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "auction_rules" ADD CONSTRAINT "auction_rules_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "bids" ADD CONSTRAINT "bids_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "bids" ADD CONSTRAINT "bids_bidder_user_id_fkey" FOREIGN KEY ("bidder_user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_listing_id_fkey" FOREIGN KEY ("listing_id") REFERENCES "listings"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_source_bid_id_fkey" FOREIGN KEY ("source_bid_id") REFERENCES "bids"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "phone_verification_codes" ADD CONSTRAINT "phone_verification_codes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

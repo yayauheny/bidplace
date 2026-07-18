@@ -518,3 +518,56 @@ Status: Confirmed
 ### Example
 
 Обычные брюки массового производства не подходят; личная вещь известного человека или сделанная им вещь может подходить.
+
+---
+
+## DEC-037 — Product и Listing разделяют предмет и размещение
+
+Date: 2026-07-18  
+Status: Confirmed
+
+### Decision
+
+Каноническая модель MVP: `SellerProfile → Product → Listing → AuctionRules → Bid[] → Order`.
+`Product` описывает физический предмет и может иметь несколько `Listing` во времени. `Auction` больше не является aggregate root; термин сохраняется только для аукционных правил и политик.
+
+### Source
+
+Решение основателя, Task A, 2026-07-18.
+
+---
+
+## DEC-038 — Публичная ссылка Product использует random publicId
+
+Date: 2026-07-18  
+Status: Confirmed
+
+### Decision
+
+Единственный публичный detail route — `/product/[publicId]`. `Product` и `Order` получают неизменяемый криптографически случайный publicId; title-derived slug и `/auctions/[slug]` удаляются без compatibility period.
+
+---
+
+## DEC-039 — BYN, startPrice и soft close для MVP
+
+Date: 2026-07-18  
+Status: Confirmed
+
+### Decision
+
+MVP использует только BYN. Reserve и Buy Now исключены. `AuctionRules.startPrice` — минимальная цена продавца. Soft close применяется как 60-second window, 60-second extension, 600-second total cap.
+
+### Revises
+
+`DEC-008`, `DEC-009` и `DEC-034` в части hard close и reserve.
+
+---
+
+## DEC-040 — Order foundation и минимальная moderation входят в MVP
+
+Date: 2026-07-18  
+Status: Confirmed
+
+### Decision
+
+После завершённого Listing создаётся privacy-safe `Order` без payment/delivery machine. SellerProfile и Product используют минимальные admin-only approval transitions. Automatic winner replacement и visual redesign не входят в текущую реализацию; light redesign отложен в Task B.

@@ -1,185 +1,86 @@
 const { Prisma, PrismaClient } = require('@bidplace/database');
 
 const prisma = new PrismaClient();
+const money = (value) => new Prisma.Decimal(value);
+
+function requiredEnvironment(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is required to create the deterministic local/test admin.`);
+  }
+  return value;
+}
+
+async function createProductWithImages({ publicId, sellerProfileId, categoryId, title, city }) {
+  return prisma.product.create({
+    data: {
+      publicId,
+      sellerProfileId,
+      categoryId,
+      title,
+      story: 'A small reproducible local fixture used only to verify Product and Listing states.',
+      condition: 'excellent',
+      uniqueness: 'One original physical item.',
+      provenance: 'Created and offered directly by the approved seller.',
+      city,
+      deliveryInfo: 'Pickup or delivery is arranged after the Order is created.',
+      status: 'APPROVED',
+      images: {
+        create: [0, 1, 2].map((position) => ({
+          position,
+          mimeType: 'image/png',
+          byteLength: 1,
+          data: Buffer.from([position]),
+          checksum: `${String(position).repeat(64)}`,
+        })),
+      },
+    },
+  });
+}
 
 async function main() {
+  const adminEmail = requiredEnvironment('SEED_ADMIN_EMAIL');
+  const adminPasswordHash = requiredEnvironment('SEED_ADMIN_PASSWORD_HASH');
+
+  await prisma.phoneVerificationCode.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.bid.deleteMany();
-  await prisma.auction.deleteMany();
-  await prisma.lot.deleteMany();
+  await prisma.auctionRules.deleteMany();
+  await prisma.listing.deleteMany();
+  await prisma.productImage.deleteMany();
+  await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
   const category = await prisma.category.create({
-    data: {
-      slug: 'art-object',
-      name: 'Art Object',
-      description: 'Curated art and collectible pieces for MVP demos.',
-    },
+    data: { slug: 'art-object', name: 'Art object', description: 'Local verification category.' },
   });
-
-  const seller = await prisma.user.create({
-    data: {
-      email: 'seller@bidplace.test',
-      passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$demo$hash',
-      phone: '+15555550100',
-      displayName: 'Demo Seller',
-      role: 'user',
-    },
-  });
-
-  const buyerOne = await prisma.user.create({
-    data: {
-      email: 'buyer-one@bidplace.test',
-      passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$demo$hash',
-      phone: '+15555550101',
-      displayName: 'Buyer One',
-      role: 'user',
-    },
-  });
-
-  const buyerTwo = await prisma.user.create({
-    data: {
-      email: 'buyer-two@bidplace.test',
-      passwordHash: '$argon2id$v=19$m=65536,t=3,p=1$demo$hash',
-      phone: '+15555550102',
-      displayName: 'Buyer Two',
-      role: 'user',
-    },
-  });
+  const [admin, seller, buyer] = await Promise.all([
+    prisma.user.create({ data: { email: adminEmail, passwordHash: adminPasswordHash, phone: '+375290000001', displayName: 'Local Admin', role: 'admin', phoneVerifiedAt: new Date('2026-01-01T00:00:00.000Z') } }),
+    prisma.user.create({ data: { email: 'seller@bidplace.test', passwordHash: adminPasswordHash, phone: '+375290000002', displayName: 'Local Seller', phoneVerifiedAt: new Date('2026-01-01T00:00:00.000Z') } }),
+    prisma.user.create({ data: { email: 'buyer@bidplace.test', passwordHash: adminPasswordHash, phone: '+375290000003', displayName: 'Local Buyer', phoneVerifiedAt: new Date('2026-01-01T00:00:00.000Z') } }),
+  ]);
+  void admin;
 
   const sellerProfile = await prisma.sellerProfile.create({
-    data: {
-      userId: seller.id,
-      slug: 'demo-seller',
-      sellerType: 'creator',
-      storeName: 'Demo Store',
-      country: 'BY',
-      contactPreference: 'telegram',
-      socialLink: 'https://example.com/demo-store',
-      shortDescription: 'Demo seller profile for local development.',
-      status: 'active',
-    },
+    data: { userId: seller.id, slug: 'local-seller', sellerType: 'creator', storeName: 'Local Seller', country: 'BY', contactPreference: 'telegram', status: 'APPROVED' },
   });
-
-  const activeLot = await prisma.lot.create({
-    data: {
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title: 'Signed Ceramic Vase',
-      description: 'Handmade ceramic vase from the MVP seed data set.',
-      condition: 'excellent',
-      images: ['https://example.com/images/vase-1.jpg'],
-      status: 'published',
-    },
-  });
-
-  const activeAuction = await prisma.auction.create({
-    data: {
-      lotId: activeLot.id,
-      sellerProfileId: sellerProfile.id,
-      slug: 'demo-active-auction',
-      startPrice: new Prisma.Decimal('100.00'),
-      reservePrice: new Prisma.Decimal('150.00'),
-      currentPrice: new Prisma.Decimal('120.00'),
-      currency: 'USD',
-      bidStep: new Prisma.Decimal('5.00'),
-      startsAt: new Date('2026-07-12T10:00:00.000Z'),
-      endsAt: new Date('2026-07-16T10:00:00.000Z'),
-      status: 'active',
-      bidCount: 2,
-    },
-  });
-
-  await prisma.bid.create({
-    data: {
-      auctionId: activeAuction.id,
-      bidderUserId: buyerOne.id,
-      amount: new Prisma.Decimal('110.00'),
-      status: 'outbid',
-    },
-  });
-
-  await prisma.bid.create({
-    data: {
-      auctionId: activeAuction.id,
-      bidderUserId: buyerTwo.id,
-      amount: new Prisma.Decimal('120.00'),
-      status: 'winning',
-    },
-  });
-
-  const soldLot = await prisma.lot.create({
-    data: {
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title: 'Framed Limited Print',
-      description: 'Limited print used for the finished-auction seed.',
-      condition: 'good',
-      images: ['https://example.com/images/print-1.jpg'],
-      status: 'published',
-    },
-  });
-
-  const soldAuction = await prisma.auction.create({
-    data: {
-      lotId: soldLot.id,
-      sellerProfileId: sellerProfile.id,
-      slug: 'demo-sold-auction',
-      startPrice: new Prisma.Decimal('200.00'),
-      reservePrice: new Prisma.Decimal('240.00'),
-      currentPrice: new Prisma.Decimal('260.00'),
-      currency: 'USD',
-      bidStep: new Prisma.Decimal('10.00'),
-      startsAt: new Date('2026-07-10T10:00:00.000Z'),
-      endsAt: new Date('2026-07-11T10:00:00.000Z'),
-      status: 'sold',
-      bidCount: 3,
-    },
-  });
-
-  await prisma.bid.create({
-    data: {
-      auctionId: soldAuction.id,
-      bidderUserId: buyerOne.id,
-      amount: new Prisma.Decimal('220.00'),
-      status: 'outbid',
-    },
-  });
-
-  await prisma.bid.create({
-    data: {
-      auctionId: soldAuction.id,
-      bidderUserId: buyerTwo.id,
-      amount: new Prisma.Decimal('240.00'),
-      status: 'outbid',
-    },
-  });
-
-  const soldWinningBid = await prisma.bid.create({
-    data: {
-      auctionId: soldAuction.id,
-      bidderUserId: buyerTwo.id,
-      amount: new Prisma.Decimal('260.00'),
-      status: 'won',
-    },
-  });
-
-  await prisma.auction.update({
-    where: { id: soldAuction.id },
-    data: {
-      winnerBidId: soldWinningBid.id,
-    },
-  });
-
-  console.log('Seeded 1 category, 3 users, 2 lots, 2 auctions and 5 bids.');
+  const [scheduledProduct, liveProduct, endedProduct] = await Promise.all([
+    createProductWithImages({ publicId: 'seedSched01', sellerProfileId: sellerProfile.id, categoryId: category.id, title: 'Scheduled seed product', city: 'Minsk' }),
+    createProductWithImages({ publicId: 'seedLive002', sellerProfileId: sellerProfile.id, categoryId: category.id, title: 'Live seed product', city: 'Minsk' }),
+    createProductWithImages({ publicId: 'seedEnded3', sellerProfileId: sellerProfile.id, categoryId: category.id, title: 'Ended seed product', city: 'Minsk' }),
+  ]);
+  const now = new Date();
+  const scheduled = await prisma.listing.create({ data: { productId: scheduledProduct.id, status: 'SCHEDULED', startsAt: new Date(now.getTime() + 3_600_000), originalEndsAt: new Date(now.getTime() + 7_200_000), endsAt: new Date(now.getTime() + 7_200_000), currentPrice: money('50.00'), auctionRules: { create: { startPrice: money('50.00') } } } });
+  const live = await prisma.listing.create({ data: { productId: liveProduct.id, status: 'LIVE', startsAt: new Date(now.getTime() - 3_600_000), originalEndsAt: new Date(now.getTime() + 3_600_000), endsAt: new Date(now.getTime() + 3_600_000), currentPrice: money('75.00'), bidCount: 1, auctionRules: { create: { startPrice: money('50.00') } } } });
+  const ended = await prisma.listing.create({ data: { productId: endedProduct.id, status: 'ENDED', startsAt: new Date(now.getTime() - 7_200_000), originalEndsAt: new Date(now.getTime() - 3_600_000), endsAt: new Date(now.getTime() - 3_600_000), closedAt: new Date(now.getTime() - 3_600_000), currentPrice: money('120.00'), bidCount: 1, auctionRules: { create: { startPrice: money('100.00') } } } });
+  const liveBid = await prisma.bid.create({ data: { listingId: live.id, bidderUserId: buyer.id, idempotencyKey: 'seed-live-bid', amount: money('75.00') } });
+  void liveBid;
+  const endedBid = await prisma.bid.create({ data: { listingId: ended.id, bidderUserId: buyer.id, idempotencyKey: 'seed-ended-bid', amount: money('120.00') } });
+  await prisma.order.create({ data: { publicId: 'seedOrder01', listingId: ended.id, sellerId: seller.id, buyerId: buyer.id, sourceBidId: endedBid.id, finalAmount: money('120.00'), contactDueAt: new Date(now.getTime() + 82_800_000) } });
+  void scheduled;
+  console.log('Seeded deterministic local/test admin plus scheduled, live, and ended Product Listings in BYN.');
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => { await prisma.$disconnect(); });
