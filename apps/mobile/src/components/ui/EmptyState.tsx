@@ -24,15 +24,15 @@ export function EmptyState({
   const palette = useAppThemePalette();
 
   return (
-    <AppCard style={{ alignItems: 'center' }}>
-      <YStack style={{ alignItems: 'center', gap: mobileSpacing[3] }}>
+    <AppCard style={{ alignItems: 'center', paddingVertical: mobileSpacing[8] }}>
+      <YStack style={{ alignItems: 'center', gap: mobileSpacing[3], maxWidth: 420 }}>
         {icon}
         <Text
           style={{
             color: palette.text,
-            fontSize: 18,
-            lineHeight: 24,
-            fontWeight: '700',
+            fontSize: 24,
+            lineHeight: 30,
+            fontWeight: '600',
             textAlign: 'center',
           }}
         >
@@ -49,7 +49,9 @@ export function EmptyState({
           {description}
         </Text>
         {actionLabel && onAction ? (
-          <AppButton onPress={onAction}>{actionLabel}</AppButton>
+          <AppButton onPress={onAction} buttonSize="large">
+            {actionLabel}
+          </AppButton>
         ) : null}
       </YStack>
     </AppCard>

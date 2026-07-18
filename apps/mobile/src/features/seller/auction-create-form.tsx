@@ -2,30 +2,32 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-import { AppButton, AppCard, ControlledAppInput, EmptyState, ErrorState, LoadingState, FormField } from '../../components/ui';
-import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
+
 import {
-  getUserFacingErrorMessage,
-} from '../../lib/errors';
+  AppButton,
+  AppCard,
+  ControlledAppInput,
+  EmptyState,
+  ErrorState,
+  FormField,
+  LoadingState,
+  PageIntro,
+} from '../../components/ui';
+import { getUserFacingErrorMessage } from '../../lib/errors';
+import { mobileSpacing } from '../../theme/tokens';
 import {
   formatNumberInput,
   parseOptionalNumberInput,
   parseRequiredNumberInput,
   toIsoInput,
 } from './form-helpers';
-import {
-  useCreateAuctionMutation,
-  useMySellerLotsQuery,
-} from './hooks';
+import { useCreateAuctionMutation, useMySellerLotsQuery } from './hooks';
 import { useSellerProfileRequirement } from './profile-requirement';
 import { auctionFormSchema, type AuctionFormValues } from './schemas';
 
 export function AuctionCreateForm() {
   const router = useRouter();
-  const palette = useAppThemePalette();
   const profileRequirement = useSellerProfileRequirement(
     'Не удалось проверить seller profile',
   );
@@ -101,9 +103,7 @@ export function AuctionCreateForm() {
       });
       router.back();
     } catch (error) {
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось создать auction'),
-      );
+      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось создать auction'));
     }
   });
 
@@ -114,10 +114,7 @@ export function AuctionCreateForm() {
   if (lotsQuery.isError) {
     return (
       <ErrorState
-        description={getUserFacingErrorMessage(
-          lotsQuery.error,
-          'Не удалось загрузить lot-ы',
-        )}
+        description={getUserFacingErrorMessage(lotsQuery.error, 'Не удалось загрузить lot-ы')}
         onAction={() => lotsQuery.refetch()}
       />
     );
@@ -125,7 +122,7 @@ export function AuctionCreateForm() {
 
   if (draftLots.length === 0) {
     return (
-        <EmptyState
+      <EmptyState
         title="Нет draft lot-ов"
         description="Сначала создайте lot, затем вернитесь к созданию auction."
         actionLabel="Создать lot"
@@ -137,14 +134,10 @@ export function AuctionCreateForm() {
   return (
     <AppCard>
       <YStack style={{ gap: mobileSpacing[4] }}>
-        <YStack style={{ gap: mobileSpacing[1] }}>
-          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
-            Создать auction
-          </Text>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-            Выберите draft lot и задайте параметры торгов.
-          </Text>
-        </YStack>
+        <PageIntro
+          title="Создать auction"
+          description="Выберите draft lot и задайте параметры торгов."
+        />
 
         <FormField
           label="Lot"
@@ -155,6 +148,7 @@ export function AuctionCreateForm() {
           <YStack style={{ gap: mobileSpacing[2] }}>
             {draftLots.map((lot) => {
               const selected = selectedLotId === lot.id;
+
               return (
                 <AppButton
                   key={lot.id}
@@ -248,7 +242,7 @@ export function AuctionCreateForm() {
         />
 
         {submitError ? (
-          <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>
+          <Text color="$danger" style={{ fontSize: 14, lineHeight: 20 }}>
             {submitError}
           </Text>
         ) : null}
@@ -257,7 +251,12 @@ export function AuctionCreateForm() {
           <AppButton tone="secondary" onPress={() => router.back()}>
             Отмена
           </AppButton>
-          <AppButton onPress={onSubmit} isLoading={createAuctionMutation.isPending} disabled={!canSubmit}>
+          <AppButton
+            onPress={onSubmit}
+            isLoading={createAuctionMutation.isPending}
+            disabled={!canSubmit}
+            buttonSize="large"
+          >
             Создать auction
           </AppButton>
         </XStack>

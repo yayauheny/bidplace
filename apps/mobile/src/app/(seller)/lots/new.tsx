@@ -3,7 +3,7 @@ import { LotCreateForm } from '../../../features/seller/lot-create-form';
 
 export default function SellerNewLotScreen() {
   return (
-    <Screen>
+    <Screen mode="seller">
       <LotCreateForm />
     </Screen>
   );

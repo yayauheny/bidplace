@@ -51,7 +51,7 @@ export function StatusBadge({ tone = 'neutral', children }: StatusBadgeProps) {
         borderRadius: mobileRadius.full,
         borderWidth: 1,
         paddingHorizontal: mobileSpacing[2],
-        paddingVertical: mobileSpacing[1],
+        paddingVertical: 5,
         backgroundColor: styles.backgroundColor,
         borderColor: styles.borderColor,
       }}
@@ -62,6 +62,7 @@ export function StatusBadge({ tone = 'neutral', children }: StatusBadgeProps) {
           fontSize: 12,
           lineHeight: 16,
           fontWeight: '600',
+          letterSpacing: 0.4,
         }}
       >
         {children}

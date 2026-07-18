@@ -1,10 +1,10 @@
-import type { ComponentPropsWithoutRef } from 'react';
+import type { TextInputProps } from 'react-native';
+import { TextInput } from 'react-native';
 import { useId } from 'react';
 
 import { mobileRadius, mobileSpacing, mobileSizes } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
 import { FormField } from './FormField';
-import { Input } from 'tamagui';
 
 export type AppInputProps = {
   label: string;
@@ -13,7 +13,7 @@ export type AppInputProps = {
   required?: boolean;
   id?: string;
   editable?: boolean;
-} & ComponentPropsWithoutRef<typeof Input>;
+} & TextInputProps;
 
 export function AppInput({
   label,
@@ -21,6 +21,8 @@ export function AppInput({
   error,
   required,
   id,
+  multiline,
+  style,
   ...props
 }: AppInputProps) {
   const generatedId = useId();
@@ -28,7 +30,6 @@ export function AppInput({
   const controlId = id ?? generatedId;
   const descriptionId = description ? `${controlId}-description` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
-  const describedBy = [descriptionId, errorId].filter(Boolean).join(' ');
 
   return (
     <FormField
@@ -40,25 +41,26 @@ export function AppInput({
       descriptionId={descriptionId}
       errorId={errorId}
     >
-      <Input
-        id={controlId}
-        aria-describedby={describedBy || undefined}
-        aria-invalid={Boolean(error)}
-        placeholderTextColor="$textMuted"
-        style={{
-          height: mobileSizes.lg,
-          borderRadius: mobileRadius.md,
-          borderWidth: 1,
-          borderColor: palette.border,
-          backgroundColor: palette.surface,
-          color: palette.text,
-          paddingHorizontal: mobileSpacing[3],
-          opacity: props.editable === false ? 0.6 : 1,
-        }}
-        focusStyle={{
-          borderColor: '$focusRing',
-        }}
+      <TextInput
         {...props}
+        id={controlId}
+        multiline={multiline}
+        placeholderTextColor={palette.textMuted}
+        style={[
+          {
+            minHeight: multiline ? 132 : mobileSizes.lg,
+            borderRadius: mobileRadius.md,
+            borderWidth: 1,
+            borderColor: error ? palette.danger : palette.border,
+            backgroundColor: palette.surface,
+            color: palette.text,
+            paddingHorizontal: mobileSpacing[3],
+            paddingVertical: multiline ? mobileSpacing[3] : 0,
+            opacity: props.editable === false ? 0.6 : 1,
+            fontSize: 16,
+          },
+          style,
+        ]}
       />
     </FormField>
   );

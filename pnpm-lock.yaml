@@ -123,6 +123,12 @@ importers:
       '@bidplace/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@expo-google-fonts/cormorant-garamond':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@hookform/resolvers':
         specifier: 5.4.0
         version: 5.4.0(react-hook-form@7.81.0(react@19.2.3))
@@ -931,6 +937,12 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@expo-google-fonts/cormorant-garamond@0.4.1':
+    resolution: {integrity: sha512-e8J4Cn13K1txygamg50n3odLUsYP7Ck28XOGobMi7uDsWvFmp/jgK0qcALqJTlmi9NczSWUNdERxcLauHCBa/Q==}
+
+  '@expo-google-fonts/inter@0.4.2':
+    resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
 
   '@expo-google-fonts/material-symbols@0.4.38':
     resolution: {integrity: sha512-IJkBtN1o8u9BW5fvSii1MyHPQ7Q0HxbWcVBvOrOzgMLpVtZw7R2w94wBTVR7kZwv3w1JNTESMmLA5Sqn1+Z36A==}
@@ -7201,6 +7213,10 @@ snapshots:
 
   '@exodus/bytes@1.15.1':
     optional: true
+
+  '@expo-google-fonts/cormorant-garamond@0.4.1': {}
+
+  '@expo-google-fonts/inter@0.4.2': {}
 
   '@expo-google-fonts/material-symbols@0.4.38': {}
 

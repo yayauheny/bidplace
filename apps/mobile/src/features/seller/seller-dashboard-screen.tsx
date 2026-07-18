@@ -1,21 +1,28 @@
 import { useRouter } from 'expo-router';
+import { YStack } from 'tamagui';
 
-import { AppButton, AppCard, EmptyState, ErrorState, LoadingState, Screen, SectionHeader, StatusBadge } from '../../components/ui';
-import { formatCurrencyAmount, formatNumber } from '../../lib/formatters';
-import { mobileLayout, mobileSpacing } from '../../theme/tokens';
-import { Text, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
-import { getUserFacingErrorMessage } from '../../lib/errors';
-import { getAuctionStatusLabel, getAuctionStatusTone } from '../auctions/utils';
 import {
-  useMySellerAuctionsQuery,
-  useMySellerLotsQuery,
-} from './hooks';
+  AppButton,
+  AppCard,
+  DetailList,
+  EmptyState,
+  EntityPanel,
+  ErrorState,
+  LoadingState,
+  PageIntro,
+  Screen,
+  SectionHeader,
+  StatGrid,
+} from '../../components/ui';
+import { formatCurrencyAmount, formatNumber } from '../../lib/formatters';
+import { getUserFacingErrorMessage } from '../../lib/errors';
+import { mobileLayout, mobileSpacing } from '../../theme/tokens';
+import { getAuctionStatusLabel } from '../auctions/utils';
+import { useMySellerAuctionsQuery, useMySellerLotsQuery } from './hooks';
 import { useSellerProfileRequirement } from './profile-requirement';
 
 export function SellerDashboardScreen() {
   const router = useRouter();
-  const palette = useAppThemePalette();
   const profileRequirement = useSellerProfileRequirement(
     'Не удалось загрузить seller dashboard',
   );
@@ -30,7 +37,7 @@ export function SellerDashboardScreen() {
 
   if (profileRequirement.kind === 'loading') {
     return (
-      <Screen>
+      <Screen mode="seller">
         <LoadingState label="Загружаем seller dashboard" />
       </Screen>
     );
@@ -38,7 +45,7 @@ export function SellerDashboardScreen() {
 
   if (profileRequirement.kind === 'missing') {
     return (
-      <Screen>
+      <Screen mode="seller">
         <EmptyState
           title="Профиль продавца не создан"
           description="Создайте seller profile, чтобы открыть lot и auction workflow."
@@ -51,7 +58,7 @@ export function SellerDashboardScreen() {
 
   if (profileRequirement.kind === 'error') {
     return (
-      <Screen>
+      <Screen mode="seller">
         <ErrorState
           description={profileRequirement.message}
           onAction={() => profileRequirement.retry()}
@@ -65,54 +72,46 @@ export function SellerDashboardScreen() {
   const auctions = auctionsQuery.data?.auctions ?? [];
 
   return (
-    <Screen>
+    <Screen mode="seller">
       <YStack
         style={{
           width: '100%',
           maxWidth: mobileLayout.contentMaxWidth,
           alignSelf: 'center',
-          gap: mobileSpacing[4],
+          gap: mobileSpacing[5],
         }}
       >
-        <YStack style={{ gap: mobileSpacing[2] }}>
-          <StatusBadge tone="accent">Seller area</StatusBadge>
-          <Text style={{ fontSize: 32, lineHeight: 38, fontWeight: '700', color: palette.text }}>
-            Dashboard
-          </Text>
-          <Text style={{ fontSize: 16, lineHeight: 24, color: palette.textMuted }}>
-            Управляйте seller profile, lot-ами и auction-ами из одного места.
-          </Text>
-        </YStack>
+        <PageIntro
+          badge={{ label: 'Seller area', tone: 'accent' }}
+          title="Seller workspace"
+          description="Управляйте профилем, lot-ами и аукционами в одном рабочем пространстве, которое визуально совпадает с публичной витриной."
+        />
+
+        <StatGrid
+          items={[
+            { label: 'Профиль', value: profile.storeName },
+            { label: 'Lot-ов', value: formatNumber(lots.length) },
+            { label: 'Auction-ов', value: formatNumber(auctions.length) },
+          ]}
+        />
 
         <AppCard>
           <YStack style={{ gap: mobileSpacing[3] }}>
             <SectionHeader
-              title={profile?.storeName ?? 'Профиль не создан'}
-              description={profile?.shortDescription ?? 'Публичный профиль продавца'}
+              title={profile.storeName}
+              description={profile.shortDescription ?? 'Публичный профиль продавца'}
+              actionLabel="Редактировать"
+              onAction={() => router.push('/profile')}
             />
-            {profile ? (
-              <YStack style={{ gap: mobileSpacing[1] }}>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-                  Slug: {profile.slug}
-                </Text>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-                  Страна: {profile.country}
-                </Text>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-                  Тип: {profile.sellerType}
-                </Text>
-              </YStack>
-            ) : (
-              <EmptyState
-                title="Профиль не заполнен"
-                description="Создайте профиль, чтобы открыть seller flow."
-                actionLabel="Создать профиль"
-                onAction={() => router.push('/profile')}
-              />
-            )}
-            <AppButton tone="secondary" onPress={() => router.push('/profile')}>
-              {profile ? 'Редактировать профиль' : 'Создать профиль'}
-            </AppButton>
+            <DetailList
+              items={[
+                { label: 'Slug', value: profile.slug },
+                { label: 'Страна', value: profile.country },
+                { label: 'Тип', value: profile.sellerType },
+                { label: 'Контакт', value: profile.contactPreference },
+                ...(profile.socialLink ? [{ label: 'Ссылка', value: profile.socialLink }] : []),
+              ]}
+            />
           </YStack>
         </AppCard>
 
@@ -121,6 +120,8 @@ export function SellerDashboardScreen() {
             <SectionHeader
               title="Lot-ы"
               description={`Всего ${formatNumber(lots.length)} записей.`}
+              actionLabel="Создать lot"
+              onAction={() => router.push('/lots/new')}
             />
             {lotsQuery.isLoading ? <LoadingState label="Загружаем lot-ы" /> : null}
             {lotsQuery.isError ? (
@@ -143,21 +144,13 @@ export function SellerDashboardScreen() {
               ) : (
                 <YStack style={{ gap: mobileSpacing[2] }}>
                   {lots.slice(0, 3).map((lot) => (
-                    <AppCard key={lot.id}>
-                      <YStack style={{ gap: mobileSpacing[1] }}>
-                        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '700', color: palette.text }}>
-                          {lot.title}
-                        </Text>
-                        <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-                          {lot.condition}
-                        </Text>
-                        <StatusBadge tone="neutral">{lot.status}</StatusBadge>
-                      </YStack>
-                    </AppCard>
+                    <EntityPanel
+                      key={lot.id}
+                      eyebrow={lot.status}
+                      title={lot.title}
+                      subtitle={lot.condition}
+                    />
                   ))}
-                  <AppButton tone="secondary" onPress={() => router.push('/lots/new')}>
-                    Создать lot
-                  </AppButton>
                 </YStack>
               )
             ) : null}
@@ -169,6 +162,8 @@ export function SellerDashboardScreen() {
             <SectionHeader
               title="Auction-ы"
               description={`Всего ${formatNumber(auctions.length)} записей.`}
+              actionLabel="Создать auction"
+              onAction={() => router.push('/auctions/new')}
             />
             {auctionsQuery.isLoading ? <LoadingState label="Загружаем auction-ы" /> : null}
             {auctionsQuery.isError ? (
@@ -191,23 +186,13 @@ export function SellerDashboardScreen() {
               ) : (
                 <YStack style={{ gap: mobileSpacing[2] }}>
                   {auctions.slice(0, 3).map((auction) => (
-                    <AppCard key={auction.id}>
-                      <YStack style={{ gap: mobileSpacing[1] }}>
-                        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '700', color: palette.text }}>
-                          {auction.slug}
-                        </Text>
-                        <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-                          {formatCurrencyAmount(auction.currentPrice, auction.currency)}
-                        </Text>
-                        <StatusBadge tone={getAuctionStatusTone(auction.status)}>
-                          {getAuctionStatusLabel(auction.status)}
-                        </StatusBadge>
-                      </YStack>
-                    </AppCard>
+                    <EntityPanel
+                      key={auction.id}
+                      eyebrow={getAuctionStatusLabel(auction.status)}
+                      title={auction.slug}
+                      subtitle={formatCurrencyAmount(auction.currentPrice, auction.currency)}
+                    />
                   ))}
-                  <AppButton tone="secondary" onPress={() => router.push('/auctions/new')}>
-                    Создать auction
-                  </AppButton>
                 </YStack>
               )
             ) : null}

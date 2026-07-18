@@ -3,7 +3,7 @@ import { AuctionCreateForm } from '../../../features/seller/auction-create-form'
 
 export default function SellerNewAuctionScreen() {
   return (
-    <Screen>
+    <Screen mode="seller">
       <AuctionCreateForm />
     </Screen>
   );

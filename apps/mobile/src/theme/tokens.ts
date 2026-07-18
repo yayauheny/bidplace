@@ -3,14 +3,23 @@ import { colors, layout, radius, sizes, spacing, typography } from '@bidplace/de
 export const mobileSpacing = spacing;
 export const mobileRadius = radius;
 export const mobileSizes = sizes;
-export const mobileLayout = {
-  ...layout,
-  formMaxWidth: 520,
-  compactFormMaxWidth: 440,
+export const mobileLayout = layout;
+export const appMedia = {
+  mobileMax: 640,
+  tabletMax: 1024,
+  desktopMin: 1025,
+  wideMin: 1440,
+} as const;
+export const fontFamilies = {
+  serifRegular: 'CormorantGaramond_500Medium',
+  serifStrong: 'CormorantGaramond_600SemiBold',
+  sansRegular: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansStrong: 'Inter_600SemiBold',
 } as const;
 
 export const lightTheme = {
-  background: colors.paper,
+  background: colors.background,
   surface: colors.surfaceStrong,
   surfaceMuted: colors.surfaceMuted,
   surfaceRaised: colors.paper,
@@ -29,8 +38,9 @@ export const lightTheme = {
   danger: colors.danger,
   dangerSoft: '#FDECEC',
   info: colors.info,
+  imageBackground: colors.imageBackground,
   overlay: colors.overlay,
-  shadowColor: 'rgba(39, 22, 19, 0.14)',
+  shadowColor: 'rgba(17, 17, 17, 0.12)',
   focusRing: colors.accentStrong,
 } as const;
 
@@ -56,6 +66,7 @@ export const darkTheme = {
   danger: colors.darkDanger,
   dangerSoft: '#3b1c22',
   info: '#6fb0df',
+  imageBackground: '#242424',
   overlay: colors.darkOverlay,
   shadowColor: colors.darkOverlay,
   focusRing: colors.darkAccent,

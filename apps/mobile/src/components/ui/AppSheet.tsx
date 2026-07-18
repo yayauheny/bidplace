@@ -35,10 +35,10 @@ export function AppSheet({
       <Sheet.Frame
         style={{
           backgroundColor: palette.surface,
-          padding: mobileSpacing[4],
+          padding: mobileSpacing[5],
           gap: mobileSpacing[4],
-          borderTopLeftRadius: mobileRadius.xl,
-          borderTopRightRadius: mobileRadius.xl,
+          borderTopLeftRadius: mobileRadius['2xl'],
+          borderTopRightRadius: mobileRadius['2xl'],
         }}
       >
         <Sheet.Handle />

@@ -20,14 +20,14 @@ export function ErrorState({
   const palette = useAppThemePalette();
 
   return (
-    <AppCard style={{ borderColor: palette.danger }}>
-      <YStack style={{ alignItems: 'center', gap: mobileSpacing[3] }}>
+    <AppCard style={{ borderColor: palette.danger, paddingVertical: mobileSpacing[8] }}>
+      <YStack style={{ alignItems: 'center', gap: mobileSpacing[3], maxWidth: 420 }}>
         <Text
           style={{
             color: palette.text,
-            fontSize: 18,
-            lineHeight: 24,
-            fontWeight: '700',
+            fontSize: 24,
+            lineHeight: 30,
+            fontWeight: '600',
             textAlign: 'center',
           }}
         >

@@ -1,15 +1,25 @@
 import { useRouter } from 'expo-router';
+import { YStack } from 'tamagui';
 
-import { AuctionCard } from '../../components/auction/AuctionCard';
-import { EmptyState, ErrorState, LoadingState, Screen, SectionHeader, AppCard } from '../../components/ui';
-import { mobileLayout, mobileSpacing } from '../../theme/tokens';
+import {
+  AppCard,
+  DetailList,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageIntro,
+  Screen,
+  SectionHeader,
+} from '../../components/ui';
+import { ProductGrid } from '../../components/storefront/ProductGrid';
 import { formatNumber } from '../../lib/formatters';
-import { Text, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
 import {
   getErrorStatus,
   getUserFacingErrorMessage,
 } from '../../lib/errors';
+import { useApiClient } from '../../providers/api-provider';
+import { mobileLayout, mobileSpacing } from '../../theme/tokens';
+import { mapAuctionListItemToStorefrontProduct } from '../storefront/model';
 import { usePublicSellerDetailQuery } from './hooks';
 
 type PublicSellerScreenProps = {
@@ -18,8 +28,8 @@ type PublicSellerScreenProps = {
 
 export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
   const router = useRouter();
+  const api = useApiClient();
   const sellerQuery = usePublicSellerDetailQuery(slug);
-  const palette = useAppThemePalette();
 
   if (sellerQuery.isLoading) {
     return (
@@ -31,6 +41,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
 
   if (sellerQuery.isError) {
     const status = getErrorStatus(sellerQuery.error);
+
     if (status === 404) {
       return (
         <Screen>
@@ -38,7 +49,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
             title="Профиль не найден"
             description="Проверьте ссылку или вернитесь к каталогу."
             actionLabel="В каталог"
-            onAction={() => router.push('/')}
+            onAction={() => router.push('/catalog')}
           />
         </Screen>
       );
@@ -47,10 +58,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
     return (
       <Screen>
         <ErrorState
-          description={getUserFacingErrorMessage(
-            sellerQuery.error,
-            'Не удалось загрузить профиль',
-          )}
+          description={getUserFacingErrorMessage(sellerQuery.error, 'Не удалось загрузить профиль')}
           onAction={() => sellerQuery.refetch()}
         />
       </Screen>
@@ -64,7 +72,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
           title="Профиль не найден"
           description="Проверьте ссылку или вернитесь к каталогу."
           actionLabel="В каталог"
-          onAction={() => router.push('/')}
+          onAction={() => router.push('/catalog')}
         />
       </Screen>
     );
@@ -72,6 +80,9 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
 
   const profile = sellerQuery.data.sellerProfile;
   const relatedAuctions = sellerQuery.data.auctions;
+  const relatedProducts = relatedAuctions.map((item) =>
+    mapAuctionListItemToStorefrontProduct(item, api.baseUrl),
+  );
 
   return (
     <Screen>
@@ -80,29 +91,23 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
           width: '100%',
           maxWidth: mobileLayout.contentMaxWidth,
           alignSelf: 'center',
-          gap: mobileSpacing[4],
+          gap: mobileSpacing[5],
         }}
       >
         <AppCard>
           <YStack style={{ gap: mobileSpacing[3] }}>
-            <SectionHeader
+            <PageIntro
               title={profile.storeName}
               description={profile.shortDescription ?? 'Описание не заполнено'}
             />
-            <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-              Страна: {profile.country}
-            </Text>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-              Тип: {profile.sellerType}
-            </Text>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: palette.text }}>
-              Контакт: {profile.contactPreference}
-            </Text>
-            {profile.socialLink ? (
-              <Text style={{ fontSize: 14, lineHeight: 20, color: palette.primary }}>
-                {profile.socialLink}
-              </Text>
-            ) : null}
+            <DetailList
+              items={[
+                { label: 'Страна', value: profile.country },
+                { label: 'Тип', value: profile.sellerType },
+                { label: 'Контакт', value: profile.contactPreference },
+                ...(profile.socialLink ? [{ label: 'Ссылка', value: profile.socialLink }] : []),
+              ]}
+            />
           </YStack>
         </AppCard>
 
@@ -117,11 +122,7 @@ export function PublicSellerScreen({ slug }: PublicSellerScreenProps) {
               description="Сейчас у продавца нет активных или запланированных аукционов в каталоге."
             />
           ) : (
-            <YStack style={{ gap: mobileSpacing[4] }}>
-              {relatedAuctions.map((item) => (
-                <AuctionCard key={item.auction.id} {...item} />
-              ))}
-            </YStack>
+            <ProductGrid products={relatedProducts} />
           )}
         </YStack>
       </YStack>

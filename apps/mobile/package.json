@@ -7,6 +7,8 @@
     "@bidplace/api-client": "workspace:*",
     "@bidplace/contracts": "workspace:*",
     "@bidplace/design-tokens": "workspace:*",
+    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@hookform/resolvers": "5.4.0",
     "@react-native/normalize-colors": "^0.74.1",
     "@react-navigation/native": "^7.3.8",

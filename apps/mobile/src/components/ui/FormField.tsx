@@ -28,10 +28,12 @@ export function FormField({
     <YStack gap={mobileSpacing[1]}>
       <Label
         htmlFor={htmlFor}
-        fontSize={14}
-        lineHeight={20}
+        fontSize={12}
+        lineHeight={16}
         fontWeight="600"
-        color="$text"
+        letterSpacing={0.9}
+        textTransform="uppercase"
+        color="$textMuted"
       >
         {label}
         {required ? ' *' : null}

@@ -25,7 +25,7 @@ export function SectionHeader({
   return (
     <XStack style={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: mobileSpacing[3] }}>
       <YStack style={{ flex: 1, gap: mobileSpacing[1] }}>
-        <Text style={{ color: palette.text, fontSize: 20, lineHeight: 26, fontWeight: '700' }}>
+        <Text style={{ color: palette.text, fontSize: 24, lineHeight: 30, fontWeight: '600' }}>
           {title}
         </Text>
         {description ? (

@@ -16,14 +16,14 @@ export function AppCard({ children, ...props }: AppCardProps) {
       gap={mobileSpacing[4]}
       style={{
         padding: mobileSpacing[4],
-        borderRadius: mobileRadius.lg,
+        borderRadius: mobileRadius.md,
         borderWidth: 1,
         borderColor: palette.border,
         backgroundColor: palette.surface,
         shadowColor: palette.shadowColor,
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
       }}
       {...props}
     >

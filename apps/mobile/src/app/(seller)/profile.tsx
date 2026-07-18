@@ -22,7 +22,7 @@ export default function SellerProfileScreen() {
 
     if (status !== 404) {
       return (
-        <Screen>
+        <Screen mode="seller">
           <ErrorState
             description={getUserFacingErrorMessage(
               profileQuery.error,
@@ -38,7 +38,7 @@ export default function SellerProfileScreen() {
   const profile = profileQuery.data?.sellerProfile ?? null;
 
   return (
-    <Screen>
+    <Screen mode="seller">
       <SellerProfileForm profile={profile} />
     </Screen>
   );

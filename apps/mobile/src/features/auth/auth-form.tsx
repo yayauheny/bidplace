@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppButton, AppCard, ControlledAppInput } from '../../components/ui';
 import { mobileSpacing } from '../../theme/tokens';
 import { useAuth } from '../../providers/auth-provider';
@@ -27,14 +28,26 @@ function AuthCard({
 }) {
   const palette = useAppThemePalette();
   return (
-    <AppCard>
-      <YStack style={{ gap: mobileSpacing[2] }}>
-        <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
-          {title}
-        </Text>
-        <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>{description}</Text>
+    <AppCard style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+      <YStack style={{ gap: mobileSpacing[4], alignItems: 'center' }}>
+        <BrandLogo />
+        <YStack style={{ gap: mobileSpacing[2], alignItems: 'center' }}>
+          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
+            {title}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              lineHeight: 20,
+              color: palette.textMuted,
+              textAlign: 'center',
+            }}
+          >
+            {description}
+          </Text>
+        </YStack>
       </YStack>
-      {children}
+      <YStack style={{ gap: mobileSpacing[4] }}>{children}</YStack>
     </AppCard>
   );
 }
@@ -82,7 +95,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   return (
     <AuthCard
       title="Вход"
-      description="Используйте email и пароль для доступа к seller и admin зонам."
+      description="Войдите или создайте аккаунт, чтобы продолжить работу с аукционами."
     >
       <YStack style={{ gap: mobileSpacing[3] }}>
         <ControlledAppInput
@@ -106,7 +119,12 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
         {submitError ? (
           <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>{submitError}</Text>
         ) : null}
-        <AppButton onPress={onSubmit} isLoading={form.formState.isSubmitting} loadingLabel="Входим">
+        <AppButton
+          onPress={onSubmit}
+          isLoading={form.formState.isSubmitting}
+          loadingLabel="Входим"
+          buttonSize="large"
+        >
           Войти
         </AppButton>
       </YStack>
@@ -161,7 +179,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   return (
     <AuthCard
       title="Регистрация"
-      description="Создайте аккаунт, чтобы открыть seller и admin сценарии."
+      description="Создайте аккаунт, чтобы открыть seller- и admin-сценарии."
     >
       <YStack style={{ gap: mobileSpacing[3] }}>
         <ControlledAppInput
@@ -206,6 +224,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
           onPress={onSubmit}
           isLoading={form.formState.isSubmitting}
           loadingLabel="Создаём аккаунт"
+          buttonSize="large"
         >
           Создать аккаунт
         </AppButton>

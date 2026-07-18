@@ -2,21 +2,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { XStack, YStack } from 'tamagui';
 import type { SellerProfile } from '@bidplace/contracts';
 
-import { AppButton, AppCard, ControlledAppInput, FormField } from '../../components/ui';
-import { mobileSpacing } from '../../theme/tokens';
-import { Text, XStack, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
+import {
+  AppButton,
+  AppCard,
+  ControlledAppInput,
+  FormField,
+  PageIntro,
+} from '../../components/ui';
 import { getUserFacingErrorMessage } from '../../lib/errors';
+import { mobileSpacing } from '../../theme/tokens';
+import { useCreateSellerProfileMutation, useUpdateSellerProfileMutation } from './hooks';
 import {
   sellerProfileFormSchema,
   type SellerProfileFormValues,
 } from './schemas';
-import {
-  useCreateSellerProfileMutation,
-  useUpdateSellerProfileMutation,
-} from './hooks';
 
 type SellerProfileFormProps = {
   profile?: SellerProfile | null;
@@ -24,17 +26,11 @@ type SellerProfileFormProps = {
 
 function parseOptionalText(value: string) {
   const trimmedValue = value.trim();
-
-  if (trimmedValue === '') {
-    return null;
-  }
-
-  return value;
+  return trimmedValue === '' ? null : value;
 }
 
 export function SellerProfileForm({ profile }: SellerProfileFormProps) {
   const router = useRouter();
-  const palette = useAppThemePalette();
   const createMutation = useCreateSellerProfileMutation();
   const updateMutation = useUpdateSellerProfileMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -82,25 +78,21 @@ export function SellerProfileForm({ profile }: SellerProfileFormProps) {
       }
       router.back();
     } catch (error) {
-      setSubmitError(
-        getUserFacingErrorMessage(error, 'Не удалось сохранить профиль'),
-      );
+      setSubmitError(getUserFacingErrorMessage(error, 'Не удалось сохранить профиль'));
     }
   });
 
   return (
     <AppCard>
       <YStack style={{ gap: mobileSpacing[4] }}>
-        <YStack style={{ gap: mobileSpacing[1] }}>
-          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
-            {isEditing ? 'Редактировать профиль' : 'Создать профиль продавца'}
-          </Text>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-            {isEditing
+        <PageIntro
+          title={isEditing ? 'Редактировать профиль' : 'Создать профиль продавца'}
+          description={
+            isEditing
               ? 'Обновите публичные данные продавца.'
-              : 'Создайте seller profile, чтобы открыть lot и auction сценарии.'}
-          </Text>
-        </YStack>
+              : 'Создайте seller profile, чтобы открыть lot и auction сценарии.'
+          }
+        />
 
         <YStack style={{ gap: mobileSpacing[3] }}>
           <ControlledAppInput
@@ -188,15 +180,18 @@ export function SellerProfileForm({ profile }: SellerProfileFormProps) {
           />
 
           {submitError ? (
-            <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>
-              {submitError}
-            </Text>
+            <YStack>
+              <AppButton tone="subtle" disabled>
+                {submitError}
+              </AppButton>
+            </YStack>
           ) : null}
 
           <AppButton
             onPress={onSubmit}
             isLoading={mutation.isPending}
             loadingLabel={isEditing ? 'Сохраняем' : 'Создаём профиль'}
+            buttonSize="large"
           >
             {isEditing ? 'Сохранить' : 'Создать профиль'}
           </AppButton>

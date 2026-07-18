@@ -5,7 +5,7 @@ import { YStack } from 'tamagui';
 
 export default function LoginScreen() {
   return (
-    <Screen>
+    <Screen mode="auth" showHeader={false}>
       <YStack
         style={{
           flex: 1,

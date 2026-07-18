@@ -3,30 +3,32 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-import { AppButton, AppCard, ControlledAppInput, EmptyState, ErrorState, FormField, LoadingState } from '../../components/ui';
-import { mobileSpacing } from '../../theme/tokens';
 import { Text, XStack, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
+
 import {
-  useCreateLotMutation,
-  useSellerCategoriesQuery,
-} from './hooks';
-import {
-  getUserFacingErrorMessage,
-} from '../../lib/errors';
-import { lotFormSchema, type LotFormValues } from './schemas';
+  AppButton,
+  AppCard,
+  ControlledAppInput,
+  EmptyState,
+  ErrorState,
+  FormField,
+  LoadingState,
+  PageIntro,
+} from '../../components/ui';
+import { getUserFacingErrorMessage } from '../../lib/errors';
+import { mobileSpacing } from '../../theme/tokens';
+import { useCreateLotMutation, useSellerCategoriesQuery } from './hooks';
 import {
   assetToBlob,
   getImageAssetKey,
   mergeSelectedImages,
 } from './form-helpers';
 import { useSellerProfileRequirement } from './profile-requirement';
+import { lotFormSchema, type LotFormValues } from './schemas';
 import { SelectedLotImages } from './selected-lot-images';
 
 export function LotCreateForm() {
   const router = useRouter();
-  const palette = useAppThemePalette();
   const profileRequirement = useSellerProfileRequirement(
     'Не удалось проверить seller profile',
   );
@@ -102,14 +104,11 @@ export function LotCreateForm() {
     return (
       <AppCard>
         <YStack style={{ gap: mobileSpacing[2] }}>
-          <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '700', color: palette.text }}>
+          <Text color="$text" style={{ fontSize: 16, lineHeight: 24, fontWeight: '700' }}>
             Категории недоступны
           </Text>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-            {getUserFacingErrorMessage(
-              categoriesQuery.error,
-              'Не удалось загрузить категории',
-            )}
+          <Text color="$textMuted" style={{ fontSize: 14, lineHeight: 20 }}>
+            {getUserFacingErrorMessage(categoriesQuery.error, 'Не удалось загрузить категории')}
           </Text>
           <AppButton tone="secondary" onPress={() => categoriesQuery.refetch()}>
             Повторить
@@ -122,14 +121,10 @@ export function LotCreateForm() {
   return (
     <AppCard>
       <YStack style={{ gap: mobileSpacing[4] }}>
-        <YStack style={{ gap: mobileSpacing[1] }}>
-          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
-            Создать lot
-          </Text>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-            Lot создаётся как draft и может быть опубликован позже через auction flow.
-          </Text>
-        </YStack>
+        <PageIntro
+          title="Создать lot"
+          description="Lot создаётся как draft и может быть опубликован позже через auction flow."
+        />
 
         <YStack style={{ gap: mobileSpacing[3] }}>
           <FormField
@@ -141,13 +136,12 @@ export function LotCreateForm() {
             <YStack style={{ gap: mobileSpacing[2] }}>
               {categories.map((category) => {
                 const selected = selectedCategoryId === category.id;
+
                 return (
                   <AppButton
                     key={category.id}
                     tone={selected ? 'primary' : 'secondary'}
-                    onPress={() =>
-                      form.setValue('categoryId', category.id, { shouldValidate: true })
-                    }
+                    onPress={() => form.setValue('categoryId', category.id, { shouldValidate: true })}
                   >
                     {category.name}
                   </AppButton>
@@ -201,10 +195,7 @@ export function LotCreateForm() {
                   }
                 } catch (error) {
                   setImageError(
-                    getUserFacingErrorMessage(
-                      error,
-                      'Не удалось выбрать изображения',
-                    ),
+                    getUserFacingErrorMessage(error, 'Не удалось выбрать изображения'),
                   );
                 }
               }}
@@ -212,7 +203,7 @@ export function LotCreateForm() {
               Добавить изображения
             </AppButton>
             {imageError ? (
-              <Text style={{ color: palette.danger, fontSize: 12, lineHeight: 16 }}>
+              <Text color="$danger" style={{ fontSize: 12, lineHeight: 16 }}>
                 {imageError}
               </Text>
             ) : null}
@@ -220,9 +211,7 @@ export function LotCreateForm() {
               images={selectedImages}
               onRemove={(imageKey) =>
                 setSelectedImages((currentImages) =>
-                  currentImages.filter(
-                    (image) => getImageAssetKey(image) !== imageKey,
-                  ),
+                  currentImages.filter((image) => getImageAssetKey(image) !== imageKey),
                 )
               }
             />
@@ -234,7 +223,7 @@ export function LotCreateForm() {
           </YStack>
 
           {submitError ? (
-            <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>
+            <Text color="$danger" style={{ fontSize: 14, lineHeight: 20 }}>
               {submitError}
             </Text>
           ) : null}
@@ -243,7 +232,12 @@ export function LotCreateForm() {
             <AppButton tone="secondary" onPress={() => router.back()}>
               Отмена
             </AppButton>
-            <AppButton onPress={onSubmit} isLoading={createLotMutation.isPending} disabled={!canSubmit}>
+            <AppButton
+              onPress={onSubmit}
+              isLoading={createLotMutation.isPending}
+              disabled={!canSubmit}
+              buttonSize="large"
+            >
               Создать lot
             </AppButton>
           </XStack>

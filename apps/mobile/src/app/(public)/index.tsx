@@ -1,1 +1,1 @@
-export { AuctionListScreen as default } from '../../features/auctions/auction-list-screen';
+export { StorefrontHomeScreen as default } from '../../features/storefront/storefront-home-screen';

@@ -6,11 +6,13 @@ import { useAppThemePalette } from '../../theme/palette';
 import { Button, Text, XStack } from 'tamagui';
 
 type AppButtonTone = 'primary' | 'secondary' | 'subtle';
+type AppButtonSize = 'small' | 'default' | 'large';
 
 type AppButtonProps = ComponentPropsWithoutRef<typeof Button> & {
   isLoading?: boolean;
   loadingLabel?: string;
   tone?: AppButtonTone;
+  buttonSize?: AppButtonSize;
 };
 
 function getToneStyles(
@@ -42,6 +44,7 @@ function getToneStyles(
 
 export function AppButton({
   tone = 'primary',
+  buttonSize = 'default',
   isLoading,
   loadingLabel,
   disabled,
@@ -53,6 +56,19 @@ export function AppButton({
   const busy = Boolean(isLoading);
   const isDisabled = Boolean(disabled || busy);
   const indicatorColor = tone === 'primary' ? palette.onPrimary : palette.text;
+  const height =
+    buttonSize === 'large'
+      ? mobileSizes['2xl']
+      : buttonSize === 'small'
+        ? mobileSizes.md
+        : mobileSizes.lg;
+  const paddingHorizontal =
+    buttonSize === 'large'
+      ? mobileSpacing[6]
+      : buttonSize === 'small'
+        ? mobileSpacing[3]
+        : mobileSpacing[4];
+  const radius = buttonSize === 'large' ? mobileRadius.lg : mobileRadius.md;
 
   return (
     <Button
@@ -61,10 +77,10 @@ export function AppButton({
         backgroundColor: styles.backgroundColor,
         borderColor: styles.borderColor,
         borderWidth: 1,
-        borderRadius: mobileRadius.md,
+        borderRadius: radius,
         color: styles.color,
-        height: mobileSizes.lg,
-        paddingHorizontal: mobileSpacing[4],
+        height,
+        paddingHorizontal,
         opacity: isDisabled ? 0.55 : 1,
       }}
       focusStyle={{
@@ -83,7 +99,7 @@ export function AppButton({
           <Text
             style={{
               color: styles.color,
-              fontSize: 15,
+              fontSize: buttonSize === 'large' ? 16 : 14,
               fontWeight: '600',
             }}
           >
@@ -94,8 +110,9 @@ export function AppButton({
         <Text
           style={{
             color: styles.color,
-            fontSize: 15,
+            fontSize: buttonSize === 'large' ? 16 : 14,
             fontWeight: '600',
+            letterSpacing: 0.2,
           }}
         >
           {children}

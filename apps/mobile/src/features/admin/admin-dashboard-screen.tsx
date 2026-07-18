@@ -1,14 +1,30 @@
-import { AppButton, AppCard, EmptyState, ErrorState, LoadingState, Screen, SectionHeader, StatusBadge } from '../../components/ui';
+import { YStack } from 'tamagui';
+
+import {
+  AppButton,
+  AppCard,
+  DetailList,
+  EmptyState,
+  EntityPanel,
+  ErrorState,
+  LoadingState,
+  PageIntro,
+  Screen,
+  SectionHeader,
+  StatGrid,
+} from '../../components/ui';
 import { formatCurrencyAmount, formatNumber } from '../../lib/formatters';
-import { mobileLayout, mobileSpacing } from '../../theme/tokens';
-import { Text, YStack } from 'tamagui';
-import { useAppThemePalette } from '../../theme/palette';
-import { getAuctionStatusLabel, getAuctionStatusTone } from '../auctions/utils';
-import { useAdminAuctionsQuery, useAdminUsersQuery, useBanUserMutation, useHideAuctionMutation } from './hooks';
 import { getUserFacingErrorMessage } from '../../lib/errors';
+import { mobileLayout, mobileSpacing } from '../../theme/tokens';
+import { getAuctionStatusLabel } from '../auctions/utils';
+import {
+  useAdminAuctionsQuery,
+  useAdminUsersQuery,
+  useBanUserMutation,
+  useHideAuctionMutation,
+} from './hooks';
 
 export function AdminDashboardScreen() {
-  const palette = useAppThemePalette();
   const usersQuery = useAdminUsersQuery();
   const auctionsQuery = useAdminAuctionsQuery();
   const banUserMutation = useBanUserMutation();
@@ -17,24 +33,27 @@ export function AdminDashboardScreen() {
   const auctions = auctionsQuery.data?.auctions ?? [];
 
   return (
-    <Screen>
+    <Screen mode="admin">
       <YStack
         style={{
           width: '100%',
           maxWidth: mobileLayout.contentMaxWidth,
           alignSelf: 'center',
-          gap: mobileSpacing[4],
+          gap: mobileSpacing[5],
         }}
       >
-        <YStack style={{ gap: mobileSpacing[2] }}>
-          <StatusBadge tone="danger">Admin area</StatusBadge>
-          <Text style={{ fontSize: 32, lineHeight: 38, fontWeight: '700', color: palette.text }}>
-            Moderation dashboard
-          </Text>
-          <Text style={{ fontSize: 16, lineHeight: 24, color: palette.textMuted }}>
-            Управляйте пользователями и аукционами с server-backed actions.
-          </Text>
-        </YStack>
+        <PageIntro
+          badge={{ label: 'Admin area', tone: 'danger' }}
+          title="Moderation workspace"
+          description="Операционная панель использует ту же дизайн-систему, но остаётся строгой по смыслу и безопасной по действиям."
+        />
+
+        <StatGrid
+          items={[
+            { label: 'Пользователей', value: formatNumber(users.length) },
+            { label: 'Auction-ов', value: formatNumber(auctions.length) },
+          ]}
+        />
 
         <AppCard>
           <YStack style={{ gap: mobileSpacing[3] }}>
@@ -66,17 +85,12 @@ export function AdminDashboardScreen() {
               ) : (
                 <YStack style={{ gap: mobileSpacing[2] }}>
                   {users.map((user) => (
-                    <AppCard key={user.id}>
-                      <YStack style={{ gap: mobileSpacing[2] }}>
-                        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '700', color: palette.text }}>
-                          {user.displayName}
-                        </Text>
-                        <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-                          {user.email}
-                        </Text>
-                        <StatusBadge tone={user.status === 'active' ? 'success' : 'danger'}>
-                          {user.status}
-                        </StatusBadge>
+                    <EntityPanel
+                      key={user.id}
+                      eyebrow={user.status}
+                      title={user.displayName}
+                      subtitle={user.email}
+                      footer={
                         <AppButton
                           tone="secondary"
                           onPress={() => banUserMutation.mutate(user.id)}
@@ -85,8 +99,15 @@ export function AdminDashboardScreen() {
                         >
                           {user.status === 'banned' ? 'Уже заблокирован' : 'Заблокировать'}
                         </AppButton>
-                      </YStack>
-                    </AppCard>
+                      }
+                    >
+                      <DetailList
+                        items={[
+                          { label: 'Телефон', value: user.phone },
+                          { label: 'Роль', value: user.role },
+                        ]}
+                      />
+                    </EntityPanel>
                   ))}
                 </YStack>
               )
@@ -124,17 +145,12 @@ export function AdminDashboardScreen() {
               ) : (
                 <YStack style={{ gap: mobileSpacing[2] }}>
                   {auctions.map((auction) => (
-                    <AppCard key={auction.id}>
-                      <YStack style={{ gap: mobileSpacing[2] }}>
-                        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '700', color: palette.text }}>
-                          {auction.slug}
-                        </Text>
-                        <Text style={{ fontSize: 14, lineHeight: 20, color: palette.textMuted }}>
-                          {formatCurrencyAmount(auction.currentPrice, auction.currency)}
-                        </Text>
-                        <StatusBadge tone={getAuctionStatusTone(auction.status)}>
-                          {getAuctionStatusLabel(auction.status)}
-                        </StatusBadge>
+                    <EntityPanel
+                      key={auction.id}
+                      eyebrow={getAuctionStatusLabel(auction.status)}
+                      title={auction.slug}
+                      subtitle={formatCurrencyAmount(auction.currentPrice, auction.currency)}
+                      footer={
                         <AppButton
                           tone="secondary"
                           onPress={() => hideAuctionMutation.mutate(auction.id)}
@@ -143,8 +159,8 @@ export function AdminDashboardScreen() {
                         >
                           {auction.status === 'hidden' ? 'Уже скрыт' : 'Скрыть'}
                         </AppButton>
-                      </YStack>
-                    </AppCard>
+                      }
+                    />
                   ))}
                 </YStack>
               )
