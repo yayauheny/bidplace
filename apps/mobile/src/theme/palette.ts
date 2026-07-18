@@ -1,11 +1,8 @@
-import { useColorScheme } from 'react-native';
+// Light-only palette hook.
+// MVP uses a single light theme; dark mode is not implemented.
+// Future: replace this with a context-provided token map.
+import { lightTheme } from '@bidplace/design-tokens';
 
-import { darkTheme, lightTheme, type AppThemePalette } from './tokens';
-
-export type { AppThemePalette } from './tokens';
-
-export function useAppThemePalette(): AppThemePalette {
-  const colorScheme = useColorScheme();
-
-  return colorScheme === 'dark' ? darkTheme : lightTheme;
+export function useAppThemePalette() {
+  return lightTheme;
 }

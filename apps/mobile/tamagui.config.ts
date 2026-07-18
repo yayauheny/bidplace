@@ -2,7 +2,7 @@
 import { defaultConfig } from '@tamagui/config/v5';
 import { createFont, createTamagui } from 'tamagui';
 
-import { appMedia, darkTheme, fontFamilies, lightTheme } from './src/theme/tokens';
+import { appMedia, fontFamilies, tamaguiTheme } from './src/theme/tokens';
 
 const bodyFont = createFont({
   family: fontFamilies.sansRegular,
@@ -38,6 +38,8 @@ const headingFont = createFont({
   },
 });
 
+// MVP uses light theme only.
+// Dark theme will be added as a new token map in a future task.
 const config = createTamagui({
   ...defaultConfig,
   fonts: {
@@ -54,8 +56,7 @@ const config = createTamagui({
   },
   themes: {
     ...defaultConfig.themes,
-    light: lightTheme,
-    dark: darkTheme,
+    light: tamaguiTheme,
   },
 });
 

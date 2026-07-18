@@ -7,6 +7,7 @@ import { View } from 'react-native';
 
 import { AppProviders } from '../providers/app-providers';
 import { lightTheme } from '../theme/tokens';
+// lightTheme is the sole runtime theme; no dark mode switching
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

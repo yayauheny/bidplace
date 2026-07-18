@@ -1,45 +1,29 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider as NavigationThemeProvider,
-  type Theme,
-} from '@react-navigation/native';
-import { useMemo, type ReactNode } from 'react';
-import { useColorScheme } from 'react-native';
+import { DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
+import { type ReactNode } from 'react';
 import { TamaguiProvider } from 'tamagui';
 
 import config from '../../tamagui.config';
-import { darkTheme, lightTheme } from '../theme/tokens';
+import { lightTheme } from '../theme/tokens';
 
-function buildNavigationTheme(mode: 'light' | 'dark'): Theme {
-  const palette = mode === 'dark' ? darkTheme : lightTheme;
-  const baseTheme = mode === 'dark' ? DarkTheme : DefaultTheme;
-
-  return {
-    ...baseTheme,
-    colors: {
-      ...baseTheme.colors,
-      background: palette.background,
-      card: palette.surface,
-      primary: palette.primary,
-      border: palette.border,
-      text: palette.text,
-      notification: palette.primary,
-    },
-  };
-}
+// MVP is light-only. Dark mode is not implemented.
+// To add dark theme in the future: provide a new token map here, do not rewrite components.
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: lightTheme.background,
+    card: lightTheme.surface,
+    primary: lightTheme.primary,
+    border: lightTheme.borderColor,
+    text: lightTheme.color,
+    notification: lightTheme.primary,
+  },
+};
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const colorScheme = useColorScheme();
-  const themeName = colorScheme === 'dark' ? 'dark' : 'light';
-  const navigationTheme = useMemo(
-    () => buildNavigationTheme(themeName),
-    [themeName],
-  );
-
   return (
     <NavigationThemeProvider value={navigationTheme}>
-      <TamaguiProvider config={config} defaultTheme={themeName}>
+      <TamaguiProvider config={config} defaultTheme="light">
         {children}
       </TamaguiProvider>
     </NavigationThemeProvider>
