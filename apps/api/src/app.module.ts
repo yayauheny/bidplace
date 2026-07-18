@@ -2,35 +2,27 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
-import { AdminModule } from './admin/admin.module';
-import { AuctionsModule } from './auctions/auctions.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
-import { BidsModule } from './bids/bids.module';
 import { DatabaseModule } from './core/database';
 import { ApiExceptionFilter } from './core/errors';
 import { HealthModule } from './core/health';
-import { RealtimeModule } from './core/realtime';
 import { ClockModule } from './core/time';
-import { ImagesModule } from './images/images.module';
-import { LotsModule } from './lots/lots.module';
-import { SellersModule } from './sellers/sellers.module';
+import { PublicIdModule } from './core/public-id';
+import { ProductsModule } from './products/products.module';
+import { ListingsModule } from './listings/listings.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     HealthModule,
     ClockModule,
-    AdminModule,
+    PublicIdModule,
     CategoriesModule,
     DatabaseModule,
     AuthModule,
-    SellersModule,
-    LotsModule,
-    ImagesModule,
-    BidsModule,
-    RealtimeModule,
-    AuctionsModule,
+    ProductsModule,
+    ListingsModule,
   ],
   providers: [
     {

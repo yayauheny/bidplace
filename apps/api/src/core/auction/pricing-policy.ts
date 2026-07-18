@@ -1,119 +1,17 @@
 import { Decimal } from '@bidplace/database';
 
-import { type Bid } from '@bidplace/contracts';
-
 export type DecimalAmountInput = Decimal | number | string;
-
-export type AuctionBidLike = {
-  id: string;
-  amount: DecimalAmountInput;
-  status: Bid['status'];
-  createdAt: Date;
-};
-
-const ZERO_DECIMAL = new Decimal(0);
-
-const BID_STEP_RULES = [
-  { upperBound: new Decimal(25), step: new Decimal('0.5') },
-  { upperBound: new Decimal(100), step: new Decimal(1) },
-  { upperBound: new Decimal(500), step: new Decimal(5) },
-  { upperBound: new Decimal(1000), step: new Decimal(10) },
+const steps = [
+  { ceiling: new Decimal(25), value: new Decimal('0.50') },
+  { ceiling: new Decimal(100), value: new Decimal(1) },
+  { ceiling: new Decimal(500), value: new Decimal(5) },
+  { ceiling: new Decimal(1000), value: new Decimal(10) },
 ] as const;
-
-export const eligibleBidStatuses = [
-  'active',
-  'winning',
-  'outbid',
-] as const satisfies readonly Bid['status'][];
-
-export function isEligibleBidStatus(status: Bid['status']): boolean {
-  return (eligibleBidStatuses as readonly Bid['status'][]).includes(status);
-}
-
-export function calculateBidStep(amount: DecimalAmountInput): Decimal {
-  const decimalAmount = toDecimalAmount(amount);
-
-  for (const rule of BID_STEP_RULES) {
-    if (decimalAmount.lt(rule.upperBound)) {
-      return rule.step;
-    }
-  }
-
-  return new Decimal(25);
-}
-
-export function resolveMinimumNextBid(currentPrice: DecimalAmountInput): Decimal {
-  const decimalCurrentPrice = toDecimalAmount(currentPrice);
-
-  return decimalCurrentPrice.add(calculateBidStep(decimalCurrentPrice));
-}
-
-export function resolveCurrentPrice(
-  startPrice: DecimalAmountInput,
-  highestEligibleBid: Decimal | null,
-): Decimal {
-  return highestEligibleBid ?? toDecimalAmount(startPrice);
-}
-
-export function reserveReached(
-  currentPrice: DecimalAmountInput,
-  reservePrice: DecimalAmountInput,
-): boolean {
-  return toDecimalAmount(currentPrice).gte(toDecimalAmount(reservePrice));
-}
-
-export function findHighestEligibleBid<T extends AuctionBidLike>(
-  bids: readonly T[],
-): T | null {
-  const eligibleBids = bids.filter((bid) => isEligibleBidStatus(bid.status));
-
-  if (eligibleBids.length === 0) {
-    return null;
-  }
-
-  let currentWinner = eligibleBids[0]!;
-
-  for (let index = 1; index < eligibleBids.length; index += 1) {
-    const candidate = eligibleBids[index]!;
-    const candidateAmount = toDecimalAmount(candidate.amount);
-    const currentWinnerAmount = toDecimalAmount(currentWinner.amount);
-
-    if (candidateAmount.gt(currentWinnerAmount)) {
-      currentWinner = candidate;
-      continue;
-    }
-
-    if (candidateAmount.lt(currentWinnerAmount)) {
-      continue;
-    }
-
-    if (candidate.createdAt < currentWinner.createdAt) {
-      currentWinner = candidate;
-      continue;
-    }
-
-    if (candidate.createdAt > currentWinner.createdAt) {
-      continue;
-    }
-
-    if (candidate.id < currentWinner.id) {
-      currentWinner = candidate;
-    }
-  }
-
-  return currentWinner!;
-}
-
-export function toDecimalAmount(
-  value: DecimalAmountInput,
-): Decimal {
-  if (value instanceof Decimal) {
-    return value;
-  }
-
-  return new Decimal(value);
-}
-
-export function isPositiveDecimal(value: DecimalAmountInput): boolean {
-  return toDecimalAmount(value).gt(ZERO_DECIMAL);
+export function toDecimalAmount(value: DecimalAmountInput): Decimal { return value instanceof Decimal ? value : new Decimal(value); }
+export function calculateBidStep(currentPrice: DecimalAmountInput): Decimal { const price = toDecimalAmount(currentPrice); return steps.find(({ ceiling }) => price.lt(ceiling))?.value ?? new Decimal(25); }
+export function resolveMinimumNextBid(currentPrice: DecimalAmountInput): Decimal { const price = toDecimalAmount(currentPrice); return price.add(calculateBidStep(price)); }
+export function resolveSoftCloseEndsAt(endsAt: Date, originalEndsAt: Date, now: Date, windowSeconds: number, extensionSeconds: number, maxTotalSeconds: number): Date {
+  const remaining = endsAt.getTime() - now.getTime();
+  if (remaining <= 0 || remaining > windowSeconds * 1_000) return endsAt;
+  return new Date(Math.min(endsAt.getTime() + extensionSeconds * 1_000, originalEndsAt.getTime() + maxTotalSeconds * 1_000));
 }

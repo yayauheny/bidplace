@@ -1,14 +1,12 @@
 import {
-  AUCTION_STATUSES,
-  BID_STATUSES,
-  LOT_STATUSES,
+  LISTING_STATUSES,
+  PRODUCT_STATUSES,
   SELLER_STATUSES,
   SELLER_TYPES,
   USER_ROLES,
   USER_STATUSES,
-  type AuctionStatus,
-  type BidStatus,
-  type LotStatus,
+  type ListingStatus,
+  type ProductStatus,
   type SellerStatus,
   type SellerType,
   type UserRole,
@@ -93,35 +91,25 @@ export function parseSellerStatus(
   });
 }
 
-export function parseLotStatus(value: string, recordId?: string): LotStatus {
+export function parseProductStatus(value: string, recordId?: string): ProductStatus {
   return parseEnumValue({
-    entity: 'Lot',
+    entity: 'Product',
     field: 'status',
     value,
-    values: LOT_STATUSES,
+    values: PRODUCT_STATUSES,
     recordId,
   });
 }
 
-export function parseAuctionStatus(
+export function parseListingStatus(
   value: string,
   recordId?: string,
-): AuctionStatus {
+): ListingStatus {
   return parseEnumValue({
-    entity: 'Auction',
+    entity: 'Listing',
     field: 'status',
     value,
-    values: AUCTION_STATUSES,
-    recordId,
-  });
-}
-
-export function parseBidStatus(value: string, recordId?: string): BidStatus {
-  return parseEnumValue({
-    entity: 'Bid',
-    field: 'status',
-    value,
-    values: BID_STATUSES,
+    values: LISTING_STATUSES,
     recordId,
   });
 }
