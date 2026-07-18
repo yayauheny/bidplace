@@ -3,6 +3,7 @@ import {
   loginRequestSchema,
   registerRequestSchema,
   meResponseSchema,
+  phoneOtpVerifyRequestSchema,
   type LoginRequest,
   type RegisterRequest,
 } from '@bidplace/contracts';
@@ -13,6 +14,7 @@ import { requestJson, type RequestContext } from './request';
 const logoutResponseSchema = z.object({
   ok: z.literal(true),
 });
+const okResponseSchema = z.object({ ok: z.literal(true) });
 
 export function createAuthClient(context: RequestContext) {
   return {
@@ -45,6 +47,12 @@ export function createAuthClient(context: RequestContext) {
       return requestJson(context, '/api/auth/logout', logoutResponseSchema, {
         method: 'POST',
       });
+    },
+    requestPhoneOtp() {
+      return requestJson(context, '/api/auth/phone/request', okResponseSchema, { method: 'POST' });
+    },
+    verifyPhoneOtp(input: { code: string }) {
+      return requestJson(context, '/api/auth/phone/verify', okResponseSchema, { method: 'POST', body: phoneOtpVerifyRequestSchema.parse(input) });
     },
   };
 }
