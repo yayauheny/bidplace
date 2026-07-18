@@ -9,6 +9,8 @@ import {
 import { orderResponseSchema } from './order';
 import { uuidSchema } from './primitives';
 import { sellerProfileResponseSchema } from './seller-profile';
+import { sellerProfileSchema } from './seller-profile';
+import { productSchema } from './product';
 
 export const adminSellerStatusUpdateRequestSchema = z
   .object({ status: sellerStatusSchema.extract(['APPROVED', 'SUSPENDED']) })
@@ -28,6 +30,8 @@ export const adminRankedBidsResponseSchema = z
 
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminOrderResponseSchema = orderResponseSchema;
+export const adminSellerProfilesResponseSchema = z.object({ sellerProfiles: z.array(sellerProfileSchema) }).strict();
+export const adminProductsResponseSchema = z.object({ products: z.array(productSchema) }).strict();
 
 export type AdminSellerStatusUpdateRequest = z.infer<
   typeof adminSellerStatusUpdateRequestSchema

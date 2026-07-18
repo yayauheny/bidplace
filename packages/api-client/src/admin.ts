@@ -5,6 +5,8 @@ import {
   adminProductStatusUpdateRequestSchema,
   adminRankedBidsResponseSchema,
   adminSellerStatusResponseSchema,
+  adminSellerProfilesResponseSchema,
+  adminProductsResponseSchema,
   adminSellerStatusUpdateRequestSchema,
   productResponseSchema,
   type AdminOrderCancellationRequest,
@@ -17,6 +19,12 @@ import { requestJson, type RequestContext } from './request';
 
 export function createAdminClient(context: RequestContext) {
   return {
+    listSellerProfiles() {
+      return requestJson(context, '/api/admin/seller-profiles', adminSellerProfilesResponseSchema);
+    },
+    listProducts() {
+      return requestJson(context, '/api/admin/products', adminProductsResponseSchema);
+    },
     updateSellerStatus(id: string, input: AdminSellerStatusUpdateRequest) {
       return requestJson(context, `/api/admin/seller-profiles/${id}/status`, adminSellerStatusResponseSchema, {
         method: 'PATCH',

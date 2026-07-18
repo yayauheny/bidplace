@@ -12,6 +12,7 @@ import { PrismaService } from '../core/database';
 import { parseBody } from '../core/validation';
 import { OrdersService } from '../orders/orders.service';
 import { productSelect, toProductResponse } from '../products/products.mapper';
+import { toContractProduct } from '../products/products.mapper';
 import { AdminGuard } from './admin.guard';
 
 @Controller('admin')
@@ -21,6 +22,18 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersService,
   ) {}
+
+  @Get('seller-profiles')
+  async listSellers() {
+    const sellerProfiles = await this.prisma.sellerProfile.findMany({ orderBy: { createdAt: 'asc' } });
+    return { sellerProfiles: sellerProfiles.map((sellerProfile) => ({ ...sellerProfile, createdAt: sellerProfile.createdAt.toISOString(), updatedAt: sellerProfile.updatedAt.toISOString() })) };
+  }
+
+  @Get('products')
+  async listProducts() {
+    const products = await this.prisma.product.findMany({ select: productSelect, orderBy: { createdAt: 'asc' } });
+    return { products: products.map(toContractProduct) };
+  }
 
   @Patch('seller-profiles/:id/status')
   async updateSeller(@Param('id') id: string, @Body() body: unknown) {
