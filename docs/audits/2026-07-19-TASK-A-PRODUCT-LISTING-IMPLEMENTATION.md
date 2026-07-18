@@ -3,7 +3,7 @@
 Date: 2026-07-19
 Branch: `feature/product-listing-model`
 Starting SHA: `50c3753`  
-Final SHA: documentation commit for this report.
+Final SHA: `7180d1997652dfaca785fe8004ee62cf2bf023a4`.
 
 ## Delivered model and behavior
 
