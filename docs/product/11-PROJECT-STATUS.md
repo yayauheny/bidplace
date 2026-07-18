@@ -5,24 +5,24 @@
 
 ## Реализовано
 
-| Поведение | Evidence |
-| --- | --- |
-| Canonical storage model | `packages/database/prisma/schema.prisma`: `SellerProfile → Product → Listing → AuctionRules → Bid → Order`; baseline `20260716000000_baseline` создаёт schema с partial indexes `one_active_listing_per_product` и `one_active_order_per_listing`. |
-| Product and Listing rules | `apps/api/src/products`, `apps/api/src/listings`, `apps/api/src/admin`: draft Product, approval completeness gate, owner lock after `SCHEDULED`/`LIVE`, explicit Listing transitions and BYN-only auction rules. |
-| Bids and soft close | `apps/api/src/bids`, `apps/api/src/core/auction/pricing-policy.ts`: serializable transaction, idempotency key, self-bid/phone gates, compare-and-update, BYN increment policy, 60/60/600 soft close. |
-| Lifecycle and Order | `apps/api/src/lifecycle`, `apps/api/src/orders`: scheduler activation/closing, deterministic winner, atomic Order foundation, owner/admin authorization, manual admin cancellation/replacement. |
-| Phone verification | `apps/api/src/otp`, `PhoneVerificationCode`: hashed one-time OTP, expiry, retry/cooldown and rate limiting. A production transport remains blocked by an external provider configuration. |
-| Public and realtime API | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
-| Local reset and seed | Verified 2026-07-18: `prisma migrate reset` applied the rewritten baseline to local PostgreSQL; `prisma/seed.js` created deterministic admin plus scheduled/live/ended BYN Product Listings. |
+| Поведение                 | Evidence                                                                                                                                                                                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canonical storage model   | `packages/database/prisma/schema.prisma`: `SellerProfile → Product → Listing → AuctionRules → Bid → Order`; baseline `20260716000000_baseline` создаёт schema с partial indexes `one_active_listing_per_product` и `one_active_order_per_listing`.                    |
+| Product and Listing rules | `apps/api/src/products`, `apps/api/src/listings`, `apps/api/src/admin`: draft Product, approval completeness gate, owner lock after `SCHEDULED`/`LIVE`, explicit Listing transitions and BYN-only auction rules.                                                      |
+| Bids and soft close       | `apps/api/src/bids`, `apps/api/src/core/auction/pricing-policy.ts`: serializable transaction, idempotency key, self-bid/phone gates, compare-and-update, BYN increment policy, 60/60/600 soft close.                                                                  |
+| Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`: scheduler activation/closing, deterministic winner, atomic Order foundation, owner/admin authorization, manual admin cancellation/replacement.                                                                       |
+| Phone verification        | `apps/api/src/otp`, `PhoneVerificationCode`: hashed one-time OTP, expiry, retry/cooldown and rate limiting. A production transport remains blocked by an external provider configuration.                                                                             |
+| Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
+| Local reset and seed      | Verified 2026-07-18: `prisma migrate reset` applied the rewritten baseline to local PostgreSQL; `prisma/seed.js` created deterministic admin plus scheduled/live/ended BYN Product Listings.                                                                          |
 
 ## Partial / needs verification
 
-| Area | Current evidence | Remaining gap |
-| --- | --- | --- |
-| Seller and admin mobile flows | Owner/public Seller APIs, Product/Listing/image draft forms, and compact `/admin` status controls exist. | Existing Product draft editing, image management after the initial create session, and admin Order replacement UI remain incomplete. |
-| Product detail UX | `/product/[publicId]` has images, Listing state, bid history, OTP actions and realtime refetch. | Countdown, own participation state and winner Order link need completion and mobile QA. |
-| Tests | API unit suite and mobile query-cache suite pass; pricing boundaries pass; clean migration and seed were executed manually. | Required PostgreSQL race/idempotency/invariant tests and dedicated Product/Order/Activity/realtime unit tests are still incomplete. |
-| Operations | Single-process scheduler and Socket.IO gateway work for MVP. | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
+| Area                          | Current evidence                                                                                                                                                                     | Remaining gap                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Seller and admin mobile flows | Owner/public Seller APIs, Product/Listing forms, later Product draft editing, draft image upload/review, and compact `/admin` status and manual Order replacement controls exist.    | ProductImage deletion/reordering and device/accessibility QA remain incomplete.                                                           |
+| Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch. | Mobile/device accessibility QA remains.                                                                                                   |
+| Tests                         | API unit suite and mobile query-cache suite pass; pricing boundaries pass; clean migration and seed were executed manually.                                                          | Required PostgreSQL race/idempotency/invariant tests and dedicated Product/Order/Activity/realtime unit tests are still incomplete.       |
+| Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                         | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
 ## Intentional MVP boundaries
 
