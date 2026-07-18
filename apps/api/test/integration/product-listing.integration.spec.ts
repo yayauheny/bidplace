@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 import { BidsService } from '../../src/bids/bids.service';
 import { Clock } from '../../src/core/time';
+import { ListingLifecycleService } from '../../src/lifecycle/listing-lifecycle.service';
 import { createIntegrationDatabaseContext, type IntegrationDatabaseContext } from './test-database';
 
 let context: IntegrationDatabaseContext;
@@ -90,6 +91,26 @@ describe('Product / Listing PostgreSQL invariants', () => {
     expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(1);
     expect(current?.currentPrice.toNumber()).toBe(11);
     expect(current?.bidCount).toBe(1);
+    expect(realtime.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes an expired Listing once and creates an Order for the deterministic top Bid', async () => {
+    const { seller, buyer, product } = await fixture();
+    const listing = await prisma.listing.create({ data: { ...listingData(product.id, 'LIVE'), endsAt: now, originalEndsAt: now } });
+    const lower = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: seller.id, idempotencyKey: 'lower', amount: new Prisma.Decimal(10) } });
+    const winner = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: buyer.id, idempotencyKey: 'winner', amount: new Prisma.Decimal(11) } });
+    void lower;
+    const realtime = { emit: vi.fn() };
+    const lifecycle = new ListingLifecycleService(prisma as never, new FixedClock(), { generate: () => 'orderPub001' } as never, realtime as never);
+
+    expect(await lifecycle.close(listing.id, now)).toBe(true);
+    expect(await lifecycle.close(listing.id, now)).toBe(false);
+    const order = await prisma.order.findFirst({ where: { listingId: listing.id } });
+    const closed = await prisma.listing.findUnique({ where: { id: listing.id } });
+
+    expect(order?.sourceBidId).toBe(winner.id);
+    expect(order?.buyerId).toBe(buyer.id);
+    expect(closed?.status).toBe('ENDED');
     expect(realtime.emit).toHaveBeenCalledTimes(1);
   });
 });
