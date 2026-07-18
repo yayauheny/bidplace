@@ -1,6 +1,6 @@
 # bidplace
 
-Creator-first аукционная площадка для продажи физических авторских и ценных коллекционных вещей.
+Курируемая площадка прямых продаж значимых, авторских, ограниченных или связанных с конкретным человеком вещей.
 
 Текущий фокус:
 
@@ -9,7 +9,7 @@ Creator-first аукционная площадка для продажи физ
 - direct-link sharing;
 - сбор ставок;
 - определение победителя;
-- foundation под future payments, delivery, moderation и marketplace growth.
+- foundation под future payments, delivery, moderation и trust layer.
 
 ## Что это за проект
 
@@ -17,16 +17,18 @@ Creator-first аукционная площадка для продажи физ
 
 Продуктовая цель:
 
-- дать креаторам, small brands и публичным людям простой способ быстро выставить вещь на аукцион;
+- дать creators и публичным людям простой способ напрямую продать значимую вещь своей аудитории;
 - собрать всех заинтересованных покупателей в одном месте;
 - не терять победителя и его контакты;
-- позже добавить безопасные расчёты, доставку и trust layer.
+- позже добавить безопасные расчёты, доставку и дополнительные механизмы доверия.
+
+Обычный resale, массовые товары, перекупщики и искусственные ставки продукту противоречат.
 
 ## Текущий статус
 
-Репозиторий находится на этапе подготовки MVP-аукционов.
+Репозиторий находится в Phase 0: техническая устойчивость перед первым реальным пилотом.
 
-Источник истины по продукту и архитектуре уже зафиксирован в `docs/`.
+Источник истины по продукту, архитектуре и фактическому состоянию находится в `docs/product/`.
 
 Ключевой сценарий MVP:
 
@@ -34,19 +36,22 @@ Creator-first аукционная площадка для продажи физ
 - публикует ссылку;
 - buyer делает ставки;
 - система закрывает аукцион по таймеру;
-- seller получает контакт победителя.
+- система определяет победителя из состояния базы данных.
+
+Полный handoff и подтверждение продажи пока не реализованы. Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md).
 
 ## Документация
 
 Начинать отсюда:
 
-1. [docs/README.md](/Users/yayauheny/projects/bidplace/docs/README.md)
-2. [docs/PRODUCT_DECISIONS.md](/Users/yayauheny/projects/bidplace/docs/PRODUCT_DECISIONS.md)
-3. [docs/RFC_MVP_AUCTIONS.md](/Users/yayauheny/projects/bidplace/docs/RFC_MVP_AUCTIONS.md)
-4. [docs/FUTURE_ROADMAP.md](/Users/yayauheny/projects/bidplace/docs/FUTURE_ROADMAP.md)
-5. [docs/IMPLEMENTATION_PLAN.md](/Users/yayauheny/projects/bidplace/docs/IMPLEMENTATION_PLAN.md)
-6. [docs/ARCHITECTURE.md](/Users/yayauheny/projects/bidplace/docs/ARCHITECTURE.md)
-7. [docs/API_CONTRACTS.md](/Users/yayauheny/projects/bidplace/docs/API_CONTRACTS.md)
+1. [Канонический индекс](docs/product/00-PROJECT-INDEX.md)
+2. [Продуктовая основа](docs/product/01-PRODUCT-FOUNDATION.md)
+3. [MVP RFC](docs/product/05-MVP-RFC.md)
+4. [Roadmap на 24 месяца](docs/product/06-ROADMAP-24-MONTHS.md)
+5. [Архитектура и дизайн](docs/product/10-CODE-ARCHITECTURE-AND-DESIGN.md)
+6. [Фактический статус проекта](docs/product/11-PROJECT-STATUS.md)
+7. [Журнал решений](docs/product/12-DECISION-LOG.md)
+8. [Правила хранения исследований](docs/research/README.md)
 
 ## Технологии
 
@@ -74,6 +79,7 @@ packages/
   api-client/
   config/
   contracts/
+  database/
   design-tokens/
   eslint-config/
   tsconfig/
