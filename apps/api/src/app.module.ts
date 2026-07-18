@@ -14,6 +14,7 @@ import { ListingsModule } from './listings/listings.module';
 import { BidsModule } from './bids/bids.module';
 import { LifecycleModule } from './lifecycle/lifecycle.module';
 import { OrdersModule } from './orders/orders.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { OrdersModule } from './orders/orders.module';
     BidsModule,
     LifecycleModule,
     OrdersModule,
+    OtpModule,
   ],
   providers: [
     {

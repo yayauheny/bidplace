@@ -23,3 +23,5 @@ export const authTokenPayloadSchema = z
 
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type AuthTokenPayload = z.infer<typeof authTokenPayloadSchema>;
+
+export const phoneOtpVerifyRequestSchema = z.object({ code: z.string().regex(/^\d{6}$/) }).strict();
