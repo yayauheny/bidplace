@@ -1,57 +1,68 @@
+import type { LightTheme } from '@bidplace/design-tokens';
 import { mobileRadius, mobileSpacing } from '../../theme/tokens';
-import { type AppThemePalette, useAppThemePalette } from '../../theme/palette';
+import { useAppThemePalette } from '../../theme/palette';
 import { Text, XStack } from 'tamagui';
 
-type StatusTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+// Status badge tones — status must NEVER rely on color alone.
+// Each tone produces a distinct background + text + border combination.
+type StatusTone = 'neutral' | 'primary' | 'positive' | 'warning' | 'negative';
 
 type StatusBadgeProps = {
   tone?: StatusTone;
   children: string;
+  /** accessibilityLabel overrides the badge text for screen readers */
+  accessibilityLabel?: string;
 };
 
 const toneStyles: Record<
   StatusTone,
-  (palette: AppThemePalette) => { backgroundColor: string; borderColor: string; color: string }
+  (p: LightTheme) => { backgroundColor: string; borderColor: string; color: string }
 > = {
-  neutral: (palette) => ({
-    backgroundColor: palette.surfaceMuted,
-    borderColor: palette.border,
-    color: palette.textMuted,
+  neutral: (p) => ({
+    backgroundColor: p.surfaceMuted,
+    borderColor: p.borderColor,
+    color: p.colorSecondary,
   }),
-  accent: (palette) => ({
-    backgroundColor: palette.primarySoft,
-    borderColor: palette.primary,
-    color: palette.primary,
+  primary: (p) => ({
+    backgroundColor: p.primaryTint,
+    borderColor: p.primary,
+    color: p.primary,
   }),
-  success: (palette) => ({
-    backgroundColor: palette.successSoft,
-    borderColor: palette.success,
-    color: palette.success,
+  positive: (p) => ({
+    backgroundColor: p.positiveTint,
+    borderColor: p.positive,
+    color: p.positive,
   }),
-  warning: (palette) => ({
-    backgroundColor: palette.warningSoft,
-    borderColor: palette.warning,
-    color: palette.warning,
+  warning: (p) => ({
+    backgroundColor: p.warningTint,
+    borderColor: p.warning,
+    color: p.warning,
   }),
-  danger: (palette) => ({
-    backgroundColor: palette.dangerSoft,
-    borderColor: palette.danger,
-    color: palette.danger,
+  negative: (p) => ({
+    backgroundColor: p.negativeTint,
+    borderColor: p.negative,
+    color: p.negative,
   }),
 };
 
-export function StatusBadge({ tone = 'neutral', children }: StatusBadgeProps) {
+export function StatusBadge({
+  tone = 'neutral',
+  children,
+  accessibilityLabel,
+}: StatusBadgeProps) {
   const palette = useAppThemePalette();
   const styles = toneStyles[tone](palette);
 
   return (
     <XStack
+      accessibilityLabel={accessibilityLabel ?? children}
       style={{
+        alignSelf: 'flex-start',
         alignItems: 'center',
-        borderRadius: mobileRadius.full,
+        borderRadius: mobileRadius.small,
         borderWidth: 1,
         paddingHorizontal: mobileSpacing[2],
-        paddingVertical: 5,
+        paddingVertical: 4,
         backgroundColor: styles.backgroundColor,
         borderColor: styles.borderColor,
       }}
@@ -62,7 +73,7 @@ export function StatusBadge({ tone = 'neutral', children }: StatusBadgeProps) {
           fontSize: 12,
           lineHeight: 16,
           fontWeight: '600',
-          letterSpacing: 0.4,
+          letterSpacing: 0.3,
         }}
       >
         {children}

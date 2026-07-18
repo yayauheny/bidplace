@@ -1,33 +1,39 @@
+// Surface — generic elevated surface primitive.
+// Use for auth cards, info sections, and any elevated container.
+// Responsibility: background + border + padding. No business logic.
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import { YStack } from 'tamagui';
 
 import { mobileRadius, mobileSpacing } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
-import { YStack } from 'tamagui';
 
-type AppCardProps = {
+type SurfaceProps = {
   children: ReactNode;
+  noPadding?: boolean;
 } & ComponentPropsWithoutRef<typeof YStack>;
 
-export function AppCard({ children, ...props }: AppCardProps) {
+export function Surface({ children, noPadding, ...props }: SurfaceProps) {
   const palette = useAppThemePalette();
 
   return (
     <YStack
-      gap={mobileSpacing[4]}
-      style={{
-        padding: mobileSpacing[4],
-        borderRadius: mobileRadius.md,
-        borderWidth: 1,
-        borderColor: palette.border,
-        backgroundColor: palette.surface,
-        shadowColor: palette.shadowColor,
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
-      }}
       {...props}
+      style={[
+        {
+          backgroundColor: palette.surface,
+          borderRadius: mobileRadius.panel,
+          borderWidth: 1,
+          borderColor: palette.borderColor,
+          padding: noPadding ? 0 : mobileSpacing[4],
+        },
+        // @ts-expect-error -- RN style array
+        props.style,
+      ]}
     >
       {children}
     </YStack>
   );
 }
+
+// AppCard is preserved as an alias during migration.
+export { Surface as AppCard };

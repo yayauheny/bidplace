@@ -1,17 +1,14 @@
-import type { ReactNode } from 'react';
+import { Pressable } from 'react-native';
+import { Text, YStack } from 'tamagui';
 
 import { mobileSpacing } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
-import { AppButton } from './AppButton';
-import { AppCard } from './AppCard';
-import { Text, YStack } from 'tamagui';
 
 type EmptyStateProps = {
-  title: string;
+  title?: string;
   description: string;
   actionLabel?: string;
   onAction?: () => void;
-  icon?: ReactNode;
 };
 
 export function EmptyState({
@@ -19,41 +16,71 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
-  icon,
 }: EmptyStateProps) {
   const palette = useAppThemePalette();
 
   return (
-    <AppCard style={{ alignItems: 'center', paddingVertical: mobileSpacing[8] }}>
-      <YStack style={{ alignItems: 'center', gap: mobileSpacing[3], maxWidth: 420 }}>
-        {icon}
+    <YStack
+      flex={1}
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: mobileSpacing[16],
+        paddingHorizontal: mobileSpacing[6],
+        gap: mobileSpacing[3],
+      }}
+      role="status"
+    >
+      {title ? (
         <Text
           style={{
-            color: palette.text,
-            fontSize: 24,
-            lineHeight: 30,
+            color: palette.color,
+            fontSize: 17,
+            lineHeight: 22,
             fontWeight: '600',
             textAlign: 'center',
           }}
         >
           {title}
         </Text>
-        <Text
-          style={{
-            color: palette.textMuted,
-            fontSize: 14,
-            lineHeight: 20,
-            textAlign: 'center',
-          }}
+      ) : null}
+      <Text
+        style={{
+          color: palette.colorMuted,
+          fontSize: 14,
+          lineHeight: 21,
+          textAlign: 'center',
+          maxWidth: 320,
+        }}
+      >
+        {description}
+      </Text>
+      {actionLabel && onAction ? (
+        <Pressable
+          onPress={onAction}
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            marginTop: mobileSpacing[2],
+            paddingHorizontal: mobileSpacing[4],
+            paddingVertical: mobileSpacing[2],
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: palette.borderColor,
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
-          {description}
-        </Text>
-        {actionLabel && onAction ? (
-          <AppButton onPress={onAction} buttonSize="large">
+          <Text
+            style={{
+              color: palette.color,
+              fontSize: 14,
+              lineHeight: 20,
+              fontWeight: '500',
+            }}
+          >
             {actionLabel}
-          </AppButton>
-        ) : null}
-      </YStack>
-    </AppCard>
+          </Text>
+        </Pressable>
+      ) : null}
+    </YStack>
   );
 }

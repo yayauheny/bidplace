@@ -45,19 +45,20 @@ export function AppInput({
         {...props}
         id={controlId}
         multiline={multiline}
-        placeholderTextColor={palette.textMuted}
+        placeholderTextColor={palette.colorMuted}
         style={[
           {
             minHeight: multiline ? 132 : mobileSizes.lg,
-            borderRadius: mobileRadius.md,
+            borderRadius: mobileRadius.control,
             borderWidth: 1,
-            borderColor: error ? palette.danger : palette.border,
+            borderColor: error ? palette.negative : palette.borderColor,
             backgroundColor: palette.surface,
-            color: palette.text,
+            color: palette.color,
             paddingHorizontal: mobileSpacing[3],
-            paddingVertical: multiline ? mobileSpacing[3] : 0,
-            opacity: props.editable === false ? 0.6 : 1,
+            paddingVertical: multiline ? mobileSpacing[3] : mobileSpacing[2],
+            opacity: props.editable === false ? 0.55 : 1,
             fontSize: 16,
+            lineHeight: 24,
           },
           style,
         ]}

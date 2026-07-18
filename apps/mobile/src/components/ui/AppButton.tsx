@@ -1,36 +1,42 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { Button, Text, XStack } from 'tamagui';
 
 import { mobileRadius, mobileSpacing, mobileSizes } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
-import { Button, Text, XStack } from 'tamagui';
 
-type AppButtonTone = 'primary' | 'secondary' | 'subtle';
-type AppButtonSize = 'small' | 'default' | 'large';
+type ButtonTone = 'primary' | 'secondary' | 'subtle' | 'danger';
+type ButtonSize = 'small' | 'default' | 'large';
 
 type AppButtonProps = ComponentPropsWithoutRef<typeof Button> & {
   isLoading?: boolean;
   loadingLabel?: string;
-  tone?: AppButtonTone;
-  buttonSize?: AppButtonSize;
+  tone?: ButtonTone;
+  buttonSize?: ButtonSize;
 };
 
 function getToneStyles(
   palette: ReturnType<typeof useAppThemePalette>,
-  tone: AppButtonTone,
+  tone: ButtonTone,
 ) {
   switch (tone) {
     case 'secondary':
       return {
         backgroundColor: palette.surface,
-        borderColor: palette.border,
-        color: palette.text,
+        borderColor: palette.borderColor,
+        color: palette.color,
       };
     case 'subtle':
       return {
         backgroundColor: 'transparent',
         borderColor: 'transparent',
-        color: palette.text,
+        color: palette.color,
+      };
+    case 'danger':
+      return {
+        backgroundColor: palette.negativeTint,
+        borderColor: palette.negative,
+        color: palette.negative,
       };
     case 'primary':
     default:
@@ -55,20 +61,23 @@ export function AppButton({
   const styles = getToneStyles(palette, tone);
   const busy = Boolean(isLoading);
   const isDisabled = Boolean(disabled || busy);
-  const indicatorColor = tone === 'primary' ? palette.onPrimary : palette.text;
+  const indicatorColor = tone === 'primary' ? palette.onPrimary : palette.color;
+
   const height =
     buttonSize === 'large'
       ? mobileSizes['2xl']
       : buttonSize === 'small'
         ? mobileSizes.md
         : mobileSizes.lg;
+
   const paddingHorizontal =
     buttonSize === 'large'
       ? mobileSpacing[6]
       : buttonSize === 'small'
         ? mobileSpacing[3]
         : mobileSpacing[4];
-  const radius = buttonSize === 'large' ? mobileRadius.lg : mobileRadius.md;
+
+  const fontSize = buttonSize === 'large' ? 15 : 14;
 
   return (
     <Button
@@ -77,30 +86,28 @@ export function AppButton({
         backgroundColor: styles.backgroundColor,
         borderColor: styles.borderColor,
         borderWidth: 1,
-        borderRadius: radius,
-        color: styles.color,
+        borderRadius: mobileRadius.control,
         height,
         paddingHorizontal,
-        opacity: isDisabled ? 0.55 : 1,
+        minWidth: mobileSizes.touch,
+        opacity: isDisabled ? 0.5 : 1,
       }}
       focusStyle={{
-        borderColor: '$focusRing',
+        outlineColor: palette.focusRing,
+        outlineWidth: 2,
+        outlineOffset: 2,
       }}
       {...props}
     >
       {busy ? (
-        <XStack
-          style={{
-            alignItems: 'center',
-            gap: mobileSpacing[2],
-          }}
-        >
+        <XStack style={{ alignItems: 'center', gap: mobileSpacing[2] }}>
           <ActivityIndicator size="small" color={indicatorColor} />
           <Text
             style={{
               color: styles.color,
-              fontSize: buttonSize === 'large' ? 16 : 14,
+              fontSize,
               fontWeight: '600',
+              letterSpacing: 0.1,
             }}
           >
             {loadingLabel ?? 'Загрузка'}
@@ -110,9 +117,9 @@ export function AppButton({
         <Text
           style={{
             color: styles.color,
-            fontSize: buttonSize === 'large' ? 16 : 14,
+            fontSize,
             fontWeight: '600',
-            letterSpacing: 0.2,
+            letterSpacing: 0.1,
           }}
         >
           {children}

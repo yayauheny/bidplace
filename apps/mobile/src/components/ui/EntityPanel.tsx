@@ -1,51 +1,89 @@
+// OperationalPanel — panel for operational/transactional UI sections.
+// Use for: bid panel, order summary, admin controls.
+// Responsibility: slightly elevated surface with a clear heading slot.
+// Not for product cards or generic content containers.
 import type { ReactNode } from 'react';
 import { Text, YStack } from 'tamagui';
 
-import { mobileRadius, mobileSpacing } from '../../theme/tokens';
+import { mobileRadius, mobileSpacing, fontFamilies } from '../../theme/tokens';
+import { useAppThemePalette } from '../../theme/palette';
 
-type EntityPanelProps = {
+type OperationalPanelProps = {
   eyebrow?: string;
-  title: string;
+  title?: string;
   subtitle?: string;
   children?: ReactNode;
   footer?: ReactNode;
 };
 
-export function EntityPanel({
+export function OperationalPanel({
   eyebrow,
   title,
   subtitle,
   children,
   footer,
-}: EntityPanelProps) {
+}: OperationalPanelProps) {
+  const palette = useAppThemePalette();
+
   return (
     <YStack
       style={{
-        gap: mobileSpacing[3],
-        padding: mobileSpacing[3],
+        gap: mobileSpacing[4],
+        padding: mobileSpacing[4],
         borderWidth: 1,
-        borderColor: '#DFDDD7',
-        borderRadius: mobileRadius.md,
-        backgroundColor: '#FFFFFF',
+        borderColor: palette.borderColor,
+        borderRadius: mobileRadius.panel,
+        backgroundColor: palette.surface,
       }}
     >
-      <YStack style={{ gap: mobileSpacing[1] }}>
-        {eyebrow ? (
-          <Text color="$textMuted" style={{ fontSize: 12, lineHeight: 16, letterSpacing: 0.9, textTransform: 'uppercase' }}>
-            {eyebrow}
-          </Text>
-        ) : null}
-        <Text color="$text" style={{ fontSize: 18, lineHeight: 24, fontWeight: '600' }}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text color="$textMuted" style={{ fontSize: 14, lineHeight: 20 }}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </YStack>
+      {(eyebrow ?? title ?? subtitle) ? (
+        <YStack style={{ gap: mobileSpacing[1] }}>
+          {eyebrow ? (
+            <Text
+              style={{
+                color: palette.colorMuted,
+                fontFamily: fontFamilies.sansMedium,
+                fontSize: 11,
+                lineHeight: 14,
+                letterSpacing: 1.0,
+                textTransform: 'uppercase',
+              }}
+            >
+              {eyebrow}
+            </Text>
+          ) : null}
+          {title ? (
+            <Text
+              style={{
+                color: palette.color,
+                fontFamily: fontFamilies.sansStrong,
+                fontSize: 17,
+                lineHeight: 22,
+                fontWeight: '600',
+              }}
+            >
+              {title}
+            </Text>
+          ) : null}
+          {subtitle ? (
+            <Text
+              style={{
+                color: palette.colorMuted,
+                fontFamily: fontFamilies.sansRegular,
+                fontSize: 14,
+                lineHeight: 20,
+              }}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </YStack>
+      ) : null}
       {children}
       {footer}
     </YStack>
   );
 }
+
+// EntityPanel alias for existing imports during migration
+export { OperationalPanel as EntityPanel };
