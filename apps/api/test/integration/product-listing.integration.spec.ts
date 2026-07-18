@@ -94,6 +94,23 @@ describe('Product / Listing PostgreSQL invariants', () => {
     expect(realtime.emit).toHaveBeenCalledTimes(1);
   });
 
+  it('serializes concurrent accepted Bids into the canonical higher price', async () => {
+    const { product, buyer } = await fixture();
+    const secondBuyer = await prisma.user.create({ data: { email: `second.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37533${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Second', phoneVerifiedAt: new Date() } });
+    const listing = await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+    const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);
+
+    await Promise.all([
+      bids.place(buyer.id, listing.id, 'concurrent-one', { amount: 11 }),
+      bids.place(secondBuyer.id, listing.id, 'concurrent-two', { amount: 12 }),
+    ]);
+    const current = await prisma.listing.findUnique({ where: { id: listing.id } });
+
+    expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(2);
+    expect(current?.currentPrice.toNumber()).toBe(12);
+    expect(current?.bidCount).toBe(2);
+  });
+
   it('closes an expired Listing once and creates an Order for the deterministic top Bid', async () => {
     const { seller, buyer, product } = await fixture();
     const listing = await prisma.listing.create({ data: { ...listingData(product.id, 'LIVE'), endsAt: now, originalEndsAt: now } });
