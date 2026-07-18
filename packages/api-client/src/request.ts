@@ -58,9 +58,11 @@ function normalizeQuery(
 export function createRequestContext(
   options: ApiClientOptions,
 ): RequestContext {
+  const fetchImpl = options.fetchImpl ?? fetch;
+
   return {
     baseUrl: normalizeBaseUrl(options.baseUrl),
-    fetchImpl: options.fetchImpl ?? fetch,
+    fetchImpl: (input, init) => fetchImpl(input, init),
     ...(options.getAccessToken
       ? { getAccessToken: options.getAccessToken }
       : {}),
@@ -145,7 +147,7 @@ export async function requestJson<T>(
   let response: Response;
 
   try {
-    response = await context.fetchImpl(url, init);
+    response = await context.fetchImpl(url.toString(), init);
   } catch {
     throw createNetworkError();
   }

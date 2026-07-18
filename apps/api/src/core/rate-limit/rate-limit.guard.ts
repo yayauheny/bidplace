@@ -6,6 +6,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
@@ -31,8 +32,12 @@ export class RateLimitGuard implements CanActivate {
     @Inject(Reflector)
     private readonly reflector: Pick<Reflector, 'getAllAndOverride'>,
     private readonly rateLimitService: RateLimitService,
-    private readonly trustProxy = loadServerEnv().TRUST_PROXY,
-  ) {}
+    @Optional() @Inject('RATE_LIMIT_TRUST_PROXY') trustProxy?: boolean,
+  ) {
+    this.trustProxy = trustProxy ?? loadServerEnv().TRUST_PROXY;
+  }
+
+  private readonly trustProxy: boolean;
 
   canActivate(
     context: Pick<ExecutionContext, 'getHandler' | 'getClass' | 'switchToHttp'>,

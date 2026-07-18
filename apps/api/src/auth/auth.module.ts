@@ -25,6 +25,6 @@ import { RateLimitModule } from '../core/rate-limit';
       useFactory: () => loadServerEnv().JWT_SECRET,
     },
   ],
-  exports: [AuthService, BearerAuthGuard, OptionalBearerAuthGuard],
+  exports: [AuthService, AuthTokenService, BearerAuthGuard, OptionalBearerAuthGuard],
 })
 export class AuthModule {}
