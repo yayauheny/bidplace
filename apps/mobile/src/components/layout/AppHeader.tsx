@@ -27,7 +27,7 @@ export function AppHeader({ mode = 'public' }: AppHeaderProps) {
   const auth = useAuth();
   const [open, setOpen] = useState(false);
   const isDesktop = Boolean(media.desktop || media.wide);
-  const profileHref = auth.isAuthenticated ? '/profile' : '/login';
+  const profileHref = auth.isAuthenticated ? '/me/activity' : '/login';
   const sectionLabel =
     mode === 'admin' ? 'Admin' : mode === 'seller' ? 'Seller' : 'EN';
 

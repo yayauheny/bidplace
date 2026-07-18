@@ -32,7 +32,7 @@ type AuthContextValue = {
   readonly user: User | null;
   readonly isAuthenticated: boolean;
   readonly isAdmin: boolean;
-  readonly canCreateAuction: boolean;
+  readonly canCreateListing: boolean;
   readonly canModerate: boolean;
   readonly login: (input: LoginRequest) => Promise<AuthResponse>;
   readonly register: (input: RegisterRequest) => Promise<AuthResponse>;
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: user !== null,
       isAdmin: user?.role === 'admin',
-      canCreateAuction: user !== null,
+      canCreateListing: user !== null,
       canModerate: user?.role === 'admin',
       login: async (input: LoginRequest) => {
         const response = await api.auth.login(input);

@@ -1,3 +1,85 @@
-import { BadRequestException, Body, Controller, Param, Patch, UseGuards } from '@nestjs/common'; import { z } from 'zod'; import { BearerAuthGuard } from '../auth'; import { PrismaService } from '../core/database'; import { parseBody } from '../core/validation'; import { AdminGuard } from './admin.guard';
-const sellerStatus = z.object({ status: z.enum(['APPROVED', 'SUSPENDED']) }).strict(); const productStatus = z.object({ status: z.enum(['APPROVED', 'ARCHIVED']) }).strict();
-@Controller('admin') @UseGuards(BearerAuthGuard, AdminGuard) export class AdminController { constructor(private readonly prisma: PrismaService) {} @Patch('seller-profiles/:id/status') updateSeller(@Param('id') id: string, @Body() body: unknown) { return this.prisma.sellerProfile.update({ where: { id }, data: parseBody(sellerStatus, body) }); } @Patch('products/:id/status') async updateProduct(@Param('id') id: string, @Body() body: unknown) { const input = parseBody(productStatus, body); if (input.status === 'APPROVED') { const product = await this.prisma.product.findUnique({ where: { id }, include: { images: { select: { id: true } } } }); if (!product || !product.title || !product.story || !product.categoryId || !product.condition || !product.uniqueness || !product.provenance || !product.city || !product.deliveryInfo || product.images.length < 3) throw new BadRequestException('Product does not meet approval requirements'); } return this.prisma.product.update({ where: { id }, data: input }); } }
+import {
+  adminOrderCancellationRequestSchema,
+  adminOrderReplacementRequestSchema,
+  adminProductStatusUpdateRequestSchema,
+  adminSellerStatusUpdateRequestSchema,
+  sellerProfileResponseSchema,
+} from '@bidplace/contracts';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+
+import { BearerAuthGuard } from '../auth';
+import { PrismaService } from '../core/database';
+import { parseBody } from '../core/validation';
+import { OrdersService } from '../orders/orders.service';
+import { productSelect, toProductResponse } from '../products/products.mapper';
+import { AdminGuard } from './admin.guard';
+
+@Controller('admin')
+@UseGuards(BearerAuthGuard, AdminGuard)
+export class AdminController {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly orders: OrdersService,
+  ) {}
+
+  @Patch('seller-profiles/:id/status')
+  async updateSeller(@Param('id') id: string, @Body() body: unknown) {
+    const sellerProfile = await this.prisma.sellerProfile.update({
+      where: { id },
+      data: parseBody(adminSellerStatusUpdateRequestSchema, body),
+    });
+    return sellerProfileResponseSchema.parse({
+      sellerProfile: {
+        ...sellerProfile,
+        createdAt: sellerProfile.createdAt.toISOString(),
+        updatedAt: sellerProfile.updatedAt.toISOString(),
+      },
+    });
+  }
+
+  @Patch('products/:id/status')
+  async updateProduct(@Param('id') id: string, @Body() body: unknown) {
+    const input = parseBody(adminProductStatusUpdateRequestSchema, body);
+    if (input.status === 'APPROVED') {
+      const product = await this.prisma.product.findUnique({
+        where: { id },
+        include: { images: { select: { id: true } } },
+      });
+      if (
+        !product ||
+        !product.title ||
+        !product.story ||
+        !product.categoryId ||
+        !product.condition ||
+        !product.uniqueness ||
+        !product.provenance ||
+        !product.city ||
+        !product.deliveryInfo ||
+        product.images.length < 3
+      ) {
+        throw new BadRequestException('Product does not meet approval requirements');
+      }
+    }
+    const product = await this.prisma.product.update({
+      where: { id },
+      data: input,
+      select: productSelect,
+    });
+    return toProductResponse(product);
+  }
+
+  @Get('listings/:listingId/bids')
+  listRankedBids(@Param('listingId') listingId: string) {
+    return this.orders.listRankedBids(listingId);
+  }
+
+  @Post('orders/:publicId/cancel')
+  cancelOrder(@Param('publicId') publicId: string, @Body() body: unknown) {
+    return this.orders.cancel(publicId, parseBody(adminOrderCancellationRequestSchema, body));
+  }
+
+  @Post('orders/:publicId/replacement')
+  replaceOrder(@Param('publicId') publicId: string, @Body() body: unknown) {
+    return this.orders.replace(publicId, parseBody(adminOrderReplacementRequestSchema, body));
+  }
+}

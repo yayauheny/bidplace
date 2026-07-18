@@ -1,8 +1,8 @@
 import { QueryClient, type QueryKey } from '@tanstack/react-query';
 
-export const catalogueKeys = {
-  all: ['catalogue'] as const,
-  categories: ['catalogue', 'categories'] as const,
+export const productKeys = {
+  all: ['products'] as const,
+  categories: ['products', 'categories'] as const,
 };
 
 const authScopedRoots = new Set(['user', 'seller', 'admin']);

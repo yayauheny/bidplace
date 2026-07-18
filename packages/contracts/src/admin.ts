@@ -1,35 +1,43 @@
 import { z } from 'zod';
 
-import { listingSchema } from './listing';
-import { userSchema } from './user';
+import { bidSchema } from './bid';
+import {
+  orderCancellationReasonSchema,
+  productStatusSchema,
+  sellerStatusSchema,
+} from './enums';
+import { orderResponseSchema } from './order';
+import { uuidSchema } from './primitives';
+import { sellerProfileResponseSchema } from './seller-profile';
 
-export const adminUsersResponseSchema = z
-  .object({
-    users: z.array(userSchema),
-  })
+export const adminSellerStatusUpdateRequestSchema = z
+  .object({ status: sellerStatusSchema.extract(['APPROVED', 'SUSPENDED']) })
+  .strict();
+export const adminProductStatusUpdateRequestSchema = z
+  .object({ status: productStatusSchema.extract(['APPROVED', 'ARCHIVED']) })
+  .strict();
+export const adminOrderCancellationRequestSchema = z
+  .object({ reason: orderCancellationReasonSchema })
+  .strict();
+export const adminOrderReplacementRequestSchema = z
+  .object({ bidId: uuidSchema })
+  .strict();
+export const adminRankedBidsResponseSchema = z
+  .object({ bids: z.array(bidSchema) })
   .strict();
 
-export const adminListingsResponseSchema = z
-  .object({
-    listings: z.array(listingSchema),
-  })
-  .strict();
+export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
+export const adminOrderResponseSchema = orderResponseSchema;
 
-export const adminUserResponseSchema = z
-  .object({
-    user: userSchema,
-  })
-  .strict();
-
-export const adminListingResponseSchema = z
-  .object({
-    listing: listingSchema,
-  })
-  .strict();
-
-export type AdminUsersResponse = z.infer<typeof adminUsersResponseSchema>;
-export type AdminListingsResponse = z.infer<
-  typeof adminListingsResponseSchema
+export type AdminSellerStatusUpdateRequest = z.infer<
+  typeof adminSellerStatusUpdateRequestSchema
 >;
-export type AdminUserResponse = z.infer<typeof adminUserResponseSchema>;
-export type AdminListingResponse = z.infer<typeof adminListingResponseSchema>;
+export type AdminProductStatusUpdateRequest = z.infer<
+  typeof adminProductStatusUpdateRequestSchema
+>;
+export type AdminOrderCancellationRequest = z.infer<
+  typeof adminOrderCancellationRequestSchema
+>;
+export type AdminOrderReplacementRequest = z.infer<
+  typeof adminOrderReplacementRequestSchema
+>;

@@ -8,14 +8,12 @@ import { AppSheet } from '../ui';
 type MobileNavigationDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profileHref: '/profile' | '/login';
+  profileHref: '/me/activity' | '/login';
 };
 
 const navItems = [
   { label: 'Главная', href: '/' as const },
-  { label: 'Каталог', href: '/catalog' as const },
-  { label: 'Коллекции', href: '/catalog' as const },
-  { label: 'О нас', href: '/catalog' as const },
+  { label: 'Мои покупки', href: '/me/activity' as const },
 ];
 
 export function MobileNavigationDrawer({
