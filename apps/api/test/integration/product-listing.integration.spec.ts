@@ -43,7 +43,7 @@ function listingData(productId: string, status: 'SCHEDULED' | 'LIVE' | 'ENDED') 
 
 beforeAll(async () => { context = await createIntegrationDatabaseContext(); prisma = context.prisma; });
 afterEach(reset);
-afterAll(async () => { await context.cleanup(); });
+afterAll(async () => { await context?.cleanup(); });
 
 describe('Product / Listing PostgreSQL invariants', () => {
   it('allows only one scheduled or live Listing for a Product', async () => {
