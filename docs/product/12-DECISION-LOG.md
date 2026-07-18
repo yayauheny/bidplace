@@ -571,3 +571,14 @@ Status: Confirmed
 ### Decision
 
 После завершённого Listing создаётся privacy-safe `Order` без payment/delivery machine. SellerProfile и Product используют минимальные admin-only approval transitions. Automatic winner replacement и visual redesign не входят в текущую реализацию; light redesign отложен в Task B.
+
+---
+
+## DEC-041 — Task A closed-pilot verification boundary
+
+Date: 2026-07-19
+Status: Confirmed
+
+### Decision
+
+Task A is accepted for a closed pilot with manual controls after its focused Chromium E2E and full repository gates. WebKit, full browser/device matrix, visual regression, exhaustive seller/admin E2E, accessibility automation and ten-session rehearsal are release hardening after Task B, not prerequisites for the pilot.

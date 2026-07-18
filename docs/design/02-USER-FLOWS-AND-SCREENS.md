@@ -1,6 +1,6 @@
 # bidplace — пользовательские маршруты и экраны
 
-Последнее обновление: 2026-07-18
+Последнее обновление: 2026-07-19
 
 Статус: MVP flow confirmed by product docs; implementation snapshot is Partial
 
@@ -19,7 +19,7 @@
 | My purchases        | `/me/activity`        | Derived Activity statuses, Product links and allowed Order links.                                                                                                                                                                                                             | Partial: visual QA and richer state copy remain.                 |
 | Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin.                                                                                                                                                                                                                  | Partial: role-specific mobile QA remains.                        |
 
-The retired `/auctions/[slug]` public route is not a Product route and must not be restored as a compatibility screen.
+The retired `/auctions/[slug]` public route is not a Product route and must not be restored as a compatibility screen. Chromium closed-pilot verification confirms the route is unmatched, and verifies canonical Product, Activity and Order navigation.
 
 ## Seller routes
 

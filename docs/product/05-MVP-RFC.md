@@ -450,3 +450,7 @@ Minimum success:
 - seller не завершает;
 - ads не конвертируются;
 - code не проходит gate.
+
+## Implementation verification — 2026-07-19
+
+Task A is completed for a closed pilot with manual controls. The implementation follows the current Product/Listing contract: BYN auction only, no reserve or Buy Now, verified-phone bids, soft close, and authorized Orders. Chromium verifies the canonical buyer path and authorization boundaries; release-scale browser/device/accessibility coverage remains explicitly deferred in `11-PROJECT-STATUS.md`.

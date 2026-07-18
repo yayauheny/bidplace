@@ -310,3 +310,7 @@ Fix without changing bid facts.
 - deletion with audit;
 - reconnect;
 - out-of-order WebSocket.
+
+## Implementation verification — 2026-07-19
+
+Task A closes the closed-pilot gate with unit/integration evidence for bid idempotency, soft close, close-vs-Bid concurrency and Order privacy, plus Chromium coverage for verified-phone bidding, outsider Order denial and ordinary-user admin denial. Production SMS delivery, multi-instance scheduler coordination and broader browser/device rehearsal remain future operational work.

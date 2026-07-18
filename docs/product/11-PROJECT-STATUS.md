@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-07-18
-Статус: Partial — Product / Listing migration реализована, но pilot UI и полный integration coverage ещё не завершены.
+Последнее обновление: 2026-07-19
+Статус: Task A completed for closed pilot with manual controls.
 
 ## Реализовано
 
@@ -22,7 +22,7 @@
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Seller and admin mobile flows | Owner/public Seller APIs, Product/Listing forms, later Product draft editing, draft image upload/review/delete/reordering, and compact `/admin` status and manual Order replacement controls exist.             | Device/accessibility QA remains incomplete.                                                                                               |
 | Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch.                            | Mobile/device accessibility QA remains.                                                                                                   |
-| Tests                         | API unit suite includes Product, Listing, Order, OTP, Activity derivation and realtime privacy coverage; mobile query-cache suite and pricing boundaries pass; clean migration and seed were executed manually. | Required PostgreSQL invariant/idempotency coverage and browser E2E remain incomplete.                                                     |
+| Tests                         | API unit/integration suites, clean migration/reset/seed, full lint/typecheck/build gates and Chromium E2E pass. `apps/mobile/e2e/closed-pilot.spec.ts` covers Product → UI login → test OTP → Bid → Activity → ended Order, outsider Order denial, ordinary-user admin denial, permitted admin Order access and absent legacy route. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
 ## Intentional MVP boundaries
@@ -31,6 +31,16 @@
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.
 - Manual admin replacement preserves cancelled Order history; automatic replacement is Planned.
+
+## Closed-pilot verification — 2026-07-19
+
+- Frozen workspace install; full lint and typecheck; API build; Expo web export; Prisma validation; isolated reset and seed passed.
+- API unit and PostgreSQL integration suites passed.
+- Chromium E2E passed: 3 tests, real Expo web + API + isolated `bidplace_e2e` database + local test OTP adapter.
+
+## Post-Task-B release hardening TODO
+
+- WebKit and full cross-browser matrix; physical-device QA; visual regression; exhaustive seller/admin E2E; full accessibility automation; ten-session browser rehearsal.
 
 ## Checks executed for this snapshot
 

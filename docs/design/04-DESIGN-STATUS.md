@@ -1,6 +1,6 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-07-18
+Дата снимка: 2026-07-19
 
 Статус документа: Partial — Task A изменила функциональные routes без визуального redesign и без approved Figma source.
 
@@ -9,7 +9,7 @@
 | Экран                      | Route                                               | Статус                              | Evidence / remaining work                                                                                                                                                                                         |
 | -------------------------- | --------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public Product list        | `/`                                                 | Implemented without approved design | `product-list-screen.tsx` reads approved Products; loading and error states exist.                                                                                                                                |
-| Product detail and bidding | `/product/[publicId]`                               | Partial                             | Images, value fields, Listing/BYN state, server-deadline countdown, bid history, OTP controls, Activity-derived participation, winner Order link and reconnect refetch exist. Device and accessibility QA remain. |
+| Product detail and bidding | `/product/[publicId]`                               | Closed-pilot verified               | Chromium verifies load, UI login, OTP, rejected unverified bid, accepted Bid and current-price update; device and accessibility QA remain. |
 | My purchases               | `/me/activity`                                      | Partial                             | Activity API projection and basic screen exist; state-specific copy and visual QA remain.                                                                                                                         |
 | Order                      | `/order/[publicId]`                                 | Partial                             | Authorized Order summary exists; seller/buyer role copy and final mobile QA remain.                                                                                                                               |
 | Seller profile             | `/(seller)/profile`                                 | Implemented without approved design | Canonical SellerProfile create/edit/status flow; loading/error/submission states exist.                                                                                                                           |

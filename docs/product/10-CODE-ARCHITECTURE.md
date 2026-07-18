@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-07-18
+Последнее обновление: 2026-07-19
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -38,4 +38,4 @@ The API currently assumes a single scheduler and Socket.IO instance. Before mult
 
 ## Verification
 
-The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-18. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.
+The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-19. Closed-pilot Chromium verification starts real API and Expo web servers against isolated `bidplace_e2e`, provisions deterministic users/data, writes OTP only to a test-only file configured by `TEST_OTP_FILE`, and uses a controlled close fixture to assert the canonical Order route. `packages/api-client` wraps the selected fetch implementation so browser-native `fetch` retains its receiver. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.
