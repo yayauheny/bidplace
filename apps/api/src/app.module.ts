@@ -18,6 +18,7 @@ import { OtpModule } from './otp/otp.module';
 import { AdminModule } from './admin/admin.module';
 import { ActivityModule } from './activity/activity.module';
 import { ImagesModule } from './images/images.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ImagesModule } from './images/images.module';
     AdminModule,
     ActivityModule,
     ImagesModule,
+    RealtimeModule,
   ],
   providers: [
     {

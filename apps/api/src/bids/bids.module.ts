@@ -1,2 +1,2 @@
-import { Module } from '@nestjs/common'; import { AuthModule } from '../auth'; import { DatabaseModule } from '../core/database'; import { ClockModule } from '../core/time'; import { BidsController } from './bids.controller'; import { BidsService } from './bids.service';
-@Module({ imports: [AuthModule, DatabaseModule, ClockModule], controllers: [BidsController], providers: [BidsService], exports: [BidsService] }) export class BidsModule {}
+import { Module } from '@nestjs/common'; import { AuthModule } from '../auth'; import { DatabaseModule } from '../core/database'; import { ClockModule } from '../core/time'; import { RealtimeModule } from '../realtime/realtime.module'; import { BidsController } from './bids.controller'; import { BidsService } from './bids.service';
+@Module({ imports: [AuthModule, DatabaseModule, ClockModule, RealtimeModule], controllers: [BidsController], providers: [BidsService], exports: [BidsService] }) export class BidsModule {}
