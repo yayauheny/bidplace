@@ -130,4 +130,27 @@ describe('Product / Listing PostgreSQL invariants', () => {
     expect(closed?.status).toBe('ENDED');
     expect(realtime.emit).toHaveBeenCalledTimes(1);
   });
+
+  it('rejects a Bid at the close boundary while the Listing closes with its existing winner', async () => {
+    const { seller, buyer, product } = await fixture();
+    const nextBuyer = await prisma.user.create({ data: { email: `next.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37525${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Next', phoneVerifiedAt: new Date() } });
+    const listing = await prisma.listing.create({ data: { ...listingData(product.id, 'LIVE'), endsAt: now, originalEndsAt: now } });
+    const winner = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: buyer.id, idempotencyKey: 'existing-winner', amount: new Prisma.Decimal(10) } });
+    const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);
+    const lifecycle = new ListingLifecycleService(prisma as never, new FixedClock(), { generate: () => 'orderPub002' } as never, { emit: vi.fn() } as never);
+    void seller;
+
+    const [close, bid] = await Promise.allSettled([
+      lifecycle.close(listing.id, now),
+      bids.place(nextBuyer.id, listing.id, 'close-race', { amount: 11 }),
+    ]);
+    const closed = await prisma.listing.findUnique({ where: { id: listing.id } });
+    const order = await prisma.order.findFirst({ where: { listingId: listing.id } });
+
+    expect(close).toMatchObject({ status: 'fulfilled', value: true });
+    expect(bid).toMatchObject({ status: 'rejected', reason: { message: 'Listing is not open for bids' } });
+    expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(1);
+    expect(closed?.status).toBe('ENDED');
+    expect(order?.sourceBidId).toBe(winner.id);
+  });
 });
