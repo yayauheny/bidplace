@@ -20,6 +20,16 @@ export const sellerProfileSchema = z
   })
   .strict();
 
+export const publicSellerProfileSchema = sellerProfileSchema.pick({
+  slug: true,
+  sellerType: true,
+  storeName: true,
+  country: true,
+  contactPreference: true,
+  socialLink: true,
+  shortDescription: true,
+});
+
 export const sellerProfileCreateRequestSchema = z
   .object({
     slug: slugSchema,

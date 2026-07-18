@@ -1,4 +1,4 @@
-import { z } from 'zod'; import { listingSchema } from './listing'; import { productSchema } from './product'; import { publicSellerProfileSchema } from './public-seller'; import { paginationMetaSchema } from './pagination'; import { moneyAmountSchema } from './primitives';
+import { z } from 'zod'; import { listingSchema } from './listing'; import { productSchema } from './product'; import { publicSellerProfileSchema } from './seller-profile'; import { paginationMetaSchema } from './pagination'; import { moneyAmountSchema } from './primitives';
 export const publicProductListItemSchema = z.object({ product: productSchema, sellerProfile: publicSellerProfileSchema, listing: listingSchema.nullable() }).strict();
 export const productListResponseSchema = z.object({ products: z.array(publicProductListItemSchema), pagination: paginationMetaSchema }).strict();
 export const publicProductDetailResponseSchema = z.object({ product: productSchema, sellerProfile: publicSellerProfileSchema, listing: listingSchema.nullable(), minimumNextBid: moneyAmountSchema.nullable() }).strict();
