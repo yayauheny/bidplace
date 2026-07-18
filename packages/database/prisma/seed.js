@@ -1,4 +1,4 @@
-const { Prisma, PrismaClient } = require('@bidplace/database');
+const { Prisma, PrismaClient } = require('../dist');
 
 const prisma = new PrismaClient();
 const money = (value) => new Prisma.Decimal(value);
