@@ -34,9 +34,9 @@
 ## Checks executed for this snapshot
 
 - `tsc` for contracts, API client, API and mobile;
-- API Vitest suite: 12 files, 57 tests;
+- API Vitest suite: 19 files, 72 tests;
 - mobile Vitest suite: 1 file, 3 tests;
-- clean PostgreSQL migration reset and deterministic seed;
+- isolated PostgreSQL integration suite: 2 files, 5 tests; clean migration reset and deterministic seed;
 - direct SQL confirmation of Listing seed states and both partial unique indexes.
 
 See `10-CODE-ARCHITECTURE.md` for boundaries and `05-MVP-RFC.md` for product contract gaps.
