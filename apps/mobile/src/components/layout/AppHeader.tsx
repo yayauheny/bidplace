@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, usePathname } from 'expo-router';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { Text, XStack, YStack, useMedia } from 'tamagui';
@@ -24,14 +24,12 @@ function ActionLabel({ children }: { children: ReactNode }) {
 
 export function AppHeader({ mode = 'public' }: AppHeaderProps) {
   const media = useMedia();
-  const pathname = usePathname();
   const auth = useAuth();
   const [open, setOpen] = useState(false);
   const isDesktop = Boolean(media.desktop || media.wide);
   const profileHref = auth.isAuthenticated ? '/profile' : '/login';
   const sectionLabel =
     mode === 'admin' ? 'Admin' : mode === 'seller' ? 'Seller' : 'EN';
-  const cartCount = pathname.startsWith('/catalog') ? '08' : '00';
 
   return (
     <>
@@ -81,21 +79,9 @@ export function AppHeader({ mode = 'public' }: AppHeaderProps) {
             }}
           >
             <ActionLabel>{sectionLabel}</ActionLabel>
-            {isDesktop ? (
-              <Link href="/catalog" asChild>
-                <Pressable accessibilityRole="link">
-                  <ActionLabel>Search</ActionLabel>
-                </Pressable>
-              </Link>
-            ) : null}
             <Link href={profileHref} asChild>
               <Pressable accessibilityRole="link">
                 <ActionLabel>Profile</ActionLabel>
-              </Pressable>
-            </Link>
-            <Link href="/catalog" asChild>
-              <Pressable accessibilityRole="link">
-                <ActionLabel>{`Cart ${cartCount}`}</ActionLabel>
               </Pressable>
             </Link>
           </XStack>

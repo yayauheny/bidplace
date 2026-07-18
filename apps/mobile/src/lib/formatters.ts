@@ -31,14 +31,14 @@ function getCurrencyFormatter(
   return formatter;
 }
 
-export function formatCurrencyAmount(value: number, currency = 'USD') {
+export function formatCurrencyAmount(value: number, currency = 'BYN') {
   return getCurrencyFormatter('ru-RU', currency, 2).format(value);
 }
 
 export function formatDisplayPrice(
   value: number,
-  currency = 'USD',
-  locale = 'en-US',
+  currency = 'BYN',
+  locale = 'ru-BY',
 ) {
   return getCurrencyFormatter(locale, currency, 0).format(value);
 }

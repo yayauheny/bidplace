@@ -12,8 +12,8 @@ type PriceProps = {
 
 export function Price({
   value,
-  currency = 'USD',
-  locale = 'en-US',
+  currency = 'BYN',
+  locale = 'ru-BY',
   tone = 'default',
 }: PriceProps) {
   const palette = useAppThemePalette();
