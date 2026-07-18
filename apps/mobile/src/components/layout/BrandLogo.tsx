@@ -4,6 +4,7 @@ import { Pressable } from 'react-native';
 import { Text, XStack } from 'tamagui';
 
 import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
+import icon from '../../../assets/icon.png';
 
 type BrandLogoProps = {
   compact?: boolean;
@@ -17,7 +18,7 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
       <Pressable accessibilityRole="link" accessibilityLabel="На главную">
         <XStack style={{ alignItems: 'center', gap: mobileSpacing[2] }}>
           <Image
-            source={require('../../../assets/icon.png')}
+            source={icon}
             style={{
               width: size,
               height: size,

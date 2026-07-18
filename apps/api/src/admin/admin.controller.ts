@@ -11,8 +11,7 @@ import { BearerAuthGuard } from '../auth';
 import { PrismaService } from '../core/database';
 import { parseBody } from '../core/validation';
 import { OrdersService } from '../orders/orders.service';
-import { productSelect, toProductResponse } from '../products/products.mapper';
-import { toContractProduct } from '../products/products.mapper';
+import { productSelect, toContractProduct, toProductResponse } from '../products/products.mapper';
 import { AdminGuard } from './admin.guard';
 
 @Controller('admin')

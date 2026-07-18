@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "node --env-file ../../.env ./node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma",
+    "generate": "node ./node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma",
     "db:generate": "pnpm run generate",
     "migrate": "node --env-file ../../.env ./node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma",
     "db:migrate": "pnpm run migrate",

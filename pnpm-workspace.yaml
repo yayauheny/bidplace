@@ -13,3 +13,4 @@ allowBuilds:
   argon2: true
   esbuild: true
   prisma: true
+  unrs-resolver: false
