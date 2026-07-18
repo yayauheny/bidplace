@@ -53,3 +53,81 @@ For high-risk backend changes, use both `nest` and `security`.
 
 - Use short, specific branch and commit names.
 - Do not mention agents or automation in branches, commits, or pull requests.
+
+<!-- BIDPLACE_PROJECT_RULES_START -->
+
+## Bidplace Project Documentation
+
+Before every task in this repository:
+
+1. Read `docs/product/00-PROJECT-INDEX.md`.
+2. Read `docs/product/01-PRODUCT-FOUNDATION.md`.
+3. Read `docs/product/11-PROJECT-STATUS.md`.
+4. Use the index to open only the owner documents relevant to the task.
+5. Identify the affected product behavior, its owner document, and any conflict with confirmed bidplace principles before changing code.
+
+The core product principle is value. bidplace is for direct sales of significant, authored, limited, or personally connected items. General resale, resellers, mass-market goods, and artificial bids conflict with the product.
+
+### Document Ownership
+
+- Product boundaries and value: `01-PRODUCT-FOUNDATION.md`.
+- Product history: `02-PRODUCT-EVOLUTION.md`.
+- Market and competitive patterns: `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md`.
+- Exact MVP behavior: `05-MVP-RFC.md`.
+- Development waves: `06-ROADMAP-24-MONTHS.md`.
+- Growth and creator launch: `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`.
+- Seller and item eligibility: `08-SELLER-AND-ITEM-POLICY.md`.
+- Bids, provenance, privacy, and integrity: `09-TRUST-AND-AUCTION-INTEGRITY.md`.
+- Architecture and long-lived technical decisions: `10-CODE-ARCHITECTURE-AND-DESIGN.md`.
+- Current implementation state: `11-PROJECT-STATUS.md`.
+- Decision history: `12-DECISION-LOG.md`.
+
+Keep one owner per claim. In other documents, add a short conclusion and a link instead of copying the full description.
+
+### Protected Product Documents
+
+Do not change these during ordinary development work without an explicit founder decision:
+
+- `01-PRODUCT-FOUNDATION.md`;
+- `02-PRODUCT-EVOLUTION.md`;
+- `03-CUSTDEV-TAISIA.md`;
+- `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md`;
+- `06-ROADMAP-24-MONTHS.md`;
+- `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`;
+- `08-SELLER-AND-ITEM-POLICY.md`;
+- `09-TRUST-AND-AUCTION-INTEGRITY.md`.
+
+If a requested change conflicts with a protected document, identify the exact conflict, stop the product-changing part, and request an explicit founder decision.
+
+### Updating Documentation with Code
+
+After every task that changes code or actual system behavior:
+
+1. Update `docs/product/11-PROJECT-STATUS.md` with `Implemented`, `Partial`, `Not implemented`, or `Needs verification`.
+2. Cite concrete modules, APIs, tables, screens, and tests that support the status.
+3. Do not mark a feature `Implemented` when critical checks, server behavior, primary errors, or verification are missing.
+4. Update `docs/product/10-CODE-ARCHITECTURE-AND-DESIGN.md` only when architecture boundaries, domain models, app/package structure, contracts, persistence, security invariants, or shared design principles changed.
+5. Check the result against `docs/product/05-MVP-RFC.md` and record implementation gaps in `11-PROJECT-STATUS.md`.
+
+Do not rewrite `05-MVP-RFC.md` merely because current code differs. Change it only after an explicit product-contract decision.
+
+### Decisions and Research
+
+- `12-DECISION-LOG.md` is append-oriented. Add an entry only for an explicit new decision, a selected alternative, a revised decision, or a rejected idea.
+- Do not infer a founder decision or rewrite previous entries. A revision must reference the earlier decision.
+- `docs/research/raw/*` is an immutable primary-material archive. Never rewrite, delete, or promote raw claims directly to confirmed product decisions.
+- Store new research in a separate dated file and move conclusions to the appropriate owner document only with the correct status and source.
+- Keep product statuses (`Confirmed`, `Hypothesis`, `Planned`, `Rejected`) separate from code statuses.
+
+### Task Completion
+
+Before the final response:
+
+1. Run the relevant checks and tests.
+2. Verify code against `05-MVP-RFC.md` and architecture changes against `10-CODE-ARCHITECTURE-AND-DESIGN.md`.
+3. Update `11-PROJECT-STATUS.md` for behavior changes.
+4. Update `12-DECISION-LOG.md` only when an explicit decision was made.
+5. Confirm that code and canonical documentation do not silently contradict each other.
+6. Report code changes, documentation changes, status changes, remaining gaps, and open founder decisions.
+
+<!-- BIDPLACE_PROJECT_RULES_END -->
