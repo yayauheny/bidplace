@@ -1,0 +1,2 @@
+import { Controller, Get, Param, UseGuards } from '@nestjs/common'; import { BearerAuthGuard, CurrentUser } from '../auth'; import { OrdersService } from './orders.service';
+@Controller('orders') @UseGuards(BearerAuthGuard) export class OrdersController { constructor(private readonly orders: OrdersService) {} @Get(':publicId') get(@CurrentUser() auth: { sub: string; role: string }, @Param('publicId') publicId: string) { return this.orders.get(auth.sub, auth.role, publicId); } }

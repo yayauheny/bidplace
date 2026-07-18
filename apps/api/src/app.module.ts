@@ -11,6 +11,9 @@ import { ClockModule } from './core/time';
 import { PublicIdModule } from './core/public-id';
 import { ProductsModule } from './products/products.module';
 import { ListingsModule } from './listings/listings.module';
+import { BidsModule } from './bids/bids.module';
+import { LifecycleModule } from './lifecycle/lifecycle.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { ListingsModule } from './listings/listings.module';
     AuthModule,
     ProductsModule,
     ListingsModule,
+    BidsModule,
+    LifecycleModule,
+    OrdersModule,
   ],
   providers: [
     {
