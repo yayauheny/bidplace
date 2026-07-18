@@ -9,6 +9,7 @@ export {
   type ApiClientErrorKind,
 } from './errors';
 import { createListingsClient } from './listings';
+import { createImagesClient } from './images';
 import { createOrdersClient } from './orders';
 import { createProductsClient } from './products';
 import {
@@ -32,6 +33,7 @@ export function createApiClient(options: ApiClientOptions) {
     auth: createAuthClient(context),
     activity: createActivityClient(context),
     listings: createListingsClient(context),
+    images: createImagesClient(context),
     products: createProductsClient(context),
     orders: createOrdersClient(context),
     sellers: createSellersClient(context),
