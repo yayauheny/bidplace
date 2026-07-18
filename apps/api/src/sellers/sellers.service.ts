@@ -1,5 +1,6 @@
 import {
   publicSellerDetailResponseSchema,
+  sellerProductListResponseSchema,
   sellerProfileResponseSchema,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
@@ -7,6 +8,7 @@ import {
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../core/database';
+import { productSelect, toContractProduct } from '../products/products.mapper';
 import { ProductsService } from '../products/products.service';
 
 @Injectable()
@@ -50,6 +52,13 @@ export class SellersService {
     }).catch(() => null);
     if (!sellerProfile) throw new NotFoundException('Seller profile not found');
     return this.toProfileResponse(sellerProfile);
+  }
+
+  async listProducts(userId: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({ where: { userId }, select: { id: true } });
+    if (!sellerProfile) throw new NotFoundException('Seller profile not found');
+    const products = await this.prisma.product.findMany({ where: { sellerProfileId: sellerProfile.id }, select: productSelect, orderBy: { createdAt: 'desc' } });
+    return sellerProductListResponseSchema.parse({ products: products.map(toContractProduct) });
   }
 
   async getPublic(slug: string) {

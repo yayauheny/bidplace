@@ -30,6 +30,12 @@ export class SellersController {
     return this.sellers.update(auth.sub, parseBody(sellerProfileUpdateRequestSchema, body));
   }
 
+  @Get('seller/products')
+  @UseGuards(BearerAuthGuard)
+  listProducts(@CurrentUser() auth: { sub: string }) {
+    return this.sellers.listProducts(auth.sub);
+  }
+
   @Get('sellers/:slug/detail')
   getPublic(@Param('slug') slug: string) {
     return this.sellers.getPublic(slug);
