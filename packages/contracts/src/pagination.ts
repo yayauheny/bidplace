@@ -7,4 +7,12 @@ export const paginationQuerySchema = z
   })
   .strict();
 
+export const paginationMetaSchema = z
+  .object({
+    page: z.number().int().min(1),
+    limit: z.number().int().min(1).max(100),
+    total: z.number().int().nonnegative(),
+  })
+  .strict();
+
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
