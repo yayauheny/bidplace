@@ -1,0 +1,2 @@
+import { Controller, Get, UseGuards } from '@nestjs/common'; import { BearerAuthGuard, CurrentUser } from '../auth'; import { ActivityService } from './activity.service';
+@Controller('me') @UseGuards(BearerAuthGuard) export class ActivityController { constructor(private readonly activity: ActivityService) {} @Get('activity') get(@CurrentUser() auth: { sub: string }) { return this.activity.get(auth.sub); } }

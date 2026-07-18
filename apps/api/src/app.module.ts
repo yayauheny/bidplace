@@ -15,6 +15,8 @@ import { BidsModule } from './bids/bids.module';
 import { LifecycleModule } from './lifecycle/lifecycle.module';
 import { OrdersModule } from './orders/orders.module';
 import { OtpModule } from './otp/otp.module';
+import { AdminModule } from './admin/admin.module';
+import { ActivityModule } from './activity/activity.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { OtpModule } from './otp/otp.module';
     LifecycleModule,
     OrdersModule,
     OtpModule,
+    AdminModule,
+    ActivityModule,
   ],
   providers: [
     {
