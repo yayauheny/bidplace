@@ -1,11 +1,11 @@
-# bidplace — код, архитектура и дизайн
+# bidplace — архитектура кода
 
 Последнее обновление: 2026-07-18  
 Статус: Confirmed как целевая рамка; фактический снимок сверён с репозиторием 2026-07-18
 
 ## 1. Назначение
 
-Этот документ связывает целевые архитектурные правила bidplace с фактической структурой кода. Точный статус функций и расхождения с MVP принадлежат `11-PROJECT-STATUS.md`.
+Этот документ фиксирует фактическую структуру кода и долгоживущие технические границы. Точный статус функций и расхождения с MVP принадлежат `11-PROJECT-STATUS.md`; дизайн имеет отдельных владельцев в `../design/`.
 
 ## 2. Фактический baseline
 
@@ -209,16 +209,11 @@ Seed требует исправления: он использует удалё
 - Не заменять `Auction` общей `Sale` abstraction до появления минимум двух дополнительных форматов.
 - Payments после validation требуют Order, Payment, Ledger, Payout, Refund и Delivery; balance только через ledger.
 
-## 15. Design principles
+## 15. Связь с дизайном
 
-- content first: предмет, человек, история, детали, затем аукцион;
-- mobile first для social traffic;
-- calm urgency без дешёвого давления;
-- editorial quality и крупные изображения;
-- visible trust signals;
-- без mass-market языка, discount-first UI и бесконечных шумных grids.
+Визуальные принципы принадлежат `../design/01-DESIGN-FOUNDATION.md`, пользовательские маршруты — `../design/02-USER-FLOWS-AND-SCREENS.md`, общие компоненты и tokens — `../design/03-DESIGN-SYSTEM.md`, фактическая готовность UI — `../design/04-DESIGN-STATUS.md`.
 
-Фактические UI-расхождения перечислены в `11-PROJECT-STATUS.md`; текущий storefront не является основанием менять продуктовый контракт.
+Кодовые границы остаются следующими: общие визуальные значения живут в `packages/design-tokens`, mobile theme и Tamagui configuration — в `apps/mobile/src/theme` и `apps/mobile/tamagui.config.ts`, переиспользуемые UI-компоненты — в `apps/mobile/src/components`. Текущий UI не является основанием менять продуктовый контракт.
 
 ## 16. Anti-patterns
 

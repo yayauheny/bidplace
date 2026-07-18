@@ -23,23 +23,25 @@
 
 ## 2. Карта файлов
 
-| Файл | Единственная зона ответственности |
-|---|---|
-| `00-PROJECT-INDEX.md` | Навигация, правила чтения и обновления |
-| `01-PRODUCT-FOUNDATION.md` | Неизменяемое ядро: ценность, миссия, границы, North Star |
-| `02-PRODUCT-EVOLUTION.md` | История появления идеи и хронология изменений |
-| `03-CUSTDEV-TAISIA.md` | Полный разбор первого интервью |
-| `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать |
-| `05-MVP-RFC.md` | Точный контракт первой рабочей версии и пилота |
-| `06-ROADMAP-24-MONTHS.md` | Волны развития на два года и переходные критерии |
-| `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов |
-| `08-SELLER-AND-ITEM-POLICY.md` | Кто может продавать и какие предметы допустимы |
-| `09-TRUST-AND-AUCTION-INTEGRITY.md` | Честность ставок, provenance, приватность и расследования |
-| `10-CODE-ARCHITECTURE-AND-DESIGN.md` | Связь кода, доменной модели, UX и долгосрочного продукта |
-| `11-PROJECT-STATUS.md` | Часто меняющийся фактический статус кода |
-| `12-DECISION-LOG.md` | Реестр решений, альтернатив, причин и условий пересмотра |
-| `../research/README.md` | Правила хранения сырого исследования |
-| `../research/raw/*` | Архив исходных отчётов; не каноническое решение |
+| Файл                                    | Единственная зона ответственности                                            |
+| --------------------------------------- | ---------------------------------------------------------------------------- |
+| `00-PROJECT-INDEX.md`                   | Навигация, правила чтения и обновления                                       |
+| `01-PRODUCT-FOUNDATION.md`              | Неизменяемое ядро: ценность, миссия, границы, North Star                     |
+| `02-PRODUCT-EVOLUTION.md`               | История появления идеи и хронология изменений                                |
+| `03-CUSTDEV-TAISIA.md`                  | Полный разбор первого интервью                                               |
+| `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать                                     |
+| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота                               |
+| `06-ROADMAP-24-MONTHS.md`               | Волны развития на два года и переходные критерии                             |
+| `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов                                            |
+| `08-SELLER-AND-ITEM-POLICY.md`          | Кто может продавать и какие предметы допустимы                               |
+| `09-TRUST-AND-AUCTION-INTEGRITY.md`     | Честность ставок, provenance, приватность и расследования                    |
+| `10-CODE-ARCHITECTURE.md`               | Фактическая архитектура, stack, contracts, persistence и технические границы |
+| `11-PROJECT-STATUS.md`                  | Часто меняющийся фактический статус кода                                     |
+| `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
+| `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
+| `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
+| `../research/README.md`                 | Правила хранения сырого исследования                                         |
+| `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |
 
 ## 3. Минимальные пакеты чтения
 
@@ -55,8 +57,20 @@
 
 - `05-MVP-RFC.md`
 - `06-ROADMAP-24-MONTHS.md`
-- `10-CODE-ARCHITECTURE-AND-DESIGN.md`
+- `10-CODE-ARCHITECTURE.md`
 - релевантные решения из `12-DECISION-LOG.md`
+
+### UI, экран или пользовательский маршрут
+
+Дополнительно:
+
+- `../design/00-DESIGN-INDEX.md`;
+- `../design/01-DESIGN-FOUNDATION.md`;
+- `../design/02-USER-FLOWS-AND-SCREENS.md`;
+- `../design/03-DESIGN-SYSTEM.md`;
+- `../design/04-DESIGN-STATUS.md`.
+
+Для чистого handoff вместо полного набора достаточно `00`, нужного flow из `02`, системы из `03` и `05-DESIGN-HANDOFF.md`.
 
 ### Ставки, аукционы, пользователи, безопасность
 
@@ -124,7 +138,8 @@
 Обновить:
 
 - `11-PROJECT-STATUS.md`;
-- при необходимости `10-CODE-ARCHITECTURE-AND-DESIGN.md`.
+- при необходимости `10-CODE-ARCHITECTURE.md`;
+- при UI-изменении — соответствующий owner в `docs/design/`.
 
 ### Изменение продуктового поведения
 
@@ -158,11 +173,17 @@ Status: Planned
 Decision: DEC-XXX
 
 ### Задача
+
 ### Поведение
+
 ### Правила
+
 ### Данные
+
 ### Риски
+
 ### Проверка
+
 ### Не входит
 ```
 
@@ -195,9 +216,17 @@ Decision: DEC-XXX
     │   ├── 07-GROWTH-AND-ADVERTISING-PLAYBOOK.md
     │   ├── 08-SELLER-AND-ITEM-POLICY.md
     │   ├── 09-TRUST-AND-AUCTION-INTEGRITY.md
-    │   ├── 10-CODE-ARCHITECTURE-AND-DESIGN.md
+    │   ├── 10-CODE-ARCHITECTURE.md
     │   ├── 11-PROJECT-STATUS.md
     │   └── 12-DECISION-LOG.md
+    ├── design/
+    │   ├── 00-DESIGN-INDEX.md
+    │   ├── 01-DESIGN-FOUNDATION.md
+    │   ├── 02-USER-FLOWS-AND-SCREENS.md
+    │   ├── 03-DESIGN-SYSTEM.md
+    │   ├── 04-DESIGN-STATUS.md
+    │   └── 05-DESIGN-HANDOFF.md
+    ├── audits/
     └── research/
         ├── README.md
         └── raw/

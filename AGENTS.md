@@ -78,7 +78,7 @@ The core product principle is value. bidplace is for direct sales of significant
 - Growth and creator launch: `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`.
 - Seller and item eligibility: `08-SELLER-AND-ITEM-POLICY.md`.
 - Bids, provenance, privacy, and integrity: `09-TRUST-AND-AUCTION-INTEGRITY.md`.
-- Architecture and long-lived technical decisions: `10-CODE-ARCHITECTURE-AND-DESIGN.md`.
+- Architecture and long-lived technical decisions: `10-CODE-ARCHITECTURE.md`.
 - Current implementation state: `11-PROJECT-STATUS.md`.
 - Decision history: `12-DECISION-LOG.md`.
 
@@ -106,7 +106,7 @@ After every task that changes code or actual system behavior:
 1. Update `docs/product/11-PROJECT-STATUS.md` with `Implemented`, `Partial`, `Not implemented`, or `Needs verification`.
 2. Cite concrete modules, APIs, tables, screens, and tests that support the status.
 3. Do not mark a feature `Implemented` when critical checks, server behavior, primary errors, or verification are missing.
-4. Update `docs/product/10-CODE-ARCHITECTURE-AND-DESIGN.md` only when architecture boundaries, domain models, app/package structure, contracts, persistence, security invariants, or shared design principles changed.
+4. Update `docs/product/10-CODE-ARCHITECTURE.md` only when architecture boundaries, domain models, app/package structure, contracts, persistence, or security invariants changed.
 5. Check the result against `docs/product/05-MVP-RFC.md` and record implementation gaps in `11-PROJECT-STATUS.md`.
 
 Do not rewrite `05-MVP-RFC.md` merely because current code differs. Change it only after an explicit product-contract decision.
@@ -119,12 +119,32 @@ Do not rewrite `05-MVP-RFC.md` merely because current code differs. Change it on
 - Store new research in a separate dated file and move conclusions to the appropriate owner document only with the correct status and source.
 - Keep product statuses (`Confirmed`, `Hypothesis`, `Planned`, `Rejected`) separate from code statuses.
 
+### Design documentation
+
+Before changing user-facing UI, read:
+
+- `docs/design/00-DESIGN-INDEX.md`;
+- `docs/design/01-DESIGN-FOUNDATION.md`;
+- `docs/design/02-USER-FLOWS-AND-SCREENS.md`;
+- `docs/design/03-DESIGN-SYSTEM.md`;
+- `docs/design/04-DESIGN-STATUS.md`.
+
+After changing UI:
+
+1. Update `docs/design/04-DESIGN-STATUS.md`.
+2. Update `docs/design/03-DESIGN-SYSTEM.md` when shared components or tokens changed.
+3. Update `docs/design/02-USER-FLOWS-AND-SCREENS.md` when a user flow changed.
+4. Do not change visual principles or product flows without an explicit founder or assigned-designer decision.
+5. Do not mark a screen complete without loading, empty, error, responsive, and accessibility states.
+
+`docs/design/01-DESIGN-FOUNDATION.md` is protected and changes only by direct decision of the founder or assigned designer.
+
 ### Task Completion
 
 Before the final response:
 
 1. Run the relevant checks and tests.
-2. Verify code against `05-MVP-RFC.md` and architecture changes against `10-CODE-ARCHITECTURE-AND-DESIGN.md`.
+2. Verify code against `05-MVP-RFC.md` and architecture changes against `10-CODE-ARCHITECTURE.md`.
 3. Update `11-PROJECT-STATUS.md` for behavior changes.
 4. Update `12-DECISION-LOG.md` only when an explicit decision was made.
 5. Confirm that code and canonical documentation do not silently contradict each other.

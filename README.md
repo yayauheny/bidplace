@@ -48,10 +48,11 @@
 2. [Продуктовая основа](docs/product/01-PRODUCT-FOUNDATION.md)
 3. [MVP RFC](docs/product/05-MVP-RFC.md)
 4. [Roadmap на 24 месяца](docs/product/06-ROADMAP-24-MONTHS.md)
-5. [Архитектура и дизайн](docs/product/10-CODE-ARCHITECTURE-AND-DESIGN.md)
+5. [Архитектура](docs/product/10-CODE-ARCHITECTURE.md)
 6. [Фактический статус проекта](docs/product/11-PROJECT-STATUS.md)
-7. [Журнал решений](docs/product/12-DECISION-LOG.md)
-8. [Правила хранения исследований](docs/research/README.md)
+7. [Индекс дизайн-документации](docs/design/00-DESIGN-INDEX.md)
+8. [Журнал решений](docs/product/12-DECISION-LOG.md)
+9. [Правила хранения исследований](docs/research/README.md)
 
 ## Технологии
 
@@ -97,7 +98,7 @@ docs/
 - REST API с префиксом `/api`
 - WebSocket для realtime ставок
 - Cron внутри backend для закрытия аукционов на MVP
-- Локальное файловое хранилище в dev, абстракция под S3 на будущее
+- Изображения хранятся в PostgreSQL как `LotImage`; внешнее object storage пока не реализовано
 - Shared contracts и design tokens, без общего UI-kit на старте
 
 ## Локальный запуск
@@ -164,11 +165,5 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 
 ## Что дальше
 
-Ближайший практический этап:
-
-- Prisma schema;
-- shared contracts;
-- auth;
-- auction domain logic;
-- tests;
-- затем развивать единый Expo frontend поверх готового backend.
+Ближайший практический этап — закрыть блокеры технического rehearsal и реального пилота из
+[`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md), не расширяя MVP.

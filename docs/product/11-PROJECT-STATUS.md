@@ -1,178 +1,125 @@
 # bidplace — текущий статус проекта
 
 Дата снимка: 2026-07-18  
-Статус документа: Verified against repository source and executed checks
+Статус: Verified against repository source and executed checks
 
-## 1. Область аудита
+## Область и этап
 
-Проверены monorepo/workspaces, backend, Expo client, Prisma schema и migrations, shared contracts/API client, auth, seller profile, lot/images, auctions, bids, reserve, history, Socket.IO, scheduler, admin, tests, seed и конфигурация. `.env` и секреты не читались. Новые продуктовые функции в ходе аудита не реализовывались.
+Проверены apps/packages, Prisma schema/migrations, API, Expo routes, contracts, auth, seller/lot/images, auctions/bids/lifecycle/realtime, admin, tests, seed, configuration и UI. `.env` и секреты не читались. Подробный исторический снимок: `../audits/2026-07-18-INITIAL-REPOSITORY-AUDIT.md`.
 
-Статус `Implemented` означает завершённое поведение в своей узкой области, а не готовность всего pilot flow. `Partial` используется, если существует рабочее ядро, но отсутствует обязательная часть MVP или critical gate.
+Текущий этап: **Phase 0 — техническая устойчивость перед rehearsal и первым реальным пилотом**.
 
-## 2. Текущий этап
+`Implemented` означает завершённое узкое поведение, но не готовность всего pilot flow. `Partial` означает, что рабочее ядро есть, а обязательная часть MVP отсутствует или не проверена.
 
-```text
-Phase 0 — техническая устойчивость перед первым реальным пилотом
-```
+## Function status
 
-Цель: полный rehearsal с 10 участниками, затем первая реальная продажа.
+| Функция                   | Статус / путь                                                                  | Фактическое поведение                                                                            | Не хватает / риск                                                                          | Тесты                                     | Pilot blocker     | Следующее действие                                    |
+| ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------- | ----------------- | ----------------------------------------------------- |
+| Auth/session              | Partial — `apps/api/src/auth`, `apps/mobile/src/features/auth`                 | register/login/me/logout; argon2; cookie/bearer; session invalidation; rate limit                | native cookie persistence и полный HTTP/mobile flow не подтверждены                        | unit auth/token/guards                    | Да, technical     | E2E на target web/native                              |
+| Identity/phone            | Phone verification Not implemented — `User.phone`                              | phone хранится как строка регистрации                                                            | нет verified state, OTP, expiry/abuse limits и first-bid gate                              | нет OTP tests                             | Да                | Спроектировать provider-neutral verification contract |
+| Seller onboarding/profile | Implemented but inconsistent with product — `sellers/*`, seller forms          | пользователь сам создаёт сразу active profile; public page существует                            | нет invitation/admin verification, photo/city/directions; public contact preference        | seller unit tests                         | Да                | Добавить ручную review-модель отдельной задачей       |
+| Category                  | Implemented — `categories/*`, `Category`                                       | простой public справочник                                                                        | admin management не требуется для manual MVP                                               | unit                                      | Нет               | Оставить manual                                       |
+| Lot/content               | Partial — `lots/*`, `lot-create-form.tsx`                                      | owner создаёт draft с базовыми полями                                                            | нет technique/materials/dimensions/year/uniqueness/city/delivery/provenance                | lot unit                                  | Да                | Согласовать schema с RFC без расширения scope         |
+| Images                    | Partial — `images/*`, `LotImage`                                               | binary DB storage, signature/decode/MIME/size validation, access, order/delete                   | можно опубликовать <3; нет moderation/object store                                         | unit + PostgreSQL integration             | Да                | Ввести RFC completeness gate                          |
+| Auction draft/schedule    | Implemented but inconsistent with product — `auctions/*`, auction form         | draft, dates, prices, publish to scheduled/active                                                | USD default, required public reserve, `buyNowPrice`, state mismatch                        | service/lifecycle unit                    | Да                | Привести MVP contract/UI к BYN scheduled auction      |
+| Moderation/publication    | Implemented but inconsistent with product — `publishAuction`                   | seller публикует сам                                                                             | нет pending review, preview, admin approval/audit                                          | publish unit только текущего поведения    | Да                | Создать manual review transition                      |
+| Bid placement             | Implemented but unsafe for pilot — `bids/bids.service.ts`                      | serializable transaction/retry, server time, self-bid ban, increment, atomic price/count         | нет idempotency, verified-phone/BYN gates и durable audit                                  | unit + concurrent integration             | Да, technical     | Idempotency и audit до rehearsal                      |
+| Reserve                   | Partial/inconsistent — contracts/API/UI/lifecycle                              | участвует в выборе winner                                                                        | обязательный и раскрыт public, хотя RFC задаёт optional hidden                             | reserve unit/integration                  | Да                | Разделить private/public contract                     |
+| Bid history/privacy       | Partial — public/seller/admin bid APIs, `BidHistory.tsx`                       | public payload не содержит user ID; seller/admin имеют полную запись                             | нет public alias/audit metadata; UI показывает status вместо bidder                        | contract/service tests                    | Да                | Добавить alias и explicit privacy tests               |
+| Scheduled start/close     | Partial — lifecycle service + scheduler                                        | server-time activate/close каждые 30s; status predicate; serializable close                      | нет durable audit и доказанной multi-instance/single-runner topology                       | unit + close race/idempotency integration | Да, technical     | Зафиксировать deployment invariant и audit            |
+| Winner                    | Implemented narrow — lifecycle service                                         | winner вычисляется из DB детерминированно; reserve/no-reserve result                             | дальнейший handoff отсутствует; product state names differ                                 | reserve/concurrent close integration      | Да для real sale  | Добавить canonical result/handoff states отдельно     |
+| Realtime/reconnect        | Partial — `core/realtime/*`                                                    | backend emits `auction.updated`, `bid.placed`, `auction.ended` по room                           | mobile subscription, version, gap detection, reconnect snapshot отсутствуют                | event contract/publisher unit             | Да, technical     | Authoritative snapshot + client recovery              |
+| Participation status      | Not implemented                                                                | отсутствует query/model/UI                                                                       | нет winning/outbid/won/lost/next action                                                    | нет                                       | Да                | Добавить user-scoped participation read model         |
+| Handoff/refusal/sale      | Not implemented                                                                | отсутствуют model/API/UI                                                                         | real transaction нельзя корректно завершить и измерить                                     | нет                                       | Да                | Сначала утвердить operational flow/privacy            |
+| Admin/moderation          | Partial — `apps/api/src/admin`, `/admin`                                       | list users/auctions, ban, hide, bids endpoint                                                    | нет approval, confirmation, investigation, handoff и audit                                 | admin unit                                | Да                | Сделать pilot operations queue                        |
+| Audit log                 | Not implemented                                                                | append-only entity/service отсутствует                                                           | bids/close/admin/handoff не имеют расследуемого trail                                      | нет                                       | Да                | Ввести durable security event model                   |
+| Analytics                 | Not implemented                                                                | pilot events/store отсутствуют                                                                   | нельзя измерить funnel/результат первой сделки                                             | нет                                       | Да для validation | Определить минимальные server-side events             |
+| Public UI                 | Implemented but inconsistent with product — routes/features/storefront/auction | public view, auth, bid form, timer, basic states                                                 | competing detail routes, demo fallback, reserve leak, mass-market copy; no approved design | 3 mobile unit tests; export passed        | Да                | Утвердить canonical direct-link flow                  |
+| Seller/admin UI           | Partial                                                                        | forms/dashboards и basic feedback states                                                         | нет review/handoff; mixed terminology; destructive confirmation absent                     | limited mobile tests                      | Да                | Handoff экранов из design status                      |
+| Seed/operations           | Partial — `prisma/seed.js`, config, Docker Compose                             | local PostgreSQL/config validation                                                               | seed uses removed field, legacy statuses/USD; нет CI/deploy/observability/backups          | env unit; build/integration               | Да                | Исправить reproducible BYN rehearsal dataset          |
+| Future mechanics          | Not implemented as intended                                                    | fixed price/drops/payments/shipping/inbox отсутствуют; `buyNowPrice` только преждевременное поле | future abstractions не должны расширять MVP                                                | нет end-to-end                            | Нет сейчас        | Не реализовывать до roadmap gates                     |
 
-## 3. Карта фактической реализации
+## MVP readiness
 
-| Область                | Product               | Code            | Доказательство                                                            | Работает                                                                      | Не хватает / риск                                                                            |
-| ---------------------- | --------------------- | --------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Email/password auth    | Confirmed             | Partial         | `apps/api/src/auth/*`; `apps/mobile/src/features/auth/*`; auth unit tests | register/login/me/logout, argon2, HttpOnly cookie/bearer, rate limit          | Нет HTTP/mobile E2E; native cookie persistence не подтверждён                                |
-| User identity          | Confirmed             | Implemented     | `packages/database/prisma/schema.prisma`; `auth.mapper.ts`                | Buyer и seller используют один `User`; role только admin/user                 | Нет verification state                                                                       |
-| SellerProfile          | Confirmed             | Partial         | `sellers.service.ts`; seller profile screens/tests                        | create/update/self/public profile                                             | Профиль сразу `active`, нет invitation/admin verification, фото, города и направления        |
-| Public seller page     | Confirmed             | Partial         | `sellers.controller.ts`; `public-seller-screen.tsx`                       | Профиль и scheduled/active auctions                                           | Нет фото, past auctions, examples; contact preference публичен                               |
-| Category               | Confirmed             | Implemented     | `categories.*`; `Category` model; unit test                               | Детерминированный простой справочник                                          | Нет admin management, что допустимо для manual MVP                                           |
-| Lot creation           | Confirmed             | Partial         | `lots.service.ts`; `lot-create-form.tsx`; unit tests                      | Draft lot, ownership, category, title/description/condition                   | Нет техники, материалов, размеров, года, uniqueness, city, delivery и provenance             |
-| Images                 | Confirmed             | Partial         | `LotImage`; `images/*`; image integration tests                           | Upload, MIME/signature/decode validation, size limits, access, order/delete   | Можно создать lot без изображений; нет minimum 3, moderation и object storage                |
-| Auction entity         | Confirmed             | Partial         | `Auction` model; contracts; `auctions.service.ts`                         | Draft creation, schedule, prices, dates, state                                | State machine расходится с RFC; reserve обязательный; `buyNowPrice` находится в MVP contract |
-| Seller publication     | Confirmed             | Partial         | `publishAuction`; auction service tests                                   | Seller публикует draft как scheduled/active атомарно с lot                    | Нет `PENDING_REVIEW` и admin approval; seller обходит moderation                             |
-| Scheduled start        | Confirmed             | Implemented     | `AuctionLifecycleService.activateScheduledAuctions`; unit test            | Server-time activation с status predicate                                     | Нет durable audit; scheduler topology не определена                                          |
-| Timed end / hard close | Confirmed             | Implemented     | `BidsService`; lifecycle scheduler/service; integration race test         | Reject после `endsAt`, server clock, 30-second close cycle                    | Нет rehearsal/deployment evidence                                                            |
-| Reserve                | Confirmed             | Partial         | pricing policy; lifecycle reserve tests                                   | Reserve влияет на winner/no-winner                                            | Значение обязательное и раскрывается public API/UI, хотя должно быть optional hidden         |
-| Manual bids            | Confirmed             | Partial         | `BidsService`; unit/integration concurrency tests                         | Serializable transaction, self-bid ban, increments, atomic price/count/status | Нет phone verification, idempotency key, BYN-only gate и audit record                        |
-| Bid history            | Confirmed             | Partial         | public auction detail; seller/admin bids endpoints                        | Public history не раскрывает bidder user ID; seller/admin видят полную запись | Нет публичного псевдонима и audit metadata; UI показывает bid status вместо участника        |
-| Realtime               | Confirmed             | Partial         | `core/realtime/*`; event contract tests                                   | Backend публикует auction/bid/end events по room                              | Нет mobile subscription, version, gap detection, reconnect snapshot и integration test       |
-| Cron close             | Confirmed             | Partial         | `auction-closing.scheduler.ts`; lifecycle tests                           | Каждые 30 секунд, `waitForCompletion`, повторное закрытие идемпотентно        | Нет durable close audit и single-runner deployment guarantee                                 |
-| Winner                 | Confirmed             | Implemented     | lifecycle service; reserve/concurrent-close integration tests             | Winner вычисляется из DB транзакционно и детерминированно                     | Дальнейший handoff не реализован                                                             |
-| Phone verification     | Confirmed             | Not implemented | `User.phone` и registration form — только ввод строки                     | Телефон сохраняется при регистрации                                           | Нет verified flag, OTP/provider/rate limit/expiry и gate перед первой ставкой                |
-| Participation status   | Confirmed             | Not implemented | Нет route/model/query                                                     | —                                                                             | Нет «Побеждает/Перебита/Выиграна/…» и next action                                            |
-| External notifications | Rejected MVP          | Not implemented | Нет notification integration                                              | Соответствует MVP                                                             | Критические security/payment сообщения потребуют отдельного решения позже                    |
-| Seller privacy         | Confirmed             | Not implemented | Только `contactPreference` в profile                                      | —                                                                             | Нет privacy mode и правил раскрытия контакта                                                 |
-| Handoff                | Confirmed             | Not implemented | Нет entity/API/UI                                                         | —                                                                             | Нельзя завершить pilot flow после winner                                                     |
-| Winner refusal         | Confirmed             | Not implemented | Нет entity/API/admin flow                                                 | —                                                                             | Нет сохранённого audit и перехода к next bidder                                              |
-| Sale confirmation      | Confirmed             | Not implemented | Нет status/API/UI                                                         | —                                                                             | Нет `SALE_CONFIRMED` и результата пилота                                                     |
-| Admin panel            | Confirmed             | Partial         | `admin/*`; mobile admin screen; unit tests                                | List users/auctions, ban, hide, view bids endpoint                            | Нет seller/lot approval, failed handoff, audit и подтверждений действий                      |
-| Audit log              | Confirmed             | Not implemented | Нет Prisma model/service                                                  | —                                                                             | Critical bids/close/admin actions не имеют append-only trail                                 |
-| Minimal analytics      | Confirmed             | Not implemented | Нет events/store/provider                                                 | —                                                                             | Нельзя измерить pilot funnel                                                                 |
-| Seed/demo data         | Confirmed operational | Partial         | `packages/database/prisma/seed.js`                                        | Содержит demo users/category/lots/auctions/bids                               | Использует удалённое `Lot.images`, legacy statuses и USD; seed требует исправления           |
-| Environment config     | Confirmed technical   | Partial         | `core/config/env.ts`; `packages/config`; `docker-compose.yml`             | Zod validation и local PostgreSQL                                             | Нет production deployment, CI, observability, backups/restore evidence                       |
-| Soft close             | Planned               | Not implemented | Нет кода                                                                  | —                                                                             | После пилота                                                                                 |
-| Fixed price            | Planned               | Not implemented | `buyNowPrice` хранится, но поведения нет                                  | —                                                                             | Поле/UI опережает подтверждённый scope                                                       |
-| Drops                  | Planned               | Not implemented | Нет кода                                                                  | —                                                                             | После validation                                                                             |
-| Payments               | Planned               | Not implemented | Нет кода                                                                  | —                                                                             | Не входят в MVP                                                                              |
-| Shipping               | Planned               | Not implemented | Нет кода                                                                  | —                                                                             | Не входит в MVP                                                                              |
-| Inbox                  | Planned               | Not implemented | Нет кода                                                                  | —                                                                             | Позднее для public sellers                                                                   |
-| Discovery              | Planned               | Partial         | Public catalog/storefront routes существуют                               | Есть list/detail UI                                                           | Без search/ranking/recommendations; mass-market storefront требует продуктовой сверки        |
-| AI                     | Planned distant       | Not implemented | Нет кода                                                                  | —                                                                             | Не core                                                                                      |
-| Services               | Rejected current      | Not implemented | Нет кода                                                                  | Соответствует продукту                                                        | —                                                                                            |
-| Brand accounts         | Rejected current      | Not implemented | Нет отдельной роли                                                        | Соответствует текущей политике                                                | `influencer` enum не равен утверждённому `PUBLIC_PERSON` extension point                     |
-| Resale                 | Rejected              | Not implemented | Нет отдельного flow                                                       | Нет общего resale-механизма                                                   | Provenance policy технически не моделируется и не проверяется                                |
+| Направление       | Статус          | Причина                                                                                                                 |
+| ----------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Product           | Blocked         | seller/lot moderation, complete value card и canonical flow не соответствуют RFC                                        |
+| Auction integrity | Partially ready | atomic bids/DB winner/idempotent close есть; idempotency, audit, reserve privacy и deployment invariant отсутствуют     |
+| Technical test    | Blocked         | нет 10-user rehearsal, client realtime/reconnect, reproducible seed и end-to-end session evidence                       |
+| UX                | Blocked         | нет phone verification, own status, reconnect и post-auction; public flow дублируется                                   |
+| Operations        | Unknown         | первый seller/item, price, assets, announcement, payment/handoff and interview ownership не зафиксированы в репозитории |
 
-## 4. Тестовые доказательства
+## Pilot blockers
 
-### Unit и contract tests
+### До технического rehearsal
 
-- auth, token, session invalidation и guards;
-- rate limiting и environment parsing;
-- seller, category, lot, image, auction, bid, lifecycle и admin services;
-- persistence parsing и Prisma error mapping;
-- HTTP/WebSocket Zod contracts;
-- React Query auth-scope cache behavior.
+1. Bid idempotency и durable audit.
+2. Mobile realtime с authoritative reconnect snapshot.
+3. Single-runner либо безопасная multi-instance lifecycle topology.
+4. Закрытый public reserve.
+5. Воспроизводимый BYN seed/reset.
+6. E2E session на target web/native и 10-user near-simultaneous bid rehearsal.
+7. Automated privacy assertions для public/event payloads.
 
-### Integration tests
+### До первой реальной сделки
 
-- concurrent bids;
-- bid/close race и post-close rejection;
-- duplicate idempotent close;
-- reserve-met и reserve-unmet close;
-- transaction rollback;
-- draft/public image access, delete/reorder и cascade.
+1. Manual seller/lot/auction approval и preview.
+2. Phone verification before first bid.
+3. Полная карточка ценности и минимум три изображения.
+4. Participation, winner/loser and post-auction states.
+5. Privacy-safe contact handoff, refusal and sale confirmation.
+6. Minimal analytics, incident owner, rules/privacy/legal review.
+7. Observability, backup and restore rehearsal.
 
-### Отсутствуют
+## Technical debt affecting product validation
 
-- E2E browser/native flow;
-- 10-user rehearsal/load test;
-- realtime reconnect/gap recovery;
-- phone verification;
-- moderation/preview;
-- privacy/handoff/refusal/sale confirmation;
-- production deployment, backup и restore tests.
+- stale seed делает rehearsal невоспроизводимым;
+- backend realtime без клиента не проверяет live experience;
+- отсутствующие analytics не позволяют отличить product failure от technical failure;
+- state names и premature `buyNowPrice` усложняют однозначный MVP flow;
+- in-memory rate limit и scheduler topology не описывают production behavior;
+- DB image storage работает для пилота, но требует capacity monitoring.
 
-## 5. Расхождения с `05-MVP-RFC.md`
+## Product inconsistencies
 
-1. SellerProfile создаётся active без invitation и admin verification.
-2. Seller сам публикует auction; `PENDING_REVIEW` и preview moderation отсутствуют.
-3. Auction statuses используют `sold`/`failed`, а не канонические `ENDED_WITH_WINNER`/`ENDED_NO_WINNER`; нет `SALE_CONFIRMED` и `HANDOFF_FAILED`.
-4. Телефон обязателен при регистрации, но не верифицируется перед первой ставкой.
-5. `reservePrice` обязательный и публично раскрывается API и UI вместо optional hidden reserve.
-6. Bid request не имеет idempotency key.
-7. UI по умолчанию создаёт USD auction; MVP определяет BYN.
-8. Lot contract содержит только title/description/condition/category и не покрывает обязательные provenance/content fields.
-9. Нет требования минимум трёх изображений.
-10. Public bid history не показывает псевдоним участника.
-11. Realtime есть только на backend; клиент делает refetch после mutation и не восстанавливает snapshot после reconnect.
-12. Нет participation status, seller privacy, handoff, winner refusal, sale confirmation, audit log и analytics.
-13. Admin не подтверждает seller/lot/auction и не сопровождает failed handoff.
-14. `buyNowPrice` и storefront-лексика присутствуют до подтверждения fixed-price scope; сам fixed-price flow отсутствует.
-15. Seed не соответствует текущей Prisma schema и рынку BYN.
+- seller активируется и публикует без ручной проверки;
+- reserve обязателен и публичен;
+- mobile auction defaults to USD, MVP requires BYN;
+- lot model не объясняет provenance/value согласно RFC;
+- public history lacks aliases;
+- external notifications корректно отсутствуют как `Rejected MVP`, несмотря на raw research suggestions;
+- storefront/demo language приближает продукт к general marketplace;
+- canonical handoff and sale states отсутствуют.
 
-## 6. P0 — blockers до rehearsal
+## Security and integrity risks
 
-- добавить idempotency для ставок;
-- провести контролируемый 10-user concurrency test;
-- подключить mobile realtime с snapshot/refetch on reconnect;
-- подтвердить запуск ровно одного lifecycle runner либо безопасную multi-instance модель;
-- добавить durable audit для bid/close/admin;
-- закрыть reserve leak;
-- проверить end-to-end auth session на целевых native/web средах;
-- исправить seed и воспроизводимый reset/demo flow;
-- подтвердить отсутствие PII в public/event payloads автоматическим тестом.
+- no verified-phone gate, bid idempotency or append-only audit;
+- public hidden-reserve disclosure;
+- no review trail for seller/publication/admin actions;
+- no explicit reconnect/gap handling may show stale leader/price;
+- no automated PII regression test;
+- distributed rate limit, deployment topology, logging/monitoring and restore readiness unknown.
 
-## 7. P1 — blockers до real pilot
+## Design readiness
 
-- invitation/admin verification seller;
-- lot/auction moderation и preview;
-- phone OTP gate;
-- полная карточка лота и image minimum;
-- participation statuses;
-- privacy mode и contact handoff;
-- refusal и sale confirmation;
-- minimal analytics;
-- rules/privacy/legal readiness для Беларуси;
-- observability, incident contact, backups и restore rehearsal.
+Approved Figma/assets не найдены. Shared tokens/components и responsive primitives существуют, но часть находится в незакоммиченном working tree. Critical screens for verification, participation, moderation, reconnect and post-auction are not started. Детали: `../design/04-DESIGN-STATUS.md`.
 
-## 8. Открытые решения основателя
+## Unknowns requiring manual verification
 
-- первый seller и первый item;
-- start price, reserve и duration;
-- сохранять hidden reserve после пилота или перейти к minimum acceptable start price;
-- допустима ли текущая storefront/catalog подача или она слишком близка к mass-market;
-- убрать ли `buyNowPrice` до отдельного решения о fixed price;
-- как сопоставить технический `influencer` с продуктовым `PUBLIC_PERSON`;
-- privacy mode, handoff contact и delivery process;
-- seller legal status, rules acceptance и pilot incident owner.
+- выбранные первый seller и lot;
+- утверждённые start price/reserve/duration;
+- seller legal status and accepted rules;
+- фактические pilot devices/browsers and accessibility target;
+- production host/topology, incident contact, observability, backups;
+- payment/contact/delivery manual process;
+- approved Figma, brand assets, photography and announcement plan;
+- native session behavior and 10-user network/reconnect behavior outside local tests.
 
-## 9. Готовность
+## Executed checks (2026-07-18)
 
-### Rehearsal
-
-Not ready. Основные серверные bidding/close invariants существуют, но отсутствуют idempotency, client realtime/reconnect, durable audit, 10-user gate и воспроизводимый seed.
-
-### Pilot
-
-Not ready. Дополнительно отсутствуют phone verification, moderation, полная карточка, participation, privacy, handoff, sale confirmation и analytics.
-
-## 10. Update 2026-07-18
-
-- Verified: monorepo, API, mobile, contracts, persistence, migrations, scheduler, realtime backend, tests и config.
-- Implemented: фактические статусы подтверждены путями и test inventory.
-- Changed: исходный `Needs verification` заменён полным repository snapshot.
-- Still blocked: rehearsal и pilot gates из разделов 6–7.
-- Docs updated: `10-CODE-ARCHITECTURE-AND-DESIGN.md`, `11-PROJECT-STATUS.md`.
-
-## 11. Выполненные проверки 2026-07-18
-
-- TypeScript typecheck всех apps/packages: passed.
-- API unit tests: 156 passed.
-- Contracts tests: 27 passed.
-- Mobile unit tests: 3 passed.
+- TypeScript typecheck all apps/packages: passed.
+- API unit tests: 156 passed; contracts: 27; mobile: 3.
 - PostgreSQL integration tests: 14 passed.
-- API build: passed.
-- Expo web/iOS/Android export с отключённой загрузкой `.env`: passed.
+- API build and Expo web/iOS/Android export: passed.
 - API lint: passed.
-- Formatting изменённых `10` и `11`: passed.
-- Mobile lint: 3 existing errors в `BrandLogo.tsx`, `seller-dashboard-screen.tsx` и `storefront-home-screen.tsx`; файлы не менялись этой документальной задачей.
+- Mobile lint: 3 pre-existing working-tree errors (`BrandLogo.tsx`, `seller-dashboard-screen.tsx`, `storefront-home-screen.tsx`).
