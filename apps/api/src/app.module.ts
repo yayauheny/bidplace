@@ -17,6 +17,7 @@ import { OrdersModule } from './orders/orders.module';
 import { OtpModule } from './otp/otp.module';
 import { AdminModule } from './admin/admin.module';
 import { ActivityModule } from './activity/activity.module';
+import { ImagesModule } from './images/images.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ActivityModule } from './activity/activity.module';
     OtpModule,
     AdminModule,
     ActivityModule,
+    ImagesModule,
   ],
   providers: [
     {

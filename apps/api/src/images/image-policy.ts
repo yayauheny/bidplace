@@ -24,7 +24,7 @@ export type ValidatedImageUpload = {
   mimeType: SupportedImageMimeType;
 };
 
-export const lotImageUploadLimits = {
+export const productImageUploadLimits = {
   maxFiles: serverEnv.LOT_IMAGE_MAX_FILES,
   maxFileBytes: serverEnv.LOT_IMAGE_MAX_FILE_BYTES,
   maxTotalBytes: serverEnv.LOT_IMAGE_MAX_TOTAL_BYTES,
@@ -106,12 +106,12 @@ async function assertDecodableRasterImage(
   }
 }
 
-export async function validateLotImageUploads(
+export async function validateProductImageUploads(
   files: readonly RawImageUpload[],
 ): Promise<ValidatedImageUpload[]> {
-  if (files.length > lotImageUploadLimits.maxFiles) {
+  if (files.length > productImageUploadLimits.maxFiles) {
     throw new BadRequestException(
-      `A lot can have at most ${lotImageUploadLimits.maxFiles} images`,
+      `A Product can have at most ${productImageUploadLimits.maxFiles} images`,
     );
   }
 
@@ -126,7 +126,7 @@ export async function validateLotImageUploads(
       throw new BadRequestException('Image file is empty');
     }
 
-    if (file.buffer.length > lotImageUploadLimits.maxFileBytes) {
+    if (file.buffer.length > productImageUploadLimits.maxFileBytes) {
       throw new BadRequestException('Image file is too large');
     }
 
@@ -150,9 +150,9 @@ export async function validateLotImageUploads(
     };
   }));
 
-  if (totalBytes > lotImageUploadLimits.maxTotalBytes) {
+  if (totalBytes > productImageUploadLimits.maxTotalBytes) {
     throw new BadRequestException(
-      `A lot cannot exceed ${lotImageUploadLimits.maxTotalBytes} total image bytes`,
+      `A Product cannot exceed ${productImageUploadLimits.maxTotalBytes} total image bytes`,
     );
   }
 

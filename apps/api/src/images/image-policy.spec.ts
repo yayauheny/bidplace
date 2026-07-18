@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
   detectImageMimeType,
-  validateLotImageUploads,
+  validateProductImageUploads,
 } from './image-policy';
 
 let pngBuffer = Buffer.alloc(0);
@@ -33,7 +33,7 @@ describe('image policy', () => {
 
   it('normalizes validated uploads to detected mime types', async () => {
     await expect(
-      validateLotImageUploads([
+      validateProductImageUploads([
         {
           buffer: pngBuffer,
           mimetype: 'image/png',
@@ -49,7 +49,7 @@ describe('image policy', () => {
 
   it('rejects empty uploads', async () => {
     await expect(
-      validateLotImageUploads([
+      validateProductImageUploads([
         {
           buffer: Buffer.alloc(0),
           mimetype: 'image/png',
@@ -60,7 +60,7 @@ describe('image policy', () => {
 
   it('rejects files whose claimed mime type does not match the contents', async () => {
     await expect(
-      validateLotImageUploads([
+      validateProductImageUploads([
         {
           buffer: pngBuffer,
           mimetype: 'image/jpeg',
@@ -71,7 +71,7 @@ describe('image policy', () => {
 
   it('rejects unsupported signatures such as svg payloads', async () => {
     await expect(
-      validateLotImageUploads([
+      validateProductImageUploads([
         {
           buffer: Buffer.from('<svg viewBox="0 0 1 1"></svg>'),
           mimetype: 'image/svg+xml',
@@ -82,7 +82,7 @@ describe('image policy', () => {
 
   it('rejects corrupted raster payloads even when the signature matches', async () => {
     await expect(
-      validateLotImageUploads([
+      validateProductImageUploads([
         {
           buffer: corruptedPngBuffer,
           mimetype: 'image/png',
