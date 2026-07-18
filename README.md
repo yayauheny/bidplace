@@ -32,11 +32,11 @@
 
 Ключевой сценарий MVP:
 
-- seller создаёт лот и аукцион;
+- seller создаёт Product и Auction Listing;
 - публикует ссылку;
 - buyer делает ставки;
 - система закрывает аукцион по таймеру;
-- система определяет победителя из состояния базы данных.
+- система определяет победителя и создаёт минимальный Order из состояния базы данных.
 
 Полный handoff и подтверждение продажи пока не реализованы. Актуальный снимок: [`docs/product/11-PROJECT-STATUS.md`](docs/product/11-PROJECT-STATUS.md).
 
@@ -98,7 +98,7 @@ docs/
 - REST API с префиксом `/api`
 - WebSocket для realtime ставок
 - Cron внутри backend для закрытия аукционов на MVP
-- Изображения хранятся в PostgreSQL как `LotImage`; внешнее object storage пока не реализовано
+- Изображения хранятся в PostgreSQL как `ProductImage`; внешнее object storage пока не реализовано
 - Shared contracts и design tokens, без общего UI-kit на старте
 
 ## Локальный запуск
@@ -141,6 +141,8 @@ Docker Compose поднимает PostgreSQL локально на `5432`.
 
 Backend использует `DATABASE_URL` из корневого `.env`.
 
+Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD_HASH`; реальные production credentials не должны использоваться. Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
+
 ## Принципы разработки
 
 - минимальный корректный scope;
@@ -152,7 +154,7 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 
 ## Что не входит в текущий MVP
 
-- buy now
+- buy now и reserve price
 - drops
 - custom requests
 - payments
