@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { BidsService } from '../../src/bids/bids.service';
+import { Clock } from '../../src/core/time';
 import { createIntegrationDatabaseContext, type IntegrationDatabaseContext } from './test-database';
 
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
+const now = new Date('2026-07-18T11:00:00.000Z');
+class FixedClock extends Clock { now(): Date { return now; } }
 
 async function reset() {
   await prisma.phoneVerificationCode.deleteMany();
@@ -70,5 +74,22 @@ describe('Product / Listing PostgreSQL invariants', () => {
 
     await expect(prisma.bid.create({ data: { listingId: second.id, bidderUserId: buyer.id, idempotencyKey: 'same-key', amount: new Prisma.Decimal(11) } }))
       .rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('replays an accepted Bid idempotently without a second write or event', async () => {
+    const { buyer, product } = await fixture();
+    const listing = await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
+    const realtime = { emit: vi.fn() };
+    const bids = new BidsService(prisma as never, new FixedClock(), realtime as never);
+
+    const first = await bids.place(buyer.id, listing.id, 'same-request', { amount: 11 });
+    const replay = await bids.place(buyer.id, listing.id, 'same-request', { amount: 11 });
+    const current = await prisma.listing.findUnique({ where: { id: listing.id } });
+
+    expect(replay.bid.id).toBe(first.bid.id);
+    expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(1);
+    expect(current?.currentPrice.toNumber()).toBe(11);
+    expect(current?.bidCount).toBe(1);
+    expect(realtime.emit).toHaveBeenCalledTimes(1);
   });
 });
