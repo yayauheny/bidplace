@@ -35,8 +35,8 @@ export function LoadingState({ label, compact = false }: LoadingStateProps) {
         paddingVertical: mobileSpacing[16],
         gap: mobileSpacing[3],
       }}
-      accessibilityRole="progressbar"
-      accessibilityLabel={label ?? 'Загрузка'}
+      role="status"
+      aria-label={label ? undefined : 'Загрузка'}
     >
       <ActivityIndicator size="large" color={palette.primary} />
       {label ? (

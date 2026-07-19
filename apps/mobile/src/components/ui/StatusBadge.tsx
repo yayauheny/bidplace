@@ -10,8 +10,8 @@ type StatusTone = 'neutral' | 'primary' | 'positive' | 'warning' | 'negative';
 type StatusBadgeProps = {
   tone?: StatusTone;
   children: string;
-  /** accessibilityLabel overrides the badge text for screen readers */
-  accessibilityLabel?: string;
+  /** ariaLabel overrides the badge text for screen readers */
+  ariaLabel?: string;
 };
 
 const toneStyles: Record<
@@ -48,14 +48,14 @@ const toneStyles: Record<
 export function StatusBadge({
   tone = 'neutral',
   children,
-  accessibilityLabel,
+  ariaLabel,
 }: StatusBadgeProps) {
   const palette = useAppThemePalette();
   const styles = toneStyles[tone](palette);
 
   return (
     <XStack
-      accessibilityLabel={accessibilityLabel ?? children}
+      aria-label={ariaLabel}
       style={{
         alignSelf: 'flex-start',
         alignItems: 'center',

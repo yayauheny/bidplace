@@ -48,7 +48,6 @@ export function DesktopNavigation({ mode = 'public' }: DesktopNavigationProps) {
           <Link key={`${item.label}-${item.href}`} href={item.href} asChild>
             <Pressable
               accessibilityRole="link"
-              accessibilityLabel={item.label}
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             >
               <YStack style={{ paddingVertical: mobileSpacing[1] }}>

@@ -31,7 +31,7 @@ export function BrandLogo({ compact = false, inverted = false }: BrandLogoProps)
     <Link href="/" asChild>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="bidplace — на главную"
+        aria-label="bidplace — на главную"
         style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
       >
         <XStack
@@ -50,7 +50,7 @@ export function BrandLogo({ compact = false, inverted = false }: BrandLogoProps)
                 tintColor: inverted ? '#FFFFFF' : undefined,
               }}
               contentFit="contain"
-              accessibilityLabel="bidplace mark"
+              alt=""
             />
           ) : (
             // Fallback placeholder until brand-mark.png is placed

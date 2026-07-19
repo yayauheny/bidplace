@@ -333,7 +333,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                     source={{ uri: `${getApiUrl()}${image.url}` }}
                     style={{ width: '100%', height: 180 }}
                     contentFit="cover"
-                    accessibilityLabel={`Изображение предмета ${image.position + 1}`}
+                    alt={`Изображение предмета ${image.position + 1}`}
                   />
                   {editable ? (
                     <YStack style={{ gap: mobileSpacing[1] }}>

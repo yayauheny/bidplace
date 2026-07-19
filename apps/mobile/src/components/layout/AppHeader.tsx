@@ -51,7 +51,7 @@ function MenuTrigger({ onPress }: { onPress: () => void }) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Открыть меню"
+      aria-label="Открыть меню"
       style={({ pressed }) => ({
         opacity: pressed ? 0.6 : 1,
         padding: mobileSpacing[2],

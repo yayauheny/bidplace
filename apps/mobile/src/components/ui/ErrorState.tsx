@@ -68,7 +68,6 @@ export function ErrorState({
         <Pressable
           onPress={onAction}
           accessibilityRole="button"
-          accessibilityLabel={actionLabel ?? defaultActionLabel}
           style={({ pressed }) => ({
             marginTop: mobileSpacing[2],
             paddingHorizontal: mobileSpacing[4],

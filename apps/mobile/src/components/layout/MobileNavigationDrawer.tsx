@@ -53,7 +53,7 @@ export function MobileNavigationDrawer({
           <Pressable
             onPress={() => onOpenChange(false)}
             accessibilityRole="button"
-            accessibilityLabel="Закрыть меню"
+            aria-label="Закрыть меню"
             style={({ pressed }) => ({
               opacity: pressed ? 0.6 : 1,
               minWidth: 44,
