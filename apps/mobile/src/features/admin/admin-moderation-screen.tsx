@@ -125,13 +125,13 @@ export function AdminModerationScreen() {
 
   if (sellers.isLoading || products.isLoading)
     return (
-      <Screen>
+      <Screen mode="admin">
         <LoadingState label="Загружаем moderation" />
       </Screen>
     );
   if (sellers.isError || products.isError || !sellers.data || !products.data)
     return (
-      <Screen>
+      <Screen mode="admin">
         <ErrorState
           description="Не удалось загрузить moderation"
           onAction={() => {
@@ -143,7 +143,7 @@ export function AdminModerationScreen() {
     );
 
   return (
-    <Screen>
+    <Screen mode="admin">
       <YStack style={{ gap: mobileSpacing[6] }}>
         <SectionHeader title="Модерация" />
 

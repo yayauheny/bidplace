@@ -23,7 +23,7 @@ const sellerNavItems = [
 
 const adminNavItems = [
   { label: 'Каталог', href: '/' as const },
-  { label: 'Модерация', href: '/(admin)' as const },
+  { label: 'Модерация', href: '/admin' as const },
 ];
 
 function getNavItems(mode: DesktopNavigationProps['mode']) {

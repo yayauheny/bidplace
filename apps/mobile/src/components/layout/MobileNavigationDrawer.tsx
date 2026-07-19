@@ -128,6 +128,30 @@ export function MobileNavigationDrawer({
               </Text>
             </Pressable>
           ) : null}
+          {mode === 'admin' ? (
+            <Pressable
+              onPress={() => { onOpenChange(false); router.push('/admin'); }}
+              accessibilityRole="link"
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+                paddingVertical: mobileSpacing[4],
+                borderBottomWidth: 1,
+                borderBottomColor: palette.borderColor,
+              })}
+            >
+              <Text
+                style={{
+                  fontFamily: fontFamilies.serifRegular,
+                  color: palette.color,
+                  fontSize: 32,
+                  lineHeight: 40,
+                  fontWeight: '500',
+                }}
+              >
+                Модерация
+              </Text>
+            </Pressable>
+          ) : null}
         </YStack>
 
         {/* Profile link at bottom */}
