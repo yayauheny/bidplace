@@ -38,6 +38,26 @@
 - API unit and PostgreSQL integration suites passed.
 - Chromium E2E passed: 3 tests, real Expo web + API + isolated `bidplace_e2e` database + local test OTP adapter.
 
+## Task B Editorial Redesign — 2026-07-19
+
+- Task B Editorial Redesign завершена.
+- Выполнен основной type-safety commit.
+- Выполнено исправление explicit protected admin route в коммите `79e6ad7` (admin URL теперь `/admin` и защищён administrative guard).
+- Проверки: mobile TypeScript проходит; targeted ESLint изменённых файлов проходит; `expo export --platform web` проходит (SPA refresh `/admin` в production зависит от hosting fallback на `index.html`).
+- Результаты ручного smoke-test:
+[ЗДЕСЬ Я ВСТАВЛЮ РЕАЛЬНЫЕ РЕЗУЛЬТАТЫ:
+
+- `/` как гость:
+- `/admin` как администратор:
+- refresh `/admin`:
+- `/admin` как обычный пользователь:
+- mobile drawer 375 px:
+- desktop navigation 1440 px:
+- переключение 1024/1025 px:
+- browser console:
+- краткая проверка основных экранов:
+]
+
 ## Post-Task-B release hardening TODO
 
 - WebKit and full cross-browser matrix; physical-device QA; visual regression; exhaustive seller/admin E2E; full accessibility automation; ten-session browser rehearsal.

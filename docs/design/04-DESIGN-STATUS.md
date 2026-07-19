@@ -2,7 +2,7 @@
 
 Дата снимка: 2026-07-19
 
-Статус документа: Partial — Task B editorial redesign завершён (type-safe, lint/typecheck PASS). Device/accessibility QA остаётся.
+Статус документа: Partial — Task B editorial redesign завершена. Основной type-safety commit завершил типизацию, а в коммите 79e6ad7 реализован explicit protected admin route. Device/accessibility QA остаётся.
 
 ## Functional screen status
 
@@ -15,7 +15,7 @@
 | Seller profile             | `/(seller)/profile`                                 | Implemented without approved design | Canonical SellerProfile create/edit/status flow; loading/error/submission states exist.                                                                                                                           |
 | Product draft              | `/(seller)/products/new`, `/(seller)/products/[id]` | Partial                             | Raw TextInput replaced with AppInput; fields grouped in OperationalPanel; gap tokens migrated to mobileSpacing. Device and accessibility QA remain.                                                               |
 | Listing draft              | `/(seller)/listings/new`                            | Partial                             | Raw TextInput replaced with AppInput; SectionHeader added; gap tokens migrated to mobileSpacing. Date input usability and seller listing management need QA.                                                       |
-| Admin moderation           | `/(admin)`                                          | Partial                             | Compact SellerProfile/Product review controls and a confirmed manual Order cancellation/replacement flow with anonymous ranked Bids exist; types derived from ApiClient. Device and design QA remain.              |
+| Admin moderation           | `/admin`                                            | Partial                             | Protected by explicit administrative guard. Compact SellerProfile/Product review controls and a confirmed manual Order cancellation/replacement flow with anonymous ranked Bids exist; types derived from ApiClient. Device and design QA remain. |
 
 ## Removed routes and promises
 
