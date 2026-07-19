@@ -12,12 +12,12 @@ type DesktopNavigationProps = {
 // Only routes that are actually implemented and stable.
 const publicNavItems = [
   { label: 'Каталог', href: '/' as const },
-  { label: 'Мои покупки', href: '/me/activity' as never },
+  { label: 'Мои покупки', href: '/me/activity' as const },
 ];
 
 const sellerNavItems = [
   { label: 'Каталог', href: '/' as const },
-  { label: 'Мои покупки', href: '/me/activity' as never },
+  { label: 'Мои покупки', href: '/me/activity' as const },
   { label: 'Продавать', href: '/profile' as const },
 ];
 

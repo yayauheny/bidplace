@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Text, YStack } from 'tamagui';
+import type { ApiClient } from '@bidplace/api-client';
 
 import {
   AppButton,
@@ -16,13 +17,14 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAppThemePalette } from '../../theme/palette';
 import { mobileSpacing } from '../../theme/tokens';
 
-type SellerProfile = { id: string; storeName: string; status: string };
-type AdminProduct = { id: string; title: string | null; status: string };
-type RankedBid = { id: string; amount: number; bidderAlias: string };
-type AdminSellersData = { sellerProfiles: SellerProfile[] };
-type AdminProductsData = { products: AdminProduct[] };
-type RankedBidsData = { bids: RankedBid[] };
-type CancelOrderData = { order: { publicId: string; listingId: string } };
+// Derive types from the API client to stay in sync with the contract.
+type AdminSellersData = Awaited<ReturnType<ApiClient['admin']['listSellerProfiles']>>;
+type AdminProductsData = Awaited<ReturnType<ApiClient['admin']['listProducts']>>;
+type RankedBidsData = Awaited<ReturnType<ApiClient['admin']['listRankedBids']>>;
+
+type SellerProfile = AdminSellersData['sellerProfiles'][number];
+type AdminProduct = AdminProductsData['products'][number];
+type RankedBid = RankedBidsData['bids'][number];
 
 type SellerStatusTone = 'positive' | 'warning' | 'negative' | 'neutral';
 type ProductStatusTone = 'positive' | 'neutral' | 'negative';
@@ -46,11 +48,11 @@ export function AdminModerationScreen() {
   const palette = useAppThemePalette();
   const sellers = useQuery({
     queryKey: ['admin', 'seller-profiles'],
-    queryFn: () => api.admin.listSellerProfiles() as Promise<AdminSellersData>,
+    queryFn: () => api.admin.listSellerProfiles(),
   });
   const products = useQuery({
     queryKey: ['admin', 'products'],
-    queryFn: () => api.admin.listProducts() as Promise<AdminProductsData>,
+    queryFn: () => api.admin.listProducts(),
   });
   const [orderPublicId, setOrderPublicId] = useState('');
   const [cancelReason, setCancelReason] = useState<
@@ -96,13 +98,13 @@ export function AdminModerationScreen() {
 
   const rankedBids = useQuery({
     queryKey: ['admin', 'ranked-bids', cancelledOrder?.listingId],
-    queryFn: () => api.admin.listRankedBids(cancelledOrder!.listingId) as Promise<RankedBidsData>,
+    queryFn: () => api.admin.listRankedBids(cancelledOrder!.listingId),
     enabled: Boolean(cancelledOrder),
   });
 
   const cancelOrder = useMutation({
     mutationFn: () =>
-      api.admin.cancelOrder(orderPublicId, { reason: cancelReason }) as Promise<CancelOrderData>,
+      api.admin.cancelOrder(orderPublicId, { reason: cancelReason }),
     onSuccess: (data) => {
       setCancelledOrder({
         publicId: data.order.publicId,

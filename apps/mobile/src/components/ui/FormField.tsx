@@ -33,7 +33,7 @@ export function FormField({
         fontWeight="600"
         letterSpacing={0.9}
         textTransform="uppercase"
-        color={palette.textMuted as any}
+        style={{ color: palette.textMuted }}
       >
         {label}
         {required ? ' *' : null}

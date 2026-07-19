@@ -5,44 +5,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
-// Local types for query.data — api returns Promise<unknown> in dist,
-// these types reflect the actual runtime shape.
-type ProductImage = { id: string; url: string };
-type ProductDetail = {
-  product: {
-    publicId: string;
-    title: string | null;
-    story: string | null;
-    provenance: string | null;
-    technique: string | null;
-    materials: string | null;
-    dimensions: string | null;
-    condition: string | null;
-    uniqueness: string | null;
-    city: string | null;
-    deliveryInfo: string | null;
-    images: ProductImage[];
-  };
-  sellerProfile: { storeName: string };
-  listing: {
-    id: string;
-    status: ListingStatus;
-    currentPrice: number;
-    endsAt: string;
-    startsAt: string;
-    auctionRules: { startPrice: number };
-  } | null;
-  minimumNextBid: number | null;
-};
-type ActivityItem = {
-  listing: { id: string };
-  status: string;
-  orderPublicId: string | null;
-  product: { publicId: string; title: string | null };
-};
-type ActivityData = { activity: ActivityItem[] };
-type BidItem = { id: string; amount: number; bidderAlias: string };
-
 import {
   AppButton,
   AppInput,
@@ -59,6 +21,10 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { useAppThemePalette } from '../../theme/palette';
 import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
+import type { ApiClient } from '@bidplace/api-client';
+
+// Derive types from the API client to stay in sync with the contract.
+type BidItem = Awaited<ReturnType<ApiClient['listings']['listBids']>>['bids'][number];
 
 type BidAttempt = { listingId: string; amount: number; idempotencyKey: string };
 
@@ -121,7 +87,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
 
   const query = useQuery({
     queryKey: ['products', publicId],
-    queryFn: () => api.products.get(publicId) as Promise<ProductDetail>,
+    queryFn: () => api.products.get(publicId),
   });
   const listingId = query.data?.listing?.id;
   const bids = useQuery({
@@ -131,7 +97,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   });
   const activity = useQuery({
     queryKey: ['user', 'activity'],
-    queryFn: () => api.activity.get() as Promise<ActivityData>,
+    queryFn: () => api.activity.get(),
     enabled: auth.isAuthenticated,
   });
 
@@ -151,11 +117,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   };
 
   const realtimeState = useListingRealtime(listingId, refreshListing);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const otp = useMutation({ mutationFn: () => (api.auth as any).requestPhoneOtp() });
+  const otp = useMutation({ mutationFn: () => api.auth.requestPhoneOtp() });
   const verify = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: () => (api.auth as any).verifyPhoneOtp({ code }),
+    mutationFn: () => api.auth.verifyPhoneOtp({ code }),
   });
   const bid = useMutation({
     mutationFn: (attempt: BidAttempt) =>
@@ -237,7 +201,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               gap: mobileSpacing[2],
             }}
           >
-            {product.images.map((image: ProductImage) => (
+            {product.images.map((image) => (
               <YStack
                 key={image.id}
                 style={{
@@ -537,12 +501,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
 
         {/* Order links */}
         {participation?.orderPublicId ? (
-          <Link href={`/order/${participation.orderPublicId}` as never} asChild>
+          <Link href={{ pathname: '/order/[publicId]', params: { publicId: participation.orderPublicId } }} asChild>
             <AppButton tone="secondary">Открыть результат заказа</AppButton>
           </Link>
         ) : null}
         {listing?.status === 'ENDED' && !participation?.orderPublicId ? (
-          <Link href={"/me/activity" as never} asChild>
+          <Link href="/me/activity" asChild>
             <AppButton tone="subtle">
               Проверить результат в «Моих покупках»
             </AppButton>

@@ -16,7 +16,7 @@ type MobileNavigationDrawerProps = {
 
 const navItems = [
   { label: 'Каталог', href: '/' as const },
-  { label: 'Мои покупки', href: '/me/activity' as never },
+  { label: 'Мои покупки', href: '/me/activity' as const },
 ];
 
 export function MobileNavigationDrawer({
@@ -133,7 +133,7 @@ export function MobileNavigationDrawer({
         {/* Profile link at bottom */}
         <YStack style={{ paddingHorizontal: mobileSpacing[5], paddingTop: mobileSpacing[6] }}>
           <Pressable
-            onPress={() => { onOpenChange(false); router.push(profileHref as never); }}
+            onPress={() => { onOpenChange(false); router.push(profileHref); }}
             accessibilityRole="link"
             style={({ pressed }) => ({
               opacity: pressed ? 0.6 : 1,

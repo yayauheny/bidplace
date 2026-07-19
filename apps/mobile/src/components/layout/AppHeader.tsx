@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import { Text, XStack, YStack, useMedia } from 'tamagui';
 
 import { useAuth } from '../../providers/auth-provider';
@@ -19,12 +19,12 @@ function NavAction({
   href,
   children,
 }: {
-  href: string;
+  href: '/profile' | '/me/activity' | '/login';
   children: ReactNode;
 }) {
   const palette = useAppThemePalette();
   return (
-    <Link href={href as never} asChild>
+    <Link href={href} asChild>
       <Pressable
         accessibilityRole="link"
         style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
@@ -86,15 +86,17 @@ export function AppHeader({ mode = 'public' }: AppHeaderProps) {
   return (
     <>
       <YStack
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: palette.borderColor,
-          backgroundColor: palette.surface,
-          // sticky on web
-          position: 'sticky' as never,
-          top: 0,
-          zIndex: 30,
-        }}
+        style={[
+          {
+            borderBottomWidth: 1,
+            borderBottomColor: palette.borderColor,
+            backgroundColor: palette.surface,
+            top: 0,
+            zIndex: 30,
+          },
+          // sticky is a web-only CSS value — apply only on web
+          Platform.select({ web: { position: 'sticky' } as object, default: {} }),
+        ]}
       >
         <XStack
           style={{

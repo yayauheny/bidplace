@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { Text, XStack } from 'tamagui';
 
-import { fontFamilies, mobileBrand } from '../../theme/tokens';
+import { mobileBrand } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
 
 // Brand mark — raster PNG placed by founder at assets/brand-mark.png.

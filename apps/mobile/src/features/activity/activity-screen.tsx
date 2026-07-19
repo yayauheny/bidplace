@@ -15,16 +15,13 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { useAppThemePalette } from '../../theme/palette';
 import { fontFamilies, mobileSpacing } from '../../theme/tokens';
+import type { ApiClient } from '@bidplace/api-client';
 
-type ActivityItem = {
-  listing: { id: string };
-  status: string;
-  orderPublicId: string | null;
-  product: { publicId: string; title: string | null };
-};
-type ActivityData = { activity: ActivityItem[] };
+// Derive types from the API client to stay in sync with the contract.
+type ActivityData = Awaited<ReturnType<ApiClient['activity']['get']>>;
+type ActivityItem = ActivityData['activity'][number];
 
-type ParticipationStatus = string;
+type ParticipationStatus = ActivityItem['status'];
 
 function activityStatusTone(
   status: ParticipationStatus,
@@ -49,7 +46,7 @@ export function ActivityScreen() {
   const palette = useAppThemePalette();
   const query = useQuery({
     queryKey: ['user', 'activity'],
-    queryFn: () => api.activity.get() as Promise<ActivityData>,
+    queryFn: () => api.activity.get(),
   });
 
   if (query.isLoading)
@@ -99,7 +96,7 @@ export function ActivityScreen() {
                     </Text>
                   </Link>
                   {item.orderPublicId ? (
-                    <Link href={`/order/${item.orderPublicId}` as never} asChild>
+                    <Link href={{ pathname: '/order/[publicId]', params: { publicId: item.orderPublicId } }} asChild>
                       <AppButton tone="secondary" buttonSize="small">
                         Открыть заказ
                       </AppButton>

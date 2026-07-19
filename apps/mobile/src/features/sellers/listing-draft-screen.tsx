@@ -1,20 +1,24 @@
 import { useState } from 'react';
-import { TextInput } from 'react-native';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { Text, YStack } from 'tamagui';
 
 import {
   AppButton,
+  AppInput,
   ErrorState,
   LoadingState,
+  OperationalPanel,
   Screen,
+  SectionHeader,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
-import { mobileSpacing, palette } from '../../theme/tokens';
+import { useAppThemePalette } from '../../theme/palette';
+import { mobileSpacing } from '../../theme/tokens';
 
 export function ListingDraftScreen() {
   const api = useApiClient();
+  const palette = useAppThemePalette();
   const products = useQuery({
     queryKey: ['seller', 'products'],
     queryFn: () => api.sellers.listProducts(),
@@ -40,74 +44,97 @@ export function ListingDraftScreen() {
   if (products.isLoading)
     return (
       <Screen>
-        <LoadingState label="Загружаем ваши Product" />
+        <LoadingState label="Загружаем ваши предметы" />
       </Screen>
     );
   if (products.isError || !products.data)
     return (
       <Screen>
         <ErrorState
-          description="Не удалось загрузить Product"
+          description="Не удалось загрузить предметы"
           onAction={() => products.refetch()}
         />
       </Screen>
     );
   return (
     <Screen>
-      <YStack gap="$3">
-        <Text fontSize={30} fontWeight="600">
-          Новый Auction Listing
-        </Text>
-        <Text>
-          Валюта: BYN. Правила soft close будут зафиксированы сервером при
-          создании.
-        </Text>
-        {products.data.products.map((product) => (
-          <YStack key={product.id} gap="$1">
-            <AppButton
-              tone={product.id === productId ? 'primary' : 'secondary'}
-              onPress={() => setProductId(product.id)}
-            >
-              {product.title ?? product.id} · {product.status}
-            </AppButton>
-            <Link href={`/(seller)/products/${product.id}` as never} asChild>
-              Редактировать Product
-            </Link>
+      <YStack style={{ gap: mobileSpacing[5] }}>
+        <SectionHeader
+          title="Новое размещение"
+          description="Валюта: BYN. Правила soft close фиксируются сервером при создании."
+        />
+
+        {/* Product selection */}
+        <OperationalPanel eyebrow="Предмет">
+          <YStack style={{ gap: mobileSpacing[2] }}>
+            {products.data.products.map((product) => (
+              <YStack key={product.id} style={{ gap: mobileSpacing[1] }}>
+                <AppButton
+                  tone={product.id === productId ? 'primary' : 'secondary'}
+                  onPress={() => setProductId(product.id)}
+                >
+                  {product.title ?? product.id} · {product.status}
+                </AppButton>
+                <Link
+                  href={{
+                    pathname: '/(seller)/products/[id]',
+                    params: { id: product.id },
+                  }}
+                  asChild
+                >
+                  <AppButton tone="subtle" buttonSize="small">
+                    Редактировать предмет
+                  </AppButton>
+                </Link>
+              </YStack>
+            ))}
           </YStack>
-        ))}
-        <TextInput
-          value={startsAt}
-          onChangeText={setStartsAt}
-          placeholder="Начало ISO, например 2026-07-20T12:00:00.000Z"
-          autoCapitalize="none"
-        />
-        <TextInput
-          value={endsAt}
-          onChangeText={setEndsAt}
-          placeholder="Окончание ISO"
-          autoCapitalize="none"
-        />
-        <TextInput
-          value={startPrice}
-          onChangeText={setStartPrice}
-          placeholder="Стартовая цена в BYN"
-          keyboardType="decimal-pad"
-        />
+        </OperationalPanel>
+
+        {/* Schedule fields */}
+        <OperationalPanel eyebrow="Расписание">
+          <YStack style={{ gap: mobileSpacing[3] }}>
+            <AppInput
+              label="Начало"
+              value={startsAt}
+              onChangeText={setStartsAt}
+              placeholder="2026-07-20T12:00:00.000Z"
+              autoCapitalize="none"
+            />
+            <AppInput
+              label="Окончание"
+              value={endsAt}
+              onChangeText={setEndsAt}
+              placeholder="2026-07-21T12:00:00.000Z"
+              autoCapitalize="none"
+            />
+            <AppInput
+              label="Стартовая цена, BYN"
+              value={startPrice}
+              onChangeText={setStartPrice}
+              placeholder="0"
+              keyboardType="decimal-pad"
+            />
+          </YStack>
+        </OperationalPanel>
+
         <AppButton isLoading={create.isPending} onPress={() => create.mutate()}>
-          Создать Listing
+          Создать размещение
         </AppButton>
+
         {listingId ? (
           <AppButton
             tone="secondary"
             isLoading={schedule.isPending}
             onPress={() => schedule.mutate()}
           >
-            Запланировать Listing
+            Запланировать размещение
           </AppButton>
         ) : null}
+
         {create.isError || schedule.isError ? (
           <Text style={{ color: palette.negative }}>
-            Не удалось сохранить Listing. Проверьте Product approval и даты.
+            Не удалось сохранить размещение. Проверьте approval предмета и даты.
           </Text>
         ) : null}
       </YStack>

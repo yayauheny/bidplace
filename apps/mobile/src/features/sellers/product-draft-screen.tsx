@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { TextInput } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -8,17 +7,23 @@ import { Text, YStack } from 'tamagui';
 
 import {
   AppButton,
+  AppInput,
   ErrorState,
   LoadingState,
+  OperationalPanel,
   Screen,
+  SectionHeader,
+  StatusBadge,
 } from '../../components/ui';
-import { mobileSpacing, palette } from '../../theme/tokens';
+import { useAppThemePalette } from '../../theme/palette';
 import { getApiUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
+import { mobileSpacing } from '../../theme/tokens';
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
   const api = useApiClient();
   const router = useRouter();
+  const palette = useAppThemePalette();
   const queryClient = useQueryClient();
   const categories = useQuery({
     queryKey: ['products', 'categories'],
@@ -89,7 +94,11 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         : api.products.create(input()),
     onSuccess: async ({ product }) => {
       await queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
-      if (!existingProduct) router.replace(`/(seller)/products/${product.id}` as never);
+      if (!existingProduct)
+        router.replace({
+          pathname: '/(seller)/products/[id]',
+          params: { id: product.id },
+        });
     },
   });
   const upload = useMutation({
@@ -129,7 +138,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
   if (categories.isLoading || (productId && products.isLoading))
     return (
       <Screen>
-        <LoadingState label="Загружаем Product" />
+        <LoadingState label="Загружаем предмет" />
       </Screen>
     );
   if (
@@ -140,7 +149,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
     return (
       <Screen>
         <ErrorState
-          description="Не удалось загрузить Product"
+          description="Не удалось загрузить предмет"
           onAction={() => {
             void categories.refetch();
             void products.refetch();
@@ -152,192 +161,255 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
   return (
     <Screen>
-      <YStack gap="$3">
-        <Text fontSize={30} fontWeight="600">
-          {existingProduct ? 'Редактировать Product' : 'Новый Product'}
-        </Text>
-        <Text>
-          Черновик можно сохранить неполным. Для approval понадобятся все
-          обязательные поля и минимум три изображения.
-        </Text>
+      <YStack style={{ gap: mobileSpacing[5] }}>
+        <SectionHeader
+          title={existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
+          description="Черновик можно сохранить неполным. Для approval нужны все обязательные поля и минимум 3 изображения."
+        />
+
         {existingProduct && !editable ? (
-          <Text style={{ color: palette.negative }}>
-            Product уже нельзя редактировать или изменять его изображения.
-          </Text>
+          <OperationalPanel>
+            <Text style={{ color: palette.negative }}>
+              Предмет уже нельзя редактировать или изменять его изображения.
+            </Text>
+          </OperationalPanel>
         ) : null}
-        <Text>Категория</Text>
-        {categories.data.categories.map((category) => (
-          <AppButton
-            key={category.id}
-            tone={categoryId === category.id ? 'primary' : 'secondary'}
-            disabled={!editable}
-            onPress={() => setCategoryId(category.id)}
-          >
-            {category.name}
-          </AppButton>
-        ))}
-        <TextInput
-          editable={editable}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Название"
-        />
-        <TextInput
-          editable={editable}
-          value={story}
-          onChangeText={setStory}
-          placeholder="История предмета"
-          multiline
-        />
-        <TextInput
-          editable={editable}
-          value={technique}
-          onChangeText={setTechnique}
-          placeholder="Техника (необязательно)"
-        />
-        <TextInput
-          editable={editable}
-          value={materials}
-          onChangeText={setMaterials}
-          placeholder="Материалы (необязательно)"
-        />
-        <TextInput
-          editable={editable}
-          value={dimensions}
-          onChangeText={setDimensions}
-          placeholder="Размеры (необязательно)"
-        />
-        <TextInput
-          editable={editable}
-          value={weight}
-          onChangeText={setWeight}
-          placeholder="Вес (необязательно)"
-        />
-        <TextInput
-          editable={editable}
-          value={year}
-          onChangeText={setYear}
-          placeholder="Год (необязательно)"
-          keyboardType="number-pad"
-        />
-        <TextInput
-          editable={editable}
-          value={condition}
-          onChangeText={setCondition}
-          placeholder="Состояние"
-        />
-        <TextInput
-          editable={editable}
-          value={uniqueness}
-          onChangeText={setUniqueness}
-          placeholder="Уникальность или тираж"
-        />
-        <TextInput
-          editable={editable}
-          value={provenance}
-          onChangeText={setProvenance}
-          placeholder="Происхождение"
-          multiline
-        />
-        <TextInput
-          editable={editable}
-          value={city}
-          onChangeText={setCity}
-          placeholder="Город"
-        />
-        <TextInput
-          editable={editable}
-          value={deliveryInfo}
-          onChangeText={setDeliveryInfo}
-          placeholder="Передача или доставка"
-          multiline
-        />
+
+        {/* Category */}
+        <OperationalPanel eyebrow="Категория">
+          <YStack style={{ gap: mobileSpacing[2] }}>
+            {categories.data.categories.map((category) => (
+              <AppButton
+                key={category.id}
+                tone={categoryId === category.id ? 'primary' : 'secondary'}
+                disabled={!editable}
+                onPress={() => setCategoryId(category.id)}
+              >
+                {category.name}
+              </AppButton>
+            ))}
+          </YStack>
+        </OperationalPanel>
+
+        {/* Core fields */}
+        <OperationalPanel eyebrow="Основное">
+          <YStack style={{ gap: mobileSpacing[3] }}>
+            <AppInput
+              label="Название"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Название"
+              editable={editable}
+            />
+            <AppInput
+              label="История предмета"
+              value={story}
+              onChangeText={setStory}
+              placeholder="История предмета"
+              multiline
+              editable={editable}
+            />
+            <AppInput
+              label="Состояние"
+              value={condition}
+              onChangeText={setCondition}
+              placeholder="Состояние"
+              editable={editable}
+            />
+            <AppInput
+              label="Уникальность или тираж"
+              value={uniqueness}
+              onChangeText={setUniqueness}
+              placeholder="Уникальность или тираж"
+              editable={editable}
+            />
+            <AppInput
+              label="Происхождение"
+              value={provenance}
+              onChangeText={setProvenance}
+              placeholder="Происхождение"
+              multiline
+              editable={editable}
+            />
+          </YStack>
+        </OperationalPanel>
+
+        {/* Technical attributes */}
+        <OperationalPanel eyebrow="Технические характеристики">
+          <YStack style={{ gap: mobileSpacing[3] }}>
+            <AppInput
+              label="Техника"
+              value={technique}
+              onChangeText={setTechnique}
+              placeholder="Техника (необязательно)"
+              editable={editable}
+            />
+            <AppInput
+              label="Материалы"
+              value={materials}
+              onChangeText={setMaterials}
+              placeholder="Материалы (необязательно)"
+              editable={editable}
+            />
+            <AppInput
+              label="Размеры"
+              value={dimensions}
+              onChangeText={setDimensions}
+              placeholder="Размеры (необязательно)"
+              editable={editable}
+            />
+            <AppInput
+              label="Вес"
+              value={weight}
+              onChangeText={setWeight}
+              placeholder="Вес (необязательно)"
+              editable={editable}
+            />
+            <AppInput
+              label="Год"
+              value={year}
+              onChangeText={setYear}
+              placeholder="Год (необязательно)"
+              keyboardType="number-pad"
+              editable={editable}
+            />
+          </YStack>
+        </OperationalPanel>
+
+        {/* Logistics */}
+        <OperationalPanel eyebrow="Логистика">
+          <YStack style={{ gap: mobileSpacing[3] }}>
+            <AppInput
+              label="Город"
+              value={city}
+              onChangeText={setCity}
+              placeholder="Город"
+              editable={editable}
+            />
+            <AppInput
+              label="Передача или доставка"
+              value={deliveryInfo}
+              onChangeText={setDeliveryInfo}
+              placeholder="Передача или доставка"
+              multiline
+              editable={editable}
+            />
+          </YStack>
+        </OperationalPanel>
+
         {editable ? (
-          <AppButton isLoading={save.isPending} onPress={() => save.mutate()}>
+          <AppButton
+            buttonSize="large"
+            isLoading={save.isPending}
+            onPress={() => save.mutate()}
+          >
             {existingProduct ? 'Сохранить изменения' : 'Сохранить черновик'}
           </AppButton>
         ) : null}
-        {existingProduct ? (
-          <>
-            <Text>Изображений: {existingProduct.images.length}/10</Text>
-            {existingProduct.images.map((image) => (
-              <YStack key={image.id} gap="$1">
-                <Image
-                  source={{ uri: `${getApiUrl()}${image.url}` }}
-                  style={{ width: '100%', height: 180 }}
-                  contentFit="cover"
-                  accessibilityLabel={`Изображение Product ${image.position + 1}`}
-                />
-                {editable ? (
-                  <>
-                    <AppButton
-                      tone="secondary"
-                      disabled={image.position === 0}
-                      isLoading={reorderImages.isPending}
-                      onPress={() => {
-                        const ids = existingProduct.images.map(
-                          (item) => item.id,
-                        );
-                        const index = ids.indexOf(image.id);
-                        [ids[index - 1], ids[index]] = [
-                          ids[index],
-                          ids[index - 1],
-                        ];
-                        reorderImages.mutate(ids);
-                      }}
-                    >
-                      Переместить выше
-                    </AppButton>
-                    <AppButton
-                      tone="secondary"
-                      disabled={
-                        image.position === existingProduct.images.length - 1
-                      }
-                      isLoading={reorderImages.isPending}
-                      onPress={() => {
-                        const ids = existingProduct.images.map(
-                          (item) => item.id,
-                        );
-                        const index = ids.indexOf(image.id);
-                        [ids[index], ids[index + 1]] = [
-                          ids[index + 1],
-                          ids[index],
-                        ];
-                        reorderImages.mutate(ids);
-                      }}
-                    >
-                      Переместить ниже
-                    </AppButton>
-                    <AppButton
-                      tone="subtle"
-                      isLoading={removeImage.isPending}
-                      onPress={() => removeImage.mutate(image.id)}
-                    >
-                      Удалить изображение
-                    </AppButton>
-                  </>
-                ) : null}
-              </YStack>
-            ))}
-            {editable ? (
-              <AppButton
-                tone="secondary"
-                isLoading={upload.isPending}
-                onPress={chooseImages}
-              >
-                Добавить изображения
-              </AppButton>
-            ) : null}
-            {upload.isError ? (
-              <Text style={{ color: palette.negative }}>Не удалось загрузить изображения</Text>
-            ) : null}
-            {removeImage.isError || reorderImages.isError ? (
-              <Text style={{ color: palette.negative }}>Не удалось изменить изображения.</Text>
-            ) : null}
-          </>
-        ) : null}
+
         {save.isError ? (
-          <Text style={{ color: palette.negative }}>Не удалось сохранить Product</Text>
+          <Text style={{ color: palette.negative }}>
+            Не удалось сохранить предмет
+          </Text>
+        ) : null}
+
+        {/* Images */}
+        {existingProduct ? (
+          <OperationalPanel eyebrow="Изображения">
+            <YStack style={{ gap: mobileSpacing[3] }}>
+              {existingProduct.status !== 'DRAFT' ? (
+                <StatusBadge tone="neutral">
+                  Изображения нельзя изменить после публикации
+                </StatusBadge>
+              ) : null}
+              <Text
+                style={{ color: palette.colorSecondary, fontSize: 13, lineHeight: 18 }}
+              >
+                {existingProduct.images.length}/10 изображений
+              </Text>
+              {existingProduct.images.map((image) => (
+                <YStack key={image.id} style={{ gap: mobileSpacing[2] }}>
+                  <Image
+                    source={{ uri: `${getApiUrl()}${image.url}` }}
+                    style={{ width: '100%', height: 180 }}
+                    contentFit="cover"
+                    accessibilityLabel={`Изображение предмета ${image.position + 1}`}
+                  />
+                  {editable ? (
+                    <YStack style={{ gap: mobileSpacing[1] }}>
+                      <AppButton
+                        tone="secondary"
+                        buttonSize="small"
+                        disabled={image.position === 0}
+                        isLoading={reorderImages.isPending}
+                        onPress={() => {
+                          const ids = existingProduct.images.map(
+                            (item) => item.id,
+                          );
+                          const index = ids.indexOf(image.id);
+                          [ids[index - 1], ids[index]] = [
+                            ids[index],
+                            ids[index - 1],
+                          ];
+                          reorderImages.mutate(ids);
+                        }}
+                      >
+                        Переместить выше
+                      </AppButton>
+                      <AppButton
+                        tone="secondary"
+                        buttonSize="small"
+                        disabled={
+                          image.position === existingProduct.images.length - 1
+                        }
+                        isLoading={reorderImages.isPending}
+                        onPress={() => {
+                          const ids = existingProduct.images.map(
+                            (item) => item.id,
+                          );
+                          const index = ids.indexOf(image.id);
+                          [ids[index], ids[index + 1]] = [
+                            ids[index + 1],
+                            ids[index],
+                          ];
+                          reorderImages.mutate(ids);
+                        }}
+                      >
+                        Переместить ниже
+                      </AppButton>
+                      <AppButton
+                        tone="subtle"
+                        buttonSize="small"
+                        isLoading={removeImage.isPending}
+                        onPress={() => removeImage.mutate(image.id)}
+                      >
+                        Удалить изображение
+                      </AppButton>
+                    </YStack>
+                  ) : null}
+                </YStack>
+              ))}
+              {editable ? (
+                <AppButton
+                  tone="secondary"
+                  isLoading={upload.isPending}
+                  onPress={chooseImages}
+                >
+                  Добавить изображения
+                </AppButton>
+              ) : null}
+              {upload.isError ? (
+                <Text style={{ color: palette.negative }}>
+                  Не удалось загрузить изображения
+                </Text>
+              ) : null}
+              {removeImage.isError || reorderImages.isError ? (
+                <Text style={{ color: palette.negative }}>
+                  Не удалось изменить изображения.
+                </Text>
+              ) : null}
+            </YStack>
+          </OperationalPanel>
         ) : null}
       </YStack>
     </Screen>

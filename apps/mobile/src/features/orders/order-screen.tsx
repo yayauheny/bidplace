@@ -12,16 +12,11 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { mobileSpacing } from '../../theme/tokens';
 
-type OrderData = {
-  order: { publicId: string; finalAmount: number; contactDueAt: string };
-  productSummary: { title: string | null };
-};
-
 export function OrderScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
   const query = useQuery({
     queryKey: ['orders', publicId],
-    queryFn: () => api.orders.get(publicId) as Promise<OrderData>,
+    queryFn: () => api.orders.get(publicId),
   });
 
   if (query.isLoading)
