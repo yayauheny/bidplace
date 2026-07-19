@@ -5,7 +5,8 @@ import { Pressable } from 'react-native';
 import { Text, XStack, YStack, useMedia } from 'tamagui';
 
 import { useAuth } from '../../providers/auth-provider';
-import { mobileLayout, mobileSpacing } from '../../theme/tokens';
+import { mobileLayout, mobileSpacing, fontFamilies } from '../../theme/tokens';
+import { useAppThemePalette } from '../../theme/palette';
 import { BrandLogo } from './BrandLogo';
 import { DesktopNavigation } from './DesktopNavigation';
 import { MobileNavigationDrawer } from './MobileNavigationDrawer';
@@ -14,31 +15,83 @@ type AppHeaderProps = {
   mode?: 'public' | 'seller' | 'admin' | 'auth';
 };
 
-function ActionLabel({ children }: { children: ReactNode }) {
+function NavAction({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  const palette = useAppThemePalette();
   return (
-    <Text color="$text" style={{ fontSize: 12, letterSpacing: 1.1, textTransform: 'uppercase' }}>
-      {children}
-    </Text>
+    <Link href={href as never} asChild>
+      <Pressable
+        accessibilityRole="link"
+        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+      >
+        <Text
+          style={{
+            fontFamily: fontFamilies.sansMedium,
+            fontSize: 13,
+            lineHeight: 18,
+            letterSpacing: 0.2,
+            color: palette.colorSecondary,
+          }}
+        >
+          {children}
+        </Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+function MenuTrigger({ onPress }: { onPress: () => void }) {
+  const palette = useAppThemePalette();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Открыть меню"
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.6 : 1,
+        padding: mobileSpacing[2],
+        minWidth: 44,
+        minHeight: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+      })}
+    >
+      <Text
+        style={{
+          fontFamily: fontFamilies.sansMedium,
+          fontSize: 13,
+          lineHeight: 18,
+          color: palette.colorSecondary,
+        }}
+      >
+        Меню
+      </Text>
+    </Pressable>
   );
 }
 
 export function AppHeader({ mode = 'public' }: AppHeaderProps) {
   const media = useMedia();
   const auth = useAuth();
+  const palette = useAppThemePalette();
   const [open, setOpen] = useState(false);
   const isDesktop = Boolean(media.desktop || media.wide);
   const profileHref = auth.isAuthenticated ? '/me/activity' : '/login';
-  const sectionLabel =
-    mode === 'admin' ? 'Admin' : mode === 'seller' ? 'Seller' : 'EN';
 
   return (
     <>
       <YStack
         style={{
           borderBottomWidth: 1,
-          borderBottomColor: '#DFDDD7',
-          backgroundColor: '#FFFFFF',
-          position: 'sticky',
+          borderBottomColor: palette.borderColor,
+          backgroundColor: palette.surface,
+          // sticky on web
+          position: 'sticky' as never,
           top: 0,
           zIndex: 30,
         }}
@@ -50,48 +103,60 @@ export function AppHeader({ mode = 'public' }: AppHeaderProps) {
             alignSelf: 'center',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: mobileSpacing[3],
-            paddingHorizontal: mobileSpacing[4],
-            paddingVertical: mobileSpacing[3],
-            minHeight: 60,
+            paddingHorizontal: mobileSpacing[5],
+            minHeight: 56,
           }}
         >
-          <XStack style={{ flex: 1, alignItems: 'center', gap: mobileSpacing[3] }}>
+          {/* Left: nav or menu trigger */}
+          <XStack style={{ flex: 1, alignItems: 'center', gap: mobileSpacing[5] }}>
             {isDesktop ? (
-              <DesktopNavigation />
+              <DesktopNavigation mode={mode} />
             ) : (
-              <Pressable onPress={() => setOpen(true)} accessibilityRole="button">
-                <ActionLabel>Menu</ActionLabel>
-              </Pressable>
+              <MenuTrigger onPress={() => setOpen(true)} />
             )}
           </XStack>
 
-          <XStack style={{ flex: 1, justifyContent: 'center' }}>
+          {/* Center: brand lockup */}
+          <XStack style={{ alignItems: 'center' }}>
             <BrandLogo compact={!isDesktop} />
           </XStack>
 
+          {/* Right: profile / context actions */}
           <XStack
             style={{
               flex: 1,
               alignItems: 'center',
               justifyContent: 'flex-end',
-              gap: mobileSpacing[3],
+              gap: mobileSpacing[4],
             }}
           >
-            <ActionLabel>{sectionLabel}</ActionLabel>
-            <Link href={profileHref} asChild>
-              <Pressable accessibilityRole="link">
-                <ActionLabel>Profile</ActionLabel>
-              </Pressable>
-            </Link>
+            {mode === 'admin' ? (
+              <Text
+                style={{
+                  fontFamily: fontFamilies.sansMedium,
+                  fontSize: 12,
+                  color: palette.warning,
+                  fontWeight: '600',
+                }}
+              >
+                Admin
+              </Text>
+            ) : mode === 'seller' ? (
+              <NavAction href="/profile">Продавец</NavAction>
+            ) : null}
+            <NavAction href={profileHref}>
+              {auth.isAuthenticated ? 'Мои покупки' : 'Войти'}
+            </NavAction>
           </XStack>
         </XStack>
       </YStack>
+
       {!isDesktop ? (
         <MobileNavigationDrawer
           open={open}
           onOpenChange={setOpen}
           profileHref={profileHref}
+          mode={mode}
         />
       ) : null}
     </>
