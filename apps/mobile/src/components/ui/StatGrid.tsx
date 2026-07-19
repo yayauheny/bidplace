@@ -1,6 +1,6 @@
 import { Text, XStack, YStack } from 'tamagui';
 
-import { mobileRadius, mobileSpacing } from '../../theme/tokens';
+import { mobileRadius, mobileSpacing, palette } from '../../theme/tokens';
 
 type StatItem = {
   label: string;
@@ -24,14 +24,14 @@ export function StatGrid({ items }: StatGridProps) {
             padding: mobileSpacing[3],
             borderWidth: 1,
             borderColor: '#DFDDD7',
-            borderRadius: mobileRadius.md,
+            borderRadius: mobileRadius.control,
             backgroundColor: '#FFFFFF',
           }}
         >
-          <Text color="$textMuted" style={{ fontSize: 12, lineHeight: 16, letterSpacing: 0.9, textTransform: 'uppercase' }}>
+          <Text style={{ color: palette.textMuted, fontSize: 12, lineHeight: 16, letterSpacing: 0.9, textTransform: 'uppercase' }}>
             {item.label}
           </Text>
-          <Text color="$text" style={{ fontSize: 20, lineHeight: 26, fontWeight: '600' }}>
+          <Text style={{ color: palette.textPrimary, fontSize: 20, lineHeight: 26, fontWeight: '600' }}>
             {item.value}
           </Text>
         </YStack>

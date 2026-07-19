@@ -26,7 +26,6 @@ export function Surface({ children, noPadding, ...props }: SurfaceProps) {
           borderColor: palette.borderColor,
           padding: noPadding ? 0 : mobileSpacing[4],
         },
-        // @ts-expect-error -- RN style array
         props.style,
       ]}
     >

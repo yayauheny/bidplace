@@ -1,6 +1,6 @@
 import { Text, YStack } from 'tamagui';
 
-import { mobileSpacing } from '../../theme/tokens';
+import { mobileSpacing, palette } from '../../theme/tokens';
 
 type DetailItem = {
   label: string;
@@ -17,12 +17,11 @@ export function DetailList({ items }: DetailListProps) {
     <YStack style={{ gap: mobileSpacing[2] }}>
       {items.map((item) => (
         <YStack key={`${item.label}-${item.value}`} style={{ gap: 2 }}>
-          <Text color="$textMuted" style={{ fontSize: 12, lineHeight: 16, letterSpacing: 0.9, textTransform: 'uppercase' }}>
+          <Text style={{ color: palette.textMuted, fontSize: 12, lineHeight: 16, letterSpacing: 0.9, textTransform: 'uppercase' }}>
             {item.label}
           </Text>
           <Text
-            color={item.accent ? '$text' : '$text'}
-            style={{ fontSize: 15, lineHeight: 22 }}
+            style={{ color: palette.textPrimary, fontSize: 15, lineHeight: 22 }}
           >
             {item.value}
           </Text>

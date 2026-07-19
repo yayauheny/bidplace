@@ -32,14 +32,14 @@ function AuthCard({
       <YStack style={{ gap: mobileSpacing[4], alignItems: 'center' }}>
         <BrandLogo />
         <YStack style={{ gap: mobileSpacing[2], alignItems: 'center' }}>
-          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.text }}>
+          <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: palette.color }}>
             {title}
           </Text>
           <Text
             style={{
               fontSize: 14,
               lineHeight: 20,
-              color: palette.textMuted,
+              color: palette.colorMuted,
               textAlign: 'center',
             }}
           >
@@ -78,7 +78,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   });
 
   if (!auth.ready) {
-    return <Text style={{ color: palette.textMuted }}>Подготавливаем форму...</Text>;
+    return <Text style={{ color: palette.colorMuted }}>Подготавливаем форму...</Text>;
   }
 
   if (auth.isAuthenticated) {
@@ -117,7 +117,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
           error={form.formState.errors.password?.message}
         />
         {submitError ? (
-          <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>{submitError}</Text>
+          <Text style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}>{submitError}</Text>
         ) : null}
         <AppButton
           onPress={onSubmit}
@@ -162,7 +162,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
   });
 
   if (!auth.ready) {
-    return <Text style={{ color: palette.textMuted }}>Подготавливаем форму...</Text>;
+    return <Text style={{ color: palette.colorMuted }}>Подготавливаем форму...</Text>;
   }
 
   if (auth.isAuthenticated) {
@@ -218,7 +218,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
           error={form.formState.errors.password?.message}
         />
         {submitError ? (
-          <Text style={{ color: palette.danger, fontSize: 14, lineHeight: 20 }}>{submitError}</Text>
+          <Text style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}>{submitError}</Text>
         ) : null}
         <AppButton
           onPress={onSubmit}

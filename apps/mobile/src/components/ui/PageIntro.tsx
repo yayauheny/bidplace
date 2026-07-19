@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { Text, YStack } from 'tamagui';
 
-import { mobileSpacing } from '../../theme/tokens';
+import { mobileSpacing, palette } from '../../theme/tokens';
 import { StatusBadge } from './StatusBadge';
 
 type PageIntroProps = {
   badge?: {
     label: string;
-    tone?: 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+    tone?: 'positive' | 'warning' | 'negative' | 'neutral';
   };
   title: string;
   description?: string;
@@ -24,11 +24,11 @@ export function PageIntro({
     <YStack style={{ gap: mobileSpacing[3] }}>
       {badge ? <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge> : null}
       <YStack style={{ gap: mobileSpacing[2] }}>
-        <Text color="$text" fontFamily="$heading" style={{ fontSize: 36, lineHeight: 40 }}>
+        <Text fontFamily="$heading" style={{ color: palette.textPrimary, fontSize: 36, lineHeight: 40 }}>
           {title}
         </Text>
         {description ? (
-          <Text color="$textMuted" style={{ fontSize: 16, lineHeight: 24, maxWidth: 720 }}>
+          <Text style={{ color: palette.textMuted, fontSize: 16, lineHeight: 24, maxWidth: 720 }}>
             {description}
           </Text>
         ) : null}

@@ -11,6 +11,7 @@ import {
   Screen,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
+import { mobileSpacing, palette } from '../../theme/tokens';
 
 export function ListingDraftScreen() {
   const api = useApiClient();
@@ -69,7 +70,7 @@ export function ListingDraftScreen() {
             >
               {product.title ?? product.id} · {product.status}
             </AppButton>
-            <Link href={`/(seller)/products/${product.id}`}>
+            <Link href={`/(seller)/products/${product.id}` as never} asChild>
               Редактировать Product
             </Link>
           </YStack>
@@ -105,7 +106,7 @@ export function ListingDraftScreen() {
           </AppButton>
         ) : null}
         {create.isError || schedule.isError ? (
-          <Text color="$danger">
+          <Text style={{ color: palette.negative }}>
             Не удалось сохранить Listing. Проверьте Product approval и даты.
           </Text>
         ) : null}

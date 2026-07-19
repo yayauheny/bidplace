@@ -12,6 +12,7 @@ import {
   LoadingState,
   Screen,
 } from '../../components/ui';
+import { mobileSpacing, palette } from '../../theme/tokens';
 import { getApiUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 
@@ -88,7 +89,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         : api.products.create(input()),
     onSuccess: async ({ product }) => {
       await queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
-      if (!existingProduct) router.replace(`/(seller)/products/${product.id}`);
+      if (!existingProduct) router.replace(`/(seller)/products/${product.id}` as never);
     },
   });
   const upload = useMutation({
@@ -160,7 +161,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           обязательные поля и минимум три изображения.
         </Text>
         {existingProduct && !editable ? (
-          <Text color="$danger">
+          <Text style={{ color: palette.negative }}>
             Product уже нельзя редактировать или изменять его изображения.
           </Text>
         ) : null}
@@ -328,15 +329,15 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               </AppButton>
             ) : null}
             {upload.isError ? (
-              <Text color="$danger">Не удалось загрузить изображения</Text>
+              <Text style={{ color: palette.negative }}>Не удалось загрузить изображения</Text>
             ) : null}
             {removeImage.isError || reorderImages.isError ? (
-              <Text color="$danger">Не удалось изменить изображения.</Text>
+              <Text style={{ color: palette.negative }}>Не удалось изменить изображения.</Text>
             ) : null}
           </>
         ) : null}
         {save.isError ? (
-          <Text color="$danger">Не удалось сохранить Product</Text>
+          <Text style={{ color: palette.negative }}>Не удалось сохранить Product</Text>
         ) : null}
       </YStack>
     </Screen>

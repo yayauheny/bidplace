@@ -19,7 +19,7 @@ export function Price({
   const palette = useAppThemePalette();
   const formatted = formatDisplayPrice(value, currency, locale);
 
-  const color = tone === 'accent' ? palette.primary : tone === 'muted' ? palette.textMuted : palette.text;
+  const color = tone === 'accent' ? palette.primary : tone === 'muted' ? palette.colorMuted : palette.color;
 
   return (
     <Text

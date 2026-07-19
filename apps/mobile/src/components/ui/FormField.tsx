@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { mobileSpacing } from '../../theme/tokens';
+import { mobileSpacing, palette } from '../../theme/tokens';
 import { Label, Text, YStack } from 'tamagui';
 
 type FormFieldProps = {
@@ -33,14 +33,14 @@ export function FormField({
         fontWeight="600"
         letterSpacing={0.9}
         textTransform="uppercase"
-        color="$textMuted"
+        color={palette.textMuted as any}
       >
         {label}
         {required ? ' *' : null}
       </Label>
       {children}
       {description ? (
-        <Text id={descriptionId} fontSize={12} lineHeight={16} color="$textMuted">
+        <Text id={descriptionId} fontSize={12} lineHeight={16} style={{ color: palette.textMuted }}>
           {description}
         </Text>
       ) : null}
@@ -49,7 +49,7 @@ export function FormField({
           id={errorId}
           fontSize={12}
           lineHeight={16}
-          color="$danger"
+          style={{ color: palette.negative }}
           accessibilityRole="alert"
         >
           {error}

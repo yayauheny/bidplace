@@ -1,20 +1,64 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { TextInput } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { Text, YStack } from 'tamagui';
+import { Text, XStack, YStack } from 'tamagui';
+
+// Local types for query.data — api returns Promise<unknown> in dist,
+// these types reflect the actual runtime shape.
+type ProductImage = { id: string; url: string };
+type ProductDetail = {
+  product: {
+    publicId: string;
+    title: string | null;
+    story: string | null;
+    provenance: string | null;
+    technique: string | null;
+    materials: string | null;
+    dimensions: string | null;
+    condition: string | null;
+    uniqueness: string | null;
+    city: string | null;
+    deliveryInfo: string | null;
+    images: ProductImage[];
+  };
+  sellerProfile: { storeName: string };
+  listing: {
+    id: string;
+    status: ListingStatus;
+    currentPrice: number;
+    endsAt: string;
+    startsAt: string;
+    auctionRules: { startPrice: number };
+  } | null;
+  minimumNextBid: number | null;
+};
+type ActivityItem = {
+  listing: { id: string };
+  status: string;
+  orderPublicId: string | null;
+  product: { publicId: string; title: string | null };
+};
+type ActivityData = { activity: ActivityItem[] };
+type BidItem = { id: string; amount: number; bidderAlias: string };
 
 import {
   AppButton,
+  AppInput,
+  DetailList,
   ErrorState,
   LoadingState,
+  OperationalPanel,
   Screen,
+  StatusBadge,
 } from '../../components/ui';
 import { getApiUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
+import { useAppThemePalette } from '../../theme/palette';
+import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
 
 type BidAttempt = { listingId: string; amount: number; idempotencyKey: string };
 
@@ -36,9 +80,9 @@ function formatRemainingTime(endsAt: string, now: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
 }
 
-function listingStatusLabel(
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | 'DRAFT',
-): string {
+type ListingStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | 'DRAFT';
+
+function listingStatusLabel(status: ListingStatus): string {
   return {
     SCHEDULED: 'Торги запланированы',
     LIVE: 'Торги идут',
@@ -48,17 +92,36 @@ function listingStatusLabel(
   }[status];
 }
 
+function listingStatusTone(
+  status: ListingStatus,
+): 'positive' | 'primary' | 'neutral' | 'negative' {
+  if (status === 'LIVE') return 'positive';
+  if (status === 'SCHEDULED') return 'primary';
+  if (status === 'CANCELLED') return 'negative';
+  return 'neutral';
+}
+
+function participationStatusTone(
+  status: string,
+): 'positive' | 'warning' | 'neutral' {
+  if (status === 'LEADING' || status === 'WON') return 'positive';
+  if (status === 'OUTBID') return 'warning';
+  return 'neutral';
+}
+
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const palette = useAppThemePalette();
   const [amount, setAmount] = useState('');
   const [code, setCode] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [now, setNow] = useState(Date.now());
+
   const query = useQuery({
     queryKey: ['products', publicId],
-    queryFn: () => api.products.get(publicId),
+    queryFn: () => api.products.get(publicId) as Promise<ProductDetail>,
   });
   const listingId = query.data?.listing?.id;
   const bids = useQuery({
@@ -68,13 +131,15 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   });
   const activity = useQuery({
     queryKey: ['user', 'activity'],
-    queryFn: () => api.activity.get(),
+    queryFn: () => api.activity.get() as Promise<ActivityData>,
     enabled: auth.isAuthenticated,
   });
+
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(interval);
   }, []);
+
   const refreshListing = () => {
     void queryClient.invalidateQueries({ queryKey: ['products', publicId] });
     if (listingId)
@@ -84,10 +149,13 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     if (auth.isAuthenticated)
       void queryClient.invalidateQueries({ queryKey: ['user', 'activity'] });
   };
+
   const realtimeState = useListingRealtime(listingId, refreshListing);
-  const otp = useMutation({ mutationFn: () => api.auth.requestPhoneOtp() });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const otp = useMutation({ mutationFn: () => (api.auth as any).requestPhoneOtp() });
   const verify = useMutation({
-    mutationFn: () => api.auth.verifyPhoneOtp({ code }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: () => (api.auth as any).verifyPhoneOtp({ code }),
   });
   const bid = useMutation({
     mutationFn: (attempt: BidAttempt) =>
@@ -122,13 +190,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const participation = listing
     ? activity.data?.activity.find((item) => item.listing.id === listing.id)
     : undefined;
+
   const submitBid = () => {
     if (!listing) return;
     const nextAmount = Number(amount);
-    const reusable =
-      pendingAttempt?.listingId === listing.id &&
-      pendingAttempt.amount === nextAmount
-        ? pendingAttempt
+    const existing = pendingAttempt;
+    const reusable: BidAttempt =
+      existing !== null &&
+      existing.listingId === listing.id &&
+      existing.amount === nextAmount
+        ? existing
         : {
             listingId: listing.id,
             amount: nextAmount,
@@ -138,131 +209,344 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     bid.mutate(reusable);
   };
 
+  const detailItems = [
+    product.technique ? { label: 'Техника', value: product.technique } : null,
+    product.materials ? { label: 'Материалы', value: product.materials } : null,
+    product.dimensions ? { label: 'Размеры', value: product.dimensions } : null,
+    product.condition ? { label: 'Состояние', value: product.condition } : null,
+    product.uniqueness
+      ? { label: 'Уникальность', value: product.uniqueness }
+      : null,
+    product.city ? { label: 'Город', value: product.city } : null,
+    product.deliveryInfo
+      ? { label: 'Передача', value: product.deliveryInfo }
+      : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
   return (
     <Screen>
-      <YStack gap="$3">
-        {product.images.map((image) => (
-          <Image
-            key={image.id}
-            source={{ uri: `${getApiUrl()}${image.url}` }}
-            style={{ width: '100%', height: 280 }}
-            contentFit="cover"
-          />
-        ))}
-        <Text fontSize={30} fontWeight="600">
-          {product.title ?? 'Предмет'}
-        </Text>
-        <Text>{product.story ?? ''}</Text>
-        <Text>{product.provenance ?? ''}</Text>
-        {product.technique ? <Text>Техника: {product.technique}</Text> : null}
-        {product.materials ? <Text>Материалы: {product.materials}</Text> : null}
-        {product.dimensions ? <Text>Размеры: {product.dimensions}</Text> : null}
-        {product.condition ? <Text>Состояние: {product.condition}</Text> : null}
-        {product.uniqueness ? (
-          <Text>Уникальность: {product.uniqueness}</Text>
-        ) : null}
-        {product.city ? <Text>Город: {product.city}</Text> : null}
-        {product.deliveryInfo ? (
-          <Text>Передача: {product.deliveryInfo}</Text>
-        ) : null}
-        <Text>Автор: {sellerProfile.storeName}</Text>
-        {listing ? (
-          <YStack gap="$2">
-            <Text>{listingStatusLabel(listing.status)}</Text>
-            <Text>Стартовая цена: {listing.auctionRules.startPrice} BYN</Text>
-            <Text>Текущая цена: {listing.currentPrice} BYN</Text>
-            {minimumNextBid !== null ? (
-              <Text>Минимальная ставка: {minimumNextBid} BYN</Text>
-            ) : null}
-            {listing.status === 'LIVE' ? (
-              <Text accessibilityLiveRegion="polite">
-                До завершения: {formatRemainingTime(listing.endsAt, now)}
-              </Text>
-            ) : null}
-            {listing.status === 'SCHEDULED' ? (
-              <Text>
-                Начало: {new Date(listing.startsAt).toLocaleString('ru-BY')}
-              </Text>
-            ) : null}
-            <Text>
-              Окончание: {new Date(listing.endsAt).toLocaleString('ru-BY')}
-            </Text>
-            <Text>
-              {realtimeState === 'connected'
-                ? 'Обновления подключены'
-                : realtimeState === 'reconnecting'
-                  ? 'Восстанавливаем обновления'
-                  : 'Обновления недоступны — используем актуальную загрузку'}
-            </Text>
-            {participation ? (
-              <Text>Ваш статус: {participation.status}</Text>
-            ) : null}
-            {listing.status === 'LIVE' ? (
-              <>
-                <TextInput
-                  value={amount}
-                  onChangeText={setAmount}
-                  keyboardType="decimal-pad"
-                  placeholder="Ваша ставка в BYN"
+      <YStack style={{ gap: mobileSpacing[5] }}>
+        {/* Image gallery */}
+        {product.images.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginHorizontal: -mobileSpacing[4] }}
+            contentContainerStyle={{
+              paddingHorizontal: mobileSpacing[4],
+              gap: mobileSpacing[2],
+            }}
+          >
+            {product.images.map((image: ProductImage) => (
+              <YStack
+                key={image.id}
+                style={{
+                  width: 300,
+                  height: 375,
+                  borderRadius: mobileRadius.panel,
+                  overflow: 'hidden',
+                  backgroundColor: palette.imageBackground,
+                }}
+              >
+                <Image
+                  source={{ uri: `${getApiUrl()}${image.url}` }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
                 />
-                <AppButton isLoading={bid.isPending} onPress={submitBid}>
-                  Сделать ставку
-                </AppButton>
-                {bid.isError && pendingAttempt ? (
-                  <AppButton tone="secondary" onPress={submitBid}>
-                    Повторить ставку
-                  </AppButton>
-                ) : null}
-                <AppButton
-                  tone="secondary"
-                  isLoading={otp.isPending}
-                  onPress={() => otp.mutate()}
-                >
-                  Получить код телефона
-                </AppButton>
-                <TextInput
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  placeholder="Код из SMS"
-                />
-                <AppButton
-                  tone="secondary"
-                  isLoading={verify.isPending}
-                  onPress={() => verify.mutate()}
-                >
-                  Подтвердить телефон
-                </AppButton>
-                {bid.isError ? (
-                  <Text color="$danger">
-                    Ставка не принята. Проверьте статус торгов и минимальную
-                    сумму.
-                  </Text>
-                ) : null}
-                {otp.isError || verify.isError ? (
-                  <Text color="$danger">
-                    Не удалось подтвердить телефон. Попробуйте ещё раз.
-                  </Text>
-                ) : null}
-              </>
-            ) : null}
-            <Text fontWeight="600">История ставок</Text>
-            {bids.data?.bids.map((item) => (
-              <Text key={item.id}>
-                {item.bidderAlias}: {item.amount} BYN
-              </Text>
+              </YStack>
             ))}
-          </YStack>
+          </ScrollView>
+        ) : null}
+
+        {/* Title block */}
+        <YStack style={{ gap: mobileSpacing[1] }}>
+          <Text
+            style={{
+              fontFamily: fontFamilies.sansMedium,
+              fontSize: 12,
+              lineHeight: 16,
+              letterSpacing: 0.8,
+              textTransform: 'uppercase',
+              color: palette.colorMuted,
+            }}
+          >
+            {sellerProfile.storeName}
+          </Text>
+          <Text
+            style={{
+              fontFamily: fontFamilies.serifStrong,
+              fontSize: 30,
+              lineHeight: 36,
+              color: palette.color,
+            }}
+          >
+            {product.title ?? 'Предмет'}
+          </Text>
+          {product.story || product.provenance ? (
+            <Text
+              style={{
+                fontFamily: fontFamilies.sansRegular,
+                fontSize: 15,
+                lineHeight: 24,
+                color: palette.colorSecondary,
+                marginTop: mobileSpacing[2],
+              }}
+            >
+              {[product.story, product.provenance].filter(Boolean).join('\n\n')}
+            </Text>
+          ) : null}
+        </YStack>
+
+        {/* Attributes */}
+        {detailItems.length > 0 ? (
+          <OperationalPanel eyebrow="О предмете">
+            <DetailList items={detailItems} />
+          </OperationalPanel>
+        ) : null}
+
+        {/* Listing panel */}
+        {listing ? (
+          <OperationalPanel
+            eyebrow="Торги"
+            footer={
+              listing.status === 'LIVE' ? (
+                <YStack style={{ gap: mobileSpacing[3] }}>
+                  <AppInput
+                    label="Ваша ставка, BYN"
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="decimal-pad"
+                    placeholder={
+                      minimumNextBid !== null ? `от ${minimumNextBid}` : ''
+                    }
+                  />
+                  <AppButton
+                    buttonSize="large"
+                    isLoading={bid.isPending}
+                    loadingLabel="Отправляем ставку"
+                    onPress={submitBid}
+                  >
+                    Сделать ставку
+                  </AppButton>
+                  {bid.isError && pendingAttempt ? (
+                    <AppButton tone="secondary" onPress={submitBid}>
+                      Повторить ставку
+                    </AppButton>
+                  ) : null}
+                  {bid.isError ? (
+                    <Text
+                      style={{
+                        color: palette.negative,
+                        fontSize: 14,
+                        lineHeight: 20,
+                      }}
+                    >
+                      Ставка не принята. Проверьте статус торгов и минимальную
+                      сумму.
+                    </Text>
+                  ) : null}
+
+                  {/* OTP */}
+                  <YStack style={{ gap: mobileSpacing[2] }}>
+                    <AppButton
+                      tone="secondary"
+                      isLoading={otp.isPending}
+                      onPress={() => otp.mutate()}
+                    >
+                      Получить код подтверждения
+                    </AppButton>
+                    <AppInput
+                      label="Код из SMS"
+                      value={code}
+                      onChangeText={setCode}
+                      keyboardType="number-pad"
+                      placeholder="——————"
+                    />
+                    <AppButton
+                      tone="secondary"
+                      isLoading={verify.isPending}
+                      onPress={() => verify.mutate()}
+                    >
+                      Подтвердить телефон
+                    </AppButton>
+                    {otp.isError || verify.isError ? (
+                      <Text
+                        style={{
+                          color: palette.negative,
+                          fontSize: 14,
+                          lineHeight: 20,
+                        }}
+                      >
+                        Не удалось подтвердить телефон. Попробуйте ещё раз.
+                      </Text>
+                    ) : null}
+                  </YStack>
+                </YStack>
+              ) : null
+            }
+          >
+            <YStack style={{ gap: mobileSpacing[3] }}>
+              <XStack style={{ alignItems: 'center', gap: mobileSpacing[2] }}>
+                <StatusBadge tone={listingStatusTone(listing.status)}>
+                  {listingStatusLabel(listing.status)}
+                </StatusBadge>
+                {participation ? (
+                  <StatusBadge
+                    tone={participationStatusTone(participation.status)}
+                  >
+                    {participation.status}
+                  </StatusBadge>
+                ) : null}
+              </XStack>
+
+              {/* Prices */}
+              <YStack style={{ gap: 2 }}>
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.sansStrong,
+                    fontSize: 28,
+                    lineHeight: 34,
+                    color: palette.color,
+                    fontWeight: '700',
+                  }}
+                >
+                  {listing.currentPrice} BYN
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.sansRegular,
+                    fontSize: 13,
+                    lineHeight: 18,
+                    color: palette.colorMuted,
+                  }}
+                >
+                  {'Старт: '}
+                  {listing.auctionRules.startPrice} BYN
+                  {minimumNextBid !== null
+                    ? ` · Мин. ставка: ${minimumNextBid} BYN`
+                    : ''}
+                </Text>
+              </YStack>
+
+              {/* Timer */}
+              {listing.status === 'LIVE' ? (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={{
+                    fontFamily: fontFamilies.sansMedium,
+                    fontSize: 15,
+                    lineHeight: 22,
+                    color: palette.colorSecondary,
+                  }}
+                >
+                  До завершения: {formatRemainingTime(listing.endsAt, now)}
+                </Text>
+              ) : null}
+              {listing.status === 'SCHEDULED' ? (
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.sansRegular,
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: palette.colorSecondary,
+                  }}
+                >
+                  Начало: {new Date(listing.startsAt).toLocaleString('ru-BY')}
+                </Text>
+              ) : null}
+              <Text
+                style={{
+                  fontFamily: fontFamilies.sansRegular,
+                  fontSize: 13,
+                  lineHeight: 18,
+                  color: palette.colorMuted,
+                }}
+              >
+                Окончание: {new Date(listing.endsAt).toLocaleString('ru-BY')}
+              </Text>
+
+              {/* Realtime */}
+              <Text
+                style={{
+                  fontFamily: fontFamilies.sansRegular,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  color: palette.colorMuted,
+                }}
+              >
+                {realtimeState === 'connected'
+                  ? 'Обновления подключены'
+                  : realtimeState === 'reconnecting'
+                    ? 'Восстанавливаем обновления…'
+                    : 'Обновления недоступны — используем актуальную загрузку'}
+              </Text>
+            </YStack>
+          </OperationalPanel>
         ) : (
-          <Text>Сейчас нет активного размещения.</Text>
+          <OperationalPanel>
+            <Text
+              style={{
+                fontFamily: fontFamilies.sansRegular,
+                fontSize: 15,
+                color: palette.colorSecondary,
+              }}
+            >
+              Сейчас нет активного размещения.
+            </Text>
+          </OperationalPanel>
         )}
+
+        {/* Bid history */}
+        {bids.data?.bids && bids.data.bids.length > 0 ? (
+          <OperationalPanel eyebrow="История ставок">
+            <YStack style={{ gap: mobileSpacing[2] }}>
+              {bids.data.bids.map((item: BidItem) => (
+                <XStack
+                  key={item.id}
+                  style={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.sansRegular,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: palette.colorSecondary,
+                    }}
+                  >
+                    {item.bidderAlias}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.sansStrong,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: palette.color,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {item.amount} BYN
+                  </Text>
+                </XStack>
+              ))}
+            </YStack>
+          </OperationalPanel>
+        ) : null}
+
+        {/* Order links */}
         {participation?.orderPublicId ? (
-          <Link href={`/order/${participation.orderPublicId}`}>
-            Открыть результат заказа
+          <Link href={`/order/${participation.orderPublicId}` as never} asChild>
+            <AppButton tone="secondary">Открыть результат заказа</AppButton>
           </Link>
         ) : null}
         {listing?.status === 'ENDED' && !participation?.orderPublicId ? (
-          <Link href="/me/activity">Проверить результат в «Моих покупках»</Link>
+          <Link href={"/me/activity" as never} asChild>
+            <AppButton tone="subtle">
+              Проверить результат в «Моих покупках»
+            </AppButton>
+          </Link>
         ) : null}
       </YStack>
     </Screen>

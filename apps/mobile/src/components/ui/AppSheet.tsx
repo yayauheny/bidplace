@@ -37,8 +37,8 @@ export function AppSheet({
           backgroundColor: palette.surface,
           padding: mobileSpacing[5],
           gap: mobileSpacing[4],
-          borderTopLeftRadius: mobileRadius['2xl'],
-          borderTopRightRadius: mobileRadius['2xl'],
+          borderTopLeftRadius: mobileRadius.large,
+          borderTopRightRadius: mobileRadius.large,
         }}
       >
         <Sheet.Handle />
@@ -47,7 +47,7 @@ export function AppSheet({
             {title ? (
               <Text
                 style={{
-                  color: palette.text,
+                  color: palette.color,
                   fontSize: 20,
                   lineHeight: 26,
                   fontWeight: '700',
@@ -59,7 +59,7 @@ export function AppSheet({
             {description ? (
               <Text
                 style={{
-                  color: palette.textMuted,
+                  color: palette.colorMuted,
                   fontSize: 14,
                   lineHeight: 20,
                 }}
