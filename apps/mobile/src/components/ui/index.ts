@@ -1,4 +1,5 @@
 export * from './AppButton';
+export * from './ProductCard';
 export * from './AppCard';    // exports Surface + AppCard alias
 export * from './AppInput';
 export * from './AppSheet';
