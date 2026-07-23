@@ -582,3 +582,92 @@ Status: Confirmed
 ### Decision
 
 Task A is accepted for a closed pilot with manual controls after its focused Chromium E2E and full repository gates. WebKit, full browser/device matrix, visual regression, exhaustive seller/admin E2E, accessibility automation and ten-session rehearsal are release hardening after Task B, not prerequisites for the pilot.
+
+---
+
+## DEC-042 — Публичная заявка seller и отдельный доступ к продажам
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Кнопка «Стать seller» доступна публично зарегистрированному User. Заявка создаёт SellerProfile, но не даёт право создавать или публиковать Product и Listing. После ручного admin approval выдаётся отдельный persisted seller access; admin может его отозвать. Buyer account и seller capability не являются одной ролью.
+
+### Rationale
+
+MVP не требует ручных приглашений, но сохраняет curated supply и не допускает неподтверждённые товары на площадку.
+
+---
+
+## DEC-043 — Данные публичного SellerProfile
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Для заявки seller обязательны profile photo, имя и фамилия либо название seller, краткое описание автора/стиля работ и хотя бы один social link или другие публично проверяемые данные. SellerProfile отделён от buyer account; имя из регистрации может предзаполнять профиль, но seller может выбрать другое публичное имя или название.
+
+---
+
+## DEC-044 — Модерация Product до публичной публикации
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Seller создаёт private Product draft и отправляет его на admin moderation. Пока Product не approved, он недоступен в public catalog и по public URL. Для creator-made Product обязательна минимум одна собственная фотография; состояние не является обязательным MVP-полем.
+
+### Future
+
+Поздние классы предметов могут потребовать condition/defects отдельным решением.
+
+---
+
+## DEC-045 — Ручная замена winner в MVP
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+При отказе или недоступности winner admin фиксирует причину, отменяет исходный Order и вручную выбирает replacement из ranked Bid list. История исходного Order и winner сохраняется.
+
+### Planned after MVP
+
+Автоматическая замена может быть рассмотрена после MVP на основании подтверждённого evidence неудачного контакта, включая AI-assisted разбор материала, предоставленного seller. Для неё нужны отдельные privacy, security и product decisions.
+
+---
+
+## DEC-046 — Минимальная first-party analytics для pilot
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+MVP фиксирует только минимальные first-party события воронки и результата сделки. Dashboard и third-party marketing trackers не входят в решение.
+
+---
+
+## DEC-047 — Временные поля для будущих retention policies
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Persisted entities должны иметь `createdAt` и `updatedAt`; Product дополнительно получает `publishedAt` при первой публичной публикации. PII и audit хранятся бессрочно до отдельной legal/privacy policy.
+
+---
+
+## DEC-048 — Дизайн не расширяется в ближайшей MVP-волне
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Следующая MVP-волна использует существующий UI. Redesign и новые визуальные направления не входят в seller access, moderation, handoff, analytics и security work.

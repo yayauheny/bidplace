@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-07-19
-Статус: Task A completed for closed pilot with manual controls.
+Последнее обновление: 2026-07-23
+Статус: Technical baseline is Partial; confirmed MVP decisions require implementation before the next closed-pilot gate.
 
 ## Реализовано
 
@@ -13,7 +13,7 @@
 | Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`: scheduler activation/closing, deterministic winner, atomic Order foundation, owner/admin authorization, manual admin cancellation/replacement.                                                                       |
 | Phone verification        | `apps/api/src/otp`, `PhoneVerificationCode`: hashed one-time OTP, expiry, retry/cooldown and rate limiting. A production transport remains blocked by an external provider configuration.                                                                             |
 | Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
-| Local reset and seed      | Verified 2026-07-18: `prisma migrate reset` applied the rewritten baseline to local PostgreSQL; `prisma/seed.js` created deterministic admin plus scheduled/live/ended BYN Product Listings.                                                                          |
+| Local reset and seed      | The reset guard is present, but `packages/database/prisma/seed.js` contains `seedEnded3`, a 10-character Product publicId that violates the 11-character contract and can make the public catalog response fail validation. This requires a fixture fix and rerun. |
 | Prisma generated client   | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                         |
 
 ## Partial / needs verification
@@ -25,12 +25,26 @@
 | Tests                         | API unit/integration suites, clean migration/reset/seed, full lint/typecheck/build gates and Chromium E2E pass. Expo Router types and UI codebase fully typechecked. `apps/mobile/e2e/closed-pilot.spec.ts` covers Product → UI login → test OTP → Bid → Activity → ended Order, outsider Order denial, ordinary-user admin denial, permitted admin Order access and absent legacy route. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
+## Confirmed MVP implementation gaps — 2026-07-23
+
+| Area | Status | Required implementation evidence |
+| --- | --- | --- |
+| Public seller application and access grant | Not implemented | Public SellerProfile application; separate admin-controlled persisted grant; backend authorization on all seller writes; revoke tests; capability projection and admin UI. |
+| Seller profile data | Partial | Current profile lacks the confirmed profile photo and public-application distinction. Add the confirmed public fields without exposing buyer data automatically. |
+| Product moderation and visibility | Partial | Current Product can be approved but has no explicit submitted/review state. Add private-under-review behavior, moderation reason/history and `publishedAt`; change the approval image gate from three to one. |
+| Seller handoff actions | Not implemented | Seller must record contact/result or failure. Current Order is an authorization foundation, not a complete handoff workflow. Exact buyer-to-seller contact policy is still open. |
+| Timestamps | Partial | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented. |
+| Pilot analytics | Not implemented | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker. |
+| Production OTP transport | Not implemented | Current local transport intentionally fails in production; provider and integration are still required. |
+| Closed-pilot rehearsal | Needs verification | Existing Chromium E2E covers the buyer path, not the confirmed seller application/moderation flow or the required 10-user rehearsal. |
+
 ## Intentional MVP boundaries
 
 - Only `ListingType.AUCTION` and `BYN` exist.
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.
 - Manual admin replacement preserves cancelled Order history; automatic replacement is Planned.
+- Design is frozen for the next MVP implementation wave: reuse the present UI and do not include a redesign in these domain/security tasks.
 
 ## Closed-pilot verification — 2026-07-19
 

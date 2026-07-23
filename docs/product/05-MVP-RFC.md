@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
-Версия: 1.0  
-Последнее обновление: 2026-07-18  
+Версия: 1.1
+Последнее обновление: 2026-07-23
 Статус: Confirmed  
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-047`
 
 ## 1. Цель MVP
 
@@ -31,8 +31,7 @@ MVP не проверяет полноценный marketplace.
 - Беларусь;
 - русский язык;
 - BYN;
-- закрытый запуск;
-- вручную приглашённые продавцы;
+- закрытый pilot: публичная заявка seller доступна, но продавать можно только после ручного admin approval;
 - вероятный первый продавец — Таисия Борисова;
 - оригинальная физическая работа;
 - оплата и доставка вне платформы.
@@ -65,7 +64,7 @@ MVP не проверяет полноценный marketplace.
 - загружает изображения;
 - заполняет карточку;
 - назначает start/end;
-- задаёт start price и optional reserve;
+- задаёт start price;
 - публикует preview после модерации;
 - видит ставки;
 - получает winner;
@@ -85,14 +84,13 @@ MVP не проверяет полноценный marketplace.
 
 ### Seller onboarding
 
-1. Приглашение.
-2. Регистрация.
-3. SellerProfile.
-4. Выбор работы.
-5. Создание лота.
-6. Admin review.
-7. Preview.
-8. Ссылка и материалы анонса.
+1. Visitor подаёт публичную заявку seller и заполняет SellerProfile.
+2. Admin вручную проверяет заявку и выдаёт доступ к seller cabinet.
+3. Approved seller создаёт Product draft.
+4. Product отправляется на ручную модерацию.
+5. После Product approval seller создаёт и планирует Listing.
+6. Preview и публичная ссылка появляются только для approved Product.
+7. Seller получает материалы для анонса.
 
 ### Buyer flow
 
@@ -112,8 +110,8 @@ MVP не проверяет полноценный marketplace.
 1. Backend использует server time.
 2. После `endsAt` bids не принимаются.
 3. Cron закрывает идемпотентно.
-4. Если reserve достигнут или отсутствует — winner.
-5. Иначе — no winner.
+4. Highest valid Bid становится winner.
+5. Если valid Bid нет — Listing завершается без winner.
 6. Contacts раскрываются по privacy mode.
 7. Оплата/передача вне платформы.
 8. Seller подтверждает результат или проблему.
@@ -156,16 +154,17 @@ WebSocket только ускоряет отображение.
 - history, currentPrice, bidCount, winner согласованы;
 - rejected bid получает причину и новый minimum.
 
-### Hard close
+### Soft close
 
 MVP:
 
-- bid валиден, если backend фиксирует до `endsAt`;
+- bid валиден, если backend фиксирует его до актуального `endsAt`;
 - device time игнорируется;
-- после `endsAt` reject;
-- без automatic extension.
+- Bid в последние 60 seconds продлевает `endsAt` на 60 seconds;
+- суммарное продление ограничено 600 seconds от исходного `endsAt`;
+- после актуального `endsAt` bid отклоняется.
 
-Soft close — Planned.
+Server рассчитывает и атомарно фиксирует новое `endsAt`; client timer не источник истины.
 
 ### Bid increments
 
@@ -188,23 +187,15 @@ Soft close — Planned.
 
 Не показываются email, phone, internal ID, полное имя без необходимости.
 
-## 8. Цена и reserve
+## 8. Цена
 
-MVP поддерживает:
-
-- start price;
-- optional hidden reserve;
-- статус reserve reached/not reached.
-
-Для первого пилота цена согласуется вручную.
+MVP использует только start price в BYN. Это минимальная цена seller; hidden reserve и reserve status не существуют в runtime, public UI или API.
 
 Нельзя:
 
 - использовать связанные accounts;
 - создавать platform bids;
-- менять reserve после первой ставки.
-
-После пилотов отдельно решить: hidden reserve или start price = minimum acceptable.
+- менять start price после планирования Listing.
 
 ## 9. Статус участия вместо внешних уведомлений
 
@@ -263,20 +254,14 @@ MVP поддерживает:
 - вес при необходимости;
 - год;
 - уникальность/тираж;
-- состояние;
 - город;
 - передача/доставка;
 - start price;
-- reserve;
 - startsAt;
 - endsAt;
 - изображения.
 
-Изображения минимум:
-
-1. главное;
-2. деталь;
-3. масштаб/интерьер.
+Для MVP обязателен минимум один собственный снимок предмета. Главное изображение, деталь и масштаб/интерьер остаются рекомендуемым набором для качественной модерации и анонса, но не являются техническим gate. Состояние не запрашивается для creator-made Product: предполагается новая авторская вещь; поле может понадобиться поздним классам предметов и не является обязательным MVP-атрибутом.
 
 Требования: чистота, качество, честный цвет, отсутствие мусора и чужих изображений.
 
@@ -284,12 +269,13 @@ MVP поддерживает:
 
 Минимум:
 
-- имя/псевдоним;
-- фото;
-- короткое описание;
-- город/страна;
-- направление;
-- social links.
+- profile photo;
+- имя и фамилия либо название seller;
+- короткое описание автора, его стиля и работ;
+- хотя бы один social link либо другие публично проверяемые данные;
+- страна; город и направление — optional.
+
+SellerProfile отделён от buyer account. Для MVP допустимо предзаполнять seller name из регистрации, но seller может указать другое публичное имя или название; данные buyer не становятся публичными автоматически.
 
 Другие работы:
 
@@ -316,13 +302,17 @@ SLA 24 часа и штрафы — Hypothesis, не MVP.
 
 1. Seller отмечает отказ/нет ответа.
 2. Admin проверяет.
-3. Seller связывается со следующим bidder вручную.
+3. Admin вручную отменяет исходный Order с причиной и выбирает replacement из ranked Bid list.
 4. История не меняется.
 5. Original winner остаётся в audit.
 
+После MVP может появиться автоматизированная замена winner на основе подтверждённого evidence неудачного контакта, включая AI-assisted разбор предоставленного seller материала. До отдельной privacy, security и product decision такая автоматизация не запускается и не заменяет admin review.
+
 ## 15. Хранение
 
-Bid history хранится долгосрочно:
+Bid history хранится долгосрочно. Все persisted entities должны иметь `createdAt` и `updatedAt`; для Product дополнительно требуется `publishedAt`, фиксируемый в момент первой публичной публикации. Эти timestamps становятся основой для будущих retention policies, но сами сроки хранения PII остаются отдельным legal/privacy решением.
+
+Bid audit хранит:
 
 - auctionId;
 - bidderId;
@@ -338,7 +328,7 @@ Hide из UI не удаляет audit.
 
 ## 16. Analytics
 
-Без сложного dashboard.
+Без сложного dashboard и third-party marketing trackers. MVP собирает только минимальные first-party события, необходимые для проверки гипотезы и сопровождения пилота.
 
 Events:
 
@@ -368,7 +358,7 @@ Events:
 - cron close/repeat;
 - bid after close;
 - correct winner;
-- reserve cases;
+- soft-close cases;
 - seller handoff.
 
 Blockers:
@@ -422,7 +412,7 @@ Minimum success:
 - charity;
 - collectibles;
 - proxy;
-- soft close;
+- hidden reserve;
 - live;
 - chat;
 - external notifications;
@@ -453,4 +443,4 @@ Minimum success:
 
 ## Implementation verification — 2026-07-19
 
-Task A is completed for a closed pilot with manual controls. The implementation follows the current Product/Listing contract: BYN auction only, no reserve or Buy Now, verified-phone bids, soft close, and authorized Orders. Chromium verifies the canonical buyer path and authorization boundaries; release-scale browser/device/accessibility coverage remains explicitly deferred in `11-PROJECT-STATUS.md`.
+Task A established a partial technical baseline: BYN auction only, no reserve or Buy Now, verified-phone bids, soft close and authorized Orders. Seller application approval, Product moderation workflow, seller handoff actions, minimal analytics, production OTP transport and the 10-user rehearsal remain implementation work; the factual status belongs to `11-PROJECT-STATUS.md`.

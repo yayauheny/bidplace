@@ -1,8 +1,8 @@
 # bidplace — доверие и честность аукциона
 
-Последнее обновление: 2026-07-18  
+Последнее обновление: 2026-07-23
 Статус: Confirmed  
-Связанные решения: `DEC-008`, `DEC-009`, `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`
+Связанные решения: `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`, `DEC-039`, `DEC-045` — `DEC-047`
 
 ## 1. Роль доверия
 
@@ -120,22 +120,14 @@ Bid только через backend transaction.
 - one bid service;
 - event post-commit.
 
-## 6. Hard и soft close
+## 6. Soft close
 
-### MVP hard close
+### MVP
 
-Плюсы: проще, тестируемо, точный контракт.
-
-Риски: sniping, latency, пользователь не успевает.
-
-### Planned soft close
-
-- bid в последние 60 sec;
-- +2 minutes;
-- repeat;
-- optional cap.
-
-Перед включением: load test, UI, server calculation, no double close, new decision.
+- Bid в последние 60 seconds продлевает auction на 60 seconds.
+- Общее продление ограничено 600 seconds от исходного `endsAt`.
+- Server, а не client или WebSocket, рассчитывает и фиксирует новое `endsAt` в той же transaction, что и accepted Bid.
+- Проверки покрывают границу close, repeat scheduler pass и bid/close race.
 
 ## 7. Уведомления и status
 
@@ -149,7 +141,7 @@ Bid только через backend transaction.
 
 - no return after outbid;
 - missed ending;
-- hard close усиливает.
+- soft close должен быть ясно показан в UI, чтобы не восприниматься как скрытое продление.
 
 Данные:
 
@@ -204,9 +196,9 @@ Privacy mode:
 Winner refusal:
 
 - winner остаётся;
-- admin фиксирует reason;
-- next bidder manual;
-- future offer flow.
+- admin фиксирует reason, отменяет исходный Order и вручную выбирает replacement из ranked Bid list;
+- история исходного winner и Order не меняется;
+- автоматическая замена без admin допускается только после MVP и отдельного решения о privacy, evidence и security. Возможный AI-анализ материала, предоставленного seller о неудачном контакте, не является доказательством или механизмом MVP.
 
 ## 11. Хранение
 
@@ -220,7 +212,7 @@ Auction/bids не hard-delete при hide.
 - legal hold;
 - anonymization.
 
-Сроки — legal/privacy решение.
+До legal/privacy решения используется бессрочное хранение. Все persisted entities получают `createdAt` и `updatedAt`; Product также получает `publishedAt` при первой публичной публикации. Эти даты не отменяют будущую policy удаления или anonymization.
 
 ## 12. Admin MVP
 
@@ -247,7 +239,6 @@ Admin не редактирует bid amount.
 - repeated refusals;
 - multiple accounts per phone;
 - timing;
-- bids below reserve;
 - cancellations.
 
 Flag не доказательство.
