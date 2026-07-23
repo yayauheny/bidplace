@@ -28,19 +28,21 @@ SellerProfile
 
 The following is a confirmed target, not a claim about the current schema or API:
 
-- a registered User may submit a public SellerProfile application, but a separately persisted admin grant is required for every seller write;
-- SellerProfile stores a public profile photo, public name or seller title, description and at least one public verification source. It is separate from buyer identity, although the registration name may prefill it;
-- Product requires a moderation state before public visibility. A Product remains private while it is a draft or under review; its first public transition sets immutable `publishedAt`;
+- a registered User may submit a public SellerProfile application. `APPROVED` SellerProfile is the seller capability; `PENDING_REVIEW`, `CHANGES_REQUESTED`, `REJECTED` and `SUSPENDED` block Product and Listing writes. Admin role remains independent;
+- SellerProfile stores a public profile photo, public `fullName`, description and at least one public verification source. It is separate from buyer identity, although the registration name may prefill it;
+- Product requires a moderation state before public visibility. A Product remains private while it is a draft or under review; it appears in public catalog only with a `SCHEDULED` or `LIVE` Listing, and its first public transition sets immutable `publishedAt`;
 - one own Product image is the MVP technical minimum. Condition is not mandatory for creator-made Product; the current optional field is preserved until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- future automatic winner replacement, including any AI-assisted evidence assessment, is outside MVP and must not be added to lifecycle or Order code without a new decision.
+- buyer accepts a versioned service-rules text before the first Bid; production MVP verifies email before that Bid, while a test-only bypass is impossible in a production build;
+- active Order handoff exposes only the seller-selected Telegram, phone or Instagram contact to buyer, and the verified buyer email to seller. Seller privacy mode reverses who initiates contact;
+- automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy
 
 - Bid placement is server-time, serializable, idempotent by `(bidderUserId, idempotencyKey)`, self-bid protected, phone-verified and compare-and-update guarded.
 - The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
 - Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID.
-- Public Product, Listing and Socket.IO projections contain no buyer contacts or seller internal identifiers. The exact buyer-to-seller handoff contact remains an open product and privacy decision; current Order projections must not be treated as the final handoff contract.
+- Public Product, Listing and Socket.IO projections contain no buyer contacts or seller internal identifiers. Order contacts are limited to the active buyer, seller and admin; current Order projections require extension to implement the confirmed handoff contract.
 - Product images remain binary PostgreSQL storage for the pilot; object storage is a future operational change.
 
 ## Runtime topology and extension boundary

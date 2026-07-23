@@ -3,7 +3,7 @@
 Версия: 1.1
 Последнее обновление: 2026-07-23
 Статус: Confirmed  
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-047`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`
 
 ## 1. Цель MVP
 
@@ -84,8 +84,8 @@ MVP не проверяет полноценный marketplace.
 
 ### Seller onboarding
 
-1. Visitor подаёт публичную заявку seller и заполняет SellerProfile.
-2. Admin вручную проверяет заявку и выдаёт доступ к seller cabinet.
+1. Visitor подаёт публичную заявку seller и заполняет SellerProfile со статусом `PENDING_REVIEW`.
+2. Admin вручную проверяет заявку. Только `APPROVED` SellerProfile открывает seller cabinet для Product и Listing.
 3. Approved seller создаёт Product draft.
 4. Product отправляется на ручную модерацию.
 5. После Product approval seller создаёт и планирует Listing.
@@ -98,12 +98,13 @@ MVP не проверяет полноценный marketplace.
 2. Изучает работу.
 3. Нажимает bid CTA.
 4. Регистрируется email/password.
-5. Подтверждает телефон перед первой ставкой.
-6. Видит minimum.
-7. Отправляет bid.
-8. Backend атомарно фиксирует.
-9. Клиенты получают realtime.
-10. Статус виден в разделе участия.
+5. Подтверждает email перед первой ставкой.
+6. Перед первой ставкой видит и принимает версию правил сервиса.
+7. Видит minimum.
+8. Отправляет bid.
+9. Backend атомарно фиксирует.
+10. Клиенты получают realtime.
+11. Статус виден в разделе участия.
 
 ### Closing
 
@@ -119,21 +120,16 @@ MVP не проверяет полноценный marketplace.
 ## 6. Scheduled auction
 
 ```text
-DRAFT
-→ PENDING_REVIEW
-→ SCHEDULED
-→ ACTIVE
-→ ENDED_WITH_WINNER
-→ ENDED_NO_WINNER
-→ SALE_CONFIRMED
-→ HANDOFF_FAILED
-→ HIDDEN
+SellerProfile: PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | SUSPENDED
+Product:       DRAFT → PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | ARCHIVED
+Listing:       DRAFT → SCHEDULED → LIVE → ENDED | CANCELLED
+Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CANCELLED
 ```
 
-- до `startsAt` bid недоступен;
-- preview показывает дату запуска;
-- backend переводит в `ACTIVE`;
-- client timer не источник истины.
+- SellerProfile в `PENDING_REVIEW` доступен заявителю только для просмотра статуса; Product и Listing writes открываются только после `APPROVED`.
+- Product в `DRAFT`, `PENDING_REVIEW`, `CHANGES_REQUESTED` или `REJECTED` не виден публично.
+- Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED` либо `LIVE` Listing. После завершения продажа остаётся доступной по прямому public URL с результатом, если её не скрыл admin.
+- до `startsAt` bid недоступен; backend переводит Listing в `LIVE`; client timer не источник истины.
 
 ## 7. Правила ставок
 
@@ -165,6 +161,10 @@ MVP:
 - после актуального `endsAt` bid отклоняется.
 
 Server рассчитывает и атомарно фиксирует новое `endsAt`; client timer не источник истины.
+
+### Принятие правил
+
+Перед первой ставкой buyer видит краткие правила сервиса и явным действием соглашается с их versioned text. Backend хранит версию правил и timestamp принятия. Это не payment flow и не заменяет юридические документы.
 
 ### Bid increments
 
@@ -229,15 +229,17 @@ MVP использует только start price в BYN. Это минимал�
 
 Критические сообщения об оплате и безопасности позднее отделяются от маркетинговых.
 
-## 10. Телефонная верификация
+## 10. Email verification
 
 - не нужна для просмотра;
 - может не требоваться при базовой регистрации;
-- обязательна перед первой ставкой;
-- Telegram/SMS provider;
+- обязательна перед первой ставкой в production;
+- production MVP использует email; Telegram verification и phone verification рассматриваются после MVP;
 - rate limit;
-- OTP expiry;
+- verification code expiry;
 - abuse check.
+
+Dev/test окружение может использовать явный non-production bypass, который невозможен в production build и не отключает authorization, transaction или idempotency checks.
 
 ## 11. Карточка лота
 
@@ -275,7 +277,7 @@ MVP использует только start price в BYN. Это минимал�
 - хотя бы один social link либо другие публично проверяемые данные;
 - страна; город и направление — optional.
 
-SellerProfile отделён от buyer account. Для MVP допустимо предзаполнять seller name из регистрации, но seller может указать другое публичное имя или название; данные buyer не становятся публичными автоматически.
+SellerProfile отделён от buyer account. Для MVP используется одно поле `fullName`: в нём seller указывает публичное имя, имя и фамилию или название. Оно может предзаполняться из регистрации, но данные buyer не становятся публичными автоматически.
 
 Другие работы:
 
@@ -286,7 +288,9 @@ SellerProfile отделён от buyer account. Для MVP допустимо �
 
 ## 13. Контакты и handoff
 
-По умолчанию обе стороны получают нужный контакт.
+Seller при onboarding указывает обязательный `handoffContact` и его тип: Telegram, phone или Instagram. Public profile не делает этот contact автоматически доступным.
+
+По умолчанию обе стороны получают нужный contact после создания активного Order: buyer видит выбранный seller handoff contact, seller видит verified buyer email. Контакты доступны только сторонам active Order и admin.
 
 Privacy mode seller:
 
@@ -306,11 +310,11 @@ SLA 24 часа и штрафы — Hypothesis, не MVP.
 4. История не меняется.
 5. Original winner остаётся в audit.
 
-После MVP может появиться автоматизированная замена winner на основе подтверждённого evidence неудачного контакта, включая AI-assisted разбор предоставленного seller материала. До отдельной privacy, security и product decision такая автоматизация не запускается и не заменяет admin review.
+Автоматическая замена winner и AI-анализ evidence не входят в MVP и не имеют утверждённого будущего workflow. До отдельного решения все replacement выполняются вручную admin.
 
 ## 15. Хранение
 
-Bid history хранится долгосрочно. Все persisted entities должны иметь `createdAt` и `updatedAt`; для Product дополнительно требуется `publishedAt`, фиксируемый в момент первой публичной публикации. Эти timestamps становятся основой для будущих retention policies, но сами сроки хранения PII остаются отдельным legal/privacy решением.
+Bid history хранится долгосрочно. Все persisted entities должны иметь `createdAt` и `updatedAt`; для Product дополнительно требуется `publishedAt`, фиксируемый в момент первой публичной публикации. Удаление аккаунта, Product или PII в MVP не реализуется; сроки и процедура будущего удаления остаются отдельным legal/privacy решением.
 
 Bid audit хранит:
 

@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-07-23
 Статус: Confirmed  
-Связанные решения: `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`, `DEC-039`, `DEC-045` — `DEC-047`
+Связанные решения: `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`, `DEC-039`, `DEC-045`, `DEC-047`, `DEC-050`, `DEC-051`, `DEC-054`
 
 ## 1. Роль доверия
 
@@ -154,19 +154,19 @@ Bid только через backend transaction.
 
 Critical transactional messages позднее отделяются от marketing.
 
-## 8. Identity и phone
+## 8. Identity и email verification
 
 Перед first bid:
 
-- verified phone;
+- verified email в production MVP;
 - rate limits;
 - attempt limits;
-- OTP expiry;
+- verification-code expiry;
 - abuse detection.
 
-Phone не public.
+Dev/test bypass разрешён только в явно non-production окружении. Он не может попасть в production build и не ослабляет остальные ограничения ставок.
 
-Winner phone передаётся seller только в handoff и по правилам.
+Buyer email и seller handoff contact не public. После создания active Order buyer получает выбранный seller contact (Telegram, phone или Instagram), seller получает verified buyer email; privacy mode seller сохраняется.
 
 ## 9. Seller privacy
 
@@ -198,7 +198,7 @@ Winner refusal:
 - winner остаётся;
 - admin фиксирует reason, отменяет исходный Order и вручную выбирает replacement из ranked Bid list;
 - история исходного winner и Order не меняется;
-- автоматическая замена без admin допускается только после MVP и отдельного решения о privacy, evidence и security. Возможный AI-анализ материала, предоставленного seller о неудачном контакте, не является доказательством или механизмом MVP.
+- автоматическая замена и AI-анализ не входят в MVP. Весь replacement выполняется admin вручную; будущее поведение не определено до отдельного решения.
 
 ## 11. Хранение
 
@@ -212,7 +212,7 @@ Auction/bids не hard-delete при hide.
 - legal hold;
 - anonymization.
 
-До legal/privacy решения используется бессрочное хранение. Все persisted entities получают `createdAt` и `updatedAt`; Product также получает `publishedAt` при первой публичной публикации. Эти даты не отменяют будущую policy удаления или anonymization.
+До legal/privacy решения используется бессрочное хранение. Self-service deletion в MVP отсутствует. Все persisted entities получают `createdAt` и `updatedAt`; Product также получает `publishedAt` при первой публичной публикации. Эти даты не отменяют будущую policy удаления или anonymization.
 
 ## 12. Admin MVP
 

@@ -671,3 +671,81 @@ Status: Confirmed
 ### Decision
 
 Следующая MVP-волна использует существующий UI. Redesign и новые визуальные направления не входят в seller access, moderation, handoff, analytics и security work.
+
+---
+
+## DEC-049 — SellerProfile approval является seller capability
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Любой зарегистрированный User может открыть seller cabinet и создать заявку SellerProfile со статусом `PENDING_REVIEW`. Отдельная сущность grant не создаётся: возможность писать Product и Listing появляется только у `APPROVED` SellerProfile и отзывается статусом `SUSPENDED`. Admin role и seller capability остаются независимыми.
+
+### Revises
+
+`DEC-042` в части отдельного persisted seller grant.
+
+---
+
+## DEC-050 — Email verification и принятие правил перед первой ставкой
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Production MVP использует email verification перед первой ставкой. В то же действие buyer принимает версию правил сервиса; версия и timestamp сохраняются. Telegram verification и phone verification не входят в MVP. Dev/test bypass допускается только вне production.
+
+### Revises
+
+`DEC-016` в части обязательной phone verification.
+
+---
+
+## DEC-051 — Публичный профиль и handoff contacts
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+SellerProfile использует одно публичное поле `fullName`, которое может содержать имя, имя и фамилию или название. Публично показываются базовые данные профиля: photo, `fullName`, description, страна и допустимые public links.
+
+Seller отдельно указывает handoff contact: Telegram, phone или Instagram. После создания active Order buyer получает этот contact, seller получает verified buyer email. Privacy mode seller сохраняется.
+
+---
+
+## DEC-052 — Public catalog и история завершённого Product
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Product появляется в public catalog только после moderation approval и при `SCHEDULED` либо `LIVE` Listing. После завершения он исключается из общего каталога, но сохраняется по прямому public URL с результатом и историей, пока admin его не скрыл.
+
+---
+
+## DEC-053 — Юридическая граница MVP в Беларуси
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+Для MVP в Беларуси bidplace не принимает оплату, не организует доставку и не выступает escrow. Сервис предоставляет авторизацию, seller application/moderation, размещение предмета, ставки и определение winner. Seller несёт ответственность за налоги, законность и точность размещаемого content, право продажи и фактическую передачу предмета.
+
+До real pilot нужны public rules, privacy notice и legal review checklist. Это решение не является юридическим заключением.
+
+---
+
+## DEC-054 — Нет удаления и автоматизации replacement в MVP
+
+Date: 2026-07-23
+Status: Confirmed
+
+### Decision
+
+В MVP нет self-service удаления account, Product, PII или audit. Все winner replacement выполняются вручную admin. AI-анализ и автоматическая replacement logic не входят в MVP и не получают заранее заданного post-MVP workflow.

@@ -29,13 +29,13 @@
 
 | Area | Status | Required implementation evidence |
 | --- | --- | --- |
-| Public seller application and access grant | Not implemented | Public SellerProfile application; separate admin-controlled persisted grant; backend authorization on all seller writes; revoke tests; capability projection and admin UI. |
-| Seller profile data | Partial | Current profile lacks the confirmed profile photo and public-application distinction. Add the confirmed public fields without exposing buyer data automatically. |
-| Product moderation and visibility | Partial | Current Product can be approved but has no explicit submitted/review state. Add private-under-review behavior, moderation reason/history and `publishedAt`; change the approval image gate from three to one. |
-| Seller handoff actions | Not implemented | Seller must record contact/result or failure. Current Order is an authorization foundation, not a complete handoff workflow. Exact buyer-to-seller contact policy is still open. |
+| Public seller application and capability | Not implemented | Public `PENDING_REVIEW` SellerProfile application; admin approval makes the profile itself the seller capability; backend authorization on all seller writes; suspension/revoke tests; capability projection and admin UI. |
+| Seller profile data | Partial | Current profile lacks the confirmed profile photo, `fullName`, handoff contact and public-application distinction. Add the confirmed public fields without exposing buyer data automatically. |
+| Product moderation and visibility | Partial | Current Product can be approved but has no explicit submitted/review state. Add private-under-review behavior, moderation reason/history and `publishedAt`; change the approval image gate from three to one and limit catalog visibility to scheduled/live Listing. |
+| Seller handoff actions | Not implemented | Seller must record contact/result or failure. Extend Order with the confirmed active-order contact projection: seller-selected Telegram/phone/Instagram for buyer, verified buyer email for seller, and privacy mode. |
 | Timestamps | Partial | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented. |
 | Pilot analytics | Not implemented | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker. |
-| Production OTP transport | Not implemented | Current local transport intentionally fails in production; provider and integration are still required. |
+| Production email verification | Not implemented | Current phone OTP flow does not match the confirmed MVP. Implement production email verification before first Bid, versioned service-rules acceptance and a test-only non-production bypass. |
 | Closed-pilot rehearsal | Needs verification | Existing Chromium E2E covers the buyer path, not the confirmed seller application/moderation flow or the required 10-user rehearsal. |
 
 ## Intentional MVP boundaries
