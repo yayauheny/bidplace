@@ -53,6 +53,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test:e2e-fence": "node e2e/test-e2e-fence.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

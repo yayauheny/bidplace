@@ -180,6 +180,18 @@ export class ListingsService {
     }
 
     const { auctionRules, ...record } = listing;
+    const {
+      id: _auctionRulesId,
+      listingId: _auctionRulesListingId,
+      createdAt: _auctionRulesCreatedAt,
+      updatedAt: _auctionRulesUpdatedAt,
+      ...auctionRulesRecord
+    } = auctionRules as typeof auctionRules & {
+      id?: string;
+      listingId?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+    };
     return {
       listing: {
         ...record,
@@ -192,7 +204,7 @@ export class ListingsService {
         createdAt: record.createdAt.toISOString(),
         updatedAt: record.updatedAt.toISOString(),
         auctionRules: {
-          ...auctionRules,
+          ...auctionRulesRecord,
           startPrice: auctionRules.startPrice.toNumber(),
           incrementPolicyCode: 'MVP_BYN_V1' as const,
           softCloseWindowSeconds: 60 as const,

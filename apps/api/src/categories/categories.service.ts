@@ -8,8 +8,6 @@ type CategoryRecord = {
   slug: string;
   name: string;
   description: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 export interface CategoriesRepository {
@@ -33,8 +31,6 @@ export class CategoriesService {
         slug: category.slug,
         name: category.name,
         description: category.description,
-        createdAt: category.createdAt.toISOString(),
-        updatedAt: category.updatedAt.toISOString(),
       })),
     });
   }

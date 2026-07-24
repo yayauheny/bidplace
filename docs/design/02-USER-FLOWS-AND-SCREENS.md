@@ -1,6 +1,6 @@
 # bidplace — пользовательские маршруты и экраны
 
-Последнее обновление: 2026-07-19
+Последнее обновление: 2026-07-24
 
 Статус: MVP flow confirmed by product docs; implementation snapshot is Partial
 
@@ -15,9 +15,9 @@
 | Экран               | Route                 | Реализованное поведение                                                                                                                                                                                                                                                       | Статус / remaining work                                          |
 | ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Public Product list | `/`                   | Список approved Product из API; loading и error.                                                                                                                                                                                                                              | Implemented without approved design.                             |
-| Product detail      | `/product/[publicId]` | Изображения, seller, value fields, scheduled/live/ended Listing, BYN price, server-deadline countdown, minimum next Bid, aliases, OTP actions, idempotent retry and socket-driven refetch. Signed-in buyer sees Activity-derived participation and Order link when it exists. | Partial: device/accessibility QA and state-specific copy remain. |
+| Product detail      | `/product/[publicId]` | Изображения, seller, value fields, scheduled/live/ended Listing, BYN price, server-deadline countdown, minimum next Bid, aliases, OTP actions, idempotent retry and socket-driven refetch. Signed-in buyer sees Activity-derived participation and Order link when it exists. Closed-pilot Chromium coverage passed for buyer login, OTP, bid and refetch. | Partial: device/accessibility QA and state-specific copy remain. |
 | My purchases        | `/me/activity`        | Derived Activity statuses, Product links and allowed Order links.                                                                                                                                                                                                             | Partial: visual QA and richer state copy remain.                 |
-| Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin; buyer sees the allowed seller contact projection, seller sees `buyerEmailAtClose`, and seller action states cover `contacted`, `completed` and `handoffFailed`.                                                                                  | Partial: role-specific mobile QA remains.                        |
+| Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin; buyer sees the allowed seller contact projection, seller sees `buyerEmailAtClose`, and seller action states cover `contacted`, `completed` and `handoffFailed`. Closed-pilot Chromium coverage passed for buyer privacy, seller actions and outsider/admin access. | Partial: role-specific mobile QA remains.                        |
 
 The retired `/auctions/[slug]` public route is not a Product route and must not be restored as a compatibility screen. Chromium closed-pilot verification confirms the route is unmatched, and verifies canonical Product, Activity and Order navigation.
 
@@ -25,16 +25,16 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 
 | Экран               | Route                     | Реализованное поведение                                                                                                                     | Статус / remaining work                                      |
 | ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile, upload a public profile photo, edit handoff corrections while `CHANGES_REQUESTED`, show status, and keep fields read-only outside that state.            | Implemented without approved design.                         |
-| New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft.                                                                                                        | Partial: device/accessibility QA remains.                    |
-| Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields and review, upload, delete or reorder Product images. Server blocks locked Product edits and images. | Partial: device/accessibility QA remains.                    |
-| New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing.                          | Partial: date input and seller Listing-management QA remain. |
+| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile, upload a public profile photo, edit handoff corrections while `CHANGES_REQUESTED`, show status, and keep fields read-only outside that state. Closed-pilot Chromium coverage passed for real file upload and moderation gating.            | Closed-pilot verified; device/accessibility QA remains.     |
+| New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft. Closed-pilot Chromium coverage passed for draft create, image upload, submit to moderation and admin approval.                                                                                                        | Closed-pilot verified; device/accessibility QA remains.     |
+| Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields and review, upload, delete or reorder Product images. Server blocks locked Product edits and images. Closed-pilot Chromium coverage passed for seller-side product create and image upload. | Closed-pilot verified; device/accessibility QA remains.     |
+| New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing. Closed-pilot Chromium coverage passed for schedule create and browser-opened auction link.                          | Closed-pilot verified; seller Listing-management QA remains. |
 
 ## Admin route
 
 | Экран      | Route      | Реализованное поведение                                                                                                                                             | Статус / remaining work                                            |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Moderation | `/(admin)` | Admin-only SellerProfile approve/suspend, Product approve/archive, and confirmed manual Order cancellation followed by a selected anonymous ranked Bid replacement. | Partial: device/accessibility QA and richer review context remain. |
+| Moderation | `/(admin)` | Admin-only SellerProfile approve/suspend, Product approve/archive, and confirmed manual Order cancellation followed by a selected anonymous ranked Bid replacement. Closed-pilot Chromium coverage passed for seller approval and product moderation. | Closed-pilot verified; device/accessibility QA and richer review context remain. |
 
 ## Flow constraints
 

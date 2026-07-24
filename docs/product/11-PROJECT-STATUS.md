@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
 Последнее обновление: 2026-07-24
-Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API unit tests, API build, mobile typecheck/export, PostgreSQL integration tests, and closed-pilot browser/E2E verification, but repo-wide format check still reports pre-existing drift and the 10-user rehearsal remains pending.
+Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API unit tests, API build, mobile typecheck/export, PostgreSQL integration tests, the disposable-DB fence check, and closed-pilot browser/E2E verification, but repo-wide format check still reports pre-existing drift and the 10-user rehearsal remains pending.
 
 ## Реализовано
 
@@ -14,30 +14,30 @@
 | Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`, `apps/api/src/orders/order-snapshot.ts`: scheduler activation/closing, deterministic winner, atomic Order foundation, active-order snapshot, seller handoff actions, manual admin cancellation/replacement and audit. |
 | Email verification and rules | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation. |
 | Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; public sockets are allow-listed by origin, credential-free, IP rate-limited and room-capped; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
-| Local reset and seed      | The reset guard is present; the disposable `bidplace_e2e` setup was revalidated through Playwright preparation and close fixtures, but a dedicated one-command seed smoke outside E2E was not rerun. |
+| Local reset and seed      | The reset guard is present; the disposable `bidplace_e2e` setup was revalidated through Playwright preparation and close fixtures, and the dedicated `test:e2e-fence` guard check passes, but a standalone seed smoke outside E2E was not rerun. |
 | Prisma generated client   | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                         |
 
 ## Partial / needs verification
 
 | Area                          | Current evidence                                                                                                                                                                                                | Remaining gap                                                                                                                             |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Seller and admin mobile flows | Seller application now includes `fullName`, public profile photo, editable handoff corrections in `CHANGES_REQUESTED`, and status-gated read-only mode outside that state; Product/Listing forms and compact `/admin` moderation controls still exist.             | Device/accessibility QA and browser/E2E seller-path verification remain incomplete.                                                                                               |
+| Seller and admin mobile flows | Seller application now includes `fullName`, public profile photo, editable handoff corrections in `CHANGES_REQUESTED`, and status-gated read-only mode outside that state; Product/Listing forms and compact `/admin` moderation controls still exist.             | Device/accessibility QA remains; browser/E2E seller-path verification passed in the closed-pilot suite.                                                                                               |
 | Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch. All UI components strictly typed without `any` casts. | Mobile/device accessibility QA remains.                                                                                                   |
-| Tests                         | API unit suite passed; `apps/api/test/integration/product-listing.integration.spec.ts` passed against local PostgreSQL; Expo Router types, API build, mobile typecheck/export, and Playwright closed-pilot browser flow passed. | Release-hardening browser/device/accessibility matrix remains deferred. |
+| Tests                         | API unit suite passed; `apps/api/test/integration/product-listing.integration.spec.ts` passed against local PostgreSQL; Expo Router types, API build, mobile typecheck/export, `apps/mobile:test:e2e-fence`, and Playwright closed-pilot browser flow passed. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
 ## Confirmed MVP implementation gaps — 2026-07-23
 
 | Area | Status | Required implementation evidence |
 | --- | --- | --- |
-| Public seller application and capability | Partial | `POST/PATCH /seller/profile`, seller status projection and the seller-write capability gate now exist, and the mobile application screen uses multipart photo upload; closed-pilot browser/E2E verification of the seller-path remains pending. |
-| Seller profile data | Partial | Handoff contact, handoff initiator, immutable public `fullName`, profile photo upload/public URL and `CHANGES_REQUESTED` edit flow for public and handoff fields now exist in schema, API and mobile; browser/device QA remains. |
+| Public seller application and capability | Partial | `POST/PATCH /seller/profile`, seller status projection and the seller-write capability gate now exist, and the mobile application screen uses multipart photo upload; closed-pilot browser/E2E verification of the seller-path passed. |
+| Seller profile data | Partial | Handoff contact, handoff initiator, immutable public `fullName`, profile photo upload/public URL and `CHANGES_REQUESTED` edit flow for public and handoff fields now exist in schema, API and mobile; browser seller-path verification passed and device QA remains. |
 | Product moderation and visibility | Implemented | `submit`, admin moderation service, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place. |
 | Seller handoff actions | Implemented | Order snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator`; seller actions and admin replacement/cancellation preserve audit and role-scoped projections. |
 | Timestamps | Partial | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented. |
 | Pilot analytics | Not implemented | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker. |
 | Production email verification | Implemented | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/bids/bid-eligibility.ts` now enforce SMTP-backed email verification, versioned rules acceptance and a test-only bypass that stays disabled in production. |
-| Closed-pilot rehearsal | Needs verification | Chromium Playwright now covers the buyer path, seller handoff actions, and the order privacy matrix against disposable PostgreSQL; the isolated 10-user rehearsal still needs to be run. |
+| Closed-pilot rehearsal | Needs verification | Chromium Playwright now covers the buyer path, seller/admin browser flow, seller handoff actions, and the order privacy matrix against disposable PostgreSQL; the isolated 10-user rehearsal still needs to be run. |
 
 ## Intentional MVP boundaries
 

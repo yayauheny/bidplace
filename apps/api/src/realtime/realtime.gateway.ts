@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,68 +7,20 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { type IncomingMessage } from 'node:http';
 import { Server, Socket } from 'socket.io';
 
 import { uuidSchema } from '@bidplace/contracts';
 
 import { PrismaService } from '../core/database';
 import { RateLimitService } from '../core/rate-limit';
+import { resolveSocketIp } from './realtime.options';
 
-const allowedOrigin = process.env.CORS_ORIGIN?.trim();
-const gatewayCorsOrigin = allowedOrigin ? [allowedOrigin] : false;
 const publicListingRoomLimit = 5;
-
-function allowSocketRequest(request: IncomingMessage, callback: (error: Error | null, success: boolean) => void): void {
-  const origin = request.headers.origin;
-
-  if (!origin) {
-    callback(null, true);
-    return;
-  }
-
-  if (!allowedOrigin) {
-    callback(null, false);
-    return;
-  }
-
-  callback(null, origin === allowedOrigin);
-}
-
-function resolveSocketIp(socket: Socket): string {
-  const forwardedFor = socket.handshake.headers['x-forwarded-for'];
-
-  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
-    const firstForwarded = forwardedFor.split(',')[0];
-
-    if (firstForwarded) {
-      return firstForwarded.trim();
-    }
-  }
-
-  if (Array.isArray(forwardedFor)) {
-    const firstForwarded = forwardedFor[0];
-
-    if (typeof firstForwarded === 'string' && firstForwarded.trim()) {
-      const firstValue = firstForwarded.split(',')[0];
-
-      if (firstValue) {
-        return firstValue.trim();
-      }
-    }
-  }
-
-  return socket.handshake.address ?? socket.id;
-}
+const anonymousConnectionLimit = 5;
+const anonymousJoinLimit = 10;
 
 @Injectable()
-@WebSocketGateway({
-  cors: {
-    origin: gatewayCorsOrigin,
-    credentials: false,
-  },
-  allowRequest: allowSocketRequest,
-})
+@WebSocketGateway()
 export class RealtimeGateway {
   @WebSocketServer()
   server!: Server;
@@ -78,12 +30,15 @@ export class RealtimeGateway {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rateLimits: RateLimitService,
+    @Inject('REALTIME_TRUST_PROXY') private readonly trustProxy: boolean,
   ) {}
 
   handleConnection(socket: Socket): void {
-    const ip = resolveSocketIp(socket);
+    const ip = resolveSocketIp(socket, this.trustProxy);
+    const bucket = ip === 'unknown' ? 'unknown' : ip;
+    const limit = ip === 'unknown' ? anonymousConnectionLimit : 30;
 
-    if (!this.rateLimits.consume(`realtime:connect:ip:${ip}`, 30, 60_000)) {
+    if (!this.rateLimits.consume(`realtime:connect:ip:${bucket}`, limit, 60_000)) {
       socket.disconnect(true);
       return;
     }
@@ -108,9 +63,11 @@ export class RealtimeGateway {
       throw new WsException('Invalid listing id');
     }
 
-    const ip = resolveSocketIp(socket);
+    const ip = resolveSocketIp(socket, this.trustProxy);
+    const bucket = ip === 'unknown' ? 'unknown' : ip;
+    const limit = ip === 'unknown' ? anonymousJoinLimit : 60;
 
-    if (!this.rateLimits.consume(`realtime:join:ip:${ip}`, 60, 60_000)) {
+    if (!this.rateLimits.consume(`realtime:join:ip:${bucket}`, limit, 60_000)) {
       throw new WsException('Too many join requests');
     }
 

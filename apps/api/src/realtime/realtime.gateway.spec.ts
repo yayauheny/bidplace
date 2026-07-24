@@ -21,6 +21,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       { listing: { findFirst: vi.fn() } } as never,
       { consume: vi.fn().mockReturnValue(true) } as never,
+      false,
     );
 
     await expect(gateway.join(createSocket(), { listingId: 'bad-id' })).rejects.toThrow(
@@ -37,6 +38,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       prisma as never,
       { consume: vi.fn().mockReturnValue(true) } as never,
+      false,
     );
 
     await expect(
@@ -61,7 +63,7 @@ describe('RealtimeGateway', () => {
     const rateLimits = {
       consume: vi.fn().mockReturnValue(true),
     };
-    const gateway = new RealtimeGateway(prisma as never, rateLimits as never);
+    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
     const socket = createSocket();
 
     await expect(
@@ -90,7 +92,7 @@ describe('RealtimeGateway', () => {
         .fn()
         .mockImplementation((key: string) => !key.startsWith('realtime:connect')),
     };
-    const gateway = new RealtimeGateway(prisma as never, rateLimits as never);
+    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
     const socket = createSocket('socket-2');
 
     gateway.handleConnection(socket);
@@ -109,5 +111,34 @@ describe('RealtimeGateway', () => {
     await expect(
       gateway.join(joinSocket, { listingId: randomUUID() }),
     ).resolves.toEqual({ ok: true });
+  });
+
+  it('uses a conservative unknown IP bucket when the socket has no address', () => {
+    const prisma = {
+      listing: {
+        findFirst: vi.fn().mockResolvedValue({ id: randomUUID() }),
+      },
+    };
+    const rateLimits = {
+      consume: vi.fn().mockReturnValue(true),
+    };
+    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
+    const socket = {
+      id: 'socket-unknown',
+      handshake: {
+        address: '',
+        headers: {},
+      },
+      join: vi.fn(),
+      disconnect: vi.fn(),
+    } as never;
+
+    gateway.handleConnection(socket);
+
+    expect(rateLimits.consume).toHaveBeenCalledWith(
+      'realtime:connect:ip:unknown',
+      5,
+      60_000,
+    );
   });
 });

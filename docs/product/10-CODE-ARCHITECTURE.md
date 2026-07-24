@@ -9,6 +9,7 @@
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed.
+- Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
 
 ## Persistence model
 
@@ -56,4 +57,4 @@ The API currently assumes a single scheduler and Socket.IO instance. The pilot d
 
 ## Verification
 
-The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-19. Closed-pilot Chromium verification starts real API and Expo web servers against isolated `bidplace_e2e`, provisions deterministic users/data, writes email verification codes only to a test-only file configured by `TEST_EMAIL_FILE`, and uses a controlled close fixture to assert the canonical Order route. `packages/api-client` wraps the selected fetch implementation so browser-native `fetch` retains its receiver. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.
+The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-19. Closed-pilot Chromium verification starts real API and Expo web servers against isolated `bidplace_e2e`, provisions deterministic users/data, writes email verification codes only to a test-only file configured by `TEST_EMAIL_FILE`, uses a controlled close fixture to assert the canonical Order route, and the dedicated `apps/mobile:test:e2e-fence` check verifies the destructive-reset guard. `packages/api-client` wraps the selected fetch implementation so browser-native `fetch` retains its receiver. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.

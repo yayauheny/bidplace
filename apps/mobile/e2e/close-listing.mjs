@@ -3,22 +3,12 @@ import { resolve } from 'node:path';
 
 import { Prisma, PrismaClient } from '../../../packages/database/dist/index.js';
 
-if (process.env.NODE_ENV !== 'test') {
-  throw new Error('NODE_ENV must be test to close the E2E listing');
-}
+import { assertDisposableDatabase } from './disposable-database.mjs';
 
 const databaseUrl = process.env.E2E_DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error('E2E_DATABASE_URL is required');
-}
-
-const database = new URL(databaseUrl);
-const databaseName = database.pathname.replace(/^\//, '');
-
-if (databaseName !== 'bidplace_e2e') {
-  throw new Error(`E2E_DATABASE_URL must target bidplace_e2e, got ${databaseName}`);
-}
+assertDisposableDatabase(databaseUrl, {
+  nodeEnv: process.env.NODE_ENV,
+});
 
 const e2e = resolve(import.meta.dirname);
 const statePath = resolve(e2e, '.state.json');
@@ -31,27 +21,50 @@ const prisma = new PrismaClient({
   },
 });
 
+const listing = await prisma.listing.findUniqueOrThrow({
+  where: { id: state.listing.id },
+  select: {
+    id: true,
+    product: {
+      select: {
+        sellerProfile: {
+          select: {
+            userId: true,
+            handoffContactType: true,
+            handoffContactValue: true,
+            handoffInitiator: true,
+          },
+        },
+      },
+    },
+  },
+});
+
 const bid = await prisma.bid.findFirstOrThrow({
-  where: { listingId: state.listing.id },
+  where: { listingId: listing.id },
   orderBy: { amount: 'desc' },
+});
+const buyer = await prisma.user.findUniqueOrThrow({
+  where: { id: bid.bidderUserId },
+  select: { email: true },
 });
 const order = await prisma.order.create({
   data: {
     publicId: 'e2eOrder001',
-    listingId: state.listing.id,
-    sellerId: state.seller.id,
+    listingId: listing.id,
+    sellerId: listing.product.sellerProfile.userId,
     buyerId: bid.bidderUserId,
     sourceBidId: bid.id,
     finalAmount: new Prisma.Decimal(bid.amount),
     contactDueAt: new Date(Date.now() + 24 * 60 * 60 * 1_000),
-    sellerHandoffType: 'TELEGRAM',
-    sellerHandoffValue: '@e2eseller',
-    buyerEmailAtClose: state.buyer.email,
-    handoffInitiator: 'BUYER_CONTACTS_SELLER',
+    sellerHandoffType: listing.product.sellerProfile.handoffContactType,
+    sellerHandoffValue: listing.product.sellerProfile.handoffContactValue,
+    buyerEmailAtClose: buyer.email,
+    handoffInitiator: listing.product.sellerProfile.handoffInitiator,
   },
 });
 await prisma.listing.update({
-  where: { id: state.listing.id },
+  where: { id: listing.id },
   data: { status: 'ENDED', closedAt: new Date(), currentPrice: bid.amount },
 });
 await writeFile(statePath, JSON.stringify({ ...state, order }));

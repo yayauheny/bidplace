@@ -68,9 +68,22 @@ export function toPublicSellerProfile(
 export function toSellerProfileResponse(
   sellerProfile: SellerProfileResponseRecord,
 ) {
+  const {
+    profilePhotoMimeType: _profilePhotoMimeType,
+    profilePhotoByteLength: _profilePhotoByteLength,
+    profilePhotoChecksum: _profilePhotoChecksum,
+    profilePhotoData: _profilePhotoData,
+    ...sellerProfileResponse
+  } = sellerProfile as SellerProfileResponseRecord & {
+    profilePhotoMimeType?: string | null;
+    profilePhotoByteLength?: number | null;
+    profilePhotoChecksum?: string | null;
+    profilePhotoData?: Uint8Array | null;
+  };
+
   return sellerProfileResponseSchema.parse({
     sellerProfile: {
-      ...sellerProfile,
+      ...sellerProfileResponse,
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),

@@ -22,8 +22,6 @@ describe('CategoriesService', () => {
         slug: 'art-object',
         name: 'Art Object',
         description: 'Curated art and collectible pieces for MVP demos.',
-        createdAt: new Date('2026-07-13T10:00:00.000Z'),
-        updatedAt: new Date('2026-07-13T10:00:00.000Z'),
       },
     ]);
 
@@ -34,5 +32,27 @@ describe('CategoriesService', () => {
     });
     expect(result.categories).toHaveLength(1);
     expect(result.categories[0].slug).toBe('art-object');
+  });
+
+  it('does not require category timestamps from the database', async () => {
+    prisma.category.findMany.mockResolvedValue([
+      {
+        id: 'b8d7d079-f07e-4cd0-b1e2-1f3a8c1d8f5b',
+        slug: 'art-object',
+        name: 'Art Object',
+        description: null,
+      },
+    ]);
+
+    const result = await service.listCategories();
+
+    expect(result.categories[0]).toMatchObject({
+      id: 'b8d7d079-f07e-4cd0-b1e2-1f3a8c1d8f5b',
+      slug: 'art-object',
+      name: 'Art Object',
+      description: null,
+    });
+    expect(result.categories[0]).not.toHaveProperty('createdAt');
+    expect(result.categories[0]).not.toHaveProperty('updatedAt');
   });
 });
