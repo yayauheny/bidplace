@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ProductsService } from './products.service';
+import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 const product = {
   id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -28,7 +29,12 @@ const product = {
 describe('ProductsService', () => {
   it('retries a Product public ID collision without exposing the database error', async () => {
     const prisma = {
-      sellerProfile: { findUnique: vi.fn().mockResolvedValue({ id: product.sellerProfileId }) },
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: product.sellerProfileId,
+          status: 'APPROVED',
+        }),
+      },
       product: {
         create: vi.fn()
           .mockRejectedValueOnce({ code: 'P2002' })
@@ -49,7 +55,8 @@ describe('ProductsService', () => {
     const prisma = {
       product: {
         findUnique: vi.fn().mockResolvedValue({
-          sellerProfile: { userId: 'owner-id' },
+          status: 'DRAFT',
+          sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
           listings: [{ id: 'listing-id' }],
         }),
         update: vi.fn(),
@@ -60,5 +67,42 @@ describe('ProductsService', () => {
     await expect(service.update('owner-id', product.id, { title: 'Locked' }))
       .rejects.toThrow('Product is locked by an active Listing');
     expect(prisma.product.update).not.toHaveBeenCalled();
+  });
+
+  it('uses a narrow seller select for public Product queries', async () => {
+    const publicProduct = {
+      ...product,
+      status: 'APPROVED' as const,
+      publishedAt: null,
+    };
+    const prisma = {
+      product: {
+        findFirst: vi.fn().mockResolvedValue({
+          ...publicProduct,
+          sellerProfile: {
+            slug: 'seller-slug',
+            sellerType: 'creator',
+            fullName: 'Seller',
+            country: 'BY',
+            socialLink: 'https://example.com/seller',
+            shortDescription: 'Short',
+          },
+          listings: [],
+        }),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.getPublic('public-id');
+
+    expect(prisma.product.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          sellerProfile: {
+            select: publicSellerProfileSelect,
+          },
+        }),
+      }),
+    );
   });
 });

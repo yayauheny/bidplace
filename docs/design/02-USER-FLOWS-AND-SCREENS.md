@@ -25,7 +25,7 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 
 | Экран               | Route                     | Реализованное поведение                                                                                                                     | Статус / remaining work                                      |
 | ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile and show its status.                                                                                            | Implemented without approved design.                         |
+| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile, upload a public profile photo, edit handoff corrections while `CHANGES_REQUESTED`, show status, and keep fields read-only outside that state.            | Implemented without approved design.                         |
 | New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft.                                                                                                        | Partial: device/accessibility QA remains.                    |
 | Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields and review, upload, delete or reorder Product images. Server blocks locked Product edits and images. | Partial: device/accessibility QA remains.                    |
 | New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing.                          | Partial: date input and seller Listing-management QA remain. |
@@ -43,6 +43,8 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 - The Product screen derives participation from `GET /api/me/activity`, never from public Bid identity or event order.
 - A seller or admin does not receive bidder contacts from ranked Bid inspection; contact is only revealed through the authorized active Order.
 - Seller Product edits and image operations are allowed only while the backend considers the Product unlocked.
+- Seller profile edits are allowed only while the backend returns `CHANGES_REQUESTED`; `PENDING_REVIEW`, `APPROVED`, `REJECTED` and `SUSPENDED` are read-only. Handoff contact, handoff initiator and public profile data can all be corrected in that state.
+- Public seller detail uses `fullName`, profile photo URL and a public verification link; private handoff contact stays off public routes.
 
 ## Required manual QA
 

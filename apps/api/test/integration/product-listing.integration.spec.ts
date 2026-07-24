@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
+import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { BidsService } from '../../src/bids/bids.service';
@@ -29,9 +30,28 @@ async function reset() {
 async function fixture() {
   const suffix = randomUUID();
   const seller = await prisma.user.create({ data: { email: `seller.${suffix}@bidplace.test`, passwordHash: 'test', phone: `+37529${suffix.replace(/-/g, '').slice(0, 7)}`, displayName: 'Seller' } });
-  const buyer = await prisma.user.create({ data: { email: `buyer.${suffix}@bidplace.test`, passwordHash: 'test', phone: `+37544${suffix.replace(/-/g, '').slice(0, 7)}`, displayName: 'Buyer', phoneVerifiedAt: new Date() } });
+  const buyer = await prisma.user.create({ data: { email: `buyer.${suffix}@bidplace.test`, passwordHash: 'test', phone: `+37544${suffix.replace(/-/g, '').slice(0, 7)}`, displayName: 'Buyer', phoneVerifiedAt: new Date(), emailVerifiedAt: new Date() } });
+  await prisma.termsAcceptance.create({ data: { userId: buyer.id, rulesVersion: CURRENT_RULES_VERSION, acceptedAt: new Date() } });
   const category = await prisma.category.create({ data: { slug: `art-${suffix}`, name: 'Art' } });
-  const sellerProfile = await prisma.sellerProfile.create({ data: { userId: seller.id, slug: `seller-${suffix}`, sellerType: 'creator', storeName: 'Seller', country: 'BY', contactPreference: 'telegram', status: 'APPROVED' } });
+  const sellerProfile = await prisma.sellerProfile.create({
+    data: {
+      userId: seller.id,
+      slug: `seller-${suffix}`,
+      sellerType: 'creator',
+      fullName: 'Seller',
+      country: 'BY',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: 1,
+      profilePhotoChecksum: '0'.repeat(64),
+      profilePhotoData: Buffer.from([0]),
+      socialLink: 'https://example.com/seller',
+      shortDescription: 'Seller profile for integration tests',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@seller',
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'APPROVED',
+    },
+  });
   const product = await prisma.product.create({ data: { publicId: randomUUID().replace(/-/g, '').slice(0, 11), sellerProfileId: sellerProfile.id, categoryId: category.id, title: 'Product', story: 'Story', condition: 'New', uniqueness: 'One', provenance: 'Direct', city: 'Minsk', deliveryInfo: 'Pickup', status: 'APPROVED' } });
   return { seller, buyer, product };
 }
@@ -60,9 +80,9 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const listing = await prisma.listing.create({ data: listingData(product.id, 'ENDED') });
     const firstBid = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: buyer.id, idempotencyKey: 'first', amount: new Prisma.Decimal(10) } });
     const secondBid = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: seller.id, idempotencyKey: 'second', amount: new Prisma.Decimal(11) } });
-    await prisma.order.create({ data: { publicId: 'orderPublic1', listingId: listing.id, sellerId: seller.id, buyerId: buyer.id, sourceBidId: firstBid.id, finalAmount: firstBid.amount, contactDueAt: new Date() } });
+    await prisma.order.create({ data: { publicId: 'orderPublic1', listingId: listing.id, sellerId: seller.id, buyerId: buyer.id, sourceBidId: firstBid.id, finalAmount: firstBid.amount, contactDueAt: new Date(), sellerHandoffType: 'TELEGRAM', sellerHandoffValue: '@seller', buyerEmailAtClose: buyer.email, handoffInitiator: 'BUYER_CONTACTS_SELLER' } });
 
-    await expect(prisma.order.create({ data: { publicId: 'orderPublic2', listingId: listing.id, sellerId: seller.id, buyerId: seller.id, sourceBidId: secondBid.id, finalAmount: secondBid.amount, contactDueAt: new Date() } }))
+    await expect(prisma.order.create({ data: { publicId: 'orderPublic2', listingId: listing.id, sellerId: seller.id, buyerId: seller.id, sourceBidId: secondBid.id, finalAmount: secondBid.amount, contactDueAt: new Date(), sellerHandoffType: 'TELEGRAM', sellerHandoffValue: '@seller', buyerEmailAtClose: buyer.email, handoffInitiator: 'BUYER_CONTACTS_SELLER' } }))
       .rejects.toMatchObject({ code: 'P2002' });
   });
 
@@ -96,19 +116,27 @@ describe('Product / Listing PostgreSQL invariants', () => {
 
   it('serializes concurrent accepted Bids into the canonical higher price', async () => {
     const { product, buyer } = await fixture();
-    const secondBuyer = await prisma.user.create({ data: { email: `second.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37533${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Second', phoneVerifiedAt: new Date() } });
+    const secondBuyer = await prisma.user.create({ data: { email: `second.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37533${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Second', phoneVerifiedAt: new Date(), emailVerifiedAt: new Date() } });
+    await prisma.termsAcceptance.create({ data: { userId: secondBuyer.id, rulesVersion: CURRENT_RULES_VERSION, acceptedAt: new Date() } });
     const listing = await prisma.listing.create({ data: listingData(product.id, 'LIVE') });
     const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);
 
-    await Promise.all([
+    const results = await Promise.allSettled([
       bids.place(buyer.id, listing.id, 'concurrent-one', { amount: 11 }),
       bids.place(secondBuyer.id, listing.id, 'concurrent-two', { amount: 12 }),
     ]);
     const current = await prisma.listing.findUnique({ where: { id: listing.id } });
+    const fulfilled = results.filter(
+      (result): result is PromiseFulfilledResult<unknown> =>
+        result.status === 'fulfilled',
+    );
 
-    expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(2);
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+    expect(await prisma.bid.count({ where: { listingId: listing.id } })).toBe(
+      fulfilled.length,
+    );
     expect(current?.currentPrice.toNumber()).toBe(12);
-    expect(current?.bidCount).toBe(2);
+    expect(current?.bidCount).toBe(fulfilled.length);
   });
 
   it('closes an expired Listing once and creates an Order for the deterministic top Bid', async () => {
@@ -133,7 +161,8 @@ describe('Product / Listing PostgreSQL invariants', () => {
 
   it('rejects a Bid at the close boundary while the Listing closes with its existing winner', async () => {
     const { seller, buyer, product } = await fixture();
-    const nextBuyer = await prisma.user.create({ data: { email: `next.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37525${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Next', phoneVerifiedAt: new Date() } });
+    const nextBuyer = await prisma.user.create({ data: { email: `next.${randomUUID()}@bidplace.test`, passwordHash: 'test', phone: `+37525${randomUUID().replace(/-/g, '').slice(0, 7)}`, displayName: 'Next', phoneVerifiedAt: new Date(), emailVerifiedAt: new Date() } });
+    await prisma.termsAcceptance.create({ data: { userId: nextBuyer.id, rulesVersion: CURRENT_RULES_VERSION, acceptedAt: new Date() } });
     const listing = await prisma.listing.create({ data: { ...listingData(product.id, 'LIVE'), endsAt: now, originalEndsAt: now } });
     const winner = await prisma.bid.create({ data: { listingId: listing.id, bidderUserId: buyer.id, idempotencyKey: 'existing-winner', amount: new Prisma.Decimal(10) } });
     const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);

@@ -1,26 +1,27 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-07-23
-Статус: Technical baseline is Partial; confirmed MVP decisions require implementation before the next closed-pilot gate.
+Последнее обновление: 2026-07-24
+Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer privacy mode, image reorder safety, API unit tests and mobile typecheck, but the API integration suite still has one failing concurrent-bid case and closed-pilot browser/E2E seller-path verification is still pending.
 
 ## Реализовано
 
 | Поведение                 | Evidence                                                                                                                                                                                                                                                              |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Canonical storage model   | `packages/database/prisma/schema.prisma`: `SellerProfile → Product → Listing → AuctionRules → Bid → Order`; baseline `20260716000000_baseline` создаёт schema с partial indexes `one_active_listing_per_product` и `one_active_order_per_listing`.                    |
-| Product and Listing rules | `apps/api/src/products`, `apps/api/src/listings`, `apps/api/src/admin`: draft Product, approval completeness gate, owner lock after `SCHEDULED`/`LIVE`, explicit Listing transitions and BYN-only auction rules.                                                      |
-| Bids and soft close       | `apps/api/src/bids`, `apps/api/src/core/auction/pricing-policy.ts`: serializable transaction, idempotency key, self-bid/phone gates, compare-and-update, BYN increment policy, 60/60/600 soft close.                                                                  |
-| Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`: scheduler activation/closing, deterministic winner, atomic Order foundation, owner/admin authorization, manual admin cancellation/replacement.                                                                       |
-| Phone verification        | `apps/api/src/otp`, `PhoneVerificationCode`: hashed one-time OTP, expiry, retry/cooldown and rate limiting. A production transport remains blocked by an external provider configuration.                                                                             |
+| Canonical storage model   | `packages/database/prisma/schema.prisma`, `packages/database/prisma/migrations/20260716000000_baseline/migration.sql`: nullable `phone`, `email_verified_at`, `TermsAcceptance`, `EmailVerificationCode`, moderation enums, handoff snapshot fields and append-only `AuditEvent` are present with the expected partial indexes. |
+| Product and Listing rules | `apps/api/src/products`, `apps/api/src/listings`, `apps/api/src/admin`, `apps/api/src/sellers/seller-capability.ts`, `apps/api/src/products/public-visibility.ts`: draft Product, submit-to-review, approval gate, owner lock after `SCHEDULED`/`LIVE`, shared public visibility predicates and BYN-only auction rules. |
+| Seller privacy and image reorder | `apps/api/src/orders/orders.service.ts`, `apps/api/src/images/images.service.ts`: buyer-facing Order projections hide seller contacts in `SELLER_CONTACTS_BUYER`, keep them in `BUYER_CONTACTS_SELLER`, and image reordering uses a two-phase temporary offset to avoid unique-position collisions; both paths have unit coverage. |
+| Bids and soft close       | `apps/api/src/bids`, `apps/api/src/core/auction/pricing-policy.ts`, `apps/api/src/bids/bid-eligibility.ts`: serializable transaction, idempotency key, self-bid gate, compare-and-update, BYN increment policy, 60/60/600 soft close, email verification and versioned rules acceptance. |
+| Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`, `apps/api/src/orders/order-snapshot.ts`: scheduler activation/closing, deterministic winner, atomic Order foundation, active-order snapshot, seller handoff actions, manual admin cancellation/replacement and audit. |
+| Email verification and rules | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation. |
 | Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
-| Local reset and seed      | The reset guard is present, but `packages/database/prisma/seed.js` contains `seedEnded3`, a 10-character Product publicId that violates the 11-character contract and can make the public catalog response fail validation. This requires a fixture fix and rerun. |
+| Local reset and seed      | The reset guard is present; the seed fixture still needs a fresh re-run after the MVP schema updates and was not revalidated in this snapshot. |
 | Prisma generated client   | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                         |
 
 ## Partial / needs verification
 
 | Area                          | Current evidence                                                                                                                                                                                                | Remaining gap                                                                                                                             |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Seller and admin mobile flows | Owner/public Seller APIs, Product/Listing forms, later Product draft editing, draft image upload/review/delete/reordering, and compact `/admin` status and manual Order replacement controls exist.             | Device/accessibility QA remains incomplete.                                                                                               |
+| Seller and admin mobile flows | Seller application now includes `fullName`, public profile photo, editable handoff corrections in `CHANGES_REQUESTED`, and status-gated read-only mode outside that state; Product/Listing forms and compact `/admin` moderation controls still exist.             | Device/accessibility QA and browser/E2E seller-path verification remain incomplete.                                                                                               |
 | Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch. All UI components strictly typed without `any` casts. | Mobile/device accessibility QA remains.                                                                                                   |
 | Tests                         | API unit/integration suites, clean migration/reset/seed, full lint/typecheck/build gates and Chromium E2E pass. Expo Router types and UI codebase fully typechecked. `apps/mobile/e2e/closed-pilot.spec.ts` covers Product → UI login → test OTP → Bid → Activity → ended Order, outsider Order denial, ordinary-user admin denial, permitted admin Order access and absent legacy route. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
@@ -29,13 +30,13 @@
 
 | Area | Status | Required implementation evidence |
 | --- | --- | --- |
-| Public seller application and capability | Not implemented | Public `PENDING_REVIEW` SellerProfile application; admin approval makes the profile itself the seller capability; backend authorization on all seller writes; suspension/revoke tests; capability projection and admin UI. |
-| Seller profile data | Partial | Current profile lacks the confirmed profile photo, `fullName`, handoff contact and public-application distinction. Add the confirmed public fields without exposing buyer data automatically. |
-| Product moderation and visibility | Partial | Current Product can be approved but has no explicit submitted/review state. Add private-under-review behavior, moderation reason/history and `publishedAt`; change the approval image gate from three to one and limit catalog visibility to scheduled/live Listing. |
-| Seller handoff actions | Not implemented | Seller must record contact/result or failure. Extend Order with the confirmed active-order contact projection: seller-selected Telegram/phone/Instagram for buyer, verified buyer email for seller, and privacy mode. |
+| Public seller application and capability | Partial | `POST/PATCH /seller/profile`, seller status projection and the seller-write capability gate now exist, and the mobile application screen uses multipart photo upload; closed-pilot browser/E2E verification of the seller-path remains pending. |
+| Seller profile data | Partial | Handoff contact, handoff initiator, immutable public `fullName`, profile photo upload/public URL and `CHANGES_REQUESTED` edit flow for public and handoff fields now exist in schema, API and mobile; browser/device QA remains. |
+| Product moderation and visibility | Implemented | `submit`, admin moderation service, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place. |
+| Seller handoff actions | Implemented | Order snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator`; seller actions and admin replacement/cancellation preserve audit and role-scoped projections. |
 | Timestamps | Partial | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented. |
 | Pilot analytics | Not implemented | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker. |
-| Production email verification | Not implemented | Current phone OTP flow does not match the confirmed MVP. Implement production email verification before first Bid, versioned service-rules acceptance and a test-only non-production bypass. |
+| Production email verification | Implemented | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/bids/bid-eligibility.ts` now enforce SMTP-backed email verification, versioned rules acceptance and a test-only bypass that stays disabled in production. |
 | Closed-pilot rehearsal | Needs verification | Existing Chromium E2E covers the buyer path, not the confirmed seller application/moderation flow or the required 10-user rehearsal. |
 
 ## Intentional MVP boundaries
@@ -46,11 +47,14 @@
 - Manual admin replacement preserves cancelled Order history; automatic replacement is Planned.
 - Design is frozen for the next MVP implementation wave: reuse the present UI and do not include a redesign in these domain/security tasks.
 
-## Closed-pilot verification — 2026-07-19
+## Historical closed-pilot verification — 2026-07-19
 
 - Frozen workspace install; full lint and typecheck; API build; Expo web export; Prisma validation; isolated reset and seed passed.
-- API unit and PostgreSQL integration suites passed.
-- Chromium E2E passed: 3 tests, real Expo web + API + isolated `bidplace_e2e` database + local test OTP adapter.
+- API typecheck passed on the current tree.
+- API unit suite passed: 20 files, 86 tests.
+- API integration suite passed: 2 files, 8 tests, against local PostgreSQL.
+- Production SMTP env validation passed in `apps/api/src/core/config/env.spec.ts`.
+- Chromium E2E, mobile typecheck, lint and seed reset were not rerun in this snapshot.
 
 ## Task B Editorial Redesign — 2026-07-19
 
@@ -78,10 +82,12 @@
 
 ## Checks executed for this snapshot
 
-- `tsc` for contracts, API client, API and mobile;
-- API Vitest suite: 19 files, 72 tests;
-- mobile Vitest suite: 1 file, 3 tests;
-- isolated PostgreSQL integration suite: 2 files, 8 tests; clean migration reset and deterministic seed;
-- direct SQL confirmation of Listing seed states and both partial unique indexes.
+- `packages/database`: Prisma client generation and TypeScript build completed against the updated seller-profile schema.
+- `packages/contracts`: TypeScript build completed after seller-profile, order and auth contract updates.
+- `packages/api-client`: TypeScript build completed after multipart seller application and auth response updates.
+- `apps/api` typecheck passed.
+- `apps/api` unit Vitest suite passed: 22 files, 91 tests.
+- `apps/api` integration Vitest suite currently has one failing test in `test/integration/product-listing.integration.spec.ts` (`serializes concurrent accepted Bids into the canonical higher price`), which rejects `11` with `Bid must be at least 12.50`; this remains to be investigated.
+- `apps/mobile` typecheck passed after seller application, product and admin UI updates.
 
 See `10-CODE-ARCHITECTURE.md` for boundaries and `05-MVP-RFC.md` for product contract gaps.

@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-07-23
+Последнее обновление: 2026-07-24
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -28,13 +28,13 @@ SellerProfile
 
 The following is a confirmed target, not a claim about the current schema or API:
 
-- a registered User may submit a public SellerProfile application. `APPROVED` SellerProfile is the seller capability; `PENDING_REVIEW`, `CHANGES_REQUESTED`, `REJECTED` and `SUSPENDED` block Product and Listing writes. Admin role remains independent;
-- SellerProfile stores a public profile photo, public `fullName`, description and at least one public verification source. It is separate from buyer identity, although the registration name may prefill it;
-- Product requires a moderation state before public visibility. A Product remains private while it is a draft or under review; it appears in public catalog only with a `SCHEDULED` or `LIVE` Listing, and its first public transition sets immutable `publishedAt`;
+- `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
+- SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
+- Product requires a moderation state before public visibility. A Product remains private while it is a draft or under review; `submit` moves it into review, admin moderation records a reasoned audit trail, and the first public Listing transition sets immutable `publishedAt`;
 - one own Product image is the MVP technical minimum. Condition is not mandatory for creator-made Product; the current optional field is preserved until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text before the first Bid; production MVP verifies email before that Bid, while a test-only bypass is impossible in a production build;
-- active Order handoff exposes only the seller-selected Telegram, phone or Instagram contact to buyer, and the verified buyer email to seller. Seller privacy mode reverses who initiates contact;
+- buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version, and `otp.service.ts` uses SMTP/nodemailer in production with a test-only bypass that cannot activate in production;
+- active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. Buyer, seller and admin receive role-scoped projections, and admin cancellation/replacement preserves the original record with append-only audit;
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy
@@ -42,7 +42,9 @@ The following is a confirmed target, not a claim about the current schema or API
 - Bid placement is server-time, serializable, idempotent by `(bidderUserId, idempotencyKey)`, self-bid protected, phone-verified and compare-and-update guarded.
 - The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
 - Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID.
-- Public Product, Listing and Socket.IO projections contain no buyer contacts or seller internal identifiers. Order contacts are limited to the active buyer, seller and admin; current Order projections require extension to implement the confirmed handoff contract.
+- Public Product, Listing and Socket.IO projections contain no buyer contacts or seller internal identifiers. Order projections stay role-scoped: buyer sees the seller snapshot only when the handoff initiator is `BUYER_CONTACTS_SELLER`, seller sees the buyer email snapshot, and admin sees the allowed full record.
+- Buyer-facing Order privacy mode can hide seller contacts entirely when the seller chooses `SELLER_CONTACTS_BUYER`; the buyer projection returns `null` contact fields in that mode.
+- Product image reorder uses a two-phase temporary offset inside a transaction so the unique `(productId, position)` constraint never collides during swaps.
 - Product images remain binary PostgreSQL storage for the pilot; object storage is a future operational change.
 
 ## Runtime topology and extension boundary

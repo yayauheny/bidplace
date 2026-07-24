@@ -1,15 +1,30 @@
 import {
   publicSellerDetailResponseSchema,
   sellerProductListResponseSchema,
-  sellerProfileResponseSchema,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { createHash } from 'node:crypto';
 
 import { PrismaService } from '../core/database';
+import { type ValidatedImageUpload } from '../images/image-policy';
 import { productSelect, toContractProduct } from '../products/products.mapper';
+import { publicCatalogProductWhere } from '../products/public-visibility';
 import { ProductsService } from '../products/products.service';
+import { assertApprovedSeller } from './seller-capability';
+import {
+  publicSellerProfileSelect,
+  sellerProfilePhotoSelect,
+  sellerProfileResponseSelect,
+  toPublicSellerProfile,
+  toSellerProfileResponse,
+} from './seller-profile.mapper';
 
 @Injectable()
 export class SellersService {
@@ -19,46 +34,140 @@ export class SellersService {
   ) {}
 
   async getMine(userId: string) {
-    const sellerProfile = await this.prisma.sellerProfile.findUnique({ where: { userId } });
-    if (!sellerProfile) throw new NotFoundException('Seller profile not found');
-    return this.toProfileResponse(sellerProfile);
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: sellerProfileResponseSelect,
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    return toSellerProfileResponse(sellerProfile);
   }
 
-  async create(userId: string, input: SellerProfileCreateRequest) {
-    const existing = await this.prisma.sellerProfile.findUnique({ where: { userId } });
-    if (existing) throw new ConflictException('Seller profile already exists');
+  async create(
+    userId: string,
+    input: SellerProfileCreateRequest,
+    profilePhoto: ValidatedImageUpload,
+  ) {
+    const existing = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (existing) {
+      throw new ConflictException('Seller profile already exists');
+    }
+
+    const profilePhotoData = Uint8Array.from(profilePhoto.buffer);
+
     const sellerProfile = await this.prisma.sellerProfile.create({
       data: {
         userId,
         slug: input.slug,
         sellerType: input.sellerType,
-        storeName: input.storeName,
+        fullName: input.fullName,
         country: input.country,
-        contactPreference: input.contactPreference,
-        socialLink: input.socialLink ?? null,
-        shortDescription: input.shortDescription ?? null,
+        socialLink: input.socialLink,
+        shortDescription: input.shortDescription,
+        handoffContactType: input.handoffContactType,
+        handoffContactValue: input.handoffContactValue,
+        handoffInitiator:
+          input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
+        profilePhotoMimeType: profilePhoto.mimeType,
+        profilePhotoByteLength: profilePhoto.buffer.byteLength,
+        profilePhotoChecksum: createHash('sha256')
+          .update(profilePhoto.buffer)
+          .digest('hex'),
+        profilePhotoData,
       },
+      select: sellerProfileResponseSelect,
     });
-    return this.toProfileResponse(sellerProfile);
+
+    return toSellerProfileResponse(sellerProfile);
   }
 
-  async update(userId: string, input: SellerProfileUpdateRequest) {
+  async update(
+    userId: string,
+    input: SellerProfileUpdateRequest,
+    profilePhoto?: ValidatedImageUpload,
+  ) {
+    const current = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        status: true,
+        slug: true,
+      },
+    });
+
+    if (!current) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    if (current.status !== 'CHANGES_REQUESTED') {
+      throw new ForbiddenException('Seller profile cannot be edited');
+    }
+
     const data = Object.fromEntries(
       Object.entries(input).filter(([, value]) => value !== undefined),
     );
-    const sellerProfile = await this.prisma.sellerProfile.update({
-      where: { userId },
-      data,
-    }).catch(() => null);
-    if (!sellerProfile) throw new NotFoundException('Seller profile not found');
-    return this.toProfileResponse(sellerProfile);
+
+    if (profilePhoto) {
+      const profilePhotoData = Uint8Array.from(profilePhoto.buffer);
+
+      Object.assign(data, {
+        profilePhotoMimeType: profilePhoto.mimeType,
+        profilePhotoByteLength: profilePhoto.buffer.byteLength,
+        profilePhotoChecksum: createHash('sha256')
+          .update(profilePhoto.buffer)
+          .digest('hex'),
+        profilePhotoData,
+      });
+    }
+
+    try {
+      const sellerProfile = await this.prisma.sellerProfile.update({
+        where: { id: current.id },
+        data,
+        select: sellerProfileResponseSelect,
+      });
+
+      return toSellerProfileResponse(sellerProfile);
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error) {
+        if (error.code === 'P2025') {
+          throw new NotFoundException('Seller profile not found');
+        }
+
+        if (error.code === 'P2002') {
+          throw new ConflictException('Seller profile slug is already taken');
+        }
+      }
+
+      throw error;
+    }
   }
 
   async listProducts(userId: string) {
-    const sellerProfile = await this.prisma.sellerProfile.findUnique({ where: { userId }, select: { id: true } });
-    if (!sellerProfile) throw new NotFoundException('Seller profile not found');
-    const products = await this.prisma.product.findMany({ where: { sellerProfileId: sellerProfile.id }, select: productSelect, orderBy: { createdAt: 'desc' } });
-    return sellerProductListResponseSchema.parse({ products: products.map(toContractProduct) });
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { sellerProfileId: sellerProfile.id },
+      select: productSelect,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return sellerProductListResponseSchema.parse({
+      products: products.map(toContractProduct),
+    });
   }
 
   async getPublic(slug: string) {
@@ -66,9 +175,11 @@ export class SellersService {
       where: { slug, status: 'APPROVED' },
       include: {
         products: {
-          where: { status: 'APPROVED' },
+          where: publicCatalogProductWhere,
           include: {
-            sellerProfile: true,
+            sellerProfile: {
+              select: publicSellerProfileSelect,
+            },
             images: { orderBy: { position: 'asc' } },
             listings: {
               where: { status: { in: ['SCHEDULED', 'LIVE'] } },
@@ -80,41 +191,37 @@ export class SellersService {
         },
       },
     });
-    if (!sellerProfile) throw new NotFoundException('Seller profile not found');
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
     return publicSellerDetailResponseSchema.parse({
-      sellerProfile: {
-        slug: sellerProfile.slug,
-        sellerType: sellerProfile.sellerType,
-        storeName: sellerProfile.storeName,
-        country: sellerProfile.country,
-        contactPreference: sellerProfile.contactPreference,
-        socialLink: sellerProfile.socialLink,
-        shortDescription: sellerProfile.shortDescription,
-      },
-      products: sellerProfile.products.map((product) => this.products.toPublicProduct(product)),
+      sellerProfile: toPublicSellerProfile(sellerProfile),
+      products: sellerProfile.products.map((product) =>
+        this.products.toPublicProduct(product),
+      ),
     });
   }
 
-  private toProfileResponse(sellerProfile: {
-    id: string;
-    userId: string;
-    slug: string;
-    sellerType: string;
-    storeName: string;
-    country: string;
-    contactPreference: string;
-    socialLink: string | null;
-    shortDescription: string | null;
-    status: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
-    return sellerProfileResponseSchema.parse({
-      sellerProfile: {
-        ...sellerProfile,
-        createdAt: sellerProfile.createdAt.toISOString(),
-        updatedAt: sellerProfile.updatedAt.toISOString(),
-      },
+  async getPhoto(slug: string, userId?: string, role?: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findFirst({
+      where: { slug },
+      select: sellerProfilePhotoSelect,
     });
+
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    const isOwner = sellerProfile.userId === userId;
+    const isAdmin = role === 'admin';
+    const isPublic = sellerProfile.status === 'APPROVED';
+
+    if (!isOwner && !isAdmin && !isPublic) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    return sellerProfile;
   }
 }
