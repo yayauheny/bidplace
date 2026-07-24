@@ -1,3 +1,49 @@
-import { publicSellerDetailResponseSchema, sellerProductListResponseSchema, sellerProfileCreateRequestSchema, sellerProfileResponseSchema, sellerProfileUpdateRequestSchema, type SellerProfileCreateRequest, type SellerProfileUpdateRequest } from '@bidplace/contracts';
+import {
+  publicSellerDetailResponseSchema,
+  sellerProductListResponseSchema,
+  sellerProfileCreateRequestSchema,
+  sellerProfileResponseSchema,
+  sellerProfileUpdateRequestSchema,
+  type SellerProfileCreateRequest,
+  type SellerProfileUpdateRequest,
+} from '@bidplace/contracts';
+
 import { requestJson, type RequestContext } from './request';
-export function createSellersClient(context: RequestContext) { return { getMyProfile() { return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema); }, listProducts() { return requestJson(context, '/api/seller/products', sellerProductListResponseSchema); }, getPublicDetail(slug: string) { return requestJson(context, `/api/sellers/${slug}/detail`, publicSellerDetailResponseSchema); }, createProfile(input: SellerProfileCreateRequest) { return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema, { method: 'POST', body: sellerProfileCreateRequestSchema.parse(input) }); }, updateProfile(input: SellerProfileUpdateRequest) { return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema, { method: 'PATCH', body: sellerProfileUpdateRequestSchema.parse(input) }); } }; }
+
+export function createSellersClient(context: RequestContext) {
+  return {
+    getMyProfile() {
+      return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema);
+    },
+    listProducts() {
+      return requestJson(context, '/api/seller/products', sellerProductListResponseSchema);
+    },
+    getPublicDetail(slug: string) {
+      return requestJson(
+        context,
+        `/api/sellers/${slug}/detail`,
+        publicSellerDetailResponseSchema,
+      );
+    },
+    createProfile(input: SellerProfileCreateRequest, profilePhoto: Blob) {
+      return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema, {
+        method: 'POST',
+        body: {
+          ...sellerProfileCreateRequestSchema.parse(input),
+          profilePhoto,
+        },
+        asFormData: true,
+      });
+    },
+    updateProfile(input: SellerProfileUpdateRequest, profilePhoto?: Blob) {
+      return requestJson(context, '/api/seller/profile', sellerProfileResponseSchema, {
+        method: 'PATCH',
+        body: {
+          ...sellerProfileUpdateRequestSchema.parse(input),
+          profilePhoto,
+        },
+        asFormData: true,
+      });
+    },
+  };
+}

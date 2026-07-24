@@ -1,9 +1,11 @@
 import {
+  acceptRulesRequestSchema,
   authResponseSchema,
+  emailOtpVerifyRequestSchema,
   loginRequestSchema,
-  registerRequestSchema,
   meResponseSchema,
-  phoneOtpVerifyRequestSchema,
+  registerRequestSchema,
+  serviceRulesResponseSchema,
   type LoginRequest,
   type RegisterRequest,
 } from '@bidplace/contracts';
@@ -19,40 +21,44 @@ const okResponseSchema = z.object({ ok: z.literal(true) });
 export function createAuthClient(context: RequestContext) {
   return {
     register(input: RegisterRequest) {
-      return requestJson(
-        context,
-        '/api/auth/register',
-        authResponseSchema,
-        {
-          method: 'POST',
-          body: registerRequestSchema.parse(input),
-        },
-      );
+      return requestJson(context, '/api/auth/register', authResponseSchema, {
+        method: 'POST',
+        body: registerRequestSchema.parse(input),
+      });
     },
     login(input: LoginRequest) {
-      return requestJson(
-        context,
-        '/api/auth/login',
-        authResponseSchema,
-        {
-          method: 'POST',
-          body: loginRequestSchema.parse(input),
-        },
-      );
+      return requestJson(context, '/api/auth/login', authResponseSchema, {
+        method: 'POST',
+        body: loginRequestSchema.parse(input),
+      });
     },
     me() {
       return requestJson(context, '/api/auth/me', meResponseSchema);
+    },
+    getRules() {
+      return requestJson(context, '/api/auth/rules', serviceRulesResponseSchema);
+    },
+    acceptRules(input: { rulesVersion: string }) {
+      return requestJson(context, '/api/auth/rules/accept', authResponseSchema, {
+        method: 'POST',
+        body: acceptRulesRequestSchema.parse(input),
+      });
     },
     logout() {
       return requestJson(context, '/api/auth/logout', logoutResponseSchema, {
         method: 'POST',
       });
     },
-    requestPhoneOtp() {
-      return requestJson(context, '/api/auth/phone/request', okResponseSchema, { method: 'POST' });
+    requestEmailVerification() {
+      return requestJson(context, '/api/auth/email/request', okResponseSchema, {
+        method: 'POST',
+      });
     },
-    verifyPhoneOtp(input: { code: string }) {
-      return requestJson(context, '/api/auth/phone/verify', okResponseSchema, { method: 'POST', body: phoneOtpVerifyRequestSchema.parse(input) });
+    verifyEmailVerification(input: { code: string }) {
+      return requestJson(context, '/api/auth/email/verify', okResponseSchema, {
+        method: 'POST',
+        body: emailOtpVerifyRequestSchema.parse(input),
+      });
     },
   };
 }
