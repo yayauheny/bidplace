@@ -35,8 +35,9 @@ export function OrderScreen({ publicId }: { publicId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const query = useQuery({
-    queryKey: ['orders', publicId],
+    queryKey: ['orders', publicId, auth.user?.id ?? 'anonymous'],
     queryFn: () => api.orders.get(publicId),
+    enabled: auth.isAuthenticated,
   });
 
   const invalidateRelatedQueries = async () => {
@@ -112,7 +113,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
     }),
   } as const;
 
-  if (query.isLoading) {
+  if (!auth.isAuthenticated || query.isLoading) {
     return (
       <Screen>
         <LoadingState label="Загружаем заказ" />
@@ -140,12 +141,13 @@ export function OrderScreen({ publicId }: { publicId: string }) {
     );
   }
 
-  const { order, productSummary } = query.data;
+  const response = query.data as OrderResponse;
+  const { order, productSummary } = response;
   const isAdminView = auth.isAdmin;
-  const isSellerView = !isAdminView && 'buyerEmailAtClose' in order;
-  const sellerViewOrder = order as unknown as SellerProjection;
-  const buyerViewOrder = order as unknown as BuyerProjection;
-  const adminViewOrder = order as unknown as AdminProjection;
+  const isSellerView = !isAdminView && 'buyerEmailAtClose' in response;
+  const sellerViewOrder = response as unknown as SellerProjection;
+  const buyerViewOrder = response as unknown as BuyerProjection;
+  const adminViewOrder = response as unknown as AdminProjection;
   const hasSellerContact =
     buyerViewOrder.sellerHandoffType !== null &&
     buyerViewOrder.sellerHandoffValue !== null;

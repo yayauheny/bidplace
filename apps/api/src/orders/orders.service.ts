@@ -17,7 +17,23 @@ import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import { createOrderSnapshot } from './order-snapshot';
 
-const orderWithProductInclude = {
+const orderWithProductSelect = {
+  id: true,
+  publicId: true,
+  listingId: true,
+  sourceBidId: true,
+  finalAmount: true,
+  contactDueAt: true,
+  status: true,
+  cancellationReason: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerHandoffType: true,
+  sellerHandoffValue: true,
+  buyerEmailAtClose: true,
+  handoffInitiator: true,
+  sellerId: true,
+  buyerId: true,
   listing: {
     include: {
       product: {
@@ -29,10 +45,10 @@ const orderWithProductInclude = {
   },
   buyer: { select: { email: true } },
   seller: { select: { email: true } },
-} satisfies Prisma.OrderInclude;
+} satisfies Prisma.OrderSelect;
 
 type OrderRecord = Prisma.OrderGetPayload<{
-  include: typeof orderWithProductInclude;
+  select: typeof orderWithProductSelect;
 }>;
 
 type OrderAudience = 'admin' | 'seller' | 'buyer';
@@ -323,7 +339,7 @@ export class OrdersService {
   private findWithProduct(publicId: string) {
     return this.prisma.order.findUnique({
       where: { publicId },
-      include: orderWithProductInclude,
+      select: orderWithProductSelect,
     });
   }
 

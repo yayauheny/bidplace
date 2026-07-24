@@ -17,7 +17,6 @@ import { type ValidatedImageUpload } from '../images/image-policy';
 import { productSelect, toContractProduct } from '../products/products.mapper';
 import { publicCatalogProductWhere } from '../products/public-visibility';
 import { ProductsService } from '../products/products.service';
-import { assertApprovedSeller } from './seller-capability';
 import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,

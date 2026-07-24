@@ -14,7 +14,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'node apps/mobile/e2e/prepare.mjs && pnpm --filter @bidplace/api build && node apps/api/dist/main.js',
+        'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api build && node apps/api/dist/main.js',
       cwd: '../..',
       url: 'http://127.0.0.1:3001/api/health',
       env: {
@@ -30,7 +30,7 @@ export default defineConfig({
     },
     {
       command:
-        'pnpm --filter @bidplace/mobile exec expo start --web --clear --port 8081',
+        'corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port 8081',
       cwd: '../..',
       url: 'http://127.0.0.1:8081',
       env: { EXPO_PUBLIC_API_URL: 'http://127.0.0.1:3001' },

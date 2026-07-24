@@ -336,7 +336,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                     fontWeight: '700',
                   }}
                 >
-                  {listing.currentPrice} BYN
+                  Текущая цена: {listing.currentPrice} BYN
                 </Text>
                 <Text
                   style={{

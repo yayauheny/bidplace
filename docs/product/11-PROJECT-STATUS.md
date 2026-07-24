@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
 Последнее обновление: 2026-07-24
-Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer privacy mode, image reorder safety, first-bid floor handling, API unit tests, API build, and mobile typecheck/export, but the API integration suite could not reach PostgreSQL on `127.0.0.1:5432`, repo-wide format/lint are still not green, and closed-pilot browser/E2E seller-path verification is still pending.
+Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API unit tests, API build, mobile typecheck/export, PostgreSQL integration tests, and closed-pilot browser/E2E verification, but repo-wide format check still reports pre-existing drift and the 10-user rehearsal remains pending.
 
 ## Реализовано
 
@@ -14,7 +14,7 @@
 | Lifecycle and Order       | `apps/api/src/lifecycle`, `apps/api/src/orders`, `apps/api/src/orders/order-snapshot.ts`: scheduler activation/closing, deterministic winner, atomic Order foundation, active-order snapshot, seller handoff actions, manual admin cancellation/replacement and audit. |
 | Email verification and rules | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation. |
 | Public and realtime API   | `packages/contracts`, `packages/api-client`, `apps/api/src/realtime`: public Product projections exclude seller internal identifiers and buyer PII; listings use `listing:*` events; public sockets are allow-listed by origin, credential-free, IP rate-limited and room-capped; mobile uses HTTP as canonical snapshot and refetches on socket reconnect/events. |
-| Local reset and seed      | The reset guard is present; the seed fixture still needs a fresh re-run after the MVP schema updates and was not revalidated in this snapshot. |
+| Local reset and seed      | The reset guard is present; the disposable `bidplace_e2e` setup was revalidated through Playwright preparation and close fixtures, but a dedicated one-command seed smoke outside E2E was not rerun. |
 | Prisma generated client   | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                         |
 
 ## Partial / needs verification
@@ -23,7 +23,7 @@
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Seller and admin mobile flows | Seller application now includes `fullName`, public profile photo, editable handoff corrections in `CHANGES_REQUESTED`, and status-gated read-only mode outside that state; Product/Listing forms and compact `/admin` moderation controls still exist.             | Device/accessibility QA and browser/E2E seller-path verification remain incomplete.                                                                                               |
 | Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch. All UI components strictly typed without `any` casts. | Mobile/device accessibility QA remains.                                                                                                   |
-| Tests                         | API unit suite passed; `apps/api/test/integration/product-listing.integration.spec.ts` could not connect to PostgreSQL in this environment; Expo Router types, API build and UI codebase typecheck/export passed. | Release-hardening browser/device/accessibility matrix remains deferred. |
+| Tests                         | API unit suite passed; `apps/api/test/integration/product-listing.integration.spec.ts` passed against local PostgreSQL; Expo Router types, API build, mobile typecheck/export, and Playwright closed-pilot browser flow passed. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
 ## Confirmed MVP implementation gaps — 2026-07-23
@@ -37,7 +37,7 @@
 | Timestamps | Partial | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented. |
 | Pilot analytics | Not implemented | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker. |
 | Production email verification | Implemented | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/bids/bid-eligibility.ts` now enforce SMTP-backed email verification, versioned rules acceptance and a test-only bypass that stays disabled in production. |
-| Closed-pilot rehearsal | Needs verification | Existing Chromium E2E covers the buyer path, not the confirmed seller application/moderation flow or the required 10-user rehearsal. |
+| Closed-pilot rehearsal | Needs verification | Chromium Playwright now covers the buyer path, seller handoff actions, and the order privacy matrix against disposable PostgreSQL; the isolated 10-user rehearsal still needs to be run. |
 
 ## Intentional MVP boundaries
 
@@ -88,10 +88,11 @@
 - `apps/api` typecheck passed.
 - `apps/api` build passed.
 - `apps/api` unit Vitest suite passed: 23 files, 106 tests.
-- `apps/api` integration Vitest suite failed before connecting because PostgreSQL at `127.0.0.1:5432` was unavailable.
-- `apps/mobile` typecheck passed after seller application, product and admin UI updates.
+- `apps/api` integration Vitest suite passed against local PostgreSQL after the order snapshot regression was fixed.
+- `apps/mobile` typecheck passed after the buyer/seller order projection fixes.
 - `apps/mobile` build passed (`expo export`).
+- `apps/mobile` Playwright closed-pilot browser suite passed against disposable PostgreSQL.
+- `corepack pnpm lint` passed once Turbo was forced through the pinned pnpm 11.7.0 wrapper.
 - `corepack pnpm format:check` failed with repo-wide Prettier warnings across 162 files.
-- `corepack pnpm lint` failed because Turbo invoked pnpm 11.10.0 while the repo pins 11.7.0.
 
 See `10-CODE-ARCHITECTURE.md` for boundaries and `05-MVP-RFC.md` for product contract gaps.

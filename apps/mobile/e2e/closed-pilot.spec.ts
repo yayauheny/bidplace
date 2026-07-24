@@ -7,7 +7,10 @@ import { publicProductDetailResponseSchema } from '@bidplace/contracts';
 
 const execFileAsync = promisify(execFile);
 const e2e = resolve(__dirname);
+const databaseUrl =
+  'postgresql://auction:auction@127.0.0.1:5432/bidplace_e2e?schema=public';
 let state: {
+  seller: { email: string };
   buyer: { email: string };
   outsider: { email: string };
   admin: { email: string };
@@ -51,15 +54,18 @@ test('buyer completes Product, OTP, Bid, Activity, and Order flow', async ({
   await page.goto('/login');
   await page.getByLabel('Email').fill(state.buyer.email);
   await page.getByLabel('Пароль').fill('password123');
+  const buyerLoginResponse = page.waitForResponse(
+    'http://127.0.0.1:3001/api/auth/login',
+  );
   await page.getByRole('button', { name: 'Войти' }).click();
+  expect((await buyerLoginResponse).ok()).toBeTruthy();
+  await page.waitForURL('http://127.0.0.1:8081/');
   await expect
     .poll(() => page.context().cookies('http://127.0.0.1:3001'))
     .toHaveLength(1);
   await page.goto(`/product/${state.product.publicId}`);
 
-  await page.getByPlaceholder('Ваша ставка в BYN').fill('11');
-  await page.getByRole('button', { name: 'Сделать ставку' }).click();
-  await expect(page.getByText('Ставка не принята.')).toBeVisible();
+  await expect(page.getByText('Мы отправим код на ваш email.')).toBeVisible();
   const otpResponse = page.waitForResponse(
     'http://127.0.0.1:3001/api/auth/email/request',
   );
@@ -68,16 +74,42 @@ test('buyer completes Product, OTP, Bid, Activity, and Order flow', async ({
   await expect.poll(readOtp).not.toBeNull();
   await page.getByPlaceholder('000000').fill((await readOtp())!);
   await page.getByRole('button', { name: 'Подтвердить email' }).click();
+  await expect(page.getByRole('button', { name: 'Принять правила' })).toBeVisible();
+  await page.getByRole('button', { name: 'Принять правила' }).click();
+  await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
+  await page.getByLabel('Ваша ставка, BYN').fill('11');
   await page.getByRole('button', { name: 'Сделать ставку' }).click();
   await expect(page.getByText('Текущая цена: 11 BYN')).toBeVisible();
 
-  await execFileAsync(process.execPath, [resolve(e2e, 'close-listing.mjs')]);
+  await execFileAsync(process.execPath, [resolve(e2e, 'close-listing.mjs')], {
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      E2E_DATABASE_URL: databaseUrl,
+    },
+  });
   state = JSON.parse(await readFile(resolve(e2e, '.state.json'), 'utf8'));
   await page.goto('/me/activity');
   await expect(page.getByText('E2E Product')).toBeVisible();
-  await page.getByText(`Заказ: ${state.order!.publicId}`).click();
+  await page.getByRole('link', { name: 'Открыть заказ' }).click();
   await expect(page.getByText(`Заказ ${state.order!.publicId}`)).toBeVisible();
 
+  await page.goto(`/order/${state.order!.publicId}`);
+  await expect(page.getByText('@e2eseller')).toBeVisible();
+  await expect(page.getByText(state.buyer.email)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Выйти' }).click();
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(state.seller.email);
+  await page.getByLabel('Пароль').fill('password123');
+  const sellerLoginResponse = page.waitForResponse(
+    'http://127.0.0.1:3001/api/auth/login',
+  );
+  await page.getByRole('button', { name: 'Войти' }).click();
+  expect((await sellerLoginResponse).ok()).toBeTruthy();
+  await page.waitForURL('http://127.0.0.1:8081/');
+  await expect
+    .poll(() => page.context().cookies('http://127.0.0.1:3001'))
+    .toHaveLength(1);
   await page.goto(`/order/${state.order!.publicId}`);
   await expect(page.getByText(state.buyer.email)).toBeVisible();
   await page.getByRole('button', { name: 'Отметить контакт' }).click();
@@ -115,7 +147,12 @@ test('outsider cannot open another buyer order and ordinary user cannot moderate
   await page.goto('/login');
   await page.getByLabel('Email').fill(state.outsider.email);
   await page.getByLabel('Пароль').fill('password123');
+  const outsiderLoginResponse = page.waitForResponse(
+    'http://127.0.0.1:3001/api/auth/login',
+  );
   await page.getByRole('button', { name: 'Войти' }).click();
+  expect((await outsiderLoginResponse).ok()).toBeTruthy();
+  await page.waitForURL('http://127.0.0.1:8081/');
   await page.goto(`/order/${state.order!.publicId}`);
   await expect(page.getByText('Заказ недоступен')).toBeVisible();
   await context.close();

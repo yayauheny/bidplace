@@ -123,7 +123,7 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const result = await bids.place(buyer.id, listing.id, 'start-price', { amount: 10 });
     const current = await prisma.listing.findUnique({ where: { id: listing.id } });
 
-    expect(result.bid.amount.toNumber()).toBe(10);
+    expect(result.bid.amount).toBe(10);
     expect(current?.currentPrice.toNumber()).toBe(10);
     expect(current?.bidCount).toBe(1);
     expect(realtime.emit).toHaveBeenCalledTimes(1);

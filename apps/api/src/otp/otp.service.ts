@@ -16,7 +16,7 @@ import {
   createTransport,
   type Transporter,
 } from 'nodemailer';
-import SMTPTransport = require('nodemailer/lib/smtp-transport');
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 export type OtpRequestContext = {
   ip?: string;
@@ -171,7 +171,7 @@ export class OtpService {
 
     try {
       await this.transport.deliver(user.email, code);
-    } catch (error) {
+    } catch {
       await this.prisma.emailVerificationCode.delete({
         where: { id: record.id },
       });

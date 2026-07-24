@@ -6,8 +6,6 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
 
-type AuditTargetType = 'SELLER_PROFILE' | 'PRODUCT';
-
 @Injectable()
 export class AdminModerationService {
   constructor(private readonly prisma: PrismaService) {}

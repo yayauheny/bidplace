@@ -39,8 +39,12 @@ try {
     !(
       typeof error === 'object' &&
       error !== null &&
-      'code' in error &&
-      error.code === '42P04'
+      (('code' in error && error.code === '42P04') ||
+        ('meta' in error &&
+          error.meta &&
+          typeof error.meta === 'object' &&
+          'code' in error.meta &&
+          error.meta.code === '42P04'))
     )
   ) {
     throw error;
