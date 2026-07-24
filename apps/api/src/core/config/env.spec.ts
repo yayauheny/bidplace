@@ -75,4 +75,25 @@ describe('resolveServerEnvFilePath', () => {
       }),
     ).toThrow(/SMTP_HOST/);
   });
+
+  it('rejects partially configured SMTP credentials', () => {
+    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
+
+    expect(() =>
+      loadServerEnv({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
+        JWT_SECRET: 'secret',
+        SMTP_HOST: 'smtp.example.com',
+        SMTP_PORT: '587',
+        SMTP_SECURE: 'false',
+        SMTP_USERNAME: 'user',
+        SMTP_FROM: 'no-reply@example.com',
+        SERVICE_RULES_OWNER: 'Bidplace',
+        SERVICE_RULES_CONTACT: 'support@example.com',
+        SERVICE_RULES_TEXT: 'Rules text',
+        TEST_EMAIL_BYPASS: 'false',
+      }),
+    ).toThrow(/SMTP_USERNAME and SMTP_PASSWORD/);
+  });
 });

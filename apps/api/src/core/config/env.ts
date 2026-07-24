@@ -60,6 +60,17 @@ const serverEnvSchema = z
     },
   )
   .superRefine((env, context) => {
+    if (
+      (env.SMTP_USERNAME === undefined) !==
+      (env.SMTP_PASSWORD === undefined)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: env.SMTP_USERNAME === undefined ? ['SMTP_USERNAME'] : ['SMTP_PASSWORD'],
+        message: 'SMTP_USERNAME and SMTP_PASSWORD must be configured together',
+      });
+    }
+
     if (env.NODE_ENV === 'production') {
       const requiredKeys: Array<keyof ServerEnv> = [
         'SMTP_HOST',

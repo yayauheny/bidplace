@@ -35,6 +35,8 @@ type OrderRecord = Prisma.OrderGetPayload<{
   include: typeof orderWithProductInclude;
 }>;
 
+type OrderAudience = 'admin' | 'seller' | 'buyer';
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -49,15 +51,13 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    if (role !== 'admin' && order.sellerId !== userId && order.buyerId !== userId) {
+    const audience = this.resolveAudience(userId, role, order);
+
+    if (order.status === 'CANCELLED' && audience !== 'admin') {
       throw new ForbiddenException('Order is not available');
     }
 
-    if (order.status === 'CANCELLED' && role !== 'admin') {
-      throw new NotFoundException('Order not found');
-    }
-
-    return this.toResponse(order, role);
+    return this.toResponse(order, audience);
   }
 
   async markContacted(userId: string, publicId: string) {
@@ -327,10 +327,27 @@ export class OrdersService {
     });
   }
 
-  private toResponse(
-    order: NonNullable<OrderRecord>,
+  private resolveAudience(
+    userId: string,
     role: string,
-  ) {
+    order: Pick<OrderRecord, 'sellerId' | 'buyerId'>,
+  ): OrderAudience {
+    if (role === 'admin') {
+      return 'admin';
+    }
+
+    if (order.sellerId === userId) {
+      return 'seller';
+    }
+
+    if (order.buyerId === userId) {
+      return 'buyer';
+    }
+
+    throw new ForbiddenException('Order is not available');
+  }
+
+  private toResponse(order: NonNullable<OrderRecord>, audience: OrderAudience) {
     const base = {
       order: {
         id: order.id,
@@ -349,7 +366,7 @@ export class OrdersService {
       },
     };
 
-    if (role === 'admin') {
+    if (audience === 'admin') {
       return adminOrderResponseSchema.parse({
         ...base,
         sellerHandoffType: order.sellerHandoffType,
@@ -359,7 +376,7 @@ export class OrdersService {
       });
     }
 
-    if (role === 'seller') {
+    if (audience === 'seller') {
       return sellerOrderResponseSchema.parse({
         ...base,
         buyerEmailAtClose: order.buyerEmailAtClose,

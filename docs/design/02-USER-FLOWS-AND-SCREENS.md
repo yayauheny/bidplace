@@ -17,7 +17,7 @@
 | Public Product list | `/`                   | Список approved Product из API; loading и error.                                                                                                                                                                                                                              | Implemented without approved design.                             |
 | Product detail      | `/product/[publicId]` | Изображения, seller, value fields, scheduled/live/ended Listing, BYN price, server-deadline countdown, minimum next Bid, aliases, OTP actions, idempotent retry and socket-driven refetch. Signed-in buyer sees Activity-derived participation and Order link when it exists. | Partial: device/accessibility QA and state-specific copy remain. |
 | My purchases        | `/me/activity`        | Derived Activity statuses, Product links and allowed Order links.                                                                                                                                                                                                             | Partial: visual QA and richer state copy remain.                 |
-| Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin.                                                                                                                                                                                                                  | Partial: role-specific mobile QA remains.                        |
+| Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin; buyer sees the allowed seller contact projection, seller sees `buyerEmailAtClose`, and seller action states cover `contacted`, `completed` and `handoffFailed`.                                                                                  | Partial: role-specific mobile QA remains.                        |
 
 The retired `/auctions/[slug]` public route is not a Product route and must not be restored as a compatibility screen. Chromium closed-pilot verification confirms the route is unmatched, and verifies canonical Product, Activity and Order navigation.
 
@@ -45,6 +45,7 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 - Seller Product edits and image operations are allowed only while the backend considers the Product unlocked.
 - Seller profile edits are allowed only while the backend returns `CHANGES_REQUESTED`; `PENDING_REVIEW`, `APPROVED`, `REJECTED` and `SUSPENDED` are read-only. Handoff contact, handoff initiator and public profile data can all be corrected in that state.
 - Public seller detail uses `fullName`, profile photo URL and a public verification link; private handoff contact stays off public routes.
+- Order actions are seller-scoped and include `contacted`, `completed` and `handoffFailed`; after each action the mobile client refetches both the Order and activity projections.
 
 ## Required manual QA
 

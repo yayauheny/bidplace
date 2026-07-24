@@ -12,7 +12,11 @@ import {
   randomInt,
 } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
-import { createTransport, type Transporter } from 'nodemailer';
+import {
+  createTransport,
+  type Transporter,
+} from 'nodemailer';
+import SMTPTransport = require('nodemailer/lib/smtp-transport');
 
 export type OtpRequestContext = {
   ip?: string;
@@ -55,17 +59,7 @@ export class SmtpOtpTransport extends OtpTransport {
   static create(env: ServerEnv): SmtpOtpTransport {
     return new SmtpOtpTransport(
       env,
-      createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_SECURE ?? false,
-        auth:
-          env.SMTP_USERNAME && env.SMTP_PASSWORD
-            ? { user: env.SMTP_USERNAME, pass: env.SMTP_PASSWORD }
-            : undefined,
-        connectionTimeout: 10_000,
-        socketTimeout: 10_000,
-      }),
+      createTransport(buildSmtpTransportOptions(env)),
     );
   }
 
@@ -77,6 +71,31 @@ export class SmtpOtpTransport extends OtpTransport {
       text: `Your bidplace verification code is ${code}.`,
     });
   }
+}
+
+export function buildSmtpTransportOptions(env: ServerEnv): SMTPTransport.Options {
+  const hasUsername = Boolean(env.SMTP_USERNAME);
+  const hasPassword = Boolean(env.SMTP_PASSWORD);
+
+  if (hasUsername !== hasPassword) {
+    throw new Error('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
+  }
+
+  return {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE ?? false,
+    requireTLS: env.SMTP_SECURE === false,
+    auth:
+      hasUsername && hasPassword
+        ? {
+            user: env.SMTP_USERNAME,
+            pass: env.SMTP_PASSWORD,
+          }
+        : undefined,
+    connectionTimeout: 10_000,
+    socketTimeout: 10_000,
+  };
 }
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');

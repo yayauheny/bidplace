@@ -23,8 +23,9 @@ export default defineConfig({
         API_PORT: '3001',
         CORS_ORIGIN: 'http://127.0.0.1:8081',
         DATABASE_URL: databaseUrl,
+        E2E_DATABASE_URL: databaseUrl,
         JWT_SECRET: 'e2e-jwt-secret',
-        TEST_OTP_FILE: 'apps/mobile/e2e/.otp.jsonl',
+        TEST_EMAIL_FILE: 'apps/mobile/e2e/.email.jsonl',
       },
     },
     {

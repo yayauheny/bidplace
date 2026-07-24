@@ -27,7 +27,7 @@ describe('OrdersService', () => {
     const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
     const service = new OrdersService(prisma as never, {} as never);
 
-    const result = await service.get('seller-id', 'seller', baseOrder.publicId);
+    const result = await service.get('seller-id', 'user', baseOrder.publicId);
 
     expect(result.buyerEmailAtClose).toBe('buyer@example.com');
   });
@@ -63,5 +63,25 @@ describe('OrdersService', () => {
     await expect(service.get('other-id', 'user', baseOrder.publicId)).rejects.toThrow(
       'Order is not available',
     );
+  });
+
+  it('hides cancelled orders from buyer and seller while keeping them visible to admin', async () => {
+    const cancelledOrder = {
+      ...baseOrder,
+      status: 'CANCELLED' as const,
+    };
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(cancelledOrder) } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(service.get('seller-id', 'user', cancelledOrder.publicId)).rejects.toThrow(
+      'Order is not available',
+    );
+    await expect(service.get('buyer-id', 'user', cancelledOrder.publicId)).rejects.toThrow(
+      'Order is not available',
+    );
+
+    const adminResult = await service.get('admin-id', 'admin', cancelledOrder.publicId);
+    expect(adminResult.order.status).toBe('CANCELLED');
+    expect(adminResult.buyerEmailAtClose).toBe('buyer@example.com');
   });
 });

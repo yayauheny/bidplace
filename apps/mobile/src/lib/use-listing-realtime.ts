@@ -14,10 +14,13 @@ export function useListingRealtime(listingId: string | undefined, onSignal: () =
   useEffect(() => {
     if (!listingId) return undefined;
 
-    const socket = io(getApiUrl(), { transports: ['websocket'] });
+    const socket = io(getApiUrl(), {
+      transports: ['websocket'],
+      withCredentials: false,
+    });
     setState('connecting');
     const subscribe = () => {
-      socket.emit('listing.join', listingId);
+      socket.emit('listing.join', { listingId });
       setState('connected');
       callback.current();
     };

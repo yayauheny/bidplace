@@ -8,7 +8,11 @@ import {
 } from '@nestjs/common';
 
 import { Clock } from '../core/time';
-import { resolveMinimumNextBid, resolveSoftCloseEndsAt, toDecimalAmount } from '../core/auction';
+import {
+  resolveMinimumBidAmount,
+  resolveSoftCloseEndsAt,
+  toDecimalAmount,
+} from '../core/auction';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { RealtimeService } from '../realtime/realtime.service';
 import {
@@ -80,7 +84,11 @@ export class BidsService {
         throw new ConflictException('Listing is not open for bids');
       }
 
-      const minimum = resolveMinimumNextBid(listing.currentPrice);
+      const minimum = resolveMinimumBidAmount({
+        currentPrice: listing.currentPrice,
+        startPrice: listing.auctionRules.startPrice,
+        bidCount: listing.bidCount,
+      });
 
       if (amount.lessThan(minimum)) {
         throw new BadRequestException(`Bid must be at least ${minimum.toFixed(2)}`);
@@ -159,8 +167,12 @@ export class BidsService {
           softCloseMaxTotalSeconds: 600 as const,
         },
       },
-      minimumNextBid: resolveMinimumNextBid(listing.currentPrice).toNumber(),
-    };
+        minimumNextBid: resolveMinimumBidAmount({
+          currentPrice: listing.currentPrice,
+          startPrice: listing.auctionRules.startPrice,
+          bidCount: listing.bidCount,
+        }).toNumber(),
+      };
 
     if (!result.replay) {
       this.realtime.emit(listingId, 'bid.placed', {

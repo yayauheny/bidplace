@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
-import { resolveMinimumNextBid } from '../core/auction';
+import { resolveMinimumBidAmount } from '../core/auction';
 import { PublicIdService } from '../core/public-id';
 import {
   productSelect,
@@ -252,8 +252,14 @@ export class ProductsService {
     return publicProductDetailResponseSchema.parse({
       ...projection,
       minimumNextBid:
-        projection.listing?.status === 'LIVE' && currentListing
-          ? resolveMinimumNextBid(currentListing.currentPrice).toNumber()
+        projection.listing?.status === 'LIVE' &&
+        currentListing &&
+        currentListing.auctionRules
+          ? resolveMinimumBidAmount({
+              currentPrice: currentListing.currentPrice,
+              startPrice: currentListing.auctionRules.startPrice,
+              bidCount: currentListing.bidCount,
+            }).toNumber()
           : null,
     });
   }
@@ -353,7 +359,7 @@ export class ProductsService {
       sellerProfile: toPublicSellerProfile(record.sellerProfile),
       listing:
         listing && listing.auctionRules
-          ? {
+              ? {
               id: listing.id,
               productId: listing.productId,
               type: 'AUCTION' as const,
@@ -374,7 +380,7 @@ export class ProductsService {
                 softCloseExtensionSeconds: 60 as const,
                 softCloseMaxTotalSeconds: 600 as const,
               },
-            }
+              }
           : null,
     };
   }

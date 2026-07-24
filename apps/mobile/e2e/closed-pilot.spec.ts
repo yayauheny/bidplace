@@ -18,7 +18,7 @@ let state: {
 
 async function readOtp(): Promise<string | null> {
   try {
-    const lines = (await readFile(resolve(e2e, '.otp.jsonl'), 'utf8'))
+    const lines = (await readFile(resolve(e2e, '.email.jsonl'), 'utf8'))
       .trim()
       .split('\n');
     return JSON.parse(lines.at(-1) ?? '{}').code ?? null;
@@ -61,13 +61,13 @@ test('buyer completes Product, OTP, Bid, Activity, and Order flow', async ({
   await page.getByRole('button', { name: 'Сделать ставку' }).click();
   await expect(page.getByText('Ставка не принята.')).toBeVisible();
   const otpResponse = page.waitForResponse(
-    'http://127.0.0.1:3001/api/auth/phone/request',
+    'http://127.0.0.1:3001/api/auth/email/request',
   );
-  await page.getByRole('button', { name: 'Получить код телефона' }).click();
+  await page.getByRole('button', { name: 'Отправить код' }).click();
   expect((await otpResponse).status()).toBe(201);
   await expect.poll(readOtp).not.toBeNull();
-  await page.getByPlaceholder('Код из SMS').fill((await readOtp())!);
-  await page.getByRole('button', { name: 'Подтвердить телефон' }).click();
+  await page.getByPlaceholder('000000').fill((await readOtp())!);
+  await page.getByRole('button', { name: 'Подтвердить email' }).click();
   await page.getByRole('button', { name: 'Сделать ставку' }).click();
   await expect(page.getByText('Текущая цена: 11 BYN')).toBeVisible();
 
@@ -77,6 +77,13 @@ test('buyer completes Product, OTP, Bid, Activity, and Order flow', async ({
   await expect(page.getByText('E2E Product')).toBeVisible();
   await page.getByText(`Заказ: ${state.order!.publicId}`).click();
   await expect(page.getByText(`Заказ ${state.order!.publicId}`)).toBeVisible();
+
+  await page.goto(`/order/${state.order!.publicId}`);
+  await expect(page.getByText(state.buyer.email)).toBeVisible();
+  await page.getByRole('button', { name: 'Отметить контакт' }).click();
+  await expect(page.getByText('CONTACTED')).toBeVisible();
+  await page.getByRole('button', { name: 'Передача завершена' }).click();
+  await expect(page.getByText('COMPLETED')).toBeVisible();
 });
 
 test('outsider cannot open another buyer order and ordinary user cannot moderate', async ({
