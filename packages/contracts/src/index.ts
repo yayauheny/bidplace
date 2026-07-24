@@ -8,6 +8,7 @@ export * from './error';
 export * from './enums';
 export * from './events';
 export * from './listing';
+export * from './rules';
 export * from './order';
 export * from './product';
 export * from './public-product';

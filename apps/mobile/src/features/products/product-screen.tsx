@@ -21,6 +21,7 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { useAppThemePalette } from '../../theme/palette';
 import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
+import { EmailRulesGate } from '../auth/email-rules-gate';
 import type { ApiClient } from '@bidplace/api-client';
 
 // Derive types from the API client to stay in sync with the contract.
@@ -81,7 +82,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const queryClient = useQueryClient();
   const palette = useAppThemePalette();
   const [amount, setAmount] = useState('');
-  const [code, setCode] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [now, setNow] = useState(Date.now());
 
@@ -117,10 +117,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   };
 
   const realtimeState = useListingRealtime(listingId, refreshListing);
-  const otp = useMutation({ mutationFn: () => api.auth.requestPhoneOtp() });
-  const verify = useMutation({
-    mutationFn: () => api.auth.verifyPhoneOtp({ code }),
-  });
   const bid = useMutation({
     mutationFn: (attempt: BidAttempt) =>
       api.listings.placeBid(
@@ -234,7 +230,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               color: palette.colorMuted,
             }}
           >
-            {sellerProfile.storeName}
+            {sellerProfile.fullName}
           </Text>
           <Text
             style={{
@@ -274,66 +270,31 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             eyebrow="Торги"
             footer={
               listing.status === 'LIVE' ? (
-                <YStack style={{ gap: mobileSpacing[3] }}>
-                  <AppInput
-                    label="Ваша ставка, BYN"
-                    value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="decimal-pad"
-                    placeholder={
-                      minimumNextBid !== null ? `от ${minimumNextBid}` : ''
-                    }
-                  />
-                  <AppButton
-                    buttonSize="large"
-                    isLoading={bid.isPending}
-                    loadingLabel="Отправляем ставку"
-                    onPress={submitBid}
-                  >
-                    Сделать ставку
-                  </AppButton>
-                  {bid.isError && pendingAttempt ? (
-                    <AppButton tone="secondary" onPress={submitBid}>
-                      Повторить ставку
-                    </AppButton>
-                  ) : null}
-                  {bid.isError ? (
-                    <Text
-                      style={{
-                        color: palette.negative,
-                        fontSize: 14,
-                        lineHeight: 20,
-                      }}
-                    >
-                      Ставка не принята. Проверьте статус торгов и минимальную
-                      сумму.
-                    </Text>
-                  ) : null}
-
-                  {/* OTP */}
-                  <YStack style={{ gap: mobileSpacing[2] }}>
-                    <AppButton
-                      tone="secondary"
-                      isLoading={otp.isPending}
-                      onPress={() => otp.mutate()}
-                    >
-                      Получить код подтверждения
-                    </AppButton>
+                <EmailRulesGate redirectTo={`/product/${publicId}`}>
+                  <YStack style={{ gap: mobileSpacing[3] }}>
                     <AppInput
-                      label="Код из SMS"
-                      value={code}
-                      onChangeText={setCode}
-                      keyboardType="number-pad"
-                      placeholder="——————"
+                      label="Ваша ставка, BYN"
+                      value={amount}
+                      onChangeText={setAmount}
+                      keyboardType="decimal-pad"
+                      placeholder={
+                        minimumNextBid !== null ? `от ${minimumNextBid}` : ''
+                      }
                     />
                     <AppButton
-                      tone="secondary"
-                      isLoading={verify.isPending}
-                      onPress={() => verify.mutate()}
+                      buttonSize="large"
+                      isLoading={bid.isPending}
+                      loadingLabel="Отправляем ставку"
+                      onPress={submitBid}
                     >
-                      Подтвердить телефон
+                      Сделать ставку
                     </AppButton>
-                    {otp.isError || verify.isError ? (
+                    {bid.isError && pendingAttempt ? (
+                      <AppButton tone="secondary" onPress={submitBid}>
+                        Повторить ставку
+                      </AppButton>
+                    ) : null}
+                    {bid.isError ? (
                       <Text
                         style={{
                           color: palette.negative,
@@ -341,11 +302,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                           lineHeight: 20,
                         }}
                       >
-                        Не удалось подтвердить телефон. Попробуйте ещё раз.
+                        Ставка не принята. Проверьте статус торгов и минимальную
+                        сумму.
                       </Text>
                     ) : null}
                   </YStack>
-                </YStack>
+                </EmailRulesGate>
               ) : null
             }
           >

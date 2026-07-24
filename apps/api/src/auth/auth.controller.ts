@@ -1,9 +1,11 @@
 import {
   type AuthTokenPayload,
+  acceptRulesRequestSchema,
+  authResponseSchema,
   loginRequestSchema,
   meResponseSchema,
   registerRequestSchema,
-  authResponseSchema,
+  serviceRulesResponseSchema,
 } from '@bidplace/contracts';
 import {
   Body,
@@ -52,6 +54,11 @@ type AuthCookieResponse = {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('rules')
+  async getRules() {
+    return serviceRulesResponseSchema.parse(await this.authService.getRules());
+  }
+
   @UseGuards(RateLimitGuard)
   @RateLimit({
     keyPrefix: 'auth:register',
@@ -96,6 +103,21 @@ export class AuthController {
     return authResponseSchema.parse({
       user: session.user,
     });
+  }
+
+  @UseGuards(BearerAuthGuard)
+  @Post('rules/accept')
+  async acceptRules(
+    @Body() body: unknown,
+    @CurrentUser() auth?: AuthTokenPayload,
+  ) {
+    if (!auth) {
+      throw new UnauthorizedException('Missing authenticated user');
+    }
+
+    const input = parseBody(acceptRulesRequestSchema, body);
+
+    return this.authService.acceptRules(auth.sub, input);
   }
 
   @UseGuards(BearerAuthGuard)

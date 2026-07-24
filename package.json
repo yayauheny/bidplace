@@ -13,6 +13,7 @@
     "db:generate": "pnpm --filter @bidplace/database db:generate",
     "db:migrate": "pnpm --filter @bidplace/database db:migrate",
     "db:seed": "pnpm --filter @bidplace/database db:seed",
+    "db:reset:demo": "echo '\\n⚠️  ВНИМАНИЕ: База данных очищается!\\n' && pnpm --filter @bidplace/database db:seed",
     "test:integration": "pnpm --filter @bidplace/api test:integration",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

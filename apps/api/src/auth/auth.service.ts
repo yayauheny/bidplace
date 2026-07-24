@@ -1,6 +1,11 @@
 import {
+  type AcceptRulesRequest,
+  type AuthResponse,
   type LoginRequest,
   type RegisterRequest,
+  type ServiceRulesResponse,
+  authResponseSchema,
+  CURRENT_RULES_VERSION,
   type User as ContractUser,
 } from '@bidplace/contracts';
 import {
@@ -20,24 +25,22 @@ import {
 } from './auth.mapper';
 import { PasswordHasherService } from './password-hasher.service';
 import { PrismaService, isPrismaUniqueConstraintError } from '../core/database';
+import { loadServerEnv } from '../core/config';
+import { resolveServiceRules } from '../core/rules';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export interface AuthRepository {
-  user: {
-    findFirst: PrismaService['user']['findFirst'];
-    create: PrismaService['user']['create'];
-    findUnique: PrismaService['user']['findUnique'];
-    update: PrismaService['user']['update'];
-  };
+function normalizePhone(phone: string | null | undefined): string | null {
+  const trimmed = phone?.trim();
+  return trimmed ? trimmed : null;
 }
 
-export type AuthSessionResult = {
+export interface AuthSessionResult {
   accessToken: string;
   user: ContractUser;
-};
+}
 
 const authUserExistsSelect = {
   id: true,
@@ -46,18 +49,21 @@ const authUserExistsSelect = {
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(PrismaService) private readonly prisma: AuthRepository,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
     private readonly authTokenService: AuthTokenService,
   ) {}
 
   async register(input: RegisterRequest): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
+    const phone = normalizePhone(input.phone);
 
     const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { phone: input.phone }],
-      },
+      where: phone
+        ? {
+            OR: [{ email }, { phone }],
+          }
+        : { email },
       select: authUserExistsSelect,
     });
 
@@ -71,11 +77,13 @@ export class AuthService {
       const user = await this.prisma.user.create({
         data: {
           email,
-          phone: input.phone,
+          phone,
           displayName: input.displayName,
           passwordHash,
           status: 'active',
           sessionVersion: 0,
+          emailVerifiedAt: null,
+          phoneVerifiedAt: null,
         },
         select: authCredentialsSelect,
       });
@@ -93,9 +101,7 @@ export class AuthService {
   async login(input: LoginRequest): Promise<AuthSessionResult> {
     const email = normalizeEmail(input.email);
     const user = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
       select: authCredentialsSelect,
     });
 
@@ -123,9 +129,7 @@ export class AuthService {
 
   async me(userId: string): Promise<ContractUser> {
     const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       select: authUserContractSelect,
     });
 
@@ -136,11 +140,45 @@ export class AuthService {
     return toContractUser(user);
   }
 
+  async getRules(): Promise<ServiceRulesResponse> {
+    return {
+      rules: resolveServiceRules(loadServerEnv()),
+    };
+  }
+
+  async acceptRules(
+    userId: string,
+    input: AcceptRulesRequest,
+  ): Promise<AuthResponse> {
+    if (input.rulesVersion !== CURRENT_RULES_VERSION) {
+      throw new ConflictException('Rules version is stale');
+    }
+
+    await this.prisma.termsAcceptance.upsert({
+      where: {
+        userId_rulesVersion: {
+          userId,
+          rulesVersion: input.rulesVersion,
+        },
+      },
+      create: {
+        userId,
+        rulesVersion: input.rulesVersion,
+        acceptedAt: new Date(),
+      },
+      update: {
+        acceptedAt: new Date(),
+      },
+    });
+
+    return authResponseSchema.parse({
+      user: await this.me(userId),
+    });
+  }
+
   async logout(userId: string): Promise<void> {
     await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       data: {
         sessionVersion: {
           increment: 1,

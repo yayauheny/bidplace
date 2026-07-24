@@ -171,7 +171,7 @@ export function AdminModerationScreen() {
                       color: palette.color,
                     }}
                   >
-                    {seller.storeName}
+                    {seller.fullName}
                   </Text>
                   <StatusBadge tone={sellerStatusTone(seller.status)}>
                     {seller.status}

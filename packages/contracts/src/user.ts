@@ -7,7 +7,10 @@ export const userSchema = z
   .object({
     id: uuidSchema,
     email: z.string().email(),
-    phone: z.string().trim().min(1),
+    phone: z.string().trim().min(1).nullable(),
+    emailVerifiedAt: isoDateTimeSchema.nullable(),
+    phoneVerifiedAt: isoDateTimeSchema.nullable(),
+    acceptedRulesVersion: z.string().trim().min(1).nullable(),
     displayName: z.string().trim().min(1),
     role: userRoleSchema,
     status: userStatusSchema,
@@ -20,7 +23,7 @@ export const registerRequestSchema = z
   .object({
     email: z.string().email(),
     password: z.string().min(8),
-    phone: z.string().trim().min(1),
+    phone: z.string().trim().min(1).nullable().optional(),
     displayName: z.string().trim().min(1),
   })
   .strict();

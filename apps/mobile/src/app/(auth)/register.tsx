@@ -1,21 +1,29 @@
+import { useLocalSearchParams } from 'expo-router';
 import { RegisterForm } from '../../features/auth/auth-form';
+import { getSafeRedirect } from '../../features/auth/auth-redirect';
 import { Screen } from '../../components/ui';
 import { mobileLayout } from '../../theme/tokens';
 import { YStack } from 'tamagui';
 
 export default function RegisterScreen() {
+  const { redirectTo } = useLocalSearchParams<{
+    redirectTo?: string | string[];
+  }>();
+
+  const safeRedirect = getSafeRedirect(redirectTo);
+
   return (
     <Screen mode="auth" showHeader={false}>
       <YStack
+        flex={1}
         style={{
-          flex: 1,
           width: '100%',
           maxWidth: mobileLayout.formMaxWidth,
           alignSelf: 'center',
           justifyContent: 'center',
         }}
       >
-        <RegisterForm redirectTo="/" />
+        <RegisterForm redirectTo={safeRedirect} />
       </YStack>
     </Screen>
   );

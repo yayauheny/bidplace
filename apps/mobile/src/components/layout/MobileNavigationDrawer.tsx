@@ -1,10 +1,11 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
 import { Text, XStack, YStack } from 'tamagui';
 
 import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
+import { useAuth } from '../../providers/auth-provider';
 import { AppSheet } from '../ui';
 
 type MobileNavigationDrawerProps = {
@@ -27,6 +28,8 @@ export function MobileNavigationDrawer({
 }: MobileNavigationDrawerProps) {
   const palette = useAppThemePalette();
   const router = useRouter();
+  const auth = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Close on Escape (web)
   useEffect(() => {
@@ -128,7 +131,7 @@ export function MobileNavigationDrawer({
               </Text>
             </Pressable>
           ) : null}
-          {mode === 'admin' ? (
+          {auth.canModerate ? (
             <Pressable
               onPress={() => { onOpenChange(false); router.push('/admin'); }}
               accessibilityRole="link"
@@ -156,32 +159,75 @@ export function MobileNavigationDrawer({
 
         {/* Profile link at bottom */}
         <YStack style={{ paddingHorizontal: mobileSpacing[5], paddingTop: mobileSpacing[6] }}>
-          <Pressable
-            onPress={() => { onOpenChange(false); router.push(profileHref); }}
-            accessibilityRole="link"
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.6 : 1,
-              paddingVertical: mobileSpacing[3],
-              paddingHorizontal: mobileSpacing[4],
-              borderRadius: mobileRadius.control,
-              borderWidth: 1,
-              borderColor: palette.borderColor,
-              alignItems: 'center',
-              minHeight: 44,
-              justifyContent: 'center',
-            })}
-          >
-            <Text
-              style={{
-                fontFamily: fontFamilies.sansMedium,
-                color: palette.colorSecondary,
-                fontSize: 14,
-                letterSpacing: 0.2,
+          {auth.isAuthenticated ? (
+            <Pressable
+              onPress={async () => {
+                if (isLoggingOut) return;
+                setIsLoggingOut(true);
+                onOpenChange(false);
+                try {
+                  await auth.logout();
+                } catch {
+                  // AuthProvider уже очищает локальную сессию в finally.
+                } finally {
+                  router.replace('/');
+                }
               }}
+              accessibilityRole="button"
+              disabled={isLoggingOut}
+              style={({ pressed }) => ({
+                opacity: pressed || isLoggingOut ? 0.6 : 1,
+                paddingVertical: mobileSpacing[3],
+                paddingHorizontal: mobileSpacing[4],
+                borderRadius: mobileRadius.control,
+                borderWidth: 1,
+                borderColor: palette.borderColor,
+                alignItems: 'center',
+                minHeight: 44,
+                justifyContent: 'center',
+              })}
             >
-              {profileHref === '/me/activity' ? 'Мои покупки' : 'Войти'}
-            </Text>
-          </Pressable>
+              <Text
+                style={{
+                  fontFamily: fontFamilies.sansMedium,
+                  color: palette.colorSecondary,
+                  fontSize: 14,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Выйти
+              </Text>
+            </Pressable>
+          ) : (
+            <Link href={profileHref} asChild>
+              <Pressable
+                onPress={() => onOpenChange(false)}
+                accessibilityRole="link"
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.6 : 1,
+                  paddingVertical: mobileSpacing[3],
+                  paddingHorizontal: mobileSpacing[4],
+                  borderRadius: mobileRadius.control,
+                  borderWidth: 1,
+                  borderColor: palette.borderColor,
+                  alignItems: 'center',
+                  minHeight: 44,
+                  justifyContent: 'center',
+                })}
+              >
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.sansMedium,
+                    color: palette.colorSecondary,
+                    fontSize: 14,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Войти
+                </Text>
+              </Pressable>
+            </Link>
+          )}
         </YStack>
       </YStack>
     </AppSheet>

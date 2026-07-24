@@ -9,14 +9,19 @@ datasource db {
 }
 
 enum SellerProfileStatus {
-  DRAFT
+  PENDING_REVIEW
   APPROVED
+  CHANGES_REQUESTED
+  REJECTED
   SUSPENDED
 }
 
 enum ProductStatus {
   DRAFT
+  PENDING_REVIEW
+  CHANGES_REQUESTED
   APPROVED
+  REJECTED
   ARCHIVED
 }
 
@@ -34,7 +39,9 @@ enum ListingStatus {
 
 enum OrderStatus {
   PENDING_CONTACT
+  CONTACTED
   COMPLETED
+  HANDOFF_FAILED
   CANCELLED
 }
 
@@ -44,42 +51,70 @@ enum OrderCancellationReason {
   ADMIN_CANCELLED
 }
 
+enum HandoffContactType {
+  TELEGRAM
+  PHONE
+  INSTAGRAM
+}
+
+enum HandoffInitiator {
+  BUYER_CONTACTS_SELLER
+  SELLER_CONTACTS_BUYER
+}
+
+enum AuditTargetType {
+  SELLER_PROFILE
+  PRODUCT
+  ORDER
+  LISTING
+}
+
 model User {
-  id              String   @id @default(uuid()) @db.Uuid
-  email           String   @unique @db.VarChar(255)
-  passwordHash    String   @map("password_hash") @db.VarChar(255)
-  phone           String   @unique @db.VarChar(32)
-  phoneVerifiedAt DateTime? @map("phone_verified_at")
-  displayName     String   @map("display_name") @db.VarChar(120)
-  role            String   @default("user")
-  status          String   @default("active")
-  sessionVersion  Int      @default(0) @map("session_version")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  sellerProfile   SellerProfile?
-  bids            Bid[]
-  buyerOrders     Order[] @relation("OrderBuyer")
-  sellerOrders    Order[] @relation("OrderSeller")
-  phoneCodes      PhoneVerificationCode[]
+  id                String                @id @default(uuid()) @db.Uuid
+  email             String                @unique @db.VarChar(255)
+  passwordHash      String                @map("password_hash") @db.VarChar(255)
+  phone             String?               @unique @db.VarChar(32)
+  emailVerifiedAt   DateTime?             @map("email_verified_at")
+  phoneVerifiedAt   DateTime?             @map("phone_verified_at")
+  displayName       String                @map("display_name") @db.VarChar(120)
+  role              String                @default("user")
+  status            String                @default("active")
+  sessionVersion    Int                   @default(0) @map("session_version")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  sellerProfile     SellerProfile?
+  bids              Bid[]
+  buyerOrders       Order[]               @relation("OrderBuyer")
+  sellerOrders      Order[]               @relation("OrderSeller")
+  phoneCodes        PhoneVerificationCode[]
+  emailCodes        EmailVerificationCode[]
+  termsAcceptances   TermsAcceptance[]
+  auditEvents       AuditEvent[]          @relation("AuditActor")
 
   @@map("users")
 }
 
 model SellerProfile {
-  id                String              @id @default(uuid()) @db.Uuid
-  userId            String              @unique @map("user_id") @db.Uuid
-  slug              String              @unique @db.VarChar(120)
-  sellerType        String              @map("seller_type")
-  storeName         String              @map("store_name") @db.VarChar(160)
-  country           String              @db.VarChar(80)
-  contactPreference String              @map("contact_preference") @db.VarChar(40)
-  socialLink        String?             @map("social_link") @db.VarChar(255)
-  shortDescription  String?             @map("short_description") @db.Text
-  status            SellerProfileStatus @default(DRAFT)
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  user              User                @relation(fields: [userId], references: [id], onDelete: Restrict)
-  products          Product[]
+  id                  String              @id @default(uuid()) @db.Uuid
+  userId              String              @unique @map("user_id") @db.Uuid
+  slug                String              @unique @db.VarChar(120)
+  sellerType          String              @map("seller_type")
+  fullName            String              @map("full_name") @db.VarChar(160)
+  country             String              @db.VarChar(80)
+  profilePhotoMimeType String              @map("profile_photo_mime_type") @db.VarChar(100)
+  profilePhotoByteLength Int              @map("profile_photo_byte_length")
+  profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)
+  profilePhotoData    Bytes               @map("profile_photo_data")
+  socialLink          String              @map("social_link") @db.VarChar(255)
+  shortDescription    String              @map("short_description") @db.Text
+  handoffContactType  HandoffContactType? @map("handoff_contact_type")
+  handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
+  handoffInitiator    HandoffInitiator    @default(BUYER_CONTACTS_SELLER) @map("handoff_initiator")
+  status              SellerProfileStatus @default(PENDING_REVIEW)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  products            Product[]
 
   @@map("seller_profiles")
 }
@@ -111,6 +146,7 @@ model Product {
   provenance      String?       @db.Text
   city            String?       @db.VarChar(160)
   deliveryInfo    String?       @map("delivery_info") @db.Text
+  publishedAt     DateTime?     @map("published_at")
   status          ProductStatus @default(DRAFT)
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -201,6 +237,10 @@ model Order {
   sourceBidId        String                   @unique @map("source_bid_id") @db.Uuid
   finalAmount        Decimal                  @map("final_amount") @db.Decimal(12, 2)
   contactDueAt       DateTime                 @map("contact_due_at")
+  sellerHandoffType  HandoffContactType       @map("seller_handoff_type")
+  sellerHandoffValue String                   @map("seller_handoff_value") @db.VarChar(255)
+  buyerEmailAtClose  String                   @map("buyer_email_at_close") @db.VarChar(255)
+  handoffInitiator   HandoffInitiator         @map("handoff_initiator")
   status             OrderStatus              @default(PENDING_CONTACT)
   cancellationReason OrderCancellationReason? @map("cancellation_reason")
   createdAt          DateTime                 @default(now()) @map("created_at")
@@ -228,4 +268,47 @@ model PhoneVerificationCode {
 
   @@index([userId, createdAt])
   @@map("phone_verification_codes")
+}
+
+model EmailVerificationCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  codeHash  String   @map("code_hash") @db.Char(64)
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("email_verification_codes")
+}
+
+model TermsAcceptance {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  rulesVersion String  @map("rules_version") @db.VarChar(40)
+  acceptedAt  DateTime @map("accepted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rulesVersion])
+  @@index([userId, acceptedAt])
+  @@map("terms_acceptances")
+}
+
+model AuditEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  actorUserId String          @map("actor_user_id") @db.Uuid
+  targetType  AuditTargetType @map("target_type")
+  targetId    String          @map("target_id") @db.Uuid
+  oldStatus   String?         @map("old_status") @db.VarChar(64)
+  newStatus   String?         @map("new_status") @db.VarChar(64)
+  reason      String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  actor User @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([targetType, targetId, createdAt])
+  @@map("audit_events")
 }

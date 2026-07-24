@@ -12,6 +12,9 @@ type PrismaUser = {
   email: string;
   passwordHash: string;
   phone: string;
+  emailVerifiedAt: Date | null;
+  phoneVerifiedAt: Date | null;
+  acceptedRulesVersion?: string | null;
   displayName: string;
   role: 'admin' | 'user';
   status: 'active' | 'banned';
@@ -26,6 +29,9 @@ function createPrismaUser(overrides: Partial<PrismaUser> = {}): PrismaUser {
     email: 'seller@example.com',
     passwordHash: 'hashed-password',
     phone: '+15555550123',
+    emailVerifiedAt: null,
+    phoneVerifiedAt: null,
+    acceptedRulesVersion: null,
     displayName: 'Demo Seller',
     role: 'user',
     status: 'active',
@@ -92,6 +98,8 @@ describe('AuthService', () => {
         passwordHash: 'hashed-value',
         status: 'active',
         sessionVersion: 0,
+        emailVerifiedAt: null,
+        phoneVerifiedAt: null,
       },
       select: authCredentialsSelect,
     });
@@ -107,6 +115,9 @@ describe('AuthService', () => {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'new-seller@example.com',
         phone: '+15555550123',
+        emailVerifiedAt: null,
+        phoneVerifiedAt: null,
+        acceptedRulesVersion: null,
         displayName: 'Demo Seller',
         role: 'user',
         status: 'active',
@@ -171,6 +182,9 @@ describe('AuthService', () => {
         id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
         email: 'login@example.com',
         phone: '+15555550123',
+        emailVerifiedAt: null,
+        phoneVerifiedAt: null,
+        acceptedRulesVersion: null,
         displayName: 'Demo Seller',
         role: 'user',
         status: 'active',
@@ -191,6 +205,9 @@ describe('AuthService', () => {
       id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
       email: 'seller@example.com',
       phone: '+15555550123',
+      emailVerifiedAt: null,
+      phoneVerifiedAt: null,
+      acceptedRulesVersion: null,
       displayName: 'Demo Seller',
       role: 'user',
       status: 'active',

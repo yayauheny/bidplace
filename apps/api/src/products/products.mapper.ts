@@ -1,7 +1,76 @@
 import { productResponseSchema, type Product } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-export const productSelect = { id: true, publicId: true, sellerProfileId: true, categoryId: true, title: true, story: true, technique: true, materials: true, dimensions: true, weight: true, year: true, condition: true, uniqueness: true, provenance: true, city: true, deliveryInfo: true, status: true, createdAt: true, updatedAt: true, images: { select: { id: true, position: true, mimeType: true, byteLength: true, checksum: true }, orderBy: { position: 'asc' } } } satisfies Prisma.ProductSelect;
-export type ProductRecord = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
-export function toContractProduct(product: ProductRecord): Product { return { id: product.id, publicId: product.publicId, sellerProfileId: product.sellerProfileId, categoryId: product.categoryId ?? null, title: product.title ?? null, story: product.story ?? null, technique: product.technique ?? null, materials: product.materials ?? null, dimensions: product.dimensions ?? null, weight: product.weight ?? null, year: product.year ?? null, condition: product.condition ?? null, uniqueness: product.uniqueness ?? null, provenance: product.provenance ?? null, city: product.city ?? null, deliveryInfo: product.deliveryInfo ?? null, status: product.status, images: product.images.map((image) => ({ id: image.id, position: image.position, url: `/api/images/${image.id}`, mimeType: image.mimeType, byteLength: image.byteLength, checksum: image.checksum })), createdAt: product.createdAt.toISOString(), updatedAt: product.updatedAt.toISOString() }; }
-export function toProductResponse(product: ProductRecord) { return productResponseSchema.parse({ product: toContractProduct(product) }); }
+export const productSelect = {
+  id: true,
+  publicId: true,
+  sellerProfileId: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  deliveryInfo: true,
+  publishedAt: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  images: {
+    select: {
+      id: true,
+      position: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+    },
+    orderBy: { position: 'asc' },
+  },
+} satisfies Prisma.ProductSelect;
+
+export type ProductRecord = Prisma.ProductGetPayload<{
+  select: typeof productSelect;
+}>;
+
+export function toContractProduct(product: ProductRecord): Product {
+  return {
+    id: product.id,
+    publicId: product.publicId,
+    sellerProfileId: product.sellerProfileId,
+    categoryId: product.categoryId ?? null,
+    title: product.title ?? null,
+    story: product.story ?? null,
+    technique: product.technique ?? null,
+    materials: product.materials ?? null,
+    dimensions: product.dimensions ?? null,
+    weight: product.weight ?? null,
+    year: product.year ?? null,
+    condition: product.condition ?? null,
+    uniqueness: product.uniqueness ?? null,
+    provenance: product.provenance ?? null,
+    city: product.city ?? null,
+    deliveryInfo: product.deliveryInfo ?? null,
+    publishedAt: product.publishedAt?.toISOString() ?? null,
+    status: product.status,
+    images: product.images.map((image) => ({
+      id: image.id,
+      position: image.position,
+      url: `/api/images/${image.id}`,
+      mimeType: image.mimeType,
+      byteLength: image.byteLength,
+      checksum: image.checksum,
+    })),
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+  };
+}
+
+export function toProductResponse(product: ProductRecord) {
+  return productResponseSchema.parse({ product: toContractProduct(product) });
+}

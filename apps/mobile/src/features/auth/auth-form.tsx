@@ -1,4 +1,5 @@
-import { useRouter, type Href } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
+import type { SafeRedirect } from './auth-redirect';
 import { useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,7 +53,11 @@ function AuthCard({
   );
 }
 
-export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
+type AuthFormProps = {
+  redirectTo?: SafeRedirect;
+};
+
+export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const router = useRouter();
   const palette = useAppThemePalette();
@@ -71,7 +76,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
 
     try {
       await auth.login(values);
-      router.replace(redirectTo);
+      router.replace(redirectTo as Href);
     } catch (error) {
       setSubmitError(getUserFacingErrorMessage(error, 'Не удалось войти'));
     }
@@ -87,7 +92,7 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
         title="Вы уже вошли"
         description="Если нужно, выйдите из текущей сессии и попробуйте снова."
       >
-        <AppButton onPress={() => router.replace(redirectTo)}>Перейти дальше</AppButton>
+        <AppButton onPress={() => router.replace(redirectTo as Href)}>Перейти дальше</AppButton>
       </AuthCard>
     );
   }
@@ -127,12 +132,28 @@ export function LoginForm({ redirectTo = '/' }: { redirectTo?: Href }) {
         >
           Войти
         </AppButton>
+        <Link
+          href={{
+            pathname: '/register',
+            params: redirectTo !== '/' ? { redirectTo } : undefined,
+          }}
+          style={{
+            color: palette.color,
+            fontSize: 14,
+            fontWeight: '600',
+            textAlign: 'center',
+            paddingTop: mobileSpacing[2],
+            paddingBottom: mobileSpacing[2],
+          }}
+        >
+          Нет аккаунта? Создать аккаунт
+        </Link>
       </YStack>
     </AuthCard>
   );
 }
 
-export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
+export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
   const router = useRouter();
   const palette = useAppThemePalette();
@@ -153,7 +174,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
 
     try {
       await auth.register(values);
-      router.replace(redirectTo);
+      router.replace(redirectTo as Href);
     } catch (error) {
       setSubmitError(
         getUserFacingErrorMessage(error, 'Не удалось зарегистрироваться'),
@@ -171,7 +192,7 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
         title="Вы уже вошли"
         description="Если нужно, выйдите из текущей сессии и попробуйте снова."
       >
-        <AppButton onPress={() => router.replace(redirectTo)}>Перейти дальше</AppButton>
+        <AppButton onPress={() => router.replace(redirectTo as Href)}>Перейти дальше</AppButton>
       </AuthCard>
     );
   }
@@ -228,6 +249,22 @@ export function RegisterForm({ redirectTo = '/' }: { redirectTo?: Href }) {
         >
           Создать аккаунт
         </AppButton>
+        <Link
+          href={{
+            pathname: '/login',
+            params: redirectTo !== '/' ? { redirectTo } : undefined,
+          }}
+          style={{
+            color: palette.color,
+            fontSize: 14,
+            fontWeight: '600',
+            textAlign: 'center',
+            paddingTop: mobileSpacing[2],
+            paddingBottom: mobileSpacing[2],
+          }}
+        >
+          Уже есть аккаунт? Войти
+        </Link>
       </YStack>
     </AuthCard>
   );

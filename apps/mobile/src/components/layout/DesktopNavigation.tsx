@@ -4,9 +4,17 @@ import { Text, XStack, YStack } from 'tamagui';
 
 import { fontFamilies, mobileSpacing } from '../../theme/tokens';
 import { useAppThemePalette } from '../../theme/palette';
+import { useAuth } from '../../providers/auth-provider';
 
 type DesktopNavigationProps = {
   mode?: 'public' | 'seller' | 'admin' | 'auth';
+};
+
+type NavigationHref = '/' | '/me/activity' | '/profile' | '/admin';
+
+type NavigationItem = {
+  label: string;
+  href: NavigationHref;
 };
 
 // Only routes that are actually implemented and stable.
@@ -35,7 +43,15 @@ function getNavItems(mode: DesktopNavigationProps['mode']) {
 export function DesktopNavigation({ mode = 'public' }: DesktopNavigationProps) {
   const pathname = usePathname();
   const palette = useAppThemePalette();
-  const navItems = getNavItems(mode);
+  const auth = useAuth();
+
+  let navItems: NavigationItem[] = getNavItems(mode);
+  if (auth.canModerate && !navItems.some((item) => item.href === '/admin')) {
+    navItems = [...navItems, { label: 'Модерация', href: '/admin' }];
+  }
+  if (!auth.canModerate) {
+    navItems = navItems.filter((item) => item.href !== '/admin');
+  }
 
   return (
     <XStack style={{ alignItems: 'center', gap: mobileSpacing[5] }}>

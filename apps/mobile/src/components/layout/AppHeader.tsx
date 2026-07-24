@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, Pressable } from 'react-native';
 import { Text, XStack, YStack, useMedia } from 'tamagui';
@@ -42,6 +42,45 @@ function NavAction({
         </Text>
       </Pressable>
     </Link>
+  );
+}
+
+function LogoutAction({ onLogout }: { onLogout: () => void }) {
+  const palette = useAppThemePalette();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+    } catch {
+      // AuthProvider уже очищает локальную сессию в finally.
+    } finally {
+      router.replace('/');
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={handleLogout}
+      accessibilityRole="button"
+      disabled={isLoggingOut}
+      style={({ pressed }) => ({ opacity: pressed || isLoggingOut ? 0.6 : 1 })}
+    >
+      <Text
+        style={{
+          fontFamily: fontFamilies.sansMedium,
+          fontSize: 13,
+          lineHeight: 18,
+          letterSpacing: 0.2,
+          color: palette.colorSecondary,
+        }}
+      >
+        Выйти
+      </Text>
+    </Pressable>
   );
 }
 
@@ -146,9 +185,11 @@ export function AppHeader({ mode = 'public' }: AppHeaderProps) {
             ) : mode === 'seller' ? (
               <NavAction href="/profile">Продавец</NavAction>
             ) : null}
-            <NavAction href={profileHref}>
-              {auth.isAuthenticated ? 'Мои покупки' : 'Войти'}
-            </NavAction>
+            {auth.isAuthenticated ? (
+              <LogoutAction onLogout={auth.logout} />
+            ) : (
+              <NavAction href={profileHref}>Войти</NavAction>
+            )}
           </XStack>
         </XStack>
       </YStack>

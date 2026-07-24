@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Text, YStack } from 'tamagui';
+import { Text, XStack, YStack } from 'tamagui';
 
 import {
   AppButton,
@@ -101,6 +101,13 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         });
     },
   });
+  const submit = useMutation({
+    mutationFn: (productIdToSubmit: string) =>
+      api.products.submit(productIdToSubmit),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+    },
+  });
   const upload = useMutation({
     mutationFn: (images: Blob[]) => api.images.add(existingProduct!.id, images),
     onSuccess: () =>
@@ -157,15 +164,54 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         />
       </Screen>
     );
-  const editable = !existingProduct || existingProduct.status === 'DRAFT';
+  const editable =
+    !existingProduct ||
+    existingProduct.status === 'DRAFT' ||
+    existingProduct.status === 'CHANGES_REQUESTED';
 
   return (
     <Screen>
       <YStack style={{ gap: mobileSpacing[5] }}>
         <SectionHeader
           title={existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
-          description="Черновик можно сохранить неполным. Для approval нужны все обязательные поля и минимум 3 изображения."
+          description="Черновик можно сохранить неполным. Для approval нужны все обязательные поля и минимум 1 изображение."
         />
+
+        {existingProduct ? (
+          <YStack style={{ gap: mobileSpacing[3] }}>
+            <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <StatusBadge tone={existingProduct.status === 'APPROVED' ? 'positive' : 'neutral'}>
+                {existingProduct.status}
+              </StatusBadge>
+              <AppButton tone="subtle" buttonSize="small" onPress={() => products.refetch()}>
+                Обновить
+              </AppButton>
+            </XStack>
+            {existingProduct.status === 'APPROVED' ? (
+              <Link href={{ pathname: '/(seller)/listings/new', params: { productId: existingProduct.id } }} asChild>
+                <AppButton tone="primary" buttonSize="large">Создать аукцион</AppButton>
+              </Link>
+            ) : null}
+            {existingProduct.status !== 'APPROVED' && editable ? (
+              <AppButton
+                tone="primary"
+                buttonSize="large"
+                isLoading={submit.isPending}
+                disabled={existingProduct.images.length < 1}
+                onPress={() => submit.mutate(existingProduct.id)}
+              >
+                {existingProduct.status === 'CHANGES_REQUESTED'
+                  ? 'Повторно отправить на модерацию'
+                  : 'Отправить на модерацию'}
+              </AppButton>
+            ) : null}
+            {existingProduct.status !== 'APPROVED' && existingProduct.images.length < 1 ? (
+              <Text style={{ color: palette.colorMuted, fontSize: 13, lineHeight: 18 }}>
+                Добавьте хотя бы одно изображение перед отправкой.
+              </Text>
+            ) : null}
+          </YStack>
+        ) : null}
 
         {existingProduct && !editable ? (
           <OperationalPanel>
@@ -317,9 +363,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         {existingProduct ? (
           <OperationalPanel eyebrow="Изображения">
             <YStack style={{ gap: mobileSpacing[3] }}>
-              {existingProduct.status !== 'DRAFT' ? (
+              {existingProduct.status === 'PENDING_REVIEW' ? (
                 <StatusBadge tone="neutral">
-                  Изображения нельзя изменить после публикации
+                  Изображения нельзя изменить во время модерации
                 </StatusBadge>
               ) : null}
               <Text

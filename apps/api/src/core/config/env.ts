@@ -37,6 +37,17 @@ const serverEnvSchema = z
       .positive()
       .default(40 * 1024 * 1024),
     JWT_SECRET: z.string().min(1),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_SECURE: booleanEnvSchema.optional(),
+    SMTP_USERNAME: z.string().min(1).optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
+    SMTP_FROM: z.string().min(1).optional(),
+    SERVICE_RULES_OWNER: z.string().min(1).optional(),
+    SERVICE_RULES_CONTACT: z.string().min(1).optional(),
+    SERVICE_RULES_TEXT: z.string().min(1).optional(),
+    TEST_EMAIL_FILE: z.string().min(1).optional(),
+    TEST_EMAIL_BYPASS: booleanEnvSchema,
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
   })
@@ -47,7 +58,38 @@ const serverEnvSchema = z
       message: 'LOT_IMAGE_MAX_TOTAL_BYTES must be at least LOT_IMAGE_MAX_FILE_BYTES',
       path: ['LOT_IMAGE_MAX_TOTAL_BYTES'],
     },
-  );
+  )
+  .superRefine((env, context) => {
+    if (env.NODE_ENV === 'production') {
+      const requiredKeys: Array<keyof ServerEnv> = [
+        'SMTP_HOST',
+        'SMTP_PORT',
+        'SMTP_SECURE',
+        'SMTP_FROM',
+        'SERVICE_RULES_OWNER',
+        'SERVICE_RULES_CONTACT',
+        'SERVICE_RULES_TEXT',
+      ];
+
+      for (const key of requiredKeys) {
+        if (env[key] === undefined || env[key] === null) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required in production`,
+          });
+        }
+      }
+
+      if (env.TEST_EMAIL_BYPASS) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TEST_EMAIL_BYPASS'],
+          message: 'TEST_EMAIL_BYPASS cannot be enabled in production',
+        });
+      }
+    }
+  });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
@@ -86,6 +128,13 @@ export function resolveServerEnvFilePath(
 
 export function loadServerEnv(env: NodeJS.ProcessEnv = process.env): ServerEnv {
   const envFilePath = resolveServerEnvFilePath();
+  const envInput = createEnvInput(envFilePath, env);
 
-  return parseEnv(serverEnvSchema, createEnvInput(envFilePath, env));
+  for (const key of Object.keys(envInput)) {
+    if (process.env[key] === undefined) {
+      process.env[key] = envInput[key];
+    }
+  }
+
+  return parseEnv(serverEnvSchema, envInput);
 }

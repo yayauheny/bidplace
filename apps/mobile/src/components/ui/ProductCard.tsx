@@ -48,7 +48,7 @@ export function ProductCard({ product, listing, sellerProfile }: ProductCardProp
     <Link href={`/product/${product.publicId}`} asChild>
       <Pressable
         accessibilityRole="link"
-        aria-label={`${product.title ?? 'Предмет'} — ${sellerProfile.storeName}`}
+        aria-label={`${product.title ?? 'Предмет'} — ${sellerProfile.fullName}`}
         style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
       >
         <YStack style={{ gap: mobileSpacing[2] }}>
@@ -86,7 +86,7 @@ export function ProductCard({ product, listing, sellerProfile }: ProductCardProp
                 letterSpacing: 0.1,
               }}
             >
-              {sellerProfile.storeName}
+              {sellerProfile.fullName}
             </Text>
             <Text
               numberOfLines={2}

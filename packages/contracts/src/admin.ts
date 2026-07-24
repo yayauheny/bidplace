@@ -6,32 +6,81 @@ import {
   productStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import { orderResponseSchema } from './order';
 import { uuidSchema } from './primitives';
-import { sellerProfileResponseSchema } from './seller-profile';
-import { sellerProfileSchema } from './seller-profile';
+import { sellerProfileResponseSchema, sellerProfileSchema } from './seller-profile';
 import { productSchema } from './product';
 
+const sellerModerationStatusSchema = sellerStatusSchema.extract([
+  'APPROVED',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+  'SUSPENDED',
+]);
+
+const productModerationStatusSchema = productStatusSchema.extract([
+  'APPROVED',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+  'ARCHIVED',
+]);
+
 export const adminSellerStatusUpdateRequestSchema = z
-  .object({ status: sellerStatusSchema.extract(['APPROVED', 'SUSPENDED']) })
-  .strict();
+  .object({
+    status: sellerModerationStatusSchema,
+    reason: z.string().trim().min(1).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      ['CHANGES_REQUESTED', 'REJECTED', 'SUSPENDED'].includes(value.status) &&
+      !value.reason
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reason'],
+        message: 'reason is required for this seller status',
+      });
+    }
+  });
+
 export const adminProductStatusUpdateRequestSchema = z
-  .object({ status: productStatusSchema.extract(['APPROVED', 'ARCHIVED']) })
-  .strict();
+  .object({
+    status: productModerationStatusSchema,
+    reason: z.string().trim().min(1).optional(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      ['CHANGES_REQUESTED', 'REJECTED', 'ARCHIVED'].includes(value.status) &&
+      !value.reason
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reason'],
+        message: 'reason is required for this product status',
+      });
+    }
+  });
+
 export const adminOrderCancellationRequestSchema = z
   .object({ reason: orderCancellationReasonSchema })
   .strict();
+
 export const adminOrderReplacementRequestSchema = z
   .object({ bidId: uuidSchema })
   .strict();
+
 export const adminRankedBidsResponseSchema = z
   .object({ bids: z.array(bidSchema) })
   .strict();
 
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
-export const adminOrderResponseSchema = orderResponseSchema;
-export const adminSellerProfilesResponseSchema = z.object({ sellerProfiles: z.array(sellerProfileSchema) }).strict();
-export const adminProductsResponseSchema = z.object({ products: z.array(productSchema) }).strict();
+export const adminSellerProfilesResponseSchema = z
+  .object({ sellerProfiles: z.array(sellerProfileSchema) })
+  .strict();
+export const adminProductsResponseSchema = z
+  .object({ products: z.array(productSchema) })
+  .strict();
 
 export type AdminSellerStatusUpdateRequest = z.infer<
   typeof adminSellerStatusUpdateRequestSchema

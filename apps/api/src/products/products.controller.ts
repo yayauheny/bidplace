@@ -1,2 +1,48 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'; import { paginationQuerySchema, productWriteRequestSchema } from '@bidplace/contracts'; import { BearerAuthGuard, CurrentUser } from '../auth'; import { parseBody } from '../core/validation'; import { ProductsService } from './products.service';
-@Controller('products') export class ProductsController { constructor(private readonly products: ProductsService) {} @Get() list(@Query() query: unknown) { return this.products.listPublic(parseBody(paginationQuerySchema, query)); } @Get(':publicId') get(@Param('publicId') publicId: string) { return this.products.getPublic(publicId); } @Post() @UseGuards(BearerAuthGuard) create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) { return this.products.create(auth.sub, parseBody(productWriteRequestSchema, body)); } @Patch(':id') @UseGuards(BearerAuthGuard) update(@CurrentUser() auth: { sub: string }, @Param('id') id: string, @Body() body: unknown) { return this.products.update(auth.sub, id, parseBody(productWriteRequestSchema, body)); } }
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { paginationQuerySchema, productWriteRequestSchema } from '@bidplace/contracts';
+
+import { BearerAuthGuard, CurrentUser } from '../auth';
+import { parseBody } from '../core/validation';
+import { ProductsService } from './products.service';
+
+@Controller('products')
+export class ProductsController {
+  constructor(private readonly products: ProductsService) {}
+
+  @Get()
+  list(@Query() query: unknown) {
+    return this.products.listPublic(parseBody(paginationQuerySchema, query));
+  }
+
+  @Get(':publicId')
+  get(@Param('publicId') publicId: string) {
+    return this.products.getPublic(publicId);
+  }
+
+  @Post()
+  @UseGuards(BearerAuthGuard)
+  create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
+    return this.products.create(auth.sub, parseBody(productWriteRequestSchema, body));
+  }
+
+  @Post(':id/submit')
+  @UseGuards(BearerAuthGuard)
+  submit(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.products.submit(auth.sub, id);
+  }
+
+  @Patch(':id')
+  @UseGuards(BearerAuthGuard)
+  update(@CurrentUser() auth: { sub: string }, @Param('id') id: string, @Body() body: unknown) {
+    return this.products.update(auth.sub, id, parseBody(productWriteRequestSchema, body));
+  }
+}

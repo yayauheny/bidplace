@@ -1,8 +1,10 @@
 import { z } from 'zod';
+
 import { productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
 const optionalText = z.string().trim().min(1).nullable();
+
 export const productImageSchema = z
   .object({
     id: uuidSchema,
@@ -13,9 +15,11 @@ export const productImageSchema = z
     checksum: z.string().length(64),
   })
   .strict();
+
 export const productImageOrderRequestSchema = z
   .object({ imageIds: z.array(uuidSchema).min(1).max(10) })
   .strict();
+
 export const productSchema = z
   .object({
     id: uuidSchema,
@@ -34,12 +38,14 @@ export const productSchema = z
     provenance: optionalText,
     city: optionalText,
     deliveryInfo: optionalText,
+    publishedAt: isoDateTimeSchema.nullable(),
     status: productStatusSchema,
     images: z.array(productImageSchema),
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })
   .strict();
+
 export const productWriteRequestSchema = z
   .object({
     categoryId: uuidSchema.optional(),
@@ -57,8 +63,10 @@ export const productWriteRequestSchema = z
     deliveryInfo: z.string().trim().min(1).optional(),
   })
   .strict();
+
 export const productResponseSchema = z
   .object({ product: productSchema })
   .strict();
+
 export type Product = z.infer<typeof productSchema>;
 export type ProductWriteRequest = z.infer<typeof productWriteRequestSchema>;

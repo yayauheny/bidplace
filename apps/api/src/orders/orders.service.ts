@@ -1,12 +1,39 @@
 import {
   type AdminOrderCancellationRequest,
   type AdminOrderReplacementRequest,
-  orderResponseSchema,
+  adminOrderResponseSchema,
+  buyerOrderResponseSchema,
+  sellerOrderResponseSchema,
 } from '@bidplace/contracts';
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { type Prisma } from '@bidplace/database';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
+import { createOrderSnapshot } from './order-snapshot';
+
+const orderWithProductInclude = {
+  listing: {
+    include: {
+      product: {
+        include: {
+          sellerProfile: true,
+        },
+      },
+    },
+  },
+  buyer: { select: { email: true } },
+  seller: { select: { email: true } },
+} satisfies Prisma.OrderInclude;
+
+type OrderRecord = Prisma.OrderGetPayload<{
+  include: typeof orderWithProductInclude;
+}>;
 
 @Injectable()
 export class OrdersService {
@@ -17,12 +44,39 @@ export class OrdersService {
 
   async get(userId: string, role: string, publicId: string) {
     const order = await this.findWithProduct(publicId);
-    if (!order) throw new NotFoundException('Order not found');
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
     if (role !== 'admin' && order.sellerId !== userId && order.buyerId !== userId) {
       throw new ForbiddenException('Order is not available');
     }
 
-    return this.toResponse(order, role === 'admin' || order.sellerId === userId);
+    if (order.status === 'CANCELLED' && role !== 'admin') {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.toResponse(order, role);
+  }
+
+  async markContacted(userId: string, publicId: string) {
+    return this.updateSellerStatus(userId, publicId, 'CONTACTED', [
+      'PENDING_CONTACT',
+    ]);
+  }
+
+  async markCompleted(userId: string, publicId: string) {
+    return this.updateSellerStatus(userId, publicId, 'COMPLETED', [
+      'CONTACTED',
+    ]);
+  }
+
+  async markHandoffFailed(userId: string, publicId: string) {
+    return this.updateSellerStatus(userId, publicId, 'HANDOFF_FAILED', [
+      'PENDING_CONTACT',
+      'CONTACTED',
+    ]);
   }
 
   async listRankedBids(listingId: string) {
@@ -30,11 +84,20 @@ export class OrdersService {
       where: { id: listingId },
       select: { id: true },
     });
-    if (!listing) throw new NotFoundException('Listing not found');
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
 
     const bids = await this.prisma.bid.findMany({
       where: { listingId },
-      select: { id: true, listingId: true, amount: true, createdAt: true, bidderUserId: true },
+      select: {
+        id: true,
+        listingId: true,
+        amount: true,
+        createdAt: true,
+        bidderUserId: true,
+      },
       orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
     });
 
@@ -49,39 +112,114 @@ export class OrdersService {
     };
   }
 
-  async cancel(publicId: string, input: AdminOrderCancellationRequest) {
-    const updated = await this.prisma.order.updateMany({
-      where: { publicId, status: 'PENDING_CONTACT' },
-      data: { status: 'CANCELLED', cancellationReason: input.reason },
+  async cancel(adminUserId: string, publicId: string, input: AdminOrderCancellationRequest) {
+    await runSerializableTransaction(this.prisma, async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { publicId },
+        include: { listing: { select: { id: true } } },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      if (!['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'].includes(order.status)) {
+        throw new ConflictException('Order cannot be cancelled');
+      }
+
+      await tx.order.update({
+        where: { publicId },
+        data: {
+          status: 'CANCELLED',
+          cancellationReason: input.reason,
+        },
+      });
+
+      await this.recordAudit(tx, {
+        actorUserId: adminUserId,
+        targetType: 'ORDER',
+        targetId: order.id,
+        oldStatus: order.status,
+        newStatus: 'CANCELLED',
+        reason: input.reason,
+      });
+
+      return order.id;
     });
-    if (updated.count !== 1) throw new ConflictException('Order cannot be cancelled');
-    const response = await this.findWithProduct(publicId);
-    if (!response) throw new NotFoundException('Order not found');
-    return this.toResponse(response, true);
+
+    const updated = await this.findWithProduct(publicId);
+    if (!updated) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.toResponse(updated, 'admin');
   }
 
-  async replace(publicId: string, input: AdminOrderReplacementRequest) {
+  async replace(adminUserId: string, publicId: string, input: AdminOrderReplacementRequest) {
     const replacement = await runSerializableTransaction(this.prisma, async (tx) => {
       const original = await tx.order.findUnique({
         where: { publicId },
-        include: { listing: { select: { id: true, status: true } } },
+        include: {
+          listing: {
+            include: {
+              product: {
+                include: {
+                  sellerProfile: true,
+                },
+              },
+            },
+          },
+        },
       });
-      if (!original || original.status !== 'CANCELLED' || original.listing.status !== 'ENDED') {
+
+      if (!original || original.status !== 'CANCELLED') {
         throw new ConflictException('Order is not eligible for replacement');
       }
+
+      if (input.bidId === original.sourceBidId) {
+        throw new ConflictException('Replacement bid must differ from the original source bid');
+      }
+
       const active = await tx.order.findFirst({
-        where: { listingId: original.listingId, status: { in: ['PENDING_CONTACT', 'COMPLETED'] } },
+        where: {
+          listingId: original.listingId,
+          status: { in: ['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'] },
+        },
         select: { id: true },
       });
-      if (active) throw new ConflictException('Listing already has an active Order');
+
+      if (active) {
+        throw new ConflictException('Listing already has an active Order');
+      }
+
       const bid = await tx.bid.findFirst({
         where: { id: input.bidId, listingId: original.listingId },
       });
-      if (!bid) throw new NotFoundException('Bid not found for Listing');
+
+      if (!bid) {
+        throw new NotFoundException('Bid not found for Listing');
+      }
+
+      const buyer = await tx.user.findUnique({
+        where: { id: bid.bidderUserId },
+        select: { email: true },
+      });
+
+      if (!buyer) {
+        throw new NotFoundException('Buyer not found');
+      }
+
+      const sellerProfile = original.listing.product.sellerProfile;
+      if (
+        !sellerProfile.handoffContactType ||
+        !sellerProfile.handoffContactValue
+      ) {
+        throw new ConflictException('Seller handoff contact is missing');
+      }
 
       for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
-          return await tx.order.create({
+          const created = await tx.order.create({
             data: {
               publicId: this.publicIds.generate(),
               listingId: original.listingId,
@@ -90,33 +228,110 @@ export class OrdersService {
               sourceBidId: bid.id,
               finalAmount: bid.amount,
               contactDueAt: new Date(),
+              ...createOrderSnapshot({
+                sellerHandoffType: sellerProfile.handoffContactType,
+                sellerHandoffValue: sellerProfile.handoffContactValue,
+                buyerEmailAtClose: buyer.email,
+                handoffInitiator: sellerProfile.handoffInitiator,
+              }),
             },
           });
+
+          await this.recordAudit(tx, {
+            actorUserId: adminUserId,
+            targetType: 'ORDER',
+            targetId: original.id,
+            oldStatus: 'CANCELLED',
+            newStatus: 'REPLACED',
+            reason: 'Manual replacement selected by admin',
+          });
+
+          return created;
         } catch (error) {
-          if (!(typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002')) {
+          if (
+            !(
+              typeof error === 'object' &&
+              error !== null &&
+              'code' in error &&
+              error.code === 'P2002'
+            )
+          ) {
             throw error;
           }
         }
       }
+
       throw new ConflictException('Could not assign Order number');
     });
+
     const response = await this.findWithProduct(replacement.publicId);
-    if (!response) throw new NotFoundException('Order not found');
-    return this.toResponse(response, true);
+    if (!response) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.toResponse(response, 'admin');
+  }
+
+  private async updateSellerStatus(
+    userId: string,
+    publicId: string,
+    nextStatus: 'CONTACTED' | 'COMPLETED' | 'HANDOFF_FAILED',
+    allowedStatuses: Array<'PENDING_CONTACT' | 'CONTACTED'>,
+  ) {
+    const result = await runSerializableTransaction(this.prisma, async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { publicId },
+      });
+
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      if (order.sellerId !== userId) {
+        throw new ForbiddenException('Order is not owned by seller');
+      }
+
+      if (!allowedStatuses.includes(order.status as 'PENDING_CONTACT' | 'CONTACTED')) {
+        throw new ConflictException('Order cannot transition to the requested status');
+      }
+
+      const updated = await tx.order.update({
+        where: { publicId },
+        data: { status: nextStatus },
+      });
+
+      await this.recordAudit(tx, {
+        actorUserId: userId,
+        targetType: 'ORDER',
+        targetId: order.id,
+        oldStatus: order.status,
+        newStatus: nextStatus,
+        reason: null,
+      });
+
+      return updated;
+    });
+
+    const response = await this.findWithProduct(result.publicId);
+    if (!response) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.toResponse(response, 'seller');
   }
 
   private findWithProduct(publicId: string) {
     return this.prisma.order.findUnique({
       where: { publicId },
-      include: { listing: { include: { product: true } }, buyer: { select: { phone: true } } },
+      include: orderWithProductInclude,
     });
   }
 
   private toResponse(
-    order: NonNullable<Awaited<ReturnType<OrdersService['findWithProduct']>>>,
-    includeBuyerContact: boolean,
+    order: NonNullable<OrderRecord>,
+    role: string,
   ) {
-    return orderResponseSchema.parse({
+    const base = {
       order: {
         id: order.id,
         publicId: order.publicId,
@@ -132,8 +347,51 @@ export class OrdersService {
         publicId: order.listing.product.publicId,
         title: order.listing.product.title ?? 'Product',
       },
-      buyerPhone: includeBuyerContact ? order.buyer.phone : null,
-      buyerTelegramUsername: null,
+    };
+
+    if (role === 'admin') {
+      return adminOrderResponseSchema.parse({
+        ...base,
+        sellerHandoffType: order.sellerHandoffType,
+        sellerHandoffValue: order.sellerHandoffValue,
+        buyerEmailAtClose: order.buyerEmailAtClose,
+        handoffInitiator: order.handoffInitiator,
+      });
+    }
+
+    if (role === 'seller') {
+      return sellerOrderResponseSchema.parse({
+        ...base,
+        buyerEmailAtClose: order.buyerEmailAtClose,
+      });
+    }
+
+    return buyerOrderResponseSchema.parse({
+      ...base,
+      sellerHandoffType:
+        order.handoffInitiator === 'BUYER_CONTACTS_SELLER'
+          ? order.sellerHandoffType
+          : null,
+      sellerHandoffValue:
+        order.handoffInitiator === 'BUYER_CONTACTS_SELLER'
+          ? order.sellerHandoffValue
+          : null,
+    });
+  }
+
+  private async recordAudit(
+    tx: Prisma.TransactionClient,
+    input: {
+      actorUserId: string;
+      targetType: 'ORDER';
+      targetId: string;
+      oldStatus: string | null;
+      newStatus: string | null;
+      reason: string | null;
+    },
+  ) {
+    await tx.auditEvent.create({
+      data: input,
     });
   }
 }

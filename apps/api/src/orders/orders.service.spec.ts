@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { OrdersService } from './orders.service';
 
-const order = {
+const baseOrder = {
   id: '7a728f95-6c4d-4f35-a3fd-a7b9903a3182',
   publicId: 'orderPub001',
   listingId: 'dc20fe0f-138b-45b4-b4ce-4fd55312a985',
@@ -10,6 +10,10 @@ const order = {
   buyerId: 'buyer-id',
   finalAmount: { toNumber: () => 125 },
   contactDueAt: new Date('2026-07-19T00:00:00.000Z'),
+  sellerHandoffType: 'PHONE' as const,
+  sellerHandoffValue: '+375291234567',
+  buyerEmailAtClose: 'buyer@example.com',
+  handoffInitiator: 'BUYER_CONTACTS_SELLER' as const,
   status: 'PENDING_CONTACT' as const,
   cancellationReason: null,
   createdAt: new Date('2026-07-18T00:00:00.000Z'),
@@ -19,29 +23,45 @@ const order = {
 };
 
 describe('OrdersService', () => {
-  it('allows seller access and includes the verified buyer phone', async () => {
-    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(order) } };
+  it('allows seller access and includes the buyer email snapshot', async () => {
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
     const service = new OrdersService(prisma as never, {} as never);
 
-    const result = await service.get('seller-id', 'user', order.publicId);
+    const result = await service.get('seller-id', 'seller', baseOrder.publicId);
 
-    expect(result.buyerPhone).toBe('+375290000000');
+    expect(result.buyerEmailAtClose).toBe('buyer@example.com');
   });
 
-  it('allows buyer access without exposing the buyer contact projection', async () => {
+  it('shows seller contact to buyers in BUYER_CONTACTS_SELLER privacy mode', async () => {
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    const result = await service.get('buyer-id', 'user', baseOrder.publicId);
+
+    expect(result.sellerHandoffType).toBe('PHONE');
+    expect(result.sellerHandoffValue).toBe('+375291234567');
+  });
+
+  it('hides seller contact from buyers in SELLER_CONTACTS_BUYER privacy mode', async () => {
+    const order = {
+      ...baseOrder,
+      handoffInitiator: 'SELLER_CONTACTS_BUYER' as const,
+    };
     const prisma = { order: { findUnique: vi.fn().mockResolvedValue(order) } };
     const service = new OrdersService(prisma as never, {} as never);
 
     const result = await service.get('buyer-id', 'user', order.publicId);
 
-    expect(result.buyerPhone).toBeNull();
+    expect(result.sellerHandoffType).toBeNull();
+    expect(result.sellerHandoffValue).toBeNull();
   });
 
   it('rejects unrelated users', async () => {
-    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(order) } };
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
     const service = new OrdersService(prisma as never, {} as never);
 
-    await expect(service.get('other-id', 'user', order.publicId))
-      .rejects.toThrow('Order is not available');
+    await expect(service.get('other-id', 'user', baseOrder.publicId)).rejects.toThrow(
+      'Order is not available',
+    );
   });
 });

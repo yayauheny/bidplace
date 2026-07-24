@@ -1,2 +1,34 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common'; import { phoneOtpVerifyRequestSchema } from '@bidplace/contracts'; import { BearerAuthGuard, CurrentUser } from '../auth'; import { RateLimit, RateLimitGuard } from '../core/rate-limit'; import { parseBody } from '../core/validation'; import { OtpService } from './otp.service';
-@Controller('auth/phone') @UseGuards(BearerAuthGuard) export class OtpController { constructor(private readonly otp: OtpService) {} @Post('request') @UseGuards(RateLimitGuard) @RateLimit({ keyPrefix: 'otp:request', limit: 3, windowMs: 60_000, scope: 'user' }) request(@CurrentUser() auth: { sub: string }) { return this.otp.request(auth.sub).then(() => ({ ok: true })); } @Post('verify') @UseGuards(RateLimitGuard) @RateLimit({ keyPrefix: 'otp:verify', limit: 10, windowMs: 60_000, scope: 'user' }) verify(@CurrentUser() auth: { sub: string }, @Body() body: unknown) { return this.otp.verify(auth.sub, parseBody(phoneOtpVerifyRequestSchema, body).code).then(() => ({ ok: true })); } }
+import {
+  emailOtpVerifyRequestSchema,
+  type AuthTokenPayload,
+} from '@bidplace/contracts';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+
+import { BearerAuthGuard, CurrentUser } from '../auth';
+import { parseBody } from '../core/validation';
+import { OtpService, type OtpRequestContext } from './otp.service';
+
+@Controller('auth/email')
+@UseGuards(BearerAuthGuard)
+export class OtpController {
+  constructor(private readonly otp: OtpService) {}
+
+  @Post('request')
+  request(
+    @CurrentUser() auth: AuthTokenPayload,
+    @Req() request: OtpRequestContext,
+  ) {
+    return this.otp.request(auth.sub, request).then(() => ({ ok: true }));
+  }
+
+  @Post('verify')
+  verify(
+    @CurrentUser() auth: AuthTokenPayload,
+    @Req() request: OtpRequestContext,
+    @Body() body: unknown,
+  ) {
+    return this.otp
+      .verify(auth.sub, parseBody(emailOtpVerifyRequestSchema, body).code, request)
+      .then(() => ({ ok: true }));
+  }
+}
