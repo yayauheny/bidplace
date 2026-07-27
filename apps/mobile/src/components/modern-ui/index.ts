@@ -5,6 +5,8 @@ export * from './AuctionCard';
 export * from './Button';
 export * from './ImagePlaceholder';
 export * from './MotionPressable';
+export * from './BottomActionBar';
+export * from './ProductGallery';
 export * from './Separator';
 export * from './Skeleton';
 export * from './TextField';
