@@ -1,113 +1,189 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { Text, YStack } from 'tamagui';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  AppButton,
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
-  StatusBadge,
-} from '../../components/ui';
-import { useApiClient } from '../../providers/api-provider';
-import { useAppThemePalette } from '../../theme/palette';
-import { fontFamilies, mobileSpacing } from '../../theme/tokens';
 import type { ApiClient } from '@bidplace/api-client';
+import { modernTokens } from '@bidplace/design-tokens';
 
-// Derive types from the API client to stay in sync with the contract.
+import { AppHeader } from '../../components/layout/AppHeader';
+import {
+  AppText,
+  MotionPressable,
+  PrimaryButton,
+  SecondaryButton,
+} from '../../components/modern-ui';
+import { useApiClient } from '../../providers/api-provider';
+
 type ActivityData = Awaited<ReturnType<ApiClient['activity']['get']>>;
 type ActivityItem = ActivityData['activity'][number];
 
-type ParticipationStatus = ActivityItem['status'];
-
-function activityStatusTone(
-  status: ParticipationStatus,
-): 'positive' | 'warning' | 'neutral' {
-  if (status === 'LEADING' || status === 'WON') return 'positive';
-  if (status === 'OUTBID') return 'warning';
-  return 'neutral';
+function activityStatusLabel(status: ActivityItem['status']): string {
+  return {
+    LEADING: 'Побеждаете',
+    OUTBID: 'Ставка перебита',
+    WON: 'Выиграли',
+    LOST: 'Торги завершены',
+    AWAITING_SELLER_CONTACT: 'Ожидаем контакта продавца',
+    COMPLETED: 'Передача завершена',
+    WIN_CANCELLED: 'Заказ отменён',
+  }[status];
 }
 
-function activityStatusLabel(status: ParticipationStatus): string {
-  const labels: Record<string, string> = {
-    LEADING: 'Лидирует',
-    OUTBID: 'Перебита',
-    WON: 'Победа',
-    LOST: 'Завершено',
-  };
-  return labels[status] ?? status;
+function activityStatusTone(
+  status: ActivityItem['status'],
+): 'accent' | 'success' | 'secondary' {
+  if (status === 'LEADING' || status === 'WON') return 'success';
+  if (status === 'OUTBID') return 'accent';
+  return 'secondary';
+}
+
+function ActivityRow({ item }: { item: ActivityItem }) {
+  const status = activityStatusLabel(item.status);
+  return (
+    <View
+      style={{
+        gap: modernTokens.space.x3,
+        borderBottomWidth: 1,
+        borderBottomColor: modernTokens.color.border,
+        paddingBottom: modernTokens.space.x4,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: modernTokens.space.x3,
+        }}
+      >
+        <Link href={`/product/${item.product.publicId}`} asChild>
+          <MotionPressable
+            accessibilityRole="link"
+            accessibilityLabel={`Открыть предмет ${item.product.title ?? 'Предмет'}`}
+            onPress={() => undefined}
+            preset="card"
+            style={{ flex: 1, gap: modernTokens.space.x1 }}
+          >
+            <AppText role="cardTitle">
+              {item.product.title ?? 'Предмет'}
+            </AppText>
+            <AppText role="bodySmall" tone="secondary">
+              Открыть предмет
+            </AppText>
+          </MotionPressable>
+        </Link>
+        <AppText
+          role="caption"
+          tone={activityStatusTone(item.status)}
+          style={{
+            backgroundColor: modernTokens.color.chip,
+            borderRadius: modernTokens.radius.pill,
+            overflow: 'hidden',
+            paddingHorizontal: modernTokens.space.x2,
+            paddingVertical: modernTokens.space.x1,
+          }}
+        >
+          {status}
+        </AppText>
+      </View>
+      {item.orderPublicId ? (
+        <Link
+          href={{
+            pathname: '/order/[publicId]',
+            params: { publicId: item.orderPublicId },
+          }}
+          asChild
+        >
+          <SecondaryButton label="Открыть заказ" onPress={() => undefined} />
+        </Link>
+      ) : null}
+    </View>
+  );
 }
 
 export function ActivityScreen() {
   const api = useApiClient();
-  const palette = useAppThemePalette();
   const query = useQuery({
     queryKey: ['user', 'activity'],
     queryFn: () => api.activity.get(),
   });
 
-  if (query.isLoading)
-    return (
-      <Screen>
-        <LoadingState label="Загружаем покупки" />
-      </Screen>
+  let content: React.ReactNode;
+  if (query.isLoading) {
+    content = (
+      <View style={{ paddingVertical: modernTokens.space.x16 }}>
+        <AppText role="bodySmall" tone="secondary">
+          Загружаем покупки…
+        </AppText>
+      </View>
     );
-  if (query.isError || !query.data)
-    return (
-      <Screen>
-        <ErrorState
-          description="Не удалось загрузить покупки"
-          onAction={() => query.refetch()}
-        />
-      </Screen>
+  } else if (query.isError || !query.data) {
+    content = (
+      <View
+        style={{
+          alignItems: 'center',
+          gap: modernTokens.space.x4,
+          paddingVertical: modernTokens.space.x16,
+        }}
+      >
+        <AppText role="sectionTitle">Не удалось загрузить покупки</AppText>
+        <PrimaryButton label="Повторить" onPress={() => void query.refetch()} />
+      </View>
     );
-
-  const { activity } = query.data;
+  } else if (query.data.activity.length === 0) {
+    content = (
+      <View
+        style={{
+          alignItems: 'center',
+          gap: modernTokens.space.x3,
+          paddingVertical: modernTokens.space.x16,
+        }}
+      >
+        <AppText role="sectionTitle">Пока нет торгов</AppText>
+        <AppText
+          role="bodySmall"
+          tone="secondary"
+          style={{ textAlign: 'center' }}
+        >
+          Ваши ставки и результаты появятся здесь.
+        </AppText>
+      </View>
+    );
+  } else {
+    content = (
+      <View style={{ gap: modernTokens.space.x4 }}>
+        {query.data.activity.map((item) => (
+          <ActivityRow key={item.listing.id} item={item} />
+        ))}
+      </View>
+    );
+  }
 
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[5] }}>
-        <SectionHeader title="Мои покупки" />
-
-        {activity.length === 0 ? (
-          <EmptyState description="У вас ещё нет активных торгов" />
-        ) : (
-          <YStack style={{ gap: mobileSpacing[3] }}>
-            {activity.map((item: ActivityItem) => (
-              <OperationalPanel key={item.listing.id}>
-                <YStack style={{ gap: mobileSpacing[3] }}>
-                  <StatusBadge tone={activityStatusTone(item.status)}>
-                    {activityStatusLabel(item.status)}
-                  </StatusBadge>
-                  <Link href={`/product/${item.product.publicId}`} asChild>
-                    <Text
-                      style={{
-                        fontFamily: fontFamilies.sansStrong,
-                        fontSize: 16,
-                        lineHeight: 22,
-                        color: palette.primary,
-                        fontWeight: '600',
-                      }}
-                    >
-                      {item.product.title ?? 'Предмет'}
-                    </Text>
-                  </Link>
-                  {item.orderPublicId ? (
-                    <Link href={{ pathname: '/order/[publicId]', params: { publicId: item.orderPublicId } }} asChild>
-                      <AppButton tone="secondary" buttonSize="small">
-                        Открыть заказ
-                      </AppButton>
-                    </Link>
-                  ) : null}
-                </YStack>
-              </OperationalPanel>
-            ))}
-          </YStack>
-        )}
-      </YStack>
-    </Screen>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+    >
+      <AppHeader />
+      <ScrollView
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+          paddingHorizontal: modernTokens.space.x5,
+          paddingVertical: modernTokens.space.x8,
+          gap: modernTokens.space.x6,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ gap: modernTokens.space.x2 }}>
+          <AppText role="screenTitle">Мои покупки</AppText>
+          <AppText role="bodySmall" tone="secondary">
+            Статусы ваших ставок и заказов.
+          </AppText>
+        </View>
+        {content}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
