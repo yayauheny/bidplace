@@ -3,7 +3,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Page,
+} from '@playwright/test';
 import { publicProductDetailResponseSchema } from '@bidplace/contracts';
 
 const execFileAsync = promisify(execFile);
@@ -59,19 +64,15 @@ async function chooseFile(page: Page, buttonName: string) {
   await chooser.setFiles(imageFixturePath);
 }
 
-async function signIn(
-  page: Page,
-  email: string,
-  redirectTo: string,
-) {
+async function signIn(page: Page, email: string, redirectTo: string) {
   await page.goto(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Пароль').fill(sellerPassword);
   const loginResponse = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/auth/login') &&
-        response.request().method() === 'POST',
-    );
+    (response) =>
+      response.url().endsWith('/api/auth/login') &&
+      response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Войти' }).click();
   expect((await loginResponse).ok()).toBeTruthy();
   await page.waitForURL(new RegExp(`${escapeRegExp(redirectTo)}$`));
@@ -93,9 +94,7 @@ async function registerSeller(page: Page) {
   await page.waitForURL(/\/profile$/);
 }
 
-async function submitSellerProfile(
-  page: Page,
-) {
+async function submitSellerProfile(page: Page) {
   await page.getByLabel('URL-slug').fill(sellerSlug);
   await page.getByLabel('Имя или название').fill(sellerFullName);
   await page.getByLabel('Страна').fill(sellerCountry);
@@ -122,7 +121,6 @@ async function createProduct(page: Page) {
   await page.getByRole('button', { name: 'E2E art' }).click();
   await page.getByLabel('Название').fill('E2E Product');
   await page.getByLabel('История предмета').fill('Real API product');
-  await page.getByLabel('Состояние').fill('New');
   await page.getByLabel('Уникальность или тираж').fill('One');
   await page.getByLabel('Происхождение').fill('E2E');
   await page.getByLabel('Техника').fill('Mixed media');
@@ -168,7 +166,7 @@ async function createAndScheduleListing(
   productId: string,
   productPublicId: string,
 ) {
-  await page.getByRole('link', { name: 'Создать аукцион' }).click();
+  await page.getByRole('button', { name: 'Создать аукцион' }).click();
   await expect(page.getByText('Новое размещение')).toBeVisible();
 
   const startsAt = new Date(Date.now() + 15_000).toISOString();
@@ -198,7 +196,9 @@ async function createAndScheduleListing(
 
   await page.getByRole('button', { name: 'Запланировать размещение' }).click();
   expect((await scheduleResponse).ok()).toBeTruthy();
-  await expect(page.getByRole('link', { name: 'Открыть страницу аукциона' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Открыть страницу аукциона' }),
+  ).toBeVisible();
 
   return { id: listing.id as string, productPublicId };
 }
@@ -233,7 +233,9 @@ test.describe.serial('closed pilot', () => {
     request,
   }) => {
     test.setTimeout(120_000);
-    const sellerContext = await browser.newContext({ baseURL: 'http://127.0.0.1:8081' });
+    const sellerContext = await browser.newContext({
+      baseURL: 'http://127.0.0.1:8081',
+    });
     const sellerPage = await sellerContext.newPage();
 
     await registerSeller(sellerPage);
@@ -242,15 +244,19 @@ test.describe.serial('closed pilot', () => {
     state = { ...state, seller: { email: sellerEmail } };
     await writeFile(resolve(e2e, '.state.json'), JSON.stringify(state));
 
-    const adminContext = await browser.newContext({ baseURL: 'http://127.0.0.1:8081' });
+    const adminContext = await browser.newContext({
+      baseURL: 'http://127.0.0.1:8081',
+    });
     const adminPage = await adminContext.newPage();
     await signIn(adminPage, state.admin.email, '/admin');
     await expect(adminPage.getByText(sellerFullName)).toBeVisible();
-    await adminPage.getByRole('button', { name: 'Approve' }).first().click();
+    await adminPage.getByRole('button', { name: 'Одобрить' }).first().click();
     await expect(adminPage.getByText('APPROVED')).toBeVisible();
 
     await sellerPage.reload();
-    await expect(sellerPage.getByRole('link', { name: 'Создать лот' })).toBeVisible();
+    await expect(
+      sellerPage.getByRole('link', { name: 'Создать лот' }),
+    ).toBeVisible();
     await sellerPage.getByRole('link', { name: 'Создать лот' }).click();
 
     const createdProduct = await createProduct(sellerPage);
@@ -259,11 +265,13 @@ test.describe.serial('closed pilot', () => {
 
     await adminPage.reload();
     await expect(adminPage.getByText('E2E Product')).toBeVisible();
-    await adminPage.getByRole('button', { name: 'Approve' }).nth(1).click();
+    await adminPage.getByRole('button', { name: 'Одобрить' }).nth(1).click();
     await expect(adminPage.getByText('APPROVED')).toBeVisible();
 
     await sellerPage.reload();
-    await expect(sellerPage.getByRole('link', { name: 'Создать аукцион' })).toBeVisible();
+    await expect(
+      sellerPage.getByRole('button', { name: 'Создать аукцион' }),
+    ).toBeVisible();
     const createdListing = await createAndScheduleListing(
       sellerPage,
       createdProduct.id,
@@ -283,10 +291,15 @@ test.describe.serial('closed pilot', () => {
     );
     expect(productResponse.ok()).toBeTruthy();
     expect(
-      publicProductDetailResponseSchema.safeParse(await productResponse.json()).success,
+      publicProductDetailResponseSchema.safeParse(await productResponse.json())
+        .success,
     ).toBeTruthy();
 
-    await signIn(page, state.buyer.email, `/product/${createdProduct.publicId}`);
+    await signIn(
+      page,
+      state.buyer.email,
+      `/product/${createdProduct.publicId}`,
+    );
     await expect(page.getByText('E2E Product')).toBeVisible();
     await expect(page.getByText('Текущая цена: 10 BYN')).toBeVisible();
 
@@ -303,7 +316,9 @@ test.describe.serial('closed pilot', () => {
     const code = (await readOtp())!;
     await page.getByPlaceholder('000000').fill(code);
     await page.getByRole('button', { name: 'Подтвердить email' }).click();
-    await expect(page.getByRole('button', { name: 'Принять правила' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Принять правила' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Принять правила' }).click();
     await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
     await page.getByLabel('Ваша ставка, BYN').fill('11');
@@ -322,7 +337,9 @@ test.describe.serial('closed pilot', () => {
     await page.goto('/me/activity');
     await expect(page.getByText('E2E Product')).toBeVisible();
     await page.getByRole('link', { name: 'Открыть заказ' }).click();
-    await expect(page.getByText(`Заказ ${state.order!.publicId}`)).toBeVisible();
+    await expect(
+      page.getByText(`Заказ ${state.order!.publicId}`),
+    ).toBeVisible();
 
     await page.goto(`/order/${state.order!.publicId}`);
     await expect(page.getByText(sellerHandoffContactValue)).toBeVisible();
@@ -332,11 +349,19 @@ test.describe.serial('closed pilot', () => {
       baseURL: 'http://127.0.0.1:8081',
     });
     const sellerLoginPage = await sellerLoginContext.newPage();
-    await signIn(sellerLoginPage, sellerEmail, `/order/${state.order!.publicId}`);
+    await signIn(
+      sellerLoginPage,
+      sellerEmail,
+      `/order/${state.order!.publicId}`,
+    );
     await expect(sellerLoginPage.getByText(state.buyer.email)).toBeVisible();
-    await sellerLoginPage.getByRole('button', { name: 'Отметить контакт' }).click();
+    await sellerLoginPage
+      .getByRole('button', { name: 'Отметить контакт' })
+      .click();
     await expect(sellerLoginPage.getByText('CONTACTED')).toBeVisible();
-    await sellerLoginPage.getByRole('button', { name: 'Передача завершена' }).click();
+    await sellerLoginPage
+      .getByRole('button', { name: 'Передача завершена' })
+      .click();
     await expect(sellerLoginPage.getByText('COMPLETED')).toBeVisible();
     await sellerLoginContext.close();
   });
@@ -345,9 +370,12 @@ test.describe.serial('closed pilot', () => {
     browser,
     request,
   }) => {
-    const adminLogin = await request.post('http://127.0.0.1:3001/api/auth/login', {
-      data: { email: state.admin.email, password: sellerPassword },
-    });
+    const adminLogin = await request.post(
+      'http://127.0.0.1:3001/api/auth/login',
+      {
+        data: { email: state.admin.email, password: sellerPassword },
+      },
+    );
     expect(adminLogin.ok()).toBeTruthy();
     const permittedOrder = await request.get(
       `http://127.0.0.1:3001/api/orders/${state.order!.publicId}`,
@@ -355,9 +383,15 @@ test.describe.serial('closed pilot', () => {
     );
     expect(permittedOrder.ok()).toBeTruthy();
 
-    const context = await browser.newContext({ baseURL: 'http://127.0.0.1:8081' });
+    const context = await browser.newContext({
+      baseURL: 'http://127.0.0.1:8081',
+    });
     const outsiderPage = await context.newPage();
-    await signIn(outsiderPage, state.outsider.email, `/order/${state.order!.publicId}`);
+    await signIn(
+      outsiderPage,
+      state.outsider.email,
+      `/order/${state.order!.publicId}`,
+    );
     await expect(outsiderPage.getByText('Заказ недоступен')).toBeVisible();
     await context.close();
   });

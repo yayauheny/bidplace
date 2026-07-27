@@ -1,51 +1,42 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Text, YStack } from 'tamagui';
 import type { ApiClient } from '@bidplace/api-client';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { modernTokens } from '@bidplace/design-tokens';
+
+import { AppHeader } from '../../components/layout/AppHeader';
 import {
-  AppButton,
-  AppInput,
-  ErrorState,
-  LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
-  StatusBadge,
-} from '../../components/ui';
+  AppDialog,
+  AppText,
+  DestructiveButton,
+  FormSection,
+  PrimaryButton,
+  SecondaryButton,
+  TextField,
+} from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
-import { useAppThemePalette } from '../../theme/palette';
-import { mobileSpacing } from '../../theme/tokens';
 
-// Derive types from the API client to stay in sync with the contract.
-type AdminSellersData = Awaited<ReturnType<ApiClient['admin']['listSellerProfiles']>>;
-type AdminProductsData = Awaited<ReturnType<ApiClient['admin']['listProducts']>>;
+type AdminSellersData = Awaited<
+  ReturnType<ApiClient['admin']['listSellerProfiles']>
+>;
+type AdminProductsData = Awaited<
+  ReturnType<ApiClient['admin']['listProducts']>
+>;
 type RankedBidsData = Awaited<ReturnType<ApiClient['admin']['listRankedBids']>>;
-
 type SellerProfile = AdminSellersData['sellerProfiles'][number];
 type AdminProduct = AdminProductsData['products'][number];
 type RankedBid = RankedBidsData['bids'][number];
-
-type SellerStatusTone = 'positive' | 'warning' | 'negative' | 'neutral';
-type ProductStatusTone = 'positive' | 'neutral' | 'negative';
-
-function sellerStatusTone(status: string): SellerStatusTone {
-  if (status === 'APPROVED') return 'positive';
-  if (status === 'PENDING') return 'warning';
-  if (status === 'SUSPENDED') return 'negative';
-  return 'neutral';
-}
-
-function productStatusTone(status: string): ProductStatusTone {
-  if (status === 'APPROVED') return 'positive';
-  if (status === 'ARCHIVED') return 'negative';
-  return 'neutral';
-}
+type Confirmation =
+  | { kind: 'seller-suspend'; id: string }
+  | { kind: 'product-archive'; id: string }
+  | { kind: 'order-cancel' }
+  | { kind: 'order-replace'; bidId: string };
 
 export function AdminModerationScreen() {
   const api = useApiClient();
   const queryClient = useQueryClient();
-  const palette = useAppThemePalette();
   const sellers = useQuery({
     queryKey: ['admin', 'seller-profiles'],
     queryFn: () => api.admin.listSellerProfiles(),
@@ -58,22 +49,17 @@ export function AdminModerationScreen() {
   const [cancelReason, setCancelReason] = useState<
     'BUYER_DECLINED' | 'BUYER_UNREACHABLE' | 'ADMIN_CANCELLED'
   >('BUYER_DECLINED');
-  const [
-    awaitingCancellationConfirmation,
-    setAwaitingCancellationConfirmation,
-  ] = useState(false);
   const [cancelledOrder, setCancelledOrder] = useState<{
     publicId: string;
     listingId: string;
   } | null>(null);
-
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: ['admin', 'seller-profiles'],
     });
     void queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
   };
-
   const sellerStatus = useMutation({
     mutationFn: ({
       id,
@@ -84,7 +70,6 @@ export function AdminModerationScreen() {
     }) => api.admin.updateSellerStatus(id, { status }),
     onSuccess: refresh,
   });
-
   const productStatus = useMutation({
     mutationFn: ({
       id,
@@ -95,13 +80,6 @@ export function AdminModerationScreen() {
     }) => api.admin.updateProductStatus(id, { status }),
     onSuccess: refresh,
   });
-
-  const rankedBids = useQuery({
-    queryKey: ['admin', 'ranked-bids', cancelledOrder?.listingId],
-    queryFn: () => api.admin.listRankedBids(cancelledOrder!.listingId),
-    enabled: Boolean(cancelledOrder),
-  });
-
   const cancelOrder = useMutation({
     mutationFn: () =>
       api.admin.cancelOrder(orderPublicId, { reason: cancelReason }),
@@ -110,293 +88,289 @@ export function AdminModerationScreen() {
         publicId: data.order.publicId,
         listingId: data.order.listingId,
       });
-      setAwaitingCancellationConfirmation(false);
+      setConfirmation(null);
     },
   });
-
+  const rankedBids = useQuery({
+    queryKey: ['admin', 'ranked-bids', cancelledOrder?.listingId],
+    queryFn: () => api.admin.listRankedBids(cancelledOrder!.listingId),
+    enabled: Boolean(cancelledOrder),
+  });
   const replaceOrder = useMutation({
     mutationFn: (bidId: string) =>
       api.admin.replaceOrder(cancelledOrder!.publicId, { bidId }),
     onSuccess: () => {
       setCancelledOrder(null);
       setOrderPublicId('');
+      setConfirmation(null);
     },
   });
+  const confirming =
+    sellerStatus.isPending ||
+    productStatus.isPending ||
+    cancelOrder.isPending ||
+    replaceOrder.isPending;
 
   if (sellers.isLoading || products.isLoading)
     return (
-      <Screen mode="admin">
-        <LoadingState label="Загружаем moderation" />
-      </Screen>
+      <AdminShell>
+        <AppText role="bodySmall" tone="secondary">
+          Загружаем модерацию…
+        </AppText>
+      </AdminShell>
     );
   if (sellers.isError || products.isError || !sellers.data || !products.data)
     return (
-      <Screen mode="admin">
-        <ErrorState
-          description="Не удалось загрузить moderation"
-          onAction={() => {
+      <AdminShell>
+        <AppText role="sectionTitle">Не удалось загрузить модерацию</AppText>
+        <SecondaryButton
+          label="Повторить"
+          onPress={() => {
             void sellers.refetch();
             void products.refetch();
           }}
         />
-      </Screen>
+      </AdminShell>
     );
 
+  const confirm = () => {
+    if (!confirmation) return;
+    if (confirmation.kind === 'seller-suspend')
+      sellerStatus.mutate({ id: confirmation.id, status: 'SUSPENDED' });
+    if (confirmation.kind === 'product-archive')
+      productStatus.mutate({ id: confirmation.id, status: 'ARCHIVED' });
+    if (confirmation.kind === 'order-cancel') cancelOrder.mutate();
+    if (confirmation.kind === 'order-replace')
+      replaceOrder.mutate(confirmation.bidId);
+  };
+  const confirmationText: Record<
+    Confirmation['kind'],
+    { title: string; description: string; label: string }
+  > = {
+    'seller-suspend': {
+      title: 'Приостановить продавца?',
+      description:
+        'Продавец потеряет возможность работать с профилем в текущем статусе.',
+      label: 'Приостановить',
+    },
+    'product-archive': {
+      title: 'Архивировать предмет?',
+      description: 'Предмет будет исключён из дальнейшей работы модерации.',
+      label: 'Архивировать',
+    },
+    'order-cancel': {
+      title: 'Отменить Order?',
+      description:
+        'Текущий покупатель потеряет active Order. Затем можно выбрать следующую принятую ставку.',
+      label: 'Отменить Order',
+    },
+    'order-replace': {
+      title: 'Создать replacement Order?',
+      description: 'Выбранная ставка станет новым активным Order.',
+      label: 'Создать replacement Order',
+    },
+  };
+
   return (
-    <Screen mode="admin">
-      <YStack style={{ gap: mobileSpacing[6] }}>
-        <SectionHeader title="Модерация" />
-
-        {/* Sellers */}
-        <YStack style={{ gap: mobileSpacing[3] }}>
-          <Text
-            style={{
-              fontSize: 18,
-              lineHeight: 24,
-              fontWeight: '600',
-              color: palette.color,
-            }}
+    <AdminShell>
+      <AppText role="screenTitle">Модерация</AppText>
+      <FormSection title="Продавцы">
+        {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
+          <ModerationCard
+            key={seller.id}
+            title={seller.fullName}
+            status={seller.status}
           >
-            Продавцы
-          </Text>
-          {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
-            <OperationalPanel key={seller.id}>
-              <YStack style={{ gap: mobileSpacing[3] }}>
-                <YStack style={{ gap: mobileSpacing[1] }}>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      lineHeight: 22,
-                      fontWeight: '600',
-                      color: palette.color,
-                    }}
-                  >
-                    {seller.fullName}
-                  </Text>
-                  <StatusBadge tone={sellerStatusTone(seller.status)}>
-                    {seller.status}
-                  </StatusBadge>
-                </YStack>
-                <YStack style={{ gap: mobileSpacing[2] }}>
-                  <AppButton
-                    tone="secondary"
-                    buttonSize="small"
-                    isLoading={sellerStatus.isPending}
-                    onPress={() =>
-                      sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
-                    }
-                  >
-                    Approve
-                  </AppButton>
-                  <AppButton
-                    tone="subtle"
-                    buttonSize="small"
-                    isLoading={sellerStatus.isPending}
-                    onPress={() =>
-                      sellerStatus.mutate({
-                        id: seller.id,
-                        status: 'SUSPENDED',
-                      })
-                    }
-                  >
-                    Suspend
-                  </AppButton>
-                </YStack>
-              </YStack>
-            </OperationalPanel>
-          ))}
-        </YStack>
-
-        {/* Products */}
-        <YStack style={{ gap: mobileSpacing[3] }}>
-          <Text
-            style={{
-              fontSize: 18,
-              lineHeight: 24,
-              fontWeight: '600',
-              color: palette.color,
-            }}
+            <PrimaryButton
+              label="Одобрить"
+              loading={sellerStatus.isPending}
+              onPress={() =>
+                sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
+              }
+            />
+            <DestructiveButton
+              label="Приостановить"
+              loading={sellerStatus.isPending}
+              onPress={() =>
+                setConfirmation({ kind: 'seller-suspend', id: seller.id })
+              }
+            />
+          </ModerationCard>
+        ))}
+        {sellerStatus.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось изменить статус продавца. Проверьте полномочия и
+            повторите попытку.
+          </AppText>
+        ) : null}
+      </FormSection>
+      <FormSection title="Предметы">
+        {products.data.products.map((product: AdminProduct) => (
+          <ModerationCard
+            key={product.id}
+            title={product.title ?? 'Без названия'}
+            status={product.status}
           >
-            Предметы
-          </Text>
-          {products.data.products.map((product: AdminProduct) => (
-            <OperationalPanel key={product.id}>
-              <YStack style={{ gap: mobileSpacing[3] }}>
-                <YStack style={{ gap: mobileSpacing[1] }}>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      lineHeight: 22,
-                      fontWeight: '600',
-                      color: palette.color,
-                    }}
-                  >
-                    {product.title ?? 'Без названия'}
-                  </Text>
-                  <StatusBadge tone={productStatusTone(product.status)}>
-                    {product.status}
-                  </StatusBadge>
-                </YStack>
-                <YStack style={{ gap: mobileSpacing[2] }}>
-                  <AppButton
-                    tone="secondary"
-                    buttonSize="small"
-                    isLoading={productStatus.isPending}
-                    onPress={() =>
-                      productStatus.mutate({
-                        id: product.id,
-                        status: 'APPROVED',
-                      })
-                    }
-                  >
-                    Approve
-                  </AppButton>
-                  <AppButton
-                    tone="subtle"
-                    buttonSize="small"
-                    isLoading={productStatus.isPending}
-                    onPress={() =>
-                      productStatus.mutate({
-                        id: product.id,
-                        status: 'ARCHIVED',
-                      })
-                    }
-                  >
-                    Archive
-                  </AppButton>
-                </YStack>
-              </YStack>
-            </OperationalPanel>
-          ))}
-        </YStack>
-
-        {/* Order replacement */}
-        <OperationalPanel eyebrow="Замена заказа" title="Отмена и переназначение">
-          <Text
-            style={{
-              fontSize: 14,
-              lineHeight: 20,
-              color: palette.colorSecondary,
-            }}
-          >
-            После внешнего согласования отмените активный Order и выберите
-            следующую принятую ставку. Контакты bidders здесь не раскрываются.
-          </Text>
-
-          <AppInput
-            label="Номер заказа"
-            value={orderPublicId}
-            onChangeText={(value) => {
-              setOrderPublicId(value);
-              setAwaitingCancellationConfirmation(false);
-            }}
-            placeholder="ORD-..."
-            autoCapitalize="none"
+            <PrimaryButton
+              label="Одобрить"
+              loading={productStatus.isPending}
+              onPress={() =>
+                productStatus.mutate({ id: product.id, status: 'APPROVED' })
+              }
+            />
+            <DestructiveButton
+              label="Архивировать"
+              loading={productStatus.isPending}
+              onPress={() =>
+                setConfirmation({ kind: 'product-archive', id: product.id })
+              }
+            />
+          </ModerationCard>
+        ))}
+        {productStatus.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось изменить статус предмета. Проверьте полномочия и
+            повторите попытку.
+          </AppText>
+        ) : null}
+      </FormSection>
+      <FormSection title="Отмена и переназначение заказа">
+        <AppText role="bodySmall" tone="secondary">
+          После внешнего согласования отмените активный Order и выберите
+          следующую принятую ставку. Контакты участников здесь не раскрываются.
+        </AppText>
+        <TextField
+          label="Номер заказа"
+          value={orderPublicId}
+          onChangeText={(value) => {
+            setOrderPublicId(value);
+            setConfirmation(null);
+          }}
+          placeholder="ORD-..."
+          autoCapitalize="none"
+        />
+        <AppText role="bodySmall" tone="secondary">
+          Причина отмены: {cancelReason}
+        </AppText>
+        {(
+          ['BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED'] as const
+        ).map((reason) => (
+          <SecondaryButton
+            key={reason}
+            label={`${cancelReason === reason ? '✓ ' : ''}${reason}`}
+            onPress={() => setCancelReason(reason)}
           />
-
-          <YStack style={{ gap: mobileSpacing[2] }}>
-            <Text
-              style={{
-                fontSize: 13,
-                lineHeight: 18,
-                color: palette.colorMuted,
-              }}
-            >
-              Причина отмены: {cancelReason}
-            </Text>
-            {(
-              [
-                'BUYER_DECLINED',
-                'BUYER_UNREACHABLE',
-                'ADMIN_CANCELLED',
-              ] as const
-            ).map((reason) => (
-              <AppButton
-                key={reason}
-                buttonSize="small"
-                tone={cancelReason === reason ? 'primary' : 'secondary'}
-                onPress={() => setCancelReason(reason)}
-              >
-                {reason}
-              </AppButton>
+        ))}
+        <DestructiveButton
+          label="Отменить Order"
+          disabled={!orderPublicId}
+          onPress={() => setConfirmation({ kind: 'order-cancel' })}
+        />
+        {cancelOrder.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось отменить Order. Проверьте номер, статус и полномочия.
+          </AppText>
+        ) : null}
+        {cancelledOrder ? (
+          <View style={{ gap: modernTokens.space.x2 }}>
+            <AppText role="bodySmall" tone="secondary">
+              Выберите replacement Bid для Listing {cancelledOrder.listingId}.
+            </AppText>
+            {rankedBids.isLoading ? (
+              <AppText role="bodySmall" tone="secondary">
+                Загружаем принятые ставки…
+              </AppText>
+            ) : null}
+            {rankedBids.isError ? (
+              <SecondaryButton
+                label="Повторить загрузку ставок"
+                onPress={() => void rankedBids.refetch()}
+              />
+            ) : null}
+            {rankedBids.data?.bids.map((bid: RankedBid) => (
+              <SecondaryButton
+                key={bid.id}
+                label={`Назначить ${bid.bidderAlias}: ${bid.amount} BYN`}
+                loading={replaceOrder.isPending}
+                onPress={() =>
+                  setConfirmation({ kind: 'order-replace', bidId: bid.id })
+                }
+              />
             ))}
-          </YStack>
+            {replaceOrder.isError ? (
+              <AppText role="bodySmall" tone="danger">
+                Не удалось создать replacement Order. Проверьте статус и
+                повторите попытку.
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+      </FormSection>
+      {confirmation ? (
+        <AppDialog
+          open
+          title={confirmationText[confirmation.kind].title}
+          description={confirmationText[confirmation.kind].description}
+          onClose={() => setConfirmation(null)}
+        >
+          <DestructiveButton
+            label={confirmationText[confirmation.kind].label}
+            loading={confirming}
+            onPress={confirm}
+          />
+          <SecondaryButton
+            label="Отмена"
+            disabled={confirming}
+            onPress={() => setConfirmation(null)}
+          />
+        </AppDialog>
+      ) : null}
+    </AdminShell>
+  );
+}
 
-          {!awaitingCancellationConfirmation ? (
-            <AppButton
-              tone="subtle"
-              disabled={!orderPublicId}
-              onPress={() => setAwaitingCancellationConfirmation(true)}
-            >
-              Перейти к подтверждению отмены
-            </AppButton>
-          ) : (
-            <YStack style={{ gap: mobileSpacing[2] }}>
-              <Text
-                style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}
-              >
-                Подтвердите отмену: текущий buyer потеряет active Order.
-              </Text>
-              <AppButton
-                tone="danger"
-                isLoading={cancelOrder.isPending}
-                onPress={() => cancelOrder.mutate()}
-              >
-                Подтвердить отмену Order
-              </AppButton>
-            </YStack>
-          )}
-
-          {cancelOrder.isError ? (
-            <Text
-              style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}
-            >
-              Не удалось отменить Order. Проверьте номер и текущий статус.
-            </Text>
-          ) : null}
-
-          {cancelledOrder ? (
-            <YStack style={{ gap: mobileSpacing[2] }}>
-              <Text
-                style={{
-                  fontSize: 14,
-                  lineHeight: 20,
-                  color: palette.colorSecondary,
-                }}
-              >
-                Выберите replacement Bid для Listing {cancelledOrder.listingId}
-              </Text>
-              {rankedBids.isLoading ? (
-                <LoadingState label="Загружаем принятые ставки" />
-              ) : null}
-              {rankedBids.isError ? (
-                <Text
-                  style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}
-                >
-                  Не удалось загрузить принятые ставки.
-                </Text>
-              ) : null}
-              {rankedBids.data?.bids.map((bid: RankedBid) => (
-                <AppButton
-                  key={bid.id}
-                  tone="secondary"
-                  isLoading={replaceOrder.isPending}
-                  onPress={() => replaceOrder.mutate(bid.id)}
-                >
-                  Назначить {bid.bidderAlias}: {bid.amount} BYN
-                </AppButton>
-              ))}
-              {replaceOrder.isError ? (
-                <Text
-                  style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}
-                >
-                  Не удалось создать replacement Order.
-                </Text>
-              ) : null}
-            </YStack>
-          ) : null}
-        </OperationalPanel>
-      </YStack>
-    </Screen>
+function ModerationCard({
+  title,
+  status,
+  children,
+}: {
+  title: string;
+  status: string;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      style={{
+        gap: modernTokens.space.x2,
+        borderBottomWidth: 1,
+        borderBottomColor: modernTokens.color.border,
+        paddingBottom: modernTokens.space.x4,
+      }}
+    >
+      <AppText role="label">{title}</AppText>
+      <AppText role="bodySmall" tone="secondary">
+        {status}
+      </AppText>
+      {children}
+    </View>
+  );
+}
+function AdminShell({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+    >
+      <AppHeader mode="admin" />
+      <ScrollView
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+          padding: modernTokens.space.x5,
+        }}
+      >
+        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

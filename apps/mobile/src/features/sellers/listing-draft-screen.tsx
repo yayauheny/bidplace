@@ -1,27 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { listingCreateRequestSchema } from '@bidplace/contracts';
-import { Link } from 'expo-router';
-import { Platform } from 'react-native';
-import { Text, YStack } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { Platform, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { modernTokens } from '@bidplace/design-tokens';
+
+import { AppHeader } from '../../components/layout/AppHeader';
 import {
-  AppButton,
-  AppInput,
-  ErrorState,
-  LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
-} from '../../components/ui';
+  AppText,
+  FormSection,
+  PrimaryButton,
+  SecondaryButton,
+  TextButton,
+  TextField,
+} from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
-import { useAppThemePalette } from '../../theme/palette';
-import { mobileSpacing } from '../../theme/tokens';
 
-type ListingDraftScreenProps = {
-  initialProductId?: string;
-};
-
+type ListingDraftScreenProps = { initialProductId?: string };
 type CreateListingVariables = {
   productId: string;
   productPublicId: string;
@@ -29,11 +26,7 @@ type CreateListingVariables = {
   endsAt: string;
   startPrice: number;
 };
-
-type CreatedListing = {
-  id: string;
-  productPublicId: string;
-};
+type CreatedListing = { id: string; productPublicId: string };
 
 function parseMoneyInput(value: string): number {
   return Number(value.trim().replace(',', '.'));
@@ -43,7 +36,7 @@ export function ListingDraftScreen({
   initialProductId,
 }: ListingDraftScreenProps) {
   const api = useApiClient();
-  const palette = useAppThemePalette();
+  const router = useRouter();
   const products = useQuery({
     queryKey: ['seller', 'products'],
     queryFn: () => api.sellers.listProducts(),
@@ -58,27 +51,32 @@ export function ListingDraftScreen({
   const [productSelectionError, setProductSelectionError] = useState<
     string | null
   >(null);
-
-  const selectedProduct = products.data?.products.find(
-    (product) => product.id === productId,
-  );
-  const hasHandledInitialProductIdRef = useRef(false);
-
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [startPrice, setStartPrice] = useState('');
-
+  const hasHandledInitialProductIdRef = useRef(false);
+  const selectedProduct = products.data?.products.find(
+    (product) => product.id === productId,
+  );
+  const trimmedStartsAt = startsAt.trim();
+  const trimmedEndsAt = endsAt.trim();
+  const trimmedStartPrice = startPrice.trim();
+  const request = listingCreateRequestSchema.safeParse({
+    startsAt: trimmedStartsAt,
+    endsAt: trimmedEndsAt,
+    startPrice: parseMoneyInput(trimmedStartPrice),
+  });
   const create = useMutation({
     mutationFn: ({
-      productId: createProductId,
-      startsAt: createStartsAt,
-      endsAt: createEndsAt,
-      startPrice: createStartPrice,
+      productId: id,
+      startsAt: start,
+      endsAt: end,
+      startPrice: price,
     }: CreateListingVariables) =>
-      api.listings.create(createProductId, {
-        startsAt: createStartsAt,
-        endsAt: createEndsAt,
-        startPrice: createStartPrice,
+      api.listings.create(id, {
+        startsAt: start,
+        endsAt: end,
+        startPrice: price,
       }),
     onSuccess: ({ listing }, variables) => {
       setCreatedListing({
@@ -88,58 +86,33 @@ export function ListingDraftScreen({
       setProductSelectionError(null);
     },
   });
-
-  const trimmedStartsAt = startsAt.trim();
-  const trimmedEndsAt = endsAt.trim();
-  const trimmedStartPrice = startPrice.trim();
-
-  const hasEnteredStartPrice = trimmedStartPrice.length > 0;
-
-  const hasStartedEnteringListingDetails =
-    trimmedStartsAt.length > 0 ||
-    trimmedEndsAt.length > 0 ||
-    trimmedStartPrice.length > 0;
-
-  const listingCreateRequestResult = listingCreateRequestSchema.safeParse({
-    startsAt: trimmedStartsAt,
-    endsAt: trimmedEndsAt,
-    startPrice: parseMoneyInput(trimmedStartPrice),
+  const schedule = useMutation({
+    mutationFn: (id: string) => api.listings.update(id, 'SCHEDULE'),
   });
-
-  const hasValidListingRequest =
-    hasEnteredStartPrice && listingCreateRequestResult.success;
-
-  const isListingDraftLocked = create.isPending || Boolean(createdListing);
-
-  const canCreateListing =
+  const isLocked = create.isPending || Boolean(createdListing);
+  const canCreate =
     selectedProduct?.status === 'APPROVED' &&
-    !isListingDraftLocked &&
-    hasValidListingRequest;
+    !isLocked &&
+    trimmedStartPrice.length > 0 &&
+    request.success;
 
   useEffect(() => {
     if (
       !products.data ||
       hasHandledInitialProductIdRef.current ||
       !initialProductId
-    ) {
+    )
       return;
-    }
-
     const initialProduct = products.data.products.find(
       (product) => product.id === initialProductId,
     );
-
     if (initialProduct?.status === 'APPROVED') {
       hasHandledInitialProductIdRef.current = true;
       setProductId(initialProduct.id);
       setProductSelectionError(null);
       return;
     }
-
-    if (products.isFetching || products.isRefetchError) {
-      return;
-    }
-
+    if (products.isFetching || products.isRefetchError) return;
     hasHandledInitialProductIdRef.current = true;
     setProductSelectionError(
       'Выбранный предмет не найден, не принадлежит вам или не имеет статуса APPROVED.',
@@ -152,273 +125,227 @@ export function ListingDraftScreen({
   ]);
 
   useEffect(() => {
-    if (productId && !create.isPending && !createdListing && products.data) {
-      const p = products.data.products.find(
-        (product) => product.id === productId,
+    if (!productId || create.isPending || createdListing || !products.data)
+      return;
+    const product = products.data.products.find(
+      (item) => item.id === productId,
+    );
+    if (!product || product.status !== 'APPROVED') {
+      setProductId('');
+      setProductSelectionError(
+        'Выбранный предмет больше недоступен или не имеет статуса APPROVED.',
       );
-      if (!p || p.status !== 'APPROVED') {
-        setProductId('');
-        setProductSelectionError(
-          'Выбранный предмет больше недоступен или не имеет статуса APPROVED.',
-        );
-      }
     }
   }, [productId, create.isPending, createdListing, products.data]);
 
-  const handleProductSelect = (nextProductId: string) => {
-    hasHandledInitialProductIdRef.current = true;
-    setProductId(nextProductId);
-    setProductSelectionError(null);
-  };
-
-  const handleCreateListing = () => {
-    if (
-      !selectedProduct ||
-      selectedProduct.status !== 'APPROVED' ||
-      createdListing ||
-      !hasEnteredStartPrice ||
-      !listingCreateRequestResult.success
-    ) {
-      return;
-    }
-
-    create.mutate({
-      productId: selectedProduct.id,
-      productPublicId: selectedProduct.publicId,
-      startsAt: listingCreateRequestResult.data.startsAt,
-      endsAt: listingCreateRequestResult.data.endsAt,
-      startPrice: listingCreateRequestResult.data.startPrice,
-    });
-  };
-
-  const schedule = useMutation({
-    mutationFn: (id: string) => api.listings.update(id, 'SCHEDULE'),
-  });
-
-  const handleSchedule = () => {
-    if (!createdListing) return;
-    schedule.mutate(createdListing.id);
-  };
-
-  if (!products.data) {
-    if (products.isLoading) {
-      return (
-        <Screen>
-          <LoadingState label="Загружаем ваши предметы" />
-        </Screen>
-      );
-    }
-
+  if (!products.data)
     return (
-      <Screen>
-        <ErrorState
-          description="Не удалось загрузить предметы"
-          onAction={() => products.refetch()}
-        />
-      </Screen>
+      <ListingShell>
+        {products.isLoading ? (
+          <AppText role="bodySmall" tone="secondary">
+            Загружаем ваши предметы…
+          </AppText>
+        ) : (
+          <>
+            <AppText role="sectionTitle">Не удалось загрузить предметы</AppText>
+            <SecondaryButton
+              label="Повторить"
+              onPress={() => void products.refetch()}
+            />
+          </>
+        )}
+      </ListingShell>
     );
-  }
+
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[5] }}>
-        <SectionHeader
-          title="Новое размещение"
-          description="Укажите расписание аукциона и стартовую цену. Валюта: BYN."
-        />
-
-        {/* Product selection */}
-        <OperationalPanel eyebrow="Предмет">
-          <YStack style={{ gap: mobileSpacing[2] }}>
-            {products.isRefetchError ? (
-              <YStack
-                style={{
-                  gap: mobileSpacing[2],
-                  marginBottom: mobileSpacing[2],
-                }}
-              >
-                <Text style={{ color: palette.negative }}>
-                  Не удалось обновить список предметов.
-                </Text>
-                <AppButton
-                  tone="subtle"
-                  buttonSize="small"
-                  isLoading={products.isFetching}
-                  onPress={() => {
-                    void products.refetch();
-                  }}
-                >
-                  Повторить обновление
-                </AppButton>
-              </YStack>
-            ) : null}
-            {products.data.products.map((product) => {
-              const isApproved = product.status === 'APPROVED';
-              return (
-                <YStack key={product.id} style={{ gap: mobileSpacing[1] }}>
-                  <AppButton
-                    tone={product.id === productId ? 'primary' : 'secondary'}
-                    disabled={!isApproved || isListingDraftLocked}
-                    onPress={() => handleProductSelect(product.id)}
-                  >
-                    {product.title ?? product.id} · {product.status}
-                  </AppButton>
-                  <Link
-                    href={{
-                      pathname: '/(seller)/products/[id]',
-                      params: { id: product.id },
-                    }}
-                    asChild
-                  >
-                    <AppButton
-                      tone="subtle"
-                      buttonSize="small"
-                      disabled={isListingDraftLocked}
-                    >
-                      Редактировать предмет
-                    </AppButton>
-                  </Link>
-                </YStack>
-              );
-            })}
-            {productSelectionError ? (
-              <Text style={{ color: palette.negative }}>
-                {productSelectionError}
-              </Text>
-            ) : null}
-          </YStack>
-        </OperationalPanel>
-
-        {/* Schedule fields */}
-        <OperationalPanel eyebrow="Расписание">
-          <YStack style={{ gap: mobileSpacing[3] }}>
-            <AppInput
-              label="Начало"
-              value={startsAt}
-              onChangeText={setStartsAt}
-              placeholder="2026-07-20T12:00:00.000Z"
-              autoCapitalize="none"
-              editable={!isListingDraftLocked}
+    <ListingShell>
+      <View style={{ gap: modernTokens.space.x2 }}>
+        <AppText role="screenTitle">Новое размещение</AppText>
+        <AppText role="bodySmall" tone="secondary">
+          Укажите расписание аукциона и стартовую цену. Валюта: BYN.
+        </AppText>
+      </View>
+      <FormSection title="Предмет">
+        {products.isRefetchError ? (
+          <>
+            <AppText role="bodySmall" tone="danger">
+              Не удалось обновить список предметов.
+            </AppText>
+            <SecondaryButton
+              label="Повторить обновление"
+              loading={products.isFetching}
+              onPress={() => void products.refetch()}
             />
-            <AppInput
-              label="Окончание"
-              value={endsAt}
-              onChangeText={setEndsAt}
-              placeholder="2026-07-21T12:00:00.000Z"
-              autoCapitalize="none"
-              editable={!isListingDraftLocked}
-            />
-            <AppInput
-              label="Стартовая цена, BYN"
-              value={startPrice}
-              onChangeText={setStartPrice}
-              placeholder="0"
-              keyboardType="decimal-pad"
-              editable={!isListingDraftLocked}
-            />
-          </YStack>
-        </OperationalPanel>
-
-        {hasStartedEnteringListingDetails &&
-        !hasValidListingRequest &&
-        !createdListing ? (
-          <Text style={{ color: palette.negative }}>
-            Проверьте даты, их порядок и стартовую цену. Цена должна быть
-            неотрицательной и содержать не более двух знаков после запятой.
-          </Text>
+          </>
         ) : null}
-
-        {!createdListing ? (
-          <AppButton
-            isLoading={create.isPending}
-            onPress={handleCreateListing}
-            disabled={!canCreateListing}
-          >
-            Создать размещение
-          </AppButton>
-        ) : null}
-
-        {createdListing && !schedule.isSuccess ? (
-          <AppButton
-            tone="secondary"
-            isLoading={schedule.isPending}
-            onPress={handleSchedule}
-          >
-            Запланировать размещение
-          </AppButton>
-        ) : null}
-
-        {schedule.isSuccess && createdListing ? (
-          <YStack style={{ gap: mobileSpacing[3] }}>
-            <Link
-              href={{
-                pathname: '/product/[publicId]',
-                params: {
-                  publicId: createdListing.productPublicId,
-                },
+        {products.data.products.map((product) => (
+          <View key={product.id} style={{ gap: modernTokens.space.x1 }}>
+            <SecondaryButton
+              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${product.status}`}
+              disabled={product.status !== 'APPROVED' || isLocked}
+              onPress={() => {
+                hasHandledInitialProductIdRef.current = true;
+                setProductId(product.id);
+                setProductSelectionError(null);
               }}
-              asChild
-            >
-              <AppButton buttonSize="large" tone="primary">
-                Открыть страницу аукциона
-              </AppButton>
-            </Link>
-            {Platform.OS === 'web' ? (
-              <YStack style={{ gap: mobileSpacing[2] }}>
-                <AppButton
-                  buttonSize="large"
-                  tone="secondary"
-                  onPress={async () => {
-                    if (typeof window !== 'undefined' && navigator.clipboard) {
-                      try {
-                        const url = new URL(
+            />
+            <TextButton
+              label="Редактировать предмет"
+              disabled={isLocked}
+              onPress={() =>
+                router.push({
+                  pathname: '/(seller)/products/[id]',
+                  params: { id: product.id },
+                })
+              }
+            />
+          </View>
+        ))}
+        {productSelectionError ? (
+          <AppText role="bodySmall" tone="danger">
+            {productSelectionError}
+          </AppText>
+        ) : null}
+      </FormSection>
+      <FormSection title="Расписание">
+        <TextField
+          label="Начало"
+          value={startsAt}
+          onChangeText={setStartsAt}
+          placeholder="2026-07-20T12:00:00.000Z"
+          autoCapitalize="none"
+          editable={!isLocked}
+        />
+        <TextField
+          label="Окончание"
+          value={endsAt}
+          onChangeText={setEndsAt}
+          placeholder="2026-07-21T12:00:00.000Z"
+          autoCapitalize="none"
+          editable={!isLocked}
+        />
+        <TextField
+          label="Стартовая цена, BYN"
+          value={startPrice}
+          onChangeText={setStartPrice}
+          placeholder="0"
+          keyboardType="decimal-pad"
+          editable={!isLocked}
+        />
+      </FormSection>
+      {(trimmedStartsAt || trimmedEndsAt || trimmedStartPrice) &&
+      !request.success &&
+      !createdListing ? (
+        <AppText role="bodySmall" tone="danger">
+          Проверьте даты, их порядок и стартовую цену. Цена должна быть
+          неотрицательной и содержать не более двух знаков после запятой.
+        </AppText>
+      ) : null}
+      {!createdListing ? (
+        <PrimaryButton
+          label="Создать размещение"
+          loading={create.isPending}
+          disabled={!canCreate}
+          onPress={() => {
+            if (selectedProduct && request.success)
+              create.mutate({
+                productId: selectedProduct.id,
+                productPublicId: selectedProduct.publicId,
+                startsAt: request.data.startsAt,
+                endsAt: request.data.endsAt,
+                startPrice: request.data.startPrice,
+              });
+          }}
+        />
+      ) : null}
+      {createdListing && !schedule.isSuccess ? (
+        <PrimaryButton
+          label="Запланировать размещение"
+          loading={schedule.isPending}
+          onPress={() => schedule.mutate(createdListing.id)}
+        />
+      ) : null}
+      {schedule.isSuccess && createdListing ? (
+        <FormSection title="Размещение запланировано">
+          <PrimaryButton
+            label="Открыть страницу аукциона"
+            onPress={() =>
+              router.push({
+                pathname: '/product/[publicId]',
+                params: { publicId: createdListing.productPublicId },
+              })
+            }
+          />
+          {Platform.OS === 'web' ? (
+            <>
+              <SecondaryButton
+                label="Скопировать ссылку"
+                onPress={() => {
+                  void (async () => {
+                    if (typeof window === 'undefined' || !navigator.clipboard) {
+                      setCopyState('error');
+                      return;
+                    }
+                    try {
+                      await navigator.clipboard.writeText(
+                        new URL(
                           `/product/${createdListing.productPublicId}`,
                           window.location.origin,
-                        ).toString();
-                        await navigator.clipboard.writeText(url);
-                        setCopyState('success');
-                      } catch {
-                        setCopyState('error');
-                      }
-                    } else {
+                        ).toString(),
+                      );
+                      setCopyState('success');
+                    } catch {
                       setCopyState('error');
                     }
-                  }}
-                >
-                  Скопировать ссылку
-                </AppButton>
-                {copyState === 'success' ? (
-                  <Text
-                    style={{ color: palette.positive, textAlign: 'center' }}
-                  >
-                    Ссылка скопирована
-                  </Text>
-                ) : null}
-                {copyState === 'error' ? (
-                  <Text
-                    style={{ color: palette.negative, textAlign: 'center' }}
-                  >
-                    Не удалось скопировать ссылку
-                  </Text>
-                ) : null}
-              </YStack>
-            ) : null}
-          </YStack>
-        ) : null}
+                  })();
+                }}
+              />
+              {copyState === 'success' ? (
+                <AppText role="bodySmall" tone="success">
+                  Ссылка скопирована.
+                </AppText>
+              ) : null}
+              {copyState === 'error' ? (
+                <AppText role="bodySmall" tone="danger">
+                  Не удалось скопировать ссылку.
+                </AppText>
+              ) : null}
+            </>
+          ) : null}
+        </FormSection>
+      ) : null}
+      {create.isError ? (
+        <AppText role="bodySmall" tone="danger">
+          Не удалось создать размещение. Повторите попытку или проверьте
+          актуальность предмета.
+        </AppText>
+      ) : null}
+      {schedule.isError ? (
+        <AppText role="bodySmall" tone="danger">
+          Размещение создано, но не удалось его запланировать. Повторите
+          попытку.
+        </AppText>
+      ) : null}
+    </ListingShell>
+  );
+}
 
-        {create.isError ? (
-          <Text style={{ color: palette.negative }}>
-            Не удалось создать размещение. Повторите попытку или проверьте
-            актуальность предмета.
-          </Text>
-        ) : null}
-
-        {schedule.isError ? (
-          <Text style={{ color: palette.negative }}>
-            Размещение создано, но не удалось его запланировать. Повторите
-            попытку.
-          </Text>
-        ) : null}
-      </YStack>
-    </Screen>
+function ListingShell({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+    >
+      <AppHeader mode="seller" />
+      <ScrollView
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+          padding: modernTokens.space.x5,
+        }}
+      >
+        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

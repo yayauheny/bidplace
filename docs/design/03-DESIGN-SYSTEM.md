@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-07-18
 
-Статус: Current implementation verified; final Modern UI cutover is planned in `../modern-ui/05-migration-plan.md`. The experimental bridge/pilot is not the accepted implementation strategy.
+Статус: final Modern UI cutover is in Partial final migration pending automated regression and founder acceptance. The experimental bridge/pilot is not the accepted implementation strategy.
 
 ## Current implementation
 
@@ -24,15 +24,15 @@
 | Cards/panels        | `AppCard`, `EntityPanel`, auction/storefront cards                                                                             | `components/ui`, `components/auction`, `components/storefront`                         |
 | Status              | status badge and mapping                                                                                                       | `StatusBadge.tsx`, `features/auctions/utils.ts`                                        |
 | Auction patterns    | timer, banner, gallery, bid panel/history, seller summary                                                                      | `components/auction`                                                                   |
-| Navigation          | responsive header, desktop navigation, mobile drawer                                                                           | `components/layout`                                                                    |
-| Feedback            | loading/empty/error states                                                                                                     | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
+| Navigation          | final responsive role navigation: desktop rail and mobile bottom navigation                                                    | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
+| Feedback            | route-local loading, empty, error and retry states through final primitives                                                    | `apps/mobile/src/features`, `components/modern-ui`                                     |
 | Media               | Expo Image, API URL resolver, image picker                                                                                     | `components/auction`, `components/storefront`, `features/seller`                       |
 | Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
 | Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                  | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                 |
 
-Legacy implementation has no approved icon library or canonical confirmation dialog. Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now.
+Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now. `AppDialog` is required for destructive seller media and admin moderation actions.
 
-The final foundation is available for migrated route content, while the shared legacy header remains until the navigation cutover. Route content must not introduce new legacy UI imports.
+Every route uses the final shell and primitives. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge, fallback or legacy UI import remains.
 
 ## Target principles
 
