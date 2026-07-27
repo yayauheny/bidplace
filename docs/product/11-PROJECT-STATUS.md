@@ -93,6 +93,7 @@
 - `apps/mobile` typecheck passed after the buyer/seller order projection fixes.
 - `apps/mobile` build passed (`expo export`).
 - `apps/mobile` Playwright closed-pilot browser suite passed against disposable PostgreSQL.
+- Modern UI pilot follow-up: mobile typecheck, lint, web export, E2E isolation fence and closed-pilot Playwright suite passed after the Product action-region and seller-control corrections; device and accessibility QA remain.
 - `corepack pnpm lint` passed once Turbo was forced through the pinned pnpm 11.7.0 wrapper.
 - `corepack pnpm format:check` failed with repo-wide Prettier warnings across 162 files.
 

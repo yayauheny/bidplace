@@ -5,8 +5,6 @@ import { Link, useRouter } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
 import {
-  AppButton,
-  AppInput,
   ErrorState,
   LoadingState,
   StatusBadge,
@@ -15,9 +13,12 @@ import {
   AppImage,
   AppText,
   MetadataChip,
+  ModernField,
   ModernScreen,
   ModernSection,
   PrimaryButton,
+  SecondaryButton,
+  TextButton,
 } from '../../components/modern-ui';
 import { useAppThemePalette } from '../../theme/palette';
 import { getApiUrl } from '../../lib/environment';
@@ -186,9 +187,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           <YStack style={{ gap: mobileSpacing[3] }}>
             <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <MetadataChip tone={existingProduct.status === 'APPROVED' ? 'success' : 'default'}>{existingProduct.status}</MetadataChip>
-              <AppButton tone="subtle" buttonSize="small" onPress={() => products.refetch()}>
+              <TextButton fullWidth={false} onPress={() => products.refetch()}>
                 Обновить
-              </AppButton>
+              </TextButton>
             </XStack>
             {existingProduct.status === 'APPROVED' ? (
               <Link href={{ pathname: '/(seller)/listings/new', params: { productId: existingProduct.id } }} asChild>
@@ -222,14 +223,23 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         <ModernSection eyebrow="Шаг 1 · Категория">
           <YStack style={{ gap: mobileSpacing[2] }}>
             {categories.data.categories.map((category) => (
-              <AppButton
-                key={category.id}
-                tone={categoryId === category.id ? 'primary' : 'secondary'}
-                disabled={!editable}
-                onPress={() => setCategoryId(category.id)}
-              >
-                {category.name}
-              </AppButton>
+              categoryId === category.id ? (
+                <PrimaryButton
+                  key={category.id}
+                  disabled={!editable}
+                  onPress={() => setCategoryId(category.id)}
+                >
+                  {category.name}
+                </PrimaryButton>
+              ) : (
+                <SecondaryButton
+                  key={category.id}
+                  disabled={!editable}
+                  onPress={() => setCategoryId(category.id)}
+                >
+                  {category.name}
+                </SecondaryButton>
+              )
             ))}
           </YStack>
         </ModernSection>
@@ -237,14 +247,14 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         {/* Core fields */}
         <ModernSection eyebrow="Шаг 2 · О предмете">
           <YStack style={{ gap: mobileSpacing[3] }}>
-            <AppInput
+            <ModernField
               label="Название"
               value={title}
               onChangeText={setTitle}
               placeholder="Название"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="История предмета"
               value={story}
               onChangeText={setStory}
@@ -252,21 +262,21 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               multiline
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Состояние"
               value={condition}
               onChangeText={setCondition}
               placeholder="Состояние"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Уникальность или тираж"
               value={uniqueness}
               onChangeText={setUniqueness}
               placeholder="Уникальность или тираж"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Происхождение"
               value={provenance}
               onChangeText={setProvenance}
@@ -280,35 +290,35 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         {/* Technical attributes */}
         <ModernSection eyebrow="Шаг 3 · Характеристики">
           <YStack style={{ gap: mobileSpacing[3] }}>
-            <AppInput
+            <ModernField
               label="Техника"
               value={technique}
               onChangeText={setTechnique}
               placeholder="Техника (необязательно)"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Материалы"
               value={materials}
               onChangeText={setMaterials}
               placeholder="Материалы (необязательно)"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Размеры"
               value={dimensions}
               onChangeText={setDimensions}
               placeholder="Размеры (необязательно)"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Вес"
               value={weight}
               onChangeText={setWeight}
               placeholder="Вес (необязательно)"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Год"
               value={year}
               onChangeText={setYear}
@@ -322,14 +332,14 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         {/* Logistics */}
         <ModernSection eyebrow="Шаг 4 · Передача">
           <YStack style={{ gap: mobileSpacing[3] }}>
-            <AppInput
+            <ModernField
               label="Город"
               value={city}
               onChangeText={setCity}
               placeholder="Город"
               editable={editable}
             />
-            <AppInput
+            <ModernField
               label="Передача или доставка"
               value={deliveryInfo}
               onChangeText={setDeliveryInfo}
@@ -374,11 +384,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                   <AppImage uri={`${getApiUrl()}${image.url}`} alt={`Изображение предмета ${image.position + 1}`} ratio={16 / 9} />
                   {editable ? (
                     <YStack style={{ gap: mobileSpacing[1] }}>
-                      <AppButton
-                        tone="secondary"
-                        buttonSize="small"
+                      <SecondaryButton
                         disabled={image.position === 0}
-                        isLoading={reorderImages.isPending}
+                        loading={reorderImages.isPending}
                         onPress={() => {
                           const ids = existingProduct.images.map(
                             (item) => item.id,
@@ -392,14 +400,12 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                         }}
                       >
                         Переместить выше
-                      </AppButton>
-                      <AppButton
-                        tone="secondary"
-                        buttonSize="small"
+                      </SecondaryButton>
+                      <SecondaryButton
                         disabled={
                           image.position === existingProduct.images.length - 1
                         }
-                        isLoading={reorderImages.isPending}
+                        loading={reorderImages.isPending}
                         onPress={() => {
                           const ids = existingProduct.images.map(
                             (item) => item.id,
@@ -413,27 +419,24 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                         }}
                       >
                         Переместить ниже
-                      </AppButton>
-                      <AppButton
-                        tone="subtle"
-                        buttonSize="small"
-                        isLoading={removeImage.isPending}
+                      </SecondaryButton>
+                      <TextButton
+                        loading={removeImage.isPending}
                         onPress={() => removeImage.mutate(image.id)}
                       >
                         Удалить изображение
-                      </AppButton>
+                      </TextButton>
                     </YStack>
                   ) : null}
                 </YStack>
               ))}
               {editable ? (
-                <AppButton
-                  tone="secondary"
-                  isLoading={upload.isPending}
+                <SecondaryButton
+                  loading={upload.isPending}
                   onPress={chooseImages}
                 >
                   Добавить изображения
-                </AppButton>
+                </SecondaryButton>
               ) : null}
               {upload.isError ? (
                 <Text style={{ color: palette.negative }}>

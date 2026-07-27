@@ -160,8 +160,9 @@ export function ModernField({ label, description, error, multiline, style, ...pr
       <TextInput
         {...props}
         multiline={multiline}
+        accessibilityLabel={props.accessibilityLabel ?? label}
         placeholderTextColor={modernColors.textMuted}
-        style={[styles.input, multiline && styles.inputMultiline, error ? styles.inputError : undefined, style]}
+        style={[styles.input, multiline && styles.inputMultiline, error ? styles.inputError : undefined, props.editable === false && styles.inputReadOnly, style]}
       />
       {error ? <AppText role="bodySmall" color={modernColors.danger}>{error}</AppText> : null}
     </View>
@@ -230,7 +231,17 @@ export function ModernSection({ eyebrow, title, children }: { eyebrow?: string; 
   );
 }
 
-export function ModernScreen({ children, mode = 'public', width = 'content' }: { children: ReactNode; mode?: 'public' | 'seller'; width?: 'content' | 'form' | 'wide' }) {
+export function ModernScreen({
+  children,
+  bottomAction,
+  mode = 'public',
+  width = 'content',
+}: {
+  children: ReactNode;
+  bottomAction?: ReactNode;
+  mode?: 'public' | 'seller';
+  width?: 'content' | 'form' | 'wide';
+}) {
   const { width: viewportWidth } = useWindowDimensions();
   const desktop = viewportWidth >= 1025;
   const links = mode === 'seller'
@@ -239,7 +250,7 @@ export function ModernScreen({ children, mode = 'public', width = 'content' }: {
   const maxWidth = width === 'form' ? 760 : width === 'wide' ? 1280 : 980;
   const navigation = (
     <View style={styles.rail}>
-      <BrandLogo compact={desktop} />
+      <BrandLogo compact showWordmark={false} />
       <View style={styles.railLinks}>
         {links.map((item) => <Link key={item.href} href={item.href} asChild><Pressable accessibilityRole="link" style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}><AppText role="metadata">{item.label}</AppText></Pressable></Link>)}
       </View>
@@ -254,9 +265,12 @@ export function ModernScreen({ children, mode = 'public', width = 'content' }: {
     <SafeAreaView style={styles.safeArea}>
       <View style={desktop ? styles.desktopShell : styles.mobileShell}>
         {desktop ? navigation : null}
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={[styles.content, !desktop && styles.mobileContent, { maxWidth }]}>{children}</View>
-        </ScrollView>
+        <View style={styles.mainShell}>
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <View style={[styles.content, !desktop && styles.mobileContent, { maxWidth }]}>{children}</View>
+          </ScrollView>
+          {bottomAction ? <View style={styles.stickyAction}>{bottomAction}</View> : null}
+        </View>
         {!desktop ? mobileNavigation : null}
       </View>
     </SafeAreaView>
@@ -267,18 +281,20 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: modernColors.canvas },
   desktopShell: { flex: 1, flexDirection: 'row' },
   mobileShell: { flex: 1 },
+  mainShell: { flex: 1 },
   rail: { width: 92, alignItems: 'center', paddingVertical: modernSpacing.xl, borderRightWidth: 1, borderRightColor: modernColors.border, backgroundColor: modernColors.surface, gap: modernSpacing.section },
   railLinks: { gap: modernSpacing.md, alignItems: 'center' },
   navButton: { minWidth: 44, minHeight: 44, paddingHorizontal: modernSpacing.sm, alignItems: 'center', justifyContent: 'center', borderRadius: modernRadius.control },
-  scroll: { flexGrow: 1 },
+  scroll: { flex: 1 }, scrollContent: { flexGrow: 1 },
   content: { width: '100%', alignSelf: 'center', paddingHorizontal: modernSpacing.page, paddingVertical: modernSpacing.section, gap: modernSpacing.section },
   mobileContent: { paddingBottom: 108 },
   mobileDock: { position: 'absolute', bottom: modernSpacing.lg, alignSelf: 'center', flexDirection: 'row', gap: modernSpacing.xs, padding: modernSpacing.sm, borderRadius: modernRadius.pill, borderWidth: 1, borderColor: modernColors.border, backgroundColor: modernColors.surface },
   dockButton: { minWidth: 72, minHeight: 44, paddingHorizontal: modernSpacing.sm, borderRadius: modernRadius.pill, alignItems: 'center', justifyContent: 'center' },
+  stickyAction: { width: '100%', alignSelf: 'center', maxWidth: 1280, paddingHorizontal: modernSpacing.page, paddingTop: modernSpacing.sm, paddingBottom: 96, backgroundColor: modernColors.canvas },
   button: { minHeight: 56, borderRadius: modernRadius.button, paddingHorizontal: modernSpacing.xl, flexDirection: 'row', gap: modernSpacing.sm, alignItems: 'center', justifyContent: 'center' },
   buttonFull: { width: '100%' }, primaryButton: { backgroundColor: modernColors.ink }, secondaryButton: { backgroundColor: modernColors.surface, borderWidth: 1, borderColor: modernColors.border }, textButton: { minHeight: 44, paddingHorizontal: 0, alignSelf: 'flex-start' }, buttonPressed: { opacity: 0.72 }, buttonLabel: { textTransform: 'uppercase' }, textButtonLabel: { textDecorationLine: 'underline' },
   chip: { alignSelf: 'flex-start', borderWidth: 1, borderColor: modernColors.border, borderRadius: modernRadius.pill, paddingHorizontal: modernSpacing.md, paddingVertical: modernSpacing.sm },
-  field: { gap: modernSpacing.sm }, input: { minHeight: 52, borderWidth: 1, borderColor: modernColors.border, borderRadius: modernRadius.control, backgroundColor: modernColors.surface, paddingHorizontal: modernSpacing.lg, color: modernColors.ink, fontFamily: modernFonts.sans, fontSize: 16, lineHeight: 22 }, inputMultiline: { minHeight: 132, paddingTop: modernSpacing.md, textAlignVertical: 'top' }, inputError: { borderColor: modernColors.danger },
+  field: { gap: modernSpacing.sm }, input: { minHeight: 52, borderWidth: 1, borderColor: modernColors.border, borderRadius: modernRadius.control, backgroundColor: modernColors.surface, paddingHorizontal: modernSpacing.lg, color: modernColors.ink, fontFamily: modernFonts.sans, fontSize: 16, lineHeight: 22 }, inputMultiline: { minHeight: 132, paddingTop: modernSpacing.md, textAlignVertical: 'top' }, inputError: { borderColor: modernColors.danger }, inputReadOnly: { opacity: 0.55 },
   imageFrame: { overflow: 'hidden', borderRadius: modernRadius.image, backgroundColor: modernColors.placeholder, alignItems: 'center', justifyContent: 'center' },
   card: { gap: modernSpacing.md }, cardPressed: { opacity: 0.82 }, cardMeta: { gap: modernSpacing.xs }, cardTitle: { fontFamily: modernFonts.sansStrong, color: modernColors.ink }, cardPrice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: modernSpacing.sm, marginTop: modernSpacing.xs },
   tabsRoot: { gap: modernSpacing.lg }, tabsList: { gap: modernSpacing.sm }, tab: { minHeight: 44, borderRadius: modernRadius.pill, backgroundColor: modernColors.chip, paddingHorizontal: modernSpacing.lg, alignItems: 'center', justifyContent: 'center' }, tabActive: { backgroundColor: modernColors.ink }, tabPanel: { borderTopWidth: 1, borderTopColor: modernColors.border, paddingTop: modernSpacing.xl },

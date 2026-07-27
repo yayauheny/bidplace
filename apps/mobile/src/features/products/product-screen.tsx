@@ -5,8 +5,6 @@ import { Link } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
 
 import {
-  AppButton,
-  AppInput,
   DetailList,
   ErrorState,
   LoadingState,
@@ -17,10 +15,12 @@ import {
   BottomActionBar,
   ContentTabs,
   MetadataChip,
+  ModernField,
   ModernScreen,
   ModernSection,
   PrimaryButton,
   SecondaryButton,
+  TextButton,
 } from '../../components/modern-ui';
 import { getApiUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
@@ -174,32 +174,65 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
+  const bidAction = listing?.status === 'LIVE' ? (
+    <EmailRulesGate redirectTo={`/product/${publicId}`}>
+      <BottomActionBar
+        summary={
+          <AppText role="metadata">
+            Минимальная ставка: {minimumNextBid ?? '—'} BYN
+          </AppText>
+        }
+      >
+        <YStack style={{ gap: modernSpacing.md }}>
+          <ModernField
+            label="Ваша ставка, BYN"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            placeholder={minimumNextBid !== null ? `от ${minimumNextBid}` : ''}
+          />
+          <PrimaryButton loading={bid.isPending} onPress={submitBid}>
+            Сделать ставку
+          </PrimaryButton>
+          {bid.isError && pendingAttempt ? (
+            <SecondaryButton onPress={submitBid}>
+              Повторить ставку
+            </SecondaryButton>
+          ) : null}
+          {bid.isError ? (
+            <Text style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}>
+              Ставка не принята. Проверьте статус торгов и минимальную сумму.
+            </Text>
+          ) : null}
+        </YStack>
+      </BottomActionBar>
+    </EmailRulesGate>
+  ) : null;
+
   return (
-    <ModernScreen width="wide">
+    <ModernScreen width="wide" bottomAction={bidAction}>
       <YStack style={{ gap: modernSpacing.section }}>
         {/* Image gallery */}
-        {product.images.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -mobileSpacing[4] }}
-            contentContainerStyle={{ paddingHorizontal: modernSpacing.page, gap: modernSpacing.md }}
-          >
-            {product.images.map((image) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -mobileSpacing[4] }}
+          contentContainerStyle={{ paddingHorizontal: modernSpacing.page, gap: modernSpacing.md }}
+        >
+          {product.images.length > 0 ? (
+            product.images.map((image) => (
               <AppImage key={image.id} uri={`${getApiUrl()}${image.url}`} alt={`${product.title ?? 'Предмет'} — изображение ${image.position + 1}`} style={{ width: 300 }} />
             ))}
-          </ScrollView>
-        ) : null}
+          ) : (
+            <AppImage uri={null} alt={`${product.title ?? 'Предмет'} — изображение отсутствует`} style={{ width: 300 }} />
+          )}
+        </ScrollView>
 
         {/* Title block */}
         <YStack style={{ gap: modernSpacing.sm }}>
           <AppText role="metadata" color={modernColors.textSecondary}>{sellerProfile.fullName}</AppText>
           <AppText role="display">{product.title ?? 'Предмет'}</AppText>
         </YStack>
-
-        <ContentTabs items={['О предмете', 'История создания', 'Происхождение']}>
-          {(active) => active === 'О предмете' ? (detailItems.length > 0 ? <DetailList items={detailItems} /> : <AppText role="bodySmall" color={modernColors.textSecondary}>Детали предмета появятся здесь.</AppText>) : <AppText role="body" color={modernColors.textSecondary}>{active === 'История создания' ? product.story || 'История предмета пока не добавлена.' : product.provenance || 'Происхождение пока не добавлено.'}</AppText>}
-        </ContentTabs>
 
         {/* Listing panel */}
         {listing ? (
@@ -218,50 +251,14 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               <AppText role="metadata" color={modernColors.textSecondary}>Окончание: {new Date(listing.endsAt).toLocaleString('ru-BY')}</AppText>
               <AppText role="metadata" color={realtimeState === 'connected' ? modernColors.success : modernColors.textSecondary}>{realtimeState === 'connected' ? 'Обновления подключены' : realtimeState === 'reconnecting' ? 'Восстанавливаем обновления…' : 'Обновления недоступны — используем актуальную загрузку'}</AppText>
             </YStack>
-            {listing.status === 'LIVE' ? (
-              <EmailRulesGate redirectTo={`/product/${publicId}`}>
-                  <BottomActionBar summary={<AppText role="metadata">Минимальная ставка: {minimumNextBid ?? '—'} BYN</AppText>}>
-                  <YStack style={{ gap: modernSpacing.md }}>
-                    <AppInput
-                      label="Ваша ставка, BYN"
-                      value={amount}
-                      onChangeText={setAmount}
-                      keyboardType="decimal-pad"
-                      placeholder={
-                        minimumNextBid !== null ? `от ${minimumNextBid}` : ''
-                      }
-                    />
-                    <PrimaryButton
-                      loading={bid.isPending}
-                      onPress={submitBid}
-                    >
-                      Сделать ставку
-                    </PrimaryButton>
-                    {bid.isError && pendingAttempt ? (
-                      <SecondaryButton onPress={submitBid}>
-                        Повторить ставку
-                      </SecondaryButton>
-                    ) : null}
-                    {bid.isError ? (
-                      <Text
-                        style={{
-                          color: palette.negative,
-                          fontSize: 14,
-                          lineHeight: 20,
-                        }}
-                      >
-                        Ставка не принята. Проверьте статус торгов и минимальную
-                        сумму.
-                      </Text>
-                    ) : null}
-                  </YStack>
-                  </BottomActionBar>
-              </EmailRulesGate>
-            ) : null}
           </ModernSection>
         ) : (
           <ModernSection><AppText role="bodySmall" color={modernColors.textSecondary}>Сейчас нет активного размещения.</AppText></ModernSection>
         )}
+
+        <ContentTabs items={['О предмете', 'История создания', 'Происхождение']}>
+          {(active) => active === 'О предмете' ? (detailItems.length > 0 ? <DetailList items={detailItems} /> : <AppText role="bodySmall" color={modernColors.textSecondary}>Детали предмета появятся здесь.</AppText>) : <AppText role="body" color={modernColors.textSecondary}>{active === 'История создания' ? product.story || 'История предмета пока не добавлена.' : product.provenance || 'Происхождение пока не добавлено.'}</AppText>}
+        </ContentTabs>
 
         {/* Bid history */}
         {bids.data?.bids && bids.data.bids.length > 0 ? (
@@ -286,14 +283,14 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         {/* Order links */}
         {participation?.orderPublicId ? (
           <Link href={{ pathname: '/order/[publicId]', params: { publicId: participation.orderPublicId } }} asChild>
-            <AppButton tone="secondary">Открыть результат заказа</AppButton>
+            <SecondaryButton>Открыть результат заказа</SecondaryButton>
           </Link>
         ) : null}
         {listing?.status === 'ENDED' && !participation?.orderPublicId ? (
           <Link href="/me/activity" asChild>
-            <AppButton tone="subtle">
+            <TextButton>
               Проверить результат в «Моих покупках»
-            </AppButton>
+            </TextButton>
           </Link>
         ) : null}
       </YStack>

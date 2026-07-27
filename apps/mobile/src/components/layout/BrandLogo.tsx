@@ -18,11 +18,16 @@ try {
 
 type BrandLogoProps = {
   compact?: boolean;
+  showWordmark?: boolean;
   /** inverted = white mark + text for use on dark overlays */
   inverted?: boolean;
 };
 
-export function BrandLogo({ compact = false, inverted = false }: BrandLogoProps) {
+export function BrandLogo({
+  compact = false,
+  showWordmark = true,
+  inverted = false,
+}: BrandLogoProps) {
   const palette = useAppThemePalette();
   const markSize = compact ? mobileBrand.markSizeCompact : mobileBrand.markSizeDefault;
   const textColor = inverted ? '#FFFFFF' : palette.color;
@@ -64,19 +69,21 @@ export function BrandLogo({ compact = false, inverted = false }: BrandLogoProps)
               }}
             />
           )}
-          <Text
-            style={{
-              fontFamily: mobileBrand.fontFamily,
-              fontSize: mobileBrand.fontSize,
-              fontWeight: mobileBrand.fontWeight,
-              letterSpacing: mobileBrand.letterSpacing,
-              color: textColor,
-              // Live text — never raster
-            }}
-            accessibilityElementsHidden
-          >
-            bidplace
-          </Text>
+          {showWordmark ? (
+            <Text
+              style={{
+                fontFamily: mobileBrand.fontFamily,
+                fontSize: mobileBrand.fontSize,
+                fontWeight: mobileBrand.fontWeight,
+                letterSpacing: mobileBrand.letterSpacing,
+                color: textColor,
+                // Live text — never raster
+              }}
+              accessibilityElementsHidden
+            >
+              bidplace
+            </Text>
+          ) : null}
         </XStack>
       </Pressable>
     </Link>
