@@ -25,6 +25,8 @@
 | [`myplastic/`](./myplastic/) | `discovery/myplastic-discovery-filter-mobile-reference-01.png` | Discovery / filters | Mobile / reference | Segmented switcher, filter icon, editorial image rows, native bottom sheet и checkbox counts | Reference approved |
 | [`myplastic/`](./myplastic/) | `catalog/myplastic-catalog-mobile-reference-01.png` | Discovery / catalog | Mobile / reference | Image-first sections, gray metadata, category arrows, rare orange label и partial next card | Reference approved |
 | [`myplastic/`](./myplastic/) | `product-detail/myplastic-product-detail-mobile-reference-01.png` | Product detail | Mobile / reference | Technical rows, play icons, small time metadata, similar-items rail и bottom save actions | Reference approved |
+| [`myplastic/`](./myplastic/) | `product-page/myplastic-product-page-notes-mobile-reference-01.png` | Product detail | Mobile / notes state | **Primary reference:** hero object, offset disc/mark, title, author link, tags, black CTA, tabbed information and muted details | Primary reference |
+| [`myplastic/`](./myplastic/) | `product-page/myplastic-product-page-story-mobile-reference-02.png` | Product detail | Mobile / story state | **Primary reference:** same hero with Album story tab selected and long-form history content | Primary reference |
 | [`myplastic/`](./myplastic/) | `author/myplastic-author-profile-mobile-reference-01.png` | Author profile | Mobile / reference | Partial-image hero, short bio, releases arrow, work rail, member circles и related creators | Reference approved |
 | [`tracker/`](./tracker/) | `tracker-list-mobile-reference-01.png` | Filters / auction list | Mobile / reference | Search, filter icon, rounded chips, selected accent и компактный timer/list row | Reference approved |
 | — | `home-mobile-default.png` | Home | Mobile / default | Image-first discovery, AuctionCard и плотность ленты | Ожидается |
@@ -45,7 +47,7 @@
 4. Зафиксируй platform, viewport, state и дату получения.
 5. Не заменяй отсутствие изображения описанием как подтверждённый дизайн.
 
-Подробные разборы: [`myplastic/auth-login/README.md`](./myplastic/auth-login/README.md), [`myplastic/settings/README.md`](./myplastic/settings/README.md), [`myplastic/dashboard/README.md`](./myplastic/dashboard/README.md), [`myplastic/collection/README.md`](./myplastic/collection/README.md), [`myplastic/discovery/README.md`](./myplastic/discovery/README.md), [`myplastic/catalog/README.md`](./myplastic/catalog/README.md), [`myplastic/product-detail/README.md`](./myplastic/product-detail/README.md), [`myplastic/author/README.md`](./myplastic/author/README.md) и [`tracker/README.md`](./tracker/README.md).
+Подробные разборы: [`myplastic/auth-login/README.md`](./myplastic/auth-login/README.md), [`myplastic/settings/README.md`](./myplastic/settings/README.md), [`myplastic/dashboard/README.md`](./myplastic/dashboard/README.md), [`myplastic/collection/README.md`](./myplastic/collection/README.md), [`myplastic/discovery/README.md`](./myplastic/discovery/README.md), [`myplastic/catalog/README.md`](./myplastic/catalog/README.md), [`myplastic/product-detail/README.md`](./myplastic/product-detail/README.md), [`myplastic/product-page/README.md`](./myplastic/product-page/README.md), [`myplastic/author/README.md`](./myplastic/author/README.md) и [`tracker/README.md`](./tracker/README.md).
 
 ### Шаблон записи
 

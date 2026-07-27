@@ -110,6 +110,10 @@ Use one route tree, shared domain logic, and one public component API. Mobile is
 
 Home always shows discovery content, images, title, price/current bid, and deadline/state. Product detail first viewport always shows gallery, title, current bid, minimum next bid, remaining time/status, and primary CTA. OTP appears only after “Сделать ставку”. Activity is a compact list with one main status. Seller forms are staged and category-dependent; preview is separate from editing. Settings are grouped. Admin uses the same tokens and base components, without a random SaaS shell.
 
+### Primary product-detail reference
+
+The primary visual reference for the future bidplace Product detail page is [`references/design-photos/myplastic/product-page/README.md`](./references/design-photos/myplastic/product-page/README.md). It defines the intended direction for the object hero, controlled image overlap, title/author hierarchy, metadata pills, black primary CTA, progressive disclosure tabs, and restrained black/white information language. It is a target reference, not an implemented screen or a replacement for product/auction rules.
+
 ## 7. MUST / MUST NOT
 
 ### MUST
