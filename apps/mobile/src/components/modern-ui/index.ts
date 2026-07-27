@@ -5,6 +5,7 @@ export * from './AuctionPanel';
 export * from './AuctionCard';
 export * from './Button';
 export * from './ContentTabs';
+export * from './FormSection';
 export * from './ImagePlaceholder';
 export * from './MotionPressable';
 export * from './BottomActionBar';

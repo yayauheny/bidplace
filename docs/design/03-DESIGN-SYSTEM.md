@@ -28,6 +28,7 @@
 | Feedback            | loading/empty/error states                                                                                                     | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
 | Media               | Expo Image, API URL resolver, image picker                                                                                     | `components/auction`, `components/storefront`, `features/seller`                       |
 | Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
+| Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                  | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                 |
 
 Legacy implementation has no approved icon library or canonical confirmation dialog. Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now.
 
