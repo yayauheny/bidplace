@@ -1,83 +1,49 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import { Text, XStack } from 'tamagui';
-
-import { mobileBrand } from '../../theme/tokens';
-import { useAppThemePalette } from '../../theme/palette';
-
-// Brand mark — raster PNG placed by founder at assets/brand-mark.png.
-// If the file is absent, a fallback placeholder renders until it is provided.
+import { modernTokens } from '@bidplace/design-tokens';
+import { AppText } from '../modern-ui';
 let brandMark: ReturnType<typeof require> | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  brandMark = require('../../../assets/brand-mark.png') as ReturnType<typeof require>;
+  brandMark = require('../../../assets/brand-mark.png') as ReturnType<
+    typeof require
+  >;
 } catch {
   brandMark = null;
 }
-
-type BrandLogoProps = {
-  compact?: boolean;
-  /** inverted = white mark + text for use on dark overlays */
-  inverted?: boolean;
-};
-
-export function BrandLogo({ compact = false, inverted = false }: BrandLogoProps) {
-  const palette = useAppThemePalette();
-  const markSize = compact ? mobileBrand.markSizeCompact : mobileBrand.markSizeDefault;
-  const textColor = inverted ? '#FFFFFF' : palette.color;
-
+export function BrandLogo({ compact = false }: { compact?: boolean }) {
+  const size = compact ? 24 : 32;
   return (
     <Link href="/" asChild>
       <Pressable
         accessibilityRole="link"
-        aria-label="bidplace — на главную"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        accessibilityLabel="bidplace — на главную"
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.7 : 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: modernTokens.space.x2,
+        })}
       >
-        <XStack
-          style={{
-            alignItems: 'center',
-            gap: mobileBrand.gap,
-          }}
-        >
-          {brandMark ? (
-            <Image
-              source={brandMark}
-              style={{
-                width: markSize,
-                height: markSize,
-                // tintColor makes the monochrome mark adapt to dark overlay context
-                tintColor: inverted ? '#FFFFFF' : undefined,
-              }}
-              contentFit="contain"
-              alt=""
-            />
-          ) : (
-            // Fallback placeholder until brand-mark.png is placed
-            <View
-              style={{
-                width: markSize,
-                height: markSize,
-                borderWidth: 1.5,
-                borderColor: textColor,
-                borderRadius: 4,
-              }}
-            />
-          )}
-          <Text
+        {brandMark ? (
+          <Image
+            source={brandMark}
+            contentFit="contain"
+            style={{ width: size, height: size }}
+          />
+        ) : (
+          <View
             style={{
-              fontFamily: mobileBrand.fontFamily,
-              fontSize: mobileBrand.fontSize,
-              fontWeight: mobileBrand.fontWeight,
-              letterSpacing: mobileBrand.letterSpacing,
-              color: textColor,
-              // Live text — never raster
+              width: size,
+              height: size,
+              borderRadius: modernTokens.radius.small,
+              borderWidth: 1,
+              borderColor: modernTokens.color.ink,
             }}
-            accessibilityElementsHidden
-          >
-            bidplace
-          </Text>
-        </XStack>
+          />
+        )}
+        {!compact ? <AppText role="cardTitle">bidplace</AppText> : null}
       </Pressable>
     </Link>
   );

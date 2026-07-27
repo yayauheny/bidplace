@@ -6,6 +6,8 @@
 
 Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. They have passed mobile typecheck, lint and Expo web export; no route may be marked final until it uses the complete target shell and state matrix.
 
+Shared navigation is in partial final migration: `components/layout/AppHeader.tsx` now renders role-filtered final mobile/desktop navigation. Legacy drawer and desktop navigation files remain to be deleted during final retirement.
+
 ## Functional screen status
 
 Auth (`/login`, `/register`) is in partial final migration: the forms retain existing validation and redirect behavior through final fields and buttons; device/accessibility QA remains.

@@ -1,207 +1,167 @@
-import type { ReactNode } from 'react';
-import { Link, useRouter } from 'expo-router';
+import { Link, usePathname, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable } from 'react-native';
-import { Text, XStack, YStack, useMedia } from 'tamagui';
-
+import { useWindowDimensions, View } from 'react-native';
+import { modernTokens } from '@bidplace/design-tokens';
+import {
+  AppIcon,
+  AppText,
+  IconButton,
+  MotionPressable,
+  SecondaryButton,
+} from '../modern-ui';
 import { useAuth } from '../../providers/auth-provider';
-import { mobileLayout, mobileSpacing, fontFamilies } from '../../theme/tokens';
-import { useAppThemePalette } from '../../theme/palette';
 import { BrandLogo } from './BrandLogo';
-import { DesktopNavigation } from './DesktopNavigation';
-import { MobileNavigationDrawer } from './MobileNavigationDrawer';
-
-type AppHeaderProps = {
-  mode?: 'public' | 'seller' | 'admin' | 'auth';
-};
-
-function NavAction({
-  href,
-  children,
-}: {
-  href: '/profile' | '/me/activity' | '/login';
-  children: ReactNode;
-}) {
-  const palette = useAppThemePalette();
-  return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityRole="link"
-        style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-      >
-        <Text
-          style={{
-            fontFamily: fontFamilies.sansMedium,
-            fontSize: 13,
-            lineHeight: 18,
-            letterSpacing: 0.2,
-            color: palette.colorSecondary,
-          }}
-        >
-          {children}
-        </Text>
-      </Pressable>
-    </Link>
-  );
+type Href = '/' | '/me/activity' | '/profile' | '/admin' | '/login';
+type Item = { label: string; href: Href; icon: 'menu' | 'user' };
+function items(auth: ReturnType<typeof useAuth>): Item[] {
+  if (auth.isAdmin)
+    return [
+      { label: 'Каталог', href: '/', icon: 'menu' },
+      { label: 'Модерация', href: '/admin', icon: 'user' },
+    ];
+  if (auth.canCreateListing)
+    return [
+      { label: 'Каталог', href: '/', icon: 'menu' },
+      { label: 'Покупки', href: '/me/activity', icon: 'user' },
+      { label: 'Продавец', href: '/profile', icon: 'user' },
+    ];
+  return auth.isAuthenticated
+    ? [
+        { label: 'Каталог', href: '/', icon: 'menu' },
+        { label: 'Покупки', href: '/me/activity', icon: 'user' },
+      ]
+    : [
+        { label: 'Каталог', href: '/', icon: 'menu' },
+        { label: 'Войти', href: '/login', icon: 'user' },
+      ];
 }
-
-function LogoutAction({ onLogout }: { onLogout: () => void }) {
-  const palette = useAppThemePalette();
+export function AppHeader({
+  mode = 'public',
+}: {
+  mode?: 'public' | 'seller' | 'admin' | 'auth';
+}) {
+  void mode;
+  const auth = useAuth();
+  const pathname = usePathname();
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
+  const { width } = useWindowDimensions();
+  const desktop = width >= 1025;
+  const [loggingOut, setLoggingOut] = useState(false);
+  const nav = items(auth);
+  const logout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
-      await onLogout();
-    } catch {
-      // AuthProvider уже очищает локальную сессию в finally.
+      await auth.logout();
     } finally {
       router.replace('/');
+      setLoggingOut(false);
     }
   };
-
-  return (
-    <Pressable
-      onPress={handleLogout}
-      accessibilityRole="button"
-      disabled={isLoggingOut}
-      style={({ pressed }) => ({ opacity: pressed || isLoggingOut ? 0.6 : 1 })}
-    >
-      <Text
-        style={{
-          fontFamily: fontFamilies.sansMedium,
-          fontSize: 13,
-          lineHeight: 18,
-          letterSpacing: 0.2,
-          color: palette.colorSecondary,
-        }}
-      >
-        Выйти
-      </Text>
-    </Pressable>
-  );
-}
-
-function MenuTrigger({ onPress }: { onPress: () => void }) {
-  const palette = useAppThemePalette();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      aria-label="Открыть меню"
-      style={({ pressed }) => ({
-        opacity: pressed ? 0.6 : 1,
-        padding: mobileSpacing[2],
-        minWidth: 44,
-        minHeight: 44,
-        alignItems: 'center',
-        justifyContent: 'center',
-      })}
-    >
-      <Text
-        style={{
-          fontFamily: fontFamilies.sansMedium,
-          fontSize: 13,
-          lineHeight: 18,
-          color: palette.colorSecondary,
-        }}
-      >
-        Меню
-      </Text>
-    </Pressable>
-  );
-}
-
-export function AppHeader({ mode = 'public' }: AppHeaderProps) {
-  const media = useMedia();
-  const auth = useAuth();
-  const palette = useAppThemePalette();
-  const [open, setOpen] = useState(false);
-  const isDesktop = Boolean(media.desktop || media.wide);
-  const profileHref = auth.isAuthenticated ? '/me/activity' : '/login';
-
-  return (
+  const links = (
     <>
-      <YStack
-        style={[
-          {
-            borderBottomWidth: 1,
-            borderBottomColor: palette.borderColor,
-            backgroundColor: palette.surface,
-            top: 0,
-            zIndex: 30,
-          },
-          // sticky is a web-only CSS value — apply only on web
-          Platform.select({ web: { position: 'sticky' } as object, default: {} }),
-        ]}
-      >
-        <XStack
-          style={{
-            width: '100%',
-            maxWidth: mobileLayout.pageMaxWidth,
-            alignSelf: 'center',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: mobileSpacing[5],
-            minHeight: 56,
-          }}
-        >
-          {/* Left: nav or menu trigger */}
-          <XStack style={{ flex: 1, alignItems: 'center', gap: mobileSpacing[5] }}>
-            {isDesktop ? (
-              <DesktopNavigation mode={mode} />
-            ) : (
-              <MenuTrigger onPress={() => setOpen(true)} />
-            )}
-          </XStack>
-
-          {/* Center: brand lockup */}
-          <XStack style={{ alignItems: 'center' }}>
-            <BrandLogo compact={!isDesktop} />
-          </XStack>
-
-          {/* Right: profile / context actions */}
-          <XStack
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: mobileSpacing[4],
-            }}
-          >
-            {mode === 'admin' ? (
-              <Text
+      {nav.map((item) => {
+        const active =
+          pathname === item.href ||
+          (item.href !== '/' && pathname.startsWith(item.href));
+        return (
+          <Link key={item.href} href={item.href} asChild>
+            <MotionPressable
+              accessibilityRole="link"
+              accessibilityLabel={item.label}
+              preset="button"
+              style={{
+                minHeight: modernTokens.size.touch,
+                flexDirection: desktop ? 'row' : 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: modernTokens.space.x1,
+                borderRadius: modernTokens.radius.pill,
+                backgroundColor: active
+                  ? modernTokens.color.ink
+                  : 'transparent',
+                paddingHorizontal: desktop
+                  ? modernTokens.space.x3
+                  : modernTokens.space.x2,
+              }}
+            >
+              <AppIcon
+                name={item.icon}
+                color={
+                  active ? modernTokens.color.surface : modernTokens.color.ink
+                }
+              />
+              <AppText
+                role="caption"
                 style={{
-                  fontFamily: fontFamilies.sansMedium,
-                  fontSize: 12,
-                  color: palette.warning,
-                  fontWeight: '600',
+                  color: active
+                    ? modernTokens.color.surface
+                    : modernTokens.color.ink,
                 }}
               >
-                Admin
-              </Text>
-            ) : mode === 'seller' ? (
-              <NavAction href="/profile">Продавец</NavAction>
-            ) : null}
-            {auth.isAuthenticated ? (
-              <LogoutAction onLogout={auth.logout} />
-            ) : (
-              <NavAction href={profileHref}>Войти</NavAction>
-            )}
-          </XStack>
-        </XStack>
-      </YStack>
-
-      {!isDesktop ? (
-        <MobileNavigationDrawer
-          open={open}
-          onOpenChange={setOpen}
-          profileHref={profileHref}
-          mode={mode}
-        />
-      ) : null}
+                {item.label}
+              </AppText>
+            </MotionPressable>
+          </Link>
+        );
+      })}
     </>
+  );
+  return desktop ? (
+    <View
+      style={{
+        width: 236,
+        borderRightWidth: 1,
+        borderRightColor: modernTokens.color.border,
+        backgroundColor: modernTokens.color.surface,
+        padding: modernTokens.space.x5,
+        gap: modernTokens.space.x6,
+      }}
+    >
+      <BrandLogo /> <View style={{ gap: modernTokens.space.x2 }}>{links}</View>
+      {auth.isAuthenticated ? (
+        <SecondaryButton label="Выйти" loading={loggingOut} onPress={logout} />
+      ) : null}
+    </View>
+  ) : (
+    <View
+      style={{
+        borderBottomWidth: 1,
+        borderBottomColor: modernTokens.color.border,
+        backgroundColor: modernTokens.color.surface,
+      }}
+    >
+      <View
+        style={{
+          minHeight: 56,
+          paddingHorizontal: modernTokens.space.x5,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <BrandLogo compact />
+        {auth.isAuthenticated ? (
+          <IconButton
+            icon="logOut"
+            label="Выйти"
+            onPress={logout}
+            disabled={loggingOut}
+          />
+        ) : null}
+      </View>
+      <View
+        accessibilityRole="tablist"
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          borderTopWidth: 1,
+          borderTopColor: modernTokens.color.border,
+          paddingVertical: modernTokens.space.x1,
+        }}
+      >
+        {links}
+      </View>
+    </View>
   );
 }
