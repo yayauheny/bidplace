@@ -80,6 +80,10 @@ export function toSellerProfileResponse(
     profilePhotoChecksum?: string | null;
     profilePhotoData?: Uint8Array | null;
   };
+  void _profilePhotoMimeType;
+  void _profilePhotoByteLength;
+  void _profilePhotoChecksum;
+  void _profilePhotoData;
 
   return sellerProfileResponseSchema.parse({
     sellerProfile: {

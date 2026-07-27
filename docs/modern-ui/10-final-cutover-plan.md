@@ -1,10 +1,10 @@
 # Final Modern UI implementation contract
 
-Status: **Confirmed plan — implementation has not started**
+Status: **Partial final migration — automated cutover evidence is complete; founder device/visual acceptance remains**
 Decision: `DEC-055`, `DEC-056`
 Branch: `feature/modern-ui-final` from `5e71627`
 
-This is the executable plan for the final redesign. It replaces the bridge/pilot implementation strategy. It does not add product features or change backend authority.
+This is the implementation contract for the final redesign. The clean cutover is implemented without a bridge or pilot fallback; it does not add product features or change backend authority.
 
 ## 1. Goal and definition of done
 
@@ -28,20 +28,20 @@ Done means all of the following are true:
 
 ## 2. Fixed decisions
 
-| Area | Decision |
-| --- | --- |
-| Visual stack | NativeWind v4, RN Primitives, Lucide only through `AppIcon`; React Native Reusables is pattern source only. Exact Expo 57-compatible pins are a Phase 0 ADR gate. |
-| Overlays | One bidplace adapter. Gorhom Bottom Sheet on native; RN Primitives Dialog/Popover on web/desktop. |
-| Brand | Temporary Inter wordmark on mobile; compact existing mark on desktop. Replace only when approved assets arrive. |
-| Theme | Light-only MVP. Semantic tokens must permit later dark mode without shipping it now. |
-| Navigation | Centred mobile floating dock; desktop left rail. Only implemented role-filtered destinations. |
-| Bid | Client validates documented increments; server decides final result. First Bid per buyer/Listing confirms; later Bid does not when participation is known. |
-| Product detail | Mobile bottom action; desktop contextual sticky auction panel. Auction facts precede tabs. |
-| Seller preview | Read-only mode in existing seller route; no status change, public route or self-publication. |
-| Upload | Spinner and truthful image count; no fake percentage. |
-| Destructive actions | Confirm image delete, admin archive/suspend/cancel and irreversible Order action; do not confirm reorder. |
-| Motion | Shared reduced-motion-safe presets; no haptics in MVP. |
-| Delivery | Clean final cutover before production; no runtime rollback UI. |
+| Area                | Decision                                                                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Visual stack        | NativeWind v4, RN Primitives, Lucide only through `AppIcon`; React Native Reusables is pattern source only. Exact Expo 57-compatible pins are a Phase 0 ADR gate. |
+| Overlays            | One bidplace adapter. Gorhom Bottom Sheet on native; RN Primitives Dialog/Popover on web/desktop.                                                                 |
+| Brand               | Temporary Inter wordmark on mobile; compact existing mark on desktop. Replace only when approved assets arrive.                                                   |
+| Theme               | Light-only MVP. Semantic tokens must permit later dark mode without shipping it now.                                                                              |
+| Navigation          | Centred mobile floating dock; desktop left rail. Only implemented role-filtered destinations.                                                                     |
+| Bid                 | Client validates documented increments; server decides final result. First Bid per buyer/Listing confirms; later Bid does not when participation is known.        |
+| Product detail      | Mobile bottom action; desktop contextual sticky auction panel. Auction facts precede tabs.                                                                        |
+| Seller preview      | Read-only mode in existing seller route; no status change, public route or self-publication.                                                                      |
+| Upload              | Spinner and truthful image count; no fake percentage.                                                                                                             |
+| Destructive actions | Confirm image delete, admin archive/suspend/cancel and irreversible Order action; do not confirm reorder.                                                         |
+| Motion              | Shared reduced-motion-safe presets; no haptics in MVP.                                                                                                            |
+| Delivery            | Clean final cutover before production; no runtime rollback UI.                                                                                                    |
 
 ## 3. Phase 0 — baseline, ADR and proof
 

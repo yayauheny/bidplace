@@ -192,6 +192,10 @@ export class ListingsService {
       createdAt?: Date;
       updatedAt?: Date;
     };
+    void _auctionRulesId;
+    void _auctionRulesListingId;
+    void _auctionRulesCreatedAt;
+    void _auctionRulesUpdatedAt;
     return {
       listing: {
         ...record,

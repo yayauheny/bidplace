@@ -1,6 +1,6 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-07-18
+Последнее обновление: 2026-07-28
 
 Статус: Confirmed как структура документации
 
@@ -57,8 +57,8 @@
 - routes: `apps/mobile/src/app`;
 - screens/features: `apps/mobile/src/features`;
 - shared UI: `apps/mobile/src/components`;
-- mobile theme: `apps/mobile/src/theme` и `apps/mobile/tamagui.config.ts`;
-- общие tokens: `packages/design-tokens/src/index.ts`;
+- mobile final theme: `apps/mobile/src/providers/theme-provider.tsx`;
+- общие tokens: `packages/design-tokens/src/modern.ts`;
 - API data shapes: `packages/contracts`.
 
 Наличие компонента в коде не означает наличия утверждённого дизайна. Наличие макета не означает реализованное поведение.

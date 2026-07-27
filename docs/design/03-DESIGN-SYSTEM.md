@@ -1,32 +1,32 @@
 # bidplace — дизайн-система
 
-Последнее обновление: 2026-07-18
+Последнее обновление: 2026-07-28
 
-Статус: final Modern UI cutover is in Partial final migration pending automated regression and founder acceptance. The experimental bridge/pilot is not the accepted implementation strategy.
+Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 
 ## Current implementation
 
-Часть перечисленного находится в незакоммиченном рабочем состоянии и требует design QA. Это инвентаризация кода, не утверждение бренда.
+Это фактическая инвентаризация committed final UI; она не является утверждением бренда и остаётся Partial до founder acceptance.
 
 | Область             | Фактическая реализация                                                                                                         | Путь                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Colors/themes       | light/dark semantic palettes                                                                                                   | `packages/design-tokens/src/index.ts`, `apps/mobile/src/theme/tokens.ts`, `palette.ts` |
+| Colors/themes       | light-only semantic palette through `modernTokens` and React Navigation theme                                                  | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/providers/theme-provider.tsx` |
 | Spacing             | 2–96 px шкала                                                                                                                  | `packages/design-tokens/src/index.ts`                                                  |
 | Radius              | `xs`–`2xl`, `full`                                                                                                             | `packages/design-tokens/src/index.ts`                                                  |
 | Size/touch          | control sizes и `touch: 44`                                                                                                    | `packages/design-tokens/src/index.ts`                                                  |
 | Typography tokens   | display/hero/heading/title/body/small/caption/nav                                                                              | `packages/design-tokens/src/index.ts`                                                  |
-| Fonts               | Inter body, Cormorant Garamond heading                                                                                         | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`, `_layout.tsx`                  |
+| Fonts               | Inter and PT Mono runtime loading                                                                                              | `apps/mobile/src/app/_layout.tsx`                                                      |
 | Layout              | page/content/reading/form max widths                                                                                           | `packages/design-tokens/src/index.ts`                                                  |
-| Breakpoints         | mobile ≤640, tablet ≤1024, desktop ≥1025, wide ≥1440                                                                           | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`                                 |
-| Elevation           | shadow tokens плюс local card shadows                                                                                          | tokens, `AppCard.tsx`                                                                  |
+| Breakpoints         | final responsive shell: mobile below 1025 px and desktop rail from 1025 px                                                     | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
+| Elevation           | semantic surface and overlay tokens                                                                                            | `packages/design-tokens/src/modern.ts`                                                 |
 | Buttons             | semantic primary, secondary and destructive actions with loading/disabled/accessibility state                                  | `apps/mobile/src/components/modern-ui/Button.tsx`                                      |
-| Fields/forms        | input, controlled input, field error, RHF forms                                                                                | `components/ui/AppInput.tsx`, `ControlledAppInput.tsx`, `FormField.tsx`; `features/*`  |
-| Cards/panels        | `AppCard`, `EntityPanel`, auction/storefront cards                                                                             | `components/ui`, `components/auction`, `components/storefront`                         |
-| Status              | status badge and mapping                                                                                                       | `StatusBadge.tsx`, `features/auctions/utils.ts`                                        |
-| Auction patterns    | timer, banner, gallery, bid panel/history, seller summary                                                                      | `components/auction`                                                                   |
+| Fields/forms        | `TextField`, form sections and route-level RHF forms                                                                           | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                     |
+| Cards/panels        | `AuctionCard`, `AuctionPanel`, `FormSection` and route-local surfaces                                                          | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                     |
+| Status              | semantic text tones, auction panel facts and server-projected route states                                                     | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                     |
+| Auction patterns    | gallery, auction panel, bid history and seller summary                                                                         | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/products`            |
 | Navigation          | final responsive role navigation: desktop rail and mobile bottom navigation                                                    | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
 | Feedback            | route-local loading, empty, error and retry states through final primitives                                                    | `apps/mobile/src/features`, `components/modern-ui`                                     |
-| Media               | Expo Image, API URL resolver, image picker                                                                                     | `components/auction`, `components/storefront`, `features/seller`                       |
+| Media               | Expo Image, API URL resolver, image picker and truthful seller image count                                                     | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/sellers`             |
 | Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
 | Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                  | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                 |
 
@@ -55,17 +55,13 @@ Every route uses the final shell and primitives. `FormSection` groups seller/adm
 
 - утверждённые brand tokens, typography и assets;
 - token governance и документированная семантика colors;
-- icon set;
 - focus/keyboard/screen-reader test matrix;
 - component documentation или visual regression tests;
-- canonical confirmation modal и destructive action pattern;
 - offline/reconnect banner и stale-data state;
 - participation status pattern;
 - verified seller/provenance patterns;
 - complete countdown/bid/auction state specification;
 - image gallery states для обязательных трёх изображений;
-- desktop/mobile navigation model для всех ролей;
-- единый выбор между `AuctionCard` и `ProductCard`, `AppButton` и `PrimaryButton`;
 - final light-mode contrast audit;
 - design QA evidence на целевых устройствах.
 
