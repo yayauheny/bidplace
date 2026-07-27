@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Link, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Text, XStack, YStack } from 'tamagui';
 
 import {
@@ -10,15 +9,21 @@ import {
   AppInput,
   ErrorState,
   LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
   StatusBadge,
 } from '../../components/ui';
+import {
+  AppImage,
+  AppText,
+  MetadataChip,
+  ModernScreen,
+  ModernSection,
+  PrimaryButton,
+} from '../../components/modern-ui';
 import { useAppThemePalette } from '../../theme/palette';
 import { getApiUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { mobileSpacing } from '../../theme/tokens';
+import { modernColors, modernSpacing } from '../../theme/modern-tokens';
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
   const api = useApiClient();
@@ -144,9 +149,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
   if (categories.isLoading || (productId && products.isLoading))
     return (
-      <Screen>
+      <ModernScreen mode="seller" width="form">
         <LoadingState label="Загружаем предмет" />
-      </Screen>
+      </ModernScreen>
     );
   if (
     categories.isError ||
@@ -154,7 +159,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
     (productId && (!products.data || !existingProduct))
   )
     return (
-      <Screen>
+      <ModernScreen mode="seller" width="form">
         <ErrorState
           description="Не удалось загрузить предмет"
           onAction={() => {
@@ -162,7 +167,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
             void products.refetch();
           }}
         />
-      </Screen>
+      </ModernScreen>
     );
   const editable =
     !existingProduct ||
@@ -170,40 +175,36 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
     existingProduct.status === 'CHANGES_REQUESTED';
 
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[5] }}>
-        <SectionHeader
-          title={existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
-          description="Черновик можно сохранить неполным. Для approval нужны все обязательные поля и минимум 1 изображение."
-        />
+    <ModernScreen mode="seller" width="form">
+      <YStack style={{ gap: modernSpacing.section }}>
+        <YStack style={{ gap: modernSpacing.sm }}>
+          <AppText role="screenTitle">{existingProduct ? 'Редактировать предмет' : 'Новый предмет'}</AppText>
+          <AppText role="bodySmall" color={modernColors.textSecondary}>Черновик можно сохранить неполным. Для approval нужны все обязательные поля и минимум 1 изображение.</AppText>
+        </YStack>
 
         {existingProduct ? (
           <YStack style={{ gap: mobileSpacing[3] }}>
             <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-              <StatusBadge tone={existingProduct.status === 'APPROVED' ? 'positive' : 'neutral'}>
-                {existingProduct.status}
-              </StatusBadge>
+              <MetadataChip tone={existingProduct.status === 'APPROVED' ? 'success' : 'default'}>{existingProduct.status}</MetadataChip>
               <AppButton tone="subtle" buttonSize="small" onPress={() => products.refetch()}>
                 Обновить
               </AppButton>
             </XStack>
             {existingProduct.status === 'APPROVED' ? (
               <Link href={{ pathname: '/(seller)/listings/new', params: { productId: existingProduct.id } }} asChild>
-                <AppButton tone="primary" buttonSize="large">Создать аукцион</AppButton>
+                <PrimaryButton>Создать аукцион</PrimaryButton>
               </Link>
             ) : null}
             {existingProduct.status !== 'APPROVED' && editable ? (
-              <AppButton
-                tone="primary"
-                buttonSize="large"
-                isLoading={submit.isPending}
+              <PrimaryButton
+                loading={submit.isPending}
                 disabled={existingProduct.images.length < 1}
                 onPress={() => submit.mutate(existingProduct.id)}
               >
                 {existingProduct.status === 'CHANGES_REQUESTED'
                   ? 'Повторно отправить на модерацию'
                   : 'Отправить на модерацию'}
-              </AppButton>
+              </PrimaryButton>
             ) : null}
             {existingProduct.status !== 'APPROVED' && existingProduct.images.length < 1 ? (
               <Text style={{ color: palette.colorMuted, fontSize: 13, lineHeight: 18 }}>
@@ -214,15 +215,11 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         ) : null}
 
         {existingProduct && !editable ? (
-          <OperationalPanel>
-            <Text style={{ color: palette.negative }}>
-              Предмет уже нельзя редактировать или изменять его изображения.
-            </Text>
-          </OperationalPanel>
+          <ModernSection><AppText role="bodySmall" color={modernColors.danger}>Предмет уже нельзя редактировать или изменять его изображения.</AppText></ModernSection>
         ) : null}
 
         {/* Category */}
-        <OperationalPanel eyebrow="Категория">
+        <ModernSection eyebrow="Шаг 1 · Категория">
           <YStack style={{ gap: mobileSpacing[2] }}>
             {categories.data.categories.map((category) => (
               <AppButton
@@ -235,10 +232,10 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               </AppButton>
             ))}
           </YStack>
-        </OperationalPanel>
+        </ModernSection>
 
         {/* Core fields */}
-        <OperationalPanel eyebrow="Основное">
+        <ModernSection eyebrow="Шаг 2 · О предмете">
           <YStack style={{ gap: mobileSpacing[3] }}>
             <AppInput
               label="Название"
@@ -278,10 +275,10 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               editable={editable}
             />
           </YStack>
-        </OperationalPanel>
+        </ModernSection>
 
         {/* Technical attributes */}
-        <OperationalPanel eyebrow="Технические характеристики">
+        <ModernSection eyebrow="Шаг 3 · Характеристики">
           <YStack style={{ gap: mobileSpacing[3] }}>
             <AppInput
               label="Техника"
@@ -320,10 +317,10 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               editable={editable}
             />
           </YStack>
-        </OperationalPanel>
+        </ModernSection>
 
         {/* Logistics */}
-        <OperationalPanel eyebrow="Логистика">
+        <ModernSection eyebrow="Шаг 4 · Передача">
           <YStack style={{ gap: mobileSpacing[3] }}>
             <AppInput
               label="Город"
@@ -341,16 +338,15 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               editable={editable}
             />
           </YStack>
-        </OperationalPanel>
+        </ModernSection>
 
         {editable ? (
-          <AppButton
-            buttonSize="large"
-            isLoading={save.isPending}
+          <PrimaryButton
+            loading={save.isPending}
             onPress={() => save.mutate()}
           >
             {existingProduct ? 'Сохранить изменения' : 'Сохранить черновик'}
-          </AppButton>
+          </PrimaryButton>
         ) : null}
 
         {save.isError ? (
@@ -361,7 +357,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
         {/* Images */}
         {existingProduct ? (
-          <OperationalPanel eyebrow="Изображения">
+          <ModernSection eyebrow="Шаг 5 · Изображения">
             <YStack style={{ gap: mobileSpacing[3] }}>
               {existingProduct.status === 'PENDING_REVIEW' ? (
                 <StatusBadge tone="neutral">
@@ -375,12 +371,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
               </Text>
               {existingProduct.images.map((image) => (
                 <YStack key={image.id} style={{ gap: mobileSpacing[2] }}>
-                  <Image
-                    source={{ uri: `${getApiUrl()}${image.url}` }}
-                    style={{ width: '100%', height: 180 }}
-                    contentFit="cover"
-                    alt={`Изображение предмета ${image.position + 1}`}
-                  />
+                  <AppImage uri={`${getApiUrl()}${image.url}`} alt={`Изображение предмета ${image.position + 1}`} ratio={16 / 9} />
                   {editable ? (
                     <YStack style={{ gap: mobileSpacing[1] }}>
                       <AppButton
@@ -455,9 +446,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                 </Text>
               ) : null}
             </YStack>
-          </OperationalPanel>
+          </ModernSection>
         ) : null}
       </YStack>
-    </Screen>
+    </ModernScreen>
   );
 }

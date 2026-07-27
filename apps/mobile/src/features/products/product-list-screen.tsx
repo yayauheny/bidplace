@@ -1,16 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { Text, XStack, YStack, useMedia } from 'tamagui';
+import { XStack, YStack, useMedia } from 'tamagui';
 
-import { ErrorState, LoadingState, EmptyState, Screen } from '../../components/ui';
-import { ProductCard } from '../../components/ui/ProductCard';
+import { ErrorState, LoadingState, EmptyState } from '../../components/ui';
+import { AppText, AuctionCard, ModernScreen } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
-import { mobileSpacing, fontFamilies } from '../../theme/tokens';
-import { useAppThemePalette } from '../../theme/palette';
+import { modernColors, modernSpacing } from '../../theme/modern-tokens';
 
 export function ProductListScreen() {
   const api = useApiClient();
   const media = useMedia();
-  const palette = useAppThemePalette();
 
   const query = useQuery({
     queryKey: ['products'],
@@ -20,22 +18,22 @@ export function ProductListScreen() {
   // Loading state — full screen centred spinner
   if (query.isLoading) {
     return (
-      <Screen>
+      <ModernScreen width="wide">
         <LoadingState label="Загружаем предметы" />
-      </Screen>
+      </ModernScreen>
     );
   }
 
   // Error state — with retry
   if (query.isError || !query.data) {
     return (
-      <Screen>
+      <ModernScreen width="wide">
         <ErrorState
           description="Не удалось загрузить каталог. Проверьте соединение и повторите."
           kind={query.isError ? 'network' : 'generic'}
           onAction={() => void query.refetch()}
         />
-      </Screen>
+      </ModernScreen>
     );
   }
 
@@ -44,48 +42,29 @@ export function ProductListScreen() {
   // Empty catalog
   if (products.length === 0) {
     return (
-      <Screen>
+      <ModernScreen width="wide">
         <EmptyState
           title="Пока нет предметов"
           description="Здесь появятся авторские предметы для торгов. Загляните позже."
         />
-      </Screen>
+      </ModernScreen>
     );
   }
 
   // Responsive column count: 2 on mobile, 3 on tablet, 4 on desktop
   const columns: number = media.wide ? 4 : media.desktop ? 3 : media.tablet ? 2 : 2;
-  const gap = mobileSpacing[4];
+  const gap = modernSpacing.lg;
 
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[8] }}>
-        {/* Page header */}
-        <YStack style={{ gap: mobileSpacing[2] }}>
-          <Text
-            style={{
-              fontFamily: fontFamilies.serifRegular,
-              fontSize: 34,
-              lineHeight: 42,
-              fontWeight: '500',
-              color: palette.color,
-              letterSpacing: -0.5,
-            }}
-          >
-            Каталог
-          </Text>
-          <Text
-            style={{
-              fontFamily: fontFamilies.sansRegular,
-              fontSize: 14,
-              lineHeight: 20,
-              color: palette.colorMuted,
-            }}
-          >
+    <ModernScreen width="wide">
+      <YStack style={{ gap: modernSpacing.section }}>
+        <YStack style={{ gap: modernSpacing.sm }}>
+          <AppText role="display">Каталог</AppText>
+          <AppText role="metadata" color={modernColors.textSecondary}>
             {pagination.total === 1
               ? '1 предмет'
               : `${pagination.total} предметов`}
-          </Text>
+          </AppText>
         </YStack>
 
         {/* Product grid — plain flex wrap (no FlatList; web-first) */}
@@ -105,7 +84,7 @@ export function ProductListScreen() {
                 paddingHorizontal: gap / 2,
               }}
             >
-              <ProductCard
+              <AuctionCard
                 product={product}
                 listing={listing}
                 sellerProfile={sellerProfile}
@@ -116,18 +95,11 @@ export function ProductListScreen() {
 
         {/* Stale / refetching indicator */}
         {query.isFetching && !query.isLoading ? (
-          <Text
-            style={{
-              fontFamily: fontFamilies.sansRegular,
-              fontSize: 12,
-              color: palette.colorMuted,
-              textAlign: 'center',
-            }}
-          >
+          <AppText role="metadata" color={modernColors.textMuted} style={{ textAlign: 'center' }}>
             Обновляем…
-          </Text>
+          </AppText>
         ) : null}
       </YStack>
-    </Screen>
+    </ModernScreen>
   );
 }

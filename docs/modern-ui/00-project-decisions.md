@@ -109,7 +109,7 @@ Business actions must not wait for motion. No per-component springs or bounce fo
 
 ## 6. Responsive and screen invariants
 
-Use one route tree, shared domain logic, and one public component API. Mobile is primary: compact header, bottom navigation, sheets, sticky actions, safe area. Desktop uses compact sidebar, top search, wide content, and visual grid; natural desktop equivalents replace sheets. Use a platform file only for a real layout/behavior difference.
+Use one route tree, shared domain logic, and one public component API. Mobile is primary: global navigation is a centred floating bottom dock in the safe-area reach zone, while the top of a screen is reserved for local context and actions. Do not duplicate global navigation in the mobile header. Desktop uses a compact left rail or top action area, wide centred content and a visual grid; natural desktop equivalents replace sheets. Use a platform file only for a real layout/behavior difference.
 
 Home always shows discovery content, images, title, price/current bid, and deadline/state. Product detail first viewport always shows gallery, title, current bid, minimum next bid, remaining time/status, and primary CTA. OTP appears only after “Сделать ставку”. Activity is a compact list with one main status. Seller forms are staged and category-dependent; preview is separate from editing. Settings are grouped. Admin uses the same tokens and base components, without a random SaaS shell.
 

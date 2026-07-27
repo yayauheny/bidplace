@@ -7,11 +7,13 @@ Every target screen must have loading, empty, error, offline/stale where relevan
 ## Shared shell
 
 ```text
-Desktop: Sidebar | Header/search | Main content | optional contextual panel
-Mobile: Compact header | Scroll content | sticky BottomActionBar when needed | bottom navigation
+Desktop: left rail or header actions | centred main content | optional contextual panel
+Mobile: local context at top | scroll content | sticky BottomActionBar when needed | centred floating bottom navigation
 ```
 
 Use 20–24 px mobile gutters, 32 px desktop gutters, one dominant CTA, and no hidden auction price/deadline. Loading preserves image/card geometry; empty states explain the next meaningful action; errors allow retry; offline states never imply a bid succeeded.
+
+Global navigation follows the Pinterest-style reach model: desktop actions live at the left or top edge and leave the centre for content; mobile navigation is a compact floating dock centred above the safe-area bottom. It links only to implemented routes, has 44 px touch targets, and does not duplicate itself in a mobile header. A screen header is reserved for a local back/action context.
 
 ## Screen matrix
 
