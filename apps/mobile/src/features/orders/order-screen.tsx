@@ -1,30 +1,86 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
-import { Text, YStack } from 'tamagui';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { modernTokens } from '@bidplace/design-tokens';
+
+import { AppHeader } from '../../components/layout/AppHeader';
 import {
-  AppButton,
-  DetailList,
-  ErrorState,
-  LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
-} from '../../components/ui';
+  AppDialog,
+  AppText,
+  DestructiveButton,
+  PrimaryButton,
+  SecondaryButton,
+} from '../../components/modern-ui';
+import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getUserFacingErrorMessage } from '../../lib/errors';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { mobileSpacing } from '../../theme/tokens';
 
 type SellerOrderAction = 'contacted' | 'completed' | 'handoffFailed';
 type OrderResponse = Awaited<ReturnType<ApiClient['orders']['get']>>;
 type SellerProjection = Extract<OrderResponse, { buyerEmailAtClose: string }>;
-type BuyerProjection = Extract<OrderResponse, { sellerHandoffType: string | null }>;
+type BuyerProjection = Extract<
+  OrderResponse,
+  { sellerHandoffType: string | null }
+>;
 type AdminProjection = Extract<OrderResponse, { handoffInitiator: string }>;
 
-function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString('ru-BY');
+function Panel({
+  eyebrow,
+  children,
+}: {
+  eyebrow?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View
+      style={{
+        gap: modernTokens.space.x4,
+        borderRadius: modernTokens.radius.panel,
+        borderWidth: 1,
+        borderColor: modernTokens.color.border,
+        backgroundColor: modernTokens.color.surface,
+        padding: modernTokens.space.x5,
+      }}
+    >
+      {eyebrow ? (
+        <AppText role="metadata" tone="secondary">
+          {eyebrow}
+        </AppText>
+      ) : null}
+      {children}
+    </View>
+  );
+}
+
+function Details({ items }: { items: { label: string; value: string }[] }) {
+  return (
+    <View style={{ gap: modernTokens.space.x3 }}>
+      {items.map((item) => (
+        <View
+          key={item.label}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            gap: modernTokens.space.x4,
+          }}
+        >
+          <AppText role="bodySmall" tone="secondary">
+            {item.label}
+          </AppText>
+          <AppText
+            role="bodySmall"
+            style={{ flexShrink: 1, textAlign: 'right' }}
+          >
+            {item.value}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 export function OrderScreen({ publicId }: { publicId: string }) {
@@ -33,258 +89,218 @@ export function OrderScreen({ publicId }: { publicId: string }) {
   const queryClient = useQueryClient();
   const [lastAction, setLastAction] = useState<SellerOrderAction | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-
+  const [confirmFailure, setConfirmFailure] = useState(false);
   const query = useQuery({
     queryKey: ['orders', publicId, auth.user?.id ?? 'anonymous'],
     queryFn: () => api.orders.get(publicId),
     enabled: auth.isAuthenticated,
   });
-
-  const invalidateRelatedQueries = async () => {
-    await Promise.all([
+  const invalidate = () =>
+    Promise.all([
       queryClient.invalidateQueries({ queryKey: ['orders', publicId] }),
       queryClient.invalidateQueries({ queryKey: ['user', 'activity'] }),
     ]);
-  };
-
-  const sellerActionMutation = {
-    contacted: useMutation({
-      mutationFn: () => api.orders.contacted(publicId),
-      onMutate: () => {
-        setLastAction('contacted');
-        setActionError(null);
-      },
-      onSuccess: () => {
-        setLastAction(null);
-        setActionError(null);
-        void invalidateRelatedQueries();
-      },
-      onError: (error) => {
-        setLastAction('contacted');
-        setActionError(
-          getUserFacingErrorMessage(
-            error,
-            'Не удалось обновить статус передачи. Попробуйте ещё раз.',
-          ),
-        );
-      },
-    }),
-    completed: useMutation({
-      mutationFn: () => api.orders.completed(publicId),
-      onMutate: () => {
-        setLastAction('completed');
-        setActionError(null);
-      },
-      onSuccess: () => {
-        setLastAction(null);
-        setActionError(null);
-        void invalidateRelatedQueries();
-      },
-      onError: (error) => {
-        setLastAction('completed');
-        setActionError(
-          getUserFacingErrorMessage(
-            error,
-            'Не удалось обновить статус передачи. Попробуйте ещё раз.',
-          ),
-        );
-      },
-    }),
-    handoffFailed: useMutation({
-      mutationFn: () => api.orders.handoffFailed(publicId),
-      onMutate: () => {
-        setLastAction('handoffFailed');
-        setActionError(null);
-      },
-      onSuccess: () => {
-        setLastAction(null);
-        setActionError(null);
-        void invalidateRelatedQueries();
-      },
-      onError: (error) => {
-        setLastAction('handoffFailed');
-        setActionError(
-          getUserFacingErrorMessage(
-            error,
-            'Не удалось обновить статус передачи. Попробуйте ещё раз.',
-          ),
-        );
-      },
-    }),
-  } as const;
-
-  if (!auth.isAuthenticated || query.isLoading) {
-    return (
-      <Screen>
-        <LoadingState label="Загружаем заказ" />
-      </Screen>
-    );
-  }
-
-  if (query.isError || !query.data) {
-    const kind = query.error instanceof ApiClientError
-      ? query.error.kind === 'forbidden'
-        ? 'forbidden'
-        : query.error.kind === 'not_found'
-          ? 'notFound'
-          : 'generic'
-      : 'generic';
-
-    return (
-      <Screen>
-        <ErrorState
-          kind={kind}
-          description="Заказ недоступен"
-          onAction={() => query.refetch()}
-        />
-      </Screen>
-    );
-  }
-
-  const response = query.data as OrderResponse;
-  const { order, productSummary } = response;
-  const isAdminView = auth.isAdmin;
-  const isSellerView = !isAdminView && 'buyerEmailAtClose' in response;
-  const sellerViewOrder = response as unknown as SellerProjection;
-  const buyerViewOrder = response as unknown as BuyerProjection;
-  const adminViewOrder = response as unknown as AdminProjection;
-  const hasSellerContact =
-    buyerViewOrder.sellerHandoffType !== null &&
-    buyerViewOrder.sellerHandoffValue !== null;
-  const sellerCanAct = isSellerView && !isAdminView;
-
-  const retryLastSellerAction = () => {
-    if (lastAction === 'contacted') {
-      sellerActionMutation.contacted.mutate();
-    } else if (lastAction === 'completed') {
-      sellerActionMutation.completed.mutate();
-    } else if (lastAction === 'handoffFailed') {
-      sellerActionMutation.handoffFailed.mutate();
-    }
-  };
-
-  const detailItems = [
-    { label: 'Предмет', value: productSummary.title ?? 'Предмет' },
-    { label: 'Итоговая сумма', value: `${order.finalAmount} BYN`, accent: true },
-    {
-      label: 'Связаться до',
-      value: formatDateTime(order.contactDueAt),
+  const action = (kind: SellerOrderAction) => ({
+    mutationFn: () =>
+      kind === 'contacted'
+        ? api.orders.contacted(publicId)
+        : kind === 'completed'
+          ? api.orders.completed(publicId)
+          : api.orders.handoffFailed(publicId),
+    onMutate: () => {
+      setLastAction(kind);
+      setActionError(null);
     },
-    { label: 'Статус', value: order.status },
-  ];
-
+    onSuccess: () => {
+      setLastAction(null);
+      setActionError(null);
+      setConfirmFailure(false);
+      void invalidate();
+    },
+    onError: (error: unknown) =>
+      setActionError(
+        getUserFacingErrorMessage(
+          error,
+          'Не удалось обновить статус передачи. Попробуйте ещё раз.',
+        ),
+      ),
+  });
+  const contacted = useMutation(action('contacted'));
+  const completed = useMutation(action('completed'));
+  const handoffFailed = useMutation(action('handoffFailed'));
+  if (!auth.isAuthenticated || query.isLoading)
+    return (
+      <Shell>
+        <AppText role="bodySmall" tone="secondary">
+          Загружаем заказ…
+        </AppText>
+      </Shell>
+    );
+  if (query.isError || !query.data) {
+    const message =
+      query.error instanceof ApiClientError && query.error.kind === 'forbidden'
+        ? 'Заказ недоступен'
+        : 'Не удалось загрузить заказ';
+    return (
+      <Shell>
+        <View style={{ gap: modernTokens.space.x4 }}>
+          <AppText role="sectionTitle">{message}</AppText>
+          <SecondaryButton
+            label="Повторить"
+            onPress={() => void query.refetch()}
+          />
+        </View>
+      </Shell>
+    );
+  }
+  const response = query.data;
+  const { order, productSummary } = response;
+  const isAdmin = auth.isAdmin;
+  const isSeller = !isAdmin && 'buyerEmailAtClose' in response;
+  const seller = response as SellerProjection;
+  const buyer = response as BuyerProjection;
+  const admin = response as AdminProjection;
+  const retry = () => {
+    if (lastAction === 'contacted') contacted.mutate();
+    else if (lastAction === 'completed') completed.mutate();
+    else if (lastAction === 'handoffFailed') handoffFailed.mutate();
+  };
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[5] }}>
-        <SectionHeader title={`Заказ ${order.publicId}`} />
-
-        <OperationalPanel>
-          <DetailList items={detailItems} />
-        </OperationalPanel>
-
-        {!isAdminView && !isSellerView ? (
-          <OperationalPanel eyebrow="Контакт продавца">
-            <YStack style={{ gap: mobileSpacing[2] }}>
-              {hasSellerContact ? (
-                <DetailList
-                  items={[
-                    { label: 'Тип контакта', value: String(buyerViewOrder.sellerHandoffType) },
-                    { label: 'Контакт', value: String(buyerViewOrder.sellerHandoffValue) },
-                  ]}
-                />
-              ) : (
-                <Text style={{ fontSize: 14, lineHeight: 20 }}>
-                  Продавец скрывает контакт в этом режиме передачи.
-                </Text>
-              )}
-            </YStack>
-          </OperationalPanel>
-        ) : null}
-
-        {sellerCanAct ? (
-          <OperationalPanel eyebrow="Передача заказа">
-            <YStack style={{ gap: mobileSpacing[3] }}>
-              <DetailList
+    <Shell>
+      <View style={{ gap: modernTokens.space.x6 }}>
+        <View style={{ gap: modernTokens.space.x2 }}>
+          <AppText role="metadata" tone="secondary">
+            Заказ {order.publicId}
+          </AppText>
+          <AppText role="screenTitle">
+            {productSummary.title ?? 'Предмет'}
+          </AppText>
+        </View>
+        <Panel>
+          <Details
+            items={[
+              {
+                label: 'Итоговая сумма',
+                value: formatCurrencyAmount(order.finalAmount),
+              },
+              {
+                label: 'Связаться до',
+                value: formatDateTime(order.contactDueAt),
+              },
+              { label: 'Статус', value: order.status },
+            ]}
+          />
+        </Panel>
+        {!isAdmin && !isSeller ? (
+          <Panel eyebrow="Контакт продавца">
+            {buyer.sellerHandoffType && buyer.sellerHandoffValue ? (
+              <Details
                 items={[
-                  {
-                    label: 'Email покупателя',
-                    value: sellerViewOrder.buyerEmailAtClose,
-                  },
+                  { label: 'Тип контакта', value: buyer.sellerHandoffType },
+                  { label: 'Контакт', value: buyer.sellerHandoffValue },
                 ]}
               />
-              <YStack style={{ gap: mobileSpacing[2] }}>
-                <AppButton
-                  tone="secondary"
-                  isLoading={sellerActionMutation.contacted.isPending}
-                  loadingLabel="Сохраняем"
-                  onPress={() => sellerActionMutation.contacted.mutate()}
-                >
-                  Отметить контакт
-                </AppButton>
-                <AppButton
-                  tone="primary"
-                  isLoading={sellerActionMutation.completed.isPending}
-                  loadingLabel="Сохраняем"
-                  onPress={() => sellerActionMutation.completed.mutate()}
-                >
-                  Передача завершена
-                </AppButton>
-                <AppButton
-                  tone="subtle"
-                  isLoading={sellerActionMutation.handoffFailed.isPending}
-                  loadingLabel="Сохраняем"
-                  onPress={() => sellerActionMutation.handoffFailed.mutate()}
-                >
-                  Срыв передачи
-                </AppButton>
-              </YStack>
-              {actionError ? (
-                <YStack style={{ gap: mobileSpacing[2] }}>
-                  <Text
-                    style={{
-                      color: '#b91c1c',
-                      fontSize: 14,
-                      lineHeight: 20,
-                    }}
-                  >
-                    {actionError}
-                  </Text>
-                  {lastAction ? (
-                    <AppButton tone="secondary" onPress={retryLastSellerAction}>
-                      Повторить действие
-                    </AppButton>
-                  ) : null}
-                </YStack>
-              ) : null}
-            </YStack>
-          </OperationalPanel>
+            ) : (
+              <AppText role="bodySmall" tone="secondary">
+                Продавец скрывает контакт в этом режиме передачи.
+              </AppText>
+            )}
+          </Panel>
         ) : null}
-
-        {isAdminView ? (
-          <OperationalPanel eyebrow="Администратор">
-            <DetailList
+        {isSeller ? (
+          <Panel eyebrow="Передача заказа">
+            <Details
               items={[
-                {
-                  label: 'Email покупателя',
-                  value: adminViewOrder.buyerEmailAtClose,
-                },
+                { label: 'Email покупателя', value: seller.buyerEmailAtClose },
+              ]}
+            />
+            <View style={{ gap: modernTokens.space.x2 }}>
+              <SecondaryButton
+                label="Отметить контакт"
+                loading={contacted.isPending}
+                onPress={() => contacted.mutate()}
+              />
+              <PrimaryButton
+                label="Передача завершена"
+                loading={completed.isPending}
+                onPress={() => completed.mutate()}
+              />
+              <DestructiveButton
+                label="Срыв передачи"
+                loading={handoffFailed.isPending}
+                onPress={() => setConfirmFailure(true)}
+              />
+            </View>
+            {actionError ? (
+              <View style={{ gap: modernTokens.space.x2 }}>
+                <AppText role="bodySmall" tone="danger">
+                  {actionError}
+                </AppText>
+                {lastAction ? (
+                  <SecondaryButton label="Повторить действие" onPress={retry} />
+                ) : null}
+              </View>
+            ) : null}
+          </Panel>
+        ) : null}
+        {isAdmin ? (
+          <Panel eyebrow="Администратор">
+            <Details
+              items={[
+                { label: 'Email покупателя', value: admin.buyerEmailAtClose },
                 {
                   label: 'Тип контакта',
-                  value: adminViewOrder.sellerHandoffType ?? '—',
+                  value: admin.sellerHandoffType ?? '—',
                 },
                 {
                   label: 'Контакт продавца',
-                  value: adminViewOrder.sellerHandoffValue ?? '—',
+                  value: admin.sellerHandoffValue ?? '—',
                 },
-                {
-                  label: 'Режим',
-                  value: adminViewOrder.handoffInitiator,
-                },
+                { label: 'Режим', value: admin.handoffInitiator },
               ]}
             />
-          </OperationalPanel>
+          </Panel>
         ) : null}
-      </YStack>
-    </Screen>
+      </View>
+      <AppDialog
+        open={confirmFailure}
+        title="Подтвердите срыв передачи"
+        description="Это необратимо изменит статус заказа и потребует дальнейшего сопровождения администратором."
+        onClose={() => setConfirmFailure(false)}
+      >
+        <DestructiveButton
+          label="Подтвердить срыв"
+          loading={handoffFailed.isPending}
+          onPress={() => handoffFailed.mutate()}
+        />
+        <SecondaryButton
+          label="Отмена"
+          disabled={handoffFailed.isPending}
+          onPress={() => setConfirmFailure(false)}
+        />
+      </AppDialog>
+    </Shell>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+    >
+      <AppHeader />
+      <ScrollView
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+          padding: modernTokens.space.x5,
+          gap: modernTokens.space.x6,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
