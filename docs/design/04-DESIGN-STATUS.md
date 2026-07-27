@@ -4,6 +4,8 @@
 
 Статус документа: Partial — legacy implementation is functionally verified for closed pilot. Final cutover Phase 0 has NativeWind web configuration and target font loading, but no target route has migrated. The approved transition remains a clean cutover in `../modern-ui/10-final-cutover-plan.md`; no pilot bridge or partial target route is accepted as final implementation.
 
+Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. They have passed mobile typecheck, lint and Expo web export; no route may be marked final until it uses the complete target shell and state matrix.
+
 ## Functional screen status
 
 | Экран                      | Route                                               | Статус                              | Evidence / remaining work                                                                                                                                                                                         |

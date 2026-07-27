@@ -2,6 +2,8 @@
 // light-only MVP — dark theme removed from runtime.
 // Future dark theme: add a new token map, not component rewrites.
 
+export * from './modern';
+
 export const colors = {
   // Backgrounds
   background: '#F7F6F3',

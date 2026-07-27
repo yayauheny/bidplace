@@ -27,8 +27,11 @@
 | Navigation        | responsive header, desktop navigation, mobile drawer      | `components/layout`                                                                    |
 | Feedback          | loading/empty/error states                                | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
 | Media             | Expo Image, API URL resolver, image picker                | `components/auction`, `components/storefront`, `features/seller`                       |
+| Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton and image placeholder | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/` |
 
 Legacy implementation has no approved icon library or canonical confirmation dialog. Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now.
+
+The final foundation is available for new migrated screens, but legacy routes still use Tamagui. Do not mix the two component families inside a route.
 
 ## Target principles
 
