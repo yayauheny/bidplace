@@ -8,30 +8,30 @@
 
 Часть перечисленного находится в незакоммиченном рабочем состоянии и требует design QA. Это инвентаризация кода, не утверждение бренда.
 
-| Область           | Фактическая реализация                                    | Путь                                                                                   |
-| ----------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Colors/themes     | light/dark semantic palettes                              | `packages/design-tokens/src/index.ts`, `apps/mobile/src/theme/tokens.ts`, `palette.ts` |
-| Spacing           | 2–96 px шкала                                             | `packages/design-tokens/src/index.ts`                                                  |
-| Radius            | `xs`–`2xl`, `full`                                        | `packages/design-tokens/src/index.ts`                                                  |
-| Size/touch        | control sizes и `touch: 44`                               | `packages/design-tokens/src/index.ts`                                                  |
-| Typography tokens | display/hero/heading/title/body/small/caption/nav         | `packages/design-tokens/src/index.ts`                                                  |
-| Fonts             | Inter body, Cormorant Garamond heading                    | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`, `_layout.tsx`                  |
-| Layout            | page/content/reading/form max widths                      | `packages/design-tokens/src/index.ts`                                                  |
-| Breakpoints       | mobile ≤640, tablet ≤1024, desktop ≥1025, wide ≥1440      | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`                                 |
-| Elevation         | shadow tokens плюс local card shadows                     | tokens, `AppCard.tsx`                                                                  |
-| Buttons           | tones, sizes, loading/disabled/focus                      | `components/ui/AppButton.tsx`; thin duplicate `PrimaryButton.tsx`                      |
-| Fields/forms      | input, controlled input, field error, RHF forms           | `components/ui/AppInput.tsx`, `ControlledAppInput.tsx`, `FormField.tsx`; `features/*`  |
-| Cards/panels      | `AppCard`, `EntityPanel`, auction/storefront cards        | `components/ui`, `components/auction`, `components/storefront`                         |
-| Status            | status badge and mapping                                  | `StatusBadge.tsx`, `features/auctions/utils.ts`                                        |
-| Auction patterns  | timer, banner, gallery, bid panel/history, seller summary | `components/auction`                                                                   |
-| Navigation        | responsive header, desktop navigation, mobile drawer      | `components/layout`                                                                    |
-| Feedback          | loading/empty/error states                                | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
-| Media             | Expo Image, API URL resolver, image picker                | `components/auction`, `components/storefront`, `features/seller`                       |
-| Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton and image placeholder | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/` |
+| Область             | Фактическая реализация                                                                                                         | Путь                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Colors/themes       | light/dark semantic palettes                                                                                                   | `packages/design-tokens/src/index.ts`, `apps/mobile/src/theme/tokens.ts`, `palette.ts` |
+| Spacing             | 2–96 px шкала                                                                                                                  | `packages/design-tokens/src/index.ts`                                                  |
+| Radius              | `xs`–`2xl`, `full`                                                                                                             | `packages/design-tokens/src/index.ts`                                                  |
+| Size/touch          | control sizes и `touch: 44`                                                                                                    | `packages/design-tokens/src/index.ts`                                                  |
+| Typography tokens   | display/hero/heading/title/body/small/caption/nav                                                                              | `packages/design-tokens/src/index.ts`                                                  |
+| Fonts               | Inter body, Cormorant Garamond heading                                                                                         | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`, `_layout.tsx`                  |
+| Layout              | page/content/reading/form max widths                                                                                           | `packages/design-tokens/src/index.ts`                                                  |
+| Breakpoints         | mobile ≤640, tablet ≤1024, desktop ≥1025, wide ≥1440                                                                           | `apps/mobile/src/theme/tokens.ts`, `tamagui.config.ts`                                 |
+| Elevation           | shadow tokens плюс local card shadows                                                                                          | tokens, `AppCard.tsx`                                                                  |
+| Buttons             | tones, sizes, loading/disabled/focus                                                                                           | `components/ui/AppButton.tsx`; thin duplicate `PrimaryButton.tsx`                      |
+| Fields/forms        | input, controlled input, field error, RHF forms                                                                                | `components/ui/AppInput.tsx`, `ControlledAppInput.tsx`, `FormField.tsx`; `features/*`  |
+| Cards/panels        | `AppCard`, `EntityPanel`, auction/storefront cards                                                                             | `components/ui`, `components/auction`, `components/storefront`                         |
+| Status              | status badge and mapping                                                                                                       | `StatusBadge.tsx`, `features/auctions/utils.ts`                                        |
+| Auction patterns    | timer, banner, gallery, bid panel/history, seller summary                                                                      | `components/auction`                                                                   |
+| Navigation          | responsive header, desktop navigation, mobile drawer                                                                           | `components/layout`                                                                    |
+| Feedback            | loading/empty/error states                                                                                                     | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
+| Media               | Expo Image, API URL resolver, image picker                                                                                     | `components/auction`, `components/storefront`, `features/seller`                       |
+| Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
 
 Legacy implementation has no approved icon library or canonical confirmation dialog. Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now.
 
-The final foundation is available for new migrated screens, but legacy routes still use Tamagui. Do not mix the two component families inside a route.
+The final foundation is available for migrated route content, while the shared legacy header remains until the navigation cutover. Route content must not introduce new legacy UI imports.
 
 ## Target principles
 

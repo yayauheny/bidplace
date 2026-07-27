@@ -1,18 +1,17 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Text, YStack } from 'tamagui';
+import { View } from 'react-native';
 
 import {
-  AppButton,
-  AppInput,
-  ErrorState,
-  LoadingState,
-} from '../../components/ui';
+  AppText,
+  PrimaryButton,
+  SecondaryButton,
+  TextField,
+} from '../../components/modern-ui';
+import { modernTokens } from '@bidplace/design-tokens';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { useAppThemePalette } from '../../theme/palette';
-import { mobileSpacing } from '../../theme/tokens';
 
 type EmailRulesGateProps = {
   children: ReactNode;
@@ -22,7 +21,6 @@ type EmailRulesGateProps = {
 export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
   const api = useApiClient();
   const auth = useAuth();
-  const palette = useAppThemePalette();
   const [code, setCode] = useState('');
 
   const rulesQuery = useQuery({
@@ -58,143 +56,115 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
   });
 
   if (!auth.ready) {
-    return <LoadingState label="Проверяем доступ" />;
+    return (
+      <AppText role="bodySmall" tone="secondary">
+        Проверяем доступ…
+      </AppText>
+    );
   }
 
   if (!auth.isAuthenticated) {
     return (
-      <YStack style={{ gap: mobileSpacing[3] }}>
-        <Text
-          style={{
-            color: palette.colorSecondary,
-            fontSize: 14,
-            lineHeight: 20,
-          }}
-        >
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="secondary">
           Войдите, чтобы продолжить.
-        </Text>
+        </AppText>
         <Link href={{ pathname: '/login', params: { redirectTo } }} asChild>
-          <AppButton tone="primary">Войти</AppButton>
+          <PrimaryButton label="Войти" onPress={() => undefined} />
         </Link>
-      </YStack>
+      </View>
     );
   }
 
   if (!auth.user) {
     return (
-      <ErrorState
-        description="Не удалось восстановить сессию"
-        onAction={() => {
-          void auth.refreshSession();
-        }}
-      />
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="danger">
+          Не удалось восстановить сессию
+        </AppText>
+        <SecondaryButton
+          label="Повторить"
+          onPress={() => void auth.refreshSession()}
+        />
+      </View>
     );
   }
 
   if (rulesQuery.isError) {
     return (
-      <ErrorState
-        description="Не удалось загрузить правила"
-        onAction={() => {
-          void rulesQuery.refetch();
-        }}
-      />
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="danger">
+          Не удалось загрузить правила
+        </AppText>
+        <SecondaryButton
+          label="Повторить"
+          onPress={() => void rulesQuery.refetch()}
+        />
+      </View>
     );
   }
 
   if (!auth.user.emailVerifiedAt) {
     return (
-      <YStack style={{ gap: mobileSpacing[3] }}>
-        <Text
-          style={{
-            color: palette.colorSecondary,
-            fontSize: 14,
-            lineHeight: 20,
-          }}
-        >
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="secondary">
           Мы отправим код на ваш email. После подтверждения откроем ставку и
           проверим правила сервиса.
-        </Text>
-        <AppButton
-          tone="secondary"
-          isLoading={requestEmailVerification.isPending}
+        </AppText>
+        <SecondaryButton
+          label="Отправить код"
+          loading={requestEmailVerification.isPending}
           onPress={() => requestEmailVerification.mutate()}
-        >
-          Отправить код
-        </AppButton>
-        <AppInput
+        />
+        <TextField
           label="Код из письма"
           value={code}
           onChangeText={setCode}
           keyboardType="number-pad"
           placeholder="000000"
         />
-        <AppButton
-          tone="primary"
-          isLoading={verifyEmail.isPending}
+        <PrimaryButton
+          label="Подтвердить email"
+          loading={verifyEmail.isPending}
           onPress={() => verifyEmail.mutate()}
-        >
-          Подтвердить email
-        </AppButton>
+        />
         {requestEmailVerification.isError || verifyEmail.isError ? (
-          <Text
-            style={{
-              color: palette.negative,
-              fontSize: 14,
-              lineHeight: 20,
-            }}
-          >
+          <AppText role="bodySmall" tone="danger">
             Не удалось подтвердить email. Попробуйте ещё раз.
-          </Text>
+          </AppText>
         ) : null}
-      </YStack>
+      </View>
     );
   }
 
   if (!rulesQuery.data) {
-    return <LoadingState label="Загружаем правила" />;
+    return (
+      <AppText role="bodySmall" tone="secondary">
+        Загружаем правила…
+      </AppText>
+    );
   }
 
   if (auth.user.acceptedRulesVersion !== rulesQuery.data.rules.version) {
     return (
-      <YStack style={{ gap: mobileSpacing[3] }}>
-        <Text
-          style={{
-            color: palette.colorSecondary,
-            fontSize: 14,
-            lineHeight: 20,
-          }}
-        >
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="secondary">
           {rulesQuery.data.rules.text}
-        </Text>
-        <Text
-          style={{
-            color: palette.colorMuted,
-            fontSize: 12,
-            lineHeight: 16,
-          }}
-        >
+        </AppText>
+        <AppText role="caption" tone="muted">
           Версия: {rulesQuery.data.rules.version}
-        </Text>
-        <AppButton
-          tone="primary"
-          isLoading={acceptRules.isPending}
+        </AppText>
+        <PrimaryButton
+          label="Принять правила"
+          loading={acceptRules.isPending}
           onPress={() => acceptRules.mutate()}
-        >
-          Принять правила
-        </AppButton>
+        />
         {acceptRules.isError ? (
-          <Text
-            style={{
-              color: palette.negative,
-              fontSize: 14,
-              lineHeight: 20,
-            }}
-          >
+          <AppText role="bodySmall" tone="danger">
             Не удалось принять правила. Попробуйте ещё раз.
-          </Text>
+          </AppText>
         ) : null}
-      </YStack>
+      </View>
     );
   }
 
