@@ -18,6 +18,8 @@ The current application still uses the existing Tamagui-based system. Treat ever
 | [`04-component-catalog.md`](./04-component-catalog.md) | Target public component API and states |
 | [`05-migration-plan.md`](./05-migration-plan.md) | Future migration phases, rollback, and stop conditions |
 | [`06-quality-checklist.md`](./06-quality-checklist.md) | Component, screen, accessibility, and dependency checklists |
+| [`07-current-design-research-plan.md`](./07-current-design-research-plan.md) | Repeatable procedure for researching the current UI before migration planning |
+| [`08-current-design-baseline-report.md`](./08-current-design-baseline-report.md) | Evidence-backed current UI baseline and transition-planning inputs |
 | [`references/README.md`](./references/README.md) | Reference index and priority rules |
 
 ## Target stack, in one view
@@ -36,6 +38,8 @@ Target dependency versions must be exact production versions without `^` or `~`.
 6. [`02-ui-architecture-and-resources.md`](./02-ui-architecture-and-resources.md)
 
 Then consult [`01-current-audit.md`](./01-current-audit.md) whenever a current implementation constraint matters.
+
+Before creating or revising a migration plan, run [`07-current-design-research-plan.md`](./07-current-design-research-plan.md) and refresh [`08-current-design-baseline-report.md`](./08-current-design-baseline-report.md).
 
 ## Rules for AI agents
 
