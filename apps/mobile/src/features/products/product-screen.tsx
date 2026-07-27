@@ -15,6 +15,7 @@ import {
   Screen,
   StatusBadge,
 } from '../../components/ui';
+import { AppDialog, PrimaryButton, SecondaryButton } from '../../components/modern-ui';
 import { getApiUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
@@ -23,6 +24,7 @@ import { useAppThemePalette } from '../../theme/palette';
 import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
 import { EmailRulesGate } from '../auth/email-rules-gate';
 import type { ApiClient } from '@bidplace/api-client';
+import { validateBidAmount } from './bid-validation';
 
 // Derive types from the API client to stay in sync with the contract.
 type BidItem = Awaited<ReturnType<ApiClient['listings']['listBids']>>['bids'][number];
@@ -83,6 +85,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const palette = useAppThemePalette();
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
+  const [confirmationAttempt, setConfirmationAttempt] = useState<BidAttempt | null>(null);
+  const [bidValidationError, setBidValidationError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
 
   const query = useQuery({
@@ -126,6 +130,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       ),
     onSuccess: () => {
       setPendingAttempt(null);
+      setBidValidationError(null);
+      refreshListing();
+    },
+    onError: () => {
       refreshListing();
     },
   });
@@ -151,9 +159,22 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     ? activity.data?.activity.find((item) => item.listing.id === listing.id)
     : undefined;
 
+  const sendBid = (attempt: BidAttempt) => {
+    setPendingAttempt(attempt);
+    setConfirmationAttempt(null);
+    bid.mutate(attempt);
+  };
+
   const submitBid = () => {
     if (!listing) return;
-    const nextAmount = Number(amount);
+    const validationError = validateBidAmount(amount, minimumNextBid);
+    if (validationError) {
+      setBidValidationError(validationError);
+      return;
+    }
+
+    setBidValidationError(null);
+    const nextAmount = Number(amount.replace(',', '.'));
     const existing = pendingAttempt;
     const reusable: BidAttempt =
       existing !== null &&
@@ -165,8 +186,14 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             amount: nextAmount,
             idempotencyKey: newIdempotencyKey(),
           };
-    setPendingAttempt(reusable);
-    bid.mutate(reusable);
+    // If participation is unavailable, confirmation is required by default.
+    // This prevents a stale Activity projection from bypassing first-bid consent.
+    if (!participation) {
+      setConfirmationAttempt(reusable);
+      return;
+    }
+
+    sendBid(reusable);
   };
 
   const detailItems = [
@@ -290,11 +317,11 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                       Сделать ставку
                     </AppButton>
                     {bid.isError && pendingAttempt ? (
-                      <AppButton tone="secondary" onPress={submitBid}>
+                      <AppButton tone="secondary" onPress={() => sendBid(pendingAttempt)}>
                         Повторить ставку
                       </AppButton>
                     ) : null}
-                    {bid.isError ? (
+                    {bidValidationError || bid.isError ? (
                       <Text
                         style={{
                           color: palette.negative,
@@ -302,8 +329,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                           lineHeight: 20,
                         }}
                       >
-                        Ставка не принята. Проверьте статус торгов и минимальную
-                        сумму.
+                        {bidValidationError ?? 'Ставка не принята. Сервер обновил цену и минимальную сумму — проверьте актуальные данные.'}
                       </Text>
                     ) : null}
                   </YStack>
@@ -474,6 +500,15 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             </AppButton>
           </Link>
         ) : null}
+        <AppDialog
+          open={confirmationAttempt !== null}
+          title="Подтвердите ставку"
+          description={listing ? `Вы делаете ставку на «${product.title ?? 'предмет'}» на сумму ${confirmationAttempt?.amount} BYN. Минимальная сумма по данным сервера: ${minimumNextBid ?? 'недоступна'} BYN. Торги завершаются ${new Date(listing.endsAt).toLocaleString('ru-BY')}. Ставка необратима.` : undefined}
+          onClose={() => setConfirmationAttempt(null)}
+        >
+          <PrimaryButton label="Подтвердить ставку" loading={bid.isPending} onPress={() => { if (confirmationAttempt) sendBid(confirmationAttempt); }} />
+          <SecondaryButton label="Отмена" disabled={bid.isPending} onPress={() => setConfirmationAttempt(null)} />
+        </AppDialog>
       </YStack>
     </Screen>
   );
