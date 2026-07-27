@@ -10,6 +10,17 @@ Implementation status: **Not implemented**
 
 ![MyPlastic catalog reference](./myplastic-catalog-mobile-reference-01.png)
 
+## Дополнительное наблюдение к референсу
+
+Новое присланное изображение не добавляется в каталог отдельным файлом по просьбе владельца; оно дополняет этот reference.
+
+В нём подтверждены два важных акцентных приёма:
+
+- `PRESSED AT` под названием и автором — маленькая оранжевая temporal metadata line. Она выделяет дату/событие, но не конкурирует с названием.
+- Маленькая чёрная точка у filter icon — компактный сигнал важного состояния, например активных фильтров. Точка должна быть только дополнением к accessible state и текстовому описанию.
+
+Для bidplace эти приёмы можно адаптировать к `СОЗДАНО`, `ДОБАВЛЕНО`, `ВЫСТАВЛЕНО`, `ЗАКАНЧИВАЕТСЯ` или `PRESSED AT`-подобной технической дате только при наличии реального значения. Оранжевый остаётся редким semantic accent, а не украшением всех карточек.
+
 ## Арт-директорский вывод
 
 Это сильный референс для главной ленты: сначала короткие editorial sections, затем крупные изображения, а под ними — спокойная серая metadata-строка. Контент выглядит визуально богатым, но интерфейс остаётся минимальным, потому что текст не конкурирует с изображениями.
@@ -76,6 +87,20 @@ Implementation status: **Not implemented**
 
 Для bidplace это референс для редких объявлений: `НОВИНКА`, `СКОРО ЗАКОНЧИТСЯ`, `ВЫСОКИЙ СПРОС` или verified editorial feature — только если статус основан на реальных данных и product decision. Не использовать orange как постоянный badge и не создавать искусственную срочность.
 
+### 7. Accent temporal metadata
+
+`PRESSED AT 30 JUN` и `PRESSED AT 3 JUL` показывают, как оранжевый может выделять важную, но вторичную дату. Иерархия остаётся такой:
+
+1. title предмета;
+2. author/provenance;
+3. маленькая оранжевая дата или status metadata.
+
+В bidplace подобное оформление подходит для даты выставления, даты создания, последнего обновления, upcoming announcement или срока, если значение помогает понять предмет. Для server deadline аукциона нужен отдельный, более заметный auction state.
+
+### 8. Filter indicator dot
+
+В правом верхнем углу filter icon появляется маленькая dot. Это хороший micro-signal, но не самостоятельная информация. В bidplace она может означать, что применён один или несколько фильтров, при этом trigger должен сообщать selected state через label/aria и позволять сбросить выбор.
+
 ### 7. Нижняя navigation
 
 Bottom tab bar остаётся тонким и нейтральным: серые outline icons, один active orange icon. Он не конкурирует с карточками и не добавляет подписей в каждый tab.
@@ -112,10 +137,12 @@ Bottom tab bar остаётся тонким и нейтральным: серы
 | Album tile | `AuctionCard` / curated item card |
 | Group name below title | Author/provenance line |
 | `REISSUE` label | Rare data-backed `НОВИНКА` / status label |
+| `PRESSED AT` | Rare orange date/status metadata |
+| Filter indicator dot | Active-filter state with accessible text |
 | Dark deep-dive section | Curated story/provenance collection |
 | Partial next card | Discoverable horizontal row on mobile |
 | Arrow in heading | Navigation to full category/list |
 
 ## Status
 
-Референс утверждён для catalog composition, proportions, metadata hierarchy, category arrows и редких semantic labels. Он не утверждает product categories, конкретный orange token, музыкальную domain model или финальную карточку bidplace.
+Референс утверждён для catalog composition, proportions, metadata hierarchy, category arrows, rare semantic labels, temporal accent metadata и active-filter indicator. Дополнительное присланное изображение не хранится отдельно и только расширяет характеристики этого reference. Он не утверждает product categories, конкретный orange token, музыкальную domain model или финальную карточку bidplace.
