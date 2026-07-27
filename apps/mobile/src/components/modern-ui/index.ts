@@ -1,5 +1,6 @@
 export * from './AppIcon';
 export * from './AppText';
+export * from './AuctionCard';
 export * from './Button';
 export * from './ImagePlaceholder';
 export * from './MotionPressable';

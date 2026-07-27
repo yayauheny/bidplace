@@ -31,7 +31,7 @@
 - `feature/modern-ui-final` starts from the documentation baseline before the experimental pilot; the pilot bridge is not the accepted production strategy.
 - The redesign will migrate all existing working mobile routes, preserve server-authoritative auctions, email/rules gates, privacy projections, moderation and seller locks, then remove Tamagui in one final cutover.
 - Bid confirmation and client-side increment validation are confirmed UI behaviour; backend remains authoritative. See `DEC-055`, `DEC-056` and `docs/modern-ui/10-final-cutover-plan.md`.
-- Phase 0 foundation is Partial: `apps/mobile` has exact target dependency pins, NativeWind Metro/Babel/CSS setup, Inter 700 and PT Mono loading, and a successful Expo web export. No final UI route is implemented; iOS/Android smoke, accessibility and closed-pilot verification remain required before any route status changes.
+- Phase 0 foundation is Partial: `apps/mobile` has exact target dependency pins, NativeWind Metro/Babel/CSS setup, Inter 700 and PT Mono loading, and a successful Expo web export. Catalog (`/`) now uses final discovery tokens, `AuctionCard`, loading geometry and final error/empty states while preserving its existing API query and public route. It remains Partial pending final navigation, iOS/Android smoke and accessibility verification; no other final UI route is implemented.
 
 ## Confirmed MVP implementation gaps — 2026-07-23
 
