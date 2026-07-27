@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  ignorePatterns: ['dist', '.expo', 'node_modules', 'babel.config.js', 'metro.config.js'],
+  ignorePatterns: ['dist', '.expo', 'node_modules', 'babel.config.js', 'metro.config.js', 'tailwind.config.js'],
   extends: ['../../packages/eslint-config'],
   parserOptions: {
     project: ['./tsconfig.json'],

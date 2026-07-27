@@ -2,7 +2,7 @@
 
 Дата снимка: 2026-07-24
 
-Статус документа: Partial — legacy implementation is functionally verified for closed pilot, but the approved final visual transition is a clean cutover in `../modern-ui/05-migration-plan.md`. No pilot bridge or partial target route is accepted as final implementation.
+Статус документа: Partial — legacy implementation is functionally verified for closed pilot. Final cutover Phase 0 has NativeWind web configuration and target font loading, but no target route has migrated. The approved transition remains a clean cutover in `../modern-ui/10-final-cutover-plan.md`; no pilot bridge or partial target route is accepted as final implementation.
 
 ## Functional screen status
 

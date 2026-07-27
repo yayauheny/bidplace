@@ -18,11 +18,14 @@ Use these exact packages for the Phase 0 proof:
 | `nativewind` | `4.2.1` | Stable v4 styling foundation |
 | `tailwindcss` | `3.4.17` | NativeWind v4 compiler peer |
 | `prettier-plugin-tailwindcss` | `0.5.11` | Class ordering in source files |
+| `react-native-css-interop` | `0.2.1` | NativeWind JSX runtime required by Metro under pnpm |
 | `@rn-primitives/dialog` | `1.5.2` | Accessible dialog behavior behind bidplace adapters |
 | `lucide-react-native` | `1.27.0` | Icons, only through future `AppIcon` |
 | `@gorhom/bottom-sheet` | `5.2.14` | iOS/Android `AppSheet` implementation |
 
 `react-native-svg` resolves to `15.15.5` as Lucide's required peer. It is not imported directly by routes.
+
+PT Mono uses `@expo-google-fonts/pt-mono` `0.4.1`; `PTMono_400Regular` is the only family weight and is loaded with Inter 400/500/600/700. The font package includes a Cyrillic-capable web, iOS and Android asset.
 
 ## Compatibility evidence
 
@@ -37,6 +40,7 @@ Use these exact packages for the Phase 0 proof:
 - These packages do not authorize a route migration or vendor imports from a route.
 - `AppIcon`, `AppDialog` and `AppSheet` remain the only public application APIs.
 - The remaining gate is a clean typecheck, lint, Expo web export and native device smoke after configuration. No route is marked migrated before all pass.
+- `nativewind-env.d.ts` is deliberately listed in `tsconfig.json`; this prevents NativeWind from rewriting TypeScript configuration during export.
 
 ## Sources
 

@@ -1,5 +1,6 @@
 import { CormorantGaramond_500Medium, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { PTMono_400Regular } from '@expo-google-fonts/pt-mono';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +8,7 @@ import { View } from 'react-native';
 
 import { AppProviders } from '../providers/app-providers';
 import { lightTheme } from '../theme/tokens';
+import '../../global.css';
 // lightTheme is the sole runtime theme; no dark mode switching
 
 export default function RootLayout() {
@@ -16,6 +18,8 @@ export default function RootLayout() {
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
+    Inter_700Bold,
+    PTMono_400Regular,
   });
 
   if (!fontsLoaded) {

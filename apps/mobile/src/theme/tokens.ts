@@ -20,6 +20,8 @@ export const fontFamilies = {
   sansRegular: 'Inter_400Regular',
   sansMedium: 'Inter_500Medium',
   sansStrong: 'Inter_600SemiBold',
+  sansDisplay: 'Inter_700Bold',
+  mono: 'PTMono_400Regular',
 } as const;
 
 // Single light theme — MVP is light-only.
