@@ -37,6 +37,7 @@
 - Order final content is Partial: `features/orders/order-screen.tsx` preserves buyer/seller/admin server projections and seller action refetches through final primitives; the irreversible handoff-failed action now has explicit client confirmation. Full device, accessibility and regression E2E evidence remains.
 - Auth final content is Partial: `features/auth/auth-form.tsx` retains RHF/Zod validation, safe redirect and user-facing recovery through final form primitives. Device and accessibility evidence remains.
 - Seller profile final content is Partial: `features/sellers/seller-profile-screen.tsx` retains the server `CHANGES_REQUESTED` edit lock and multipart public-photo contract through final primitives. Device and regression upload evidence remains.
+- Product image deletion now requires explicit client confirmation in `features/sellers/product-draft-screen.tsx`; server lock and reorder mutations remain authoritative. The Product draft visual migration remains Partial.
 
 ## Confirmed MVP implementation gaps — 2026-07-23
 
