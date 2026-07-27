@@ -88,6 +88,7 @@ Approved radii: small 8, control 14, image 16, button 18, panel 22, sheet 28, pi
 - `IconButton`: 44 px minimum touch target, icon 18–26 px, accessible label.
 - `BackButton`: Lucide `ChevronLeft`, accent, 44 px target; never `ArrowLeft`.
 - `FilterChip`: 34–36 px pill, mono 13; active is ink/surface.
+- Sorting and filter affordances: use the same chip, arrow, icon weight and selected black/white contrast across screens; a selected count appears only for a real selected value.
 - `MetadataChip`: thin border and mono 12–13; noninteractive unless explicitly stated.
 - Product-detail tags: short outlined anchors for year/category/material/edition/provenance; keep the set small, near-monochrome, and connected to real filter dimensions where interactive.
 - `SegmentedControl`: muted container, ink active segment, 2–3 options.
