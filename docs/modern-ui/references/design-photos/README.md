@@ -1,8 +1,8 @@
 # Design photos
 
-Эта папка предназначена для фотографий и скриншотов будущего дизайна Modern UI. Фото разложены по папкам сервисов/сайтов-источников. Каждая фотография должна иметь понятное имя файла и одну строку в каталоге ниже.
+Эта папка хранит фотографии и скриншоты для будущего дизайна Modern UI. Фото разложены по папкам сервисов/сайтов-источников. Каждая фотография имеет понятное имя, строку в каталоге и подробный README рядом с изображением.
 
-На момент создания каталога утверждённые изображения в задаче не переданы, поэтому реальные фото не добавлены. Не создавай фиктивные изображения и не скачивай референсы автоматически.
+Реальные пользовательские референсы уже сохранены ниже. Не заменяй их фиктивными изображениями и не скачивай новые референсы автоматически: сначала добавь источник, экран, состояние и визуальный разбор по правилам этого каталога.
 
 ## Правила именования
 
@@ -44,11 +44,12 @@
 
 ## Как добавлять фотографию
 
-1. Положи файл в эту папку с семантическим именем.
+1. Создай папку сервиса/сайта, затем папку экрана, и положи туда файл с семантическим именем.
 2. Добавь или обнови строку с точным именем файла в таблице.
-3. Укажи, что брать из изображения, что изменить для Modern UI и что больше не актуально.
+3. Создай README рядом с изображением: что прямо видно, что брать для bidplace, что адаптировать/не переносить.
 4. Зафиксируй platform, viewport, state и дату получения.
-5. Не заменяй отсутствие изображения описанием как подтверждённый дизайн.
+5. Добавь источник в [`../REFERENCE-AUDIT.md`](../REFERENCE-AUDIT.md) и только затем помечай его `Reference approved`.
+6. Не заменяй отсутствие изображения описанием как подтверждённый дизайн.
 
 Подробные разборы: [`myplastic/auth-login/README.md`](./myplastic/auth-login/README.md), [`myplastic/settings/README.md`](./myplastic/settings/README.md), [`myplastic/dashboard/README.md`](./myplastic/dashboard/README.md), [`myplastic/collection/README.md`](./myplastic/collection/README.md), [`myplastic/discovery/README.md`](./myplastic/discovery/README.md), [`myplastic/catalog/README.md`](./myplastic/catalog/README.md), [`myplastic/product-detail/README.md`](./myplastic/product-detail/README.md), [`myplastic/product-page/README.md`](./myplastic/product-page/README.md), [`myplastic/author/README.md`](./myplastic/author/README.md), [`myplastic/search/README.md`](./myplastic/search/README.md), [`myplastic/versions/README.md`](./myplastic/versions/README.md) и [`tracker/README.md`](./tracker/README.md).
 

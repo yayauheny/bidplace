@@ -4,7 +4,7 @@ Status: **APPROVED TARGET DESIGN**
 Implementation status: **NOT STARTED**
 Last reviewed: 2026-07-27
 Owners: founder / assigned designer / frontend owner — names not recorded
-Related references: [`references/myplastic/README.md`](./references/myplastic/README.md), [`references/bidplace-concepts/README.md`](./references/bidplace-concepts/README.md)
+Related visual system: [`DESIGN.md`](./DESIGN.md), [`references/design-photos/myplastic/README.md`](./references/design-photos/myplastic/README.md), [`references/REFERENCE-AUDIT.md`](./references/REFERENCE-AUDIT.md)
 
 This is the target source of truth after migration begins. It is not a description of the current application. When the audit finds a difference, preserve both CURRENT and TARGET and do not silently revise the target.
 
@@ -16,7 +16,7 @@ The product should feel cultural, modern, young, warm, visual, simple, confident
 
 Principles: image-first, content-first, progressive disclosure, one primary scenario per screen, one dominant CTA per meaning area, color mostly from imagery, nearly monochrome UI, rare orange, and always-visible critical auction information.
 
-Reference priority: bidplace business logic → this document → approved local screenshots → reference README → external website.
+Reference priority: bidplace business logic → this document → [`DESIGN.md`](./DESIGN.md) → approved local screenshots → reference README → external website.
 
 ## 2. Brand and logo
 

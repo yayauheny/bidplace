@@ -126,4 +126,4 @@ This wireframe is a future design direction, not an implementation instruction. 
 
 ## Status and next step
 
-Reference is approved as the first visual direction for login/registration. It does **not** approve final tokens, exact font files, auth copy, route behavior, or a complete `DESIGN.md`. Those should be consolidated only after the remaining design references and founder/designer decisions are reviewed.
+Reference is approved as the first visual direction for login/registration. It does **not** approve exact source font files, auth copy, or route behavior. The consolidated target rules are in [`../../../../DESIGN.md`](../../../../DESIGN.md); final auth behaviour remains owned by the product contract.

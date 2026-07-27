@@ -11,6 +11,7 @@ The current application still uses the existing Tamagui-based system. Treat ever
 | File | Responsibility |
 | --- | --- |
 | [`00-project-decisions.md`](./00-project-decisions.md) | Approved target visual and technical decisions |
+| [`DESIGN.md`](./DESIGN.md) | Unified visual system, evidence boundaries, component rules, and reference lookup |
 | [`01-current-audit.md`](./01-current-audit.md) | Repository audit and CURRENT → TARGET gaps |
 | [`02-ui-architecture-and-resources.md`](./02-ui-architecture-and-resources.md) | Target layers, dependency direction, and official resources |
 | [`03-screen-rules.md`](./03-screen-rules.md) | Target composition and states for product screens |
@@ -28,10 +29,11 @@ Target dependency versions must be exact production versions without `^` or `~`.
 ## Required reading order for a UI task
 
 1. [`00-project-decisions.md`](./00-project-decisions.md)
-2. [`03-screen-rules.md`](./03-screen-rules.md)
-3. [`04-component-catalog.md`](./04-component-catalog.md)
-4. The relevant reference README in [`references/`](./references/)
-5. [`02-ui-architecture-and-resources.md`](./02-ui-architecture-and-resources.md)
+2. [`DESIGN.md`](./DESIGN.md)
+3. [`03-screen-rules.md`](./03-screen-rules.md)
+4. [`04-component-catalog.md`](./04-component-catalog.md)
+5. The relevant reference README in [`references/`](./references/)
+6. [`02-ui-architecture-and-resources.md`](./02-ui-architecture-and-resources.md)
 
 Then consult [`01-current-audit.md`](./01-current-audit.md) whenever a current implementation constraint matters.
 

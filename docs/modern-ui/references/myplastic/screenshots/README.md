@@ -1,3 +1,3 @@
-# MyPlastic screenshot archive
+# MyPlastic screenshots — legacy path
 
-No approved screenshots are present. Add only owner-approved files with semantic names and update the parent README.
+No screenshots belong in this legacy folder. Use the maintained catalog at [`../../design-photos/myplastic/README.md`](../../design-photos/myplastic/README.md).

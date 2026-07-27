@@ -131,4 +131,4 @@ Implementation status: **Not implemented**
 
 ## Status
 
-Референс утверждён как источник selective typography и settings patterns. Он не утверждает финальный mono font, palette, subscription model или содержимое bidplace settings. Эти решения должны быть включены в будущую `DESIGN.md` только после накопления и согласования остальных референсов.
+Референс утверждён как источник selective typography и settings patterns. Он не утверждает исходный mono font Plastic, palette, subscription model или содержимое bidplace settings. Консолидированные target-правила находятся в [`../../../../DESIGN.md`](../../../../DESIGN.md).
