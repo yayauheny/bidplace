@@ -19,6 +19,11 @@ import { useAppThemePalette } from '../../theme/palette';
 import { getApiUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { mobileSpacing } from '../../theme/tokens';
+import {
+  AppDialog,
+  DestructiveButton,
+  SecondaryButton,
+} from '../../components/modern-ui';
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
   const api = useApiClient();
@@ -53,6 +58,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
   const [provenance, setProvenance] = useState('');
   const [city, setCity] = useState('');
   const [deliveryInfo, setDeliveryInfo] = useState('');
+  const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!existingProduct || initializedProductId === existingProduct.id) return;
@@ -179,17 +187,35 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
         {existingProduct ? (
           <YStack style={{ gap: mobileSpacing[3] }}>
-            <XStack style={{ alignItems: 'center', justifyContent: 'space-between' }}>
-              <StatusBadge tone={existingProduct.status === 'APPROVED' ? 'positive' : 'neutral'}>
+            <XStack
+              style={{ alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <StatusBadge
+                tone={
+                  existingProduct.status === 'APPROVED' ? 'positive' : 'neutral'
+                }
+              >
                 {existingProduct.status}
               </StatusBadge>
-              <AppButton tone="subtle" buttonSize="small" onPress={() => products.refetch()}>
+              <AppButton
+                tone="subtle"
+                buttonSize="small"
+                onPress={() => products.refetch()}
+              >
                 Обновить
               </AppButton>
             </XStack>
             {existingProduct.status === 'APPROVED' ? (
-              <Link href={{ pathname: '/(seller)/listings/new', params: { productId: existingProduct.id } }} asChild>
-                <AppButton tone="primary" buttonSize="large">Создать аукцион</AppButton>
+              <Link
+                href={{
+                  pathname: '/(seller)/listings/new',
+                  params: { productId: existingProduct.id },
+                }}
+                asChild
+              >
+                <AppButton tone="primary" buttonSize="large">
+                  Создать аукцион
+                </AppButton>
               </Link>
             ) : null}
             {existingProduct.status !== 'APPROVED' && editable ? (
@@ -205,8 +231,15 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                   : 'Отправить на модерацию'}
               </AppButton>
             ) : null}
-            {existingProduct.status !== 'APPROVED' && existingProduct.images.length < 1 ? (
-              <Text style={{ color: palette.colorMuted, fontSize: 13, lineHeight: 18 }}>
+            {existingProduct.status !== 'APPROVED' &&
+            existingProduct.images.length < 1 ? (
+              <Text
+                style={{
+                  color: palette.colorMuted,
+                  fontSize: 13,
+                  lineHeight: 18,
+                }}
+              >
                 Добавьте хотя бы одно изображение перед отправкой.
               </Text>
             ) : null}
@@ -369,7 +402,11 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                 </StatusBadge>
               ) : null}
               <Text
-                style={{ color: palette.colorSecondary, fontSize: 13, lineHeight: 18 }}
+                style={{
+                  color: palette.colorSecondary,
+                  fontSize: 13,
+                  lineHeight: 18,
+                }}
               >
                 {existingProduct.images.length}/10 изображений
               </Text>
@@ -427,7 +464,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                         tone="subtle"
                         buttonSize="small"
                         isLoading={removeImage.isPending}
-                        onPress={() => removeImage.mutate(image.id)}
+                        onPress={() => setImagePendingDelete(image.id)}
                       >
                         Удалить изображение
                       </AppButton>
@@ -458,6 +495,28 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           </OperationalPanel>
         ) : null}
       </YStack>
+      <AppDialog
+        open={imagePendingDelete !== null}
+        title="Удалить изображение?"
+        description="Изображение будет удалено из предмета. Это действие нельзя отменить."
+        onClose={() => setImagePendingDelete(null)}
+      >
+        <DestructiveButton
+          label="Удалить изображение"
+          loading={removeImage.isPending}
+          onPress={() => {
+            if (imagePendingDelete)
+              removeImage.mutate(imagePendingDelete, {
+                onSuccess: () => setImagePendingDelete(null),
+              });
+          }}
+        />
+        <SecondaryButton
+          label="Отмена"
+          disabled={removeImage.isPending}
+          onPress={() => setImagePendingDelete(null)}
+        />
+      </AppDialog>
     </Screen>
   );
 }
