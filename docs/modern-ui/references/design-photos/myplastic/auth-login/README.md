@@ -1,5 +1,7 @@
 # Auth reference 01 — Login / registration
 
+Reference source: **MyPlastic / Plastic**
+
 Status: **REFERENCE APPROVED FOR AUTH DIRECTION**
 Scope: визуальный референс для будущих экранов входа и регистрации bidplace
 Platform: mobile
