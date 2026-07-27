@@ -1,6 +1,6 @@
 # bidplace Modern UI
 
-Status: **approved final cutover plan — implementation not started**
+Status: **Phase 0 dependency selection in progress — route migration has not started**
 
 Modern UI is the autonomous documentation package for a future bidplace redesign. It turns approved visual decisions, component boundaries, resource choices, screen rules, and migration gates into a handoff that can be used by a project owner or AI agent. It does not implement components, change routes, or replace the current UI.
 
@@ -22,6 +22,7 @@ The current application still uses the existing Tamagui-based system. Treat ever
 | [`08-current-design-baseline-report.md`](./08-current-design-baseline-report.md) | Evidence-backed current UI baseline and transition-planning inputs |
 | [`09-design-refactor-report.md`](./09-design-refactor-report.md) | Scoped refactor map: layers, files, migration waves, and verification gates |
 | [`10-final-cutover-plan.md`](./10-final-cutover-plan.md) | Confirmed routes, Bid flow, navigation, retirement and acceptance contract |
+| [`11-phase-0-dependency-adr.md`](./11-phase-0-dependency-adr.md) | Exact stable dependency pins and compatibility evidence for Phase 0 |
 | [`references/README.md`](./references/README.md) | Reference index and priority rules |
 
 ## Target stack, in one view
