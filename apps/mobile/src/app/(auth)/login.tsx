@@ -1,30 +1,25 @@
 import { useLocalSearchParams } from 'expo-router';
+import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { modernTokens } from '@bidplace/design-tokens';
 import { LoginForm } from '../../features/auth/auth-form';
 import { getSafeRedirect } from '../../features/auth/auth-redirect';
-import { Screen } from '../../components/ui';
-import { mobileLayout } from '../../theme/tokens';
-import { YStack } from 'tamagui';
-
 export default function LoginScreen() {
   const { redirectTo } = useLocalSearchParams<{
     redirectTo?: string | string[];
   }>();
-
-  const safeRedirect = getSafeRedirect(redirectTo);
-
   return (
-    <Screen mode="auth" showHeader={false}>
-      <YStack
-        flex={1}
-        style={{
-          width: '100%',
-          maxWidth: mobileLayout.formMaxWidth,
-          alignSelf: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <LoginForm redirectTo={safeRedirect} />
-      </YStack>
-    </Screen>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor: modernTokens.color.canvas,
+        padding: modernTokens.space.x5,
+      }}
+    >
+      <View style={{ width: '100%', maxWidth: 540, alignSelf: 'center' }}>
+        <LoginForm redirectTo={getSafeRedirect(redirectTo)} />
+      </View>
+    </SafeAreaView>
   );
 }
