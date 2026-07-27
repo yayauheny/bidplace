@@ -86,6 +86,7 @@ Approved radii: small 8, control 14, image 16, button 18, panel 22, sheet 28, pi
 - `SecondaryButton`: surface, ink text, 1 px border, 56 px, radius 18.
 - `TextButton`: no container; underline only when link-like.
 - `IconButton`: 44 px minimum touch target, icon 18–26 px, accessible label.
+- Row add/remove controls: outline plus for a real reversible add action; minus/trash remains visually distinct and always requires an explicit consequence path.
 - `BackButton`: Lucide `ChevronLeft`, accent, 44 px target; never `ArrowLeft`.
 - `FilterChip`: 34–36 px pill, mono 13; active is ink/surface.
 - Sorting and filter affordances: use the same chip, arrow, icon weight and selected black/white contrast across screens; a selected count appears only for a real selected value.

@@ -5,11 +5,15 @@ Reference source: **MyPlastic / Plastic**
 Status: **REFERENCE APPROVED FOR SORTING, FILTER CHIPS AND CONSISTENT LIST AFFORDANCES**
 Scope: visual direction for bidplace search/sort/filter controls, compact rows, repeated arrows/icons and destructive actions
 Platform: mobile
-Source file: `myplastic-versions-filter-mobile-reference-01.png`
+Source files: `myplastic-versions-filter-mobile-reference-01.png`, `myplastic-versions-add-mobile-reference-02.png`
 Image size: 589 × 1280 px
 Implementation status: **Not implemented**
 
 ![MyPlastic versions and filters reference](./myplastic-versions-filter-mobile-reference-01.png)
+
+## Paired add state
+
+![MyPlastic versions add reference](./myplastic-versions-add-mobile-reference-02.png)
 
 ## Art direction
 
@@ -36,7 +40,19 @@ For bidplace, use the same component for catalog filters: `Все`, `Катег�
 
 For bidplace, destructive actions must remain separate from ordinary CTAs: archive draft, remove saved item, cancel seller action, or delete account only where supported. A black button alone is not enough—use a confirmation dialog/sheet, clear consequence text, loading/error feedback, and a recoverable path where possible. Do not use a bulk destructive action beside auction bidding controls.
 
-### 3. Compact list row
+### 3. Add actions: bulk and row-level
+
+The paired add state is the positive counterpart to the remove state:
+
+- Available chips are light and quiet because no filter is selected.
+- `Add all versions` uses the same wide black rounded primary-action form, but its wording makes the additive outcome explicit.
+- Each row has a simple outline circle with a plus sign on the right.
+- The plus is visually lighter than the bulk action and belongs to that row only.
+- Rows retain image, title and technical hierarchy; the add control does not turn them into button-heavy cards.
+
+For bidplace, this is the target pattern for reversible, real add actions: add an item to a saved list, add a draft image, add a filter condition, or add a product to a curator selection—only when the feature exists. The plus control needs a 44×44 px hit area, accessible name, loading/success/error state and protection against double submission. It must not mean `place a bid`, `confirm purchase`, or silently add private data.
+
+### 4. Compact list row
 
 - A small image starts the row without becoming a full card.
 - The first line is the primary title/version name.
@@ -47,7 +63,7 @@ For bidplace, destructive actions must remain separate from ordinary CTAs: archi
 
 For bidplace this maps to `CompactAuctionRow` and selected-item lists: thumbnail, title, author or provenance detail, then a secondary price/status/deadline line. Critical auction state must remain more legible than the reference’s tertiary metadata.
 
-### 4. Repeated arrows and icons
+### 5. Repeated arrows and icons
 
 - The sort arrow, chevrons, back arrow, and other directional marks share a thin, restrained language.
 - Each icon has one job and is repeated rather than reinvented by screen.
@@ -55,7 +71,7 @@ For bidplace this maps to `CompactAuctionRow` and selected-item lists: thumbnail
 
 Bidplace rule: use `AppIcon` and `IconButton` consistently. Inline `→` means navigation to a fuller view; chevrons indicate a nested route or expanded layer; a minus/trash icon is destructive only. Do not swap symbols arbitrarily between screens.
 
-### 5. Typography, tags and information hierarchy
+### 6. Typography, tags and information hierarchy
 
 - Screen title is simple sans and centered.
 - Search placeholder, sort, chips, and destructive button use technical/playful mono.
@@ -75,12 +91,14 @@ This is compatible with the bidplace product-page tag rules: keep tags short, co
 - Compact rows with a thumbnail and clear three-level hierarchy;
 - Separators instead of heavy card chrome;
 - Explicit destructive action pattern with confirmation;
+- Wide bulk add action and calm outline row-plus control for reversible additions;
 - Consistent rounded black primary action form.
 
 ## What requires adaptation
 
 - `Remove all versions` is a music-collection action, not a bidplace auction action;
 - A minus icon must never remove a bid, product, or saved data without confirmation;
+- A plus icon must describe a real, reversible add action and never submit a bid;
 - Country/year/label chips require real bidplace filter data;
 - No destructive action should look identical to `Сделать ставку` in context without clear text and confirmation;
 - Dense technical metadata must not hide provenance, seller, current bid, or deadline;
@@ -94,8 +112,10 @@ This is compatible with the bidplace product-page tag rules: keep tags short, co
 | Selected chip `Year 1` | Active filter with actual selected count |
 | Unselected `Format` pill | Available filter dimension |
 | `Remove all versions` | Confirmed bulk remove/archive only where supported |
+| `Add all versions` | Explicit bulk add only where supported |
 | Version row | Compact auction/activity/saved-item row |
 | Minus icon | Confirmed remove from saved list/draft only |
+| Plus icon | Accessible row-level add to a real collection/selection |
 | Repeated arrows | Shared navigation affordance through `AppIcon` |
 
 ## Status

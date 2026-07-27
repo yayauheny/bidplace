@@ -30,6 +30,7 @@
 | [`myplastic/`](./myplastic/) | `author/myplastic-author-profile-mobile-reference-01.png` | Author profile | Mobile / reference | Partial-image hero, short bio, releases arrow, work rail, member circles и related creators | Reference approved |
 | [`myplastic/`](./myplastic/) | `search/myplastic-search-scan-mobile-reference-01.png` | Search / scan home | Mobile / reference | Technical search field, dominant action surface, quiet `RECENT`, dotted `VIEW ALL` и circular recent items | Reference approved |
 | [`myplastic/`](./myplastic/) | `versions/myplastic-versions-filter-mobile-reference-01.png` | Versions / sorting | Mobile / reference | Search, selected sorting chips, bulk destructive action, compact technical list row и repeated visual affordances | Reference approved |
+| [`myplastic/`](./myplastic/) | `versions/myplastic-versions-add-mobile-reference-02.png` | Versions / add state | Mobile / reference | Available filter chips, bulk add button and outlined circular plus actions in compact rows | Reference approved |
 | [`tracker/`](./tracker/) | `tracker-list-mobile-reference-01.png` | Filters / auction list | Mobile / reference | Search, filter icon, rounded chips, selected accent и компактный timer/list row | Reference approved |
 | — | `home-mobile-default.png` | Home | Mobile / default | Image-first discovery, AuctionCard и плотность ленты | Ожидается |
 | — | `home-desktop-default.png` | Home | Desktop / default | Grid, sidebar и верхний поиск | Ожидается |
