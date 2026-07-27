@@ -255,9 +255,9 @@ test.describe.serial('closed pilot', () => {
 
     await sellerPage.reload();
     await expect(
-      sellerPage.getByRole('link', { name: 'Создать лот' }),
+      sellerPage.getByRole('button', { name: 'Создать лот' }),
     ).toBeVisible();
-    await sellerPage.getByRole('link', { name: 'Создать лот' }).click();
+    await sellerPage.getByRole('button', { name: 'Создать лот' }).click();
 
     const createdProduct = await createProduct(sellerPage);
     state = { ...state, product: createdProduct };
@@ -301,7 +301,10 @@ test.describe.serial('closed pilot', () => {
       `/product/${createdProduct.publicId}`,
     );
     await expect(page.getByText('E2E Product')).toBeVisible();
-    await expect(page.getByText('Текущая цена: 10 BYN')).toBeVisible();
+    await expect(page.locator('body')).toContainText(
+      /Текущая цена\s*10,00\s+BYN/,
+    );
+    await expect(page.getByText('Unexpected text node')).toHaveCount(0);
 
     await expect(page.getByText('Мы отправим код на ваш email.')).toBeVisible();
     const otpResponse = page.waitForResponse(
@@ -323,7 +326,13 @@ test.describe.serial('closed pilot', () => {
     await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
     await page.getByLabel('Ваша ставка, BYN').fill('11');
     await page.getByRole('button', { name: 'Сделать ставку' }).click();
-    await expect(page.getByText('Текущая цена: 11 BYN')).toBeVisible();
+    await expect(page.getByText('Подтвердите ставку')).toBeVisible();
+    await expect(page.getByText('Ставка необратима.')).toBeVisible();
+    await expect(page.getByText('Unexpected text node')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Подтвердить ставку' }).click();
+    await expect(page.locator('body')).toContainText(
+      /Текущая цена\s*11,00\s+BYN/,
+    );
 
     await execFileAsync(process.execPath, [resolve(e2e, 'close-listing.mjs')], {
       env: {
@@ -336,7 +345,7 @@ test.describe.serial('closed pilot', () => {
 
     await page.goto('/me/activity');
     await expect(page.getByText('E2E Product')).toBeVisible();
-    await page.getByRole('link', { name: 'Открыть заказ' }).click();
+    await page.getByRole('button', { name: 'Открыть заказ' }).click();
     await expect(
       page.getByText(`Заказ ${state.order!.publicId}`),
     ).toBeVisible();

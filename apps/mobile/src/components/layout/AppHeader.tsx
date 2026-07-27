@@ -118,7 +118,8 @@ export function AppHeader({
         gap: modernTokens.space.x6,
       }}
     >
-      <BrandLogo /> <View style={{ gap: modernTokens.space.x2 }}>{links}</View>
+      <BrandLogo />
+      <View style={{ gap: modernTokens.space.x2 }}>{links}</View>
       {auth.isAuthenticated ? (
         <SecondaryButton label="Выйти" loading={loggingOut} onPress={logout} />
       ) : null}
