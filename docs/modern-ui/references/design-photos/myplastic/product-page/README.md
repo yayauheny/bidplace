@@ -76,6 +76,19 @@ Outlined pills expose short, scannable values: year, category, genre and subcate
 
 Adaptation: use tags for category, material, year, edition, location or verified provenance only when those values exist in the product contract. Do not put price, deadline, or a critical auction state into a low-contrast decorative tag.
 
+#### Mandatory tag rules for bidplace
+
+- Tags are short anchors, not miniature paragraphs: one concept per tag.
+- Use a light surface or transparent background with a thin neutral outline and a calm pill radius.
+- Use the same mono/technical label role as the reference; keep the text readable in Russian and avoid unnecessary uppercase.
+- Typical roles are `НОВИНКА`, year of creation, category, material, edition, city/origin or verified provenance.
+- `НОВИНКА` and other semantic labels may use the rare accent color; ordinary category/year tags stay near monochrome.
+- Tags may be horizontally scrollable on mobile, with the next tag partially visible, but the first important tags must be visible without interaction.
+- Tags can become filter anchors when the value maps to a real catalog/filter dimension; tapping must not imply filtering if no such behavior exists.
+- Do not use tags for current bid, minimum next bid, deadline, errors, private seller data or arbitrary marketing claims.
+- Keep the set small enough that the title, author, image and primary CTA remain visually dominant.
+- Status must not rely on color alone: semantic labels also need text, accessible state and a clear source of truth.
+
 ### 4. Primary black CTA
 
 The wide black rounded button is the visual anchor under the hero. It has a short mono label, enough height for touch, and a small chevron only when it opens a next layer. It is visually stronger than tags and tabs.
@@ -149,6 +162,8 @@ Bidplace adaptation: `История создания` should use normal readabl
 | Tracklist | `О предмете` / structured facts |
 | Album story | `История создания` |
 | Notes | `Происхождение` or user-specific notes only if scope exists |
+| Year/category pills | Product anchors and filter dimensions |
+| `NEW`/editorial label | Rare data-backed `НОВИНКА` or announcement |
 | Collection / Wishlist | Save/follow actions only after product decision |
 
 ## Acceptance gates before implementation
