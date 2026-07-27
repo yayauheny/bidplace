@@ -1,6 +1,4 @@
-import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { Text, XStack, YStack } from 'tamagui';
@@ -15,13 +13,12 @@ import {
   Screen,
   StatusBadge,
 } from '../../components/ui';
-import { AppDialog, PrimaryButton, SecondaryButton } from '../../components/modern-ui';
-import { getApiUrl } from '../../lib/environment';
+import { AppDialog, AppText, PrimaryButton, ProductGallery, SecondaryButton } from '../../components/modern-ui';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { useAppThemePalette } from '../../theme/palette';
-import { fontFamilies, mobileRadius, mobileSpacing } from '../../theme/tokens';
+import { fontFamilies, mobileSpacing } from '../../theme/tokens';
 import { EmailRulesGate } from '../auth/email-rules-gate';
 import type { ApiClient } from '@bidplace/api-client';
 import { validateBidAmount } from './bid-validation';
@@ -213,62 +210,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   return (
     <Screen>
       <YStack style={{ gap: mobileSpacing[5] }}>
-        {/* Image gallery */}
-        {product.images.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -mobileSpacing[4] }}
-            contentContainerStyle={{
-              paddingHorizontal: mobileSpacing[4],
-              gap: mobileSpacing[2],
-            }}
-          >
-            {product.images.map((image) => (
-              <YStack
-                key={image.id}
-                style={{
-                  width: 300,
-                  height: 375,
-                  borderRadius: mobileRadius.panel,
-                  overflow: 'hidden',
-                  backgroundColor: palette.imageBackground,
-                }}
-              >
-                <Image
-                  source={{ uri: `${getApiUrl()}${image.url}` }}
-                  style={{ width: '100%', height: '100%' }}
-                  contentFit="cover"
-                />
-              </YStack>
-            ))}
-          </ScrollView>
-        ) : null}
+        <ProductGallery images={product.images} label={product.title ?? 'Предмет'} />
 
         {/* Title block */}
         <YStack style={{ gap: mobileSpacing[1] }}>
-          <Text
-            style={{
-              fontFamily: fontFamilies.sansMedium,
-              fontSize: 12,
-              lineHeight: 16,
-              letterSpacing: 0.8,
-              textTransform: 'uppercase',
-              color: palette.colorMuted,
-            }}
-          >
-            {sellerProfile.fullName}
-          </Text>
-          <Text
-            style={{
-              fontFamily: fontFamilies.serifStrong,
-              fontSize: 30,
-              lineHeight: 36,
-              color: palette.color,
-            }}
-          >
-            {product.title ?? 'Предмет'}
-          </Text>
+          <AppText role="metadata" tone="secondary">{sellerProfile.fullName}</AppText>
+          <AppText role="screenTitle">{product.title ?? 'Предмет'}</AppText>
           {product.story || product.provenance ? (
             <Text
               style={{
