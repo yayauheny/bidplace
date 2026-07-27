@@ -27,6 +27,7 @@
 | `seller-product-form-mobile-error.png` | Product creation/editing | Mobile / error | Ошибки полей, upload error и retry | Ожидается |
 | `admin-moderation-desktop-default.png` | Admin moderation | Desktop / default | Review rows, filters и confirmation flow | Ожидается |
 | `order-mobile-authorized.png` | Order | Mobile / authorized | Role-scoped order summary и handoff action | Ожидается |
+| `auth-login-mobile-reference-01.png` | Login / registration | Mobile / reference | Простая auth-форма: sheet, крупный заголовок, mono-кнопки и редкая accent-подсветка | Reference approved |
 
 ## Как добавлять фотографию
 
@@ -35,6 +36,8 @@
 3. Укажи, что брать из изображения, что изменить для Modern UI и что больше не актуально.
 4. Зафиксируй platform, viewport, state и дату получения.
 5. Не заменяй отсутствие изображения описанием как подтверждённый дизайн.
+
+Подробный разбор первого утверждённого auth-референса: [`auth-login/README.md`](./auth-login/README.md).
 
 ### Шаблон записи
 
