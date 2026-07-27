@@ -1,5 +1,7 @@
 # Modern UI references
 
+Фотографии дизайна хранятся в [`design-photos/`](./design-photos/). Описание каждого изображения по имени файла находится в [`design-photos/README.md`](./design-photos/README.md).
+
 | Reference | Status | Purpose | Official URL | Screenshots | README |
 | --- | --- | --- | --- | --- | --- |
 | MyPlastic | PRIMARY visual and interaction reference | Editorial typography, mono labels, controls, sheets, lists, progressive disclosure | [myplastic.app](https://myplastic.app/) | [`myplastic/screenshots/`](./myplastic/screenshots/) | [`myplastic/README.md`](./myplastic/README.md) |
