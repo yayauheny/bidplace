@@ -20,6 +20,7 @@
 | --- | --- | --- | --- | --- |
 | [`myplastic/`](./myplastic/) | `auth-login/auth-login-mobile-reference-01.png` | Login / registration | Mobile / reference | Простая auth-форма: sheet, крупный заголовок, mono-кнопки и редкая accent-подсветка | Reference approved |
 | [`myplastic/`](./myplastic/) | `settings/myplastic-settings-mobile-reference-01.png` | Settings | Mobile / reference | Группы настроек, playful mono, цветные semantic actions и grouped rows | Reference approved |
+| [`myplastic/`](./myplastic/) | `dashboard/myplastic-dashboard-mobile-reference-01.png` | Profile / dashboard | Mobile / reference | Gear navigation, circular metrics, bottom CTA и compact tab bar | Reference approved |
 | [`tracker/`](./tracker/) | `tracker-list-mobile-reference-01.png` | Filters / auction list | Mobile / reference | Search, filter icon, rounded chips, selected accent и компактный timer/list row | Reference approved |
 | — | `home-mobile-default.png` | Home | Mobile / default | Image-first discovery, AuctionCard и плотность ленты | Ожидается |
 | — | `home-desktop-default.png` | Home | Desktop / default | Grid, sidebar и верхний поиск | Ожидается |
@@ -39,7 +40,7 @@
 4. Зафиксируй platform, viewport, state и дату получения.
 5. Не заменяй отсутствие изображения описанием как подтверждённый дизайн.
 
-Подробные разборы: [`myplastic/auth-login/README.md`](./myplastic/auth-login/README.md), [`myplastic/settings/README.md`](./myplastic/settings/README.md) и [`tracker/README.md`](./tracker/README.md).
+Подробные разборы: [`myplastic/auth-login/README.md`](./myplastic/auth-login/README.md), [`myplastic/settings/README.md`](./myplastic/settings/README.md), [`myplastic/dashboard/README.md`](./myplastic/dashboard/README.md) и [`tracker/README.md`](./tracker/README.md).
 
 ### Шаблон записи
 
