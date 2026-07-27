@@ -1,6 +1,6 @@
 # bidplace Modern UI
 
-Status: **planning only — migration not started**
+Status: **approved final cutover plan — implementation not started**
 
 Modern UI is the autonomous documentation package for a future bidplace redesign. It turns approved visual decisions, component boundaries, resource choices, screen rules, and migration gates into a handoff that can be used by a project owner or AI agent. It does not implement components, change routes, or replace the current UI.
 
@@ -16,16 +16,17 @@ The current application still uses the existing Tamagui-based system. Treat ever
 | [`02-ui-architecture-and-resources.md`](./02-ui-architecture-and-resources.md) | Target layers, dependency direction, and official resources |
 | [`03-screen-rules.md`](./03-screen-rules.md) | Target composition and states for product screens |
 | [`04-component-catalog.md`](./04-component-catalog.md) | Target public component API and states |
-| [`05-migration-plan.md`](./05-migration-plan.md) | Future migration phases, rollback, and stop conditions |
+| [`05-migration-plan.md`](./05-migration-plan.md) | Approved clean-cutover phases and gates |
 | [`06-quality-checklist.md`](./06-quality-checklist.md) | Component, screen, accessibility, and dependency checklists |
 | [`07-current-design-research-plan.md`](./07-current-design-research-plan.md) | Repeatable procedure for researching the current UI before migration planning |
 | [`08-current-design-baseline-report.md`](./08-current-design-baseline-report.md) | Evidence-backed current UI baseline and transition-planning inputs |
 | [`09-design-refactor-report.md`](./09-design-refactor-report.md) | Scoped refactor map: layers, files, migration waves, and verification gates |
+| [`10-final-cutover-plan.md`](./10-final-cutover-plan.md) | Confirmed routes, Bid flow, navigation, retirement and acceptance contract |
 | [`references/README.md`](./references/README.md) | Reference index and priority rules |
 
 ## Target stack, in one view
 
-Expo, Expo Router, React Native, React Native Web, one application without Next.js, NativeWind v4, React Native Reusables as a copy-paste source, RN Primitives for accessible behavior, and a public bidplace UI-kit. Motion is planned around Reanimated and Gesture Handler, with optional Expo Haptics. Specialized adapters are planned for Lucide, SVG, AppSheet, Expo Image, Image Picker, React Hook Form, Zod, and—only after evidence—FlashList.
+Expo, Expo Router, React Native, React Native Web, one application without Next.js, NativeWind v4, React Native Reusables as a copy-paste source, RN Primitives for accessible behavior, and a public bidplace UI-kit. Motion uses Reanimated and Gesture Handler presets without MVP haptics. Specialized adapters are planned for Lucide, SVG, AppSheet, Expo Image, Image Picker, React Hook Form, Zod, and—only after evidence—FlashList.
 
 Target dependency versions must be exact production versions without `^` or `~`. This does not authorize changing the current manifest.
 
@@ -54,4 +55,4 @@ Before creating or revising a migration plan, run [`07-current-design-research-p
 - Preserve auction-critical information, public/private data boundaries, loading/error/offline states, and 44 px touch targets.
 - Do not migrate Tamagui or edit application code as part of a documentation task.
 
-Modern UI becomes the source of truth only after an explicit owner decision, the pilot screens pass the three-platform acceptance matrix, the old design docs are cross-linked or archived by an owner, and migration status is recorded as complete rather than planned.
+Modern UI becomes the implemented source of truth only after founder acceptance, the full final route matrix passes on three platforms, legacy UI is removed, and status is recorded as complete rather than planned.

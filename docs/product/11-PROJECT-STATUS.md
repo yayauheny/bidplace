@@ -26,6 +26,13 @@
 | Tests                         | API unit suite passed; `apps/api/test/integration/product-listing.integration.spec.ts` passed against local PostgreSQL; Expo Router types, API build, mobile typecheck/export, `apps/mobile:test:e2e-fence`, and Playwright closed-pilot browser flow passed. | Release-hardening browser/device/accessibility matrix remains deferred. |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP.                                                                                                                                                    | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
+## Planned final Modern UI cutover — 2026-07-27
+
+- `feature/modern-ui-final` starts from the documentation baseline before the experimental pilot; the pilot bridge is not the accepted production strategy.
+- The redesign will migrate all existing working mobile routes, preserve server-authoritative auctions, email/rules gates, privacy projections, moderation and seller locks, then remove Tamagui in one final cutover.
+- Bid confirmation and client-side increment validation are confirmed UI behaviour; backend remains authoritative. See `DEC-055`, `DEC-056` and `docs/modern-ui/10-final-cutover-plan.md`.
+- No final UI route is implemented in this baseline yet. Full web/iOS/Android, accessibility and closed-pilot verification remains required before implementation status changes.
+
 ## Confirmed MVP implementation gaps — 2026-07-23
 
 | Area | Status | Required implementation evidence |
@@ -45,7 +52,7 @@
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.
 - Manual admin replacement preserves cancelled Order history; automatic replacement is Planned.
-- Design is frozen for the next MVP implementation wave: reuse the present UI and do not include a redesign in these domain/security tasks.
+- Domain/security tasks do not absorb incidental visual work. The separately confirmed final Modern UI cutover is governed by `DEC-055`, `DEC-056` and `docs/modern-ui/10-final-cutover-plan.md`.
 
 ## Historical closed-pilot verification — 2026-07-19
 

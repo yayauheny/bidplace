@@ -749,3 +749,45 @@ Status: Confirmed
 ### Decision
 
 В MVP нет self-service удаления account, Product, PII или audit. Все winner replacement выполняются вручную admin. AI-анализ и автоматическая replacement logic не входят в MVP и не получают заранее заданного post-MVP workflow.
+
+---
+
+## DEC-055 — Final Modern UI выполняется единым cutover
+
+Date: 2026-07-27
+Status: Confirmed
+
+### Decision
+
+Modern UI реализуется в отдельной `feature/modern-ui-final` ветке как единая финальная система. В scope входят все уже работающие маршруты и только они. В runtime не остаётся bridge с Tamagui, legacy fallback, feature flag или частично мигрированный маршрут. После полной проверки Tamagui и legacy UI удаляются.
+
+Временный логотип до поставки approved asset: compact mark на desktop и live lowercase `bidplace` в Inter на mobile. Product scope не расширяется Search, Settings, saved items, filters или новыми API.
+
+### Rationale
+
+Гибридный UI делает аукционные, privacy и role flows труднее проверяемыми. До production допустим единый чистый переход без runtime rollback; обычный Git revert остаётся техническим средством восстановления после merge.
+
+### Revises
+
+`DEC-048` в части запрета redesign в ближайшей MVP-волне.
+
+---
+
+## DEC-056 — Клиентская проверка ставки и подтверждение первой ставки
+
+Date: 2026-07-27
+Status: Confirmed
+
+### Decision
+
+Client проверяет обязательность, числовой BYN формат и таблицу Bid increments из MVP RFC для немедленной обратной связи. Backend остаётся единственным источником истины для minimum next bid, current price, Listing status, deadline и soft close.
+
+Перед первой Bid пользователя в конкретном Listing UI показывает confirmation с предметом, суммой, актуальным minimum, server deadline и последствием действия. Повторная Bid в том же Listing не требует повторного confirmation, если participation достоверно известен. Rejected/stale Bid refetches canonical HTTP snapshot и не получает success presentation.
+
+### Rationale
+
+Это снижает случайные ставки, но не создаёт клиентский аукционный rule engine и не допускает расхождения с конкурентной server transaction.
+
+### Revisit when
+
+Right-swipe confirmation может рассматриваться после MVP только с отдельной accessibility и web-equivalence проверкой.

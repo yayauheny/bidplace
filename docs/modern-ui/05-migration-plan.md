@@ -1,59 +1,62 @@
-# Migration plan
+# Final Modern UI cutover
 
-Status: **planning only — no migration performed**. This plan does not authorize dependency, config, route, or source changes.
+Status: **Approved implementation strategy — start only from `feature/modern-ui-final`**.
 
-## Phases
+This supersedes the former bridge/pilot strategy. The final branch starts from the documentation baseline before the experimental Modern UI pilot. It must not merge an adapter over Tamagui, a partial target route, a feature flag, or a legacy fallback screen.
 
-### Phase 0 — baseline and gates
+## Non-negotiable boundaries
 
-- Pin and record the current versions without changing them.
-- Create a migration branch and record the owner/ADR process.
-- Define web, Android, iOS, narrow, wide, keyboard, screen-reader, and reduced-motion screenshot matrix.
-- Define acceptance criteria for tokens, component states, accessibility, performance, and rollback.
-- Verify official docs and exact production versions for every target dependency.
+- Keep Expo Router, API client, React Query, route ownership, server authorization and database contracts.
+- Keep server-authoritative Bid, realtime refetch, email verification, rules acceptance, privacy projections, Product locks and moderation.
+- Do not add Search, filters, saved items, Settings, dashboard metrics or a new public route.
+- Do not delete Cormorant/Tamagui or switch a production route until the final implementation is complete and verified.
 
-### Phase 1 — foundation and bridge
+## Phase 0 — contract and clean baseline
 
-Target work: NativeWind v4, target tokens, fonts, `AppText`, `AppIcon`, `MotionPressable`, Button family, `AppImage`, and `AppSheet`. Keep old Tamagui screens working while adapters are introduced. No screen should import a new third-party library directly.
+1. Work only in `feature/modern-ui-final`; the pilot branch is historical evidence, not a source of production code.
+2. Record one ADR with the selected libraries, exact compatible versions, Expo 57 proof, overlay split, icon policy, light-only policy, responsive breakpoints and acceptance owner.
+3. Confirm Inter and PT Mono Cyrillic on web, iOS and Android. Use temporary Inter live wordmark on mobile and compact mark on desktop until approved logo assets exist.
+4. Capture the baseline matrix at 320, 375, 390, 768, 1024, 1025 and 1440 px.
 
-### Phase 2 — pilot screens
+Gate: mobile typecheck, lint, Expo web export and E2E fence pass before UI code changes.
 
-Migrate only Home, Product detail, and Seller product form. Together they test responsive layout, cards, images, tabs, forms, overlays, motion, navigation, accessibility, and auction-critical data. Compare against the screenshot matrix and existing product contract.
+## Phase 1 — feature controllers and final foundations
 
-### Phase 3 — buyer flows
+1. Separate feature controllers/hooks from UI: Product snapshot/realtime/Bid state, auth/email/rules sequence, Seller Product mutations, Activity/Order role projection and admin actions.
+2. Build the final UI-kit and no screen-local substitutes: tokens, text, icons, motion, fields, buttons, tabs, sheets/dialogs, images, skeletons, navigation, focus/reduced-motion behaviour.
+3. Implement platform adapters only inside the UI-kit: Gorhom on native and RN Primitives on web for overlays; Lucide only through `AppIcon`.
 
-Activity, order, auth/OTP, search/filter, and navigation. Verify privacy projections, server snapshot/reconnect behavior, and rejected/accepted bid states.
+Gate: no UI-kit component receives API clients, query keys, permissions, raw contacts or auction policy.
 
-### Phase 4 — seller flows
+## Phase 2 — final Product and Bid slice
 
-Seller profile, product create/edit, image reorder/upload, and auction creation. Verify permissions, staged forms, validation, keyboard, safe area, and upload errors.
+1. Implement Catalog and Product detail with image-first layout, missing/failed/loading media states, auction facts before tabs and server deadline/status.
+2. Use mobile `BottomActionBar` and desktop contextual sticky auction panel.
+3. Replace `EmailRulesGate` with the explicit flow: CTA → auth → email verification → rules → amount → first-Bid confirmation → submit/result.
+4. Client validates numeric BYN amount and the documented increment table; server decides final price, minimum, close and soft close. A rejection refetches and explains the changed amount.
+5. First Bid in a Listing confirms; later Bids in that Listing do not, unless participation cannot be established.
 
-### Phase 5 — admin
+Gate: accepted/rejected, stale-minimum, retry/idempotency, soft close, reconnect and public-alias tests pass.
 
-Moderation and order actions using the same foundation. Verify confirmation, audit-safe copy, role-gated controls, and narrow-screen usability.
+## Phase 3 — all remaining existing flows
 
-### Phase 6 — source-of-truth transition
+Migrate, in order: auth routes, Activity, Order, Seller profile, Seller Product create/edit, Listing creation, role-aware navigation and admin moderation.
 
-After explicit owner approval, cross-link or archive old design docs without deleting them, update status documents, and declare `00-project-decisions.md` the target source of truth. This is a decision gate, not an automatic consequence of code landing.
+- Seller Product has staged fields, an explicit read-only preview mode in the existing seller route, honest upload count spinner, server errors, permission denial and delete/reorder recovery.
+- Preview never changes Product status. Existing submit-to-moderation, admin approval and Listing lifecycle remain the only visibility path.
+- Confirm image delete, admin archive/suspend/cancel and irreversible Order actions. Do not confirm reorder.
+- Mobile uses centred floating navigation; desktop uses the same role-filtered destinations in a left rail. No invented destination appears.
 
-### Phase 7 — Tamagui removal
+Gate: every route has loading, empty, error, retry, unauthorized, long-content, focus and responsive evidence; realtime routes also have stale/reconnect evidence.
 
-Only after all routes are migrated and verified: remove Tamagui imports/providers/config/compiler integration and dependencies; validate bundle, typecheck, web, Android, and iOS. Do not begin this phase while any bridge dependency remains.
+## Phase 4 — atomic route cutover and legacy removal
 
-## Temporary bridge rules
+1. Switch every existing route to the final screen tree in one reviewed change.
+2. Remove legacy screens/components, header/drawer navigation, `EmailRulesGate`, legacy palette/tokens, Cormorant UI font, Tamagui providers/config/compiler/dependencies and the experimental Modern UI pilot code.
+3. Confirm `rg "from 'tamagui'" apps/mobile/src` has no production callers.
 
-- Existing Tamagui remains the current system; Modern UI components may coexist only behind explicit adapters.
-- A route may use an old component while its target replacement is documented as Partial.
-- Do not mix Tamagui and NativeWind styling inside a new target component except at the adapter boundary.
-- Keep data contracts and business logic unchanged during visual migration.
-- Mark target components as Planned/Partial until the full state matrix passes.
+There is no runtime rollback or feature flag. Before production, failure is handled by correcting the final branch; after merge, ordinary Git revert remains the repository recovery mechanism.
 
-## Rollback and stop conditions
+## Phase 5 — acceptance and source-of-truth transition
 
-Rollback to the last verified migration commit when a pilot screen breaks routing, public/private data exposure, bid correctness, form submission, accessibility, or platform build. Keep the old screen available until the replacement passes acceptance.
-
-Stop the phase if any of these occur: target dependency lacks stable official docs; exact version is unavailable; web/native behavior diverges without an adapter; visual changes hide auction-critical data; accessibility regresses; bundle/build or typecheck fails; performance degradation is measured; or a product-flow change is needed without an owner decision.
-
-## Main risks
-
-Tamagui provider/config coupling, absent target libraries, exact-version compatibility with Expo SDK 57, missing PT Mono and brand assets, differing web/native overlay behavior, incomplete visual regression coverage, and the need to preserve auction privacy and server-authoritative state.
+Run the full matrix in `06-quality-checklist.md`, including web, iOS, Android, browser/device, privacy, Bid and accessibility checks. Founder performs the visual/device acceptance. Only then update factual status documents and declare Modern UI the implemented source of truth.

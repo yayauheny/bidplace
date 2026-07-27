@@ -38,7 +38,7 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 
 ## Flow constraints
 
-- Phone verification is required by the backend before a Bid; the Product screen presents request/verify controls and must never treat a failed Bid as accepted.
+- Email verification and versioned rules acceptance are required by the backend before a first Bid; the Product screen presents the progressive flow and must never treat a failed Bid as accepted.
 - The HTTP Product snapshot is canonical. Listing socket events only trigger refetch; reconnect performs the same authoritative refresh.
 - The Product screen derives participation from `GET /api/me/activity`, never from public Bid identity or event order.
 - A seller or admin does not receive bidder contacts from ranked Bid inspection; contact is only revealed through the authorized active Order.
@@ -51,4 +51,4 @@ The retired `/auctions/[slug]` public route is not a Product route and must not 
 
 - iPhone Safari, Android Chrome, macOS Chrome/Safari and Windows Chrome for Product, OTP, Bid, Activity, Order, seller and admin flows;
 - keyboard, screen reader, focus, long-content, empty, error and reconnect states;
-- ProductImage deletion/reordering flow after its backend contract is implemented.
+- ProductImage deletion/reordering flow against the implemented backend contract.

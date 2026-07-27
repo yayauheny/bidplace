@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-07-18
 
-Статус: Current implementation verified; target foundations partial
+Статус: Current implementation verified; final Modern UI cutover is planned in `../modern-ui/05-migration-plan.md`. The experimental bridge/pilot is not the accepted implementation strategy.
 
 ## Current implementation
 
@@ -28,7 +28,7 @@
 | Feedback          | loading/empty/error states                                | `components/ui/LoadingState.tsx`, `EmptyState.tsx`, `ErrorState.tsx`                   |
 | Media             | Expo Image, API URL resolver, image picker                | `components/auction`, `components/storefront`, `features/seller`                       |
 
-Icon library или утверждённая iconography не найдены. Общего modal/dialog pattern нет; `AppSheet` используется как bottom-sheet primitive. Dark mode tokens существуют, но продуктовая необходимость и полное покрытие не подтверждены.
+Legacy implementation has no approved icon library or canonical confirmation dialog. Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now.
 
 ## Target principles
 
@@ -62,7 +62,7 @@ Icon library или утверждённая iconography не найдены. О
 - image gallery states для обязательных трёх изображений;
 - desktop/mobile navigation model для всех ролей;
 - единый выбор между `AuctionCard` и `ProductCard`, `AppButton` и `PrimaryButton`;
-- dark mode decision и contrast audit;
+- final light-mode contrast audit;
 - design QA evidence на целевых устройствах.
 
 ## Do not invent without designer approval

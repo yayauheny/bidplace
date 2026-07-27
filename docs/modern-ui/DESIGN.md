@@ -3,7 +3,7 @@
 Status: **approved target visual system; implementation not started**
 
 Last visual audit: 2026-07-27
-Scope: a practical handoff for future bidplace UI work. It describes the target system, not the current application.
+Scope: a practical handoff for final bidplace UI work. It describes the target system, not the current application. References to search, filters, saved items or settings describe reusable visual language only; they do not authorize a route, API or control in the final MVP cutover.
 
 ## 1. How to use this document
 

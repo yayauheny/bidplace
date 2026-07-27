@@ -1,6 +1,6 @@
 # Отчёт по рефакторингу дизайн-слоя
 
-Статус: **планирование по фактическому состоянию; исходный код не менялся**
+Статус: **historical baseline and bridge analysis; superseded as implementation strategy by `05-migration-plan.md` and `10-final-cutover-plan.md`**
 
 Дата исследования: 2026-07-27
 Базовый commit: `f2c7760` (`feature/modern-ui-docs`)

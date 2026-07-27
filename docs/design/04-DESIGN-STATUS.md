@@ -2,7 +2,7 @@
 
 Дата снимка: 2026-07-24
 
-Статус документа: Partial — Task B editorial redesign завершена. Основной type-safety commit завершил типизацию, а в коммите 79e6ad7 реализован explicit protected admin route. Closed-pilot Chromium coverage теперь подтверждает seller/admin/order browser flows; device/accessibility QA остаётся.
+Статус документа: Partial — legacy implementation is functionally verified for closed pilot, but the approved final visual transition is a clean cutover in `../modern-ui/05-migration-plan.md`. No pilot bridge or partial target route is accepted as final implementation.
 
 ## Functional screen status
 

@@ -1,7 +1,7 @@
 # bidplace Modern UI — project decisions
 
 Status: **APPROVED TARGET DESIGN**
-Implementation status: **NOT STARTED**
+Implementation status: **FINAL CUTOVER PLANNED — no bridge or pilot route may merge**
 Last reviewed: 2026-07-27
 Owners: founder / assigned designer / frontend owner — names not recorded
 Related visual system: [`DESIGN.md`](./DESIGN.md), [`references/design-photos/myplastic/README.md`](./references/design-photos/myplastic/README.md), [`references/REFERENCE-AUDIT.md`](./references/REFERENCE-AUDIT.md)
@@ -23,7 +23,7 @@ Reference priority: bidplace business logic → this document → [`DESIGN.md`](
 Use the existing approved lowercase bidplace wordmark when available, in ink or white on a dark background. Use the compact `bp-mark` where space requires it. Do not create a new logo or use the logo as decorative card content. Clear space is at least the height of the letter `b`.
 
 CURRENT: `apps/mobile/assets/brand-mark.png` exists and is used by `apps/mobile/src/components/layout/BrandLogo.tsx`; the wordmark is live text in Cormorant Garamond. No separate wordmark asset or `bp-mark` asset was found in the audit.
-TARGET: the wordmark and compact mark remain behind one brand adapter, with exact asset paths recorded before implementation.
+FINAL v1: the existing mark remains behind one brand adapter. Until approved vector/raster assets are supplied, the wordmark is temporary live lowercase `bidplace` in Inter: it appears on mobile only, while desktop rail uses the compact mark only. Cormorant is not a final UI or logo dependency. Replacing this temporary wordmark requires an approved brand asset, not a route-level edit.
 
 ## 3. Target v1 tokens
 
@@ -96,22 +96,36 @@ Approved radii: small 8, control 14, image 16, button 18, panel 22, sheet 28, pi
 - `ContentTabs`: pill tabs for item, making story, and provenance; never hide critical auction data in tabs.
 - `AuctionCard`: image-first 4:5, title, current price/bid, deadline/status, at most one secondary metadata line.
 - `CompactAuctionRow`: thumbnail, title, price, deadline/status, optional bid count, separators not heavy cards.
-- `AppSheet`: one public adapter; bottom sheet on mobile and dialog/popover/side panel on desktop.
+- `AppSheet` / `AppDialog`: one public adapter API; Gorhom Bottom Sheet on iOS/Android and RN Primitives Dialog/Popover on web/desktop. Routes never import either dependency.
 - `SettingsRow`: icon, title, optional value, chevron, divider; destructive actions separated.
 - `AppImage`: Expo Image, stable aspect ratio, placeholder, blur/thumb hash, caching, transition.
-- `BottomActionBar`: mobile sticky current price/state and CTA, safe-area aware, not a duplicate auction panel.
+- `BottomActionBar`: mobile sticky current price/state and CTA, safe-area aware, not a duplicate auction panel. Desktop Product detail instead uses a contextual sticky auction panel beside the reading content.
+
+### Bid confirmation and validation
+
+- The first Bid by a buyer in a Listing requires an explicit confirmation after amount entry. A subsequent Bid in the same Listing does not repeat that confirmation; if participation data is unavailable, fail safe and show it.
+- Confirmation states the Product, entered amount, current server minimum, server deadline and irreversible auction consequence. Its confirm action is the only place that calls the Bid API.
+- The client validates required input, numeric BYN amount and the documented increment table for immediate feedback. The server remains authoritative for current price, minimum, Listing state, close and soft close. A stale or rejected Bid refetches the HTTP Product snapshot and states that the price or minimum changed; it never appears accepted.
+- A future right-swipe bid interaction is explicitly out of MVP until it has a separate accessibility, web-equivalence and accidental-action decision.
+
+### Destructive actions and uploads
+
+- Image delete, admin archive/suspend/cancel and irreversible Order actions require `AppDialog` confirmation. Image reorder does not.
+- Upload state shows an honest spinner and count, for example `Загружаем изображения: 1 из 3`; it must not invent byte percentages that the transport does not provide.
 
 ## 5. Motion
 
 Centralize values: instant 80 ms, fast 120 ms, normal 180 ms, slow 260 ms. Shared press presets: icon opacity 0.6; button scale 0.98 and opacity 0.92; card scale 0.992 and opacity 0.96; primary action scale 0.98 and opacity 0.9. Entering presets are FadeIn, FadeInUp, SlideUp, and LayoutTransition.
 
-Business actions must not wait for motion. No per-component springs or bounce for ordinary actions. Reduced motion removes translate and scale. Haptics are optional on native and only for meaningful actions. Sheet physics belongs to the sheet library; ordinary buttons do not need Gesture Handler.
+Business actions must not wait for motion. No per-component springs or bounce for ordinary actions. Reduced motion removes translate and scale. Haptics do not enter MVP; they require a separate native UX decision. Sheet physics belongs to the sheet library; ordinary buttons do not need Gesture Handler.
 
 ## 6. Responsive and screen invariants
 
-Use one route tree, shared domain logic, and one public component API. Mobile is primary: compact header, bottom navigation, sheets, sticky actions, safe area. Desktop uses compact sidebar, top search, wide content, and visual grid; natural desktop equivalents replace sheets. Use a platform file only for a real layout/behavior difference.
+Use one route tree, shared domain logic, and one public component API. Mobile is primary: global navigation is a compact centred floating dock in the safe-area reach zone; the top is reserved for local context and actions. Desktop uses a compact left rail, wide centred content and contextual panels. Natural desktop equivalents replace sheets. Use a platform file only for a real layout/behavior difference.
 
-Home always shows discovery content, images, title, price/current bid, and deadline/state. Product detail first viewport always shows gallery, title, current bid, minimum next bid, remaining time/status, and primary CTA. OTP appears only after “Сделать ставку”. Activity is a compact list with one main status. Seller forms are staged and category-dependent; preview is separate from editing. Settings are grouped. Admin uses the same tokens and base components, without a random SaaS shell.
+Global destinations are limited to implemented flows: guest sees Catalog and Sign in; buyer sees Catalog, Activity and an Account sheet; seller additionally gets a Seller sheet with Profile, New Product and New Listing; admin gets Moderation; desktop rail exposes the same role-filtered destinations. No Search, Settings, saved items or unimplemented route is created by this redesign.
+
+Home always shows discovery content, images, title, price/current bid, and deadline/state. Product detail first viewport always shows gallery, title, current bid, minimum next bid, remaining time/status, and primary CTA. OTP appears only after “Сделать ставку”. Activity is a compact list with one main status. Seller forms are staged and category-dependent; preview is a read-only mode in the existing seller route and never changes Product status. Admin uses the same tokens and base components, without a random SaaS shell.
 
 ### Primary product-detail reference
 
@@ -135,5 +149,5 @@ The primary visual reference for the future bidplace Product detail page is [`re
 - Copy a component or create two UI solutions for one role.
 - Add a token, icon pack, or library without a durable reason and ADR.
 - Hide price/deadline, rely on color alone, overuse badges/shadows, or use decorative orange.
-- Present target architecture as implemented.
-- Mix Tamagui and Modern UI except in a temporary, documented bridge during a future migration.
+- Present target architecture as implemented before the full acceptance matrix passes.
+- Mix Tamagui and Modern UI, retain legacy fallback routes, use runtime feature flags for the redesign, or merge a partial target screen.

@@ -100,11 +100,12 @@ MVP не проверяет полноценный marketplace.
 4. Регистрируется email/password.
 5. Подтверждает email перед первой ставкой.
 6. Перед первой ставкой видит и принимает версию правил сервиса.
-7. Видит minimum.
-8. Отправляет bid.
-9. Backend атомарно фиксирует.
-10. Клиенты получают realtime.
-11. Статус виден в разделе участия.
+7. Видит minimum и получает client-side feedback для числовой BYN суммы и правила increment.
+8. Перед первой ставкой в конкретном Listing явно подтверждает предмет, сумму, server minimum, deadline и последствие действия.
+9. Отправляет bid; повторная ставка в том же Listing не повторяет confirmation при известном participation status.
+10. Backend атомарно фиксирует или отклоняет; при отклонении client refetches canonical snapshot и показывает новый minimum/price.
+11. Клиенты получают realtime как сигнал для refetch.
+12. Статус виден в разделе участия.
 
 ### Closing
 
@@ -175,6 +176,8 @@ Server рассчитывает и атомарно фиксирует ново�
 | 100–500 BYN | 5 |
 | 500–1 000 BYN | 10 |
 | 1 000+ BYN | 25 |
+
+Client проверяет формат суммы и эту таблицу для немедленной обратной связи. Он не является источником истины: server transaction окончательно решает current price, minimum next bid, Listing state, `endsAt` и soft close.
 
 ### История
 
@@ -339,7 +342,7 @@ Events:
 - lot viewed;
 - bid CTA clicked;
 - registration started/completed;
-- phone verification started/completed;
+- email verification started/completed;
 - bid attempted/accepted/rejected;
 - participation viewed;
 - seller viewed;
