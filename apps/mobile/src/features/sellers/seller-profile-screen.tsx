@@ -3,22 +3,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { Text, YStack } from 'tamagui';
-
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { modernTokens } from '@bidplace/design-tokens';
 import {
-  AppButton,
-  AppInput,
-  ErrorState,
-  LoadingState,
-  OperationalPanel,
-  Screen,
-  SectionHeader,
-  StatusBadge,
-} from '../../components/ui';
+  AppText,
+  ImagePlaceholder,
+  PrimaryButton,
+  SecondaryButton,
+  TextField,
+} from '../../components/modern-ui';
+import { AppHeader } from '../../components/layout/AppHeader';
 import { getApiUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
-import { useAppThemePalette } from '../../theme/palette';
-import { mobileSpacing } from '../../theme/tokens';
 import { ApiClientError } from '@bidplace/api-client';
 
 type ProfileFields = {
@@ -68,7 +65,6 @@ function sellerStatusLabel(status: SellerStatus): string {
 export function SellerProfileScreen() {
   const api = useApiClient();
   const queryClient = useQueryClient();
-  const palette = useAppThemePalette();
   const query = useQuery({
     queryKey: ['seller', 'profile'],
     queryFn: () => api.sellers.getMyProfile(),
@@ -168,9 +164,11 @@ export function SellerProfileScreen() {
 
   if (query.isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Загружаем профиль продавца" />
-      </Screen>
+      <ProfileShell>
+        <AppText role="bodySmall" tone="secondary">
+          Загружаем профиль продавца…
+        </AppText>
+      </ProfileShell>
     );
   }
 
@@ -180,12 +178,15 @@ export function SellerProfileScreen() {
       query.error.kind !== 'not_found')
   ) {
     return (
-      <Screen>
-        <ErrorState
-          description="Не удалось загрузить профиль"
-          onAction={() => query.refetch()}
-        />
-      </Screen>
+      <ProfileShell>
+        <View style={{ gap: modernTokens.space.x4 }}>
+          <AppText role="sectionTitle">Не удалось загрузить профиль</AppText>
+          <SecondaryButton
+            label="Повторить"
+            onPress={() => void query.refetch()}
+          />
+        </View>
+      </ProfileShell>
     );
   }
 
@@ -196,72 +197,70 @@ export function SellerProfileScreen() {
   const photoPreview = photoUri;
 
   return (
-    <Screen>
-      <YStack style={{ gap: mobileSpacing[5] }}>
-        <YStack style={{ gap: mobileSpacing[2] }}>
-          <SectionHeader title="Профиль продавца" />
+    <ProfileShell>
+      <View style={{ gap: modernTokens.space.x5 }}>
+        <View style={{ gap: modernTokens.space.x2 }}>
+          <AppText role="screenTitle">Профиль продавца</AppText>
           {profile ? (
-            <StatusBadge tone={sellerStatusTone(profile.status)}>
-              {sellerStatusLabel(profile.status)}
-            </StatusBadge>
-          ) : (
-            <Text
-              style={{
-                fontSize: 14,
-                lineHeight: 20,
-                color: palette.colorMuted,
-              }}
+            <AppText
+              role="caption"
+              tone={
+                sellerStatusTone(profile.status) === 'negative'
+                  ? 'danger'
+                  : sellerStatusTone(profile.status) === 'positive'
+                    ? 'success'
+                    : 'secondary'
+              }
             >
+              {sellerStatusLabel(profile.status)}
+            </AppText>
+          ) : (
+            <AppText role="bodySmall" tone="secondary">
               Заполните профиль, чтобы подать заявку на модерацию.
-            </Text>
+            </AppText>
           )}
-        </YStack>
+        </View>
 
-        <YStack style={{ gap: mobileSpacing[3] }}>
-          <OperationalPanel eyebrow="Фото профиля">
-            <YStack style={{ gap: mobileSpacing[3] }}>
-              {photoPreview ? (
-                <Image
-                  source={{ uri: photoPreview }}
-                  style={{
-                    width: '100%',
-                    aspectRatio: 1,
-                    borderRadius: 16,
-                  }}
-                  contentFit="cover"
-                />
-              ) : (
-                <YStack
-                  style={{
-                    aspectRatio: 1,
-                    borderRadius: 16,
-                    backgroundColor: palette.surfaceMuted,
-                  }}
-                />
-              )}
-              <AppButton
-                tone="secondary"
-                buttonSize="small"
-                disabled={!editable}
-                onPress={() => void choosePhoto()}
-              >
-                {photoPreview ? 'Изменить фото' : 'Добавить фото'}
-              </AppButton>
-              {!profile ? (
-                <Text
-                  style={{
-                    color: palette.colorMuted,
-                    fontSize: 13,
-                    lineHeight: 18,
-                  }}
-                >
-                  Фото обязательно для подачи заявки.
-                </Text>
-              ) : null}
-            </YStack>
-          </OperationalPanel>
+        <View style={{ gap: modernTokens.space.x3 }}>
+          <View
+            style={{
+              gap: modernTokens.space.x3,
+              borderRadius: modernTokens.radius.panel,
+              borderWidth: 1,
+              borderColor: modernTokens.color.border,
+              backgroundColor: modernTokens.color.surface,
+              padding: modernTokens.space.x5,
+            }}
+          >
+            <AppText role="metadata" tone="secondary">
+              Фото профиля
+            </AppText>
+            {photoPreview ? (
+              <Image
+                source={{ uri: photoPreview }}
+                style={{
+                  width: '100%',
+                  aspectRatio: 1,
+                  borderRadius: modernTokens.radius.image,
+                }}
+                contentFit="cover"
+              />
+            ) : (
+              <ImagePlaceholder ratio={1} label="Фото профиля не выбрано" />
+            )}
+            <SecondaryButton
+              label={photoPreview ? 'Изменить фото' : 'Добавить фото'}
+              disabled={!editable}
+              onPress={() => void choosePhoto()}
+            />
+            {!profile ? (
+              <AppText role="bodySmall" tone="secondary">
+                Фото обязательно для подачи заявки.
+              </AppText>
+            ) : null}
+          </View>
 
-          <AppInput
+          <TextField
             label="URL-slug"
             value={fields.slug}
             onChangeText={(value) => update('slug', value)}
@@ -269,14 +268,14 @@ export function SellerProfileScreen() {
             autoCapitalize="none"
             editable={editable}
           />
-          <AppInput
+          <TextField
             label="Имя или название"
             value={fields.fullName}
             onChangeText={(value) => update('fullName', value)}
             placeholder="Иван Иванов"
             editable={editable}
           />
-          <AppInput
+          <TextField
             label="Страна"
             value={fields.country}
             onChangeText={(value) => update('country', value)}
@@ -284,7 +283,7 @@ export function SellerProfileScreen() {
             autoCapitalize="characters"
             editable={editable}
           />
-          <AppInput
+          <TextField
             label="Публичная ссылка"
             value={fields.socialLink}
             onChangeText={(value) => update('socialLink', value)}
@@ -292,7 +291,7 @@ export function SellerProfileScreen() {
             autoCapitalize="none"
             editable={editable}
           />
-          <AppInput
+          <TextField
             label="Короткое описание"
             value={fields.shortDescription}
             onChangeText={(value) => update('shortDescription', value)}
@@ -302,7 +301,7 @@ export function SellerProfileScreen() {
           />
           {!profile || editable ? (
             <>
-              <AppInput
+              <TextField
                 label="Способ передачи"
                 value={fields.handoffContactType}
                 onChangeText={(value) =>
@@ -315,7 +314,7 @@ export function SellerProfileScreen() {
                 autoCapitalize="characters"
                 editable={editable}
               />
-              <AppInput
+              <TextField
                 label="Контакт для передачи"
                 value={fields.handoffContactValue}
                 onChangeText={(value) => update('handoffContactValue', value)}
@@ -323,7 +322,7 @@ export function SellerProfileScreen() {
                 autoCapitalize="none"
                 editable={editable}
               />
-              <AppInput
+              <TextField
                 label="Кто начинает контакт"
                 value={fields.handoffInitiator}
                 onChangeText={(value) =>
@@ -338,57 +337,70 @@ export function SellerProfileScreen() {
               />
             </>
           ) : (
-            <OperationalPanel eyebrow="Передача">
-              <YStack style={{ gap: mobileSpacing[1] }}>
-                <Text style={{ color: palette.colorSecondary }}>
-                  {profile.handoffContactType}: {profile.handoffContactValue}
-                </Text>
-                <Text style={{ color: palette.colorMuted }}>
-                  Инициатор: {profile.handoffInitiator}
-                </Text>
-              </YStack>
-            </OperationalPanel>
+            <View
+              style={{
+                gap: modernTokens.space.x1,
+                borderRadius: modernTokens.radius.panel,
+                borderWidth: 1,
+                borderColor: modernTokens.color.border,
+                padding: modernTokens.space.x5,
+              }}
+            >
+              <AppText role="bodySmall" tone="secondary">
+                {profile.handoffContactType}: {profile.handoffContactValue}
+              </AppText>
+              <AppText role="bodySmall" tone="muted">
+                Инициатор: {profile.handoffInitiator}
+              </AppText>
+            </View>
           )}
-        </YStack>
+        </View>
 
         {!editable ? (
-          <Text
-            style={{
-              color: palette.colorMuted,
-              fontSize: 13,
-              lineHeight: 18,
-            }}
-          >
+          <AppText role="bodySmall" tone="secondary">
             Профиль можно редактировать только после статуса CHANGES_REQUESTED.
-          </Text>
+          </AppText>
         ) : null}
 
-        <AppButton
-          buttonSize="large"
-          isLoading={mutation.isPending}
-          loadingLabel="Сохраняем"
+        <PrimaryButton
+          loading={mutation.isPending}
           disabled={!canSave}
           onPress={() => mutation.mutate()}
-        >
-          {profile ? 'Сохранить' : 'Создать профиль'}
-        </AppButton>
+          label={profile ? 'Сохранить' : 'Создать профиль'}
+        />
 
         {profile?.status === 'APPROVED' ? (
           <Link href="/products/new" asChild>
-            <AppButton buttonSize="large" tone="primary">
-              Создать лот
-            </AppButton>
+            <PrimaryButton label="Создать лот" onPress={() => undefined} />
           </Link>
         ) : null}
 
         {mutation.isError ? (
-          <Text
-            style={{ color: palette.negative, fontSize: 14, lineHeight: 20 }}
-          >
+          <AppText role="bodySmall" tone="danger">
             Не удалось сохранить профиль
-          </Text>
+          </AppText>
         ) : null}
-      </YStack>
-    </Screen>
+      </View>
+    </ProfileShell>
+  );
+}
+
+function ProfileShell({ children }: { children: React.ReactNode }) {
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+    >
+      <AppHeader />
+      <ScrollView
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth: 760,
+          alignSelf: 'center',
+          padding: modernTokens.space.x5,
+        }}
+      >
+        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
