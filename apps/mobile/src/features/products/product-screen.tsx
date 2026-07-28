@@ -222,7 +222,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           {product.images.length > 0 ? (
             product.images.map((image) => (
               <AppImage key={image.id} uri={`${getApiUrl()}${image.url}`} alt={`${product.title ?? 'Предмет'} — изображение ${image.position + 1}`} style={{ width: 300 }} />
-            ))}
+            ))
           ) : (
             <AppImage uri={null} alt={`${product.title ?? 'Предмет'} — изображение отсутствует`} style={{ width: 300 }} />
           )}
