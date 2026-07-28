@@ -3,6 +3,11 @@
 Последнее обновление: 2026-07-28
 Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API lint/typecheck/unit/integration tests, mobile typecheck/lint/unit/web export, the disposable-DB fence check and closed-pilot browser/E2E verification. Founder device/visual/accessibility acceptance and the 10-user rehearsal remain pending.
 
+## Auction browser E2E — 2026-07-28
+
+- `Implemented`: three independent Playwright scenarios now cover seller Product draft/submission and scheduled Listing preview (`apps/mobile/e2e/auction-creation.spec.ts`), two-buyer canonical bid/outbid/stale-price behavior (`auction-bidding.spec.ts`), and lifecycle-driven close with winner Order and loser privacy (`auction-closing.spec.ts`). Shared setup lives in `e2e/support`; no `.state.json` or serial dependency remains.
+- `Needs verification`: `test:e2e:auction` was not completed because local PostgreSQL was unavailable at `127.0.0.1:5432`. Static Playwright discovery, mobile typecheck, and the disposable-database fence passed.
+
 ## Реализовано
 
 | Поведение                        | Evidence                                                                                                                                                                                                                                                                                                                                                           |

@@ -1,8 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import argon2 from '../../api/node_modules/argon2/argon2.cjs';
 import { PrismaClient } from '../../../packages/database/dist/index.js';
 
 import {
@@ -66,47 +65,13 @@ execFileSync(
 await mkdir(e2e, { recursive: true });
 await rm(resolve(e2e, '.email.jsonl'), { force: true });
 await rm(resolve(e2e, '.otp.jsonl'), { force: true });
+await rm(resolve(e2e, '.state.json'), { force: true });
 
 const prisma = new PrismaClient({
   datasources: { db: { url: databaseUrl } },
 });
 
-const passwordHash = await argon2.hash('password123');
-const [buyer, outsider, admin] = await Promise.all([
-  prisma.user.create({
-    data: {
-      email: 'buyer@e2e.test',
-      passwordHash,
-      phone: '+375290000001',
-      displayName: 'buyer',
-      role: 'user',
-    },
-  }),
-  prisma.user.create({
-    data: {
-      email: 'outsider@e2e.test',
-      passwordHash,
-      phone: '+375290000002',
-      displayName: 'outsider',
-      role: 'user',
-    },
-  }),
-  prisma.user.create({
-    data: {
-      email: 'admin@e2e.test',
-      passwordHash,
-      phone: '+375290000003',
-      displayName: 'admin',
-      role: 'admin',
-    },
-  }),
-]);
-const category = await prisma.category.create({
+await prisma.category.create({
   data: { slug: 'e2e-art', name: 'E2E art' },
 });
-
-await writeFile(
-  resolve(e2e, '.state.json'),
-  JSON.stringify({ buyer, outsider, admin, category }),
-);
 await prisma.$disconnect();
