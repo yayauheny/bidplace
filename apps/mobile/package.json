@@ -52,12 +52,12 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "dev": "expo start",
-    "build": "expo export",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "pnpm --filter @bidplace/design-tokens build && expo start",
+    "dev": "pnpm run start",
+    "build": "pnpm --filter @bidplace/design-tokens build && expo export",
+    "android": "pnpm --filter @bidplace/design-tokens build && expo start --android",
+    "ios": "pnpm --filter @bidplace/design-tokens build && expo start --ios",
+    "web": "pnpm --filter @bidplace/design-tokens build && expo start --web",
     "test:e2e-fence": "node e2e/test-e2e-fence.mjs",
     "test:e2e": "playwright test",
     "test:e2e:auction": "playwright test auction-creation.spec.ts auction-bidding.spec.ts auction-closing.spec.ts",
