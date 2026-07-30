@@ -8,7 +8,7 @@ Final foundation status: `modernTokens` and `components/modern-ui` provide targe
 
 Shared navigation is in partial final migration: `components/layout/AppShell.tsx` now owns the responsive safe-area shell and `AppHeader.tsx` renders role-filtered navigation with a full-height desktop rail, unified 44 px nav items, active Product context and keyboard focus state. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
 
-Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, seller profile and Product draft media; `ProductGallery` and `AuctionCard` expose a labeled unavailable-image fallback after `expo-image` errors; desktop Product places the gallery and auction panel at the same top level; Login validation uses Russian field messages. Mobile unit tests (17/17), typecheck, lint, E2E fence and Expo web export pass. No route is promoted to `Implemented` without founder visual/device/accessibility evidence.
+Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, seller profile and Product draft media; `ProductGallery` and `AuctionCard` expose a labeled unavailable-image fallback after `expo-image` errors; desktop Product places the gallery and auction panel at the same top level; Login validation uses Russian field messages; desktop `Link` styling keeps the active Catalog item visible and `AppIcon` no longer forwards `accessible` to web SVG DOM. Mobile unit tests (17/17), typecheck, lint, E2E fence, Expo web export and isolated headless nav smoke pass. No route is promoted to `Implemented` without founder visual/device/accessibility evidence.
 
 ## Functional screen status
 

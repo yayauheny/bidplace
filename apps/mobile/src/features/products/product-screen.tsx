@@ -513,7 +513,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             }}
           >
             <View
-              style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x6 }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                width: isDesktop ? undefined : '100%',
+                gap: modernTokens.space.x6,
+              }}
             >
               <ProductGallery
                 images={product.images}

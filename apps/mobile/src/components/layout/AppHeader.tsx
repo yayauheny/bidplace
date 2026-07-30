@@ -46,33 +46,37 @@ function NavigationItem({
   desktop: boolean;
 }) {
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const itemStyle = {
+    minHeight: modernTokens.size.touch,
+    width: desktop ? ('100%' as const) : undefined,
+    flexDirection: desktop ? ('row' as const) : ('column' as const),
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: modernTokens.space.x1,
+    borderRadius: modernTokens.radius.pill,
+    backgroundColor: active
+      ? modernTokens.color.ink
+      : focused || hovered
+        ? modernTokens.color.chip
+        : 'transparent',
+    paddingHorizontal: desktop
+      ? modernTokens.space.x3
+      : modernTokens.space.x2,
+  };
 
   return (
-    <Link href={item.href} asChild>
+    <Link href={item.href} asChild style={itemStyle}>
       <MotionPressable
         accessibilityRole="link"
         accessibilityLabel={item.label}
         accessibilityState={{ selected: active }}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
         preset="button"
-        style={(state) => ({
-          minHeight: modernTokens.size.touch,
-          width: desktop ? '100%' : undefined,
-          flexDirection: desktop ? 'row' : 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: modernTokens.space.x1,
-          borderRadius: modernTokens.radius.pill,
-          backgroundColor: active
-            ? modernTokens.color.ink
-            : focused || state.hovered
-              ? modernTokens.color.chip
-              : 'transparent',
-          paddingHorizontal: desktop
-            ? modernTokens.space.x3
-            : modernTokens.space.x2,
-        })}
       >
         <AppIcon
           name={item.icon}

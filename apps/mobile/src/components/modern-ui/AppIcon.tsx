@@ -43,7 +43,6 @@ export function AppIcon({
       size={size}
       color={color}
       accessibilityLabel={label}
-      accessible={label ? true : undefined}
     />
   );
 }
