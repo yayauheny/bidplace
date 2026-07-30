@@ -5,6 +5,7 @@ import { AUTH_TOKEN_SECRET } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
+import { LogoutAuthGuard } from './logout-auth.guard';
 import { OptionalBearerAuthGuard } from './optional-bearer-auth.guard';
 import { PasswordHasherService } from './password-hasher.service';
 import { loadServerEnv } from '../core/config';
@@ -18,6 +19,7 @@ import { RateLimitModule } from '../core/rate-limit';
     AuthService,
     AuthTokenService,
     BearerAuthGuard,
+    LogoutAuthGuard,
     OptionalBearerAuthGuard,
     PasswordHasherService,
     {
@@ -25,6 +27,12 @@ import { RateLimitModule } from '../core/rate-limit';
       useFactory: () => loadServerEnv().JWT_SECRET,
     },
   ],
-  exports: [AuthService, AuthTokenService, BearerAuthGuard, OptionalBearerAuthGuard],
+  exports: [
+    AuthService,
+    AuthTokenService,
+    BearerAuthGuard,
+    LogoutAuthGuard,
+    OptionalBearerAuthGuard,
+  ],
 })
 export class AuthModule {}

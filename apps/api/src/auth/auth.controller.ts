@@ -23,6 +23,7 @@ import {
 } from './auth.constants';
 import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
+import { LogoutAuthGuard } from './logout-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
@@ -132,17 +133,16 @@ export class AuthController {
     });
   }
 
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(LogoutAuthGuard)
   @Post('logout')
   async logout(
     @CurrentUser() auth: AuthTokenPayload | undefined,
     @Res({ passthrough: true }) response: AuthCookieResponse,
   ) {
-    if (!auth) {
-      throw new UnauthorizedException('Missing authenticated user');
+    if (auth) {
+      await this.authService.logout(auth.sub);
     }
 
-    await this.authService.logout(auth.sub);
     this.clearSessionCookie(response);
 
     return { ok: true } as const;

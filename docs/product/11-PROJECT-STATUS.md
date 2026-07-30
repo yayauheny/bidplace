@@ -13,6 +13,10 @@
 - Automated evidence for this snapshot: mobile typecheck, lint, unit tests (17/17), E2E fence, Expo web export and isolated headless web smoke passed; the smoke found a visible `/` Catalog link and no `accessible` warning. Founder visual/accessibility/device acceptance remains required; no route status is changed to `Implemented`.
 - `Needs verification`: the targeted auction Playwright regression was not started because `127.0.0.1:3001` was already occupied and the existing config disallows reusing a running server; no auction assertions were executed in this snapshot.
 
+## Auth logout resilience — 2026-07-30
+
+- `Implemented`: `POST /auth/logout` uses `LogoutAuthGuard` to identify only a valid current session. It always clears the session cookie, including when the submitted cookie is missing, expired, malformed, or stale; server-side session invalidation runs only for an authenticated current session. `apps/api/src/auth/logout-auth.guard.spec.ts` covers invalid, stale, and current tokens.
+
 ## Auction browser E2E — 2026-07-28
 
 - `Implemented`: three independent Playwright scenarios cover seller Product draft/submission and scheduled Listing preview (`apps/mobile/e2e/auction-creation.spec.ts`), two-buyer canonical bid/outbid/minimum behavior (`auction-bidding.spec.ts`), and lifecycle-driven close with winner Order and loser privacy (`auction-closing.spec.ts`). Shared setup lives in `e2e/support`; there is no `.state.json` or serial dependency.
