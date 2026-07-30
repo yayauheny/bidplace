@@ -8,6 +8,8 @@ import { modernTokens } from '@bidplace/design-tokens';
 import {
   AppText,
   ImagePlaceholder,
+  PageHeader,
+  PageState,
   PrimaryButton,
   SecondaryButton,
   TextField,
@@ -164,9 +166,7 @@ export function SellerProfileScreen() {
   if (query.isLoading) {
     return (
       <ProfileShell>
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем профиль продавца…
-        </AppText>
+        <PageState title="Загружаем профиль продавца…" loading />
       </ProfileShell>
     );
   }
@@ -178,13 +178,10 @@ export function SellerProfileScreen() {
   ) {
     return (
       <ProfileShell>
-        <View style={{ gap: modernTokens.space.x4 }}>
-          <AppText role="sectionTitle">Не удалось загрузить профиль</AppText>
-          <SecondaryButton
-            label="Повторить"
-            onPress={() => void query.refetch()}
-          />
-        </View>
+        <PageState
+          title="Не удалось загрузить профиль"
+          retry={() => void query.refetch()}
+        />
       </ProfileShell>
     );
   }
@@ -199,7 +196,10 @@ export function SellerProfileScreen() {
     <ProfileShell>
       <View style={{ gap: modernTokens.space.x5 }}>
         <View style={{ gap: modernTokens.space.x2 }}>
-          <AppText role="screenTitle">Профиль продавца</AppText>
+          <PageHeader
+            title="Профиль продавца"
+            description={!profile ? 'Заполните профиль, чтобы подать заявку на модерацию.' : undefined}
+          />
           {profile ? (
             <AppText
               role="caption"
@@ -213,11 +213,7 @@ export function SellerProfileScreen() {
             >
               {sellerStatusLabel(profile.status)}
             </AppText>
-          ) : (
-            <AppText role="bodySmall" tone="secondary">
-              Заполните профиль, чтобы подать заявку на модерацию.
-            </AppText>
-          )}
+          ) : null}
         </View>
 
         <View style={{ gap: modernTokens.space.x3 }}>

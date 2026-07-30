@@ -27,6 +27,15 @@ function deadlineLabel(item: AuctionCardItem): string {
   return new Intl.DateTimeFormat('ru-BY', { day: 'numeric', month: 'short' }).format(new Date(item.listing.endsAt));
 }
 
+function publishedLabel(item: AuctionCardItem): string | null {
+  if (!item.product.publishedAt) return null;
+  return new Intl.DateTimeFormat('ru-BY', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(item.product.publishedAt));
+}
+
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
   const firstImage = product.images[0];
@@ -44,9 +53,14 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
         <View style={{ gap: modernTokens.space.x1 }}>
           <AppText role="metadata" tone="secondary" numberOfLines={1}>{sellerProfile.fullName}</AppText>
           <AppText role="cardTitle" numberOfLines={2}>{product.title ?? 'Предмет'}</AppText>
+          {publishedLabel(item) ? (
+            <AppText role="caption" tone="secondary">
+              Размещено {publishedLabel(item)}
+            </AppText>
+          ) : null}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: modernTokens.space.x2 }}>
             <AppText role="numeric">{price}</AppText>
-            <AppText role="caption" tone={listing?.status === 'LIVE' ? 'accent' : 'secondary'}>{listingLabel(item)} · {deadlineLabel(item)}</AppText>
+            <AppText role="caption" tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}>{listingLabel(item)} · {deadlineLabel(item)}</AppText>
           </View>
         </View>
       </MotionPressable>

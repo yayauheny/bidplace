@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { AppHeader } from './AppHeader';
+import { AccountMenu } from './AccountMenu';
 
 export function AppShell({
   children,
@@ -15,6 +16,7 @@ export function AppShell({
   bottomAction?: ReactNode;
   mode?: 'public' | 'seller' | 'admin' | 'auth';
 }) {
+  void mode;
   const { width } = useWindowDimensions();
   const desktop = width >= 1025;
 
@@ -28,8 +30,21 @@ export function AppShell({
           flexDirection: desktop ? 'row' : 'column',
         }}
       >
-        <AppHeader mode={mode} />
-        <View style={{ flex: 1, minWidth: 0 }}>
+        <AppHeader />
+        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas }}>
+          <View
+            style={{
+              minHeight: 56,
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              borderBottomWidth: 1,
+              borderBottomColor: modernTokens.color.border,
+              backgroundColor: modernTokens.color.surface,
+              paddingHorizontal: desktop ? modernTokens.space.x8 : modernTokens.space.x5,
+            }}
+          >
+            <AccountMenu />
+          </View>
           {children}
           {bottomAction}
         </View>

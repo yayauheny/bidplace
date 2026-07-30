@@ -192,6 +192,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           Черновик можно сохранить неполным. Для модерации нужны обязательные
           поля и хотя бы одно изображение.
         </AppText>
+        <AppText role="bodySmall" tone="secondary">
+          Автором предмета публично будет указан ваш профиль продавца.
+        </AppText>
       </View>
 
       {existingProduct ? (
@@ -309,7 +312,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           editable={editable}
         />
         <TextField
-          label="Материалы"
+          label="Материал"
           value={materials}
           onChangeText={setMaterials}
           placeholder="Необязательно"
@@ -330,7 +333,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           editable={editable}
         />
         <TextField
-          label="Год"
+          label="Год создания"
           value={year}
           onChangeText={setYear}
           placeholder="Необязательно"
@@ -356,6 +359,10 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           editable={editable}
         />
       </FormSection>
+
+      <AppText role="bodySmall" tone="secondary">
+        Дата размещения установится автоматически при первой публичной публикации.
+      </AppText>
 
       {editable ? (
         <PrimaryButton

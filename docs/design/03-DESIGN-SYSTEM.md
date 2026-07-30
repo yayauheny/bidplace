@@ -4,19 +4,21 @@
 
 Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 
+Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip surfaces; `AppShell` owns the 72 px desktop rail and account row; `AppHeader` owns role-derived icon navigation; `AccountMenu`, `PageHeader` and `PageState` are shared primitives. Product detail uses the existing public Product/SellerProfile/Listing data for author, facts, publication date and history.
+
 ## Current implementation
 
 Это фактическая инвентаризация committed final UI; она не является утверждением бренда и остаётся Partial до founder acceptance.
 
 | Область             | Фактическая реализация                                                                                                         | Путь                                                                                   |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Colors/themes       | light-only semantic palette through `modernTokens` and React Navigation theme                                                  | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/providers/theme-provider.tsx` |
+| Colors/themes       | light-only semantic palette through `modernTokens`; web canvas and surface are white with neutral muted surfaces and semantic borders | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/providers/theme-provider.tsx` |
 | Spacing             | 2–96 px шкала                                                                                                                  | `packages/design-tokens/src/index.ts`                                                  |
 | Radius              | `xs`–`2xl`, `full`                                                                                                             | `packages/design-tokens/src/index.ts`                                                  |
 | Size/touch          | control sizes и `touch: 44`                                                                                                    | `packages/design-tokens/src/index.ts`                                                  |
 | Typography tokens   | display/hero/heading/title/body/small/caption/nav                                                                              | `packages/design-tokens/src/index.ts`                                                  |
 | Fonts               | Inter and PT Mono runtime loading                                                                                              | `apps/mobile/src/app/_layout.tsx`                                                      |
-| Layout              | page/content/reading/form max widths; shared responsive `AppShell` keeps desktop rail full-height and page area flexible             | `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/layout/AppShell.tsx` |
+| Layout              | page/content/reading/form max widths; shared `AppShell` keeps a 72 px desktop rail, account row and flexible page area             | `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/layout/AppShell.tsx` |
 | Breakpoints         | final responsive shell: mobile below 1025 px and desktop rail from 1025 px                                                     | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
 | Elevation           | semantic surface and overlay tokens                                                                                            | `packages/design-tokens/src/modern.ts`                                                 |
 | Buttons             | semantic primary, secondary and destructive actions with loading/disabled/accessibility state                                  | `apps/mobile/src/components/modern-ui/Button.tsx`                                      |
@@ -24,8 +26,8 @@
 | Cards/panels        | `AuctionCard`, `AuctionPanel`, `FormSection` and route-local surfaces                                                          | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                     |
 | Status              | semantic text tones, auction panel facts and server-projected route states                                                     | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                     |
 | Auction patterns    | gallery, auction panel, bid history and seller summary                                                                         | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/products`            |
-| Navigation          | final responsive role navigation: desktop rail and mobile bottom navigation                                                    | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
-| Feedback            | route-local loading, empty, error and retry states through final primitives                                                    | `apps/mobile/src/features`, `components/modern-ui`                                     |
+| Navigation          | role-derived icon rail with hover/focus labels, seller capability actions and shared account menu                              | `apps/mobile/src/components/layout/AppHeader.tsx`, `apps/mobile/src/components/layout/AccountMenu.tsx` |
+| Feedback            | shared `PageHeader` and `PageState` provide consistent loading, empty, error and retry states                                  | `apps/mobile/src/components/modern-ui/PageHeader.tsx`, `PageState.tsx`                 |
 | Media               | Expo Image, `getApiAssetUrl`, loading surface, missing/error placeholder, image picker and truthful seller image count          | `apps/mobile/src/lib/environment.ts`, `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/sellers` |
 | Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
 | Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                  | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                 |

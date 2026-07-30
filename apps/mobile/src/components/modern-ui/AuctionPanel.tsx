@@ -16,7 +16,6 @@ type AuctionPanelProps = {
   minimumNextBidLabel?: string;
   timingLabel: string;
   deadlineLabel: string;
-  realtimeLabel: string;
   children?: ReactNode;
 };
 
@@ -30,7 +29,6 @@ export function AuctionPanel({
   minimumNextBidLabel,
   timingLabel,
   deadlineLabel,
-  realtimeLabel,
   children,
 }: AuctionPanelProps) {
   return (
@@ -46,45 +44,34 @@ export function AuctionPanel({
       }}
     >
       <View style={{ gap: modernTokens.space.x2 }}>
-        <AppText role="metadata" tone="secondary">
-          Торги
-        </AppText>
         <View
           style={{
             flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: modernTokens.space.x2,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: modernTokens.space.x3,
           }}
         >
+          <AppText role="metadata" tone="secondary">
+            Статус
+          </AppText>
           <AppText
-            role="caption"
+            role="bodySmall"
             tone={statusTone}
             style={{
-              backgroundColor: modernTokens.color.chip,
-              borderRadius: modernTokens.radius.pill,
-              overflow: 'hidden',
-              paddingHorizontal: modernTokens.space.x2,
-              paddingVertical: modernTokens.space.x1,
+              flexShrink: 1,
+              textAlign: 'right',
             }}
           >
+            <AppText tone={statusTone}>● </AppText>
             {statusLabel}
           </AppText>
-          {participationLabel ? (
-            <AppText
-              role="caption"
-              tone={participationTone}
-              style={{
-                backgroundColor: modernTokens.color.chip,
-                borderRadius: modernTokens.radius.pill,
-                overflow: 'hidden',
-                paddingHorizontal: modernTokens.space.x2,
-                paddingVertical: modernTokens.space.x1,
-              }}
-            >
-              {participationLabel}
-            </AppText>
-          ) : null}
         </View>
+        {participationLabel ? (
+          <AppText role="caption" tone={participationTone}>
+            {participationLabel}
+          </AppText>
+        ) : null}
       </View>
 
       <View style={{ gap: modernTokens.space.x1 }}>
@@ -105,9 +92,6 @@ export function AuctionPanel({
         </AppText>
         <AppText role="bodySmall" tone="secondary">
           {deadlineLabel}
-        </AppText>
-        <AppText role="caption" tone="muted">
-          {realtimeLabel}
         </AppText>
       </View>
       {children ? (

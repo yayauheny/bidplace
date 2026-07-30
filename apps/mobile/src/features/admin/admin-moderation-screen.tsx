@@ -11,6 +11,8 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
+  PageHeader,
+  PageState,
   PrimaryButton,
   SecondaryButton,
   TextField,
@@ -127,18 +129,15 @@ export function AdminModerationScreen() {
   if (sellers.isLoading || products.isLoading)
     return (
       <AdminShell>
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем модерацию…
-        </AppText>
+        <PageState title="Загружаем модерацию…" loading />
       </AdminShell>
     );
   if (sellers.isError || products.isError || !sellers.data || !products.data)
     return (
       <AdminShell>
-        <AppText role="sectionTitle">Не удалось загрузить модерацию</AppText>
-        <SecondaryButton
-          label="Повторить"
-          onPress={() => {
+        <PageState
+          title="Не удалось загрузить модерацию"
+          retry={() => {
             void sellers.refetch();
             void products.refetch();
           }}
@@ -186,7 +185,10 @@ export function AdminModerationScreen() {
 
   return (
     <AdminShell>
-      <AppText role="screenTitle">Модерация</AppText>
+      <PageHeader
+        title="Модерация"
+        description="Проверка продавцов и предметов перед публикацией."
+      />
       <FormSection title="Продавцы">
         {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
           <ModerationCard

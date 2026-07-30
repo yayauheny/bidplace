@@ -108,8 +108,8 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
     return (
       <View style={{ gap: modernTokens.space.x3 }}>
         <AppText role="bodySmall" tone="secondary">
-          Мы отправим код на ваш email. После подтверждения откроем ставку и
-          проверим правила сервиса.
+          Чтобы сделать первую ставку, подтвердите email. Мы отправим код на
+          этот адрес. После подтверждения можно будет сделать ставку.
         </AppText>
         <SecondaryButton
           label="Отправить код"
@@ -148,6 +148,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
   if (auth.user.acceptedRulesVersion !== rulesQuery.data.rules.version) {
     return (
       <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="label">Перед первой ставкой нужно принять правила сервиса.</AppText>
         <AppText role="bodySmall" tone="secondary">
           {rulesQuery.data.rules.text}
         </AppText>

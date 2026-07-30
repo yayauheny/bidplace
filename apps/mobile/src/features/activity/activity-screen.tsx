@@ -9,7 +9,8 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AppText,
   MotionPressable,
-  PrimaryButton,
+  PageHeader,
+  PageState,
   SecondaryButton,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
@@ -110,44 +111,20 @@ export function ActivityScreen() {
 
   let content: React.ReactNode;
   if (query.isLoading) {
-    content = (
-      <View style={{ paddingVertical: modernTokens.space.x16 }}>
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем покупки…
-        </AppText>
-      </View>
-    );
+    content = <PageState title="Загружаем покупки…" loading />;
   } else if (query.isError || !query.data) {
     content = (
-      <View
-        style={{
-          alignItems: 'center',
-          gap: modernTokens.space.x4,
-          paddingVertical: modernTokens.space.x16,
-        }}
-      >
-        <AppText role="sectionTitle">Не удалось загрузить покупки</AppText>
-        <PrimaryButton label="Повторить" onPress={() => void query.refetch()} />
-      </View>
+      <PageState
+        title="Не удалось загрузить покупки"
+        retry={() => void query.refetch()}
+      />
     );
   } else if (query.data.activity.length === 0) {
     content = (
-      <View
-        style={{
-          alignItems: 'center',
-          gap: modernTokens.space.x3,
-          paddingVertical: modernTokens.space.x16,
-        }}
-      >
-        <AppText role="sectionTitle">Пока нет торгов</AppText>
-        <AppText
-          role="bodySmall"
-          tone="secondary"
-          style={{ textAlign: 'center' }}
-        >
-          Ваши ставки и результаты появятся здесь.
-        </AppText>
-      </View>
+      <PageState
+        title="Пока нет торгов"
+        message="Ваши ставки и результаты появятся здесь."
+      />
     );
   } else {
     content = (
@@ -172,12 +149,10 @@ export function ActivityScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ gap: modernTokens.space.x2 }}>
-          <AppText role="screenTitle">Мои покупки</AppText>
-          <AppText role="bodySmall" tone="secondary">
-            Статусы ваших ставок и заказов.
-          </AppText>
-        </View>
+        <PageHeader
+          title="Мои покупки"
+          description="Статусы ваших ставок и заказов."
+        />
         {content}
       </ScrollView>
     </AppShell>

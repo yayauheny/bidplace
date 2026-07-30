@@ -1,14 +1,14 @@
 export const modernTokens = {
   color: {
-    canvas: '#F7F4EE',
+    canvas: '#FFFFFF',
     surface: '#FFFFFF',
-    surfaceMuted: '#F1EEE8',
+    surfaceMuted: '#F7F7F7',
     ink: '#111111',
     inkSoft: '#252525',
     textSecondary: '#77736D',
     textMuted: '#A5A099',
     border: '#E2DDD4',
-    chip: '#EEEAE4',
+    chip: '#F5F5F5',
     placeholder: '#D8D4CD',
     accent: '#D94A24',
     accentDark: '#BC3C1B',

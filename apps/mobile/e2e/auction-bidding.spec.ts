@@ -35,6 +35,9 @@ test('two buyers place bids and observe canonical leading and outbid state', asy
     await expect(
       buyerA.page.getByRole('button', { name: 'Принять правила' }),
     ).toBeVisible();
+    await expect(
+      buyerA.page.getByText('Перед первой ставкой нужно принять правила сервиса.'),
+    ).toBeVisible();
     await buyerA.page.getByRole('button', { name: 'Принять правила' }).click();
     await placeBid(buyerA.page, '11');
     await expectCurrentPrice(buyerA.page, '11.00');

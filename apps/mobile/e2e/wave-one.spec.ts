@@ -19,6 +19,12 @@ test('authenticated buyer receives private responses and truthful empty activity
 
     await page.goto('/me/activity');
     await expect(page.getByText('Пока нет торгов')).toBeVisible();
+
+    await page.goto('/');
+    await page.getByRole('button', { name: /Открыть меню аккаунта/ }).click();
+    await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
+    await page.getByRole('button', { name: 'Выйти' }).click();
+    await expect(page.getByRole('link', { name: 'Войти' })).toBeVisible();
   } finally {
     await context.close();
   }

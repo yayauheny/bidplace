@@ -4,6 +4,12 @@
 
 Статус: MVP flow confirmed by product docs; implementation snapshot is Partial
 
+## Web UI polish — 2026-07-30
+
+- Desktop uses a 72 px icon rail with hover/focus labels and a right-side account control. Navigation derives seller actions from `SellerProfile.status`; only `APPROVED` exposes the seller cabinet and add-product action.
+- Catalog, Activity, SellerProfile, Admin and Product use shared `PageHeader`/`PageState` rhythm with explicit loading, empty and retry states. The web canvas is white and areas use semantic borders.
+- Product detail exposes author, authored-item facts, publication date, public bids and three tabs: «О предмете», «Ставки», «История предмета». No private contacts or internal identifiers are shown.
+
 ## Правила карты
 
 - Поведение определяет `../product/05-MVP-RFC.md`; этот документ фиксирует маршруты и фактические UI-состояния.

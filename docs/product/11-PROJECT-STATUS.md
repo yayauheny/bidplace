@@ -11,6 +11,11 @@
 - `Implemented`: the guarded local seed creates three public Products with three PNG fixtures in `SCHEDULED`, `LIVE` and `ENDED` states, plus pending SellerProfile and pending Product fixtures. The pending Product remains private because it is `PENDING_REVIEW` and has no public listing.
 - `Needs verification`: `apps/mobile/e2e/wave-one.spec.ts` now covers authenticated activity, new-user seller form, non-admin admin denial, admin approval of pending seller/product and route-warning regression, but browser execution and standalone guarded seed smoke still require disposable PostgreSQL.
 
+## Волна 2 — web UI polish — 2026-07-30
+
+- `Partial`: desktop web now has a white canvas, 72 px icon rail, right-side account menu and SellerProfile-derived navigation. Only `APPROVED` seller capability exposes cabinet/add-product; auth/session, permissions and API contracts are unchanged.
+- `Partial`: shared `PageHeader`/`PageState` and Product three-tab presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states. Final browser/device/accessibility acceptance is still pending.
+
 ## Local seed password handling — 2026-07-30
 
 - `Implemented`: `packages/database/prisma/seed.js` now accepts the local-only `SEED_ADMIN_PASSWORD`, hashes it with Argon2 before creating the deterministic admin, seller and buyer records, and never writes the plaintext password to the database. Runtime login continues to verify the submitted password against `User.passwordHash` through `apps/api/src/auth/password-hasher.service.ts`.

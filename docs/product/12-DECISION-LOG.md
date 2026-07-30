@@ -791,3 +791,20 @@ Client проверяет обязательность, числовой BYN ф�
 ### Revisit when
 
 Right-swipe confirmation может рассматриваться после MVP только с отдельной accessibility и web-equivalence проверкой.
+
+---
+
+## DEC-057 — Web-first UI polish boundary
+
+Date: 2026-07-30
+Status: Confirmed
+
+### Decision
+
+Вторая UI-волна использует web-first spatial logic: белый canvas, компактный icon rail, единый account control справа и shared page-state primitives. Seller navigation derives capability from `SellerProfile.status`; `APPROVED` остаётся единственным доступом к созданию предмета. Автор Product берётся из публичного `SellerProfile.fullName`, а публичная история строится только из Product/Listing данных.
+
+Tags, search, tag filtering, notifications, account settings, password reset, buyer profile page, new Product fields и mobile redesign отложены.
+
+### Rationale
+
+Это улучшает web hierarchy и role clarity без дублирования автора, изменения Product schema, расширения API или ослабления auction/privacy boundaries.

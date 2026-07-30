@@ -13,6 +13,7 @@ import {
   AuctionPanel,
   BottomActionBar,
   ContentTabs,
+  PageState,
   PrimaryButton,
   ProductGallery,
   SecondaryButton,
@@ -221,7 +222,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     if (auth.isAuthenticated)
       void queryClient.invalidateQueries({ queryKey: ['user', 'activity'] });
   };
-  const realtimeState = useListingRealtime(listingId, refreshListing);
+  useListingRealtime(listingId, refreshListing);
   const bid = useMutation({
     mutationFn: (attempt: BidAttempt) =>
       api.listings.placeBid(
@@ -242,33 +243,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   if (query.isLoading)
     return (
       <ProductShell>
-        <View
-          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <AppText role="bodySmall" tone="secondary">
-            Загружаем предмет…
-          </AppText>
-        </View>
+        <PageState title="Загружаем предмет…" loading />
       </ProductShell>
     );
   if (query.isError || !query.data)
     return (
       <ProductShell>
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: modernTokens.space.x4,
-            padding: modernTokens.space.x5,
-          }}
-        >
-          <AppText role="sectionTitle">Не удалось загрузить предмет</AppText>
-          <SecondaryButton
-            label="Повторить"
-            onPress={() => void query.refetch()}
-          />
-        </View>
+        <PageState
+          title="Не удалось загрузить предмет"
+          retry={() => void query.refetch()}
+        />
       </ProductShell>
     );
 
@@ -278,8 +262,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     : undefined;
   const detailItems: DetailItem[] = [
     product.technique ? { label: 'Техника', value: product.technique } : null,
-    product.materials ? { label: 'Материалы', value: product.materials } : null,
+    product.materials ? { label: 'Материал', value: product.materials } : null,
     product.dimensions ? { label: 'Размеры', value: product.dimensions } : null,
+    product.year ? { label: 'Год создания', value: String(product.year) } : null,
     product.condition ? { label: 'Состояние', value: product.condition } : null,
     product.uniqueness
       ? { label: 'Уникальность', value: product.uniqueness }
@@ -368,13 +353,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             : 'Торги завершены'
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
-      realtimeLabel={
-        realtimeState === 'connected'
-          ? 'Обновления подключены'
-          : realtimeState === 'reconnecting'
-            ? 'Восстанавливаем обновления…'
-            : 'Обновления недоступны — используем актуальную загрузку'
-      }
     >
       {isDesktop ? bidForm : null}
     </AuctionPanel>
@@ -430,7 +408,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           ) : null}
         </View>
       </SurfacePanel>
-    ) : (
+    ) : activeTab === 'bids' ? (
       <SurfacePanel eyebrow="История ставок">
         {bids.data?.bids?.length ? (
           <View style={{ gap: modernTokens.space.x3 }}>
@@ -458,6 +436,31 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             Ставок ещё нет.
           </AppText>
         )}
+      </SurfacePanel>
+    ) : (
+      <SurfacePanel eyebrow="История предмета">
+        <View style={{ gap: modernTokens.space.x3 }}>
+          <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
+          {product.year ? (
+            <AppText role="bodySmall" tone="secondary">
+              Год создания: {product.year}
+            </AppText>
+          ) : null}
+          {product.publishedAt ? (
+            <AppText role="bodySmall" tone="secondary">
+              Размещено на bidplace: {formatDateTime(product.publishedAt)}
+            </AppText>
+          ) : null}
+          {listing ? (
+            <AppText role="bodySmall" tone="secondary">
+              Состояние торгов: {listingStatusLabel(listing.status)}
+            </AppText>
+          ) : (
+            <AppText role="bodySmall" tone="secondary">
+              Размещение готовится.
+            </AppText>
+          )}
+        </View>
       </SurfacePanel>
     );
 
@@ -526,11 +529,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               />
               <View style={{ gap: modernTokens.space.x2 }}>
                 <AppText role="metadata" tone="secondary">
-                  {sellerProfile.fullName}
+                  Автор: {sellerProfile.fullName}
                 </AppText>
                 <AppText role="screenTitle">
                   {product.title ?? 'Предмет'}
                 </AppText>
+                {product.publishedAt ? (
+                  <AppText role="caption" tone="secondary">
+                    Размещено на bidplace: {formatDateTime(product.publishedAt)}
+                  </AppText>
+                ) : null}
               </View>
               {!isDesktop ? auctionPanel : null}
               <View style={{ gap: modernTokens.space.x3 }}>
@@ -538,6 +546,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   tabs={[
                     { id: 'about', label: 'О предмете' },
                     { id: 'bids', label: 'Ставки' },
+                    { id: 'history', label: 'История предмета' },
                   ]}
                   activeId={activeTab}
                   onChange={setActiveTab}

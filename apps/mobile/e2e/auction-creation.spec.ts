@@ -115,6 +115,9 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page.goto(`/product/${product.publicId}`);
     await expect(page.getByText(title)).toBeVisible();
     await expect(page.getByText('Торги запланированы')).toBeVisible();
+    await page.getByRole('tab', { name: 'История предмета' }).click();
+    await expect(page.getByText(/Автор:/)).toBeVisible();
+    await expect(page.getByText('Обновления подключены')).toHaveCount(0);
     await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
   } finally {
     await context.close();
