@@ -3,6 +3,11 @@
 Последнее обновление: 2026-07-30
 Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API lint/typecheck/unit/integration tests, mobile typecheck/lint/unit/web export, the disposable-DB fence check and auction browser/E2E verification. Founder device/visual/accessibility acceptance and the 10-user rehearsal remain pending.
 
+## Local seed password handling — 2026-07-30
+
+- `Implemented`: `packages/database/prisma/seed.js` now accepts the local-only `SEED_ADMIN_PASSWORD`, hashes it with Argon2 before creating the deterministic admin, seller and buyer records, and never writes the plaintext password to the database. Runtime login continues to verify the submitted password against `User.passwordHash` through `apps/api/src/auth/password-hasher.service.ts`.
+- The previous `SEED_ADMIN_PASSWORD_HASH` variable is no longer read by the seed. A local database reset must provide `SEED_ADMIN_PASSWORD` and rerun the guarded demo seed.
+
 ## Visual polish — 2026-07-30
 
 - `Partial`: `apps/mobile/src/components/layout/AppShell.tsx` now provides the shared 1025 px responsive shell; all screens that used the repeated `SafeAreaView + AppHeader` composition use the shell, with mobile bottom actions and scroll ownership preserved.

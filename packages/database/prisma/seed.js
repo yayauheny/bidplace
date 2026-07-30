@@ -1,5 +1,6 @@
 const { Prisma, PrismaClient } = require('../dist');
 const { createHash } = require('node:crypto');
+const argon2 = require('argon2');
 
 if (
   process.env.NODE_ENV === 'production' ||
@@ -66,7 +67,8 @@ async function createProductWithImages({
 
 async function main() {
   const adminEmail = requiredEnvironment('SEED_ADMIN_EMAIL');
-  const adminPasswordHash = requiredEnvironment('SEED_ADMIN_PASSWORD_HASH');
+  const adminPassword = requiredEnvironment('SEED_ADMIN_PASSWORD');
+  const adminPasswordHash = await argon2.hash(adminPassword);
 
   await prisma.auditEvent.deleteMany();
   await prisma.termsAcceptance.deleteMany();
