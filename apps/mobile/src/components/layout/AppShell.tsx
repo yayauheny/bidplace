@@ -37,6 +37,8 @@ export function AppShell({
               minHeight: 56,
               alignItems: 'flex-end',
               justifyContent: 'center',
+              position: 'relative',
+              zIndex: 100,
               borderBottomWidth: 1,
               borderBottomColor: modernTokens.color.border,
               backgroundColor: modernTokens.color.surface,

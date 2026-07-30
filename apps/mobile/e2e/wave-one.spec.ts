@@ -6,6 +6,8 @@ import {
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
+const apiBaseURL = 'http://localhost:3001';
+
 test('authenticated buyer receives private responses and truthful empty activity', async ({
   browser,
 }) => {
@@ -13,7 +15,7 @@ test('authenticated buyer receives private responses and truthful empty activity
   const { context, page } = await authenticatedPage(browser, buyer);
 
   try {
-    const activity = await context.request.get('/api/me/activity');
+    const activity = await context.request.get(`${apiBaseURL}/api/me/activity`);
     expect(activity.status()).toBe(200);
     expect((await activity.json()).activity).toEqual([]);
 
@@ -37,7 +39,9 @@ test('new authenticated user sees seller application form and cannot access admi
   const { context, page } = await authenticatedPage(browser, buyer);
 
   try {
-    const adminResponse = await context.request.get('/api/admin/products');
+    const adminResponse = await context.request.get(
+      `${apiBaseURL}/api/admin/products`,
+    );
     expect(adminResponse.status()).toBe(403);
 
     await page.goto('/profile');
@@ -82,7 +86,9 @@ test('admin reviews and approves pending seller and product', async ({
     await page.getByRole('button', { name: 'Одобрить' }).first().click();
     await expect
       .poll(async () => {
-        const response = await context.request.get('/api/admin/seller-profiles');
+        const response = await context.request.get(
+          `${apiBaseURL}/api/admin/seller-profiles`,
+        );
         const payload = await response.json();
         return payload.sellerProfiles.find(
           (seller: { id: string }) => seller.id === fixture.sellerProfileId,
@@ -95,7 +101,9 @@ test('admin reviews and approves pending seller and product', async ({
     await pendingProductApproval.click();
     await expect
       .poll(async () => {
-        const response = await context.request.get('/api/admin/products');
+        const response = await context.request.get(
+          `${apiBaseURL}/api/admin/products`,
+        );
         const payload = await response.json();
         return payload.products.find(
           (product: { id: string }) => product.id === fixture.productId,

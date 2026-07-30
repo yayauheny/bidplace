@@ -21,9 +21,9 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page.getByLabel('Уникальность или тираж').fill('One');
     await page.getByLabel('Происхождение').fill('E2E fixture');
     await page.getByLabel('Техника').fill('Mixed media');
-    await page.getByLabel('Материалы').fill('Paper, ink');
+    await page.getByLabel('Материал').fill('Paper, ink');
     await page.getByLabel('Размеры').fill('30x40');
-    await page.getByLabel('Год').fill('2026');
+    await page.getByLabel('Год создания').fill('2026');
     await page.getByLabel('Город').fill('Minsk');
     await page.getByLabel('Передача или доставка').fill('Pickup');
 
@@ -116,7 +116,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await expect(page.getByText(title)).toBeVisible();
     await expect(page.getByText('Торги запланированы')).toBeVisible();
     await page.getByRole('tab', { name: 'История предмета' }).click();
-    await expect(page.getByText(/Автор:/)).toBeVisible();
+    await expect(page.getByText(/Автор:/).first()).toBeVisible();
     await expect(page.getByText('Обновления подключены')).toHaveCount(0);
     await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
   } finally {
