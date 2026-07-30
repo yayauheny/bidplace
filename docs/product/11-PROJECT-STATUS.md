@@ -105,7 +105,7 @@
 - `packages/api-client`: TypeScript build completed after multipart seller application and auth response updates.
 - `apps/api` typecheck passed.
 - `apps/api` build passed.
-- `apps/api` unit Vitest suite passed: 23 files, 106 tests.
+- `apps/api` unit Vitest suite passed: 25 files, 115 tests.
 - `apps/api` integration Vitest suite passed against local PostgreSQL after the order snapshot regression was fixed.
 - `apps/mobile` typecheck passed after the buyer/seller order projection fixes.
 - `apps/mobile` build passed (`expo export`).
