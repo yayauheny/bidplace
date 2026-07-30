@@ -18,3 +18,7 @@ apps/mobile/e2e/.otp.jsonl
 apps/mobile/e2e/.state.json
 apps/mobile/test-results/
 apps/mobile/playwright-report/
+/.agents/tmp/
+/.pnpm-store/
+/docs.zip
+/docs 2.zip
