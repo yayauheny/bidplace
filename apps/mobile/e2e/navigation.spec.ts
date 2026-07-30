@@ -84,6 +84,9 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
     await account.focus();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await account.click();
+    await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
   } finally {
     await context.close();
   }

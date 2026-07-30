@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -15,18 +15,22 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const focusOpened = useRef(false);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const initial = label.slice(0, 1).toUpperCase();
+  const closeMenu = useCallback(() => {
+    focusOpened.current = false;
+    setOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
     const closeIfOutside = (target: EventTarget | null) => {
       const menu = document.getElementById('account-menu');
       if (menu && target instanceof Node && !menu.contains(target)) {
-        setOpen(false);
+        closeMenu();
       }
     };
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') closeMenu();
     };
     const closeOnPointerDown = (event: PointerEvent) =>
       closeIfOutside(event.target);
@@ -40,7 +44,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
       document.removeEventListener('pointerdown', closeOnPointerDown);
       document.removeEventListener('focusin', closeOnFocusIn);
     };
-  }, [open]);
+  }, [closeMenu, open]);
 
   const logout = async () => {
     if (loggingOut) return;
@@ -50,7 +54,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
       router.replace('/');
     } finally {
       setLoggingOut(false);
-      setOpen(false);
+      closeMenu();
     }
   };
 
@@ -84,7 +88,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
-        onAccessibilityEscape={() => setOpen(false)}
+        onAccessibilityEscape={closeMenu}
         onFocus={
           desktop
             ? () => {

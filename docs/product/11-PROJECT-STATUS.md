@@ -13,7 +13,7 @@
 
 ## Волна 2 — web UI polish — 2026-07-30
 
-- `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. Account menu supports click, desktop hover and keyboard focus. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; auth/session, permissions and API contracts are unchanged.
+- `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; auth/session, permissions and API contracts are unchanged.
 - `Partial`: shared `PageHeader`/`PageState` and Product three-tab presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states; catalog background refetch uses a compact status line instead of a full PageState. Browser automation covers mobile header placement, guest/pending/approved navigation and desktop account hover/focus and passes; final founder visual/device/accessibility acceptance is still pending.
 
 ## Local seed password handling — 2026-07-30
