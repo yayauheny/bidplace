@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
 Последнее обновление: 2026-07-30
-Статус: Technical baseline is Partial; the current snapshot verifies seller application, buyer/seller order privacy and handoff, image reorder safety, first-bid floor handling, API lint/typecheck/unit/integration tests, mobile typecheck/lint/unit/web export, the disposable-DB fence check and auction browser/E2E verification. Founder device/visual/accessibility acceptance and the 10-user rehearsal remain pending.
+Статус: Technical baseline is Partial; API and mobile static checks pass, while refreshed browser E2E with the centralized overlay host and seeded demo flow remains Needs verification in the current snapshot. Founder device/visual/accessibility acceptance and the 10-user rehearsal remain pending.
 
 ## Волна 1 — private web session, seed and truthful states — 2026-07-30
 
@@ -9,14 +9,14 @@
 - `Implemented`: `(public)` and `(auth)` now own Expo Router layouts, removing the root references that caused the two legacy route warnings. Public URLs remain unchanged.
 - `Implemented`: activity keeps the server-provided empty array separate from network/5xx errors; seller onboarding treats only API 404 as an absent profile; moderation shows pending actions, non-repeatable approval controls and explicit empty sections.
 - `Implemented`: the guarded local seed creates three public Products with three PNG fixtures in `SCHEDULED`, `LIVE` and `ENDED` states, plus pending SellerProfile and pending Product fixtures. The pending Product remains private because it is `PENDING_REVIEW` and has no public listing.
-- `Implemented`: `apps/mobile/e2e/wave-one.spec.ts` covers authenticated activity, account logout, new-user seller form, non-admin admin denial, admin approval of pending seller/product and route-warning regression. The full 12-test Playwright suite passes against disposable PostgreSQL.
+- `Needs verification`: `apps/mobile/e2e/wave-one.spec.ts` covers authenticated activity, account logout, new-user seller form, non-admin admin denial, admin approval of pending seller/product, admin bid/activity restrictions and route-warning regression. The refreshed full Playwright suite has not completed in the current snapshot.
 
 ## Волна 2 — web UI polish — 2026-07-30
 
-- `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state and a visible pending-aware `Выйти` action. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; admin navigation remains Catalog + Moderation.
+- `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. `OverlayHost` portals account dropdowns and rail tooltips above content using trigger-rectangle positioning. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state and a visible pending-aware `Выйти` action. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; admin navigation remains Catalog + Moderation.
 - `Implemented`: admin bid placement is denied in `BidsService`, admin buyer Activity is denied at `ActivityController`, and Product detail does not request buyer Activity or render a bid form for admin. `BidsService` unit coverage and admin browser API assertions cover the rule.
-- `Implemented`: public catalog includes approved Products whose Listing is `SCHEDULED`, `LIVE` or `ENDED`; the open-only default filter is deferred. Public image HTTP response and browser `naturalWidth` are covered by auction E2E. Final founder visual/device/accessibility acceptance is still pending.
-- `Partial`: shared `PageHeader`/`PageState` and Product three-tab presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states; bid history now distinguishes loading, error/retry and empty/data states; catalog background refetch uses a compact status line. Browser automation covers mobile header placement, guest/pending/approved navigation, desktop account hover/focus, admin restrictions and passes; final founder visual/device/accessibility acceptance is still pending.
+- `Partial`: public catalog includes approved Products whose Listing is `SCHEDULED`, `LIVE` or `ENDED`, using a shared `LIVE` → `SCHEDULED` → latest `ENDED` selector; the open-only default filter is deferred. Public image HTTP response and browser `naturalWidth` checks are implemented in E2E, but the refreshed browser run remains Needs verification. Final founder visual/device/accessibility acceptance is still pending.
+- `Needs verification`: shared `PageHeader`/`PageState` and Product three-tab presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states; bid history now distinguishes loading, error/retry and empty/data states. Browser automation covers mobile header placement, guest/pending/approved navigation, desktop account hover/focus, admin restrictions and seeded buyer/media states, but the refreshed run is not complete; final founder visual/device/accessibility acceptance is still pending.
 
 ## Local seed password handling — 2026-07-30
 
@@ -58,6 +58,8 @@
 | Prisma generated client          | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                                                                                                                      |
 
 ## Partial / needs verification
+
+Current verification override (2026-07-31): direct API Vitest now passes 29 files / 126 tests. Mobile typecheck/lint/build passed. Playwright lists 14 tests, but execution is `Needs verification`: guarded prepare stops because PostgreSQL is unavailable at `127.0.0.1:5432`; no browser assertions ran in this snapshot.
 
 | Area                          | Current evidence                                                                                                                                                                                                                                                                                                                                                                          | Remaining gap                                                                                                                             |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |

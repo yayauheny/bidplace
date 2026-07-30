@@ -62,6 +62,23 @@ execFileSync(
   },
 );
 
+execFileSync(
+  process.execPath,
+  [resolve(root, 'packages/database/prisma/seed.js')],
+  {
+    cwd: resolve(root, 'packages/database'),
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      DATABASE_URL: databaseUrl,
+      ALLOW_DESTRUCTIVE_DEMO_SEED: 'true',
+      SEED_ADMIN_EMAIL: 'admin@bidplace.test',
+      SEED_ADMIN_PASSWORD: 'password123',
+    },
+    stdio: 'inherit',
+  },
+);
+
 await mkdir(e2e, { recursive: true });
 await rm(resolve(e2e, '.email.jsonl'), { force: true });
 await rm(resolve(e2e, '.otp.jsonl'), { force: true });

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { createSellerFixture } from './support/e2e-fixtures';
+import { createAuctionFixture, createSellerFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
 test('desktop rail keeps the active catalog link visible', async ({ page }) => {
@@ -68,18 +68,26 @@ test('pending seller navigation does not expose approved seller actions', async 
 test('approved seller navigation exposes the seller cabinet and add product', async ({
   browser,
 }) => {
-  const { seller } = await createSellerFixture();
-  const { context, page } = await authenticatedPage(browser, seller);
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.seller);
 
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
-    await page.goto('/');
+    await page.goto(`/product/${fixture.product.publicId}`);
     await expect(page.getByRole('link', { name: 'Кабинет продавца' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Добавить предмет' })).toBeVisible();
+
+    for (const label of ['Каталог', 'Покупки']) {
+      await page.getByRole('link', { name: label }).hover();
+      await expect(page.locator('#navigation-tooltip')).toHaveText(label);
+    }
 
     const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
     await account.hover();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
+    const accountMenu = page.locator('#account-menu-dropdown');
+    await expect(accountMenu).toBeVisible();
+    await expect(accountMenu).toHaveCSS('z-index', '20');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
     await account.focus();
@@ -87,6 +95,8 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await page.keyboard.press('Escape');
     await account.click();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
+    await page.getByRole('button', { name: 'Выйти' }).click();
+    await expect(page.getByRole('link', { name: 'Войти' })).toBeVisible();
   } finally {
     await context.close();
   }

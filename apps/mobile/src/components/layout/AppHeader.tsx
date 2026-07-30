@@ -1,5 +1,5 @@
 import { Link, usePathname } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 import type { ReactNode } from 'react';
 
@@ -9,6 +9,7 @@ import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { AppIcon, AppText, MotionPressable } from '../modern-ui';
 import { BrandLogo } from './BrandLogo';
+import { OverlayPortal } from './OverlayHost';
 
 type Href = '/' | '/me/activity' | '/profile' | '/admin' | '/products/new';
 type Item = { label: string; href: Href; icon: 'catalog' | 'purchases' | 'seller' | 'moderation' | 'plus' };
@@ -56,12 +57,16 @@ function NavigationItem({
 }) {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(null);
   const visibleLabel = hovered || focused;
 
   return (
     <View style={{ position: 'relative' }}>
       <Link href={item.href} asChild>
         <MotionPressable
+          ref={(node) => {
+            triggerRef.current = node as unknown as { getBoundingClientRect: () => DOMRect } | null;
+          }}
           accessibilityRole="link"
           accessibilityLabel={item.label}
           accessibilityState={{ selected: active }}
@@ -91,28 +96,26 @@ function NavigationItem({
         </MotionPressable>
       </Link>
       {desktop && visibleLabel ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            left: modernTokens.size.touch + modernTokens.space.x2,
-            top: modernTokens.space.x1,
-            minHeight: modernTokens.size.touch - modernTokens.space.x2,
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: modernTokens.color.border,
-            borderRadius: modernTokens.radius.small,
-            backgroundColor: modernTokens.color.surface,
-            paddingHorizontal: modernTokens.space.x2,
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-            elevation: 3,
-            zIndex: modernTokens.layer.popover,
-          }}
-        >
-          <AppText role="caption">{item.label}</AppText>
-        </View>
+        <OverlayPortal anchorRef={triggerRef} placement="right-start" testId="navigation-tooltip">
+          <View
+            pointerEvents="none"
+            style={{
+              minHeight: modernTokens.size.touch - modernTokens.space.x2,
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: modernTokens.color.border,
+              borderRadius: modernTokens.radius.small,
+              backgroundColor: modernTokens.color.surface,
+              paddingHorizontal: modernTokens.space.x2,
+              shadowColor: '#000',
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <AppText role="caption">{item.label}</AppText>
+          </View>
+        </OverlayPortal>
       ) : null}
     </View>
   );

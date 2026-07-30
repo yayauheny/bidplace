@@ -6,6 +6,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 
 import { AppHeader } from './AppHeader';
 import { AccountMenu } from './AccountMenu';
+import { OverlayHost } from './OverlayHost';
 
 export function AppShell({
   children,
@@ -18,9 +19,10 @@ export function AppShell({
   const desktop = width >= 1025;
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
+    <OverlayHost>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
+      >
       <View
         style={{
           flex: 1,
@@ -30,14 +32,13 @@ export function AppShell({
         <AppHeader
           accountControl={desktop ? undefined : <AccountMenu desktop={false} />}
         />
-        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas, position: 'relative', zIndex: modernTokens.layer.content }}>
+        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas }}>
           <View
             style={{
               minHeight: 56,
               alignItems: 'flex-end',
               justifyContent: 'center',
               position: 'relative',
-              zIndex: modernTokens.layer.chrome,
               borderBottomWidth: 1,
               borderBottomColor: modernTokens.color.border,
               backgroundColor: modernTokens.color.surface,
@@ -50,6 +51,7 @@ export function AppShell({
           {bottomAction}
         </View>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </OverlayHost>
   );
 }

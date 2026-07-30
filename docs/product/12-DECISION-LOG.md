@@ -724,7 +724,7 @@ Status: Confirmed
 
 ### Decision
 
-Product появляется в public catalog только после moderation approval и при `SCHEDULED`, `LIVE` либо `ENDED` Listing. Завершённый Product остаётся в общем каталоге и по прямому public URL с результатом и историей, пока admin его не скрыл. Default-фильтр только открытых торгов отложен.
+Product появляется в public catalog только после moderation approval и при `SCHEDULED` либо `LIVE` Listing. После завершения он исключается из общего каталога, но сохраняется по прямому public URL с результатом и историей, пока admin его не скрыл.
 
 ---
 
@@ -823,3 +823,33 @@ Admin имеет только Catalog и Moderation в навигации. Backe
 ### Revises
 
 Связанные ограничения роли из `DEC-052` и UI-решения `DEC-057`; правило завершённых лотов из `DEC-052` пересмотрено выше.
+
+---
+
+## DEC-059 — Завершённые лоты остаются в public catalog
+
+Date: 2026-07-31
+Status: Confirmed
+
+### Decision
+
+Public catalog включает `APPROVED` Product с `SCHEDULED`, `LIVE` или `ENDED` Listing. Для Product с несколькими публичными Listing selector использует приоритет `LIVE`, затем `SCHEDULED`, затем последний `ENDED`. Default-фильтр только открытых торгов отложен.
+
+### Revises
+
+Эта запись пересматривает только правило public catalog из `DEC-052`; исходный текст `DEC-052` сохранён без изменений.
+
+---
+
+## DEC-060 — Founder decision required for local demo Bid fixtures
+
+Date: 2026-07-31
+Status: Needs founder decision
+
+### Conflict
+
+The deterministic local seed creates one Bid for the seeded buyer on the live Listing and one Bid on the ended Listing so browser demos can show bid history and the ended result. `docs/product/09-TRUST-AND-AUCTION-INTEGRITY.md` currently prohibits platform seed bids.
+
+### Required decision
+
+Confirm whether explicitly local/test-only seeded buyer fixtures are allowed when they cannot reach production data or production runtime. Until confirmed, this remains a documented implementation risk rather than a product-policy exception.

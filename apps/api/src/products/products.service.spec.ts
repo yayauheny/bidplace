@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ProductsService } from './products.service';
-import { publicCatalogProductWhere } from './public-visibility';
+import { publicCatalogProductWhere, selectPublicListing } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 const product = {
@@ -30,8 +30,15 @@ const product = {
 describe('ProductsService', () => {
   it('keeps ended listings in the public catalog predicate', () => {
     expect(publicCatalogProductWhere.listings?.some?.status).toEqual({
-      in: ['SCHEDULED', 'LIVE', 'ENDED'],
+      in: ['LIVE', 'SCHEDULED', 'ENDED'],
     });
+  });
+
+  it('selects a live listing over an older ended listing', () => {
+    const ended = { id: 'ended', status: 'ENDED' as const, createdAt: new Date('2026-07-01') };
+    const live = { id: 'live', status: 'LIVE' as const, createdAt: new Date('2026-07-02') };
+
+    expect(selectPublicListing([ended, live])?.id).toBe('live');
   });
 
   it('retries a Product public ID collision without exposing the database error', async () => {

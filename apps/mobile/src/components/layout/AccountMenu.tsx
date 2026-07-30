@@ -6,6 +6,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 
 import { useAuth } from '../../providers/auth-provider';
 import { AppIcon, AppText, SecondaryButton } from '../modern-ui';
+import { OverlayPortal } from './OverlayHost';
 
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
@@ -13,6 +14,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const focusOpened = useRef(false);
+  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(null);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const initial = label.slice(0, 1).toUpperCase();
   const closeMenu = useCallback(() => {
@@ -24,7 +26,14 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     if (!open || Platform.OS !== 'web') return;
     const closeIfOutside = (target: EventTarget | null) => {
       const menu = document.getElementById('account-menu');
-      if (menu && target instanceof Node && !menu.contains(target)) {
+      const dropdown = document.getElementById('account-menu-dropdown');
+      if (
+        menu &&
+        dropdown &&
+        target instanceof Node &&
+        !menu.contains(target) &&
+        !dropdown.contains(target)
+      ) {
         closeMenu();
       }
     };
@@ -82,9 +91,14 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   return (
     <View
       nativeID="account-menu"
-      style={{ position: 'relative', zIndex: modernTokens.layer.popover }}
+      style={{ position: 'relative' }}
     >
       <Pressable
+        ref={(node) => {
+          triggerRef.current = node as unknown as {
+            getBoundingClientRect: () => DOMRect;
+          } | null;
+        }}
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
@@ -130,34 +144,66 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
         <AppIcon name="chevronDown" size={16} />
       </Pressable>
       {open ? (
-        <View
-          style={{
-            position: 'absolute',
-            top: modernTokens.size.touch,
-            right: 0,
-            minWidth: 180,
-            gap: modernTokens.space.x2,
-            borderWidth: 1,
-            borderColor: modernTokens.color.border,
-            borderRadius: modernTokens.radius.control,
-            backgroundColor: modernTokens.color.surface,
-            padding: modernTokens.space.x2,
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-            elevation: 4,
-          }}
-        >
-          <AppText role="caption" tone="secondary">
-            {label}
-          </AppText>
-          <SecondaryButton
-            label="Выйти"
-            loading={loggingOut}
-            onPress={() => void logout()}
+        desktop ? (
+          <OverlayPortal anchorRef={triggerRef} testId="account-menu-dropdown">
+            <AccountDropdown
+              label={label}
+              loggingOut={loggingOut}
+              onLogout={() => void logout()}
+              inline={false}
+            />
+          </OverlayPortal>
+        ) : (
+          <AccountDropdown
+            label={label}
+            loggingOut={loggingOut}
+            onLogout={() => void logout()}
+            inline
           />
-        </View>
+        )
       ) : null}
+    </View>
+  );
+}
+
+function AccountDropdown({
+  label,
+  loggingOut,
+  onLogout,
+  inline,
+}: {
+  label: string;
+  loggingOut: boolean;
+  onLogout: () => void;
+  inline: boolean;
+}) {
+  return (
+    <View
+      style={{
+        position: inline ? 'absolute' : undefined,
+        top: inline ? modernTokens.size.touch : undefined,
+        right: inline ? 0 : undefined,
+        minWidth: 180,
+        gap: modernTokens.space.x2,
+        borderWidth: 1,
+        borderColor: modernTokens.color.border,
+        borderRadius: modernTokens.radius.control,
+        backgroundColor: modernTokens.color.surface,
+        padding: modernTokens.space.x2,
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
+      }}
+    >
+      <AppText role="caption" tone="secondary">
+        {label}
+      </AppText>
+      <SecondaryButton
+        label="Выйти"
+        loading={loggingOut}
+        onPress={onLogout}
+      />
     </View>
   );
 }

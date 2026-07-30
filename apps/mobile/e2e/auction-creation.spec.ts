@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import { approveProduct, createSellerFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
+const apiBaseURL = 'http://localhost:3001';
+
 test('seller creates, submits, schedules, and publicly previews an auction', async ({
   browser,
   request,
@@ -112,8 +114,12 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     expect(publicResponse.ok()).toBeTruthy();
     const publicPayload = await publicResponse.json();
     expect(publicPayload.listing.status).toBe('SCHEDULED');
-    const imageResponse = await request.get(publicPayload.product.images[0].url);
+    const imageResponse = await request.get(
+      new URL(publicPayload.product.images[0].url, apiBaseURL).toString(),
+    );
     expect(imageResponse.ok()).toBeTruthy();
+    expect(imageResponse.headers()['content-type']).toMatch(/^image\/png/);
+    expect((await imageResponse.body()).byteLength).toBeGreaterThan(0);
     await page.goto(`/product/${product.publicId}`);
     await expect(page.getByText(title)).toBeVisible();
     const image = page

@@ -4,7 +4,7 @@
 
 Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 
-Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip surfaces and semantic content/chrome/popover/modal layers; `AppShell` owns the 72 px desktop rail and account row; `AppHeader` owns role-derived icon navigation; `AccountMenu`, `PageHeader` and `PageState` are shared primitives. Product detail uses the existing public Product/SellerProfile/Listing data for author, facts, publication date and history.
+Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip surfaces and semantic content/chrome/popover/modal layers; `AppShell` owns the 72 px desktop rail, account row and web `OverlayHost`; `AppHeader` owns role-derived icon navigation; `AccountMenu`, `PageHeader` and `PageState` are shared primitives. Product detail uses the existing public Product/SellerProfile/Listing data for author, facts, publication date and history.
 
 ## Current implementation
 

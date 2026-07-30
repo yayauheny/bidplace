@@ -25,6 +25,8 @@ import { isEditableProductStatus } from './product-state';
 import {
   publicCatalogProductWhere,
   publicDirectProductWhere,
+  publicListingStatuses,
+  selectPublicListing,
 } from './public-visibility';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
@@ -234,10 +236,9 @@ export class ProductsService {
         },
         images: { orderBy: { position: 'asc' } },
         listings: {
-          where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
+          where: { status: { in: publicListingStatuses } },
           include: { auctionRules: true },
           orderBy: { createdAt: 'desc' },
-          take: 1,
         },
       },
     });
@@ -247,7 +248,7 @@ export class ProductsService {
     }
 
     const projection = this.toPublicProduct(product);
-    const currentListing = product.listings[0];
+    const currentListing = selectPublicListing(product.listings);
 
     return publicProductDetailResponseSchema.parse({
       ...projection,
@@ -276,9 +277,9 @@ export class ProductsService {
           },
           images: { orderBy: { position: 'asc' } },
           listings: {
-            where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
+            where: { status: { in: publicListingStatuses } },
             include: { auctionRules: true },
-            take: 1,
+            orderBy: { createdAt: 'desc' },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -329,7 +330,7 @@ export class ProductsService {
       }>;
     };
 
-    const listing = record.listings[0] ?? null;
+    const listing = selectPublicListing(record.listings);
     const publicProduct = toContractProduct({
       id: record.id,
       publicId: record.publicId,
