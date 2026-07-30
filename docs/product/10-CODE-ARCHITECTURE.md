@@ -45,7 +45,7 @@ The following is a confirmed target, not a claim about the current schema or API
 
 ## Integrity and privacy
 
-- Bid placement is server-time, serializable, idempotent by `(bidderUserId, idempotencyKey)`, self-bid protected, phone-verified and compare-and-update guarded.
+- Bid placement is server-time, serializable, idempotent by `(bidderUserId, idempotencyKey)`, self-bid protected, phone-verified and compare-and-update guarded; admin accounts are explicitly denied by the Bids service and have no buyer Activity projection.
 - The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
 - Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID.
 - Public Product, Listing and Socket.IO projections contain no buyer contacts or seller internal identifiers. Order projections stay role-scoped: buyer sees the seller snapshot only when the handoff initiator is `BUYER_CONTACTS_SELLER`, seller sees the buyer email snapshot, and admin sees the allowed full record.

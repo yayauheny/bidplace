@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  createAuctionFixture,
   createAdminModerationFixture,
   createBuyerFixture,
 } from './support/e2e-fixtures';
@@ -75,9 +76,24 @@ test('admin reviews and approves pending seller and product', async ({
   browser,
 }) => {
   const fixture = await createAdminModerationFixture();
+  const auction = await createAuctionFixture();
   const { context, page } = await authenticatedPage(browser, fixture.admin);
 
   try {
+    const activityResponse = await context.request.get(
+      `${apiBaseURL}/api/me/activity`,
+    );
+    expect(activityResponse.status()).toBe(403);
+
+    const bidResponse = await context.request.post(
+      `${apiBaseURL}/api/listings/${auction.listing.id}/bids`,
+      {
+        headers: { 'Idempotency-Key': `admin-${auction.listing.id}` },
+        data: { amount: 11 },
+      },
+    );
+    expect(bidResponse.status()).toBe(403);
+
     await page.goto('/admin');
     await expect(page.getByText(fixture.sellerName)).toBeVisible();
     await expect(page.getByText(fixture.productTitle)).toBeVisible();

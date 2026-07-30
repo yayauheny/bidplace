@@ -34,6 +34,7 @@ export const modernTokens = {
     numeric: { fontFamily: 'PTMono_400Regular', fontSize: 14, lineHeight: 18, fontWeight: '400' as const },
   },
   motion: { instant: 80, fast: 120, normal: 180, slow: 260 },
+  layer: { content: 0, chrome: 10, popover: 20, modal: 30 },
 } as const;
 
 export type ModernTextRole = keyof typeof modernTokens.typography;

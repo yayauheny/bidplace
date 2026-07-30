@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ProductsService } from './products.service';
+import { publicCatalogProductWhere } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 const product = {
@@ -27,6 +28,12 @@ const product = {
 };
 
 describe('ProductsService', () => {
+  it('keeps ended listings in the public catalog predicate', () => {
+    expect(publicCatalogProductWhere.listings?.some?.status).toEqual({
+      in: ['SCHEDULED', 'LIVE', 'ENDED'],
+    });
+  });
+
   it('retries a Product public ID collision without exposing the database error', async () => {
     const prisma = {
       sellerProfile: {

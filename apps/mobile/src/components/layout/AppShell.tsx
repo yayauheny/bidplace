@@ -10,13 +10,10 @@ import { AccountMenu } from './AccountMenu';
 export function AppShell({
   children,
   bottomAction,
-  mode = 'public',
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
-  mode?: 'public' | 'seller' | 'admin' | 'auth';
 }) {
-  void mode;
   const { width } = useWindowDimensions();
   const desktop = width >= 1025;
 
@@ -33,14 +30,14 @@ export function AppShell({
         <AppHeader
           accountControl={desktop ? undefined : <AccountMenu desktop={false} />}
         />
-        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas }}>
+        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas, position: 'relative', zIndex: modernTokens.layer.content }}>
           <View
             style={{
               minHeight: 56,
               alignItems: 'flex-end',
               justifyContent: 'center',
               position: 'relative',
-              zIndex: 100,
+              zIndex: modernTokens.layer.chrome,
               borderBottomWidth: 1,
               borderBottomColor: modernTokens.color.border,
               backgroundColor: modernTokens.color.surface,

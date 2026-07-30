@@ -276,7 +276,7 @@ export class ProductsService {
           },
           images: { orderBy: { position: 'asc' } },
           listings: {
-            where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+            where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
             include: { auctionRules: true },
             take: 1,
           },

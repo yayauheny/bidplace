@@ -388,7 +388,7 @@ function ModerationCard({
 }
 function AdminShell({ children }: { children: ReactNode }) {
   return (
-    <AppShell mode="admin">
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',

@@ -5,7 +5,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { useAuth } from '../../providers/auth-provider';
-import { AppIcon, AppText, IconButton } from '../modern-ui';
+import { AppIcon, AppText, SecondaryButton } from '../modern-ui';
 
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
@@ -82,7 +82,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   return (
     <View
       nativeID="account-menu"
-      style={{ position: 'relative', zIndex: 20 }}
+      style={{ position: 'relative', zIndex: modernTokens.layer.popover }}
     >
       <Pressable
         accessibilityRole="button"
@@ -151,10 +151,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           <AppText role="caption" tone="secondary">
             {label}
           </AppText>
-          <IconButton
-            icon="logOut"
+          <SecondaryButton
             label="Выйти"
-            disabled={loggingOut}
+            loading={loggingOut}
             onPress={() => void logout()}
           />
         </View>

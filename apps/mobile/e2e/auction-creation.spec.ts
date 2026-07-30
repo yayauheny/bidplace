@@ -112,8 +112,17 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     expect(publicResponse.ok()).toBeTruthy();
     const publicPayload = await publicResponse.json();
     expect(publicPayload.listing.status).toBe('SCHEDULED');
+    const imageResponse = await request.get(publicPayload.product.images[0].url);
+    expect(imageResponse.ok()).toBeTruthy();
     await page.goto(`/product/${product.publicId}`);
     await expect(page.getByText(title)).toBeVisible();
+    const image = page
+      .locator(`img[alt="Изображение предмета: ${title}"]`)
+      .first();
+    await expect(image).toBeVisible();
+    await expect
+      .poll(() => image.evaluate((element) => (element as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
     await expect(page.getByText('Торги запланированы')).toBeVisible();
     await page.getByRole('tab', { name: 'История предмета' }).click();
     await expect(page.getByText(/Автор:/).first()).toBeVisible();

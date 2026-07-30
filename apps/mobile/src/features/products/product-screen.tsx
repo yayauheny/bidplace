@@ -205,7 +205,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const activity = useQuery({
     queryKey: ['user', 'activity'],
     queryFn: () => api.activity.get(),
-    enabled: auth.isAuthenticated,
+    enabled: auth.isAuthenticated && !auth.isAdmin,
   });
 
   useEffect(() => {
@@ -219,7 +219,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       void queryClient.invalidateQueries({
         queryKey: ['listings', listingId, 'bids'],
       });
-    if (auth.isAuthenticated)
+    if (auth.isAuthenticated && !auth.isAdmin)
       void queryClient.invalidateQueries({ queryKey: ['user', 'activity'] });
   };
   useListingRealtime(listingId, refreshListing);
@@ -307,7 +307,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   };
 
   const bidForm =
-    listing?.status === 'LIVE' ? (
+    listing?.status === 'LIVE' && !auth.isAdmin ? (
       <EmailRulesGate redirectTo={`/product/${publicId}`}>
         <BidForm
           amount={amount}
@@ -327,6 +327,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           }}
         />
       </EmailRulesGate>
+    ) : null;
+  const adminBidNotice =
+    listing?.status === 'LIVE' && auth.isAdmin ? (
+      <AppText role="bodySmall" tone="secondary">
+        Администратор не участвует в торгах.
+      </AppText>
     ) : null;
   const auctionPanel = listing ? (
     <AuctionPanel
@@ -354,7 +360,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
     >
-      {isDesktop ? bidForm : null}
+      {isDesktop ? bidForm ?? adminBidNotice : adminBidNotice}
     </AuctionPanel>
   ) : (
     <SurfacePanel>
@@ -410,7 +416,18 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       </SurfacePanel>
     ) : activeTab === 'bids' ? (
       <SurfacePanel eyebrow="История ставок">
-        {bids.data?.bids?.length ? (
+        {bids.isLoading ? (
+          <AppText role="bodySmall" tone="secondary">
+            Загружаем историю ставок…
+          </AppText>
+        ) : bids.isError ? (
+          <View style={{ gap: modernTokens.space.x3 }}>
+            <AppText role="bodySmall" tone="secondary">
+              Не удалось загрузить историю ставок.
+            </AppText>
+            <SecondaryButton label="Повторить" onPress={() => void bids.refetch()} />
+          </View>
+        ) : bids.data?.bids?.length ? (
           <View style={{ gap: modernTokens.space.x3 }}>
             {bids.data.bids.map((item: BidItem) => (
               <View

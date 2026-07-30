@@ -79,20 +79,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [api]);
 
-  const syncSession = useCallback(
-    async (response: AuthResponse) => {
-      await clearAuthScopedQueries(queryClient);
-      setUser(response.user);
-      setStatus('authenticated');
-      await invalidateAuthScopedQueries(queryClient);
-    },
-    [queryClient],
-  );
-
   const clearSession = useCallback(() => {
     setUser(null);
     setStatus('anonymous');
   }, []);
+
+  const syncSession = useCallback(
+    async () => {
+      try {
+        const { user: verifiedUser } = await api.auth.me();
+        await clearAuthScopedQueries(queryClient);
+        setUser(verifiedUser);
+        setStatus('authenticated');
+        await invalidateAuthScopedQueries(queryClient);
+      } catch (error) {
+        await clearAuthScopedQueries(queryClient);
+        clearSession();
+        throw error;
+      }
+    },
+    [api, clearSession, queryClient],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -105,12 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canModerate: user?.role === 'admin',
       login: async (input: LoginRequest) => {
         const response = await api.auth.login(input);
-        await syncSession(response);
+        await syncSession();
         return response;
       },
       register: async (input: RegisterRequest) => {
         const response = await api.auth.register(input);
-        await syncSession(response);
+        await syncSession();
         return response;
       },
       logout: async () => {

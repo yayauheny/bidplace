@@ -382,7 +382,7 @@ export function SellerProfileScreen() {
 
 function ProfileShell({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell mode="seller">
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',

@@ -103,8 +103,8 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const realtime = { emit: vi.fn() };
     const bids = new BidsService(prisma as never, new FixedClock(), realtime as never);
 
-    const first = await bids.place(buyer.id, listing.id, 'same-request', { amount: 11 });
-    const replay = await bids.place(buyer.id, listing.id, 'same-request', { amount: 11 });
+    const first = await bids.place(buyer.id, 'user', listing.id, 'same-request', { amount: 11 });
+    const replay = await bids.place(buyer.id, 'user', listing.id, 'same-request', { amount: 11 });
     const current = await prisma.listing.findUnique({ where: { id: listing.id } });
 
     expect(replay.bid.id).toBe(first.bid.id);
@@ -120,7 +120,7 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const realtime = { emit: vi.fn() };
     const bids = new BidsService(prisma as never, new FixedClock(), realtime as never);
 
-    const result = await bids.place(buyer.id, listing.id, 'start-price', { amount: 10 });
+    const result = await bids.place(buyer.id, 'user', listing.id, 'start-price', { amount: 10 });
     const current = await prisma.listing.findUnique({ where: { id: listing.id } });
 
     expect(result.bid.amount).toBe(10);
@@ -135,7 +135,7 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);
 
     await expect(
-      bids.place(buyer.id, listing.id, 'too-low', { amount: 9.5 }),
+      bids.place(buyer.id, 'user', listing.id, 'too-low', { amount: 9.5 }),
     ).rejects.toThrow('Bid must be at least 10.00');
   });
 
@@ -147,8 +147,8 @@ describe('Product / Listing PostgreSQL invariants', () => {
     const bids = new BidsService(prisma as never, new FixedClock(), { emit: vi.fn() } as never);
 
     const results = await Promise.allSettled([
-      bids.place(buyer.id, listing.id, 'concurrent-one', { amount: 10 }),
-      bids.place(secondBuyer.id, listing.id, 'concurrent-two', { amount: 10.5 }),
+      bids.place(buyer.id, 'user', listing.id, 'concurrent-one', { amount: 10 }),
+      bids.place(secondBuyer.id, 'user', listing.id, 'concurrent-two', { amount: 10.5 }),
     ]);
     const current = await prisma.listing.findUnique({ where: { id: listing.id } });
     const fulfilled = results.filter(
@@ -196,7 +196,7 @@ describe('Product / Listing PostgreSQL invariants', () => {
 
     const [close, bid] = await Promise.allSettled([
       lifecycle.close(listing.id, now),
-      bids.place(nextBuyer.id, listing.id, 'close-race', { amount: 11 }),
+      bids.place(nextBuyer.id, 'user', listing.id, 'close-race', { amount: 11 }),
     ]);
     const closed = await prisma.listing.findUnique({ where: { id: listing.id } });
     const order = await prisma.order.findFirst({ where: { listingId: listing.id } });

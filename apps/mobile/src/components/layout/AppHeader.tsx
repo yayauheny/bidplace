@@ -59,7 +59,7 @@ function NavigationItem({
   const visibleLabel = hovered || focused;
 
   return (
-    <View style={{ position: 'relative', zIndex: visibleLabel ? 10 : 1 }}>
+    <View style={{ position: 'relative' }}>
       <Link href={item.href} asChild>
         <MotionPressable
           accessibilityRole="link"
@@ -108,6 +108,7 @@ function NavigationItem({
             shadowOpacity: 0.08,
             shadowRadius: 8,
             elevation: 3,
+            zIndex: modernTokens.layer.popover,
           }}
         >
           <AppText role="caption">{item.label}</AppText>

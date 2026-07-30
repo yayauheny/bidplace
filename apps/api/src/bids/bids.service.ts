@@ -30,10 +30,15 @@ export class BidsService {
 
   async place(
     userId: string,
+    role: 'admin' | 'user',
     listingId: string,
     idempotencyKey: string,
     input: BidCreateRequest,
   ) {
+    if (role === 'admin') {
+      throw new ForbiddenException('Administrators cannot place bids');
+    }
+
     if (!idempotencyKey || idempotencyKey.length > 80) {
       throw new BadRequestException('Idempotency-Key is required');
     }

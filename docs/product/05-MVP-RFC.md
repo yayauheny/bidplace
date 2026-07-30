@@ -129,7 +129,7 @@ Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CA
 
 - SellerProfile в `PENDING_REVIEW` доступен заявителю только для просмотра статуса; Product и Listing writes открываются только после `APPROVED`.
 - Product в `DRAFT`, `PENDING_REVIEW`, `CHANGES_REQUESTED` или `REJECTED` не виден публично.
-- Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED` либо `LIVE` Listing. После завершения продажа остаётся доступной по прямому public URL с результатом, если её не скрыл admin.
+- Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED`, `LIVE` либо `ENDED` Listing. Фильтр только открытых торгов остаётся будущим default-фильтром; завершённый Product сохраняет public URL и историю, если его не скрыл admin.
 - до `startsAt` bid недоступен; backend переводит Listing в `LIVE`; client timer не источник истины.
 
 ## 7. Правила ставок

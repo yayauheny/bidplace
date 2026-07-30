@@ -331,7 +331,7 @@ export function ListingDraftScreen({
 
 function ListingShell({ children }: { children: ReactNode }) {
   return (
-    <AppShell mode="seller">
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',

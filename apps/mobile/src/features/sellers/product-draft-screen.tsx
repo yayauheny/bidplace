@@ -471,7 +471,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
 function DraftShell({ children }: { children: ReactNode }) {
   return (
-    <AppShell mode="seller">
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',

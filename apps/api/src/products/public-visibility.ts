@@ -5,7 +5,7 @@ export const publicCatalogProductWhere = {
   listings: {
     some: {
       status: {
-        in: ['SCHEDULED', 'LIVE'],
+        in: ['SCHEDULED', 'LIVE', 'ENDED'],
       },
     },
   },

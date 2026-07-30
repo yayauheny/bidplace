@@ -724,7 +724,7 @@ Status: Confirmed
 
 ### Decision
 
-Product появляется в public catalog только после moderation approval и при `SCHEDULED` либо `LIVE` Listing. После завершения он исключается из общего каталога, но сохраняется по прямому public URL с результатом и историей, пока admin его не скрыл.
+Product появляется в public catalog только после moderation approval и при `SCHEDULED`, `LIVE` либо `ENDED` Listing. Завершённый Product остаётся в общем каталоге и по прямому public URL с результатом и историей, пока admin его не скрыл. Default-фильтр только открытых торгов отложен.
 
 ---
 
@@ -808,3 +808,18 @@ Tags, search, tag filtering, notifications, account settings, password reset, bu
 ### Rationale
 
 Это улучшает web hierarchy и role clarity без дублирования автора, изменения Product schema, расширения API или ослабления auction/privacy boundaries.
+
+---
+
+## DEC-058 — Admin не участвует в торгах
+
+Date: 2026-07-30
+Status: Confirmed
+
+### Decision
+
+Admin имеет только Catalog и Moderation в навигации. Backend отклоняет admin Bid и не предоставляет admin buyer Activity; admin может просматривать каталог и модерировать SellerProfile/Product. Это уточняет роль admin без расширения buyer capability.
+
+### Revises
+
+Связанные ограничения роли из `DEC-052` и UI-решения `DEC-057`; правило завершённых лотов из `DEC-052` пересмотрено выше.
