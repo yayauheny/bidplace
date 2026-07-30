@@ -84,7 +84,9 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
 
-    await page.getByRole('button', { name: 'Одобрить' }).click();
+    const pendingProductApproval = page.getByRole('button', { name: 'Одобрить' });
+    await expect(pendingProductApproval).toHaveCount(1);
+    await pendingProductApproval.click();
     await expect
       .poll(async () => {
         const response = await context.request.get('/api/admin/products');
