@@ -81,9 +81,12 @@ test('admin reviews and approves pending seller and product', async ({
     await page.goto('/admin');
     await expect(page.getByText(fixture.sellerName)).toBeVisible();
     await expect(page.getByText(fixture.productTitle)).toBeVisible();
-    await expect(page.getByText('На модерации')).toHaveCount(2);
 
-    await page.getByRole('button', { name: 'Одобрить' }).first().click();
+    await page
+      .getByText(fixture.sellerName)
+      .locator('..')
+      .getByRole('button', { name: 'Одобрить' })
+      .click();
     await expect
       .poll(async () => {
         const response = await context.request.get(
@@ -96,9 +99,11 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
 
-    const pendingProductApproval = page.getByRole('button', { name: 'Одобрить' });
-    await expect(pendingProductApproval).toHaveCount(1);
-    await pendingProductApproval.click();
+    await page
+      .getByText(fixture.productTitle)
+      .locator('..')
+      .getByRole('button', { name: 'Одобрить' })
+      .click();
     await expect
       .poll(async () => {
         const response = await context.request.get(

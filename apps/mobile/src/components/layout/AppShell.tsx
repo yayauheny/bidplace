@@ -30,7 +30,9 @@ export function AppShell({
           flexDirection: desktop ? 'row' : 'column',
         }}
       >
-        <AppHeader />
+        <AppHeader
+          accountControl={desktop ? undefined : <AccountMenu desktop={false} />}
+        />
         <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas }}>
           <View
             style={{
@@ -45,7 +47,7 @@ export function AppShell({
               paddingHorizontal: desktop ? modernTokens.space.x8 : modernTokens.space.x5,
             }}
           >
-            <AccountMenu />
+            {desktop ? <AccountMenu desktop /> : null}
           </View>
           {children}
           {bottomAction}

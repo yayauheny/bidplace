@@ -1,6 +1,7 @@
 import { Link, usePathname } from 'expo-router';
 import { useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
@@ -116,7 +117,7 @@ function NavigationItem({
   );
 }
 
-export function AppHeader() {
+export function AppHeader({ accountControl }: { accountControl?: ReactNode }) {
   const auth = useAuth();
   const capability = useSellerCapability();
   const pathname = usePathname();
@@ -177,6 +178,7 @@ export function AppHeader() {
         }}
       >
         <BrandLogo compact />
+        {accountControl}
       </View>
       <View
         accessibilityRole="tablist"

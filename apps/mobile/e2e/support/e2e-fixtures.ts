@@ -180,7 +180,9 @@ export async function createAuctionFixture(options?: {
   };
 }
 
-export async function createSellerFixture(): Promise<{
+export async function createSellerFixture(options: {
+  status?: 'APPROVED' | 'PENDING_REVIEW';
+} = {}): Promise<{
   seller: E2EUser;
   categoryId: string;
 }> {
@@ -214,7 +216,7 @@ export async function createSellerFixture(): Promise<{
       shortDescription: 'E2E seller',
       handoffContactType: 'TELEGRAM',
       handoffContactValue: `@seller_${suffix}`,
-      status: 'APPROVED',
+      status: options.status ?? 'APPROVED',
     },
   });
   await prisma.$disconnect();

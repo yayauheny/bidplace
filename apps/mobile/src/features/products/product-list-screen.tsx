@@ -7,6 +7,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout/AppShell';
 import {
   AuctionCard,
+  AppText,
   PageHeader,
   PageState,
   Skeleton,
@@ -83,7 +84,9 @@ export function ProductListScreen() {
         />
         {content}
         {query.isFetching && !query.isLoading ? (
-          <PageState title="Обновляем каталог…" loading />
+          <AppText role="caption" tone="secondary" accessibilityLiveRegion="polite">
+            Обновляем каталог…
+          </AppText>
         ) : null}
       </ScrollView>
     </AppShell>

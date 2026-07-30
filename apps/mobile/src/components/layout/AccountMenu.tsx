@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -7,34 +7,38 @@ import { modernTokens } from '@bidplace/design-tokens';
 import { useAuth } from '../../providers/auth-provider';
 import { AppIcon, AppText, IconButton } from '../modern-ui';
 
-export function AccountMenu() {
+export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const focusOpened = useRef(false);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const initial = label.slice(0, 1).toUpperCase();
 
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
-    const closeOnDocumentInteraction = (event: MouseEvent | KeyboardEvent) => {
-      if (event.type === 'keydown' && (event as KeyboardEvent).key === 'Escape') {
+    const closeIfOutside = (target: EventTarget | null) => {
+      const menu = document.getElementById('account-menu');
+      if (menu && target instanceof Node && !menu.contains(target)) {
         setOpen(false);
-        return;
-      }
-      if (event.type === 'pointerdown') {
-        const target = event.target;
-        const menu = document.getElementById('account-menu');
-        if (menu && target instanceof Node && !menu.contains(target)) {
-          setOpen(false);
-        }
       }
     };
-    document.addEventListener('keydown', closeOnDocumentInteraction);
-    document.addEventListener('pointerdown', closeOnDocumentInteraction);
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    const closeOnPointerDown = (event: PointerEvent) =>
+      closeIfOutside(event.target);
+    const closeOnFocusIn = (event: FocusEvent) => closeIfOutside(event.target);
+
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnPointerDown);
+    document.addEventListener('focusin', closeOnFocusIn);
     return () => {
-      document.removeEventListener('keydown', closeOnDocumentInteraction);
-      document.removeEventListener('pointerdown', closeOnDocumentInteraction);
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnPointerDown);
+      document.removeEventListener('focusin', closeOnFocusIn);
     };
   }, [open]);
 
@@ -72,13 +76,31 @@ export function AccountMenu() {
   }
 
   return (
-    <View nativeID="account-menu" style={{ position: 'relative', zIndex: 20 }}>
+    <View
+      nativeID="account-menu"
+      style={{ position: 'relative', zIndex: 20 }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
         onAccessibilityEscape={() => setOpen(false)}
-        onPress={() => setOpen((current) => !current)}
+        onFocus={
+          desktop
+            ? () => {
+                focusOpened.current = true;
+                setOpen(true);
+              }
+            : undefined
+        }
+        onHoverIn={desktop ? () => setOpen(true) : undefined}
+        onPress={() => {
+          if (focusOpened.current) {
+            focusOpened.current = false;
+            return;
+          }
+          setOpen((current) => !current);
+        }}
         style={({ pressed }) => ({
           minHeight: modernTokens.size.touch,
           flexDirection: 'row',

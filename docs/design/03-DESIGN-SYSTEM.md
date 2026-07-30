@@ -18,7 +18,7 @@ Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip sur
 | Size/touch          | control sizes и `touch: 44`                                                                                                    | `packages/design-tokens/src/index.ts`                                                  |
 | Typography tokens   | display/hero/heading/title/body/small/caption/nav                                                                              | `packages/design-tokens/src/index.ts`                                                  |
 | Fonts               | Inter and PT Mono runtime loading                                                                                              | `apps/mobile/src/app/_layout.tsx`                                                      |
-| Layout              | page/content/reading/form max widths; shared `AppShell` keeps a 72 px desktop rail, account row and flexible page area             | `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/layout/AppShell.tsx` |
+| Layout              | page/content/reading/form max widths; shared `AppShell` keeps a 72 px desktop rail, desktop account row, mobile header account control and flexible page area | `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/layout/AppShell.tsx`, `AppHeader.tsx` |
 | Breakpoints         | final responsive shell: mobile below 1025 px and desktop rail from 1025 px                                                     | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
 | Elevation           | semantic surface and overlay tokens                                                                                            | `packages/design-tokens/src/modern.ts`                                                 |
 | Buttons             | semantic primary, secondary and destructive actions with loading/disabled/accessibility state                                  | `apps/mobile/src/components/modern-ui/Button.tsx`                                      |
@@ -34,7 +34,7 @@ Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip sur
 
 Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now. `AppDialog` is required for destructive seller media and admin moderation actions.
 
-Every route uses the final shell and primitives. `AppShell` preserves the mobile header/bottom-action composition and provides the desktop rail/page split. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge or legacy UI import remains; image fallback is a truthful unavailable-media state, not a substitute for a valid asset URL.
+Every route uses the final shell and primitives. `AppShell` preserves the mobile header/bottom-action composition and provides the desktop rail/page split; the account control stays in the mobile brand row and desktop right-side account row respectively. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge or legacy UI import remains; image fallback is a truthful unavailable-media state, not a substitute for a valid asset URL.
 
 ## Target principles
 
