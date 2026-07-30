@@ -4,7 +4,7 @@
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
-Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck, lint, unit tests, Expo web export and the closed-pilot Playwright suite have passed; no route may be marked `Implemented` until founder acceptance evidence is recorded.
+Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck, lint, unit tests, Expo web export and the three-scenario auction Playwright suite have passed; no route may be marked `Implemented` until founder acceptance evidence is recorded.
 
 Shared navigation is in partial final migration: `components/layout/AppHeader.tsx` renders role-filtered final mobile/desktop navigation. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
 

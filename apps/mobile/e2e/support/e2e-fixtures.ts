@@ -49,21 +49,39 @@ export async function createAuctionFixture(options?: {
   bids?: boolean;
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
   const now = new Date();
   const startsAt = new Date(now.getTime() - 5_000);
   const endsAt = new Date(now.getTime() + 300_000);
-  const seller = await createUser(prisma, uniqueEmail('seller', suffix), `seller-${suffix}`);
-  const buyerA = await createUser(prisma, uniqueEmail('buyer-a', suffix), `buyer-a-${suffix}`);
-  const buyerB = await createUser(prisma, uniqueEmail('buyer-b', suffix), `buyer-b-${suffix}`);
-  const category = await prisma.category.findUniqueOrThrow({ where: { slug: 'e2e-art' } });
-  const photo = readFileSync(resolve(__dirname, '../fixtures/profile-photo.png'));
+  const seller = await createUser(
+    prisma,
+    uniqueEmail('seller', suffix),
+    `seller-${suffix}`,
+  );
+  const buyerA = await createUser(
+    prisma,
+    uniqueEmail('buyer-a', suffix),
+    `buyer-a-${suffix}`,
+  );
+  const buyerB = await createUser(
+    prisma,
+    uniqueEmail('buyer-b', suffix),
+    `buyer-b-${suffix}`,
+  );
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
 
   const sellerProfile = await prisma.sellerProfile.create({
     data: {
       userId: seller.id,
       slug: `seller-${suffix}`,
-      sellerType: 'CREATOR',
+      sellerType: 'creator',
       fullName: `E2E Seller ${suffix}`,
       country: 'BY',
       profilePhotoMimeType: 'image/png',
@@ -81,7 +99,7 @@ export async function createAuctionFixture(options?: {
   const title = `E2E Auction ${suffix}`;
   const product = await prisma.product.create({
     data: {
-      publicId: `e2e${suffix}prod`,
+      publicId: randomUUID().replace(/-/g, '').slice(0, 11),
       sellerProfileId: sellerProfile.id,
       categoryId: category.id,
       title,
@@ -123,38 +141,92 @@ export async function createAuctionFixture(options?: {
   if (options?.bids) {
     await prisma.bid.createMany({
       data: [
-        { listingId: listing.id, bidderUserId: buyerA.id, idempotencyKey: `a-${suffix}`, amount: 11 },
-        { listingId: listing.id, bidderUserId: buyerB.id, idempotencyKey: `b-${suffix}`, amount: 15 },
+        {
+          listingId: listing.id,
+          bidderUserId: buyerA.id,
+          idempotencyKey: `a-${suffix}`,
+          amount: 11,
+        },
+        {
+          listingId: listing.id,
+          bidderUserId: buyerB.id,
+          idempotencyKey: `b-${suffix}`,
+          amount: 15,
+        },
       ],
     });
-    await prisma.listing.update({ where: { id: listing.id }, data: { currentPrice: 15, bidCount: 2 } });
+    await prisma.listing.update({
+      where: { id: listing.id },
+      data: { currentPrice: 15, bidCount: 2 },
+    });
   }
 
   await prisma.$disconnect();
-  return { seller, buyerA, buyerB, product: { id: product.id, publicId: product.publicId, title }, listing: { id: listing.id, startsAt, endsAt } };
+  return {
+    seller,
+    buyerA,
+    buyerB,
+    product: { id: product.id, publicId: product.publicId, title },
+    listing: { id: listing.id, startsAt, endsAt },
+  };
 }
 
-export async function createSellerFixture(): Promise<{ seller: E2EUser; categoryId: string }> {
+export async function createSellerFixture(): Promise<{
+  seller: E2EUser;
+  categoryId: string;
+}> {
   const suffix = randomUUID().slice(0, 8);
-  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-  const seller = await createUser(prisma, uniqueEmail('seller', suffix), `seller-${suffix}`);
-  const category = await prisma.category.findUniqueOrThrow({ where: { slug: 'e2e-art' } });
-  const photo = readFileSync(resolve(__dirname, '../fixtures/profile-photo.png'));
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const seller = await createUser(
+    prisma,
+    uniqueEmail('seller', suffix),
+    `seller-${suffix}`,
+  );
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
   await prisma.sellerProfile.create({
-    data: { userId: seller.id, slug: `seller-${suffix}`, sellerType: 'CREATOR', fullName: `E2E Seller ${suffix}`, country: 'BY', profilePhotoMimeType: 'image/png', profilePhotoByteLength: photo.byteLength, profilePhotoChecksum: '0'.repeat(64), profilePhotoData: photo, socialLink: 'https://example.com/e2e', shortDescription: 'E2E seller', handoffContactType: 'TELEGRAM', handoffContactValue: `@seller_${suffix}`, status: 'APPROVED' },
+    data: {
+      userId: seller.id,
+      slug: `seller-${suffix}`,
+      sellerType: 'creator',
+      fullName: `E2E Seller ${suffix}`,
+      country: 'BY',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: '0'.repeat(64),
+      profilePhotoData: photo,
+      socialLink: 'https://example.com/e2e',
+      shortDescription: 'E2E seller',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: `@seller_${suffix}`,
+      status: 'APPROVED',
+    },
   });
   await prisma.$disconnect();
   return { seller, categoryId: category.id };
 }
 
 export async function approveProduct(productId: string): Promise<void> {
-  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-  await prisma.product.update({ where: { id: productId }, data: { status: 'APPROVED' } });
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  await prisma.product.update({
+    where: { id: productId },
+    data: { status: 'APPROVED', publishedAt: new Date() },
+  });
   await prisma.$disconnect();
 }
 
 export async function removeRulesAcceptance(userId: string): Promise<void> {
-  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
   await prisma.termsAcceptance.deleteMany({ where: { userId } });
   await prisma.$disconnect();
 }
