@@ -38,8 +38,6 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       >
-        <Stack.Screen name="(public)" />
-        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(seller)" />
         <Stack.Screen name="(admin)" />
       </Stack>

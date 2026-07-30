@@ -212,6 +212,20 @@ export async function createSellerFixture(): Promise<{
   return { seller, categoryId: category.id };
 }
 
+export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
+  const suffix = randomUUID().slice(0, 8);
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const buyer = await createUser(
+    prisma,
+    uniqueEmail('buyer', suffix),
+    `buyer-${suffix}`,
+  );
+  await prisma.$disconnect();
+  return { buyer };
+}
+
 export async function approveProduct(productId: string): Promise<void> {
   const prisma = new PrismaClient({
     datasources: { db: { url: databaseUrl } },

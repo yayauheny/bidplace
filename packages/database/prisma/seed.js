@@ -59,6 +59,7 @@ async function createProductWithImages({
   deliveryInfo,
   publishedAt,
   imageFileName,
+  status = 'APPROVED',
 }) {
   const image = readSeedProductImage(imageFileName);
 
@@ -79,7 +80,7 @@ async function createProductWithImages({
       city,
       deliveryInfo,
       publishedAt,
-      status: 'APPROVED',
+      status,
       images: {
         create: [
           {
@@ -119,7 +120,7 @@ async function main() {
     },
   });
 
-  const [admin, seller, buyer] = await Promise.all([
+  const [admin, seller, buyer, pendingSeller] = await Promise.all([
     prisma.user.create({
       data: {
         email: adminEmail,
@@ -148,6 +149,15 @@ async function main() {
         emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     }),
+    prisma.user.create({
+      data: {
+        email: 'pending-seller@bidplace.test',
+        passwordHash: adminPasswordHash,
+        phone: null,
+        displayName: 'Заявка на проверку',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    }),
   ]);
 
   const sellerProfile = await prisma.sellerProfile.create({
@@ -167,6 +177,26 @@ async function main() {
       handoffContactValue: '@anna_morozova',
       handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
+    },
+  });
+
+  const pendingSellerProfile = await prisma.sellerProfile.create({
+    data: {
+      userId: pendingSeller.id,
+      slug: 'pending-seller',
+      sellerType: 'creator',
+      fullName: 'Заявка на проверку',
+      country: 'BY',
+      socialLink: 'https://example.com/pending-seller',
+      shortDescription: 'Профиль продавца для проверки очереди модерации.',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: seedPhotoBuffer.byteLength,
+      profilePhotoChecksum: createHash('sha256').update(seedPhotoBuffer).digest('hex'),
+      profilePhotoData: seedPhotoBuffer,
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@pending_seller',
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'PENDING_REVIEW',
     },
   });
 
@@ -233,6 +263,26 @@ async function main() {
       imageFileName: 'handmade-mug.png',
     }),
   ]);
+
+  await createProductWithImages({
+    publicId: 'seedPending04',
+    sellerProfileId: pendingSellerProfile.id,
+    categoryId: category.id,
+    title: 'Этюд «Тихий свет»',
+    story: 'Предмет ожидает проверки перед публикацией.',
+    technique: 'Ручная роспись',
+    materials: 'Керамика, глазурь',
+    dimensions: '20 × 20 × 18 см',
+    year: 2026,
+    condition: 'Новое',
+    uniqueness: 'Единственный экземпляр',
+    provenance: 'Создано автором для локальной проверки модерации.',
+    city: 'Минск',
+    deliveryInfo: 'Передача после одобрения.',
+    publishedAt: null,
+    imageFileName: 'painted-planter.png',
+    status: 'PENDING_REVIEW',
+  });
 
   const scheduled = await prisma.listing.create({
     data: {

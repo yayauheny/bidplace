@@ -33,6 +33,20 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 
+function moderationStatusLabel(status: string): string {
+  return (
+    {
+      PENDING_REVIEW: 'На модерации',
+      APPROVED: 'Одобрен',
+      CHANGES_REQUESTED: 'Нужны правки',
+      REJECTED: 'Отклонён',
+      SUSPENDED: 'Приостановлен',
+      DRAFT: 'Черновик',
+      ARCHIVED: 'В архиве',
+    }[status] ?? status
+  );
+}
+
 export function AdminModerationScreen() {
   const api = useApiClient();
   const queryClient = useQueryClient();
@@ -178,16 +192,19 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={seller.id}
             title={seller.fullName}
-            status={seller.status}
+            status={moderationStatusLabel(seller.status)}
           >
-            <PrimaryButton
-              label="Одобрить"
-              loading={sellerStatus.isPending}
-              onPress={() =>
-                sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
-              }
-            />
+            {seller.status === 'PENDING_REVIEW' ? (
+              <PrimaryButton
+                label="Одобрить"
+                loading={sellerStatus.isPending}
+                onPress={() =>
+                  sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
+                }
+              />
+            ) : null}
             <DestructiveButton
+              disabled={seller.status === 'SUSPENDED'}
               label="Приостановить"
               loading={sellerStatus.isPending}
               onPress={() =>
@@ -196,6 +213,11 @@ export function AdminModerationScreen() {
             />
           </ModerationCard>
         ))}
+        {sellers.data.sellerProfiles.length === 0 ? (
+          <AppText role="bodySmall" tone="secondary">
+            Нет заявок на модерации
+          </AppText>
+        ) : null}
         {sellerStatus.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось изменить статус продавца. Проверьте полномочия и
@@ -208,16 +230,19 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={product.id}
             title={product.title ?? 'Без названия'}
-            status={product.status}
+            status={moderationStatusLabel(product.status)}
           >
-            <PrimaryButton
-              label="Одобрить"
-              loading={productStatus.isPending}
-              onPress={() =>
-                productStatus.mutate({ id: product.id, status: 'APPROVED' })
-              }
-            />
+            {product.status === 'PENDING_REVIEW' ? (
+              <PrimaryButton
+                label="Одобрить"
+                loading={productStatus.isPending}
+                onPress={() =>
+                  productStatus.mutate({ id: product.id, status: 'APPROVED' })
+                }
+              />
+            ) : null}
             <DestructiveButton
+              disabled={product.status === 'ARCHIVED'}
               label="Архивировать"
               loading={productStatus.isPending}
               onPress={() =>
@@ -226,6 +251,11 @@ export function AdminModerationScreen() {
             />
           </ModerationCard>
         ))}
+        {products.data.products.length === 0 ? (
+          <AppText role="bodySmall" tone="secondary">
+            Нет предметов на модерации
+          </AppText>
+        ) : null}
         {productStatus.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось изменить статус предмета. Проверьте полномочия и

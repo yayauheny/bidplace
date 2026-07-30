@@ -1,5 +1,5 @@
 export function getApiUrl(): string {
-  const fallback = 'http://127.0.0.1:3001';
+  const fallback = 'http://localhost:3001';
   const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
 
   if (!configured) {

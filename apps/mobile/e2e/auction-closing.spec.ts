@@ -24,13 +24,13 @@ test('closing an auction creates one winner result and preserves buyer privacy',
     await expect
       .poll(async () => {
         const response = await request.get(
-          `http://127.0.0.1:3001/api/products/${fixture.product.publicId}`,
+          `http://localhost:3001/api/products/${fixture.product.publicId}`,
         );
         return (await response.json()).listing?.status ?? null;
       })
       .toBe('ENDED');
     const activity = await winner.context.request.get(
-      'http://127.0.0.1:3001/api/me/activity',
+      'http://localhost:3001/api/me/activity',
     );
     expect(activity.ok()).toBeTruthy();
     const activityPayload = await activity.json();

@@ -7,7 +7,7 @@ export default defineConfig({
   testDir: './e2e',
   workers: 1,
   use: {
-    baseURL: 'http://127.0.0.1:8081',
+    baseURL: 'http://localhost:8081',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -16,12 +16,12 @@ export default defineConfig({
       command:
         'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api build && node apps/api/dist/main.js',
       cwd: '../..',
-      url: 'http://127.0.0.1:3001/api/health',
+      url: 'http://localhost:3001/api/health',
       env: {
         NODE_ENV: 'test',
         APP_ENV: 'local',
         API_PORT: '3001',
-        CORS_ORIGIN: 'http://127.0.0.1:8081',
+        CORS_ORIGIN: 'http://localhost:8081',
         DATABASE_URL: databaseUrl,
         E2E_DATABASE_URL: databaseUrl,
         JWT_SECRET: 'e2e-jwt-secret',
@@ -32,8 +32,8 @@ export default defineConfig({
       command:
         'corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port 8081',
       cwd: '../..',
-      url: 'http://127.0.0.1:8081',
-      env: { EXPO_PUBLIC_API_URL: 'http://127.0.0.1:3001' },
+      url: 'http://localhost:8081',
+      env: { EXPO_PUBLIC_API_URL: 'http://localhost:3001' },
     },
   ],
 });

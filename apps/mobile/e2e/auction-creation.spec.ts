@@ -61,14 +61,14 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       .getByRole('button', { name: new RegExp(`${title} · APPROVED`) })
       .click();
     const invalidDatesResponse = await context.request.post(
-      `http://127.0.0.1:3001/api/products/${product.id}/listings`,
+      `http://localhost:3001/api/products/${product.id}/listings`,
       {
         data: { startsAt: endsAt, endsAt: startsAt, startPrice: 10 },
       },
     );
     expect(invalidDatesResponse.status()).toBe(400);
     const invalidPriceResponse = await context.request.post(
-      `http://127.0.0.1:3001/api/products/${product.id}/listings`,
+      `http://localhost:3001/api/products/${product.id}/listings`,
       {
         data: { startsAt, endsAt, startPrice: -1 },
       },
@@ -99,7 +99,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       page.getByRole('button', { name: 'Открыть страницу аукциона' }),
     ).toBeVisible();
     const duplicateScheduleResponse = await context.request.patch(
-      `http://127.0.0.1:3001/api/listings/${listing.id}`,
+      `http://localhost:3001/api/listings/${listing.id}`,
       {
         data: { action: 'SCHEDULE' },
       },
@@ -107,7 +107,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     expect(duplicateScheduleResponse.ok()).toBeFalsy();
 
     const publicResponse = await request.get(
-      `http://127.0.0.1:3001/api/products/${product.publicId}`,
+      `http://localhost:3001/api/products/${product.publicId}`,
     );
     expect(publicResponse.ok()).toBeTruthy();
     const publicPayload = await publicResponse.json();

@@ -8,23 +8,29 @@ import { RealtimeSocketIoAdapter } from './realtime/realtime.adapter';
 
 async function bootstrap() {
   const serverEnv = loadServerEnv();
+  const runtimeEnv = {
+    ...serverEnv,
+    CORS_ORIGIN:
+      serverEnv.CORS_ORIGIN ??
+      (serverEnv.APP_ENV === 'local' ? 'http://localhost:8081' : undefined),
+  };
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
-  app.useWebSocketAdapter(new RealtimeSocketIoAdapter(app, serverEnv));
+  app.useWebSocketAdapter(new RealtimeSocketIoAdapter(app, runtimeEnv));
 
-  if (serverEnv.TRUST_PROXY) {
+  if (runtimeEnv.TRUST_PROXY) {
     app.getHttpAdapter().getInstance().set('trust proxy', true);
   }
 
-  if (serverEnv.CORS_ORIGIN) {
+  if (runtimeEnv.CORS_ORIGIN) {
     app.enableCors({
-      origin: serverEnv.CORS_ORIGIN,
+      origin: runtimeEnv.CORS_ORIGIN,
       credentials: true,
     });
   }
 
-  await app.listen(serverEnv.API_PORT);
+  await app.listen(runtimeEnv.API_PORT);
 }
 
 void bootstrap();
