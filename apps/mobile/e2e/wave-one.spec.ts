@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-import { createBuyerFixture } from './support/e2e-fixtures';
+import {
+  createAdminModerationFixture,
+  createBuyerFixture,
+} from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
 test('authenticated buyer receives private responses and truthful empty activity', async ({
@@ -56,4 +59,42 @@ test('route groups do not emit legacy Expo Router warnings', async ({ page }) =>
         message.includes('No route named "(auth)"'),
     ),
   ).toEqual([]);
+});
+
+test('admin reviews and approves pending seller and product', async ({
+  browser,
+}) => {
+  const fixture = await createAdminModerationFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.admin);
+
+  try {
+    await page.goto('/admin');
+    await expect(page.getByText(fixture.sellerName)).toBeVisible();
+    await expect(page.getByText(fixture.productTitle)).toBeVisible();
+    await expect(page.getByText('На модерации')).toHaveCount(2);
+
+    await page.getByRole('button', { name: 'Одобрить' }).first().click();
+    await expect
+      .poll(async () => {
+        const response = await context.request.get('/api/admin/seller-profiles');
+        const payload = await response.json();
+        return payload.sellerProfiles.find(
+          (seller: { id: string }) => seller.id === fixture.sellerProfileId,
+        )?.status;
+      })
+      .toBe('APPROVED');
+
+    await page.getByRole('button', { name: 'Одобрить' }).click();
+    await expect
+      .poll(async () => {
+        const response = await context.request.get('/api/admin/products');
+        const payload = await response.json();
+        return payload.products.find(
+          (product: { id: string }) => product.id === fixture.productId,
+        )?.status;
+      })
+      .toBe('APPROVED');
+  } finally {
+    await context.close();
+  }
 });

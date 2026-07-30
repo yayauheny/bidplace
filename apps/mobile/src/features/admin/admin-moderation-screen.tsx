@@ -215,7 +215,7 @@ export function AdminModerationScreen() {
         ))}
         {sellers.data.sellerProfiles.length === 0 ? (
           <AppText role="bodySmall" tone="secondary">
-            Нет заявок на модерации
+            Нет продавцов
           </AppText>
         ) : null}
         {sellerStatus.isError ? (
@@ -253,7 +253,7 @@ export function AdminModerationScreen() {
         ))}
         {products.data.products.length === 0 ? (
           <AppText role="bodySmall" tone="secondary">
-            Нет предметов на модерации
+            Нет предметов
           </AppText>
         ) : null}
         {productStatus.isError ? (

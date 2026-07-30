@@ -4,7 +4,7 @@
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
-Wave 1 state verification: activity distinguishes the truthful empty response from retryable API errors; seller profile renders the application form only for a confirmed 404; moderation exposes pending actions and concise empty sections. The route-group layouts also remove the two legacy Expo Router warnings. Browser/device visual and accessibility acceptance remains pending.
+Wave 1 state verification: activity distinguishes the truthful empty response from retryable API errors; seller profile renders the application form only for a confirmed 404; moderation exposes pending actions and concise empty sections (`Нет продавцов` / `Нет предметов` describe the full lists). The route-group layouts also remove the two legacy Expo Router warnings. Browser/device visual and accessibility acceptance remains pending.
 
 Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck, lint, unit tests, Expo web export and the three-scenario auction Playwright suite have passed; no route may be marked `Implemented` until founder acceptance evidence is recorded.
 

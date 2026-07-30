@@ -5,11 +5,11 @@
 
 ## Волна 1 — private web session, seed and truthful states — 2026-07-30
 
-- `Implemented`: local browser/API configuration uses canonical `http://localhost` origins (`apps/mobile/src/lib/environment.ts`, Playwright webServer and the local CORS bootstrap fallback in `apps/api/src/main.ts`). Requests still use `credentials: 'include'`; the HttpOnly `bidplace_session` cookie, guards and restricted CORS policy were not weakened.
+- `Implemented`: local browser/API configuration uses canonical `http://localhost` origins (`apps/mobile/src/lib/environment.ts`, Playwright webServer and the local CORS bootstrap fallback in `apps/api/src/main.ts`). The fallback is restricted to `NODE_ENV=development` plus `APP_ENV=local`, with production coverage in `apps/api/src/core/config/env.spec.ts`. Requests still use `credentials: 'include'`; the HttpOnly `bidplace_session` cookie, guards and restricted CORS policy were not weakened.
 - `Implemented`: `(public)` and `(auth)` now own Expo Router layouts, removing the root references that caused the two legacy route warnings. Public URLs remain unchanged.
 - `Implemented`: activity keeps the server-provided empty array separate from network/5xx errors; seller onboarding treats only API 404 as an absent profile; moderation shows pending actions, non-repeatable approval controls and explicit empty sections.
 - `Implemented`: the guarded local seed creates three public Products with three PNG fixtures in `SCHEDULED`, `LIVE` and `ENDED` states, plus pending SellerProfile and pending Product fixtures. The pending Product remains private because it is `PENDING_REVIEW` and has no public listing.
-- `Needs verification`: `apps/mobile/e2e/wave-one.spec.ts` covers authenticated activity, new-user seller form, non-admin admin denial and route-warning regression, but browser execution and standalone guarded seed smoke still require disposable PostgreSQL.
+- `Needs verification`: `apps/mobile/e2e/wave-one.spec.ts` now covers authenticated activity, new-user seller form, non-admin admin denial, admin approval of pending seller/product and route-warning regression, but browser execution and standalone guarded seed smoke still require disposable PostgreSQL.
 
 ## Local seed password handling — 2026-07-30
 

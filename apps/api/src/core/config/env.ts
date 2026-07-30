@@ -104,6 +104,16 @@ const serverEnvSchema = z
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
+export function resolveCorsOrigin(
+  env: Pick<ServerEnv, 'NODE_ENV' | 'APP_ENV' | 'CORS_ORIGIN'>,
+): string | undefined {
+  if (env.CORS_ORIGIN) return env.CORS_ORIGIN;
+
+  return env.NODE_ENV === 'development' && env.APP_ENV === 'local'
+    ? 'http://localhost:8081'
+    : undefined;
+}
+
 type ResolveServerEnvFilePathOptions = {
   moduleDir?: string;
   envOverride?: string | undefined;

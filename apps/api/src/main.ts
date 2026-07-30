@@ -3,16 +3,14 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
-import { loadServerEnv } from './core/config';
+import { loadServerEnv, resolveCorsOrigin } from './core/config';
 import { RealtimeSocketIoAdapter } from './realtime/realtime.adapter';
 
 async function bootstrap() {
   const serverEnv = loadServerEnv();
   const runtimeEnv = {
     ...serverEnv,
-    CORS_ORIGIN:
-      serverEnv.CORS_ORIGIN ??
-      (serverEnv.APP_ENV === 'local' ? 'http://localhost:8081' : undefined),
+    CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
   const app = await NestFactory.create(AppModule);
 

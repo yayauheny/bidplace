@@ -11,6 +11,13 @@ const passwordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';
 
 export type E2EUser = { id: string; email: string; password: string };
+export type AdminModerationFixture = {
+  admin: E2EUser;
+  sellerProfileId: string;
+  sellerName: string;
+  productId: string;
+  productTitle: string;
+};
 export type AuctionFixture = {
   seller: E2EUser;
   buyerA: E2EUser;
@@ -27,6 +34,7 @@ async function createUser(
   prisma: PrismaClient,
   email: string,
   displayName: string,
+  role: 'admin' | 'user' = 'user',
 ): Promise<E2EUser> {
   const user = await prisma.user.create({
     data: {
@@ -34,6 +42,7 @@ async function createUser(
       passwordHash,
       phone: `+37529${Math.floor(1_000_000 + Math.random() * 8_999_999)}`,
       displayName,
+      role,
       emailVerifiedAt: new Date(),
       phoneVerifiedAt: new Date(),
       termsAcceptances: {
@@ -224,6 +233,93 @@ export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {
   );
   await prisma.$disconnect();
   return { buyer };
+}
+
+export async function createAdminModerationFixture(): Promise<AdminModerationFixture> {
+  const suffix = randomUUID().slice(0, 8);
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const admin = await createUser(
+    prisma,
+    uniqueEmail('admin', suffix),
+    `admin-${suffix}`,
+    'admin',
+  );
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'e2e-art' },
+  });
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
+  const pendingSeller = await prisma.user.create({
+    data: {
+      email: uniqueEmail('pending-seller', suffix),
+      passwordHash,
+      displayName: `Pending Seller ${suffix}`,
+      emailVerifiedAt: new Date(),
+      termsAcceptances: {
+        create: { rulesVersion: 'MVP_RULES_V1', acceptedAt: new Date() },
+      },
+    },
+  });
+  const sellerName = `Pending Seller ${suffix}`;
+  const sellerProfile = await prisma.sellerProfile.create({
+    data: {
+      userId: pendingSeller.id,
+      slug: `pending-seller-${suffix}`,
+      sellerType: 'creator',
+      fullName: sellerName,
+      country: 'BY',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: '0'.repeat(64),
+      profilePhotoData: photo,
+      socialLink: 'https://example.com/pending-seller',
+      shortDescription: 'Pending moderation fixture',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: `@pending_${suffix}`,
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'PENDING_REVIEW',
+    },
+  });
+  const productTitle = `Pending Product ${suffix}`;
+  const product = await prisma.product.create({
+    data: {
+      publicId: randomUUID().replace(/-/g, '').slice(0, 11),
+      sellerProfileId: sellerProfile.id,
+      categoryId: category.id,
+      title: productTitle,
+      story: 'Pending moderation fixture.',
+      technique: 'Mixed media',
+      materials: 'Paper, ink',
+      dimensions: '30x40',
+      year: 2026,
+      condition: 'New',
+      uniqueness: 'One',
+      provenance: 'E2E fixture',
+      city: 'Minsk',
+      deliveryInfo: 'Pickup',
+      status: 'PENDING_REVIEW',
+      images: {
+        create: {
+          position: 0,
+          mimeType: 'image/png',
+          byteLength: photo.byteLength,
+          data: photo,
+          checksum: '0'.repeat(64),
+        },
+      },
+    },
+  });
+  await prisma.$disconnect();
+  return {
+    admin,
+    sellerProfileId: sellerProfile.id,
+    sellerName,
+    productId: product.id,
+    productTitle,
+  };
 }
 
 export async function approveProduct(productId: string): Promise<void> {

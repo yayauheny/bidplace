@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { loadServerEnv, resolveServerEnvFilePath } from './env';
+import {
+  loadServerEnv,
+  resolveCorsOrigin,
+  resolveServerEnvFilePath,
+} from './env';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -95,5 +99,27 @@ describe('resolveServerEnvFilePath', () => {
         TEST_EMAIL_BYPASS: 'false',
       }),
     ).toThrow(/SMTP_USERNAME and SMTP_PASSWORD/);
+  });
+});
+
+describe('resolveCorsOrigin', () => {
+  it('uses localhost only for local development without explicit CORS', () => {
+    expect(
+      resolveCorsOrigin({
+        NODE_ENV: 'development',
+        APP_ENV: 'local',
+        CORS_ORIGIN: undefined,
+      }),
+    ).toBe('http://localhost:8081');
+  });
+
+  it('does not enable the localhost fallback in production', () => {
+    expect(
+      resolveCorsOrigin({
+        NODE_ENV: 'production',
+        APP_ENV: 'local',
+        CORS_ORIGIN: undefined,
+      }),
+    ).toBeUndefined();
   });
 });
