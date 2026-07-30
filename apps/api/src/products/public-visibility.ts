@@ -1,22 +1,23 @@
+import { type ListingStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-export const publicListingStatuses: Prisma.ListingStatus[] = [
+export const publicListingStatuses: ListingStatus[] = [
   'LIVE',
   'SCHEDULED',
   'ENDED',
 ];
 export type PublicListingStatus = Extract<
-  Prisma.ListingStatus,
+  ListingStatus,
   'LIVE' | 'SCHEDULED' | 'ENDED'
 >;
 
-const publicListingPriority: Partial<Record<Prisma.ListingStatus, number>> = {
+const publicListingPriority: Partial<Record<ListingStatus, number>> = {
   LIVE: 0,
   SCHEDULED: 1,
   ENDED: 2,
 };
 
-export function selectPublicListing<T extends { id: string; status: Prisma.ListingStatus; createdAt: Date }>(
+export function selectPublicListing<T extends { id: string; status: ListingStatus; createdAt: Date }>(
   listings: T[],
 ): T | null {
   return [...listings].sort(
