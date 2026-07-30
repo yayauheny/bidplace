@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import type { z } from 'zod';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import type { publicProductListItemSchema } from '@bidplace/contracts';
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { getApiUrl } from '../../lib/environment';
+import { getApiAssetUrl } from '../../lib/environment';
 import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
@@ -29,17 +30,16 @@ function deadlineLabel(item: AuctionCardItem): string {
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
   const firstImage = product.images[0];
-  const imageUri = firstImage ? `${getApiUrl()}${firstImage.url}` : undefined;
   const price = listing ? `${listing.currentPrice} BYN` : 'Цена появится позже';
   const label = `${product.title ?? 'Предмет'} — ${sellerProfile.fullName}. ${price}. ${listingLabel(item)} до ${deadlineLabel(item)}`;
 
   return (
     <Link href={`/product/${product.publicId}`} asChild>
       <MotionPressable accessibilityRole="link" accessibilityLabel={label} preset="card" style={{ gap: modernTokens.space.x3 }}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} contentFit="cover" transition={modernTokens.motion.fast} recyclingKey={product.id} accessibilityLabel={product.title ?? 'Изображение предмета'} style={{ width: '100%', aspectRatio: 4 / 5, borderRadius: modernTokens.radius.image, backgroundColor: modernTokens.color.placeholder }} />
+        {firstImage ? (
+          <AuctionCardImage imageId={firstImage.id} imageUrl={firstImage.url} label={product.title ?? 'Предмет'} productId={product.id} />
         ) : (
-          <ImagePlaceholder label={`Нет изображения: ${product.title ?? 'предмет'}`} />
+          <ImagePlaceholder label={`Нет изображения: ${product.title ?? 'предмет'}`} style={{ width: '100%' }} />
         )}
         <View style={{ gap: modernTokens.space.x1 }}>
           <AppText role="metadata" tone="secondary" numberOfLines={1}>{sellerProfile.fullName}</AppText>
@@ -51,5 +51,25 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
         </View>
       </MotionPressable>
     </Link>
+  );
+}
+
+function AuctionCardImage({ imageId, imageUrl, label, productId }: { imageId: string; imageUrl: string; label: string; productId: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return <ImagePlaceholder label={`Изображение недоступно: ${label}`} style={{ width: '100%' }} />;
+  }
+
+  return (
+    <Image
+      source={{ uri: getApiAssetUrl(imageUrl) }}
+      contentFit="cover"
+      transition={modernTokens.motion.fast}
+      recyclingKey={`${productId}-${imageId}`}
+      accessibilityLabel={`Изображение предмета: ${label}`}
+      onError={() => setFailed(true)}
+      style={{ width: '100%', aspectRatio: 4 / 5, borderRadius: modernTokens.radius.image, backgroundColor: modernTokens.color.placeholder }}
+    />
   );
 }

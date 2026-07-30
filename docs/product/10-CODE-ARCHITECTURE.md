@@ -1,12 +1,14 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-07-24
+Последнее обновление: 2026-07-30
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
+- `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell: below 1025 px it preserves the mobile header/content composition, and from 1025 px it places the full-height `AppHeader` rail beside a flexible page area. Route screens remain responsible for their own scroll/content and business interactions.
+- `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.

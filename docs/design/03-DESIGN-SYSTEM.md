@@ -1,6 +1,6 @@
 # bidplace — дизайн-система
 
-Последнее обновление: 2026-07-28
+Последнее обновление: 2026-07-30
 
 Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 
@@ -16,7 +16,7 @@
 | Size/touch          | control sizes и `touch: 44`                                                                                                    | `packages/design-tokens/src/index.ts`                                                  |
 | Typography tokens   | display/hero/heading/title/body/small/caption/nav                                                                              | `packages/design-tokens/src/index.ts`                                                  |
 | Fonts               | Inter and PT Mono runtime loading                                                                                              | `apps/mobile/src/app/_layout.tsx`                                                      |
-| Layout              | page/content/reading/form max widths                                                                                           | `packages/design-tokens/src/index.ts`                                                  |
+| Layout              | page/content/reading/form max widths; shared responsive `AppShell` keeps desktop rail full-height and page area flexible             | `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/layout/AppShell.tsx` |
 | Breakpoints         | final responsive shell: mobile below 1025 px and desktop rail from 1025 px                                                     | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
 | Elevation           | semantic surface and overlay tokens                                                                                            | `packages/design-tokens/src/modern.ts`                                                 |
 | Buttons             | semantic primary, secondary and destructive actions with loading/disabled/accessibility state                                  | `apps/mobile/src/components/modern-ui/Button.tsx`                                      |
@@ -26,13 +26,13 @@
 | Auction patterns    | gallery, auction panel, bid history and seller summary                                                                         | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/products`            |
 | Navigation          | final responsive role navigation: desktop rail and mobile bottom navigation                                                    | `apps/mobile/src/components/layout/AppHeader.tsx`                                      |
 | Feedback            | route-local loading, empty, error and retry states through final primitives                                                    | `apps/mobile/src/features`, `components/modern-ui`                                     |
-| Media               | Expo Image, API URL resolver, image picker and truthful seller image count                                                     | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/sellers`             |
+| Media               | Expo Image, `getApiAssetUrl`, loading surface, missing/error placeholder, image picker and truthful seller image count          | `apps/mobile/src/lib/environment.ts`, `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/sellers` |
 | Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder, content tabs and auction panel | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`        |
 | Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                  | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                 |
 
 Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now. `AppDialog` is required for destructive seller media and admin moderation actions.
 
-Every route uses the final shell and primitives. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge, fallback or legacy UI import remains.
+Every route uses the final shell and primitives. `AppShell` preserves the mobile header/bottom-action composition and provides the desktop rail/page split. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge or legacy UI import remains; image fallback is a truthful unavailable-media state, not a substitute for a valid asset URL.
 
 ## Target principles
 

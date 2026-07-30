@@ -18,3 +18,10 @@ export function getApiUrl(): string {
     return fallback;
   }
 }
+
+export function getApiAssetUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const normalizedPath = `/${path.replace(/^\/+/, '')}`;
+  return `${getApiUrl()}${normalizedPath}`;
+}

@@ -4,11 +4,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
@@ -19,7 +18,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/modern-ui';
-import { getApiUrl } from '../../lib/environment';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
@@ -384,7 +383,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
           {existingProduct.images.map((image) => (
             <View key={image.id} style={{ gap: modernTokens.space.x2 }}>
               <Image
-                source={{ uri: `${getApiUrl()}${image.url}` }}
+                source={{ uri: getApiAssetUrl(image.url) }}
                 style={{
                   width: '100%',
                   height: 180,
@@ -465,10 +464,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
 function DraftShell({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader mode="seller" />
+    <AppShell mode="seller">
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -479,6 +475,6 @@ function DraftShell({ children }: { children: ReactNode }) {
       >
         <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

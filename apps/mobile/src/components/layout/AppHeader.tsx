@@ -33,8 +33,66 @@ function items(auth: ReturnType<typeof useAuth>): Item[] {
     : [
         { label: 'Каталог', href: '/', icon: 'menu' },
         { label: 'Войти', href: '/login', icon: 'user' },
-      ];
+    ];
 }
+
+function NavigationItem({
+  item,
+  active,
+  desktop,
+}: {
+  item: Item;
+  active: boolean;
+  desktop: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <Link href={item.href} asChild>
+      <MotionPressable
+        accessibilityRole="link"
+        accessibilityLabel={item.label}
+        accessibilityState={{ selected: active }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        preset="button"
+        style={(state) => ({
+          minHeight: modernTokens.size.touch,
+          width: desktop ? '100%' : undefined,
+          flexDirection: desktop ? 'row' : 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: modernTokens.space.x1,
+          borderRadius: modernTokens.radius.pill,
+          backgroundColor: active
+            ? modernTokens.color.ink
+            : focused || state.hovered
+              ? modernTokens.color.chip
+              : 'transparent',
+          paddingHorizontal: desktop
+            ? modernTokens.space.x3
+            : modernTokens.space.x2,
+        })}
+      >
+        <AppIcon
+          name={item.icon}
+          color={active ? modernTokens.color.surface : modernTokens.color.ink}
+        />
+        <AppText
+          role="caption"
+          style={{
+            color: active
+              ? modernTokens.color.surface
+              : modernTokens.color.ink,
+          }}
+        >
+          {item.label}
+        </AppText>
+      </MotionPressable>
+    </Link>
+  );
+}
+
 export function AppHeader({
   mode = 'public',
 }: {
@@ -62,48 +120,11 @@ export function AppHeader({
     <>
       {nav.map((item) => {
         const active =
-          pathname === item.href ||
-          (item.href !== '/' && pathname.startsWith(item.href));
-        return (
-          <Link key={item.href} href={item.href} asChild>
-            <MotionPressable
-              accessibilityRole="link"
-              accessibilityLabel={item.label}
-              preset="button"
-              style={{
-                minHeight: modernTokens.size.touch,
-                flexDirection: desktop ? 'row' : 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: modernTokens.space.x1,
-                borderRadius: modernTokens.radius.pill,
-                backgroundColor: active
-                  ? modernTokens.color.ink
-                  : 'transparent',
-                paddingHorizontal: desktop
-                  ? modernTokens.space.x3
-                  : modernTokens.space.x2,
-              }}
-            >
-              <AppIcon
-                name={item.icon}
-                color={
-                  active ? modernTokens.color.surface : modernTokens.color.ink
-                }
-              />
-              <AppText
-                role="caption"
-                style={{
-                  color: active
-                    ? modernTokens.color.surface
-                    : modernTokens.color.ink,
-                }}
-              >
-                {item.label}
-              </AppText>
-            </MotionPressable>
-          </Link>
-        );
+          (item.href === '/' &&
+            (pathname === '/' || pathname.startsWith('/product/'))) ||
+          (item.href !== '/' &&
+            (pathname === item.href || pathname.startsWith(item.href)));
+        return <NavigationItem key={item.href} item={item} active={active} desktop={desktop} />;
       })}
     </>
   );
@@ -111,6 +132,8 @@ export function AppHeader({
     <View
       style={{
         width: 236,
+        alignSelf: 'stretch',
+        flexShrink: 0,
         borderRightWidth: 1,
         borderRightColor: modernTokens.color.border,
         backgroundColor: modernTokens.color.surface,
@@ -120,6 +143,7 @@ export function AppHeader({
     >
       <BrandLogo />
       <View style={{ gap: modernTokens.space.x2 }}>{links}</View>
+      <View style={{ flex: 1 }} />
       {auth.isAuthenticated ? (
         <SecondaryButton label="Выйти" loading={loggingOut} onPress={logout} />
       ) : null}

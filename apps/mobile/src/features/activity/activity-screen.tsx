@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ApiClient } from '@bidplace/api-client';
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppText,
   MotionPressable,
@@ -161,10 +160,7 @@ export function ActivityScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader />
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -184,6 +180,6 @@ export function ActivityScreen() {
         </View>
         {content}
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

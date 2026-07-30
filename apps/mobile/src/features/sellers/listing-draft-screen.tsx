@@ -3,11 +3,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { listingCreateRequestSchema } from '@bidplace/contracts';
 import { useRouter } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppText,
   FormSection,
@@ -332,10 +331,7 @@ export function ListingDraftScreen({
 
 function ListingShell({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader mode="seller" />
+    <AppShell mode="seller">
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -346,6 +342,6 @@ function ListingShell({ children }: { children: ReactNode }) {
       >
         <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

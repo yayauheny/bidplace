@@ -4,7 +4,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { modernTokens } from '@bidplace/design-tokens';
 import {
   AppText,
@@ -13,8 +12,8 @@ import {
   SecondaryButton,
   TextField,
 } from '../../components/modern-ui';
-import { AppHeader } from '../../components/layout/AppHeader';
-import { getApiUrl } from '../../lib/environment';
+import { AppShell } from '../../components/layout/AppShell';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
 
@@ -94,7 +93,7 @@ export function SellerProfileScreen() {
       handoffContactValue: profile.handoffContactValue,
       handoffInitiator: profile.handoffInitiator,
     });
-    setPhotoUri(`${getApiUrl()}${profile.profilePhotoUrl}`);
+    setPhotoUri(getApiAssetUrl(profile.profilePhotoUrl));
     setPhotoBlob(null);
   }, [profile]);
 
@@ -387,10 +386,7 @@ export function SellerProfileScreen() {
 
 function ProfileShell({ children }: { children: React.ReactNode }) {
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader />
+    <AppShell mode="seller">
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -401,6 +397,6 @@ function ProfileShell({ children }: { children: React.ReactNode }) {
       >
         <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

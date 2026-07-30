@@ -2,11 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
@@ -357,10 +356,7 @@ function ModerationCard({
 }
 function AdminShell({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader mode="admin" />
+    <AppShell mode="admin">
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -371,6 +367,6 @@ function AdminShell({ children }: { children: ReactNode }) {
       >
         <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

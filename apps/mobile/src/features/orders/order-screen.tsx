@@ -2,11 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
@@ -285,10 +284,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
 
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader />
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           width: '100%',
@@ -301,6 +297,6 @@ function Shell({ children }: { children: ReactNode }) {
       >
         {children}
       </ScrollView>
-    </SafeAreaView>
+    </AppShell>
   );
 }

@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from '../../components/layout/AppHeader';
+import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
@@ -173,17 +172,7 @@ function ProductShell({
   children: React.ReactNode;
   bottomAction?: React.ReactNode;
 }) {
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
-    >
-      <AppHeader />
-      <View style={{ flex: 1 }}>
-        {children}
-        {bottomAction}
-      </View>
-    </SafeAreaView>
-  );
+  return <AppShell bottomAction={bottomAction}>{children}</AppShell>;
 }
 
 export function ProductScreen({ publicId }: { publicId: string }) {
@@ -516,10 +505,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             gap: modernTokens.space.x6,
           }}
         >
-          <ProductGallery
-            images={product.images}
-            label={product.title ?? 'Предмет'}
-          />
           <View
             style={{
               flexDirection: isDesktop ? 'row' : 'column',
@@ -528,8 +513,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             }}
           >
             <View
-              style={{ flex: 1, width: '100%', gap: modernTokens.space.x6 }}
+              style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x6 }}
             >
+              <ProductGallery
+                images={product.images}
+                label={product.title ?? 'Предмет'}
+              />
               <View style={{ gap: modernTokens.space.x2 }}>
                 <AppText role="metadata" tone="secondary">
                   {sellerProfile.fullName}
@@ -574,7 +563,14 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               ) : null}
             </View>
             {isDesktop ? (
-              <View style={{ width: 360, maxWidth: '100%' }}>
+              <View
+                style={[
+                  { width: 360, maxWidth: '100%' },
+                  Platform.OS === 'web'
+                    ? { position: 'sticky', top: modernTokens.space.x6 }
+                    : null,
+                ]}
+              >
                 {auctionPanel}
               </View>
             ) : null}

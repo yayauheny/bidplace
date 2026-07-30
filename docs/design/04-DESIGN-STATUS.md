@@ -1,12 +1,14 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-07-28
+Дата снимка: 2026-07-30
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
 Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck, lint, unit tests, Expo web export and the three-scenario auction Playwright suite have passed; no route may be marked `Implemented` until founder acceptance evidence is recorded.
 
-Shared navigation is in partial final migration: `components/layout/AppHeader.tsx` renders role-filtered final mobile/desktop navigation. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
+Shared navigation is in partial final migration: `components/layout/AppShell.tsx` now owns the responsive safe-area shell and `AppHeader.tsx` renders role-filtered navigation with a full-height desktop rail, unified 44 px nav items, active Product context and keyboard focus state. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
+
+Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, seller profile and Product draft media; `ProductGallery` and `AuctionCard` expose a labeled unavailable-image fallback after `expo-image` errors; desktop Product places the gallery and auction panel at the same top level; Login validation uses Russian field messages. Mobile unit tests (17/17), typecheck, lint, E2E fence and Expo web export pass. No route is promoted to `Implemented` without founder visual/device/accessibility evidence.
 
 ## Functional screen status
 
@@ -31,5 +33,6 @@ The retired public `/auctions/[slug]`, cart, swatches, fake variants, Buy Now an
 
 - mobile/web keyboard and screen-reader audit for Product, OTP, seller and Order flows;
 - loading, empty, network-error, reconnect and long-content states on pilot devices;
+- real LAN API media loading on a physical device and direct verification of approved versus private image access;
 - approval of visual treatment before marking any screen `Implemented`;
 - admin controls and Product draft image-management flow.
