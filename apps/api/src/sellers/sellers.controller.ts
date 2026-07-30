@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   sellerProfileCreateRequestSchema,
@@ -112,7 +113,7 @@ export class SellersController {
     response: {
       setHeader(name: string, value: string): void;
       type(value: string): void;
-      send(value: Uint8Array): void;
+      send(value: Buffer): void;
     },
   ) {
     const photo = await this.sellers.getPhoto(slug, auth?.sub, auth?.role);
@@ -121,6 +122,6 @@ export class SellersController {
       getImageCacheControl(photo.status === 'APPROVED'),
     );
     response.type(photo.profilePhotoMimeType);
-    response.send(photo.profilePhotoData);
+    response.send(Buffer.from(photo.profilePhotoData));
   }
 }

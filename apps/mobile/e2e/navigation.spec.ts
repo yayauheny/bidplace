@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-import { createAuctionFixture, createSellerFixture } from './support/e2e-fixtures';
+import {
+  createAuctionFixture,
+  createSellerFixture,
+} from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
 test('desktop rail keeps the active catalog link visible', async ({ page }) => {
@@ -16,7 +19,9 @@ test('desktop rail keeps the active catalog link visible', async ({ page }) => {
   await expect(catalogLink).toBeVisible();
   await expect(catalogLink).toHaveAttribute('href', '/');
   await expect(catalogLink).toHaveCSS('min-height', '44px');
-  expect(consoleErrors.filter((message) => message.includes('accessible'))).toEqual([]);
+  expect(
+    consoleErrors.filter((message) => message.includes('accessible')),
+  ).toEqual([]);
 });
 
 test('guest navigation exposes only the public catalog', async ({ page }) => {
@@ -25,10 +30,14 @@ test('guest navigation exposes only the public catalog', async ({ page }) => {
 
   await expect(page.getByRole('link', { name: 'Каталог' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Добавить предмет' })).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: 'Добавить предмет' }),
+  ).toHaveCount(0);
 });
 
-test('mobile guest account control stays in the header row', async ({ page }) => {
+test('mobile guest account control stays in the header row', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
@@ -57,9 +66,15 @@ test('pending seller navigation does not expose approved seller actions', async 
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Заявка продавца' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Кабинет продавца' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Добавить предмет' })).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'Заявка продавца' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Кабинет продавца' }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('link', { name: 'Добавить предмет' }),
+    ).toHaveCount(0);
   } finally {
     await context.close();
   }
@@ -74,16 +89,27 @@ test('approved seller navigation exposes the seller cabinet and add product', as
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto(`/product/${fixture.product.publicId}`);
-    await expect(page.getByRole('link', { name: 'Кабинет продавца' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Добавить предмет' })).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Кабинет продавца' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Добавить предмет' }),
+    ).toBeVisible();
 
     for (const label of ['Каталог', 'Покупки']) {
       await page.getByRole('link', { name: label }).hover();
+      await expect(
+        page.locator('#app-overlay-host').locator('#navigation-tooltip'),
+      ).toHaveCount(1);
       await expect(page.locator('#navigation-tooltip')).toHaveText(label);
+      await expect(page.locator('#navigation-tooltip')).toBeVisible();
     }
 
     const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
     await account.hover();
+    await expect(
+      page.locator('#app-overlay-host').locator('#account-menu-dropdown'),
+    ).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
     const accountMenu = page.locator('#account-menu-dropdown');
     await expect(accountMenu).toBeVisible();

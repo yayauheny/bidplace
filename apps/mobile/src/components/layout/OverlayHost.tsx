@@ -1,5 +1,12 @@
 import { createPortal } from 'react-dom';
-import { createContext, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Platform, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -11,19 +18,17 @@ const OverlayContext = createContext<OverlayContextValue>({ target: null });
 
 export function OverlayHost({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      setTarget(document.getElementById('app-overlay-host'));
-    }
+  const setOverlayTarget = useCallback((node: View | null) => {
+    if (Platform.OS !== 'web') return;
+    setTarget(node as unknown as HTMLElement | null);
   }, []);
 
   return (
     <OverlayContext.Provider value={{ target }}>
       <View style={{ flex: 1, position: 'relative' }}>{children}</View>
       <View
+        ref={setOverlayTarget}
         nativeID="app-overlay-host"
-        pointerEvents="box-none"
         style={{
           position: 'absolute',
           top: 0,
@@ -31,6 +36,7 @@ export function OverlayHost({ children }: { children: ReactNode }) {
           bottom: 0,
           left: 0,
           zIndex: modernTokens.layer.popover,
+          pointerEvents: 'box-none',
         }}
       />
     </OverlayContext.Provider>
@@ -54,7 +60,8 @@ export function OverlayPortal({
   useLayoutEffect(() => {
     if (Platform.OS !== 'web' || !target || !anchorRef.current) return;
 
-    const update = () => setRect(anchorRef.current?.getBoundingClientRect() ?? null);
+    const update = () =>
+      setRect(anchorRef.current?.getBoundingClientRect() ?? null);
     update();
     window.addEventListener('resize', update);
     window.addEventListener('scroll', update, true);
@@ -65,18 +72,28 @@ export function OverlayPortal({
   }, [anchorRef, target]);
 
   if (Platform.OS !== 'web') return <>{children}</>;
-  if (!target) return null;
+  if (!target || !rect) return null;
 
   const style =
     placement === 'right-start'
-      ? { left: rect ? rect.right + modernTokens.space.x2 : 0, top: rect?.top ?? 0 }
-      : { left: rect ? rect.right - 180 : 0, top: rect ? rect.bottom + modernTokens.space.x2 : 0 };
+      ? {
+          left: rect ? rect.right + modernTokens.space.x2 : 0,
+          top: rect?.top ?? 0,
+        }
+      : {
+          left: rect ? rect.right - 180 : 0,
+          top: rect ? rect.bottom + modernTokens.space.x2 : 0,
+        };
 
   return createPortal(
     <View
       nativeID={testId}
-      pointerEvents="auto"
-      style={{ position: 'fixed', ...style, zIndex: modernTokens.layer.popover }}
+      style={{
+        position: 'fixed',
+        ...style,
+        zIndex: modernTokens.layer.popover,
+        pointerEvents: 'auto',
+      }}
     >
       {children}
     </View>,

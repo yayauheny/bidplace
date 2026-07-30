@@ -12,7 +12,11 @@ import { BrandLogo } from './BrandLogo';
 import { OverlayPortal } from './OverlayHost';
 
 type Href = '/' | '/me/activity' | '/profile' | '/admin' | '/products/new';
-type Item = { label: string; href: Href; icon: 'catalog' | 'purchases' | 'seller' | 'moderation' | 'plus' };
+type Item = {
+  label: string;
+  href: Href;
+  icon: 'catalog' | 'purchases' | 'seller' | 'moderation' | 'plus';
+};
 
 function items(
   auth: ReturnType<typeof useAuth>,
@@ -57,16 +61,22 @@ function NavigationItem({
 }) {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(null);
+  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(
+    null,
+  );
   const visibleLabel = hovered || focused;
 
   return (
-    <View style={{ position: 'relative' }}>
+    <View
+      ref={(node) => {
+        triggerRef.current = node as unknown as {
+          getBoundingClientRect: () => DOMRect;
+        } | null;
+      }}
+      style={{ position: 'relative' }}
+    >
       <Link href={item.href} asChild>
         <MotionPressable
-          ref={(node) => {
-            triggerRef.current = node as unknown as { getBoundingClientRect: () => DOMRect } | null;
-          }}
           accessibilityRole="link"
           accessibilityLabel={item.label}
           accessibilityState={{ selected: active }}
@@ -96,9 +106,12 @@ function NavigationItem({
         </MotionPressable>
       </Link>
       {desktop && visibleLabel ? (
-        <OverlayPortal anchorRef={triggerRef} placement="right-start" testId="navigation-tooltip">
+        <OverlayPortal
+          anchorRef={triggerRef}
+          placement="right-start"
+          testId="navigation-tooltip"
+        >
           <View
-            pointerEvents="none"
             style={{
               minHeight: modernTokens.size.touch - modernTokens.space.x2,
               justifyContent: 'center',
@@ -111,6 +124,7 @@ function NavigationItem({
               shadowOpacity: 0.08,
               shadowRadius: 8,
               elevation: 3,
+              pointerEvents: 'none',
             }}
           >
             <AppText role="caption">{item.label}</AppText>

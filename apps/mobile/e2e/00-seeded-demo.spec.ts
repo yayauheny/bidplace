@@ -13,12 +13,16 @@ test('demo seed exposes three public products and real media', async ({
   page,
   request,
 }) => {
-  const response = await request.get(`${apiBaseURL}/api/products?page=1&limit=20`);
+  const response = await request.get(
+    `${apiBaseURL}/api/products?page=1&limit=20`,
+  );
   expect(response.ok()).toBeTruthy();
   const payload = await response.json();
   const seededProducts = payload.products.filter(
     (item: { product: { publicId: string } }) =>
-      ['seedSched01', 'seedLive002', 'seedEnded03'].includes(item.product.publicId),
+      ['seedSched01', 'seedLive002', 'seedEnded03'].includes(
+        item.product.publicId,
+      ),
   );
   expect(seededProducts).toHaveLength(3);
 
@@ -40,8 +44,26 @@ test('demo seed exposes three public products and real media', async ({
       .first();
     await expect(image).toBeVisible();
     await expect
-      .poll(() => image.evaluate((element) => (element as HTMLImageElement).naturalWidth))
+      .poll(() =>
+        image.evaluate((element) => (element as HTMLImageElement).naturalWidth),
+      )
       .toBeGreaterThan(0);
+
+    await page.goto(`/product/${item.product.publicId}`);
+    const galleryImage = page
+      .locator(`img[alt="Изображение предмета: ${item.product.title}"]`)
+      .first();
+    await expect(galleryImage).toBeVisible();
+    await expect
+      .poll(() =>
+        galleryImage.evaluate(
+          (element) => (element as HTMLImageElement).naturalWidth,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await expect(
+      page.getByText(`Изображение недоступно: ${item.product.title}`),
+    ).toHaveCount(0);
   }
 });
 
@@ -57,7 +79,9 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
 
     await page.goto('/product/seedLive002');
     await page.getByRole('tab', { name: 'Ставки' }).click();
-    await expect(page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`)).toBeVisible();
+    await expect(
+      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
+    ).toBeVisible();
     await expect(page.getByText(/75,00\s*BYN/)).toBeVisible();
 
     await page.goto('/product/seedSched01');
@@ -65,19 +89,31 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     await expect(page.getByText('Ставок ещё нет.')).toBeVisible();
 
     await page.route('**/api/listings/*/bids*', async (route) => {
-      await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: '{}',
+      });
     });
     await page.goto('/product/seedLive002');
     await page.getByRole('tab', { name: 'Ставки' }).click();
-    await expect(page.getByText('Не удалось загрузить историю ставок.')).toBeVisible();
+    await expect(
+      page.getByText('Не удалось загрузить историю ставок.'),
+    ).toBeVisible();
     await page.unroute('**/api/listings/*/bids*');
     await page.getByRole('button', { name: 'Повторить' }).click();
-    await expect(page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`)).toBeVisible();
+    await expect(
+      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
+    ).toBeVisible();
 
     await page.goto('/product/seedEnded03');
     await page.getByRole('tab', { name: 'Ставки' }).click();
-    await expect(page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Открыть результат заказа' })).toBeVisible();
+    await expect(
+      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Открыть результат заказа' }),
+    ).toBeVisible();
   } finally {
     await context.close();
   }

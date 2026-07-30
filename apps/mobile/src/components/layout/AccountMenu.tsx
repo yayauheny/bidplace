@@ -14,7 +14,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const focusOpened = useRef(false);
-  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(null);
+  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(
+    null,
+  );
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const initial = label.slice(0, 1).toUpperCase();
   const closeMenu = useCallback(() => {
@@ -90,15 +92,15 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <View
+      ref={(node) => {
+        triggerRef.current = node as unknown as {
+          getBoundingClientRect: () => DOMRect;
+        } | null;
+      }}
       nativeID="account-menu"
       style={{ position: 'relative' }}
     >
       <Pressable
-        ref={(node) => {
-          triggerRef.current = node as unknown as {
-            getBoundingClientRect: () => DOMRect;
-          } | null;
-        }}
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
@@ -199,11 +201,7 @@ function AccountDropdown({
       <AppText role="caption" tone="secondary">
         {label}
       </AppText>
-      <SecondaryButton
-        label="Выйти"
-        loading={loggingOut}
-        onPress={onLogout}
-      />
+      <SecondaryButton label="Выйти" loading={loggingOut} onPress={onLogout} />
     </View>
   );
 }

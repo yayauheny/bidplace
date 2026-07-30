@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { productImageOrderRequestSchema } from '@bidplace/contracts';
 import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
@@ -88,7 +89,7 @@ export class ImagesController {
     response: {
       setHeader(name: string, value: string): void;
       type(value: string): void;
-      send(value: Uint8Array): void;
+      send(value: Buffer): void;
     },
   ) {
     const image = await this.images.get(id, auth?.sub, auth?.role);
@@ -97,6 +98,6 @@ export class ImagesController {
       getImageCacheControl(image.product.status === 'APPROVED'),
     );
     response.type(image.mimeType);
-    response.send(image.data);
+    response.send(Buffer.from(image.data));
   }
 }
