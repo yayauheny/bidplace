@@ -10,6 +10,7 @@
 
 ## Visual polish — 2026-07-30
 
+- `Implemented`: the light branding source assets are stored in `apps/mobile/assets/branding/`; `BrandLogo.tsx` uses the black wordmark on desktop and black mark on compact/mobile navigation, while `app.json` uses the light favicon. The previous placeholder border and duplicated text lockup were removed. Expo web/native rendering still needs founder visual/device acceptance because the supplied source assets are SVG.
 - `Partial`: `apps/mobile/src/components/layout/AppShell.tsx` now provides the shared 1025 px responsive shell; all screens that used the repeated `SafeAreaView + AppHeader` composition use the shell, with mobile bottom actions and scroll ownership preserved.
 - `Partial`: `apps/mobile/src/lib/environment.ts` provides `getApiAssetUrl`; Catalog/Product/seller profile/Product draft media use it. `ProductGallery` and `AuctionCard` display labeled unavailable-image states after load errors. API image authorization and seeded live-media/device behavior still need direct founder/device verification.
 - `Partial`: `product-screen.tsx` places desktop gallery and auction panel in the same row and keeps mobile gallery → auction facts → tabs → bottom action ordering. Auction business logic, realtime refetch, privacy and contracts are unchanged.
