@@ -1,5 +1,7 @@
 const { Prisma, PrismaClient } = require('../dist');
 const { createHash } = require('node:crypto');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
 const argon2 = require('argon2');
 
 if (
@@ -17,6 +19,7 @@ const seedPhotoBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0nM9sAAAAASUVORK5CYII=',
   'base64',
 );
+const productImageFixturesDirectory = join(__dirname, 'fixtures', 'product-images');
 
 function requiredEnvironment(name) {
   const value = process.env[name];
@@ -28,36 +31,60 @@ function requiredEnvironment(name) {
   return value;
 }
 
+function readSeedProductImage(fileName) {
+  const data = readFileSync(join(productImageFixturesDirectory, fileName));
+
+  return {
+    byteLength: data.byteLength,
+    checksum: createHash('sha256').update(data).digest('hex'),
+    data,
+    mimeType: 'image/png',
+  };
+}
+
 async function createProductWithImages({
   publicId,
   sellerProfileId,
   categoryId,
   title,
+  story,
+  technique,
+  materials,
+  dimensions,
+  year,
+  condition,
+  uniqueness,
+  provenance,
   city,
+  deliveryInfo,
   publishedAt,
+  imageFileName,
 }) {
+  const image = readSeedProductImage(imageFileName);
+
   return prisma.product.create({
     data: {
       publicId,
       sellerProfileId,
       categoryId,
       title,
-      story: 'A small reproducible local fixture used only to verify Product and Listing states.',
-      condition: 'excellent',
-      uniqueness: 'One original physical item.',
-      provenance: 'Created and offered directly by the approved seller.',
+      story,
+      technique,
+      materials,
+      dimensions,
+      year,
+      condition,
+      uniqueness,
+      provenance,
       city,
-      deliveryInfo: 'Pickup or delivery is arranged after the Order is created.',
+      deliveryInfo,
       publishedAt,
       status: 'APPROVED',
       images: {
         create: [
           {
             position: 0,
-            mimeType: 'image/png',
-            byteLength: 1,
-            data: Buffer.from([0]),
-            checksum: '0'.repeat(64),
+            ...image,
           },
         ],
       },
@@ -87,8 +114,8 @@ async function main() {
   const category = await prisma.category.create({
     data: {
       slug: 'art-object',
-      name: 'Art object',
-      description: 'Local verification category.',
+      name: 'Авторская керамика',
+      description: 'Предметы, созданные и предложенные авторами напрямую.',
     },
   });
 
@@ -108,7 +135,7 @@ async function main() {
         email: 'seller@bidplace.test',
         passwordHash: adminPasswordHash,
         phone: null,
-        displayName: 'Local Seller',
+        displayName: 'Анна Морозова',
         emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     }),
@@ -117,7 +144,7 @@ async function main() {
         email: 'buyer@bidplace.test',
         passwordHash: adminPasswordHash,
         phone: null,
-        displayName: 'Local Buyer',
+        displayName: 'Тестовый покупатель',
         emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     }),
@@ -126,18 +153,18 @@ async function main() {
   const sellerProfile = await prisma.sellerProfile.create({
     data: {
       userId: seller.id,
-      slug: 'local-seller',
+      slug: 'anna-morozova',
       sellerType: 'creator',
-      fullName: 'Local Seller',
+      fullName: 'Анна Морозова',
       country: 'BY',
-      socialLink: 'https://example.com/local-seller',
-      shortDescription: 'Local deterministic seller profile used for reset and smoke testing.',
+      socialLink: 'https://example.com/anna-morozova',
+      shortDescription: 'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: seedPhotoBuffer.byteLength,
       profilePhotoChecksum: createHash('sha256').update(seedPhotoBuffer).digest('hex'),
       profilePhotoData: seedPhotoBuffer,
       handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@localseller',
+      handoffContactValue: '@anna_morozova',
       handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
     },
@@ -149,25 +176,61 @@ async function main() {
       publicId: 'seedSched01',
       sellerProfileId: sellerProfile.id,
       categoryId: category.id,
-      title: 'Scheduled seed product',
-      city: 'Minsk',
+      title: 'Кашпо «Тёплый ритм»',
+      story:
+        'Небольшое кашпо, расписанное вручную по мотивам летнего света и движения листьев.',
+      technique: 'Ручная роспись акрилом по керамике',
+      materials: 'Керамика, акрил, защитный лак',
+      dimensions: '17 × 17 × 17 см',
+      year: 2025,
+      condition: 'Новое',
+      uniqueness: 'Единственный экземпляр',
+      provenance:
+        'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
+      city: 'Минск',
+      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
+      imageFileName: 'painted-planter.png',
     }),
     createProductWithImages({
       publicId: 'seedLive002',
       sellerProfileId: sellerProfile.id,
       categoryId: category.id,
-      title: 'Live seed product',
-      city: 'Minsk',
+      title: 'Стакан для кистей «Голубая комета»',
+      story:
+        'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
+      technique: 'Лепка вручную, глазурование',
+      materials: 'Керамика, цветная глазурь',
+      dimensions: '14 × 14 × 12 см',
+      year: 2026,
+      condition: 'Новое',
+      uniqueness: 'Единственный экземпляр',
+      provenance:
+        'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
+      city: 'Минск',
+      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
+      imageFileName: 'ceramic-brush-holder.png',
     }),
     createProductWithImages({
       publicId: 'seedEnded03',
       sellerProfileId: sellerProfile.id,
       categoryId: category.id,
-      title: 'Ended seed product',
-      city: 'Minsk',
+      title: 'Чашка «Ты мне»',
+      story:
+        'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
+      technique: 'Лепка вручную, цветная глазурь',
+      materials: 'Шамотная глина, глазурь',
+      dimensions: '12 × 9 × 10 см',
+      year: 2025,
+      condition: 'Новое',
+      uniqueness: 'Единственный экземпляр',
+      provenance:
+        'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
+      city: 'Минск',
+      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
+      imageFileName: 'handmade-mug.png',
     }),
   ]);
 
