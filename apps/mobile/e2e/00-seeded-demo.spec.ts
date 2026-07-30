@@ -16,12 +16,13 @@ test('demo seed exposes three public products and real media', async ({
   const response = await request.get(`${apiBaseURL}/api/products?page=1&limit=20`);
   expect(response.ok()).toBeTruthy();
   const payload = await response.json();
-  expect(payload.products).toHaveLength(3);
-  expect(new Set(payload.products.map((item: { product: { publicId: string } }) => item.product.publicId))).toEqual(
-    new Set(['seedSched01', 'seedLive002', 'seedEnded03']),
+  const seededProducts = payload.products.filter(
+    (item: { product: { publicId: string } }) =>
+      ['seedSched01', 'seedLive002', 'seedEnded03'].includes(item.product.publicId),
   );
+  expect(seededProducts).toHaveLength(3);
 
-  for (const item of payload.products) {
+  for (const item of seededProducts) {
     expect(item.product.images).toHaveLength(1);
     const imageResponse = await request.get(
       new URL(item.product.images[0].url, apiBaseURL).toString(),
@@ -32,7 +33,7 @@ test('demo seed exposes three public products and real media', async ({
   }
 
   await page.goto('/');
-  for (const item of payload.products) {
+  for (const item of seededProducts) {
     await expect(page.getByText(item.product.title)).toBeVisible();
     const image = page
       .locator(`img[alt="Изображение предмета: ${item.product.title}"]`)

@@ -1,6 +1,6 @@
 # bidplace — дизайн-система
 
-Последнее обновление: 2026-07-30
+Последнее обновление: 2026-07-31
 
 Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 

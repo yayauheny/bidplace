@@ -1,6 +1,6 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-07-30
+Дата снимка: 2026-07-31
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 

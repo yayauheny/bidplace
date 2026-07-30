@@ -93,6 +93,21 @@ describe('SellersService', () => {
         include: expect.objectContaining({
           products: expect.objectContaining({
             include: expect.objectContaining({
+              listings: expect.objectContaining({
+                where: {
+                  status: { in: ['LIVE', 'SCHEDULED', 'ENDED'] },
+                },
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          products: expect.objectContaining({
+            include: expect.objectContaining({
               sellerProfile: {
                 select: publicSellerProfileSelect,
               },

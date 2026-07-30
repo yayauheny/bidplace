@@ -15,7 +15,10 @@ import { createHash } from 'node:crypto';
 import { PrismaService } from '../core/database';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import { productSelect, toContractProduct } from '../products/products.mapper';
-import { publicCatalogProductWhere } from '../products/public-visibility';
+import {
+  publicCatalogProductWhere,
+  publicListingStatuses,
+} from '../products/public-visibility';
 import { ProductsService } from '../products/products.service';
 import {
   publicSellerProfileSelect,
@@ -181,9 +184,9 @@ export class SellersService {
             },
             images: { orderBy: { position: 'asc' } },
             listings: {
-              where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+              where: { status: { in: publicListingStatuses } },
               include: { auctionRules: true },
-              take: 1,
+              orderBy: { createdAt: 'desc' },
             },
           },
           orderBy: { createdAt: 'desc' },

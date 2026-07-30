@@ -1,20 +1,28 @@
 import { type Prisma } from '@bidplace/database';
 
-export const publicListingStatuses = ['LIVE', 'SCHEDULED', 'ENDED'] as const;
-export type PublicListingStatus = (typeof publicListingStatuses)[number];
+export const publicListingStatuses: Prisma.ListingStatus[] = [
+  'LIVE',
+  'SCHEDULED',
+  'ENDED',
+];
+export type PublicListingStatus = Extract<
+  Prisma.ListingStatus,
+  'LIVE' | 'SCHEDULED' | 'ENDED'
+>;
 
-const publicListingPriority: Record<PublicListingStatus, number> = {
+const publicListingPriority: Partial<Record<Prisma.ListingStatus, number>> = {
   LIVE: 0,
   SCHEDULED: 1,
   ENDED: 2,
 };
 
-export function selectPublicListing<T extends { id: string; status: PublicListingStatus; createdAt: Date }>(
+export function selectPublicListing<T extends { id: string; status: Prisma.ListingStatus; createdAt: Date }>(
   listings: T[],
 ): T | null {
   return [...listings].sort(
     (left, right) =>
-      publicListingPriority[left.status] - publicListingPriority[right.status] ||
+      (publicListingPriority[left.status] ?? Number.MAX_SAFE_INTEGER) -
+        (publicListingPriority[right.status] ?? Number.MAX_SAFE_INTEGER) ||
       right.createdAt.getTime() - left.createdAt.getTime() ||
       right.id.localeCompare(left.id),
   )[0] ?? null;

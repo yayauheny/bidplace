@@ -1,6 +1,6 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-07-30
+Последнее обновление: 2026-07-31
 Статус: Technical baseline is Partial; API and mobile static checks pass, while refreshed browser E2E with the centralized overlay host and seeded demo flow remains Needs verification in the current snapshot. Founder device/visual/accessibility acceptance and the 10-user rehearsal remain pending.
 
 ## Волна 1 — private web session, seed and truthful states — 2026-07-30
