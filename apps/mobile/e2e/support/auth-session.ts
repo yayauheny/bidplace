@@ -7,10 +7,14 @@ export async function authenticatedPage(
   browser: Browser,
   user: E2EUser,
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ baseURL: 'http://localhost:8081' });
+  const context = await browser.newContext({
+    baseURL: 'http://localhost:8081',
+  });
   const login = await context.request.post(`${apiBaseURL}/api/auth/login`, {
+    headers: { 'x-forwarded-for': user.id || user.email },
     data: { email: user.email, password: user.password },
   });
-  if (!login.ok()) throw new Error(`E2E session bootstrap failed: ${login.status()}`);
+  if (!login.ok())
+    throw new Error(`E2E session bootstrap failed: ${login.status()}`);
   return { context, page: await context.newPage() };
 }

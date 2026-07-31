@@ -27,7 +27,6 @@ export function OverlayHost({ children }: { children: ReactNode }) {
     <OverlayContext.Provider value={{ target }}>
       <View style={{ flex: 1, position: 'relative' }}>{children}</View>
       <View
-        ref={setOverlayTarget}
         nativeID="app-overlay-host"
         style={{
           position: 'absolute',
@@ -36,9 +35,14 @@ export function OverlayHost({ children }: { children: ReactNode }) {
           bottom: 0,
           left: 0,
           zIndex: modernTokens.layer.popover,
-          pointerEvents: 'box-none',
+          pointerEvents: 'none',
         }}
-      />
+      >
+        <View
+          ref={setOverlayTarget}
+          style={{ width: 0, height: 0, pointerEvents: 'auto' }}
+        />
+      </View>
     </OverlayContext.Provider>
   );
 }
@@ -72,17 +76,18 @@ export function OverlayPortal({
   }, [anchorRef, target]);
 
   if (Platform.OS !== 'web') return <>{children}</>;
-  if (!target || !rect) return null;
+  const anchorRect = rect ?? anchorRef.current?.getBoundingClientRect() ?? null;
+  if (!target || !anchorRect) return null;
 
   const style =
     placement === 'right-start'
       ? {
-          left: rect ? rect.right + modernTokens.space.x2 : 0,
-          top: rect?.top ?? 0,
+          left: anchorRect.right + modernTokens.space.x2,
+          top: anchorRect.top,
         }
       : {
-          left: rect ? rect.right - 180 : 0,
-          top: rect ? rect.bottom + modernTokens.space.x2 : 0,
+          left: anchorRect.right - 180,
+          top: anchorRect.bottom + modernTokens.space.x2,
         };
 
   return createPortal(

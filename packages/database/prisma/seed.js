@@ -265,7 +265,7 @@ async function main() {
   ]);
 
   await createProductWithImages({
-    publicId: 'seedPending04',
+    publicId: 'seedPend004',
     sellerProfileId: pendingSellerProfile.id,
     categoryId: category.id,
     title: 'Этюд «Тихий свет»',

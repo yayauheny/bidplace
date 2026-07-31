@@ -36,8 +36,8 @@ test('demo seed exposes three public products and real media', async ({
     expect((await imageResponse.body()).byteLength).toBeGreaterThan(0);
   }
 
-  await page.goto('/');
   for (const item of seededProducts) {
+    await page.goto('/');
     await expect(page.getByText(item.product.title)).toBeVisible();
     const image = page
       .locator(`img[alt="Изображение предмета: ${item.product.title}"]`)
@@ -82,7 +82,7 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     await expect(
       page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
     ).toBeVisible();
-    await expect(page.getByText(/75,00\s*BYN/)).toBeVisible();
+    await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
     await page.getByRole('tab', { name: 'Ставки' }).click();
