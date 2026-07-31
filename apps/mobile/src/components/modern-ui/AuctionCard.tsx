@@ -24,7 +24,10 @@ function listingLabel(item: AuctionCardItem): string {
 
 function deadlineLabel(item: AuctionCardItem): string {
   if (!item.listing) return 'Листинг готовится';
-  return new Intl.DateTimeFormat('ru-BY', { day: 'numeric', month: 'short' }).format(new Date(item.listing.endsAt));
+  return new Intl.DateTimeFormat('ru-BY', {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(item.listing.endsAt));
 }
 
 function publishedLabel(item: AuctionCardItem): string | null {
@@ -40,27 +43,61 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
   const firstImage = product.images[0];
   const price = listing ? `${listing.currentPrice} BYN` : 'Цена появится позже';
+  const description =
+    product.story?.replace(/\s+/g, ' ').trim() ||
+    'Авторский предмет с историей и происхождением.';
   const label = `${product.title ?? 'Предмет'} — ${sellerProfile.fullName}. ${price}. ${listingLabel(item)} до ${deadlineLabel(item)}`;
 
   return (
     <Link href={`/product/${product.publicId}`} asChild>
-      <MotionPressable accessibilityRole="link" accessibilityLabel={label} preset="card" style={{ gap: modernTokens.space.x3 }}>
+      <MotionPressable
+        accessibilityRole="link"
+        accessibilityLabel={label}
+        preset="card"
+        style={{ gap: modernTokens.space.x3 }}
+      >
         {firstImage ? (
-          <AuctionCardImage imageId={firstImage.id} imageUrl={firstImage.url} label={product.title ?? 'Предмет'} productId={product.id} />
+          <AuctionCardImage
+            imageId={firstImage.id}
+            imageUrl={firstImage.url}
+            label={product.title ?? 'Предмет'}
+            productId={product.id}
+          />
         ) : (
-          <ImagePlaceholder label={`Нет изображения: ${product.title ?? 'предмет'}`} style={{ width: '100%' }} />
+          <ImagePlaceholder
+            label={`Нет изображения: ${product.title ?? 'предмет'}`}
+            style={{ width: '100%' }}
+          />
         )}
         <View style={{ gap: modernTokens.space.x1 }}>
-          <AppText role="metadata" tone="secondary" numberOfLines={1}>{sellerProfile.fullName}</AppText>
-          <AppText role="cardTitle" numberOfLines={2}>{product.title ?? 'Предмет'}</AppText>
+          <AppText role="metadata" tone="secondary" numberOfLines={1}>
+            {sellerProfile.fullName}
+          </AppText>
+          <AppText role="cardTitle" numberOfLines={2}>
+            {product.title ?? 'Предмет'}
+          </AppText>
+          <AppText role="bodySmall" tone="secondary" numberOfLines={2}>
+            {description}
+          </AppText>
           {publishedLabel(item) ? (
             <AppText role="caption" tone="secondary">
               Размещено {publishedLabel(item)}
             </AppText>
           ) : null}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: modernTokens.space.x2 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              gap: modernTokens.space.x2,
+            }}
+          >
             <AppText role="numeric">{price}</AppText>
-            <AppText role="caption" tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}>{listingLabel(item)} · {deadlineLabel(item)}</AppText>
+            <AppText
+              role="caption"
+              tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
+            >
+              {listingLabel(item)} · {deadlineLabel(item)}
+            </AppText>
           </View>
         </View>
       </MotionPressable>
@@ -68,22 +105,42 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
   );
 }
 
-function AuctionCardImage({ imageId, imageUrl, label, productId }: { imageId: string; imageUrl: string; label: string; productId: string }) {
+function AuctionCardImage({
+  imageId,
+  imageUrl,
+  label,
+  productId,
+}: {
+  imageId: string;
+  imageUrl: string;
+  label: string;
+  productId: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
-    return <ImagePlaceholder label={`Изображение недоступно: ${label}`} style={{ width: '100%' }} />;
+    return (
+      <ImagePlaceholder
+        label={`Изображение недоступно: ${label}`}
+        style={{ width: '100%' }}
+      />
+    );
   }
 
   return (
     <Image
       source={{ uri: getApiAssetUrl(imageUrl) }}
-      contentFit="cover"
+      contentFit="contain"
       transition={modernTokens.motion.fast}
       recyclingKey={`${productId}-${imageId}`}
       accessibilityLabel={`Изображение предмета: ${label}`}
       onError={() => setFailed(true)}
-      style={{ width: '100%', aspectRatio: 4 / 5, borderRadius: modernTokens.radius.image, backgroundColor: modernTokens.color.placeholder }}
+      style={{
+        width: '100%',
+        aspectRatio: 4 / 5,
+        borderRadius: modernTokens.radius.image,
+        backgroundColor: modernTokens.color.placeholder,
+      }}
     />
   );
 }

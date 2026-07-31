@@ -238,7 +238,9 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
-              disabled={seller.status === 'SUSPENDED' || seller.hasBlockingListing}
+              disabled={
+                seller.status === 'SUSPENDED' || seller.hasBlockingListing
+              }
               label="Приостановить"
               loading={sellerStatus.isPending}
               onPress={() =>
@@ -247,7 +249,8 @@ export function AdminModerationScreen() {
             />
             {seller.hasBlockingListing ? (
               <AppText role="bodySmall" tone="secondary">
-                Запланированный или активный лот: приостановка продавца недоступна до завершения торгов.
+                Запланированный или активный лот: приостановка продавца
+                недоступна до завершения торгов.
               </AppText>
             ) : null}
           </ModerationCard>
@@ -274,16 +277,22 @@ export function AdminModerationScreen() {
             {product.images[0] ? (
               <Image
                 source={{ uri: getApiAssetUrl(product.images[0].url) }}
-                contentFit="cover"
+                contentFit="contain"
                 accessibilityLabel={`Предмет: ${product.title ?? 'Без названия'}`}
-                style={{ width: 96, height: 96, borderRadius: modernTokens.radius.image }}
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: modernTokens.radius.image,
+                }}
               />
             ) : null}
             <Link
-              href={{
-                pathname: '/seller/[slug]',
-                params: { slug: product.sellerProfile.slug },
-              } as Href}
+              href={
+                {
+                  pathname: '/seller/[slug]',
+                  params: { slug: product.sellerProfile.slug },
+                } as Href
+              }
               asChild
             >
               <SecondaryButton
@@ -292,7 +301,8 @@ export function AdminModerationScreen() {
               />
             </Link>
             <AppText role="bodySmall" tone="secondary">
-              {product.city ?? 'Город не указан'} · {product.story ?? 'Описание не указано'}
+              {product.city ?? 'Город не указан'} ·{' '}
+              {product.story ?? 'Описание не указано'}
             </AppText>
             {product.lastModerationReason ? (
               <AppText role="bodySmall" tone="secondary">
@@ -301,7 +311,8 @@ export function AdminModerationScreen() {
             ) : null}
             {product.hasBlockingListing ? (
               <AppText role="bodySmall" tone="secondary">
-                Запланированный или активный лот: обычное снятие с публикации недоступно.
+                Запланированный или активный лот: обычное снятие с публикации
+                недоступно.
               </AppText>
             ) : null}
             {product.status === 'PENDING_REVIEW' ? (
@@ -426,7 +437,9 @@ export function AdminModerationScreen() {
               required
               multiline
               placeholder="Укажите причину действия"
-              error={!moderationReason.trim() ? 'Причина обязательна' : undefined}
+              error={
+                !moderationReason.trim() ? 'Причина обязательна' : undefined
+              }
             />
           ) : null}
           <DestructiveButton

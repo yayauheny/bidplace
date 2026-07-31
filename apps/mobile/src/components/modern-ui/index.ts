@@ -4,7 +4,6 @@ export * from './AppText';
 export * from './AuctionPanel';
 export * from './AuctionCard';
 export * from './Button';
-export * from './ContentTabs';
 export * from './FormSection';
 export * from './PageHeader';
 export * from './PageState';

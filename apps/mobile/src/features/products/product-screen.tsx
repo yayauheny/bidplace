@@ -12,7 +12,6 @@ import {
   AppText,
   AuctionPanel,
   BottomActionBar,
-  ContentTabs,
   PageState,
   PrimaryButton,
   ProductGallery,
@@ -191,7 +190,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     null,
   );
   const [now, setNow] = useState(Date.now());
-  const [activeTab, setActiveTab] = useState('about');
 
   const query = useQuery({
     queryKey: ['products', publicId],
@@ -265,7 +263,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     product.technique ? { label: 'Техника', value: product.technique } : null,
     product.materials ? { label: 'Материал', value: product.materials } : null,
     product.dimensions ? { label: 'Размеры', value: product.dimensions } : null,
-    product.year ? { label: 'Год создания', value: String(product.year) } : null,
+    product.year
+      ? { label: 'Год создания', value: String(product.year) }
+      : null,
     product.condition ? { label: 'Состояние', value: product.condition } : null,
     product.uniqueness
       ? { label: 'Уникальность', value: product.uniqueness }
@@ -361,7 +361,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
     >
-      {isDesktop ? bidForm ?? adminBidNotice : adminBidNotice}
+      {isDesktop ? (bidForm ?? adminBidNotice) : adminBidNotice}
     </AuctionPanel>
   ) : (
     <SurfacePanel>
@@ -370,117 +370,119 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       </AppText>
     </SurfacePanel>
   );
-  const tabContent =
-    activeTab === 'about' ? (
-      <SurfacePanel eyebrow="О предмете">
+  const itemStory = (
+    <SurfacePanel eyebrow="О предмете">
+      <View style={{ gap: modernTokens.space.x3 }}>
+        {product.story ? <AppText role="body">{product.story}</AppText> : null}
+        {product.provenance ? (
+          <>
+            <Separator />
+            <View style={{ gap: modernTokens.space.x1 }}>
+              <AppText role="label">Происхождение</AppText>
+              <AppText role="bodySmall" tone="secondary">
+                {product.provenance}
+              </AppText>
+            </View>
+          </>
+        ) : null}
+        {detailItems.map((item) => (
+          <View
+            key={item.label}
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              gap: modernTokens.space.x4,
+            }}
+          >
+            <AppText role="bodySmall" tone="secondary">
+              {item.label}
+            </AppText>
+            <AppText
+              role="bodySmall"
+              style={{ flexShrink: 1, textAlign: 'right' }}
+            >
+              {item.value}
+            </AppText>
+          </View>
+        ))}
+        {!product.story && !product.provenance && detailItems.length === 0 ? (
+          <AppText role="bodySmall" tone="secondary">
+            Описание предмета появится здесь.
+          </AppText>
+        ) : null}
+      </View>
+    </SurfacePanel>
+  );
+  const bidHistory = (
+    <SurfacePanel eyebrow="История ставок">
+      {bids.isLoading ? (
+        <AppText role="bodySmall" tone="secondary">
+          Загружаем историю ставок…
+        </AppText>
+      ) : bids.isError ? (
         <View style={{ gap: modernTokens.space.x3 }}>
-          {product.story ? (
-            <AppText role="body">{product.story}</AppText>
-          ) : null}
-          {product.provenance ? (
-            <>
-              <Separator />
-              <View style={{ gap: modernTokens.space.x1 }}>
-                <AppText role="label">Происхождение</AppText>
-                <AppText role="bodySmall" tone="secondary">
-                  {product.provenance}
-                </AppText>
-              </View>
-            </>
-          ) : null}
-          {detailItems.map((item) => (
+          <AppText role="bodySmall" tone="secondary">
+            Не удалось загрузить историю ставок.
+          </AppText>
+          <SecondaryButton
+            label="Повторить"
+            onPress={() => void bids.refetch()}
+          />
+        </View>
+      ) : bids.data?.bids?.length ? (
+        <View style={{ gap: modernTokens.space.x3 }}>
+          {bids.data.bids.map((item: BidItem) => (
             <View
-              key={item.label}
+              key={item.id}
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                gap: modernTokens.space.x4,
+                alignItems: 'center',
+                gap: modernTokens.space.x3,
               }}
             >
               <AppText role="bodySmall" tone="secondary">
-                {item.label}
+                {item.bidderAlias}
               </AppText>
-              <AppText
-                role="bodySmall"
-                style={{ flexShrink: 1, textAlign: 'right' }}
-              >
-                {item.value}
+              <AppText role="numeric">
+                {formatCurrencyAmount(item.amount)}
               </AppText>
             </View>
           ))}
-          {!product.story && !product.provenance && detailItems.length === 0 ? (
-            <AppText role="bodySmall" tone="secondary">
-              Описание предмета появится здесь.
-            </AppText>
-          ) : null}
         </View>
-      </SurfacePanel>
-    ) : activeTab === 'bids' ? (
-      <SurfacePanel eyebrow="История ставок">
-        {bids.isLoading ? (
+      ) : (
+        <AppText role="bodySmall" tone="secondary">
+          Ставок ещё нет.
+        </AppText>
+      )}
+    </SurfacePanel>
+  );
+  const itemHistory = (
+    <SurfacePanel eyebrow="История предмета">
+      <View style={{ gap: modernTokens.space.x3 }}>
+        <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
+        {product.year ? (
           <AppText role="bodySmall" tone="secondary">
-            Загружаем историю ставок…
+            Год создания: {product.year}
           </AppText>
-        ) : bids.isError ? (
-          <View style={{ gap: modernTokens.space.x3 }}>
-            <AppText role="bodySmall" tone="secondary">
-              Не удалось загрузить историю ставок.
-            </AppText>
-            <SecondaryButton label="Повторить" onPress={() => void bids.refetch()} />
-          </View>
-        ) : bids.data?.bids?.length ? (
-          <View style={{ gap: modernTokens.space.x3 }}>
-            {bids.data.bids.map((item: BidItem) => (
-              <View
-                key={item.id}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: modernTokens.space.x3,
-                }}
-              >
-                <AppText role="bodySmall" tone="secondary">
-                  {item.bidderAlias}
-                </AppText>
-                <AppText role="numeric">
-                  {formatCurrencyAmount(item.amount)}
-                </AppText>
-              </View>
-            ))}
-          </View>
+        ) : null}
+        {product.publishedAt ? (
+          <AppText role="bodySmall" tone="secondary">
+            Размещено на bidplace: {formatDateTime(product.publishedAt)}
+          </AppText>
+        ) : null}
+        {listing ? (
+          <AppText role="bodySmall" tone="secondary">
+            Состояние торгов: {listingStatusLabel(listing.status)}
+          </AppText>
         ) : (
           <AppText role="bodySmall" tone="secondary">
-            Ставок ещё нет.
+            Размещение готовится.
           </AppText>
         )}
-      </SurfacePanel>
-    ) : (
-      <SurfacePanel eyebrow="История предмета">
-        <View style={{ gap: modernTokens.space.x3 }}>
-          <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
-          {product.year ? (
-            <AppText role="bodySmall" tone="secondary">
-              Год создания: {product.year}
-            </AppText>
-          ) : null}
-          {product.publishedAt ? (
-            <AppText role="bodySmall" tone="secondary">
-              Размещено на bidplace: {formatDateTime(product.publishedAt)}
-            </AppText>
-          ) : null}
-          {listing ? (
-            <AppText role="bodySmall" tone="secondary">
-              Состояние торгов: {listingStatusLabel(listing.status)}
-            </AppText>
-          ) : (
-            <AppText role="bodySmall" tone="secondary">
-              Размещение готовится.
-            </AppText>
-          )}
-        </View>
-      </SurfacePanel>
-    );
+      </View>
+    </SurfacePanel>
+  );
 
   return (
     <ProductShell
@@ -535,22 +537,34 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           >
             <View
               style={{
-                flex: 1,
+                flex: isDesktop ? 1 : undefined,
                 minWidth: 0,
                 width: isDesktop ? undefined : '100%',
-                gap: modernTokens.space.x6,
+                gap: modernTokens.space.x4,
               }}
             >
               <ProductGallery
                 images={product.images}
                 label={product.title ?? 'Предмет'}
               />
+            </View>
+            <View
+              style={{
+                flex: isDesktop ? 1 : undefined,
+                minWidth: 0,
+                width: isDesktop ? 360 : '100%',
+                maxWidth: '100%',
+                gap: modernTokens.space.x4,
+              }}
+            >
               <View style={{ gap: modernTokens.space.x2 }}>
                 <Link
-                  href={{
-                    pathname: '/seller/[slug]',
-                    params: { slug: sellerProfile.slug },
-                  } as Href}
+                  href={
+                    {
+                      pathname: '/seller/[slug]',
+                      params: { slug: sellerProfile.slug },
+                    } as Href
+                  }
                   asChild
                 >
                   <MotionPressable
@@ -567,6 +581,11 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 <AppText role="screenTitle">
                   {product.title ?? 'Предмет'}
                 </AppText>
+                {product.story ? (
+                  <AppText role="bodySmall" tone="secondary" numberOfLines={3}>
+                    {product.story}
+                  </AppText>
+                ) : null}
                 {product.publishedAt ? (
                   <AppText role="caption" tone="secondary">
                     Размещено на bidplace: {formatDateTime(product.publishedAt)}
@@ -574,44 +593,36 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 ) : null}
               </View>
               {!isDesktop ? auctionPanel : null}
-              <View style={{ gap: modernTokens.space.x3 }}>
-                <ContentTabs
-                  tabs={[
-                    { id: 'about', label: 'О предмете' },
-                    { id: 'bids', label: 'Ставки' },
-                    { id: 'history', label: 'История предмета' },
-                  ]}
-                  activeId={activeTab}
-                  onChange={setActiveTab}
-                />
-                {tabContent}
-              </View>
-              {participation?.orderPublicId ? (
-                <Link
-                  href={{
-                    pathname: '/order/[publicId]',
-                    params: { publicId: participation.orderPublicId },
-                  }}
-                  asChild
+              {isDesktop ? (
+                <View
+                  style={
+                    Platform.OS === 'web'
+                      ? { position: 'sticky', top: modernTokens.space.x6 }
+                      : undefined
+                  }
                 >
-                  <SecondaryButton
-                    label="Открыть результат заказа"
-                    onPress={() => undefined}
-                  />
-                </Link>
+                  {auctionPanel}
+                </View>
               ) : null}
             </View>
-            {isDesktop ? (
-              <View
-                style={[
-                  { width: 360, maxWidth: '100%' },
-                  Platform.OS === 'web'
-                    ? { position: 'sticky', top: modernTokens.space.x6 }
-                    : null,
-                ]}
+          </View>
+          <View style={{ gap: modernTokens.space.x4 }}>
+            {itemStory}
+            {itemHistory}
+            {bidHistory}
+            {participation?.orderPublicId ? (
+              <Link
+                href={{
+                  pathname: '/order/[publicId]',
+                  params: { publicId: participation.orderPublicId },
+                }}
+                asChild
               >
-                {auctionPanel}
-              </View>
+                <SecondaryButton
+                  label="Открыть результат заказа"
+                  onPress={() => undefined}
+                />
+              </Link>
             ) : null}
           </View>
         </View>

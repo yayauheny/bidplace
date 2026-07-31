@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { ScrollView, useWindowDimensions, View, type DimensionValue } from 'react-native';
+import {
+  ScrollView,
+  useWindowDimensions,
+  View,
+  type DimensionValue,
+} from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
@@ -8,7 +13,6 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AuctionCard,
   AppText,
-  PageHeader,
   PageState,
   Skeleton,
 } from '../../components/modern-ui';
@@ -16,9 +20,18 @@ import { useApiClient } from '../../providers/api-provider';
 
 function CatalogLoading() {
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: modernTokens.space.x4 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: modernTokens.space.x4,
+      }}
+    >
       {[0, 1, 2, 3].map((key) => (
-        <View key={key} style={{ flex: 1, minWidth: 220, gap: modernTokens.space.x2 }}>
+        <View
+          key={key}
+          style={{ flex: 1, minWidth: 220, gap: modernTokens.space.x2 }}
+        >
           <Skeleton style={{ aspectRatio: 4 / 5 }} />
           <Skeleton style={{ width: '70%', height: 16 }} />
           <Skeleton style={{ width: '45%', height: 14 }} />
@@ -31,7 +44,10 @@ function CatalogLoading() {
 export function ProductListScreen() {
   const api = useApiClient();
   const { width } = useWindowDimensions();
-  const query = useQuery({ queryKey: ['products'], queryFn: () => api.products.list() });
+  const query = useQuery({
+    queryKey: ['products'],
+    queryFn: () => api.products.list(),
+  });
   const columns = width >= 1440 ? 4 : width >= 1025 ? 3 : 2;
   const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 
@@ -55,9 +71,18 @@ export function ProductListScreen() {
     );
   } else {
     content = (
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', margin: -modernTokens.space.x2 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          margin: -modernTokens.space.x2,
+        }}
+      >
         {query.data.products.map((item) => (
-          <View key={item.product.id} style={{ width: cardWidth, padding: modernTokens.space.x2 }}>
+          <View
+            key={item.product.id}
+            style={{ width: cardWidth, padding: modernTokens.space.x2 }}
+          >
             <AuctionCard item={item} />
           </View>
         ))}
@@ -70,21 +95,20 @@ export function ProductListScreen() {
       <ScrollView
         contentContainerStyle={{
           width: '100%',
-          maxWidth: 1440,
-          alignSelf: 'center',
-          paddingHorizontal: width >= 768 ? modernTokens.space.x8 : modernTokens.space.x5,
-          paddingVertical: modernTokens.space.x8,
-          gap: modernTokens.space.x8,
+          paddingHorizontal:
+            width >= 768 ? modernTokens.space.x6 : modernTokens.space.x5,
+          paddingVertical: modernTokens.space.x6,
+          gap: modernTokens.space.x6,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <PageHeader
-          title="Каталог"
-          description={query.data ? `${query.data.pagination.total} предметов` : 'Авторские предметы'}
-        />
         {content}
         {query.isFetching && !query.isLoading ? (
-          <AppText role="caption" tone="secondary" accessibilityLiveRegion="polite">
+          <AppText
+            role="caption"
+            tone="secondary"
+            accessibilityLiveRegion="polite"
+          >
             Обновляем каталог…
           </AppText>
         ) : null}

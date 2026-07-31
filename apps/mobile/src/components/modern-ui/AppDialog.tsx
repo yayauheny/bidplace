@@ -43,6 +43,8 @@ export function AppDialog({
             left: modernTokens.space.x5,
             right: modernTokens.space.x5,
             top: '30%',
+            maxWidth: 520,
+            alignSelf: 'center',
             gap: modernTokens.space.x4,
             borderRadius: modernTokens.radius.panel,
             backgroundColor: modernTokens.color.surface,

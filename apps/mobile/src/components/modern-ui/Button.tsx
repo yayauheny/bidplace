@@ -5,6 +5,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 import { AppIcon, type AppIconName } from './AppIcon';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
+import { buttonLayoutStyle, type ButtonWidth } from './button-layout';
 
 type ButtonProps = {
   label: string;
@@ -13,6 +14,7 @@ type ButtonProps = {
   loading?: boolean;
   icon?: AppIconName;
   accessibilityHint?: string;
+  width?: ButtonWidth;
 };
 
 function ButtonContent({
@@ -49,6 +51,7 @@ function ButtonBase({
   loading,
   icon,
   accessibilityHint,
+  width = 'content',
   style,
   textColor,
 }: ButtonProps & { style: ViewStyle; textColor: string }) {
@@ -66,7 +69,7 @@ function ButtonBase({
         {
           minHeight: modernTokens.size.button,
           justifyContent: 'center',
-          paddingHorizontal: modernTokens.space.x5,
+          ...buttonLayoutStyle(width),
         },
         style,
       ]}
