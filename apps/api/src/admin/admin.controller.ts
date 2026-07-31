@@ -35,6 +35,7 @@ const adminProductSelect = {
   ...productSelect,
   sellerProfile: { select: { slug: true, fullName: true } },
   listings: {
+    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
     select: { status: true },
     orderBy: { createdAt: 'desc' },
     take: 1,
@@ -61,7 +62,9 @@ export class AdminController {
       this.prisma.sellerProfile.findMany({
         where: {
           id: { in: ids },
-          products: { some: { listings: { some: { status: 'LIVE' } } } },
+          products: {
+            some: { listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } } },
+          },
         },
         select: { id: true },
       }),
@@ -87,7 +90,7 @@ export class AdminController {
       sellerProfiles: sellerProfiles.map((sellerProfile) => ({
         ...toSellerProfileResponse(sellerProfile).sellerProfile,
         lastModerationReason: reasons.get(sellerProfile.id) ?? null,
-        hasLiveListing: liveIds.has(sellerProfile.id),
+        hasBlockingListing: liveIds.has(sellerProfile.id),
       })),
     };
   }
@@ -119,7 +122,7 @@ export class AdminController {
       products: products.map((product) => ({
         ...toContractProduct(product),
         sellerProfile: product.sellerProfile,
-        listingStatus: product.listings[0]?.status ?? null,
+        hasBlockingListing: product.listings.length > 0,
         lastModerationReason: reasons.get(product.id) ?? null,
       })),
     };

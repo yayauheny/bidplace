@@ -238,16 +238,16 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
-              disabled={seller.status === 'SUSPENDED' || seller.hasLiveListing}
+              disabled={seller.status === 'SUSPENDED' || seller.hasBlockingListing}
               label="Приостановить"
               loading={sellerStatus.isPending}
               onPress={() =>
                 openConfirmation({ kind: 'seller-suspend', id: seller.id })
               }
             />
-            {seller.hasLiveListing ? (
+            {seller.hasBlockingListing ? (
               <AppText role="bodySmall" tone="secondary">
-                Активный лот: приостановка продавца недоступна до завершения торгов.
+                Запланированный или активный лот: приостановка продавца недоступна до завершения торгов.
               </AppText>
             ) : null}
           </ModerationCard>
@@ -299,9 +299,9 @@ export function AdminModerationScreen() {
                 Последняя причина: {product.lastModerationReason}
               </AppText>
             ) : null}
-            {product.listingStatus === 'LIVE' ? (
+            {product.hasBlockingListing ? (
               <AppText role="bodySmall" tone="secondary">
-                Активный лот: обычное снятие с публикации недоступно.
+                Запланированный или активный лот: обычное снятие с публикации недоступно.
               </AppText>
             ) : null}
             {product.status === 'PENDING_REVIEW' ? (
@@ -316,7 +316,7 @@ export function AdminModerationScreen() {
             <DestructiveButton
               disabled={
                 !['APPROVED', 'PENDING_REVIEW'].includes(product.status) ||
-                product.listingStatus === 'LIVE'
+                product.hasBlockingListing
               }
               label="Запросить изменения"
               loading={productStatus.isPending}

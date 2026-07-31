@@ -33,22 +33,26 @@ export class AdminModerationService {
       }
 
       if (!this.isAllowedSellerTransition(sellerProfile.status, input.status)) {
-        this.logger.warn('Blocked seller status transition');
+        this.logger.warn(
+          `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status}`,
+        );
         throw new ConflictException('Seller profile transition is not allowed');
       }
 
       if (input.status === 'SUSPENDED') {
-        const liveListing = await tx.listing.findFirst({
+        const blockingListing = await tx.listing.findFirst({
           where: {
-            status: 'LIVE',
+            status: { in: ['SCHEDULED', 'LIVE'] },
             product: { sellerProfileId: sellerProfile.id },
           },
           select: { id: true },
         });
-        if (liveListing) {
-          this.logger.warn('Blocked seller suspension because a live listing is active');
+        if (blockingListing) {
+          this.logger.warn(
+            `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
+          );
           throw new ConflictException(
-            'Seller cannot be suspended while a live listing is active',
+            'Seller cannot be suspended while a scheduled or live listing exists',
           );
         }
       }
@@ -89,7 +93,7 @@ export class AdminModerationService {
           sellerProfile: true,
           images: { select: { id: true } },
           listings: {
-            where: { status: 'LIVE' },
+            where: { status: { in: ['SCHEDULED', 'LIVE'] } },
             select: { id: true },
           },
         },
@@ -101,14 +105,21 @@ export class AdminModerationService {
       }
 
       if (!this.isAllowedProductTransition(product.status, input.status)) {
-        this.logger.warn('Blocked product status transition');
+        this.logger.warn(
+          `Blocked product status transition target=${product.id} from=${product.status} to=${input.status}`,
+        );
         throw new ConflictException('Product transition is not allowed');
       }
 
-      if (input.status === 'CHANGES_REQUESTED' && product.listings.length > 0) {
-        this.logger.warn('Blocked product changes request because its listing is live');
+      if (
+        ['CHANGES_REQUESTED', 'ARCHIVED'].includes(input.status) &&
+        product.listings.length > 0
+      ) {
+        this.logger.warn(
+          `Blocked product status transition target=${product.id} from=${product.status} to=${input.status} because a scheduled or live listing exists`,
+        );
         throw new ConflictException(
-          'Product cannot be changed while its listing is live',
+          'Product cannot be changed while a scheduled or live listing exists',
         );
       }
 

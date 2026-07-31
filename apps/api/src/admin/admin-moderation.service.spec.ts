@@ -49,7 +49,7 @@ describe('AdminModerationService', () => {
     );
   });
 
-  it('blocks a limiting product action while its listing is LIVE', async () => {
+  it('blocks a limiting product action while its listing is scheduled or LIVE', async () => {
     const tx = {
       product: {
         findUnique: vi.fn().mockResolvedValue({
@@ -57,7 +57,7 @@ describe('AdminModerationService', () => {
           status: 'APPROVED',
           sellerProfile: { status: 'APPROVED' },
           images: [{ id: 'image-id' }],
-          listings: [{ id: 'listing-id' }],
+          listings: [{ id: 'listing-id', status: 'SCHEDULED' }],
         }),
       },
     };
@@ -80,7 +80,7 @@ describe('AdminModerationService', () => {
         }),
       },
       listing: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'listing-id' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
       },
     };
     const service = new AdminModerationService(transactionPrisma(tx) as never);

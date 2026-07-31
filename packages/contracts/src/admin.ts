@@ -4,7 +4,6 @@ import { bidSchema } from './bid';
 import {
   orderCancellationReasonSchema,
   productStatusSchema,
-  listingStatusSchema,
   sellerStatusSchema,
 } from './enums';
 import { uuidSchema } from './primitives';
@@ -79,7 +78,7 @@ export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminSellerProfileSchema = sellerProfileSchema
   .extend({
     lastModerationReason: z.string().nullable(),
-    hasLiveListing: z.boolean(),
+    hasBlockingListing: z.boolean(),
   })
   .strict();
 export const adminSellerProfilesResponseSchema = z
@@ -91,7 +90,7 @@ export const adminProductSchema = productSchema
       slug: z.string().min(1),
       fullName: z.string().min(1),
     }).strict(),
-    listingStatus: listingStatusSchema.nullable(),
+    hasBlockingListing: z.boolean(),
     lastModerationReason: z.string().nullable(),
   })
   .strict();

@@ -85,7 +85,13 @@ export class BidsService {
         throw new ForbiddenException('Cannot bid on your own Listing');
       }
 
-      if (listing.status !== 'LIVE' || listing.startsAt > now || listing.endsAt <= now) {
+      if (
+        listing.status !== 'LIVE' ||
+        listing.product.status !== 'APPROVED' ||
+        listing.product.sellerProfile.status !== 'APPROVED' ||
+        listing.startsAt > now ||
+        listing.endsAt <= now
+      ) {
         throw new ConflictException('Listing is not open for bids');
       }
 

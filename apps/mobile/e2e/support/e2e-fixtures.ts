@@ -20,6 +20,7 @@ export type AdminModerationFixture = {
 };
 export type AuctionFixture = {
   seller: E2EUser;
+  sellerProfileId: string;
   buyerA: E2EUser;
   buyerB: E2EUser;
   product: { id: string; publicId: string; title: string };
@@ -62,7 +63,9 @@ export async function createAuctionFixture(options?: {
     datasources: { db: { url: databaseUrl } },
   });
   const now = new Date();
-  const startsAt = new Date(now.getTime() - 5_000);
+  const startsAt = new Date(
+    now.getTime() + (options?.live === false ? 30_000 : -5_000),
+  );
   const endsAt = new Date(now.getTime() + 300_000);
   const seller = await createUser(
     prisma,
@@ -173,6 +176,7 @@ export async function createAuctionFixture(options?: {
   await prisma.$disconnect();
   return {
     seller,
+    sellerProfileId: sellerProfile.id,
     buyerA,
     buyerB,
     product: { id: product.id, publicId: product.publicId, title },

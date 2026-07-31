@@ -24,13 +24,24 @@ export class ListingLifecycleService {
         status: 'SCHEDULED',
         startsAt: { lte: now },
         endsAt: { gt: now },
+        product: {
+          status: 'APPROVED',
+          sellerProfile: { status: 'APPROVED' },
+        },
       },
       select: { id: true, currentPrice: true, bidCount: true, endsAt: true },
     });
 
     for (const listing of scheduled) {
       const activated = await this.prisma.listing.updateMany({
-        where: { id: listing.id, status: 'SCHEDULED' },
+        where: {
+          id: listing.id,
+          status: 'SCHEDULED',
+          product: {
+            status: 'APPROVED',
+            sellerProfile: { status: 'APPROVED' },
+          },
+        },
         data: { status: 'LIVE' },
       });
 
