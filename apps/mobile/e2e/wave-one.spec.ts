@@ -133,6 +133,40 @@ test('admin reviews and approves pending seller and product', async ({
         )?.status;
       })
       .toBe('APPROVED');
+
+    const sellerCard = page.getByText(fixture.sellerName).locator('..');
+    await sellerCard.getByRole('button', { name: 'Приостановить' }).click();
+    await page.getByRole('textbox', { name: 'Причина' }).fill('Проверка профиля');
+    await page.getByRole('button', { name: 'Приостановить' }).last().click();
+    await expect
+      .poll(async () => {
+        const response = await context.request.get(
+          `${apiBaseURL}/api/admin/seller-profiles`,
+        );
+        const payload = await response.json();
+        return payload.sellerProfiles.find(
+          (seller: { id: string }) => seller.id === fixture.sellerProfileId,
+        )?.status;
+      })
+      .toBe('SUSPENDED');
+
+    const productCard = page.getByText(fixture.productTitle).locator('..');
+    await productCard
+      .getByRole('button', { name: 'Запросить изменения' })
+      .click();
+    await page.getByRole('textbox', { name: 'Причина' }).fill('Добавьте историю предмета');
+    await page.getByRole('button', { name: 'Запросить изменения' }).last().click();
+    await expect
+      .poll(async () => {
+        const response = await context.request.get(
+          `${apiBaseURL}/api/admin/products`,
+        );
+        const payload = await response.json();
+        return payload.products.find(
+          (product: { id: string }) => product.id === fixture.productId,
+        )?.status;
+      })
+      .toBe('CHANGES_REQUESTED');
   } finally {
     await context.close();
   }

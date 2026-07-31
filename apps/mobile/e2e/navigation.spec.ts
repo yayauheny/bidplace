@@ -127,3 +127,23 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await context.close();
   }
 });
+
+test('product author link opens the public seller profile', async ({ browser }) => {
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.buyerA);
+
+  try {
+    const detailResponse = await context.request.get(
+      `http://localhost:3001/api/products/${fixture.product.publicId}`,
+    );
+    const detail = await detailResponse.json();
+    const seller = detail.sellerProfile as { slug: string; fullName: string };
+    await page.goto(`/product/${fixture.product.publicId}`);
+    await page.getByRole('link', { name: new RegExp(`Открыть профиль автора ${seller.fullName}`) }).click();
+    await expect(page).toHaveURL(new RegExp(`/seller/${seller.slug}$`));
+    await expect(page.getByRole('heading', { name: seller.fullName })).toBeVisible();
+    await expect(page.getByText(fixture.product.title)).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});

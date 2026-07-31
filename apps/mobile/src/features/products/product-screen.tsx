@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
@@ -19,6 +19,7 @@ import {
   SecondaryButton,
   Separator,
   TextField,
+  MotionPressable,
 } from '../../components/modern-ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
@@ -545,9 +546,24 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 label={product.title ?? 'Предмет'}
               />
               <View style={{ gap: modernTokens.space.x2 }}>
-                <AppText role="metadata" tone="secondary">
-                  Автор: {sellerProfile.fullName}
-                </AppText>
+                <Link
+                  href={{
+                    pathname: '/seller/[slug]',
+                    params: { slug: sellerProfile.slug },
+                  } as Href}
+                  asChild
+                >
+                  <MotionPressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Открыть профиль автора ${sellerProfile.fullName}`}
+                    onPress={() => undefined}
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    <AppText role="metadata" tone="secondary">
+                      Автор: {sellerProfile.fullName}
+                    </AppText>
+                  </MotionPressable>
+                </Link>
                 <AppText role="screenTitle">
                   {product.title ?? 'Предмет'}
                 </AppText>
@@ -580,14 +596,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 >
                   <SecondaryButton
                     label="Открыть результат заказа"
-                    onPress={() => undefined}
-                  />
-                </Link>
-              ) : null}
-              {listing?.status === 'ENDED' && !participation?.orderPublicId ? (
-                <Link href="/me/activity" asChild>
-                  <SecondaryButton
-                    label="Проверить результат в «Моих покупках»"
                     onPress={() => undefined}
                   />
                 </Link>

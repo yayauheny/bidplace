@@ -31,6 +31,7 @@ export function selectPublicListing<T extends { id: string; status: ListingStatu
 
 export const publicCatalogProductWhere = {
   status: 'APPROVED',
+  sellerProfile: { status: 'APPROVED' },
   listings: {
     some: {
       status: {
@@ -42,6 +43,7 @@ export const publicCatalogProductWhere = {
 
 export const publicDirectProductWhere = {
   status: 'APPROVED',
+  sellerProfile: { status: 'APPROVED' },
   listings: {
     some: {
       status: {

@@ -29,6 +29,9 @@ const product = {
 
 describe('ProductsService', () => {
   it('keeps ended listings in the public catalog predicate', () => {
+    expect(publicCatalogProductWhere.sellerProfile).toEqual({
+      status: 'APPROVED',
+    });
     expect(publicCatalogProductWhere.listings?.some?.status).toEqual({
       in: ['LIVE', 'SCHEDULED', 'ENDED'],
     });

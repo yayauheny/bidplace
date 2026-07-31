@@ -13,6 +13,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { type Prisma } from '@bidplace/database';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { PrismaService } from '../core/database';
@@ -30,6 +31,16 @@ import {
 import { AdminGuard } from './admin.guard';
 import { AdminModerationService } from './admin-moderation.service';
 
+const adminProductSelect = {
+  ...productSelect,
+  sellerProfile: { select: { slug: true, fullName: true } },
+  listings: {
+    select: { status: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
+} satisfies Prisma.ProductSelect;
+
 @Controller('admin')
 @UseGuards(BearerAuthGuard, AdminGuard)
 export class AdminController {
@@ -45,22 +56,73 @@ export class AdminController {
       select: sellerProfileResponseSelect,
       orderBy: { createdAt: 'asc' },
     });
+    const ids = sellerProfiles.map(({ id }) => id);
+    const [liveSellerIds, auditEvents] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where: {
+          id: { in: ids },
+          products: { some: { listings: { some: { status: 'LIVE' } } } },
+        },
+        select: { id: true },
+      }),
+      this.prisma.auditEvent.findMany({
+        where: {
+          targetType: 'SELLER_PROFILE',
+          targetId: { in: ids },
+          reason: { not: null },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { targetId: true, reason: true },
+      }),
+    ]);
+    const liveIds = new Set(liveSellerIds.map(({ id }) => id));
+    const reasons = new Map<string, string>();
+    for (const event of auditEvents) {
+      if (event.reason && !reasons.has(event.targetId)) {
+        reasons.set(event.targetId, event.reason);
+      }
+    }
 
     return {
-      sellerProfiles: sellerProfiles.map((sellerProfile) =>
-        toSellerProfileResponse(sellerProfile).sellerProfile,
-      ),
+      sellerProfiles: sellerProfiles.map((sellerProfile) => ({
+        ...toSellerProfileResponse(sellerProfile).sellerProfile,
+        lastModerationReason: reasons.get(sellerProfile.id) ?? null,
+        hasLiveListing: liveIds.has(sellerProfile.id),
+      })),
     };
   }
 
   @Get('products')
   async listProducts() {
     const products = await this.prisma.product.findMany({
-      select: productSelect,
+      select: adminProductSelect,
       orderBy: { createdAt: 'asc' },
     });
+    const ids = products.map(({ id }) => id);
+    const auditEvents = await this.prisma.auditEvent.findMany({
+      where: {
+        targetType: 'PRODUCT',
+        targetId: { in: ids },
+        reason: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { targetId: true, reason: true },
+    });
+    const reasons = new Map<string, string>();
+    for (const event of auditEvents) {
+      if (event.reason && !reasons.has(event.targetId)) {
+        reasons.set(event.targetId, event.reason);
+      }
+    }
 
-    return { products: products.map(toContractProduct) };
+    return {
+      products: products.map((product) => ({
+        ...toContractProduct(product),
+        sellerProfile: product.sellerProfile,
+        listingStatus: product.listings[0]?.status ?? null,
+        lastModerationReason: reasons.get(product.id) ?? null,
+      })),
+    };
   }
 
   @Patch('seller-profiles/:id/status')

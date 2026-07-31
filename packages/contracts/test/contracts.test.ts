@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bidCreateRequestSchema, listingCreateRequestSchema, listingStatusSchema, productWriteRequestSchema, realtimeEventPayloadSchema } from '../src';
+import { adminProductStatusUpdateRequestSchema, adminSellerStatusUpdateRequestSchema, bidCreateRequestSchema, listingCreateRequestSchema, listingStatusSchema, productWriteRequestSchema, realtimeEventPayloadSchema } from '../src';
 
 describe('shared contracts', () => {
   it('accepts a draft Product without art-only fields', () => {
@@ -18,5 +18,10 @@ describe('shared contracts', () => {
   it('exposes listing realtime names without reserve or PII fields', () => {
     expect(realtimeEventPayloadSchema.safeParse({ event: 'listing.updated', payload: { listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', currentPrice: 20, bidCount: 1, status: 'LIVE', endsAt: '2026-07-20T11:00:00.000Z' } }).success).toBe(true);
     expect(listingStatusSchema.safeParse('active').success).toBe(false);
+  });
+  it('requires a reason for limiting admin actions', () => {
+    expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'SUSPENDED' }).success).toBe(false);
+    expect(adminProductStatusUpdateRequestSchema.safeParse({ status: 'CHANGES_REQUESTED' }).success).toBe(false);
+    expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'APPROVED' }).success).toBe(true);
   });
 });

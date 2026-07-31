@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
+import { Image } from 'expo-image';
+import { Link, type Href } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -18,6 +20,7 @@ import {
   TextField,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
+import { getApiAssetUrl } from '../../lib/environment';
 
 type AdminSellersData = Awaited<
   ReturnType<ApiClient['admin']['listSellerProfiles']>
@@ -31,7 +34,7 @@ type AdminProduct = AdminProductsData['products'][number];
 type RankedBid = RankedBidsData['bids'][number];
 type Confirmation =
   | { kind: 'seller-suspend'; id: string }
-  | { kind: 'product-archive'; id: string }
+  | { kind: 'product-changes'; id: string }
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 
@@ -69,6 +72,11 @@ export function AdminModerationScreen() {
     listingId: string;
   } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [moderationReason, setModerationReason] = useState('');
+  const openConfirmation = (next: Confirmation) => {
+    setModerationReason('');
+    setConfirmation(next);
+  };
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: ['admin', 'seller-profiles'],
@@ -79,20 +87,24 @@ export function AdminModerationScreen() {
     mutationFn: ({
       id,
       status,
+      reason,
     }: {
       id: string;
       status: 'APPROVED' | 'SUSPENDED';
-    }) => api.admin.updateSellerStatus(id, { status }),
+      reason?: string;
+    }) => api.admin.updateSellerStatus(id, { status, reason }),
     onSuccess: refresh,
   });
   const productStatus = useMutation({
     mutationFn: ({
       id,
       status,
+      reason,
     }: {
       id: string;
-      status: 'APPROVED' | 'ARCHIVED';
-    }) => api.admin.updateProductStatus(id, { status }),
+      status: 'APPROVED' | 'CHANGES_REQUESTED';
+      reason?: string;
+    }) => api.admin.updateProductStatus(id, { status, reason }),
     onSuccess: refresh,
   });
   const cancelOrder = useMutation({
@@ -148,9 +160,17 @@ export function AdminModerationScreen() {
   const confirm = () => {
     if (!confirmation) return;
     if (confirmation.kind === 'seller-suspend')
-      sellerStatus.mutate({ id: confirmation.id, status: 'SUSPENDED' });
-    if (confirmation.kind === 'product-archive')
-      productStatus.mutate({ id: confirmation.id, status: 'ARCHIVED' });
+      sellerStatus.mutate({
+        id: confirmation.id,
+        status: 'SUSPENDED',
+        reason: moderationReason.trim(),
+      });
+    if (confirmation.kind === 'product-changes')
+      productStatus.mutate({
+        id: confirmation.id,
+        status: 'CHANGES_REQUESTED',
+        reason: moderationReason.trim(),
+      });
     if (confirmation.kind === 'order-cancel') cancelOrder.mutate();
     if (confirmation.kind === 'order-replace')
       replaceOrder.mutate(confirmation.bidId);
@@ -165,10 +185,11 @@ export function AdminModerationScreen() {
         'Продавец потеряет возможность работать с профилем в текущем статусе.',
       label: 'Приостановить',
     },
-    'product-archive': {
-      title: 'Архивировать предмет?',
-      description: 'Предмет будет исключён из дальнейшей работы модерации.',
-      label: 'Архивировать',
+    'product-changes': {
+      title: 'Запросить изменения по предмету?',
+      description:
+        'Предмет будет снят с публикации. Автор сможет внести правки и повторно отправить его на модерацию.',
+      label: 'Запросить изменения',
     },
     'order-cancel': {
       title: 'Отменить Order?',
@@ -196,6 +217,17 @@ export function AdminModerationScreen() {
             title={seller.fullName}
             status={moderationStatusLabel(seller.status)}
           >
+            <AppText role="bodySmall" tone="secondary">
+              {seller.sellerType} · {seller.slug} · {seller.country}
+            </AppText>
+            <AppText role="bodySmall" tone="secondary">
+              {seller.shortDescription}
+            </AppText>
+            {seller.lastModerationReason ? (
+              <AppText role="bodySmall" tone="secondary">
+                Последняя причина: {seller.lastModerationReason}
+              </AppText>
+            ) : null}
             {seller.status === 'PENDING_REVIEW' ? (
               <PrimaryButton
                 label="Одобрить"
@@ -206,13 +238,18 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
-              disabled={seller.status === 'SUSPENDED'}
+              disabled={seller.status === 'SUSPENDED' || seller.hasLiveListing}
               label="Приостановить"
               loading={sellerStatus.isPending}
               onPress={() =>
-                setConfirmation({ kind: 'seller-suspend', id: seller.id })
+                openConfirmation({ kind: 'seller-suspend', id: seller.id })
               }
             />
+            {seller.hasLiveListing ? (
+              <AppText role="bodySmall" tone="secondary">
+                Активный лот: приостановка продавца недоступна до завершения торгов.
+              </AppText>
+            ) : null}
           </ModerationCard>
         ))}
         {sellers.data.sellerProfiles.length === 0 ? (
@@ -222,8 +259,8 @@ export function AdminModerationScreen() {
         ) : null}
         {sellerStatus.isError ? (
           <AppText role="bodySmall" tone="danger">
-            Не удалось изменить статус продавца. Проверьте полномочия и
-            повторите попытку.
+            Не удалось приостановить продавца. Проверьте причину и состояние
+            активных торгов.
           </AppText>
         ) : null}
       </FormSection>
@@ -234,6 +271,39 @@ export function AdminModerationScreen() {
             title={product.title ?? 'Без названия'}
             status={moderationStatusLabel(product.status)}
           >
+            {product.images[0] ? (
+              <Image
+                source={{ uri: getApiAssetUrl(product.images[0].url) }}
+                contentFit="cover"
+                accessibilityLabel={`Предмет: ${product.title ?? 'Без названия'}`}
+                style={{ width: 96, height: 96, borderRadius: modernTokens.radius.image }}
+              />
+            ) : null}
+            <Link
+              href={{
+                pathname: '/seller/[slug]',
+                params: { slug: product.sellerProfile.slug },
+              } as Href}
+              asChild
+            >
+              <SecondaryButton
+                label={`Автор: ${product.sellerProfile.fullName}`}
+                onPress={() => undefined}
+              />
+            </Link>
+            <AppText role="bodySmall" tone="secondary">
+              {product.city ?? 'Город не указан'} · {product.story ?? 'Описание не указано'}
+            </AppText>
+            {product.lastModerationReason ? (
+              <AppText role="bodySmall" tone="secondary">
+                Последняя причина: {product.lastModerationReason}
+              </AppText>
+            ) : null}
+            {product.listingStatus === 'LIVE' ? (
+              <AppText role="bodySmall" tone="secondary">
+                Активный лот: обычное снятие с публикации недоступно.
+              </AppText>
+            ) : null}
             {product.status === 'PENDING_REVIEW' ? (
               <PrimaryButton
                 label="Одобрить"
@@ -244,11 +314,14 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
-              disabled={product.status === 'ARCHIVED'}
-              label="Архивировать"
+              disabled={
+                !['APPROVED', 'PENDING_REVIEW'].includes(product.status) ||
+                product.listingStatus === 'LIVE'
+              }
+              label="Запросить изменения"
               loading={productStatus.isPending}
               onPress={() =>
-                setConfirmation({ kind: 'product-archive', id: product.id })
+                openConfirmation({ kind: 'product-changes', id: product.id })
               }
             />
           </ModerationCard>
@@ -260,8 +333,8 @@ export function AdminModerationScreen() {
         ) : null}
         {productStatus.isError ? (
           <AppText role="bodySmall" tone="danger">
-            Не удалось изменить статус предмета. Проверьте полномочия и
-            повторите попытку.
+            Не удалось запросить изменения по предмету. Проверьте причину и
+            состояние активных торгов.
           </AppText>
         ) : null}
       </FormSection>
@@ -344,9 +417,26 @@ export function AdminModerationScreen() {
           description={confirmationText[confirmation.kind].description}
           onClose={() => setConfirmation(null)}
         >
+          {confirmation.kind === 'seller-suspend' ||
+          confirmation.kind === 'product-changes' ? (
+            <TextField
+              label="Причина"
+              value={moderationReason}
+              onChangeText={setModerationReason}
+              required
+              multiline
+              placeholder="Укажите причину действия"
+              error={!moderationReason.trim() ? 'Причина обязательна' : undefined}
+            />
+          ) : null}
           <DestructiveButton
             label={confirmationText[confirmation.kind].label}
             loading={confirming}
+            disabled={
+              (confirmation.kind === 'seller-suspend' ||
+                confirmation.kind === 'product-changes') &&
+              !moderationReason.trim()
+            }
             onPress={confirm}
           />
           <SecondaryButton

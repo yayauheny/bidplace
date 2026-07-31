@@ -4,6 +4,7 @@ import { bidSchema } from './bid';
 import {
   orderCancellationReasonSchema,
   productStatusSchema,
+  listingStatusSchema,
   sellerStatusSchema,
 } from './enums';
 import { uuidSchema } from './primitives';
@@ -75,11 +76,27 @@ export const adminRankedBidsResponseSchema = z
   .strict();
 
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
+export const adminSellerProfileSchema = sellerProfileSchema
+  .extend({
+    lastModerationReason: z.string().nullable(),
+    hasLiveListing: z.boolean(),
+  })
+  .strict();
 export const adminSellerProfilesResponseSchema = z
-  .object({ sellerProfiles: z.array(sellerProfileSchema) })
+  .object({ sellerProfiles: z.array(adminSellerProfileSchema) })
+  .strict();
+export const adminProductSchema = productSchema
+  .extend({
+    sellerProfile: z.object({
+      slug: z.string().min(1),
+      fullName: z.string().min(1),
+    }).strict(),
+    listingStatus: listingStatusSchema.nullable(),
+    lastModerationReason: z.string().nullable(),
+  })
   .strict();
 export const adminProductsResponseSchema = z
-  .object({ products: z.array(productSchema) })
+  .object({ products: z.array(adminProductSchema) })
   .strict();
 
 export type AdminSellerStatusUpdateRequest = z.infer<
