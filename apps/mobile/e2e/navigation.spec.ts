@@ -128,7 +128,9 @@ test('approved seller navigation exposes the seller cabinet and add product', as
   }
 });
 
-test('product author link opens the public seller profile', async ({ browser }) => {
+test('product author link opens the public seller profile', async ({
+  browser,
+}) => {
   const fixture = await createAuctionFixture();
   const { context, page } = await authenticatedPage(browser, fixture.buyerA);
 
@@ -139,10 +141,18 @@ test('product author link opens the public seller profile', async ({ browser }) 
     const detail = await detailResponse.json();
     const seller = detail.sellerProfile as { slug: string; fullName: string };
     await page.goto(`/product/${fixture.product.publicId}`);
-    await page.getByRole('link', { name: new RegExp(`Открыть профиль автора ${seller.fullName}`) }).click();
+    await page
+      .getByRole('link', {
+        name: new RegExp(`Открыть профиль автора ${seller.fullName}`),
+      })
+      .click();
     await expect(page).toHaveURL(new RegExp(`/seller/${seller.slug}$`));
-    await expect(page.getByRole('heading', { name: seller.fullName })).toBeVisible();
-    await expect(page.getByText(fixture.product.title)).toBeVisible();
+    await expect(
+      page.getByText(seller.fullName, { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: new RegExp(fixture.product.title) }),
+    ).toBeVisible();
   } finally {
     await context.close();
   }

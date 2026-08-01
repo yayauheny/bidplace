@@ -78,14 +78,12 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     seededBuyer.id = user.user.id;
 
     await page.goto('/product/seedLive002');
-    await page.getByRole('tab', { name: 'Ставки' }).click();
     await expect(
       page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
     ).toBeVisible();
     await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
-    await page.getByRole('tab', { name: 'Ставки' }).click();
     await expect(page.getByText('Ставок ещё нет.')).toBeVisible();
 
     await page.route('**/api/listings/*/bids*', async (route) => {
@@ -96,7 +94,6 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
       });
     });
     await page.goto('/product/seedLive002');
-    await page.getByRole('tab', { name: 'Ставки' }).click();
     await expect(
       page.getByText('Не удалось загрузить историю ставок.'),
     ).toBeVisible();
@@ -107,7 +104,6 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     ).toBeVisible();
 
     await page.goto('/product/seedEnded03');
-    await page.getByRole('tab', { name: 'Ставки' }).click();
     await expect(
       page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
     ).toBeVisible();

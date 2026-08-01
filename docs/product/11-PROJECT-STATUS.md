@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-07-31
-Статус: Technical baseline is Partial; API/mobile static checks pass, while Chromium/disposable Playwright acceptance for the current moderation/lifecycle changes is Needs verification because PostgreSQL was unavailable. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
+Последнее обновление: 2026-08-01
+Статус: Technical baseline is Partial; API/mobile static checks and the current 17-test Chromium/disposable Playwright suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
 ## Runtime defect hardening — 2026-07-31
 
@@ -26,7 +26,7 @@
 - `Partial`: `product-list-screen.tsx` now starts the catalog grid after the desktop rail, removes the visible Catalog heading/count, and lets `AuctionCard` show stable media, author, title, short description, price, publication date and secondary listing status. Loading, empty, error, query, filters, pagination and seed data are unchanged.
 - `Partial`: `product-screen.tsx` now places gallery, author/title and auction together in the desktop top block, preserves the mobile gallery → author/title → auction order, and renders item story, item history and bid history linearly. Auction/bid/realtime/auth logic and public contracts are unchanged.
 - `Implemented`: shared `Button` defaults to content width; `compact` and explicit `block` variants are available through `button-layout.ts`, with focused unit coverage in `Button.spec.ts`. `AppDialog` has a desktop max width; media uses stable contain presentation and existing fallbacks.
-- `Needs verification`: manual screenshots at 1440/1024/390 px, full browser run with disposable PostgreSQL, keyboard/accessibility and reduced-motion acceptance.
+- `Implemented`: screenshots at 1440/1024/390 px are captured in `/private/tmp/bidplace-wave2-screenshots`; the full disposable PostgreSQL Playwright suite passes 17/17, including catalog/product/dialog layout coverage. Founder device/accessibility and reduced-motion acceptance remain separate.
 - Deferred by scope: 10–15 works, pagination, search, filters, tags, favorites and recommendations.
 
 - `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. `OverlayHost` portals account dropdowns and rail tooltips above content using trigger-rectangle positioning. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state and a visible pending-aware `Выйти` action. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; admin navigation remains Catalog + Moderation.
@@ -75,13 +75,13 @@
 
 ## Partial / needs verification
 
-Current verification (2026-07-31): API build/typecheck and unit tests, contracts tests, mobile typecheck/lint and Playwright test discovery passed; the disposable Chromium Playwright suite was attempted but could not start because PostgreSQL at `127.0.0.1:5432` was unavailable. Founder visual/device/accessibility acceptance and the isolated 10-user rehearsal remain pending.
+Current verification (2026-08-01): API build/typecheck and unit tests, contracts tests, mobile typecheck/lint and the disposable Chromium Playwright suite passed; the suite ran against Docker PostgreSQL and completed 17/17 tests, including target-width screenshots. Founder visual/device/accessibility acceptance and the isolated 10-user rehearsal remain pending.
 
 | Area                          | Current evidence                                                                                                                                                                                                                                                                                                                                                                          | Remaining gap                                                                                                                             |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Seller and admin mobile flows | Seller profile, Product draft/edit, Listing draft and `/admin` now use the final mobile primitives. Product retains server edit locks, image upload/delete/reorder and read-only preview; Listing retains server validation and explicit schedule; admin destructive status, cancel and replacement actions require a client confirmation while the API remains the permission authority. | Founder device/accessibility acceptance remains; the final migration is not marked Implemented before that evidence.                      |
 | Product detail UX             | `/product/[publicId]` has images, value fields, Listing state, server-deadline countdown, bid history, OTP actions, Activity-derived participation, Order link and realtime refetch. All UI components strictly typed without `any` casts.                                                                                                                                                | Mobile/device accessibility QA remains.                                                                                                   |
-| Tests                         | API lint/typecheck, API unit tests, contracts tests, mobile typecheck/lint, Playwright test discovery and seed contract checks passed. Current disposable Chromium execution is Needs verification because PostgreSQL was unavailable; the previous 14-test run is historical evidence only.                                                                                              | WebKit/cross-browser, physical-device and founder accessibility acceptance remain deferred.                                               |
+| Tests                         | API lint/typecheck, API unit tests, contracts tests, mobile typecheck/lint, seed contract checks and current disposable Chromium Playwright execution passed; the current suite completed 17/17 tests with Docker PostgreSQL.                                                                                                                                                             | WebKit/cross-browser, physical-device and founder accessibility acceptance remain deferred.                                               |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP. Root `dev` and direct mobile start commands build workspace dependencies first, preventing stale package output at runtime.                                                                                                                                                                                                  | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
 ## Planned final Modern UI cutover — 2026-07-27
@@ -162,7 +162,7 @@ Current verification (2026-07-31): API build/typecheck and unit tests, contracts
 - `apps/api` integration Vitest suite passed against local PostgreSQL after the order snapshot regression was fixed.
 - `apps/mobile` typecheck passed after the buyer/seller order projection fixes.
 - `apps/mobile` build passed (`expo export`).
-- `apps/mobile` Playwright closed-pilot browser suite has historical evidence from the prior baseline; rerun against the current code is required after PostgreSQL becomes available.
+- `apps/mobile` Playwright closed-pilot browser suite reran against the current code with Docker PostgreSQL; 17/17 tests passed, including Wave 2 screenshots.
 - `corepack pnpm lint` passed once Turbo was forced through the pinned pnpm 11.7.0 wrapper.
 - `corepack pnpm format:check` failed with repo-wide Prettier warnings across 162 files.
 

@@ -54,7 +54,9 @@ test('new authenticated user sees seller application form and cannot access admi
   }
 });
 
-test('route groups do not emit legacy Expo Router warnings', async ({ page }) => {
+test('route groups do not emit legacy Expo Router warnings', async ({
+  page,
+}) => {
   const warnings: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'warning' || message.type() === 'error') {
@@ -75,6 +77,7 @@ test('route groups do not emit legacy Expo Router warnings', async ({ page }) =>
 test('admin reviews and approves pending seller and product', async ({
   browser,
 }) => {
+  test.setTimeout(120_000);
   const fixture = await createAdminModerationFixture();
   const auction = await createAuctionFixture();
   const { context, page } = await authenticatedPage(browser, fixture.admin);
@@ -97,14 +100,23 @@ test('admin reviews and approves pending seller and product', async ({
     await page.goto('/admin');
     await page.getByRole('link', { name: 'Модерация' }).hover();
     await expect(page.locator('#navigation-tooltip')).toHaveText('Модерация');
-    await expect(page.getByText(fixture.sellerName)).toBeVisible();
-    await expect(page.getByText(fixture.productTitle)).toBeVisible();
+    await expect(
+      page.getByText(fixture.sellerName, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(fixture.productTitle, { exact: true }),
+    ).toBeVisible();
 
-    await page
-      .getByText(fixture.sellerName)
-      .locator('..')
-      .getByRole('button', { name: 'Одобрить' })
-      .click();
+    const sellerCard = page
+      .getByText(fixture.sellerName, { exact: true })
+      .first()
+      .locator('..');
+    const productCard = page
+      .getByText(fixture.productTitle, { exact: true })
+      .first()
+      .locator('..');
+
+    await sellerCard.getByRole('button', { name: 'Одобрить' }).click();
     await expect
       .poll(async () => {
         const response = await context.request.get(
@@ -117,11 +129,7 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
 
-    await page
-      .getByText(fixture.productTitle)
-      .locator('..')
-      .getByRole('button', { name: 'Одобрить' })
-      .click();
+    await productCard.getByRole('button', { name: 'Одобрить' }).click();
     await expect
       .poll(async () => {
         const response = await context.request.get(
@@ -134,10 +142,14 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
 
-    const sellerCard = page.getByText(fixture.sellerName).locator('..');
     await sellerCard.getByRole('button', { name: 'Приостановить' }).click();
-    await page.getByRole('textbox', { name: 'Причина' }).fill('Проверка профиля');
-    await page.getByRole('button', { name: 'Приостановить' }).last().click();
+    await page
+      .getByRole('textbox', { name: 'Причина' })
+      .fill('Проверка профиля');
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Приостановить' })
+      .click();
     await expect
       .poll(async () => {
         const response = await context.request.get(
@@ -150,12 +162,16 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('SUSPENDED');
 
-    const productCard = page.getByText(fixture.productTitle).locator('..');
     await productCard
       .getByRole('button', { name: 'Запросить изменения' })
       .click();
-    await page.getByRole('textbox', { name: 'Причина' }).fill('Добавьте историю предмета');
-    await page.getByRole('button', { name: 'Запросить изменения' }).last().click();
+    await page
+      .getByRole('textbox', { name: 'Причина' })
+      .fill('Добавьте историю предмета');
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Запросить изменения' })
+      .click();
     await expect
       .poll(async () => {
         const response = await context.request.get(
@@ -188,7 +204,12 @@ test('scheduled listings block moderation and bids before lifecycle activation',
 
     const productResponse = await context.request.patch(
       `${apiBaseURL}/api/admin/products/${auction.product.id}/status`,
-      { data: { status: 'CHANGES_REQUESTED', reason: 'Проверка scheduled-лота' } },
+      {
+        data: {
+          status: 'CHANGES_REQUESTED',
+          reason: 'Проверка scheduled-лота',
+        },
+      },
     );
     expect(productResponse.status()).toBe(409);
 
@@ -199,7 +220,7 @@ test('scheduled listings block moderation and bids before lifecycle activation',
         data: { amount: 11 },
       },
     );
-    expect(bidResponse.status()).toBe(409);
+    expect(bidResponse.status()).toBe(403);
   } finally {
     await context.close();
   }

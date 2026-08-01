@@ -76,7 +76,7 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
           <AppText role="cardTitle" numberOfLines={2}>
             {product.title ?? 'Предмет'}
           </AppText>
-          <AppText role="bodySmall" tone="secondary" numberOfLines={2}>
+          <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
             {description}
           </AppText>
           {publishedLabel(item) ? (

@@ -37,32 +37,39 @@ export function AppDialog({
             backgroundColor: modernTokens.color.overlay,
           }}
         />
-        <Dialog.Content
+        <View
           style={{
             position: 'absolute',
-            left: modernTokens.space.x5,
-            right: modernTokens.space.x5,
-            top: '30%',
-            maxWidth: 520,
-            alignSelf: 'center',
-            gap: modernTokens.space.x4,
-            borderRadius: modernTokens.radius.panel,
-            backgroundColor: modernTokens.color.surface,
-            padding: modernTokens.space.x5,
+            inset: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: modernTokens.space.x5,
           }}
+          pointerEvents="box-none"
         >
-          <Dialog.Title asChild>
-            <AppText role="sectionTitle">{title}</AppText>
-          </Dialog.Title>
-          {description ? (
-            <Dialog.Description asChild>
-              <AppText role="bodySmall" tone="secondary">
-                {description}
-              </AppText>
-            </Dialog.Description>
-          ) : null}
-          <View style={{ gap: modernTokens.space.x3 }}>{children}</View>
-        </Dialog.Content>
+          <Dialog.Content
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              gap: modernTokens.space.x4,
+              borderRadius: modernTokens.radius.panel,
+              backgroundColor: modernTokens.color.surface,
+              padding: modernTokens.space.x5,
+            }}
+          >
+            <Dialog.Title asChild>
+              <AppText role="sectionTitle">{title}</AppText>
+            </Dialog.Title>
+            {description ? (
+              <Dialog.Description asChild>
+                <AppText role="bodySmall" tone="secondary">
+                  {description}
+                </AppText>
+              </Dialog.Description>
+            ) : null}
+            <View style={{ gap: modernTokens.space.x3 }}>{children}</View>
+          </Dialog.Content>
+        </View>
       </Dialog.Portal>
     </Dialog.Root>
   );

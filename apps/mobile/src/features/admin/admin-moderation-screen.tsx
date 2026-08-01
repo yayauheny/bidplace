@@ -93,7 +93,10 @@ export function AdminModerationScreen() {
       status: 'APPROVED' | 'SUSPENDED';
       reason?: string;
     }) => api.admin.updateSellerStatus(id, { status, reason }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      setConfirmation(null);
+    },
   });
   const productStatus = useMutation({
     mutationFn: ({
@@ -105,7 +108,10 @@ export function AdminModerationScreen() {
       status: 'APPROVED' | 'CHANGES_REQUESTED';
       reason?: string;
     }) => api.admin.updateProductStatus(id, { status, reason }),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      setConfirmation(null);
+    },
   });
   const cancelOrder = useMutation({
     mutationFn: () =>
