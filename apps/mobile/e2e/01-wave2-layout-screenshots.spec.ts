@@ -27,6 +27,17 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await expect(page.getByRole('heading', { name: 'Каталог' })).toHaveCount(
         0,
       );
+      if (width === 390) {
+        const mobileNavigation = page.getByRole('tablist');
+        const firstCard = page.locator('a[href^="/product/"]').first();
+        const navigationBox = await mobileNavigation.boundingBox();
+        const firstCardBox = await firstCard.boundingBox();
+        expect(navigationBox).not.toBeNull();
+        expect(firstCardBox).not.toBeNull();
+        expect(
+          firstCardBox!.y - (navigationBox!.y + navigationBox!.height),
+        ).toBeLessThan(56);
+      }
       const catalogCards = page.locator('a[href^="/product/"]');
       await expect(catalogCards).toHaveCount(seededProducts.length);
       for (const product of seededProducts) {

@@ -1,10 +1,12 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-08-01
+Дата снимка: 2026-08-02
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
 Wave 2 catalog/product layout: Catalog no longer renders the visible title/count on desktop and uses a left-starting, available-width grid with stable media ratio, description and secondary status. Product detail keeps gallery, author/title, publication date and auction together on desktop, preserves the mobile sequence, removes content tabs, and renders story, item history and bid history as linear sections. Shared buttons default to content width; `compact` and explicit `block` are available. Logic, API contracts, auction/moderation states and seed data are unchanged. Static checks, focused button unit coverage, target-width screenshots and disposable PostgreSQL Playwright verification pass; founder device/accessibility acceptance remains separate.
+
+Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts the desktop account row; the mobile header keeps one bottom divider across brand row and navigation, without a navigation `borderTop`. The 390 px screenshot test checks the first seed card starts immediately after mobile navigation. Desktop rail/account layout is unchanged.
 
 Runtime hardening (2026-07-31): `OverlayHost` uses a stable callback-ref boundary and anchor wrappers with real web refs; the full-screen host is non-interactive while portal content remains interactive, portals do not mount before geometry exists, and binary image responses send PNG `Buffer` bytes. Static checks pass; the current 17-test disposable browser suite reran successfully. Founder device/visual/accessibility acceptance remains separate.
 

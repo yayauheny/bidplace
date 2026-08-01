@@ -23,34 +23,45 @@ export function AppShell({
       <SafeAreaView
         style={{ flex: 1, backgroundColor: modernTokens.color.canvas }}
       >
-      <View
-        style={{
-          flex: 1,
-          flexDirection: desktop ? 'row' : 'column',
-        }}
-      >
-        <AppHeader
-          accountControl={desktop ? undefined : <AccountMenu desktop={false} />}
-        />
-        <View style={{ flex: 1, minWidth: 0, backgroundColor: modernTokens.color.canvas }}>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: desktop ? 'row' : 'column',
+          }}
+        >
+          <AppHeader
+            accountControl={
+              desktop ? undefined : <AccountMenu desktop={false} />
+            }
+          />
           <View
+            testID="app-shell-content"
             style={{
-              minHeight: 56,
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              position: 'relative',
-              borderBottomWidth: 1,
-              borderBottomColor: modernTokens.color.border,
-              backgroundColor: modernTokens.color.surface,
-              paddingHorizontal: desktop ? modernTokens.space.x8 : modernTokens.space.x5,
+              flex: 1,
+              minWidth: 0,
+              backgroundColor: modernTokens.color.canvas,
             }}
           >
-            {desktop ? <AccountMenu desktop /> : null}
+            {desktop ? (
+              <View
+                style={{
+                  minHeight: 56,
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  borderBottomWidth: 1,
+                  borderBottomColor: modernTokens.color.border,
+                  backgroundColor: modernTokens.color.surface,
+                  paddingHorizontal: modernTokens.space.x8,
+                }}
+              >
+                <AccountMenu desktop />
+              </View>
+            ) : null}
+            {children}
+            {bottomAction}
           </View>
-          {children}
-          {bottomAction}
         </View>
-      </View>
       </SafeAreaView>
     </OverlayHost>
   );

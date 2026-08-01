@@ -1,6 +1,6 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-08-01
+Последнее обновление: 2026-08-02
 Статус: Technical baseline is Partial; API/mobile static checks and the current 17-test Chromium/disposable Playwright suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
 ## Runtime defect hardening — 2026-07-31
@@ -27,6 +27,7 @@
 - `Partial`: `product-screen.tsx` now places gallery, author/title and auction together in the desktop top block, preserves the mobile gallery → author/title → auction order, and renders item story, item history and bid history linearly. Auction/bid/realtime/auth logic and public contracts are unchanged.
 - `Implemented`: shared `Button` defaults to content width; `compact` and explicit `block` variants are available through `button-layout.ts`, with focused unit coverage in `Button.spec.ts`. `AppDialog` has a desktop max width; media uses stable contain presentation and existing fallbacks.
 - `Implemented`: screenshots at 1440/1024/390 px are captured in `/private/tmp/bidplace-wave2-screenshots`; the full disposable PostgreSQL Playwright suite passes 17/17, including catalog/product/dialog layout coverage. Founder device/accessibility and reduced-motion acceptance remain separate.
+- `Implemented`: mobile header layout below 1025 px no longer renders the desktop account row; `AppHeader` keeps one bottom divider and no navigation top divider. The 390 px screenshot E2E asserts the first seed card begins directly after navigation; desktop layout remains covered by the full 17/17 suite.
 - Deferred by scope: 10–15 works, pagination, search, filters, tags, favorites and recommendations.
 
 - `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. `OverlayHost` portals account dropdowns and rail tooltips above content using trigger-rectangle positioning. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state and a visible pending-aware `Выйти` action. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; admin navigation remains Catalog + Moderation.

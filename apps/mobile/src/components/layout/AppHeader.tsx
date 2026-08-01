@@ -203,8 +203,6 @@ export function AppHeader({ accountControl }: { accountControl?: ReactNode }) {
         style={{
           flexDirection: 'row',
           justifyContent: 'space-around',
-          borderTopWidth: 1,
-          borderTopColor: modernTokens.color.border,
           paddingVertical: modernTokens.space.x1,
         }}
       >
