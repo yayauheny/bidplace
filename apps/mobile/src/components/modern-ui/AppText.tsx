@@ -12,7 +12,7 @@ const toneColors = {
   default: modernTokens.color.ink,
   secondary: modernTokens.color.textSecondary,
   muted: modernTokens.color.textMuted,
-  accent: modernTokens.color.accent,
+  accent: modernTokens.color.accentDark,
   danger: modernTokens.color.danger,
   success: modernTokens.color.success,
 } as const;

@@ -14,7 +14,8 @@ export const modernTokens = {
     accentDark: '#BC3C1B',
     accentSoft: '#FFF0E8',
     success: '#3F7A48',
-    danger: '#D6453D',
+    danger: '#B63B3B',
+    focus: '#2457E6',
     overlay: 'rgba(0, 0, 0, 0.22)',
   },
   space: {
@@ -40,6 +41,7 @@ export const modernTokens = {
     pill: 999,
   },
   size: { touch: 44, input: 52, button: 56, buttonCompact: 44, icon: 20 },
+  opacity: { disabled: 0.5 },
   typography: {
     display: {
       fontFamily: 'Inter_700Bold',
@@ -133,6 +135,7 @@ export const modernTokens = {
   },
   productHeroWide: 440,
   layer: { content: 0, chrome: 10, popover: 20, modal: 30 },
+  focus: { width: 2, offset: 2 },
 } as const;
 
 export type ModernTextRole = keyof typeof modernTokens.typography;

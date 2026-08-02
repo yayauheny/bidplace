@@ -31,7 +31,7 @@ export function TextField({ label, hint, error, required, editable = true, style
           onBlur?.(event);
         }}
         placeholderTextColor={modernTokens.color.textMuted}
-        style={[{ minHeight: modernTokens.size.input, borderRadius: modernTokens.radius.control, borderWidth: focused && !error ? 2 : 1, borderColor: error ? modernTokens.color.danger : focused ? modernTokens.color.ink : modernTokens.color.border, backgroundColor: modernTokens.color.surface, color: modernTokens.color.ink, paddingHorizontal: modernTokens.space.x3, paddingVertical: modernTokens.space.x2, fontFamily: modernTokens.typography.body.fontFamily, fontSize: modernTokens.typography.body.fontSize, lineHeight: modernTokens.typography.body.lineHeight, opacity: editable ? 1 : 0.5 }, style]}
+        style={[{ minHeight: modernTokens.size.input, borderRadius: modernTokens.radius.control, borderWidth: focused && !error ? 2 : 1, borderColor: error ? modernTokens.color.danger : focused ? modernTokens.color.ink : modernTokens.color.border, backgroundColor: modernTokens.color.surface, color: modernTokens.color.ink, paddingHorizontal: modernTokens.space.x3, paddingVertical: modernTokens.space.x2, fontFamily: modernTokens.typography.body.fontFamily, fontSize: modernTokens.typography.body.fontSize, lineHeight: modernTokens.typography.body.lineHeight, opacity: editable ? 1 : modernTokens.opacity.disabled }, style]}
       />
       {error ? <AppText role="bodySmall" tone="danger" accessibilityLiveRegion="polite">{error}</AppText> : null}
     </View>

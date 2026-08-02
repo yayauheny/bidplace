@@ -36,11 +36,20 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Inspect shared primitives and existing test/e2e patterns, then implement B1.
+Implement B2 focus-visible, reduced-motion, and composite accessibility contracts.
 
 ## Completed slices
 
-None yet.
+### B1 — semantic contrast/focus tokens and public token surface
+
+- Done: `modernTokens` is the only package entry-point token surface; no current workspace runtime consumer imported the removed legacy exports.
+- Done: `accentDark`, `danger`, `focus`, disabled opacity, Wave A geometry, and product portrait ratio are semantic tokens.
+- Done: AppText accent and TextField disabled opacity use the semantic roles.
+- Changed: `packages/design-tokens/src/modern.ts`, `packages/design-tokens/src/index.ts`, `apps/mobile/src/components/modern-ui/AppText.tsx`, `apps/mobile/src/components/modern-ui/TextField.tsx`, `apps/mobile/src/lib/visual-token.spec.ts`.
+- Checks: design-tokens build passed; visual token suite passed 1 file / 6 tests; `git diff --check` passed.
+- Not done: focus-visible runtime adapter, reduced-motion behavior, and remaining B2–B6 work.
+- Next: implement B2 shared interaction and accessibility contracts.
+- Risks: founder visual/device/accessibility acceptance remains separate.
 
 ## Open risks
 

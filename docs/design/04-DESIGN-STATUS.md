@@ -7,11 +7,17 @@
 ## Wave A — structural responsive fixes — 2026-08-02
 
 - `Implemented`: A1 uses shared modern layout, breakpoint and product-ratio contracts for the desktop shell and catalog column calculation. The catalog target is now 2 columns below 900px, 3 columns from 900 through 1439px and 4 columns from 1440px.
+
 - `Implemented`: A1 has shared/unit evidence; A2 uses the shared web popover layer at all widths with collision-safe menu geometry and modal layer ordering; A3 uses one catalog grid for loading/loaded/fallback states and preserves the 4:5 media contract; A4 applies the 900px/440px product-wide geometry and keeps mobile bidding input in the auction panel with a compact safe-area dock, with buyer/admin first-viewport bounds and screenshots at 1440/1024/390; A5 applies equal-width mobile navigation cells and keyboard-scrollable auth viewports with validation/zoom evidence. Responsive browser coverage passes; founder/device/accessibility acceptance remains pending.
 
 Wave 2 catalog/product layout: Catalog no longer renders the visible title/count on desktop and uses a left-starting, available-width grid with stable media ratio, description and secondary status. Product detail keeps gallery, author/title, publication date and auction together on desktop, preserves the mobile sequence, removes content tabs, and renders story, item history and bid history as linear sections. Shared buttons default to content width; `compact` and explicit `block` are available. Logic, API contracts, auction/moderation states and seed data are unchanged. Static checks, focused button unit coverage, target-width screenshots and disposable PostgreSQL Playwright verification pass; founder device/accessibility acceptance remains separate.
 
 Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts the desktop account row; the mobile header keeps one bottom divider across brand row and navigation, without a navigation `borderTop`. Navigation cells are equal-width, icon-over-label, and use no tablist semantics. The 390 px screenshot test checks the first seed card starts immediately after mobile navigation. Desktop rail/account layout is unchanged.
+
+## Wave B — shared component and visual-system fixes — 2026-08-02
+
+- `Implemented`: B1 uses one canonical `modernTokens` public surface with contrast-safe accent/danger roles, a `#2457E6` focus role, disabled opacity, and preserved Wave A geometry. Independent contrast/unit evidence: `apps/mobile/src/lib/visual-token.spec.ts` (6 tests).
+- `Needs verification`: B2–B6 interaction, media, dialog/state, presentation-adapter, browser, and founder device/accessibility evidence.
 
 Runtime hardening (2026-07-31): `OverlayHost` uses a stable callback-ref boundary and anchor wrappers with real web refs; the full-screen host is non-interactive while portal content remains interactive, portals do not mount before geometry exists, and binary image responses send PNG `Buffer` bytes. Static checks pass; the current 22-test disposable browser suite reran successfully. Founder device/visual/accessibility acceptance remains separate.
 

@@ -75,6 +75,12 @@ Every route uses the final shell and primitives. `AppShell` preserves the mobile
 - final light-mode contrast audit;
 - design QA evidence на целевых устройствах.
 
+## Wave B shared-system progress
+
+- `Implemented`: B1 semantic contrast roles are canonical in `packages/design-tokens/src/modern.ts`; normal text/action roles and keyboard focus meet the tested contrast thresholds, while `textMuted` remains reserved for non-essential/disabled/placeholder content.
+- `Implemented`: runtime consumers use `modernTokens`; conflicting legacy token exports were removed after an import audit found no current workspace consumers. Wave A canvas, success color, layout, radius, and ratio values remain unchanged.
+- `Needs verification`: final browser/device focus, reduced-motion, dialog, and visual evidence remains part of the Wave B acceptance pass.
+
 ## Do not invent without designer approval
 
 - финальные цвета, gradients, shadows и decorative motifs;

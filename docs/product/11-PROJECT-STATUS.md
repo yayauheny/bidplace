@@ -11,6 +11,11 @@
 - `Implemented`: A4 uses the requested product-wide contract at `900px`: the gallery switches to `440×550`, the author/title/auction block becomes two-column from that boundary, and below it the amount input stays in the scrollable auction panel while the bottom action contains only a short summary and one compact primary action with safe-area padding. Buyer/admin responsive E2E coverage preserves the existing server-side bid restrictions; first-viewport bounds and buyer/admin screenshots are captured at 1440/1024/390.
 - `Implemented`: A5 uses compact `44px` buttons with `14px` radius, Inter `500/13/18` navigation typography, equal-width icon-over-label mobile navigation cells, `navigation` semantics instead of tablist semantics, and keyboard-scrollable auth viewports. Responsive browser coverage includes validation errors, enlarged-scale CTA reachability and auth evidence; founder visual/device/accessibility acceptance remains pending. No Wave B/C work is included.
 
+## Wave B — shared component and visual-system fixes — 2026-08-02
+
+- `Implemented`: B1 canonical semantic token surface and contrast roles are in `packages/design-tokens/src/modern.ts`; `AppText`, `TextField`, and the mobile runtime consume the modern surface. Verification: design-tokens build passed and `visual-token.spec.ts` passed 6 tests.
+- `Partial`: the overall Wave B shared-system work remains incomplete until B2–B6 and final browser/device acceptance are verified.
+
 ## Runtime defect hardening — 2026-07-31
 
 - `Implemented`: `OverlayHost` now supplies the web overlay boundary through a memoized callback ref; `OverlayPortal` waits for both the boundary and anchor rectangle, and navigation/account anchors use ref-supporting `View` wrappers. Web pointer-events are expressed through styles. Existing account hover/click/focus, Escape/outside dismissal and logout behavior remain in scope.
