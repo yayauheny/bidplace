@@ -52,7 +52,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     );
     await page.getByRole('button', { name: 'Отправить на модерацию' }).click();
     expect((await submitResponsePromise).ok()).toBeTruthy();
-    await expect(page.getByText('PENDING_REVIEW')).toBeVisible();
+    await expect(page.getByText('На модерации')).toBeVisible();
 
     await approveProduct(product.id);
     await page.reload();
@@ -60,7 +60,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     const startsAt = new Date(Date.now() + 15_000).toISOString();
     const endsAt = new Date(Date.now() + 315_000).toISOString();
     await page
-      .getByRole('button', { name: new RegExp(`${title} · APPROVED`) })
+      .getByRole('button', { name: new RegExp(`${title} · Одобрен`) })
       .click();
     const invalidDatesResponse = await context.request.post(
       `http://localhost:3001/api/products/${product.id}/listings`,

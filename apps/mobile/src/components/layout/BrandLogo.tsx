@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { Pressable } from 'react-native';
 import { modernTokens } from '@bidplace/design-tokens';
+
+import { MotionPressable } from '../modern-ui';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const brandMark = require('../../../assets/branding/bidplace-mark-light.png');
@@ -15,18 +16,20 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
   const size = compact ? 32 : undefined;
   return (
     <Link href="/" asChild>
-      <Pressable
+      <MotionPressable
         accessibilityRole="link"
         accessibilityLabel="bidplace — на главную"
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.7 : 1,
+        preset="icon"
+        style={{
+          width: compact ? modernTokens.size.touch : undefined,
+          height: compact ? modernTokens.size.touch : undefined,
           minWidth: modernTokens.size.touch,
           minHeight: modernTokens.size.touch,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: modernTokens.space.x2,
-        })}
+        }}
       >
         <Image
           source={source}
@@ -37,7 +40,7 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
               : { width: 180, height: 45 }
           }
         />
-      </Pressable>
+      </MotionPressable>
     </Link>
   );
 }

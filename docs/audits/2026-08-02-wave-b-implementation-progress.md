@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Run the full required verification matrix and collect Wave B screenshots/E2E evidence.
+Finalize documentation, run the final static diff check, and commit the completed Wave B work.
 
 ## Completed slices
 
@@ -57,14 +57,14 @@ Run the full required verification matrix and collect Wave B screenshots/E2E evi
 - Done: compact logo and Product author link have transparent 44px hit areas; composite icons no longer duplicate parent accessible names; image placeholders expose one labeled image role.
 - Changed: `apps/mobile/global.css`, `apps/mobile/src/lib/motion.ts`, `apps/mobile/src/lib/reduced-motion.ts`, `apps/mobile/src/lib/reduced-motion.spec.ts`, `MotionPressable.tsx`, `AppIcon.tsx`, `ImagePlaceholder.tsx`, `AuctionCard.tsx`, `ProductGallery.tsx`, `BrandLogo.tsx`, `product-screen.tsx`, `PageState.tsx`.
 - Checks: mobile typecheck passed; mobile lint passed; targeted suite passed 4 files / 16 tests after isolating the pure motion helper.
-- Not done: browser keyboard/reduced-motion evidence is part of the final E2E pass; B3–B6 remain.
+- Not done: founder physical-device and screen-reader acceptance remains; B3–B6 remain at this slice.
 - Next: stabilize button loading geometry and compact/default semantics.
 - Risks: physical-device focus and accessibility acceptance remains separate.
 
 ### B3 — stable button loading geometry
 
 - Done: default content-width buttons remain 56px/18px; compact remains 44px/14px; explicit block remains the only full-width variant.
-- Done: busy buttons retain the original accessible label and visible label, use `busy` plus disabled semantics, and reserve a stable 20px icon/spinner slot.
+- Done: busy buttons retain the original accessible label and visible label, expose `aria-busy` plus disabled semantics on web, and reserve a stable 20px icon/spinner slot.
 - Changed: `Button.tsx`, `button-layout.ts`, `Button.spec.ts`.
 - Checks: targeted button/token suite passed 2 files / 10 tests; mobile typecheck and lint passed.
 - Not done: visual width evidence at target viewports remains part of the final E2E/screenshot pass; B4–B6 remain.
@@ -87,7 +87,7 @@ Run the full required verification matrix and collect Wave B screenshots/E2E evi
 - Done: AppDialog keeps modal layer 30, bounded scroll content, keyboard tap handling, nested scrolling, and modal accessibility semantics; the existing dialog primitive continues to own focus trap, initial focus, Escape, and focus return.
 - Changed: `AppDialog.tsx`, `PageState.tsx`, `page-state-contract.ts` and its spec, modern-ui exports.
 - Checks: targeted state/media/card suite passed 3 files / 9 tests; mobile typecheck and lint passed.
-- Not done: browser keyboard-only and long-content evidence remains part of the final E2E/screenshot pass; B6 remains.
+- Not done: founder device and screen-reader acceptance remains; B6 remains at this slice.
 - Next: add shared presentation maps/adapters without changing server values or serialization.
 - Risks: dialog primitive behavior still needs real browser verification.
 
@@ -101,6 +101,17 @@ Run the full required verification matrix and collect Wave B screenshots/E2E evi
 - Not done: full E2E and target screenshots remain.
 - Next: run final package/mobile checks, E2E, screenshots, and inspect worktree.
 - Risks: full E2E may require Docker PostgreSQL and local package-manager state.
+
+## Final verification
+
+- Design-tokens build: passed.
+- Mobile typecheck: passed.
+- Mobile lint: passed.
+- Full mobile Vitest: 13 files / 50 tests passed.
+- Targeted Wave B Playwright: 1 test / 1 passed (40.3s); browser evidence covers 1440/1024/390 focus-visible, reduced motion, PageState loading/empty/error, dialog long content, loading button, and compact logo hit area.
+- Full mobile Playwright: 23 tests / 23 passed (1.9m), including existing auction, security/privacy, navigation, Wave A, Wave One, and Wave B coverage.
+- Screenshots: 21 PNG files in `/private/tmp/bidplace-wave-b-screenshots`.
+- Final remaining acceptance: founder physical-device and screen-reader/visual acceptance; no Wave C work started.
 
 ## Open risks
 

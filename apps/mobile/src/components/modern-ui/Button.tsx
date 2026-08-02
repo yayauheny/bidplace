@@ -67,6 +67,7 @@ function ButtonBase({
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
+      aria-busy={loading || undefined}
       disabled={inactive}
       onPress={onPress}
       preset="primaryAction"
