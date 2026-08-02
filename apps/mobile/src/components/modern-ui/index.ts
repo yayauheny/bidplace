@@ -14,3 +14,5 @@ export * from './ProductGallery';
 export * from './Separator';
 export * from './Skeleton';
 export * from './TextField';
+export * from './EditorialSection';
+export * from './product-media-style';

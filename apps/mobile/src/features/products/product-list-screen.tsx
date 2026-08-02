@@ -14,6 +14,7 @@ import {
   AuctionCard,
   AppText,
   PageState,
+  productMediaStyle,
   Skeleton,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
@@ -55,9 +56,7 @@ function CatalogCardSkeleton() {
     <View style={{ gap: modernTokens.space.x3 }}>
       <Skeleton
         style={{
-          width: '100%',
-          aspectRatio: modernTokens.ratio.productPortrait,
-          borderRadius: modernTokens.radius.image,
+          ...productMediaStyle(),
         }}
       />
       <View style={{ gap: modernTokens.space.x1 }}>

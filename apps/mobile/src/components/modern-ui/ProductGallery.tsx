@@ -7,6 +7,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { ImagePlaceholder } from './ImagePlaceholder';
+import { productMediaStyle } from './product-media-style';
 
 type ProductGalleryImage = { id: string; url: string };
 
@@ -73,7 +74,7 @@ function GalleryImage({
       <ImagePlaceholder
         ratio={modernTokens.ratio.productPortrait}
         label={`Изображение недоступно: ${label}`}
-        style={{ width }}
+        style={productMediaStyle(width)}
       />
     );
   }
@@ -85,12 +86,7 @@ function GalleryImage({
       transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
       accessibilityLabel={imageLabel}
       onError={() => setFailed(true)}
-      style={{
-        width,
-        aspectRatio: modernTokens.ratio.productPortrait,
-        borderRadius: modernTokens.radius.image,
-        backgroundColor: modernTokens.color.placeholder,
-      }}
+      style={productMediaStyle(width)}
     />
   );
 }

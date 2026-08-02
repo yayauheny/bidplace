@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement B4 stable card/media/detail primitives and narrow-card evidence.
+Implement B5 AppDialog and PageState state/focus contract.
 
 ## Completed slices
 
@@ -70,6 +70,16 @@ Implement B4 stable card/media/detail primitives and narrow-card evidence.
 - Not done: visual width evidence at target viewports remains part of the final E2E/screenshot pass; B4–B6 remain.
 - Next: finish shared media/card/detail contracts.
 - Risks: no new button hierarchy or full-width behavior was introduced.
+
+### B4 — shared media/card/detail primitives
+
+- Done: `productMediaStyle` is the shared 4:5 loaded/skeleton/fallback/gallery geometry contract; `AuctionCard` keeps author/title/one-line description and atomic price/status-deadline rows stable on narrow widths.
+- Done: `EditorialSection` is prepared as a plain detail primitive for Wave C; current Product section order and chrome are unchanged.
+- Changed: `product-media-style.ts`, its spec, `EditorialSection.tsx`, modern-ui exports, `AuctionCard.tsx`, `ProductGallery.tsx`, and catalog skeleton usage.
+- Checks: targeted media/card/button suite passed 3 files / 11 tests; mobile typecheck and lint passed.
+- Not done: browser visual evidence for long/missing/failed media remains part of the final screenshot/E2E pass; B5–B6 remain.
+- Next: finish dialog and PageState contracts.
+- Risks: no product section order or auction flow was changed.
 
 ## Open risks
 

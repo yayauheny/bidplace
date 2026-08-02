@@ -82,6 +82,7 @@ Every route uses the final shell and primitives. `AppShell` preserves the mobile
 - `Needs verification`: final browser/device focus, reduced-motion, dialog, and visual evidence remains part of the Wave B acceptance pass.
 - `Implemented`: B2 supplies the shared focus-visible CSS contract, web/native reduced-motion adapter, 44px compact hit areas, and single-name composite icon semantics. Browser/device evidence remains `Needs verification`.
 - `Implemented`: B3 keeps default/compact button geometry tokenized and preserves the original label plus a stable icon/spinner slot during busy state.
+- `Implemented`: B4 centralizes the 4:5 product media geometry, stable narrow-card metadata rows, and a plain `EditorialSection` primitive prepared for Wave C without changing current Product section order.
 
 ## Do not invent without designer approval
 

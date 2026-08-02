@@ -13,6 +13,7 @@ import { getAuctionCardContent } from './auction-card-layout';
 import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
+import { productMediaStyle } from './product-media-style';
 
 type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 
@@ -54,15 +55,26 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
           <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
             {description}
           </AppText>
-          <AppText role="numeric" numberOfLines={1} style={{ flexShrink: 0 }}>
-            {price}
-          </AppText>
-          <AppText
-            role="caption"
-            tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              gap: modernTokens.space.x2,
+              minWidth: 0,
+            }}
           >
-            {status} · {deadline}
-          </AppText>
+            <AppText role="numeric" numberOfLines={1} style={{ flexShrink: 0 }}>
+              {price}
+            </AppText>
+            <AppText
+              role="caption"
+              tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
+              numberOfLines={1}
+              style={{ flex: 1, flexShrink: 1, textAlign: 'right' }}
+            >
+              {status} · {deadline}
+            </AppText>
+          </View>
         </View>
       </MotionPressable>
     </Link>
@@ -87,10 +99,7 @@ function AuctionCardImage({
     return (
       <ImagePlaceholder
         label={`Изображение недоступно: ${label}`}
-        style={{
-          width: '100%',
-          aspectRatio: modernTokens.ratio.productPortrait,
-        }}
+        style={productMediaStyle()}
       />
     );
   }
@@ -103,12 +112,7 @@ function AuctionCardImage({
       recyclingKey={`${productId}-${imageId}`}
       accessibilityLabel={`Изображение предмета: ${label}`}
       onError={() => setFailed(true)}
-      style={{
-        width: '100%',
-        aspectRatio: modernTokens.ratio.productPortrait,
-        borderRadius: modernTokens.radius.image,
-        backgroundColor: modernTokens.color.placeholder,
-      }}
+      style={productMediaStyle()}
     />
   );
 }
