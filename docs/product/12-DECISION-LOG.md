@@ -853,3 +853,22 @@ The deterministic local seed creates one Bid for the seeded buyer on the live Li
 ### Required decision
 
 Confirm whether explicitly local/test-only seeded buyer fixtures are allowed when they cannot reach production data or production runtime. Until confirmed, this remains a documented implementation risk rather than a product-policy exception.
+
+---
+
+## DEC-061 — Wave B semantic action and keyboard focus colors
+
+Date: 2026-08-02
+Status: Confirmed
+
+### Decision
+
+For Wave B shared visual-system fixes, small accent text uses the contrast-safe semantic `accentDark` color `#BC3C1B`, destructive text and buttons use `#B63B3B`, and keyboard focus uses `#2457E6`.
+
+### Rationale
+
+These values are explicitly confirmed in the Wave B implementation request and provide readable semantic action text plus a visible keyboard focus ring without changing the Wave A layout or brand canvas decisions.
+
+### Scope
+
+Wave B shared tokens and primitives only; product flows, API contracts, and protected product/design foundations remain unchanged.
