@@ -17,7 +17,8 @@ Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts
 ## Wave B — shared component and visual-system fixes — 2026-08-02
 
 - `Implemented`: B1 uses one canonical `modernTokens` public surface with contrast-safe accent/danger roles, a `#2457E6` focus role, disabled opacity, and preserved Wave A geometry. Independent contrast/unit evidence: `apps/mobile/src/lib/visual-token.spec.ts` (6 tests).
-- `Needs verification`: B2–B6 interaction, media, dialog/state, presentation-adapter, browser, and founder device/accessibility evidence.
+- `Implemented`: B2 supplies focus-visible, reduced-motion, 44px compact hit-area and decorative-child contracts in shared primitives.
+- `Needs verification`: B3–B6 interaction, media, dialog/state, presentation-adapter, browser, and founder device/accessibility evidence.
 
 Runtime hardening (2026-07-31): `OverlayHost` uses a stable callback-ref boundary and anchor wrappers with real web refs; the full-screen host is non-interactive while portal content remains interactive, portals do not mount before geometry exists, and binary image responses send PNG `Buffer` bytes. Static checks pass; the current 22-test disposable browser suite reran successfully. Founder device/visual/accessibility acceptance remains separate.
 

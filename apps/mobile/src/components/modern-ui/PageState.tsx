@@ -16,6 +16,27 @@ export function PageState({
   loading?: boolean;
   retry?: () => void;
 }) {
+  if (loading) {
+    return (
+      <View
+        style={{
+          minHeight: 220,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: modernTokens.space.x8,
+        }}
+      >
+        <AppText
+          role="sectionTitle"
+          accessibilityRole="progressbar"
+          accessibilityLiveRegion="polite"
+        >
+          {title}
+        </AppText>
+      </View>
+    );
+  }
+
   return (
     <View
       style={{
@@ -33,11 +54,6 @@ export function PageState({
         </AppText>
       ) : null}
       {retry ? <PrimaryButton label="Повторить" onPress={retry} /> : null}
-      {loading ? (
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем…
-        </AppText>
-      ) : null}
     </View>
   );
 }

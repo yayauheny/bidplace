@@ -52,7 +52,7 @@ export function AppIcon({
     <Icon
       size={size}
       color={color}
-      accessibilityLabel={label}
+      {...(label ? { accessibilityLabel: label } : {})}
     />
   );
 }

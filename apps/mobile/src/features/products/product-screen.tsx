@@ -585,7 +585,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                     accessibilityRole="link"
                     accessibilityLabel={`Открыть профиль автора ${sellerProfile.fullName}`}
                     onPress={() => undefined}
-                    style={{ alignSelf: 'flex-start' }}
+                    style={{
+                      alignSelf: 'flex-start',
+                      minHeight: modernTokens.size.touch,
+                      justifyContent: 'center',
+                      paddingHorizontal: modernTokens.space.x1,
+                    }}
                   >
                     <AppText role="metadata" tone="secondary">
                       Автор: {sellerProfile.fullName}

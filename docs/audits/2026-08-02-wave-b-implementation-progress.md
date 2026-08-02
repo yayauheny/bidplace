@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement B2 focus-visible, reduced-motion, and composite accessibility contracts.
+Implement B3 stable button loading geometry and accessibility semantics.
 
 ## Completed slices
 
@@ -50,6 +50,16 @@ Implement B2 focus-visible, reduced-motion, and composite accessibility contract
 - Not done: focus-visible runtime adapter, reduced-motion behavior, and remaining B2–B6 work.
 - Next: implement B2 shared interaction and accessibility contracts.
 - Risks: founder visual/device/accessibility acceptance remains separate.
+
+### B2 — focus, motion, hit-area, and decorative-child contract
+
+- Done: web focus-visible uses a 2px outline with 2px offset and the semantic focus color; reduced-motion disables CSS transitions/animations and native/web image/press motion through the shared adapter.
+- Done: compact logo and Product author link have transparent 44px hit areas; composite icons no longer duplicate parent accessible names; image placeholders expose one labeled image role.
+- Changed: `apps/mobile/global.css`, `apps/mobile/src/lib/motion.ts`, `apps/mobile/src/lib/reduced-motion.ts`, `apps/mobile/src/lib/reduced-motion.spec.ts`, `MotionPressable.tsx`, `AppIcon.tsx`, `ImagePlaceholder.tsx`, `AuctionCard.tsx`, `ProductGallery.tsx`, `BrandLogo.tsx`, `product-screen.tsx`, `PageState.tsx`.
+- Checks: mobile typecheck passed; mobile lint passed; targeted suite passed 4 files / 16 tests after isolating the pure motion helper.
+- Not done: browser keyboard/reduced-motion evidence is part of the final E2E pass; B3–B6 remain.
+- Next: stabilize button loading geometry and compact/default semantics.
+- Risks: physical-device focus and accessibility acceptance remains separate.
 
 ## Open risks
 

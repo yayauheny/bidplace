@@ -16,6 +16,7 @@ export function ImagePlaceholder({
   return (
     <View
       accessibilityLabel={label}
+      accessibilityRole="image"
       style={[
         {
           aspectRatio: ratio,
@@ -30,7 +31,6 @@ export function ImagePlaceholder({
       <AppIcon
         name="imageOff"
         color={modernTokens.color.textSecondary}
-        label={label}
       />
     </View>
   );

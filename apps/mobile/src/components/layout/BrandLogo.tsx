@@ -20,8 +20,11 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
         accessibilityLabel="bidplace — на главную"
         style={({ pressed }) => ({
           opacity: pressed ? 0.7 : 1,
+          minWidth: modernTokens.size.touch,
+          minHeight: modernTokens.size.touch,
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: modernTokens.space.x2,
         })}
       >

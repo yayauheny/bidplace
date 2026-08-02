@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { ImagePlaceholder } from './ImagePlaceholder';
 
 type ProductGalleryImage = { id: string; url: string };
@@ -64,6 +65,7 @@ function GalleryImage({
   width: number;
 }) {
   const [failed, setFailed] = useState(false);
+  const reducedMotion = useReducedMotion();
   const imageLabel = `Изображение предмета: ${label}`;
 
   if (failed) {
@@ -80,7 +82,7 @@ function GalleryImage({
     <Image
       source={{ uri: getApiAssetUrl(image.url) }}
       contentFit="contain"
-      transition={modernTokens.motion.fast}
+      transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
       accessibilityLabel={imageLabel}
       onError={() => setFailed(true)}
       style={{

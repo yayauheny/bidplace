@@ -14,6 +14,7 @@
 ## Wave B — shared component and visual-system fixes — 2026-08-02
 
 - `Implemented`: B1 canonical semantic token surface and contrast roles are in `packages/design-tokens/src/modern.ts`; `AppText`, `TextField`, and the mobile runtime consume the modern surface. Verification: design-tokens build passed and `visual-token.spec.ts` passed 6 tests.
+- `Implemented`: B2 shared focus-visible/reduced-motion contracts, 44px logo/author hit areas, and single-name composite image/icon semantics are in the mobile shared primitives. Mobile typecheck/lint passed; the targeted B2 suite passed 16 tests.
 - `Partial`: the overall Wave B shared-system work remains incomplete until B2–B6 and final browser/device acceptance are verified.
 
 ## Runtime defect hardening — 2026-07-31

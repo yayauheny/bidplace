@@ -8,6 +8,7 @@ import type { publicProductListItemSchema } from '@bidplace/contracts';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { getAuctionCardContent } from './auction-card-layout';
 import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
@@ -80,6 +81,7 @@ function AuctionCardImage({
   productId: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   if (failed) {
     return (
@@ -97,7 +99,7 @@ function AuctionCardImage({
     <Image
       source={{ uri: getApiAssetUrl(imageUrl) }}
       contentFit="contain"
-      transition={modernTokens.motion.fast}
+      transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
       recyclingKey={`${productId}-${imageId}`}
       accessibilityLabel={`Изображение предмета: ${label}`}
       onError={() => setFailed(true)}
