@@ -5,7 +5,11 @@ import { modernTokens } from '@bidplace/design-tokens';
 import { AppIcon, type AppIconName } from './AppIcon';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
-import { buttonLayoutStyle, type ButtonWidth } from './button-layout';
+import {
+  buttonContentIconSlotStyle,
+  buttonLayoutStyle,
+  type ButtonWidth,
+} from './button-layout';
 
 type ButtonProps = {
   label: string;
@@ -33,13 +37,12 @@ function ButtonContent({
         gap: modernTokens.space.x2,
       }}
     >
-      {loading ? (
-        <ActivityIndicator color={color} size="small" />
-      ) : icon ? (
-        <AppIcon name={icon} color={color} />
-      ) : null}
-      <AppText role="button" style={{ color }}>
-        {loading ? 'Загрузка' : label}
+      <View style={buttonContentIconSlotStyle()}>
+        {loading ? <ActivityIndicator color={color} size="small" /> : null}
+        {!loading && icon ? <AppIcon name={icon} color={color} /> : null}
+      </View>
+      <AppText role="button" style={{ color }} numberOfLines={1}>
+        {label}
       </AppText>
     </View>
   );
@@ -212,7 +215,6 @@ export function IconButton({
       <AppIcon
         name={icon}
         color={selected ? modernTokens.color.surface : modernTokens.color.ink}
-        label={label}
       />
     </MotionPressable>
   );

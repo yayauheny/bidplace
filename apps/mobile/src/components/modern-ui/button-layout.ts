@@ -12,3 +12,12 @@ export function buttonLayoutStyle(width: ButtonWidth = 'content'): ViewStyle {
     ...(width === 'block' ? { width: '100%' } : {}),
   };
 }
+
+export function buttonContentIconSlotStyle(): ViewStyle {
+  return {
+    width: modernTokens.size.icon,
+    height: modernTokens.size.icon,
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+}

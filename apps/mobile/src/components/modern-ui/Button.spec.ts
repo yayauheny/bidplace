@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { buttonLayoutStyle } from './button-layout';
+import { buttonContentIconSlotStyle, buttonLayoutStyle } from './button-layout';
 
 describe('button layout variants', () => {
   it('uses content width by default', () => {
@@ -25,6 +25,13 @@ describe('button layout variants', () => {
     expect(buttonLayoutStyle('block')).toMatchObject({
       alignSelf: 'stretch',
       width: '100%',
+    });
+  });
+
+  it('reserves a stable icon slot for loading and icon states', () => {
+    expect(buttonContentIconSlotStyle()).toMatchObject({
+      width: modernTokens.size.icon,
+      height: modernTokens.size.icon,
     });
   });
 });

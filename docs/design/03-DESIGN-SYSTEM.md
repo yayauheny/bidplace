@@ -81,6 +81,7 @@ Every route uses the final shell and primitives. `AppShell` preserves the mobile
 - `Implemented`: runtime consumers use `modernTokens`; conflicting legacy token exports were removed after an import audit found no current workspace consumers. Wave A canvas, success color, layout, radius, and ratio values remain unchanged.
 - `Needs verification`: final browser/device focus, reduced-motion, dialog, and visual evidence remains part of the Wave B acceptance pass.
 - `Implemented`: B2 supplies the shared focus-visible CSS contract, web/native reduced-motion adapter, 44px compact hit areas, and single-name composite icon semantics. Browser/device evidence remains `Needs verification`.
+- `Implemented`: B3 keeps default/compact button geometry tokenized and preserves the original label plus a stable icon/spinner slot during busy state.
 
 ## Do not invent without designer approval
 

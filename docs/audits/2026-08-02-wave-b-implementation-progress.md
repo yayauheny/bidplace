@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement B3 stable button loading geometry and accessibility semantics.
+Implement B4 stable card/media/detail primitives and narrow-card evidence.
 
 ## Completed slices
 
@@ -60,6 +60,16 @@ Implement B3 stable button loading geometry and accessibility semantics.
 - Not done: browser keyboard/reduced-motion evidence is part of the final E2E pass; B3–B6 remain.
 - Next: stabilize button loading geometry and compact/default semantics.
 - Risks: physical-device focus and accessibility acceptance remains separate.
+
+### B3 — stable button loading geometry
+
+- Done: default content-width buttons remain 56px/18px; compact remains 44px/14px; explicit block remains the only full-width variant.
+- Done: busy buttons retain the original accessible label and visible label, use `busy` plus disabled semantics, and reserve a stable 20px icon/spinner slot.
+- Changed: `Button.tsx`, `button-layout.ts`, `Button.spec.ts`.
+- Checks: targeted button/token suite passed 2 files / 10 tests; mobile typecheck and lint passed.
+- Not done: visual width evidence at target viewports remains part of the final E2E/screenshot pass; B4–B6 remain.
+- Next: finish shared media/card/detail contracts.
+- Risks: no new button hierarchy or full-width behavior was introduced.
 
 ## Open risks
 
