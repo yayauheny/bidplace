@@ -18,8 +18,9 @@ test('product detail changes structure at the 900px breakpoint', async ({
   const { context, page } = await authenticatedPage(browser, fixture.buyerA);
 
   try {
-    for (const width of [899, 900, 1024, 1025]) {
-      await page.setViewportSize({ width, height: 844 });
+    for (const width of [899, 900, 1024, 1025, 1440, 390]) {
+      const height = width === 390 ? 844 : 900;
+      await page.setViewportSize({ width, height });
       await page.goto(`/product/${fixture.product.publicId}`);
 
       const image = page.locator(
@@ -31,8 +32,42 @@ test('product detail changes structure at the 900px breakpoint', async ({
       expect(imageBox!.width).toBe(width >= 900 ? 440 : 300);
       expect(imageBox!.height).toBe(width >= 900 ? 550 : 375);
 
-      await expect(page.getByText('Торги идут').first()).toBeVisible();
+      const title = page
+        .getByText(fixture.product.title, { exact: true })
+        .first();
+      const status = page.getByText('Торги идут').first();
+      const currentPriceLabel = page.getByText('Текущая цена', { exact: true });
+      const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
+      await expect(title).toBeVisible();
+      await expect(status).toBeVisible();
+      await expect(currentPriceLabel).toBeVisible();
+      await expect(currentPrice).toBeVisible();
       await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
+
+      const assertInViewport = async (locator: typeof title) => {
+        const box = await locator.boundingBox();
+        expect(box).not.toBeNull();
+        expect(box!.y).toBeGreaterThanOrEqual(0);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(height);
+      };
+
+      if (width === 390) {
+        for (const locator of [
+          title,
+          status,
+          currentPriceLabel,
+          currentPrice,
+        ]) {
+          await assertInViewport(locator);
+        }
+        const viewportMetrics = await page.evaluate(() => ({
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        }));
+        expect(viewportMetrics.documentWidth).toBeLessThanOrEqual(
+          viewportMetrics.viewportWidth,
+        );
+      }
 
       const dock = page.getByTestId('mobile-bottom-action-bar');
       if (width < 900) {
@@ -40,18 +75,33 @@ test('product detail changes structure at the 900px breakpoint', async ({
         await expect(
           dock.getByRole('button', { name: 'Сделать ставку' }),
         ).toBeVisible();
+        const dockBox = await dock.boundingBox();
+        expect(dockBox).not.toBeNull();
+        expect(dockBox!.height).toBeGreaterThanOrEqual(56);
+        expect(dockBox!.height).toBeLessThanOrEqual(64);
       } else {
         await expect(dock).toHaveCount(0);
         const amount = await page.getByLabel('Ваша ставка, BYN').boundingBox();
         expect(amount).not.toBeNull();
         expect(amount!.x).toBeGreaterThan(imageBox!.x + imageBox!.width - 10);
+
+        for (const locator of [
+          title,
+          status,
+          currentPriceLabel,
+          currentPrice,
+          page.getByText(/Мин\. ставка:/).first(),
+          page.getByText(/До завершения:/).first(),
+          page.getByRole('button', { name: 'Сделать ставку' }),
+        ]) {
+          await assertInViewport(locator);
+        }
       }
 
-      if (width === 1024) {
+      if ([1440, 1024, 390].includes(width)) {
         await mkdir(screenshotDir, { recursive: true });
         await page.screenshot({
-          path: resolve(screenshotDir, 'product-buyer-1024.png'),
-          fullPage: true,
+          path: resolve(screenshotDir, `product-buyer-${width}.png`),
         });
       }
     }
@@ -71,19 +121,41 @@ test('admin product detail preserves the no-bidding state at product-wide widths
   );
 
   try {
-    await page.setViewportSize({ width: 1024, height: 844 });
-    await page.goto(`/product/${auction.product.publicId}`);
+    for (const width of [1440, 1024, 390]) {
+      const height = width === 390 ? 844 : 900;
+      await page.setViewportSize({ width, height });
+      await page.goto(`/product/${auction.product.publicId}`);
 
-    await expect(
-      page.getByText('Администратор не участвует в торгах.'),
-    ).toBeVisible();
-    await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
-    await expect(page.getByTestId('mobile-bottom-action-bar')).toHaveCount(0);
-    await mkdir(screenshotDir, { recursive: true });
-    await page.screenshot({
-      path: resolve(screenshotDir, 'product-admin-1024.png'),
-      fullPage: true,
-    });
+      const title = page
+        .getByText(auction.product.title, { exact: true })
+        .first();
+      const status = page.getByText('Торги идут').first();
+      const currentPriceLabel = page.getByText('Текущая цена', { exact: true });
+      const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
+      await expect(title).toBeVisible();
+      await expect(status).toBeVisible();
+      await expect(currentPriceLabel).toBeVisible();
+      await expect(currentPrice).toBeVisible();
+      await expect(
+        page.getByText('Администратор не участвует в торгах.'),
+      ).toBeVisible();
+      await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
+      await expect(
+        page.getByRole('button', { name: 'Сделать ставку' }),
+      ).toHaveCount(0);
+      await expect(page.getByTestId('mobile-bottom-action-bar')).toHaveCount(0);
+      const viewportMetrics = await page.evaluate(() => ({
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      }));
+      expect(viewportMetrics.documentWidth).toBeLessThanOrEqual(
+        viewportMetrics.viewportWidth,
+      );
+      await mkdir(screenshotDir, { recursive: true });
+      await page.screenshot({
+        path: resolve(screenshotDir, `product-admin-${width}.png`),
+      });
+    }
   } finally {
     await context.close();
   }
@@ -104,6 +176,16 @@ test('auth forms stay scrollable at narrow viewport and enlarged scale', async (
   expect(initialMetrics.documentWidth).toBeLessThanOrEqual(
     initialMetrics.viewportWidth,
   );
+  await page.getByRole('button', { name: 'Создать аккаунт' }).click();
+  await expect(page.getByText('Введите имя', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Введите корректный email', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Пароль должен содержать не менее 8 символов', {
+      exact: true,
+    }),
+  ).toBeVisible();
   await page.getByLabel('Пароль').focus();
   await page.evaluate(() => {
     document.body.style.zoom = '2';
@@ -113,4 +195,14 @@ test('auth forms stay scrollable at narrow viewport and enlarged scale', async (
   await expect(
     page.getByRole('button', { name: 'Создать аккаунт' }),
   ).toBeVisible();
+  await expect(
+    page.getByText('Пароль должен содержать не менее 8 символов', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await mkdir(screenshotDir, { recursive: true });
+  await page.screenshot({
+    path: resolve(screenshotDir, 'auth-register-390-200.png'),
+    fullPage: true,
+  });
 });

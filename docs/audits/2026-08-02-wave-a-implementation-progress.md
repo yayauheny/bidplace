@@ -101,7 +101,9 @@ Status: `Implemented`
 ### Checks and results
 
 - Mobile typecheck and lint: passed.
-- Responsive Product buyer/admin E2E: passed, 2/2 tests; widths 899/900/1024/1025 and 300×375 / 440×550 gallery bounds are asserted.
+- Responsive Product buyer/admin E2E: passed, 2/2 Product tests; widths 899/900/1024/1025/1440/390 and 300×375 / 440×550 gallery bounds are asserted.
+- First-viewport assertions cover title, status, current price, minimum/timing/action at wide widths, key mobile auction truth, 56–64px dock geometry and no horizontal overflow.
+- Buyer/admin screenshots are captured at 1440/1024/390 in `/private/tmp/bidplace-wave-a-screenshots/product-{buyer,admin}-{width}.png`.
 - Mobile bid eligibility and admin no-bid conditions remain unchanged in `ProductScreen` and the API contract.
 
 ## A5 — Compact mobile navigation and auth viewport
@@ -128,7 +130,8 @@ Status: `Implemented`
 ### Checks and results
 
 - Mobile typecheck and lint: passed.
-- Responsive navigation/auth E2E: passed, 2/2 tests; approved seller navigation is checked at 390px for four in-viewport cells and no document overflow, and register is checked after focus at enlarged scale and reduced viewport height.
+- Responsive navigation/auth E2E: passed, 2/2 tests; approved seller navigation is checked at 390px for four in-viewport cells and no document overflow, and register is checked after focus, validation errors, enlarged scale and reduced viewport height.
+- Auth evidence is captured in `/private/tmp/bidplace-wave-a-screenshots/auth-register-390-200.png`.
 - Founder visual/device/accessibility acceptance remains pending.
 
 ## A2 — Overlay and dialog contract
