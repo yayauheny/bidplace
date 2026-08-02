@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Run the final verification matrix after the audit-hardening follow-up, then commit the completed Wave B work.
+Final verification passed; update the exact evidence counts, run the final static diff/worktree check, and commit the documentation-only follow-up.
 
 ## Completed slices
 
@@ -116,10 +116,11 @@ Run the final verification matrix after the audit-hardening follow-up, then comm
 - Design-tokens build: passed.
 - Mobile typecheck: passed.
 - Mobile lint: passed.
-- Full mobile Vitest: 13 files / 50 tests passed.
-- Targeted Wave B Playwright: 1 test / 1 passed (40.3s); browser evidence covers 1440/1024/390 focus-visible, reduced motion, PageState loading/empty/error, dialog long content, loading button, and compact logo hit area.
+- Full mobile Vitest: 13 files / 51 tests passed.
+- Targeted Wave B Playwright: 1 test / 1 passed (43.1s); browser evidence covers 1440/1024/390 focus-visible, reduced motion, PageState loading/empty/error, dialog long content, loading button, and compact logo hit area.
 - Full mobile Playwright: 23 tests / 23 passed (1.9m), including existing auction, security/privacy, navigation, Wave A, Wave One, and Wave B coverage.
 - Screenshots: 21 PNG files in `/private/tmp/bidplace-wave-b-screenshots`.
+- Required command matrix: `corepack pnpm --filter @bidplace/design-tokens build`, mobile `typecheck`, mobile `lint`, mobile Vitest, mobile Playwright E2E, and `git diff --check` all passed.
 - Final remaining acceptance: founder physical-device and screen-reader/visual acceptance; no Wave C work started.
 
 ## Open risks
