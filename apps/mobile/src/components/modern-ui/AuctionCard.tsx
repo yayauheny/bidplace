@@ -8,45 +8,19 @@ import type { publicProductListItemSchema } from '@bidplace/contracts';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { getAuctionCardContent } from './auction-card-layout';
 import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
 
 type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 
-function listingLabel(item: AuctionCardItem): string {
-  if (!item.listing) return 'Скоро';
-  if (item.listing.status === 'LIVE') return 'Торги идут';
-  if (item.listing.status === 'SCHEDULED') return 'Скоро';
-  if (item.listing.status === 'CANCELLED') return 'Отменено';
-  return 'Завершено';
-}
-
-function deadlineLabel(item: AuctionCardItem): string {
-  if (!item.listing) return 'Листинг готовится';
-  return new Intl.DateTimeFormat('ru-BY', {
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(item.listing.endsAt));
-}
-
-function publishedLabel(item: AuctionCardItem): string | null {
-  if (!item.product.publishedAt) return null;
-  return new Intl.DateTimeFormat('ru-BY', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(item.product.publishedAt));
-}
-
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
   const firstImage = product.images[0];
-  const price = listing ? `${listing.currentPrice} BYN` : 'Цена появится позже';
-  const description =
-    product.story?.replace(/\s+/g, ' ').trim() ||
-    'Авторский предмет с историей и происхождением.';
-  const label = `${product.title ?? 'Предмет'} — ${sellerProfile.fullName}. ${price}. ${listingLabel(item)} до ${deadlineLabel(item)}`;
+  const { title, description, price, status, deadline } =
+    getAuctionCardContent(item);
+  const label = `${title} — ${sellerProfile.fullName}. ${price}. ${status} до ${deadline}`;
 
   return (
     <Link href={`/product/${product.publicId}`} asChild>
@@ -60,12 +34,12 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
           <AuctionCardImage
             imageId={firstImage.id}
             imageUrl={firstImage.url}
-            label={product.title ?? 'Предмет'}
+            label={title}
             productId={product.id}
           />
         ) : (
           <ImagePlaceholder
-            label={`Нет изображения: ${product.title ?? 'предмет'}`}
+            label={`Нет изображения: ${title}`}
             style={{ width: '100%' }}
           />
         )}
@@ -74,31 +48,20 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
             {sellerProfile.fullName}
           </AppText>
           <AppText role="cardTitle" numberOfLines={2}>
-            {product.title ?? 'Предмет'}
+            {title}
           </AppText>
           <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
             {description}
           </AppText>
-          {publishedLabel(item) ? (
-            <AppText role="caption" tone="secondary">
-              Размещено {publishedLabel(item)}
-            </AppText>
-          ) : null}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: modernTokens.space.x2,
-            }}
+          <AppText role="numeric" numberOfLines={1} style={{ flexShrink: 0 }}>
+            {price}
+          </AppText>
+          <AppText
+            role="caption"
+            tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
           >
-            <AppText role="numeric">{price}</AppText>
-            <AppText
-              role="caption"
-              tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
-            >
-              {listingLabel(item)} · {deadlineLabel(item)}
-            </AppText>
-          </View>
+            {status} · {deadline}
+          </AppText>
         </View>
       </MotionPressable>
     </Link>
@@ -122,7 +85,10 @@ function AuctionCardImage({
     return (
       <ImagePlaceholder
         label={`Изображение недоступно: ${label}`}
-        style={{ width: '100%' }}
+        style={{
+          width: '100%',
+          aspectRatio: modernTokens.ratio.productPortrait,
+        }}
       />
     );
   }
@@ -137,7 +103,7 @@ function AuctionCardImage({
       onError={() => setFailed(true)}
       style={{
         width: '100%',
-        aspectRatio: 4 / 5,
+        aspectRatio: modernTokens.ratio.productPortrait,
         borderRadius: modernTokens.radius.image,
         backgroundColor: modernTokens.color.placeholder,
       }}

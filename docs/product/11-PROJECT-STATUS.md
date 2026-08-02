@@ -6,8 +6,8 @@
 ## Wave A — structural responsive fixes — 2026-08-02
 
 - `Implemented`: A1 centralizes the confirmed responsive contracts in `packages/design-tokens/src/modern.ts`: desktop shell `1025`, catalog columns `900`/`1440`, rail width `72`, product portrait ratio `4/5` and the existing product detail measure `1180`. `AppShell`, `AppHeader`, Catalog and Product consumers use these shared values; `catalog-layout.spec.ts` covers 899/900/1024/1025/1439/1440 boundaries.
-- `Partial`: A2 now portals the web account menu at every viewport, clamps its bottom-end geometry to an 8px viewport inset, returns focus to the trigger on Escape, and gives dialogs modal layer 30 with viewport-bounded internal scrolling. Unit/static evidence passes; browser verification is pending.
-- `Not implemented`: A3 is the next Wave A task. A4 product-detail geometry remains blocked by founder Decision 3; A5 compact/navigation roles remain blocked by founder Decision 4. No Wave B/C work is included.
+- `Partial`: A2 now portals the web account menu at every viewport, clamps its bottom-end geometry to an 8px viewport inset, returns focus to the trigger on Escape, and gives dialogs modal layer 30 with viewport-bounded internal scrolling. Unit/static evidence and the full 18-test Chromium/Playwright suite pass; physical-device and accessibility acceptance remain pending.
+- `Partial`: A3 now uses one catalog grid wrapper for loading and loaded cards, shared 4:5 media geometry for loaded/fallback/skeleton states, and separate atomic price and status/deadline rows. Unit, full static, Expo export, target-width screenshot/bounding-box and full 18-test browser coverage pass; founder/device/accessibility acceptance remains pending. A4 product-detail geometry remains blocked by founder Decision 3; A5 compact/navigation roles remain blocked by founder Decision 4. No Wave B/C work is included.
 
 ## Runtime defect hardening — 2026-07-31
 

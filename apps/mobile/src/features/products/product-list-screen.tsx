@@ -19,25 +19,53 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
 
-function CatalogLoading() {
+function CatalogGrid({
+  columns,
+  count,
+  renderCard,
+}: {
+  columns: 2 | 3 | 4;
+  count: number;
+  renderCard: (index: number) => ReactNode;
+}) {
+  const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
+
   return (
     <View
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: modernTokens.space.x4,
+        margin: -modernTokens.space.x2,
       }}
     >
-      {[0, 1, 2, 3].map((key) => (
+      {Array.from({ length: count }, (_, index) => (
         <View
-          key={key}
-          style={{ flex: 1, minWidth: 220, gap: modernTokens.space.x2 }}
+          key={index}
+          style={{ width: cardWidth, padding: modernTokens.space.x2 }}
         >
-          <Skeleton style={{ aspectRatio: 4 / 5 }} />
-          <Skeleton style={{ width: '70%', height: 16 }} />
-          <Skeleton style={{ width: '45%', height: 14 }} />
+          {renderCard(index)}
         </View>
       ))}
+    </View>
+  );
+}
+
+function CatalogCardSkeleton() {
+  return (
+    <View style={{ gap: modernTokens.space.x3 }}>
+      <Skeleton
+        style={{
+          width: '100%',
+          aspectRatio: modernTokens.ratio.productPortrait,
+          borderRadius: modernTokens.radius.image,
+        }}
+      />
+      <View style={{ gap: modernTokens.space.x1 }}>
+        <Skeleton style={{ width: '50%', height: 16 }} />
+        <Skeleton style={{ width: '85%', height: 42 }} />
+        <Skeleton style={{ width: '100%', height: 22 }} />
+        <Skeleton style={{ width: '52%', height: 18 }} />
+      </View>
     </View>
   );
 }
@@ -50,11 +78,16 @@ export function ProductListScreen() {
     queryFn: () => api.products.list(),
   });
   const columns = getCatalogColumnCount(width);
-  const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 
   let content: ReactNode;
   if (query.isLoading) {
-    content = <CatalogLoading />;
+    content = (
+      <CatalogGrid
+        columns={columns}
+        count={4}
+        renderCard={() => <CatalogCardSkeleton />}
+      />
+    );
   } else if (query.isError || !query.data) {
     content = (
       <PageState
@@ -72,22 +105,13 @@ export function ProductListScreen() {
     );
   } else {
     content = (
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          margin: -modernTokens.space.x2,
-        }}
-      >
-        {query.data.products.map((item) => (
-          <View
-            key={item.product.id}
-            style={{ width: cardWidth, padding: modernTokens.space.x2 }}
-          >
-            <AuctionCard item={item} />
-          </View>
-        ))}
-      </View>
+      <CatalogGrid
+        columns={columns}
+        count={query.data.products.length}
+        renderCard={(index) => (
+          <AuctionCard item={query.data.products[index]} />
+        )}
+      />
     );
   }
 

@@ -18,7 +18,10 @@ export function ProductGallery({
 }) {
   if (images.length === 0)
     return (
-      <ImagePlaceholder ratio={4 / 5} label={`Нет изображения: ${label}`} />
+      <ImagePlaceholder
+        ratio={modernTokens.ratio.productPortrait}
+        label={`Нет изображения: ${label}`}
+      />
     );
 
   return (
@@ -48,7 +51,7 @@ function GalleryImage({
   if (failed) {
     return (
       <ImagePlaceholder
-        ratio={4 / 5}
+        ratio={modernTokens.ratio.productPortrait}
         label={`Изображение недоступно: ${label}`}
         style={{ width: 300 }}
       />
@@ -64,7 +67,7 @@ function GalleryImage({
       onError={() => setFailed(true)}
       style={{
         width: 300,
-        aspectRatio: 4 / 5,
+        aspectRatio: modernTokens.ratio.productPortrait,
         borderRadius: modernTokens.radius.image,
         backgroundColor: modernTokens.color.placeholder,
       }}

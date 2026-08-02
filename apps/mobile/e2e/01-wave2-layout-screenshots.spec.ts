@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { createAdminModerationFixture } from './support/e2e-fixtures';
+import { getCatalogColumnCount } from '../src/features/products/catalog-layout';
 
 const screenshotDir = resolve('/private/tmp', 'bidplace-wave2-screenshots');
 const seededProducts = [
@@ -40,6 +41,29 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       }
       const catalogCards = page.locator('a[href^="/product/"]');
       await expect(catalogCards).toHaveCount(seededProducts.length);
+      const expectedColumns = getCatalogColumnCount(width);
+      const cardBoxes = await Promise.all(
+        seededProducts.map((product) =>
+          page.locator(`a[href="/product/${product.publicId}"]`).boundingBox(),
+        ),
+      );
+      const orderedCardBoxes = cardBoxes
+        .filter((box): box is NonNullable<typeof box> => box !== null)
+        .sort((left, right) => left.y - right.y || left.x - right.x);
+      const firstRowBoxes = orderedCardBoxes.slice(0, expectedColumns);
+      expect(firstRowBoxes).toHaveLength(
+        Math.min(expectedColumns, seededProducts.length),
+      );
+      expect(
+        firstRowBoxes.every(
+          (box) => Math.abs((box?.y ?? 0) - (firstRowBoxes[0]?.y ?? 0)) < 1,
+        ),
+      ).toBe(true);
+      if (expectedColumns < seededProducts.length) {
+        expect(orderedCardBoxes[expectedColumns]?.y).toBeGreaterThan(
+          orderedCardBoxes[0]?.y ?? 0,
+        );
+      }
       for (const product of seededProducts) {
         const card = page.locator(`a[href="/product/${product.publicId}"]`);
         await expect(card).toHaveCount(1);
@@ -63,6 +87,62 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         fullPage: true,
       });
 
+      await page.goto('/');
+      const account = page.getByRole('button', {
+        name: /Открыть меню аккаунта/,
+      });
+      if (width >= 1025) {
+        await account.hover();
+      } else {
+        await account.click();
+      }
+      await expect(page.locator('#account-menu-dropdown')).toBeVisible();
+      await page.screenshot({
+        path: resolve(screenshotDir, `account-menu-${width}.png`),
+        fullPage: true,
+      });
+      await page.keyboard.press('Escape');
+
+      await page.route(
+        '**/api/products*',
+        async (route) => {
+          const response = await route.fetch();
+          await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
+          await route.fulfill({ response });
+        },
+        { times: 1 },
+      );
+      await page.goto('/');
+      await expect(page.getByRole('progressbar').first()).toBeVisible();
+      await page.screenshot({
+        path: resolve(screenshotDir, `catalog-loading-${width}.png`),
+        fullPage: true,
+      });
+      await expect(catalogCards).toHaveCount(seededProducts.length);
+      await page.unroute('**/api/products*');
+
+      const failedPage = await context.newPage();
+      await failedPage.setViewportSize({
+        width,
+        height: width === 390 ? 844 : 900,
+      });
+      await failedPage.route('**/*', async (route) => {
+        if (route.request().resourceType() === 'image') {
+          await route.abort();
+          return;
+        }
+        await route.continue();
+      });
+      await failedPage.goto('/');
+      await expect(
+        failedPage.getByLabel(/Изображение недоступно|Нет изображения/).first(),
+      ).toBeVisible();
+      await failedPage.screenshot({
+        path: resolve(screenshotDir, `catalog-failed-image-${width}.png`),
+        fullPage: true,
+      });
+      await failedPage.close();
+
       await page.goto('/product/seedLive002');
       await expect(page.getByText('Торги идут').first()).toBeVisible();
       await page.screenshot({
@@ -79,7 +159,10 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         .getByRole('button', { name: 'Приостановить' })
         .click();
       await expect(page.getByRole('dialog')).toBeVisible();
-      await expect(page.getByRole('dialog')).toHaveCSS('z-index', '30');
+      await expect(page.locator('#app-dialog-content')).toHaveCSS(
+        'z-index',
+        '30',
+      );
       await page.screenshot({
         path: resolve(screenshotDir, `dialog-${width}.png`),
         fullPage: true,
