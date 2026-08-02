@@ -4,6 +4,7 @@ import { modernTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { PrimaryButton } from './Button';
+import { getPageStateMode } from './page-state-contract';
 
 export function PageState({
   title,
@@ -16,7 +17,7 @@ export function PageState({
   loading?: boolean;
   retry?: () => void;
 }) {
-  if (loading) {
+  if (getPageStateMode({ loading, retry: Boolean(retry) }) === 'loading') {
     return (
       <View
         style={{

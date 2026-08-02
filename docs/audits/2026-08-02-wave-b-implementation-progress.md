@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement B5 AppDialog and PageState state/focus contract.
+Implement B6 localized presentation adapters for existing seller/admin data.
 
 ## Completed slices
 
@@ -80,6 +80,16 @@ Implement B5 AppDialog and PageState state/focus contract.
 - Not done: browser visual evidence for long/missing/failed media remains part of the final screenshot/E2E pass; B5–B6 remain.
 - Next: finish dialog and PageState contracts.
 - Risks: no product section order or auction flow was changed.
+
+### B5 — dialog and PageState contract
+
+- Done: PageState now separates loading/empty/error modes; loading is one polite `progressbar` announcement and does not duplicate loading copy or expose retry.
+- Done: AppDialog keeps modal layer 30, bounded scroll content, keyboard tap handling, nested scrolling, and modal accessibility semantics; the existing dialog primitive continues to own focus trap, initial focus, Escape, and focus return.
+- Changed: `AppDialog.tsx`, `PageState.tsx`, `page-state-contract.ts` and its spec, modern-ui exports.
+- Checks: targeted state/media/card suite passed 3 files / 9 tests; mobile typecheck and lint passed.
+- Not done: browser keyboard-only and long-content evidence remains part of the final E2E/screenshot pass; B6 remains.
+- Next: add shared presentation maps/adapters without changing server values or serialization.
+- Risks: dialog primitive behavior still needs real browser verification.
 
 ## Open risks
 

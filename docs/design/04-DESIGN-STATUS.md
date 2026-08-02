@@ -20,6 +20,7 @@ Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts
 - `Implemented`: B2 supplies focus-visible, reduced-motion, 44px compact hit-area and decorative-child contracts in shared primitives.
 - `Implemented`: B3 preserves 56px default and 44px compact button geometry with stable loading content and busy/disabled semantics.
 - `Implemented`: B4 provides shared loaded/skeleton/fallback/gallery media geometry and stable narrow `AuctionCard` rows; `EditorialSection` is prepared for later detail application.
+- `Implemented`: B5 provides one announced loading state and bounded modal dialog semantics with shared retry/empty/error distinctions.
 - `Needs verification`: B3–B6 interaction, media, dialog/state, presentation-adapter, browser, and founder device/accessibility evidence.
 
 Runtime hardening (2026-07-31): `OverlayHost` uses a stable callback-ref boundary and anchor wrappers with real web refs; the full-screen host is non-interactive while portal content remains interactive, portals do not mount before geometry exists, and binary image responses send PNG `Buffer` bytes. Static checks pass; the current 22-test disposable browser suite reran successfully. Founder device/visual/accessibility acceptance remains separate.

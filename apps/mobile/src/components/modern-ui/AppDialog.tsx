@@ -67,6 +67,9 @@ export function AppDialog({
             }}
           >
             <ScrollView
+              accessibilityViewIsModal
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
               showsVerticalScrollIndicator
               contentContainerStyle={{
                 gap: modernTokens.space.x4,
