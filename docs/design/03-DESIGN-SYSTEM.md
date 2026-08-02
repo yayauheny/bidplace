@@ -4,6 +4,8 @@
 
 Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
 
+Wave A token update: `modernTokens.layout` now owns `railWidth` and the existing Product detail measure; `modernTokens.breakpoint` owns the desktop shell and catalog transitions; `modernTokens.ratio.productPortrait` owns the confirmed 4:5 product media ratio. No page/content max-width token was added.
+
 Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip surfaces and semantic content/chrome/popover/modal layers; `AppShell` owns the 72 px desktop rail, account row and web `OverlayHost`; `AppHeader` owns role-derived icon navigation. Catalog uses the available page width after the rail, while Product detail keeps gallery, author/title and auction in one responsive top block and renders the item story as linear sections. Product detail uses the existing public Product/SellerProfile/Listing data for author, facts, publication date and history.
 
 ## Current implementation

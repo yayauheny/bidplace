@@ -140,7 +140,7 @@ export function AppHeader({ accountControl }: { accountControl?: ReactNode }) {
   const capability = useSellerCapability();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
-  const desktop = width >= 1025;
+  const desktop = width >= modernTokens.breakpoint.desktopShell;
   const nav = items(auth, capability);
 
   const links = nav.map((item) => {
@@ -162,7 +162,7 @@ export function AppHeader({ accountControl }: { accountControl?: ReactNode }) {
   return desktop ? (
     <View
       style={{
-        width: 72,
+        width: modernTokens.layout.railWidth,
         alignSelf: 'stretch',
         flexShrink: 0,
         alignItems: 'center',

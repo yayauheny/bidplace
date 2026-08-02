@@ -34,6 +34,18 @@ export const modernTokens = {
     numeric: { fontFamily: 'PTMono_400Regular', fontSize: 14, lineHeight: 18, fontWeight: '400' as const },
   },
   motion: { instant: 80, fast: 120, normal: 180, slow: 260 },
+  layout: {
+    railWidth: 72,
+    productDetailMaxWidth: 1180,
+  },
+  breakpoint: {
+    desktopShell: 1025,
+    catalogThreeColumn: 900,
+    catalogFourColumn: 1440,
+  },
+  ratio: {
+    productPortrait: 4 / 5,
+  },
   layer: { content: 0, chrome: 10, popover: 20, modal: 30 },
 } as const;
 

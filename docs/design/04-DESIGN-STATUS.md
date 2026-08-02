@@ -4,6 +4,11 @@
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
+## Wave A — structural responsive fixes — 2026-08-02
+
+- `Implemented`: A1 uses shared modern layout, breakpoint and product-ratio contracts for the desktop shell and catalog column calculation. The catalog target is now 2 columns below 900px, 3 columns from 900 through 1439px and 4 columns from 1440px.
+- `Partial`: A1 has static/unit evidence; browser bounding-box and visual acceptance remain pending. A2/A3 are queued. Product-detail geometry and maximum-role navigation/auth changes remain blocked by the founder decisions recorded in the audit.
+
 Wave 2 catalog/product layout: Catalog no longer renders the visible title/count on desktop and uses a left-starting, available-width grid with stable media ratio, description and secondary status. Product detail keeps gallery, author/title, publication date and auction together on desktop, preserves the mobile sequence, removes content tabs, and renders story, item history and bid history as linear sections. Shared buttons default to content width; `compact` and explicit `block` are available. Logic, API contracts, auction/moderation states and seed data are unchanged. Static checks, focused button unit coverage, target-width screenshots and disposable PostgreSQL Playwright verification pass; founder device/accessibility acceptance remains separate.
 
 Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts the desktop account row; the mobile header keeps one bottom divider across brand row and navigation, without a navigation `borderTop`. The 390 px screenshot test checks the first seed card starts immediately after mobile navigation. Desktop rail/account layout is unchanged.

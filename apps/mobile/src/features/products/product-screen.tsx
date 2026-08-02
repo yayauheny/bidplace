@@ -181,7 +181,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1025;
+  const isDesktop = width >= modernTokens.breakpoint.desktopShell;
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
@@ -523,7 +523,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         <View
           style={{
             width: '100%',
-            maxWidth: 1180,
+            maxWidth: modernTokens.layout.productDetailMaxWidth,
             alignSelf: 'center',
             gap: modernTokens.space.x6,
           }}

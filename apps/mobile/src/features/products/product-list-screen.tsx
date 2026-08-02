@@ -17,6 +17,7 @@ import {
   Skeleton,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
+import { getCatalogColumnCount } from './catalog-layout';
 
 function CatalogLoading() {
   return (
@@ -48,7 +49,7 @@ export function ProductListScreen() {
     queryKey: ['products'],
     queryFn: () => api.products.list(),
   });
-  const columns = width >= 1440 ? 4 : width >= 1025 ? 3 : 2;
+  const columns = getCatalogColumnCount(width);
   const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 
   let content: ReactNode;

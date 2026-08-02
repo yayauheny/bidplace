@@ -3,6 +3,11 @@
 Последнее обновление: 2026-08-02
 Статус: Technical baseline is Partial; API/mobile static checks and the current 17-test Chromium/disposable Playwright suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
+## Wave A — structural responsive fixes — 2026-08-02
+
+- `Implemented`: A1 centralizes the confirmed responsive contracts in `packages/design-tokens/src/modern.ts`: desktop shell `1025`, catalog columns `900`/`1440`, rail width `72`, product portrait ratio `4/5` and the existing product detail measure `1180`. `AppShell`, `AppHeader`, Catalog and Product consumers use these shared values; `catalog-layout.spec.ts` covers 899/900/1024/1025/1439/1440 boundaries.
+- `Not implemented`: A2 and A3 are the next Wave A tasks. A4 product-detail geometry remains blocked by founder Decision 3; A5 compact/navigation roles remain blocked by founder Decision 4. No Wave B/C work is included.
+
 ## Runtime defect hardening — 2026-07-31
 
 - `Implemented`: `OverlayHost` now supplies the web overlay boundary through a memoized callback ref; `OverlayPortal` waits for both the boundary and anchor rectangle, and navigation/account anchors use ref-supporting `View` wrappers. Web pointer-events are expressed through styles. Existing account hover/click/focus, Escape/outside dismissal and logout behavior remain in scope.

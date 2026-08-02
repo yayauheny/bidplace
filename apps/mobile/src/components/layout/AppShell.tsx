@@ -16,7 +16,7 @@ export function AppShell({
   bottomAction?: ReactNode;
 }) {
   const { width } = useWindowDimensions();
-  const desktop = width >= 1025;
+  const desktop = width >= modernTokens.breakpoint.desktopShell;
 
   return (
     <OverlayHost>
