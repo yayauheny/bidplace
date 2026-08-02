@@ -82,7 +82,7 @@ function NavigationItem({
         <MotionPressable
           accessibilityRole="link"
           accessibilityLabel={item.label}
-          accessibilityState={{ selected: active }}
+          aria-current={active ? 'page' : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onHoverIn={() => setHovered(true)}

@@ -18,6 +18,8 @@ test('desktop rail keeps the active catalog link visible', async ({ page }) => {
   const catalogLink = page.getByRole('link', { name: 'Каталог' });
   await expect(catalogLink).toBeVisible();
   await expect(catalogLink).toHaveAttribute('href', '/');
+  await expect(catalogLink).toHaveAttribute('aria-current', 'page');
+  await expect(catalogLink).not.toHaveAttribute('aria-selected');
   await expect(catalogLink).toHaveCSS('min-height', '44px');
   expect(
     consoleErrors.filter((message) => message.includes('accessible')),
@@ -89,12 +91,20 @@ test('approved seller navigation exposes the seller cabinet and add product', as
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto(`/product/${fixture.product.publicId}`);
+    await expect(page.getByRole('link', { name: 'Каталог' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(
       page.getByRole('link', { name: 'Кабинет продавца' }),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Добавить предмет' }),
     ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Каталог' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
 
     for (const label of ['Каталог', 'Покупки']) {
       await page.getByRole('link', { name: label }).hover();

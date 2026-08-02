@@ -31,7 +31,7 @@
 
 ## Wave 2 — catalog/product layout — 2026-08-01
 
-- `Partial`: `product-list-screen.tsx` now starts the catalog grid after the desktop rail, removes the visible Catalog heading/count, and lets `AuctionCard` show stable media, author, title, short description, price, publication date and secondary listing status. Loading, empty, error, query, filters, pagination and seed data are unchanged.
+- `Partial`: `product-list-screen.tsx` now starts the catalog grid after the desktop rail, removes the visible Catalog heading/count, and lets `AuctionCard` show stable media, author, title, short description, atomic price with `BYN` and secondary listing status/deadline. Loading, empty, error, query, filters, pagination and seed data are unchanged.
 - `Partial`: `product-screen.tsx` now places gallery, author/title and auction together in the desktop top block, preserves the mobile gallery → author/title → auction order, and renders item story, item history and bid history linearly. Auction/bid/realtime/auth logic and public contracts are unchanged.
 - `Implemented`: shared `Button` defaults to content width; `compact` and explicit `block` variants are available through `button-layout.ts`, with focused unit coverage in `Button.spec.ts`. `AppDialog` has a desktop max width; media uses stable contain presentation and existing fallbacks.
 - `Implemented`: screenshots at 1440/1024/390 px are captured in `/private/tmp/bidplace-wave2-screenshots`; the full disposable PostgreSQL Playwright suite passes 22/22, including catalog/product/dialog and Wave A responsive coverage. Founder device/accessibility and reduced-motion acceptance remain separate.

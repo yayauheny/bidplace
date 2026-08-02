@@ -5,8 +5,8 @@
 - Status: `complete`
 - Last completed checkpoint: 2026-08-02 15:04
 - Current audit unit: complete
-- Next exact action: Start Wave A tasks 1–4 immediately; start task 5 after founder decision 3 is recorded
-- Blockers: Fresh screenshot regeneration is not reproducible in the current environment because pnpm signature verification attempts a failed registry fetch; this is an evidence/toolchain blocker rather than a confirmed application defect, and visual acceptance must be repeated after Wave C
+- Next exact action: Wave A implementation and acceptance evidence are complete; proceed to founder visual/device/accessibility acceptance or a separately approved Wave B scope
+- Blockers: No Wave A implementation blocker remains. Formal founder visual/device/accessibility acceptance and any decision-log entry for the selected A4/A5 values remain governance follow-ups.
 
 ## Audit queue
 
