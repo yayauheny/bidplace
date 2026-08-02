@@ -170,6 +170,26 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** every interactive element has a clearly visible focus indicator with at least 3:1 contrast against adjacent white/surface pixels; the indicator follows logical Tab order and remains visible at 200% zoom without changing layout.
 - **Tests/evidence:** Playwright keyboard traversal at 1440×900 and 1024×900 with focus screenshots for rail, account control, card, text button and dialog actions; component test asserting focus-visible styling from the shared primitive.
 
+### [P1] F-OVR-01 — Mobile account dropdown bypasses the overlay layer
+
+- **Evidence:** On `/`, `/product/[publicId]` and every AppShell route at 1024×900 and 390×844, the account control is inside the first mobile-header row. When opened, `AccountMenu` renders `AccountDropdown` as `position: absolute` inside that row with no `zIndex`; only the desktop branch uses `OverlayPortal`. The supplied screenshots do not open the account menu, so they cannot disprove occlusion by the later-painted page content.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/AccountMenu.tsx` (`AccountMenu`, inline `AccountDropdown`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/AppHeader.tsx` (mobile account host); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/OverlayHost.tsx` (`OverlayPortal`).
+- **Root cause:** popover ownership differs by viewport: desktop participates in the centralized popover layer, while mobile creates a screen-tree absolute element without an explicit stacking contract.
+- **Required change:** render the account dropdown through `OverlayPortal` on web at every viewport, using `bottom-end` placement and `layer.popover: 20`; keep an inline/native adapter only where a web portal is unavailable. Add viewport-edge collision padding of 8px so the 180px menu stays inside 390px and zoomed layouts.
+- **Do not do:** add a header-local `zIndex`, move content down while the menu is open, or add negative margins/fixed clipping heights around the header.
+- **Acceptance criteria:** the open account menu is fully visible above catalog cards, product auction panel, sticky actions and admin content at 1440×900, 1024×900 and 390×844; it stays at least 8px inside the viewport and does not change document layout.
+- **Tests/evidence:** Playwright screenshots with the account menu open over `/`, `/product/seedLive002` and `/admin` at all three viewports; assertions that it is inside `#app-overlay-host`, has z-index 20 and its bounding box stays within the viewport.
+
+### [P1] F-OVR-02 — Account dropdown does not restore focus after Escape
+
+- **Evidence:** At 1025px+ the account menu opens on trigger focus. `closeOnEscape` only calls `closeMenu()`, and `closeMenu` clears state without focusing the trigger. If keyboard focus has moved to `Выйти`, Escape unmounts the focused dropdown content. Existing `navigation.spec.ts` verifies that the menu closes but never asserts `document.activeElement`; no focus-return screenshot or test exists.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/AccountMenu.tsx` (`triggerRef`, `closeMenu`, `closeOnEscape`); `/Users/yayauheny/projects/bidplace/apps/mobile/e2e/navigation.spec.ts` (account-menu test).
+- **Root cause:** the custom popover implements open/close events manually but does not implement the focus lifecycle provided by a complete popover primitive.
+- **Required change:** keep a focusable trigger ref and return focus to it when the dropdown closes through Escape or an explicit internal close; preserve outside-pointer close without stealing focus from the user's clicked destination.
+- **Do not do:** focus `document.body`, force focus return after every pointer click, or hide the failure by removing Escape support.
+- **Acceptance criteria:** after opening the account menu, tabbing to `Выйти` and pressing Escape, the menu closes and the account trigger is `document.activeElement`; the next Tab proceeds to the next logical control exactly once.
+- **Tests/evidence:** extend `navigation.spec.ts` with keyboard-only open/traverse/Escape assertions at 1440×900 and 1025×900; capture the focus ring on the restored account trigger.
+
 **P2**
 
 ### [P2] F-BTN-01 — Loading changes content-width button geometry
@@ -201,6 +221,16 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Do not do:** delete exported values before checking package consumers, alias conflicting names to different meanings silently, or migrate components back to `lightTheme`.
 - **Acceptance criteria:** production app code has one documented token entry point; lint/type boundaries prevent new imports from the legacy surface; no visual value changes solely because of export cleanup.
 - **Tests/evidence:** repository import check, package typecheck/build, and a design-token unit test confirming the canonical white canvas, ink primary action and active semantic roles.
+
+### [P2] F-DLG-01 — Dialog stacking is not bound to the modal token
+
+- **Evidence:** `dialog-1440.png`, `dialog-1024.png` and `dialog-390.png` show the current moderation dialog correctly centered, width-limited and above ordinary content. However, `AppDialog` gives neither overlay nor content `zIndex: modernTokens.layer.modal`; the shared popover host explicitly uses 20. The screenshots cover only a dialog without another open popover, so modal-over-popover ordering is unverified.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/AppDialog.tsx` (`Dialog.Overlay`, centering wrapper, `Dialog.Content`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/OverlayHost.tsx` (`layer.popover`).
+- **Root cause:** the token map defines `layer.modal: 30`, but the dialog adapter relies on unspecified portal/default stacking instead of applying the shared layer contract.
+- **Required change:** make the dialog portal wrapper viewport-fixed and explicitly assign `layer.modal: 30` to the overlay/content stack while keeping the existing 520px maximum, 20px mobile gutter, centered composition and destructive-before-cancel hierarchy.
+- **Do not do:** add screen-local z-index values, increase every overlay to an arbitrary large number, or change the confirmed centered dialog into a new mobile sheet.
+- **Acceptance criteria:** an open dialog always covers and blocks an already-open account dropdown or tooltip; the dialog remains centered at all three viewports, its backdrop covers the full viewport during scroll, and cancel/destructive controls remain reachable.
+- **Tests/evidence:** component stacking test plus Playwright scenario that opens a popover then a dialog and asserts modal z-index 30 > popover 20; screenshots at 1440×900, 1024×900 and 390×844.
 
 ## 5. Screen-by-screen implementation specification
 

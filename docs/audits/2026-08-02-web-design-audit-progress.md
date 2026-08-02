@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 11:53
-- Current audit unit: 4 — OverlayHost, tooltips, account menu, dialogs, stacking and focus
-- Next exact action: Inspect overlay portal geometry, mobile/desktop account dropdown behavior, tooltip placement, dialog layering and focus lifecycle; compare dialog screenshots at all three viewports and add only unit 4 findings
+- Last completed checkpoint: 2026-08-02 11:55
+- Current audit unit: 5 — Catalog grid and AuctionCard at 1440/1024/390
+- Next exact action: Compare catalog screenshots and code for target column breakpoints, left-edge density, card hierarchy, price/status wrapping, image/fallback geometry and screenshot blind spots; add only unit 5 findings
 - Blockers: none
 
 ## Audit queue
@@ -15,7 +15,7 @@
 | 1 | Repo instructions, canonical product/design docs, skeleton and queue | AGENTS.md, product/design docs, screenshots, commits | `complete` | Evidence table populated; no findings (documentary unit) |
 | 2 | Design tokens, typography, colors, spacing, radii, buttons | packages/design-tokens/src/index.ts, modern.ts, Button.tsx, MotionPressable.tsx, button-layout.ts, AppText.tsx, TextField.tsx, app/_layout.tsx, shared media components | `complete` | F-ACC-01, F-ACC-02, F-ACC-03, F-BTN-01, F-TOK-02, F-TOK-03 |
 | 3 | AppShell, AppHeader, desktop rail, mobile header, account control | AppShell.tsx, AppHeader.tsx, BrandLogo.tsx, AccountMenu.tsx; catalog/product screenshots at 1440/1024/390 | `complete` | No new finding: target shell/header geometry confirmed; seller long-label evidence deferred to unit 9 regression gap |
-| 4 | OverlayHost, tooltips, account menu, dialogs, stacking and focus | OverlayHost.tsx, AccountMenu.tsx, AppDialog.tsx | `not_started` | — |
+| 4 | OverlayHost, tooltips, account menu, dialogs, stacking and focus | OverlayHost.tsx, AccountMenu.tsx, AppDialog.tsx, navigation.spec.ts, dialog screenshots at 1440/1024/390 | `complete` | F-OVR-01, F-OVR-02, F-DLG-01 |
 | 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx | `not_started` | — |
 | 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx | `not_started` | — |
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx | `not_started` | — |
@@ -43,6 +43,8 @@
 | TextField.tsx, AuctionCard.tsx, ProductGallery.tsx, ImagePlaceholder.tsx and CatalogLoading | Compared repeated state and media literals | Disabled opacity `0.5` and product portrait ratio `4/5` are consistent today but not tokenized | F-TOK-02 |
 | docs/modern-ui target docs and approved local reference screenshots | Read art-direction rules and opened product, catalog, author, auth, settings, dashboard, empty, technical-detail, discovery, search, versions and tracker PNGs | References support image-first hierarchy, restrained controls, compact rows and isolated destructive actions; they do not authorize new flows. White canvas, linear detail and unified top mobile header from the task override reference conflicts | — |
 | AppShell.tsx, AppHeader.tsx and BrandLogo.tsx plus 1440/1024/390 screenshots | Checked 1025 shell transition, rail width, logo/account placement, nav states and mobile dividers | 1440 rail/account and 1024/390 unified mobile header match confirmed target; no stale spacer or duplicate divider remains | — |
+| OverlayHost.tsx, AccountMenu.tsx and navigation.spec.ts | Checked web portal ownership, placement math, outside/Escape close, focus open/return and existing overlay assertions | Desktop dropdown/tooltips use layer 20; mobile account dropdown bypasses portal; Escape close does not prove or implement focus return | F-OVR-01, F-OVR-02 |
+| AppDialog.tsx, four dialog call sites and dialog screenshots | Checked centering, 520px maximum, 20px gutter, action ordering, cancel availability and layer contract | Current dialog geometry and destructive/cancel hierarchy pass at all viewports; modal z-index is not explicitly applied or tested against popovers | F-DLG-01 |
 
 ## Findings ledger
 
@@ -54,6 +56,9 @@
 | F-BTN-01 | P2 | Loading changes content-width button geometry | 4 / P2 | `confirmed` |
 | F-TOK-02 | P2 | Disabled opacity and product ratio are repeated literals | 4 / P2 | `confirmed` |
 | F-TOK-03 | P2 | Conflicting legacy and modern token systems remain public | 4 / P2 | `confirmed` |
+| F-OVR-01 | P1 | Mobile account dropdown bypasses the overlay layer | 4 / P1 | `confirmed` |
+| F-OVR-02 | P1 | Account dropdown does not restore keyboard focus after Escape | 4 / P1 | `confirmed` |
+| F-DLG-01 | P2 | Dialog does not explicitly apply the modal layer token | 4 / P2 | `confirmed` |
 
 ## Decisions and assumptions
 
@@ -72,4 +77,4 @@
 
 ## Resume instructions
 
-Start audit unit 4: inspect `OverlayHost.tsx`, `AccountMenu.tsx` and `AppDialog.tsx`; compare portal stacking, tooltip/dropdown placement and focus lifecycle against the three dialog screenshots, then add only unit 4 findings.
+Start audit unit 5: compare `product-list-screen.tsx`, `AuctionCard.tsx`, `Skeleton.tsx` and `ImagePlaceholder.tsx` with catalog screenshots at 1440×900, 1024×900 and 390×844; record exact grid, hierarchy, wrapping, media and evidence gaps.
