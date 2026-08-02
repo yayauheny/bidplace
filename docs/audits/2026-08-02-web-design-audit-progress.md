@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 11:36
-- Current audit unit: 3 — AppShell, AppHeader, desktop rail, mobile header, account control
-- Next exact action: Inspect AppShell, AppHeader, BrandLogo and AccountMenu for responsive structure, the 1025px rail transition, header geometry and account-control placement; add only unit 3 findings
+- Last completed checkpoint: 2026-08-02 11:53
+- Current audit unit: 4 — OverlayHost, tooltips, account menu, dialogs, stacking and focus
+- Next exact action: Inspect overlay portal geometry, mobile/desktop account dropdown behavior, tooltip placement, dialog layering and focus lifecycle; compare dialog screenshots at all three viewports and add only unit 4 findings
 - Blockers: none
 
 ## Audit queue
@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | 1 | Repo instructions, canonical product/design docs, skeleton and queue | AGENTS.md, product/design docs, screenshots, commits | `complete` | Evidence table populated; no findings (documentary unit) |
 | 2 | Design tokens, typography, colors, spacing, radii, buttons | packages/design-tokens/src/index.ts, modern.ts, Button.tsx, MotionPressable.tsx, button-layout.ts, AppText.tsx, TextField.tsx, app/_layout.tsx, shared media components | `complete` | F-ACC-01, F-ACC-02, F-ACC-03, F-BTN-01, F-TOK-02, F-TOK-03 |
-| 3 | AppShell, AppHeader, desktop rail, mobile header, account control | AppShell.tsx, AppHeader.tsx, BrandLogo.tsx, AccountMenu.tsx | `not_started` | — |
+| 3 | AppShell, AppHeader, desktop rail, mobile header, account control | AppShell.tsx, AppHeader.tsx, BrandLogo.tsx, AccountMenu.tsx; catalog/product screenshots at 1440/1024/390 | `complete` | No new finding: target shell/header geometry confirmed; seller long-label evidence deferred to unit 9 regression gap |
 | 4 | OverlayHost, tooltips, account menu, dialogs, stacking and focus | OverlayHost.tsx, AccountMenu.tsx, AppDialog.tsx | `not_started` | — |
 | 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx | `not_started` | — |
 | 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx | `not_started` | — |
@@ -35,12 +35,14 @@
 | docs/design/01-DESIGN-FOUNDATION.md | Hierarchy: 1. Image+title, 2. Person, 3. Story/materials, 4. Auction status, 5. Price/action, 6. Bid history | Design hierarchy order is canonical | — |
 | docs/design/03-DESIGN-SYSTEM.md | Missing foundations: brand tokens, typography approval, focus/keyboard matrix, component docs, offline banner, participation pattern, contrast audit | Multiple system-level gaps documented | — |
 | docs/design/04-DESIGN-STATUS.md | All screens partial final migration; founder device/accessibility acceptance pending everywhere | No screen can be marked Implemented yet | — |
-| /private/tmp/bidplace-wave2-screenshots/ | Attempted ls — directory does not exist | Screenshots are ephemeral E2E artifacts, not persistently available | — |
+| /private/tmp/bidplace-wave2-screenshots/ | Opened all nine catalog/product/dialog PNGs at original resolution; checked timestamps and attempted a fresh E2E run | Existing artifacts show the current target-width layouts; fresh regeneration is blocked before Playwright by pnpm registry-signature verification | Later screen findings; F-VR-01 |
 | Commits db4f2d1, 933312d, d02ec40, e672dda | Recent layout fixes: catalog heading removed, description clamped, dialog centered, mobile header spacer removed, mobile nav top divider removed | These issues are already fixed in HEAD; audit must not re-report them | — |
 | packages/design-tokens/src/index.ts and modern.ts | Compared all color, type, spacing, radius, size, motion and layer roles plus package exports | Active app uses `modernTokens`, but conflicting legacy exports remain public; active system lacks focus, opacity, media-ratio, nav and layout roles | F-ACC-01, F-ACC-02, F-ACC-03, F-TOK-02, F-TOK-03 |
 | Button.tsx, MotionPressable.tsx, button-layout.ts and AppText.tsx | Checked content/compact/block width behavior, loading/disabled states, semantic action colors, touch targets and text tones | Content width is correct by default; loading replaces the width-defining label; muted/accent/danger contrast and focus-visible support are incomplete | F-ACC-01, F-ACC-02, F-ACC-03, F-BTN-01 |
 | app/_layout.tsx | Verified runtime font registration | Inter 400/500/600/700 and PT Mono are registered through Expo `useFonts`, including web; no web font-family defect exists | — |
 | TextField.tsx, AuctionCard.tsx, ProductGallery.tsx, ImagePlaceholder.tsx and CatalogLoading | Compared repeated state and media literals | Disabled opacity `0.5` and product portrait ratio `4/5` are consistent today but not tokenized | F-TOK-02 |
+| docs/modern-ui target docs and approved local reference screenshots | Read art-direction rules and opened product, catalog, author, auth, settings, dashboard, empty, technical-detail, discovery, search, versions and tracker PNGs | References support image-first hierarchy, restrained controls, compact rows and isolated destructive actions; they do not authorize new flows. White canvas, linear detail and unified top mobile header from the task override reference conflicts | — |
+| AppShell.tsx, AppHeader.tsx and BrandLogo.tsx plus 1440/1024/390 screenshots | Checked 1025 shell transition, rail width, logo/account placement, nav states and mobile dividers | 1440 rail/account and 1024/390 unified mobile header match confirmed target; no stale spacer or duplicate divider remains | — |
 
 ## Findings ledger
 
@@ -56,16 +58,18 @@
 ## Decisions and assumptions
 
 - Target decisions from user request are treated as confirmed founder decisions (white canvas, desktop rail, catalog grid breakpoints at 900/1440, content-width buttons, centered dialogs, no tabs in product detail, etc.)
-- Screenshots at /private/tmp/bidplace-wave2-screenshots/ do not exist at audit time; E2E spec confirmed to write there but artifacts are ephemeral
+- Nine screenshots at `/private/tmp/bidplace-wave2-screenshots/` are available, timestamped 2026-08-02 01:16. A fresh rerun failed before Playwright because pnpm could not verify/fetch its signed release; visual conclusions identify this reproducibility limit.
 - Recent commits db4f2d1, 933312d, d02ec40, e672dda already fixed: visible catalog heading, catalog description multi-line, dialog centering, mobile header spacer, mobile nav top divider. These are not reported as findings.
 - Two token files coexist: legacy `colors/spacing/radius/sizes/typography/shadows/layout/brand` in index.ts and active `modernTokens` in modern.ts. All current components use modernTokens.
 - Measured contrast on white: `textSecondary` 4.71:1, `textMuted` 2.60:1, `accent` 4.24:1, `accentDark` 5.53:1, current `danger` 4.40:1, legacy `negative` 5.71:1, proposed focus `#2457E6` 5.86:1.
 - Expo `useFonts` registers Inter 400/500/600/700 and PT Mono under the exact family names used by `modernTokens`; the earlier font-alias concern is disproved.
 - Default button height `56` and radius `18` remain unchanged in the target system because no runtime screenshot evidence proves a global visual defect. A separate 44px compact density is only a proposed future token for dense contexts.
 - Existing `4/5` product-media ratio is preserved; audit unit 2 recommends tokenizing it, not changing the crop.
+- The current 1025px shell breakpoint is acceptable: 1440 uses the icon rail, while 1024/390 use the unified mobile header. Catalog and product-detail composition may use independent breakpoints, as explicitly confirmed by the task.
+- The local Modern UI docs use a warm canvas, content tabs and bottom mobile dock in places; the task's later explicit decisions take precedence: white canvas, linear product sections and one unified top mobile header.
 - `01-DESIGN-FOUNDATION.md` is protected — cannot be changed without founder/designer decision.
 - No Figma workspace is linked. No external design deliverables exist.
 
 ## Resume instructions
 
-Start audit unit 3: inspect `AppShell.tsx`, `AppHeader.tsx`, `BrandLogo.tsx` and `AccountMenu.tsx`; compare desktop rail/mobile header/account-control geometry at the 1025px transition against confirmed target decisions, then add only unit 3 findings.
+Start audit unit 4: inspect `OverlayHost.tsx`, `AccountMenu.tsx` and `AppDialog.tsx`; compare portal stacking, tooltip/dropdown placement and focus lifecycle against the three dialog screenshots, then add only unit 4 findings.

@@ -21,8 +21,9 @@
 | `docs/design/05-DESIGN-HANDOFF.md` | Handoff workflow, naming, required states, QA checklist | High | No Figma linked |
 | `packages/design-tokens/src/index.ts` | Legacy token set: colors, spacing, radius, sizes, typography, shadows, layout, brand | High | Code review |
 | `packages/design-tokens/src/modern.ts` | Active token set: modernTokens color/space/radius/size/typography/motion/layer | High | Code review |
-| `/private/tmp/bidplace-wave2-screenshots/` | Target-width screenshots at 1440/1024/390 | **Not available** | Directory does not exist at audit time; E2E spec writes here but screenshots are ephemeral test artifacts |
-| `apps/mobile/e2e/01-wave2-layout-screenshots.spec.ts` | Screenshot E2E: what it asserts (card count, image naturalWidth, no visible heading, mobile card proximity) | Medium | Spec reviewed; output not available |
+| `/private/tmp/bidplace-wave2-screenshots/` | Catalog, product-detail and destructive-dialog screenshots at 1440×900, 1024×900 and 390×844 | High for visible geometry; Medium for reproducibility | Nine PNGs exist, timestamped 2026-08-02 01:16. They visually include the mobile-header correction committed one minute later in `e672dda`. A fresh rerun on 2026-08-02 11:49 failed before Playwright because pnpm registry-signature verification could not complete; the existing artifacts remain the only runtime visual evidence. |
+| `apps/mobile/e2e/01-wave2-layout-screenshots.spec.ts` | Screenshot E2E: what it asserts (card count, image naturalWidth, no visible heading, mobile card proximity) | Medium | Spec and its nine existing outputs reviewed. It does not wait for image transition completion, assert catalog metadata geometry, use an eligible buyer for product CTA, or cover non-admin navigation variants. |
+| `docs/modern-ui/DESIGN.md`, `00-project-decisions.md` and approved local reference pack | Target visual grammar plus MyPlastic/Tracker screenshots for catalog, product, author, auth, settings, dashboard, empty, filters, search and compact rows | High for art direction; Low for current-runtime claims | Used only for composition and density. Explicit task decisions override conflicts: white canvas, linear product sections and unified top mobile header. No reference flow was promoted into product scope. |
 | Commit `db4f2d1` | Catalog/product layout overhaul, button width variants, description one-line | High | 15 files, reviewed stat+message |
 | Commit `933312d` | Dialog centering via portal wrapper, catalog description clamp, target-width screenshots | High | 10 files, reviewed stat+message |
 | Commit `d02ec40` | Isolated wave 2 screenshots, seeded product assertions | High | 3 files, reviewed stat+message |
@@ -130,6 +131,8 @@
 | BackButton | wraps IconButton chevronLeft | fixed `44×44` | `44` | `pill` | ✓ |
 
 ## 4. Findings and exact fixes
+
+Shell/header validation (audit unit 3): no new finding. The 1440×900 screenshot and current code confirm a 72px icon rail with hover/focus tooltips and a separate top-right account control. The 1024×900 and 390×844 screenshots confirm one compact mobile header block with logo/account row, navigation row and exactly one bottom divider. The removed mobile spacer and duplicate divider from `e672dda` are not re-reported. Role variants with four mobile destinations remain a regression-evidence gap covered in F-VR-01 during audit unit 9.
 
 **P0**
 
