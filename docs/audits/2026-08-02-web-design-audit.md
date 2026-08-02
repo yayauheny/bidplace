@@ -311,6 +311,46 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** no raw enum or mixed `Order/Bid/Listing` wording appears in visible UI; every admin choice remains unambiguous and maps one-to-one to the existing payload; confirmation copy states the consequence in Russian.
 - **Tests/evidence:** screenshot matrix for admin cancel/replacement and buyer/seller/admin order projections; unit tests for every enum label mapping; existing security/privacy E2E remains unchanged.
 
+### [P1] F-NAV-01 — Approved-seller mobile navigation has no width contract
+
+- **Evidence:** At 390px an approved seller receives four destinations: `Каталог`, `Покупки`, `Кабинет продавца`, `Добавить предмет`. Each mobile `NavigationItem` lays icon + full label in a horizontal row with 16px horizontal padding, no `flex`, `minWidth: 0`, line limit or compact-label rule. The only 390 screenshot uses an admin with two items, so overflow/wrapping is invisible to the current suite.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/AppHeader.tsx` (`items`, mobile `NavigationItem`, nav row); `/Users/yayauheny/projects/bidplace/apps/mobile/e2e/01-wave2-layout-screenshots.spec.ts` (admin-only screenshot identity).
+- **Root cause:** navigation geometry was validated with the smallest role set, while the maximum role set has a materially larger intrinsic width.
+- **Required change:** for mobile, give each destination equal `flex: 1, minWidth: 0`, place icon above label, center text and permit at most two lines without changing the full accessible name. Keep one header bottom divider and the 44px minimum target; do not alter route availability. At 1025px+ retain icon-only rail/tooltips.
+- **Do not do:** horizontally scroll global navigation, reduce labels below caption size, hide seller destinations behind the account menu, or abbreviate accessible names.
+- **Acceptance criteria:** guest, buyer, pending seller, approved seller and admin navigation fit within 390px with no horizontal overflow, clipped text or overlapping targets; selected state and full accessible labels remain correct.
+- **Tests/evidence:** role-parameterized navigation screenshots at 390×844 and 1024×900 plus rail tests at 1025/1440; bounding-box assertions for every destination and a no-horizontal-scroll assertion.
+
+### [P1] F-AUTH-01 — Auth forms are not keyboard-safe and registration copy is misleading
+
+- **Evidence:** `/login` and `/register` use a centered `SafeAreaView` with no `ScrollView` or keyboard avoidance. At 390×844 the four-field registration card may fit before keyboard, but focusing lower inputs reduces the visual viewport and can hide error, submit and login link. Registration description says an account opens `seller- и admin-сценарии`, although ordinary registration does not grant admin access. No auth screenshot exists in the current suite.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/app/(auth)/login.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/app/(auth)/register.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/auth/auth-form.tsx` (`AuthCard`, registration description).
+- **Root cause:** the auth composition assumes a full-height viewport and reuses internal role terminology in consumer-facing copy.
+- **Required change:** wrap auth content in a keyboard-aware scroll container with 20px mobile gutter, centered alignment only when content fits and a 540px maximum; ensure focused input, its error and primary button can scroll above the keyboard. Replace description with `Создайте аккаунт, чтобы участвовать в торгах и при желании подать заявку продавца.`
+- **Do not do:** shrink form type/gaps, make the whole form fixed-height, imply admin access, or add product imagery/new onboarding steps.
+- **Acceptance criteria:** every field, error, primary action and auth-switch link is reachable at 390×844 with software keyboard and 200% zoom; desktop remains a low-density single task; no copy implies self-service admin access.
+- **Tests/evidence:** login/register screenshots at all viewports plus 390 keyboard-focused first/last field, validation errors, loading and server error; keyboard-only submission and focus-order tests.
+
+### [P1] F-ACC-04 — Reduced-motion preference is not implemented
+
+- **Evidence:** `modernTokens.motion` is consumed by `expo-image` transitions in catalog/gallery, while `MotionPressable` applies pressed opacity unconditionally; `global.css` has no `prefers-reduced-motion` rule or app-level preference adapter. `catalog-1440.png` and `product-1440.png` visibly capture media with lower opacity than cached 1024/390 screenshots, demonstrating that motion timing already affects visual evidence.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/MotionPressable.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/AuctionCard.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/ProductGallery.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/global.css`; `/Users/yayauheny/projects/bidplace/packages/design-tokens/src/modern.ts`.
+- **Root cause:** durations are centralized, but preference detection and a reduced-motion branch were never added to shared primitives/media.
+- **Required change:** add one cross-platform reduced-motion hook/provider; when enabled, set image transition to 0 and remove future translate/scale while keeping immediate opacity/state feedback. On web honor `prefers-reduced-motion: reduce`; on native honor the platform accessibility setting.
+- **Do not do:** disable business actions, add screen-local media flags, rely only on CSS while native keeps motion, or lengthen transitions to make screenshots easier.
+- **Acceptance criteria:** reduced-motion mode has no decorative transform/slide/image fade; pressed/selected/loading state remains clear; business requests fire immediately in both modes.
+- **Tests/evidence:** unit tests for the preference adapter; Playwright `reducedMotion: reduce` screenshot matrix; native accessibility-setting smoke test; screenshot pixel check that loaded images are fully opaque.
+
+### [P1] F-ACC-05 — Global destination links are incorrectly exposed as tabs
+
+- **Evidence:** At 1024/390, `AppHeader` gives the navigation container `accessibilityRole="tablist"`, but every child is a route `link`, not a tab controlling an associated tabpanel. Screen readers therefore receive incompatible interaction semantics and may expect tab keyboard behavior that is not implemented.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/AppHeader.tsx` (mobile navigation container and `NavigationItem`).
+- **Root cause:** a visual navigation row was labelled by appearance rather than by route semantics.
+- **Required change:** expose the row as a labelled navigation landmark/list and keep children as links with current-page/selected state supported by the web adapter; retain logical DOM order across roles and viewports.
+- **Do not do:** convert routes into tabs, add arrow-key tab behavior, remove accessible current state, or rely on icon shape alone.
+- **Acceptance criteria:** accessibility tree reports one global navigation landmark containing links; no `tablist`/`tab` role remains; current destination is announced without changing routing behavior.
+- **Tests/evidence:** Playwright accessibility snapshot at 390/1024/1440 for guest/buyer/seller/admin and keyboard traversal assertions.
+
 **P2**
 
 ### [P2] F-BTN-01 — Loading changes content-width button geometry
@@ -363,6 +403,26 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** no screen shows duplicate loading copy; all asynchronous page loads expose progress semantics; error always offers retry when retry is valid; empty states neither impersonate errors nor introduce unsupported actions.
 - **Tests/evidence:** component tests for loading/empty/error/retry semantics; route screenshots for each state at 1440/1024/390; reduced-motion check for any animated indicator.
 
+### [P2] F-ACC-06 — Compact links miss hit targets and duplicate icon labels
+
+- **Evidence:** compact `BrandLogo` renders a 32×32 image inside a Pressable with no 44px minimum. The product author `MotionPressable` is only the 12/16 metadata line. `IconButton` labels both the parent pressable and its child `AppIcon`; `ImagePlaceholder` similarly labels both container and icon, which can cause duplicate announcements. Other shared buttons correctly meet 44px.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/BrandLogo.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-screen.tsx` (author link); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/Button.tsx` (`IconButton`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/AppIcon.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/ImagePlaceholder.tsx`.
+- **Root cause:** visual asset/text bounds define the interactive area, and icon accessibility is assigned at both composite and child levels.
+- **Required change:** give compact logo and author links a minimum 44×44 interaction box using transparent padding/alignment; in composite controls keep one accessible label on the parent and mark child icon decorative. Expose an icon label only when `AppIcon` is intentionally standalone.
+- **Do not do:** enlarge the visible logo to 44px, remove link labels, add invisible overlapping pressables, or hide standalone informative icons from assistive technology.
+- **Acceptance criteria:** every interactive target is at least 44×44; accessibility tree announces each icon button/placeholder once; visible alignment remains unchanged.
+- **Tests/evidence:** component hit-box tests, accessibility snapshots and 390×844 touch-target overlay screenshot.
+
+### [P2] F-VR-01 — Screenshot suite can pass while major layout regressions remain
+
+- **Evidence:** the current E2E counts three seeded cards but cannot prove the empty fourth 1440 column; it asserts only mobile card proximity, not price/status/currency visibility or 1024 column count. Product screenshots use an admin, so eligible-buyer input/CTA and mobile dock are absent. Loading, empty, error, failed image, focus, account-open, long content and role-max navigation are not captured. The 1440 images are visibly mid-fade because the test waits for `naturalWidth` but not transition completion. Fresh regeneration on 2026-08-02 failed before Playwright because pnpm signature verification attempted a registry fetch.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/e2e/01-wave2-layout-screenshots.spec.ts`; screenshot artifact workflow around `/private/tmp/bidplace-wave2-screenshots/`; relevant layout E2E files.
+- **Root cause:** the suite treats presence/count as a proxy for composition, uses one role identity and ephemeral local outputs, and has no deterministic motion/toolchain setup.
+- **Required change:** parameterize viewport × role × route/state; add bounding-box/visibility assertions for required first-viewport elements and exact column widths; wait for fully opaque images or run reduced motion; use eligible buyer for product CTA plus separate admin state; persist named artifacts in CI and pin an offline-reproducible project package-manager invocation.
+- **Do not do:** add more screenshots without assertions, increase arbitrary waits, accept faded images as baseline, or expand seed/product scope solely to reach 10–15 items.
+- **Acceptance criteria:** the matrix detects wrong 1024 columns, wrapped BYN/status, hidden product auction truth, overlay occlusion, seller-nav overflow and loading geometry; all artifacts identify commit/viewport/role/state and reproduce without external registry access.
+- **Tests/evidence:** completed matrix in section 7, CI artifact manifest and a deliberate regression test for each named failure class.
+
 ## 5. Screen-by-screen implementation specification
 
 | Screen / route | Keep | Remove | Change | Components/files | Acceptance screenshot |
@@ -375,6 +435,7 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 | Product draft | Staged existing fields, incomplete draft save, moderation submit, confirmed image delete | Raw statuses; 720×180 cover-cropped images; three stacked text actions per image | Localized statuses/category selection; compact 4:5 media rows; truthful upload count; preserved action hierarchy | `product-draft-screen.tsx`, `FormSection.tsx`, `TextField.tsx`, media/action primitives | Empty/filled/locked/uploading/error/many-image states at 1440/1024/390 |
 | Listing draft | Existing approved-product guard, schedule rules and two-step create/schedule behavior | Raw status in product button; ISO timestamp entry | Compact selectable product rows, localized status, date/time adapter with timezone, unchanged API serialization | `listing-draft-screen.tsx`, shared select/date controls | Empty/invalid/ready/created/scheduled states at 1440/1024/390 |
 | `/admin` | Existing queues, blocking-listing explanations, required-reason dialogs, privacy constraints and action rules | Raw English domain/enums; narrow desktop-only column; passive author rendered as heavy button | Two-column desktop moderation queues, clear row header/status/action anatomy, localized order/reason labels; preserve dialogs | `admin-moderation-screen.tsx`, `FormSection.tsx`, `AppDialog.tsx`, status/enum formatters | Admin queue and each destructive dialog at 1440/1024/390, including long/blocking/empty/error states |
+| Login/register | Auth routes without global navigation; one task; labelled fields; content-width primary and text-link switch | Registration promise of admin access; non-scrollable keyboard-obscured composition | Keyboard-aware scroll, centered 540px max only when fitting, truthful buyer/seller-application copy, deterministic loading/error geometry | `(auth)/login.tsx`, `(auth)/register.tsx`, `auth-form.tsx`, `TextField.tsx`, `Button.tsx` | Login/register at 1440/1024/390 plus keyboard, 200% zoom, validation, loading and server-error states |
 
 <!-- Populated after audit units 5–9 -->
 

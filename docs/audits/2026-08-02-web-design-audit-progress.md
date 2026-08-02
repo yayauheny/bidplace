@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 12:06
-- Current audit unit: 9 — Accessibility, keyboard, long content, responsive regressions
-- Next exact action: Cross-check semantics, focus/Tab/Escape, 44px targets, contrast, reduced motion, long labels/content, auth screens and screenshot/E2E blind spots; add unit 9 findings and remaining screen rows
+- Last completed checkpoint: 2026-08-02 12:08
+- Current audit unit: 10 — Compile findings, waves, visual regression matrix, final review
+- Next exact action: Complete verdict, remaining target-system rows, three implementation waves, visual regression matrix, founder decisions and final counts; audit every requested item and close progress
 - Blockers: none
 
 ## Audit queue
@@ -20,7 +20,7 @@
 | 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx, product screenshots, primary product reference | `complete` | F-PDP-01, F-PDP-02, F-PDP-03 |
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx, contracts and E2E | `complete` | F-AUTHOR-01, F-ACT-01, F-FORM-01, F-MEDIA-01 |
 | 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, order-screen.tsx, PageState.tsx, PageHeader.tsx, Skeleton.tsx, dialog screenshots and E2E | `complete` | F-ADM-01, F-ADM-02, F-STATE-01 |
-| 9 | Accessibility, keyboard, long content, responsive regressions | All components and screens cross-check | `not_started` | — |
+| 9 | Accessibility, keyboard, long content, responsive regressions | All components/screens, auth routes, global CSS, AppIcon, E2E and screenshot artifacts | `complete` | F-NAV-01, F-AUTH-01, F-ACC-04, F-ACC-05, F-ACC-06, F-VR-01 |
 | 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9 | `not_started` | — |
 
 ## Reviewed evidence
@@ -55,6 +55,10 @@
 | seller/profile and product-draft media code | Checked preview ratio/fit/fallback, upload wording, reorder/delete targets and confirmation | Profile preview can reach 720px square; product images crop to a 180px strip; upload lacks truthful count | F-MEDIA-01 |
 | admin-moderation-screen.tsx and dialog screenshots | Checked desktop/mobile queue geometry, status/evidence/action hierarchy, blocking explanations, destructive confirmation and order maintenance | Confirmations are explicit and centered; desktop queue underuses width and mixes evidence/actions vertically; raw English domain values remain | F-ADM-01, F-ADM-02 |
 | PageState.tsx, Skeleton.tsx and route state branches | Checked loading/empty/error semantics, retry, geometry and consistency | PageState duplicates loading copy without progress semantics; catalog skeleton is separate; several routes use ad-hoc state text | F-STATE-01 |
+| auth screens/forms and local auth reference | Checked task hierarchy, copy, form width, keyboard/zoom behavior, field/error/loading states | Clean single-task structure is sound; forms are not keyboard-scrollable and registration incorrectly mentions admin scenarios | F-AUTH-01 |
+| AppHeader, BrandLogo, AppIcon, MotionPressable and interactive call sites | Checked roles, names, current state, touch targets, Tab order and composite icon semantics | Mobile route links are incorrectly in a tablist; compact logo/author targets are undersized; some composites duplicate icon labels | F-NAV-01, F-ACC-03, F-ACC-05, F-ACC-06 |
+| motion tokens, image transitions, global.css and screenshots | Checked reduced-motion branch and screenshot determinism | No preference adapter exists; first-width screenshots catch image fade; later cached widths do not | F-ACC-04, F-VR-01 |
+| screenshot E2E matrix and artifacts | Compared assertions/identities/states against every mandatory visual failure class | Current suite cannot prove columns, metadata geometry, buyer CTA, overlays, max-role nav, state layouts or long content; artifacts are ephemeral and fresh rerun failed before Playwright | F-VR-01 |
 
 ## Findings ledger
 
@@ -82,6 +86,12 @@
 | F-ADM-01 | P1 | Desktop moderation is a long narrow action queue | 4 / P1 | `confirmed` |
 | F-ADM-02 | P1 | Admin/order UI leaks internal English domain values | 4 / P1 | `confirmed` |
 | F-STATE-01 | P2 | Shared loading state duplicates copy and lacks progress semantics | 4 / P2 | `confirmed` |
+| F-NAV-01 | P1 | Approved-seller mobile navigation has no width contract | 4 / P1 | `confirmed` |
+| F-AUTH-01 | P1 | Auth forms are not keyboard-safe and copy implies admin access | 4 / P1 | `confirmed` |
+| F-ACC-04 | P1 | Reduced-motion preference is not implemented | 4 / P1 | `confirmed` |
+| F-ACC-05 | P1 | Global route links are incorrectly exposed as tabs | 4 / P1 | `confirmed` |
+| F-ACC-06 | P2 | Compact links miss targets and composite icons duplicate labels | 4 / P2 | `confirmed` |
+| F-VR-01 | P2 | Screenshot suite misses major visual regression classes | 4 / P2 | `confirmed` |
 
 ## Decisions and assumptions
 
@@ -100,4 +110,4 @@
 
 ## Resume instructions
 
-Start audit unit 9: cross-check all screens/components for semantics, keyboard/focus, touch targets, reduced motion, long labels/content and responsive/evidence blind spots; inspect auth screens and finish the screen specification.
+Start audit unit 10: complete verdict, target system, three implementation waves, visual regression matrix, founder decisions and final counts; verify every mandatory audit topic, mark progress complete and perform final document checks.
