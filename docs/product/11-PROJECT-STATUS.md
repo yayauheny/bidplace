@@ -18,6 +18,7 @@
 - `Implemented`: B3 shared buttons preserve the original loading label, reserve a stable icon/spinner slot, and retain 56px default/44px compact geometry. Targeted button/token coverage passed 10 tests; mobile typecheck/lint passed.
 - `Implemented`: B4 centralizes the 4:5 media contract and narrow AuctionCard metadata geometry, and adds a reusable plain EditorialSection without changing Product order or auction flow. Targeted media/card coverage passed 11 tests; mobile typecheck/lint passed.
 - `Implemented`: B5 PageState separates loading/empty/error/retry and AppDialog preserves modal layer, bounded scroll, and accessibility semantics. Targeted state coverage passed 9 tests; mobile typecheck/lint passed. Browser keyboard/long-content verification remains pending.
+- `Implemented`: B6 localized seller/admin/order presentation paths and date-time normalization live in `apps/mobile/src/lib/presentation.ts`; `SelectableRow` preserves raw API values while presenting 44px localized choices. Adapter coverage passed 12 tests; mobile typecheck/lint passed.
 - `Partial`: the overall Wave B shared-system work remains incomplete until B2–B6 and final browser/device acceptance are verified.
 
 ## Runtime defect hardening — 2026-07-31

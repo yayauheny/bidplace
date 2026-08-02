@@ -15,6 +15,12 @@ import {
 } from '../../components/modern-ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getUserFacingErrorMessage } from '../../lib/errors';
+import {
+  handoffContactTypeLabels,
+  handoffInitiatorLabels,
+  orderStatusLabels,
+  presentEnum,
+} from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 
@@ -186,7 +192,10 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                 label: 'Связаться до',
                 value: formatDateTime(order.contactDueAt),
               },
-              { label: 'Статус', value: order.status },
+              {
+                label: 'Статус',
+                value: presentEnum(order.status, orderStatusLabels, 'Статус заказа'),
+              },
             ]}
           />
         </Panel>
@@ -195,7 +204,14 @@ export function OrderScreen({ publicId }: { publicId: string }) {
             {buyer.sellerHandoffType && buyer.sellerHandoffValue ? (
               <Details
                 items={[
-                  { label: 'Тип контакта', value: buyer.sellerHandoffType },
+                  {
+                    label: 'Тип контакта',
+                    value: presentEnum(
+                      buyer.sellerHandoffType,
+                      handoffContactTypeLabels,
+                      'Тип контакта',
+                    ),
+                  },
                   { label: 'Контакт', value: buyer.sellerHandoffValue },
                 ]}
               />
@@ -249,13 +265,26 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                 { label: 'Email покупателя', value: admin.buyerEmailAtClose },
                 {
                   label: 'Тип контакта',
-                  value: admin.sellerHandoffType ?? '—',
+                  value: admin.sellerHandoffType
+                    ? presentEnum(
+                        admin.sellerHandoffType,
+                        handoffContactTypeLabels,
+                        'Тип контакта',
+                      )
+                    : '—',
                 },
                 {
                   label: 'Контакт продавца',
                   value: admin.sellerHandoffValue ?? '—',
                 },
-                { label: 'Режим', value: admin.handoffInitiator },
+                {
+                  label: 'Режим',
+                  value: presentEnum(
+                    admin.handoffInitiator,
+                    handoffInitiatorLabels,
+                    'Режим контакта',
+                  ),
+                },
               ]}
             />
           </Panel>

@@ -16,6 +16,11 @@ import {
   TextField,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
+import {
+  parseDateTimeInputValue,
+  presentEnum,
+  productStatusLabels,
+} from '../../lib/presentation';
 
 type ListingDraftScreenProps = { initialProductId?: string };
 type CreateListingVariables = {
@@ -61,8 +66,8 @@ export function ListingDraftScreen({
   const trimmedEndsAt = endsAt.trim();
   const trimmedStartPrice = startPrice.trim();
   const request = listingCreateRequestSchema.safeParse({
-    startsAt: trimmedStartsAt,
-    endsAt: trimmedEndsAt,
+    startsAt: parseDateTimeInputValue(trimmedStartsAt) ?? trimmedStartsAt,
+    endsAt: parseDateTimeInputValue(trimmedEndsAt) ?? trimmedEndsAt,
     startPrice: parseMoneyInput(trimmedStartPrice),
   });
   const create = useMutation({
@@ -114,7 +119,7 @@ export function ListingDraftScreen({
     if (products.isFetching || products.isRefetchError) return;
     hasHandledInitialProductIdRef.current = true;
     setProductSelectionError(
-      'Выбранный предмет не найден, не принадлежит вам или не имеет статуса APPROVED.',
+      'Выбранный предмет не найден, не принадлежит вам или не одобрен.',
     );
   }, [
     initialProductId,
@@ -132,7 +137,7 @@ export function ListingDraftScreen({
     if (!product || product.status !== 'APPROVED') {
       setProductId('');
       setProductSelectionError(
-        'Выбранный предмет больше недоступен или не имеет статуса APPROVED.',
+        'Выбранный предмет больше недоступен или не одобрен.',
       );
     }
   }, [productId, create.isPending, createdListing, products.data]);
@@ -180,7 +185,7 @@ export function ListingDraftScreen({
         {products.data.products.map((product) => (
           <View key={product.id} style={{ gap: modernTokens.space.x1 }}>
             <SecondaryButton
-              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${product.status}`}
+              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Статус предмета')}`}
               disabled={product.status !== 'APPROVED' || isLocked}
               onPress={() => {
                 hasHandledInitialProductIdRef.current = true;

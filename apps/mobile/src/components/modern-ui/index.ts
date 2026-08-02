@@ -17,3 +17,4 @@ export * from './TextField';
 export * from './EditorialSection';
 export * from './product-media-style';
 export * from './page-state-contract';
+export * from './SelectableRow';

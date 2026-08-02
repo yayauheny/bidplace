@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement B6 localized presentation adapters for existing seller/admin data.
+Run the full required verification matrix and collect Wave B screenshots/E2E evidence.
 
 ## Completed slices
 
@@ -90,6 +90,17 @@ Implement B6 localized presentation adapters for existing seller/admin data.
 - Not done: browser keyboard-only and long-content evidence remains part of the final E2E/screenshot pass; B6 remains.
 - Next: add shared presentation maps/adapters without changing server values or serialization.
 - Risks: dialog primitive behavior still needs real browser verification.
+
+### B6 — presentation adapters for existing seller/admin data
+
+- Done: shared localized maps cover seller/product/listing/order statuses, seller types, cancellation reasons, and handoff contact/initiator values; unknown values use explicit unavailable-status copy rather than leaking raw enums.
+- Done: `SelectableRow` keeps existing string values for API payloads while presenting localized 44px compact choices; seller profile and admin cancellation paths use it/presentation maps.
+- Done: date-time adapter normalizes valid input to ISO for existing listing serialization and returns `null` for invalid input; no server schema or schedule rule changed.
+- Changed: `apps/mobile/src/lib/presentation.ts` and its spec, `SelectableRow.tsx`, modern-ui exports, seller profile/admin/order/product-draft/listing-draft screens.
+- Checks: targeted adapter/state/media/button suite passed 4 files / 12 tests; mobile typecheck and lint passed.
+- Not done: full E2E and target screenshots remain.
+- Next: run final package/mobile checks, E2E, screenshots, and inspect worktree.
+- Risks: full E2E may require Docker PostgreSQL and local package-manager state.
 
 ## Open risks
 

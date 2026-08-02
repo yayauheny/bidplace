@@ -21,6 +21,13 @@ import {
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getApiAssetUrl } from '../../lib/environment';
+import {
+  cancellationReasonLabels,
+  presentEnum,
+  productStatusLabels,
+  sellerStatusLabels,
+  sellerTypeLabels,
+} from '../../lib/presentation';
 
 type AdminSellersData = Awaited<
   ReturnType<ApiClient['admin']['listSellerProfiles']>
@@ -37,20 +44,6 @@ type Confirmation =
   | { kind: 'product-changes'; id: string }
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
-
-function moderationStatusLabel(status: string): string {
-  return (
-    {
-      PENDING_REVIEW: 'На модерации',
-      APPROVED: 'Одобрен',
-      CHANGES_REQUESTED: 'Нужны правки',
-      REJECTED: 'Отклонён',
-      SUSPENDED: 'Приостановлен',
-      DRAFT: 'Черновик',
-      ARCHIVED: 'В архиве',
-    }[status] ?? status
-  );
-}
 
 export function AdminModerationScreen() {
   const api = useApiClient();
@@ -198,15 +191,15 @@ export function AdminModerationScreen() {
       label: 'Запросить изменения',
     },
     'order-cancel': {
-      title: 'Отменить Order?',
+      title: 'Отменить заказ?',
       description:
-        'Текущий покупатель потеряет active Order. Затем можно выбрать следующую принятую ставку.',
-      label: 'Отменить Order',
+        'Текущий покупатель потеряет активный заказ. Затем можно выбрать следующую принятую ставку.',
+      label: 'Отменить заказ',
     },
     'order-replace': {
-      title: 'Создать replacement Order?',
-      description: 'Выбранная ставка станет новым активным Order.',
-      label: 'Создать replacement Order',
+      title: 'Создать новый заказ?',
+      description: 'Выбранная ставка станет новым активным заказом.',
+      label: 'Создать новый заказ',
     },
   };
 
@@ -221,10 +214,10 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={seller.id}
             title={seller.fullName}
-            status={moderationStatusLabel(seller.status)}
+            status={presentEnum(seller.status, sellerStatusLabels, 'Статус продавца')}
           >
             <AppText role="bodySmall" tone="secondary">
-              {seller.sellerType} · {seller.slug} · {seller.country}
+              {presentEnum(seller.sellerType, sellerTypeLabels, 'Тип продавца')} · {seller.slug} · {seller.country}
             </AppText>
             <AppText role="bodySmall" tone="secondary">
               {seller.shortDescription}
@@ -278,7 +271,7 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={product.id}
             title={product.title ?? 'Без названия'}
-            status={moderationStatusLabel(product.status)}
+            status={presentEnum(product.status, productStatusLabels, 'Статус предмета')}
           >
             {product.images[0] ? (
               <Image
@@ -357,7 +350,7 @@ export function AdminModerationScreen() {
       </FormSection>
       <FormSection title="Отмена и переназначение заказа">
         <AppText role="bodySmall" tone="secondary">
-          После внешнего согласования отмените активный Order и выберите
+          После внешнего согласования отмените активный заказ и выберите
           следующую принятую ставку. Контакты участников здесь не раскрываются.
         </AppText>
         <TextField
@@ -371,19 +364,27 @@ export function AdminModerationScreen() {
           autoCapitalize="none"
         />
         <AppText role="bodySmall" tone="secondary">
-          Причина отмены: {cancelReason}
+          Причина отмены: {presentEnum(
+            cancelReason,
+            cancellationReasonLabels,
+            'Причина отмены',
+          )}
         </AppText>
         {(
           ['BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED'] as const
         ).map((reason) => (
           <SecondaryButton
             key={reason}
-            label={`${cancelReason === reason ? '✓ ' : ''}${reason}`}
+            label={`${cancelReason === reason ? '✓ ' : ''}${presentEnum(
+              reason,
+              cancellationReasonLabels,
+              'Причина отмены',
+            )}`}
             onPress={() => setCancelReason(reason)}
           />
         ))}
         <DestructiveButton
-          label="Отменить Order"
+          label="Отменить заказ"
           disabled={!orderPublicId}
           onPress={() => setConfirmation({ kind: 'order-cancel' })}
         />

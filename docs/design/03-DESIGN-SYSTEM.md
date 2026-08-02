@@ -84,6 +84,7 @@ Every route uses the final shell and primitives. `AppShell` preserves the mobile
 - `Implemented`: B3 keeps default/compact button geometry tokenized and preserves the original label plus a stable icon/spinner slot during busy state.
 - `Implemented`: B4 centralizes the 4:5 product media geometry, stable narrow-card metadata rows, and a plain `EditorialSection` primitive prepared for Wave C without changing current Product section order.
 - `Implemented`: B5 separates shared loading/empty/error PageState semantics and strengthens AppDialog modal/scroll accessibility while preserving the existing focus primitive.
+- `Implemented`: B6 provides localized presentation maps, date-time normalization, and 44px selectable rows for existing seller/admin values without changing API serialization or business statuses.
 
 ## Do not invent without designer approval
 

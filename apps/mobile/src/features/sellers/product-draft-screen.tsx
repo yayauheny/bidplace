@@ -19,6 +19,7 @@ import {
   TextField,
 } from '../../components/modern-ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
@@ -209,7 +210,9 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
                   : 'secondary'
             }
           >
-            {productStatus}
+            {productStatus
+              ? presentEnum(productStatus, productStatusLabels, 'Статус предмета')
+              : null}
           </AppText>
           <SecondaryButton
             label="Обновить"

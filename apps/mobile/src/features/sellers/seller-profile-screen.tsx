@@ -11,6 +11,7 @@ import {
   PageHeader,
   PageState,
   PrimaryButton,
+  SelectableRow,
   SecondaryButton,
   TextField,
 } from '../../components/modern-ui';
@@ -18,6 +19,12 @@ import { AppShell } from '../../components/layout/AppShell';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
+import {
+  handoffContactTypeLabels,
+  handoffInitiatorLabels,
+  presentEnum,
+  sellerStatusLabels,
+} from '../../lib/presentation';
 
 type ProfileFields = {
   slug: string;
@@ -53,14 +60,7 @@ function sellerStatusTone(
 }
 
 function sellerStatusLabel(status: SellerStatus): string {
-  const labels: Record<string, string> = {
-    APPROVED: 'Одобрен',
-    PENDING_REVIEW: 'На модерации',
-    CHANGES_REQUESTED: 'Нужны правки',
-    REJECTED: 'Отклонён',
-    SUSPENDED: 'Приостановлен',
-  };
-  return labels[status] ?? status;
+  return presentEnum(status, sellerStatusLabels, 'Статус продавца');
 }
 
 export function SellerProfileScreen() {
@@ -296,18 +296,19 @@ export function SellerProfileScreen() {
           />
           {!profile || editable ? (
             <>
-              <TextField
+              <SelectableRow
                 label="Способ передачи"
                 value={fields.handoffContactType}
-                onChangeText={(value) =>
+                options={Object.entries(handoffContactTypeLabels).map(
+                  ([value, label]) => ({ value, label }),
+                )}
+                onChange={(value) =>
                   update(
                     'handoffContactType',
-                    value.toUpperCase() as ProfileFields['handoffContactType'],
+                    value as ProfileFields['handoffContactType'],
                   )
                 }
-                placeholder="TELEGRAM"
-                autoCapitalize="characters"
-                editable={editable}
+                disabled={!editable}
               />
               <TextField
                 label="Контакт для передачи"
@@ -317,18 +318,19 @@ export function SellerProfileScreen() {
                 autoCapitalize="none"
                 editable={editable}
               />
-              <TextField
+              <SelectableRow
                 label="Кто начинает контакт"
                 value={fields.handoffInitiator}
-                onChangeText={(value) =>
+                options={Object.entries(handoffInitiatorLabels).map(
+                  ([value, label]) => ({ value, label }),
+                )}
+                onChange={(value) =>
                   update(
                     'handoffInitiator',
                     value as ProfileFields['handoffInitiator'],
                   )
                 }
-                placeholder="BUYER_CONTACTS_SELLER"
-                autoCapitalize="characters"
-                editable={editable}
+                disabled={!editable}
               />
             </>
           ) : (
@@ -342,10 +344,19 @@ export function SellerProfileScreen() {
               }}
             >
               <AppText role="bodySmall" tone="secondary">
-                {profile.handoffContactType}: {profile.handoffContactValue}
+                {presentEnum(
+                  profile.handoffContactType,
+                  handoffContactTypeLabels,
+                  'Тип контакта',
+                )}: {profile.handoffContactValue}
               </AppText>
-              <AppText role="bodySmall" tone="muted">
-                Инициатор: {profile.handoffInitiator}
+              <AppText role="bodySmall" tone="secondary">
+                Инициатор:{' '}
+                {presentEnum(
+                  profile.handoffInitiator,
+                  handoffInitiatorLabels,
+                  'Режим контакта',
+                )}
               </AppText>
             </View>
           )}
