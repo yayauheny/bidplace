@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 11:57
-- Current audit unit: 6 — Product detail, gallery, auction panel, linear sections
-- Next exact action: Compare product screenshots and product-screen/gallery/auction-panel/bottom-action code at 1440/1024/390; verify the unified top block, first-viewport auction truth, linear sections and eligible-buyer CTA evidence
+- Last completed checkpoint: 2026-08-02 12:00
+- Current audit unit: 7 — Author page, purchases, seller screens, forms and media
+- Next exact action: Inspect public author, activity/purchases, seller profile, product draft, listing draft, FormSection and TextField; map hierarchy, dense rows, form width, media controls and missing responsive/runtime evidence
 - Blockers: none
 
 ## Audit queue
@@ -17,7 +17,7 @@
 | 3 | AppShell, AppHeader, desktop rail, mobile header, account control | AppShell.tsx, AppHeader.tsx, BrandLogo.tsx, AccountMenu.tsx; catalog/product screenshots at 1440/1024/390 | `complete` | No new finding: target shell/header geometry confirmed; seller long-label evidence deferred to unit 9 regression gap |
 | 4 | OverlayHost, tooltips, account menu, dialogs, stacking and focus | OverlayHost.tsx, AccountMenu.tsx, AppDialog.tsx, navigation.spec.ts, dialog screenshots at 1440/1024/390 | `complete` | F-OVR-01, F-OVR-02, F-DLG-01 |
 | 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx, real fixtures, catalog screenshots | `complete` | F-CAT-01, F-CAT-02, F-CAT-03 |
-| 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx | `not_started` | — |
+| 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx, product screenshots, primary product reference | `complete` | F-PDP-01, F-PDP-02, F-PDP-03 |
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx | `not_started` | — |
 | 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, PageState.tsx, PageHeader.tsx | `not_started` | — |
 | 9 | Accessibility, keyboard, long content, responsive regressions | All components and screens cross-check | `not_started` | — |
@@ -47,6 +47,8 @@
 | AppDialog.tsx, four dialog call sites and dialog screenshots | Checked centering, 520px maximum, 20px gutter, action ordering, cancel availability and layer contract | Current dialog geometry and destructive/cancel hierarchy pass at all viewports; modal z-index is not explicitly applied or tested against popovers | F-DLG-01 |
 | product-list-screen.tsx and catalog screenshots | Checked column math, gutters, left edge, first viewport, loaded/loading composition at 1440/1024/390 | 1440 card width and left edge pass; 1024 wrongly stays two-column; 390 card footer wraps auction truth; loading grid differs from loaded grid | F-CAT-01, F-CAT-02, F-CAT-03 |
 | AuctionCard.tsx, ImagePlaceholder.tsx and seeded product PNGs | Checked image source, 4:5 ratio, contain behavior, fallback, text hierarchy and listing states | Real images load and fallback keeps ratio; publication date is redundant; narrow footer lacks an atomic price/status layout | F-CAT-02 |
+| product-screen.tsx and product screenshots | Checked responsive top block, first viewport, story duplication, auction truth, mobile/desktop bid form and linear section order | 1440 two-column structure works but hero is undersized; 1024 stacks below 1025; 390 clips current price; screenshots use admin and cannot prove buyer CTA | F-PDP-01, F-PDP-02, F-PDP-03 |
+| ProductGallery.tsx, AuctionPanel.tsx and BottomActionBar.tsx | Checked media/fallback geometry, auction labels, status semantics, dock height and safe-area padding | Gallery is fixed 300px; auction content is explicit; mobile dock contains the full form and exceeds target compact height | F-PDP-01, F-PDP-02 |
 
 ## Findings ledger
 
@@ -64,6 +66,9 @@
 | F-CAT-01 | P1 | Catalog uses two instead of three columns at 1024px | 4 / P1 | `confirmed` |
 | F-CAT-02 | P1 | Mobile card footer breaks price/currency/status hierarchy | 4 / P1 | `confirmed` |
 | F-CAT-03 | P1 | Loading skeleton grid does not match loaded catalog | 4 / P1 | `confirmed` |
+| F-PDP-01 | P0 | Auction truth and action do not fit the first product viewport | 4 / P0 | `confirmed` |
+| F-PDP-02 | P1 | Product hero is fixed at 300px on every viewport | 4 / P1 | `confirmed` |
+| F-PDP-03 | P1 | Linear detail sections retain heavy panel chrome | 4 / P1 | `confirmed` |
 
 ## Decisions and assumptions
 
@@ -82,4 +87,4 @@
 
 ## Resume instructions
 
-Start audit unit 6: compare `product-screen.tsx`, `ProductGallery.tsx`, `AuctionPanel.tsx` and `BottomActionBar.tsx` with product screenshots at 1440×900, 1024×900 and 390×844; record top-block, first-viewport, linear-section and eligible-buyer CTA findings.
+Start audit unit 7: inspect `public-seller-screen.tsx`, `activity-screen.tsx`, `seller-profile-screen.tsx`, `product-draft-screen.tsx`, `listing-draft-screen.tsx`, `FormSection.tsx` and `TextField.tsx`; record author/purchases/seller/form/media findings and screen rows.

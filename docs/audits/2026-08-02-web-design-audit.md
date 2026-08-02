@@ -139,6 +139,16 @@ Shell/header validation (audit unit 3): no new finding. The 1440×900 screenshot
 
 No token- or button-level P0 finding was confirmed in audit unit 2.
 
+### [P0] F-PDP-01 — Auction truth and action do not fit the first product viewport
+
+- **Evidence:** In `product-1024.png`, the fixed 300×375 gallery sits alone above title/story and the auction panel; timing/deadline continue below the 900px viewport. In `product-390.png`, only status and the top of the current-price value reach the 844px boundary. The screenshot user is an admin, so no bid CTA is present. For an eligible buyer, code adds a bottom dock containing summary + 52px input + 56px button + gaps/padding (roughly 180–200px), further reducing visible content. This violates the confirmed first-viewport requirement for gallery, title, current bid, minimum, status/time and primary action.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-screen.tsx` (`isDesktop`, top-block layout, mobile `bidForm`, `bottomAction`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/BottomActionBar.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/AuctionPanel.tsx`.
+- **Root cause:** product-detail composition is coupled to the 1025px shell breakpoint, and the mobile sticky-action region contains the entire bid form instead of one compact auction summary/action row.
+- **Required change:** introduce an independent product-detail wide breakpoint at 900px: at 900px+ render gallery and title/auction column side by side. Below 900px keep the linear stack but move the amount input and validation into `AuctionPanel`; make `BottomActionBar` a single 56–64px row plus safe area with compact minimum/current summary and one `Сделать ставку` button. Reduce the top story preview to two lines on 390 and remove the publication caption from the top block; keep full story/date in linear detail sections.
+- **Do not do:** shrink critical type, crop the gallery behind a fixed height, hide minimum/deadline in a tab, or use negative margins/absolute overlaps to force content into the viewport.
+- **Acceptance criteria:** at 1440×900 and 1024×900, gallery, author, title, short story, status, current bid, minimum next bid, deadline/time and eligible primary CTA are visible without scrolling. At 390×844, the page shows gallery/title plus status/current bid, while the fixed compact dock simultaneously exposes minimum/current summary and CTA without covering panel text; keyboard opening never hides the active input or CTA.
+- **Tests/evidence:** buyer-authenticated product screenshots at all three viewports, plus 390×844 with keyboard/input focused; bounding-box assertions for each critical element; admin screenshot retained separately to verify the non-participation notice.
+
 **P1**
 
 ### [P1] F-ACC-01 — Muted captions do not meet text contrast
@@ -221,6 +231,26 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** loading, success and failed-image states have identical column count, card x-position and 4:5 media bounds at 390, 1024 and 1440; transition to loaded content moves no card edge by more than 1px.
 - **Tests/evidence:** deterministic loading-state screenshots at all three viewports and bounding-box comparisons against loaded cards; unit test for the shared column helper at boundary widths.
 
+### [P1] F-PDP-02 — Product hero is fixed at 300px on every viewport
+
+- **Evidence:** `product-1440.png` shows a 300×375 image occupying barely half of its left column, leaving a large empty band before the title/auction column; the object is less dominant than the panel. The same 300px literal appears at 1024 and 390 because `ProductGallery` owns a fixed width. The primary local product reference instead establishes an image-led hero, while the confirmed product direction requires large object imagery without decorative noise.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/ProductGallery.tsx` (`GalleryImage` and failed-image width `300`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-screen.tsx` (gallery column).
+- **Root cause:** gallery media has no responsive size contract and cannot react to the available detail column.
+- **Required change:** keep the current 300px mobile image, but at the independent 900px detail breakpoint use proposed token `layout.productHeroWide: 440` (Founder approval required) for both loaded and failed images; center a single image within its column and preserve horizontal overflow/partial-next affordance only when multiple images exist.
+- **Do not do:** stretch beyond the source ratio, use `cover` when it crops the object, introduce a screen-local percentage that differs for fallback, or enlarge the image by shrinking auction type.
+- **Acceptance criteria:** at 1440 and 1024 the hero is 440×550 with identical loaded/fallback bounds, remains fully visible and balances the adjacent auction column; at 390 it remains 300×375 and never overflows the 20px gutters.
+- **Tests/evidence:** gallery component tests for 0/1/multiple/failed images; product screenshots at all three viewports with exact media bounding boxes.
+
+### [P1] F-PDP-03 — Linear detail sections still look like stacked admin panels
+
+- **Evidence:** `product-1440.png` shows `О предмете` inside a large rounded bordered rectangle immediately below the hero; code wraps `О предмете`, `История предмета` and `История ставок` in the same `SurfacePanel`. Sections are technically linear and tab-free, but repeated panel chrome makes editorial reading feel like an admin/settings form rather than a calm object story.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-screen.tsx` (`SurfacePanel`, `itemStory`, `itemHistory`, `bidHistory`); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/Separator.tsx`.
+- **Root cause:** a generic bordered container is used both for transactional auction truth and ordinary narrative/detail content, erasing the intended distinction.
+- **Required change:** keep `AuctionPanel` as the only bordered top-block panel. Replace lower `SurfacePanel` wrappers with plain `DetailSection` composition: metadata eyebrow, 12–16px title/content gap, 32–40px section gap and one neutral divider between sections. Preserve current linear order and all existing data/error/retry behavior.
+- **Do not do:** reintroduce tabs, add alternating backgrounds, turn each fact into a chip/card, or remove bid-history loading/error/empty states.
+- **Acceptance criteria:** lower sections have no outer border, radius or separate surface; hierarchy comes from section typography, whitespace and dividers; long story text stays within the 680px reading measure on desktop while technical value rows remain scannable.
+- **Tests/evidence:** full-page product screenshots for long story, maximum detail items, empty bid history and failed bid-history load at 1440/1024/390; visual assertion that only the auction block retains panel chrome.
+
 **P2**
 
 ### [P2] F-BTN-01 — Loading changes content-width button geometry
@@ -268,6 +298,7 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 | Screen / route | Keep | Remove | Change | Components/files | Acceptance screenshot |
 |---|---|---|---|---|---|
 | `/` | White canvas; no large `Каталог` heading/count; real 4:5 images; left-aligned grid after rail; author/title/one-line story/price/status | Catalog publication-date row; any duplicate mobile header divider | Decouple 900/1440 grid breakpoints; compact footer stacks price then status; loading uses identical grid/media geometry | `product-list-screen.tsx`, `AuctionCard.tsx`, `Skeleton.tsx`, `ImagePlaceholder.tsx`, catalog breakpoint/media tokens | `catalog-1440.png`, `catalog-1024.png`, `catalog-390.png`, plus loading and failed-image variants |
+| `/product/[publicId]` | White canvas; 4:5 gallery; author/title/short story; explicit auction status/current/minimum/deadline; linear section order; first-bid confirmation | Publication caption from top block; bordered panels around ordinary story/history sections; oversized full bid form in mobile dock | Use independent 900px two-column breakpoint; 440px wide hero; compact 56–64px mobile action row; amount input inside auction panel; plain linear detail sections | `product-screen.tsx`, `ProductGallery.tsx`, `AuctionPanel.tsx`, `BottomActionBar.tsx`, `AppDialog.tsx` | Buyer and admin `product-1440.png`, `product-1024.png`, `product-390.png`; long-story and keyboard-focused variants |
 
 <!-- Populated after audit units 5–9 -->
 
