@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { ScrollView } from 'react-native';
+import { ScrollView, useWindowDimensions } from 'react-native';
 import { useState } from 'react';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -16,11 +16,18 @@ export function ProductGallery({
   images: ProductGalleryImage[];
   label: string;
 }) {
+  const { width } = useWindowDimensions();
+  const imageWidth =
+    width >= modernTokens.breakpoint.productDetailWide
+      ? modernTokens.productHeroWide
+      : 300;
+
   if (images.length === 0)
     return (
       <ImagePlaceholder
         ratio={modernTokens.ratio.productPortrait}
         label={`Нет изображения: ${label}`}
+        style={{ width: imageWidth, alignSelf: 'center' }}
       />
     );
 
@@ -28,11 +35,20 @@ export function ProductGallery({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: modernTokens.space.x3 }}
+      contentContainerStyle={{
+        minWidth: '100%',
+        gap: modernTokens.space.x3,
+        justifyContent: images.length === 1 ? 'center' : 'flex-start',
+      }}
       accessibilityLabel={`Галерея: ${label}`}
     >
       {images.map((image) => (
-        <GalleryImage key={image.id} image={image} label={label} />
+        <GalleryImage
+          key={image.id}
+          image={image}
+          label={label}
+          width={imageWidth}
+        />
       ))}
     </ScrollView>
   );
@@ -41,9 +57,11 @@ export function ProductGallery({
 function GalleryImage({
   image,
   label,
+  width,
 }: {
   image: ProductGalleryImage;
   label: string;
+  width: number;
 }) {
   const [failed, setFailed] = useState(false);
   const imageLabel = `Изображение предмета: ${label}`;
@@ -53,7 +71,7 @@ function GalleryImage({
       <ImagePlaceholder
         ratio={modernTokens.ratio.productPortrait}
         label={`Изображение недоступно: ${label}`}
-        style={{ width: 300 }}
+        style={{ width }}
       />
     );
   }
@@ -66,7 +84,7 @@ function GalleryImage({
       accessibilityLabel={imageLabel}
       onError={() => setFailed(true)}
       style={{
-        width: 300,
+        width,
         aspectRatio: modernTokens.ratio.productPortrait,
         borderRadius: modernTokens.radius.image,
         backgroundColor: modernTokens.color.placeholder,

@@ -130,6 +130,48 @@ test('approved seller navigation exposes the seller cabinet and add product', as
   }
 });
 
+test('approved seller mobile navigation uses equal cells without horizontal overflow', async ({
+  browser,
+}) => {
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.seller);
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    const navigation = page.getByLabel('Основная навигация');
+    await expect(navigation).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Кабинет продавца' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Добавить предмет' }),
+    ).toBeVisible();
+
+    const metrics = await page.evaluate(() => ({
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }));
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+
+    const links = navigation.getByRole('link');
+    const boxes = await Promise.all(
+      (await links.all()).map((link) => link.boundingBox()),
+    );
+    const visibleNavBoxes = boxes.filter(
+      (box): box is NonNullable<typeof box> => box !== null,
+    );
+    expect(visibleNavBoxes.length).toBe(4);
+    expect(visibleNavBoxes.every((box) => box.width > 80)).toBe(true);
+    expect(
+      visibleNavBoxes.every((box) => box.x >= 0 && box.x + box.width <= 390),
+    ).toBe(true);
+  } finally {
+    await context.close();
+  }
+});
+
 test('mobile account menu uses the shared overlay layer and viewport inset', async ({
   browser,
 }) => {

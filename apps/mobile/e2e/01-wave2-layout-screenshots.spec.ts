@@ -29,7 +29,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         0,
       );
       if (width === 390) {
-        const mobileNavigation = page.getByRole('tablist');
+        const mobileNavigation = page.getByLabel('Основная навигация');
         const firstCard = page.locator('a[href^="/product/"]').first();
         const navigationBox = await mobileNavigation.boundingBox();
         const firstCardBox = await firstCard.boundingBox();

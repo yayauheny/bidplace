@@ -15,6 +15,7 @@ type ButtonProps = {
   icon?: AppIconName;
   accessibilityHint?: string;
   width?: ButtonWidth;
+  compact?: boolean;
 };
 
 function ButtonContent({
@@ -52,6 +53,7 @@ function ButtonBase({
   icon,
   accessibilityHint,
   width = 'content',
+  compact = false,
   style,
   textColor,
 }: ButtonProps & { style: ViewStyle; textColor: string }) {
@@ -67,7 +69,9 @@ function ButtonBase({
       preset="primaryAction"
       style={[
         {
-          minHeight: modernTokens.size.button,
+          minHeight: compact
+            ? modernTokens.size.buttonCompact
+            : modernTokens.size.button,
           justifyContent: 'center',
           ...buttonLayoutStyle(width),
         },
@@ -90,7 +94,9 @@ export function PrimaryButton(props: ButtonProps) {
       {...props}
       textColor={modernTokens.color.surface}
       style={{
-        borderRadius: modernTokens.radius.button,
+        borderRadius: props.compact
+          ? modernTokens.radius.compact
+          : modernTokens.radius.button,
         backgroundColor: modernTokens.color.ink,
       }}
     />
@@ -103,7 +109,9 @@ export function SecondaryButton(props: ButtonProps) {
       {...props}
       textColor={modernTokens.color.ink}
       style={{
-        borderRadius: modernTokens.radius.button,
+        borderRadius: props.compact
+          ? modernTokens.radius.compact
+          : modernTokens.radius.button,
         borderWidth: 1,
         borderColor: modernTokens.color.border,
         backgroundColor: modernTokens.color.surface,
@@ -118,7 +126,9 @@ export function DestructiveButton(props: ButtonProps) {
       {...props}
       textColor={modernTokens.color.surface}
       style={{
-        borderRadius: modernTokens.radius.button,
+        borderRadius: props.compact
+          ? modernTokens.radius.compact
+          : modernTokens.radius.button,
         backgroundColor: modernTokens.color.danger,
       }}
     />

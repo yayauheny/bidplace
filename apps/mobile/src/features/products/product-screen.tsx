@@ -127,6 +127,7 @@ function BidForm({
   onAmountChange,
   onSubmit,
   onRetry,
+  showPrimaryAction = true,
 }: {
   amount: string;
   minimumNextBid: number | null;
@@ -136,6 +137,7 @@ function BidForm({
   onAmountChange: (value: string) => void;
   onSubmit: () => void;
   onRetry: () => void;
+  showPrimaryAction?: boolean;
 }) {
   return (
     <View style={{ gap: modernTokens.space.x3 }}>
@@ -149,12 +151,14 @@ function BidForm({
         }
         error={validationError ?? undefined}
       />
-      <PrimaryButton
-        label="Сделать ставку"
-        loading={isPending}
-        onPress={onSubmit}
-        accessibilityHint="Сервер проверит актуальную цену и условия торгов"
-      />
+      {showPrimaryAction ? (
+        <PrimaryButton
+          label="Сделать ставку"
+          loading={isPending}
+          onPress={onSubmit}
+          accessibilityHint="Сервер проверит актуальную цену и условия торгов"
+        />
+      ) : null}
       {hasFailedAttempt ? (
         <SecondaryButton
           label="Повторить ставку"
@@ -182,6 +186,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
   const isDesktop = width >= modernTokens.breakpoint.desktopShell;
+  const isProductWide = width >= modernTokens.breakpoint.productDetailWide;
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
@@ -326,6 +331,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           onRetry={() => {
             if (pendingAttempt) sendBid(pendingAttempt);
           }}
+          showPrimaryAction={isProductWide}
         />
       </EmailRulesGate>
     ) : null;
@@ -361,7 +367,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
     >
-      {isDesktop ? (bidForm ?? adminBidNotice) : adminBidNotice}
+      {bidForm ?? adminBidNotice}
     </AuctionPanel>
   ) : (
     <SurfacePanel>
@@ -487,7 +493,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   return (
     <ProductShell
       bottomAction={
-        !isDesktop && bidForm ? (
+        !isProductWide && bidForm ? (
           <BottomActionBar
             summary={
               <View style={{ gap: modernTokens.space.x1 }}>
@@ -502,7 +508,15 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               </View>
             }
           >
-            {bidForm}
+            <EmailRulesGate redirectTo={`/product/${publicId}`}>
+              <PrimaryButton
+                compact
+                label="Сделать ставку"
+                loading={bid.isPending}
+                onPress={submitBid}
+                accessibilityHint="Сервер проверит актуальную цену и условия торгов"
+              />
+            </EmailRulesGate>
           </BottomActionBar>
         ) : undefined
       }
@@ -514,7 +528,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             : modernTokens.space.x5,
           paddingVertical: modernTokens.space.x6,
           paddingBottom:
-            !isDesktop && bidForm
+            !isProductWide && bidForm
               ? modernTokens.space.x16
               : modernTokens.space.x8,
         }}
@@ -530,16 +544,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         >
           <View
             style={{
-              flexDirection: isDesktop ? 'row' : 'column',
+              flexDirection: isProductWide ? 'row' : 'column',
               alignItems: 'flex-start',
               gap: modernTokens.space.x6,
             }}
           >
             <View
               style={{
-                flex: isDesktop ? 1 : undefined,
+                flex: isProductWide ? 1 : undefined,
                 minWidth: 0,
-                width: isDesktop ? undefined : '100%',
+                width: isProductWide ? undefined : '100%',
                 gap: modernTokens.space.x4,
               }}
             >
@@ -550,9 +564,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             </View>
             <View
               style={{
-                flex: isDesktop ? 1 : undefined,
+                flex: isProductWide ? 1 : undefined,
                 minWidth: 0,
-                width: isDesktop ? 360 : '100%',
+                width: isProductWide ? 360 : '100%',
                 maxWidth: '100%',
                 gap: modernTokens.space.x4,
               }}
@@ -592,8 +606,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   </AppText>
                 ) : null}
               </View>
-              {!isDesktop ? auctionPanel : null}
-              {isDesktop ? (
+              {!isProductWide ? auctionPanel : null}
+              {isProductWide ? (
                 <View
                   style={
                     Platform.OS === 'web'

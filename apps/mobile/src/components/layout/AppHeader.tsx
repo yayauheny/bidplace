@@ -73,7 +73,10 @@ function NavigationItem({
           getBoundingClientRect: () => DOMRect;
         } | null;
       }}
-      style={{ position: 'relative' }}
+      style={{
+        position: 'relative',
+        ...(desktop ? {} : { flex: 1, minWidth: 0 }),
+      }}
     >
       <Link href={item.href} asChild>
         <MotionPressable
@@ -86,23 +89,34 @@ function NavigationItem({
           onHoverOut={() => setHovered(false)}
           preset="button"
           style={{
-            width: desktop ? modernTokens.size.touch : undefined,
+            width: desktop ? modernTokens.size.touch : '100%',
             minHeight: modernTokens.size.touch,
-            flexDirection: desktop ? 'column' : 'row',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: modernTokens.space.x1,
+            gap: desktop ? modernTokens.space.x1 : 0,
             borderRadius: modernTokens.radius.control,
             backgroundColor: active
               ? modernTokens.color.chip
               : hovered || focused
                 ? modernTokens.color.surfaceMuted
                 : 'transparent',
-            paddingHorizontal: modernTokens.space.x2,
+            paddingHorizontal: desktop
+              ? modernTokens.space.x2
+              : modernTokens.space.x1,
+            ...(desktop ? {} : { flex: 1, minWidth: 0 }),
           }}
         >
           <AppIcon name={item.icon} color={modernTokens.color.ink} />
-          {!desktop ? <AppText role="caption">{item.label}</AppText> : null}
+          {!desktop ? (
+            <AppText
+              role="nav"
+              numberOfLines={2}
+              style={{ textAlign: 'center' }}
+            >
+              {item.label}
+            </AppText>
+          ) : null}
         </MotionPressable>
       </Link>
       {desktop && visibleLabel ? (
@@ -199,11 +213,12 @@ export function AppHeader({ accountControl }: { accountControl?: ReactNode }) {
         {accountControl}
       </View>
       <View
-        accessibilityRole="tablist"
+        role="navigation"
+        accessibilityLabel="Основная навигация"
         style={{
           flexDirection: 'row',
-          justifyContent: 'space-around',
-          paddingVertical: modernTokens.space.x1,
+          minHeight: 56,
+          width: '100%',
         }}
       >
         {links}
