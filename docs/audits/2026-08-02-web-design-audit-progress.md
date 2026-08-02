@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 11:55
-- Current audit unit: 5 — Catalog grid and AuctionCard at 1440/1024/390
-- Next exact action: Compare catalog screenshots and code for target column breakpoints, left-edge density, card hierarchy, price/status wrapping, image/fallback geometry and screenshot blind spots; add only unit 5 findings
+- Last completed checkpoint: 2026-08-02 11:57
+- Current audit unit: 6 — Product detail, gallery, auction panel, linear sections
+- Next exact action: Compare product screenshots and product-screen/gallery/auction-panel/bottom-action code at 1440/1024/390; verify the unified top block, first-viewport auction truth, linear sections and eligible-buyer CTA evidence
 - Blockers: none
 
 ## Audit queue
@@ -16,7 +16,7 @@
 | 2 | Design tokens, typography, colors, spacing, radii, buttons | packages/design-tokens/src/index.ts, modern.ts, Button.tsx, MotionPressable.tsx, button-layout.ts, AppText.tsx, TextField.tsx, app/_layout.tsx, shared media components | `complete` | F-ACC-01, F-ACC-02, F-ACC-03, F-BTN-01, F-TOK-02, F-TOK-03 |
 | 3 | AppShell, AppHeader, desktop rail, mobile header, account control | AppShell.tsx, AppHeader.tsx, BrandLogo.tsx, AccountMenu.tsx; catalog/product screenshots at 1440/1024/390 | `complete` | No new finding: target shell/header geometry confirmed; seller long-label evidence deferred to unit 9 regression gap |
 | 4 | OverlayHost, tooltips, account menu, dialogs, stacking and focus | OverlayHost.tsx, AccountMenu.tsx, AppDialog.tsx, navigation.spec.ts, dialog screenshots at 1440/1024/390 | `complete` | F-OVR-01, F-OVR-02, F-DLG-01 |
-| 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx | `not_started` | — |
+| 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx, real fixtures, catalog screenshots | `complete` | F-CAT-01, F-CAT-02, F-CAT-03 |
 | 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx | `not_started` | — |
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx | `not_started` | — |
 | 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, PageState.tsx, PageHeader.tsx | `not_started` | — |
@@ -45,6 +45,8 @@
 | AppShell.tsx, AppHeader.tsx and BrandLogo.tsx plus 1440/1024/390 screenshots | Checked 1025 shell transition, rail width, logo/account placement, nav states and mobile dividers | 1440 rail/account and 1024/390 unified mobile header match confirmed target; no stale spacer or duplicate divider remains | — |
 | OverlayHost.tsx, AccountMenu.tsx and navigation.spec.ts | Checked web portal ownership, placement math, outside/Escape close, focus open/return and existing overlay assertions | Desktop dropdown/tooltips use layer 20; mobile account dropdown bypasses portal; Escape close does not prove or implement focus return | F-OVR-01, F-OVR-02 |
 | AppDialog.tsx, four dialog call sites and dialog screenshots | Checked centering, 520px maximum, 20px gutter, action ordering, cancel availability and layer contract | Current dialog geometry and destructive/cancel hierarchy pass at all viewports; modal z-index is not explicitly applied or tested against popovers | F-DLG-01 |
+| product-list-screen.tsx and catalog screenshots | Checked column math, gutters, left edge, first viewport, loaded/loading composition at 1440/1024/390 | 1440 card width and left edge pass; 1024 wrongly stays two-column; 390 card footer wraps auction truth; loading grid differs from loaded grid | F-CAT-01, F-CAT-02, F-CAT-03 |
+| AuctionCard.tsx, ImagePlaceholder.tsx and seeded product PNGs | Checked image source, 4:5 ratio, contain behavior, fallback, text hierarchy and listing states | Real images load and fallback keeps ratio; publication date is redundant; narrow footer lacks an atomic price/status layout | F-CAT-02 |
 
 ## Findings ledger
 
@@ -59,6 +61,9 @@
 | F-OVR-01 | P1 | Mobile account dropdown bypasses the overlay layer | 4 / P1 | `confirmed` |
 | F-OVR-02 | P1 | Account dropdown does not restore keyboard focus after Escape | 4 / P1 | `confirmed` |
 | F-DLG-01 | P2 | Dialog does not explicitly apply the modal layer token | 4 / P2 | `confirmed` |
+| F-CAT-01 | P1 | Catalog uses two instead of three columns at 1024px | 4 / P1 | `confirmed` |
+| F-CAT-02 | P1 | Mobile card footer breaks price/currency/status hierarchy | 4 / P1 | `confirmed` |
+| F-CAT-03 | P1 | Loading skeleton grid does not match loaded catalog | 4 / P1 | `confirmed` |
 
 ## Decisions and assumptions
 
@@ -77,4 +82,4 @@
 
 ## Resume instructions
 
-Start audit unit 5: compare `product-list-screen.tsx`, `AuctionCard.tsx`, `Skeleton.tsx` and `ImagePlaceholder.tsx` with catalog screenshots at 1440×900, 1024×900 and 390×844; record exact grid, hierarchy, wrapping, media and evidence gaps.
+Start audit unit 6: compare `product-screen.tsx`, `ProductGallery.tsx`, `AuctionPanel.tsx` and `BottomActionBar.tsx` with product screenshots at 1440×900, 1024×900 and 390×844; record top-block, first-viewport, linear-section and eligible-buyer CTA findings.

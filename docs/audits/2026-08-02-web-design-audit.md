@@ -28,6 +28,7 @@
 | Commit `933312d` | Dialog centering via portal wrapper, catalog description clamp, target-width screenshots | High | 10 files, reviewed stat+message |
 | Commit `d02ec40` | Isolated wave 2 screenshots, seeded product assertions | High | 3 files, reviewed stat+message |
 | Commit `e672dda` | Removed mobile header spacer, desktop account row desktop-only, removed mobile nav top divider | High | 5 files, reviewed diff |
+| Product image fixtures and `packages/database/prisma/seed.js` | Three seeded product images, titles, seller and listing states used by screenshot scenario | High | Real local PNGs are loaded in all catalog/product screenshots; no invented placeholder-only catalog conclusion |
 
 ## 3. Target visual system
 
@@ -190,6 +191,36 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** after opening the account menu, tabbing to `Выйти` and pressing Escape, the menu closes and the account trigger is `document.activeElement`; the next Tab proceeds to the next logical control exactly once.
 - **Tests/evidence:** extend `navigation.spec.ts` with keyboard-only open/traverse/Escape assertions at 1440×900 and 1025×900; capture the focus ring on the restored account trigger.
 
+### [P1] F-CAT-01 — Catalog stays at two columns at 1024px
+
+- **Evidence:** `catalog-1024.png` visibly renders two cards across, each nearly half the viewport, while the confirmed target is three columns from 900 through 1439px. `ProductListScreen` uses `width >= 1025 ? 3 : 2`, coupling the grid to the shell breakpoint. The large 4:5 media makes the 1024 view feel like an oversized gallery rather than the required dense catalog.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-list-screen.tsx` (`columns`, `cardWidth`, catalog wrapper); `/Users/yayauheny/projects/bidplace/packages/design-tokens/src/modern.ts` (missing catalog breakpoint roles).
+- **Root cause:** the catalog reuses the desktop-rail threshold instead of its independently confirmed 900px density breakpoint.
+- **Required change:** use proposed catalog breakpoint tokens `catalogThreeColumn: 900` and `catalogFourColumn: 1440`; render 2 columns below 900, 3 columns from 900 through 1439, and 4 columns at 1440+. Keep the shell rail transition independent.
+- **Do not do:** shrink card type or image height to imitate density, change the shell breakpoint merely to fix the grid, or hide card metadata below a fixed-height crop.
+- **Acceptance criteria:** bounding boxes prove exactly 2/3/4 equal-width columns at 390/1024/1440 respectively; at 1024 the first row exposes image, author, title, price with BYN and full status/deadline inside the initial 900px viewport.
+- **Tests/evidence:** parameterized layout test for 899, 900, 1439 and 1440 widths; `catalog-1024.png` regenerated with three cards across; bounding-box assertions rather than card-count alone.
+
+### [P1] F-CAT-02 — Mobile card footer breaks price and status hierarchy
+
+- **Evidence:** In `catalog-390.png`, `75 BYN` and `120 BYN` wrap between amount and currency, while `Торги идут · 2 авг.` and `Завершено · 2 авг.` split into separate fragments aligned against the price. A separate `Размещено 2 авг. 2026 г.` line consumes another row immediately above. The result obscures the required scan order image → author → title → description → price → status.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/AuctionCard.tsx` (`publishedLabel`, price/status footer View, numeric and caption text); `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-list-screen.tsx` (compact two-column context).
+- **Root cause:** the same horizontal `space-between` footer is used at every card width, with no no-wrap contract for currency/status; redundant publication metadata competes with auction truth in the narrow card.
+- **Required change:** in the two-column compact card, remove the publication-date row, keep description to one line, and stack one-line price above one-line status/deadline with left alignment and `x1` gap. Preserve the horizontal footer only where the measured card width fits both values without truncation. Use `numberOfLines={1}` for each atomic value after giving it adequate width.
+- **Do not do:** reduce the 14px price or 11px status font, abbreviate BYN, clip the footer, or remove the description that the confirmed hierarchy requires.
+- **Acceptance criteria:** at 390×844 each first-row card shows intact `75 BYN`/`120 BYN` and a readable status/deadline without overlap or interleaving; title stays at two lines maximum and description at one; publication date is absent from the catalog card.
+- **Tests/evidence:** `catalog-390.png` with seeded LIVE and ENDED cards; component tests for long title, four-digit price and each listing status; bounding-box assertion that price and status do not intersect and each currency is on the amount line.
+
+### [P1] F-CAT-03 — Loading skeleton uses a different grid than loaded cards
+
+- **Evidence:** On `/` at every target viewport, `CatalogLoading` gives each skeleton `flex: 1, minWidth: 220` inside a wrapping row, while loaded cards use calculated 2/3/4 percentage widths. At 390 the 220px minimum forces a one-column loading state before a two-column result; at 1024 it can create four narrow skeletons before the target three-column result. The screenshot scenario waits for loaded products and never captures loading geometry.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-list-screen.tsx` (`CatalogLoading`, `columns`, loaded catalog map); `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/Skeleton.tsx`.
+- **Root cause:** loading and loaded layouts have separate grid implementations and do not share the breakpoint/card-width calculation.
+- **Required change:** calculate catalog columns once and pass the same percentage width/wrapper spacing to skeleton and loaded cards; mirror the 4:5 media plus author/title/description/footer skeleton rows so each card reserves the final height.
+- **Do not do:** add a fixed loading container height, show fewer columns only while loading, or fade the layout jump behind a longer animation.
+- **Acceptance criteria:** loading, success and failed-image states have identical column count, card x-position and 4:5 media bounds at 390, 1024 and 1440; transition to loaded content moves no card edge by more than 1px.
+- **Tests/evidence:** deterministic loading-state screenshots at all three viewports and bounding-box comparisons against loaded cards; unit test for the shared column helper at boundary widths.
+
 **P2**
 
 ### [P2] F-BTN-01 — Loading changes content-width button geometry
@@ -236,6 +267,7 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 
 | Screen / route | Keep | Remove | Change | Components/files | Acceptance screenshot |
 |---|---|---|---|---|---|
+| `/` | White canvas; no large `Каталог` heading/count; real 4:5 images; left-aligned grid after rail; author/title/one-line story/price/status | Catalog publication-date row; any duplicate mobile header divider | Decouple 900/1440 grid breakpoints; compact footer stacks price then status; loading uses identical grid/media geometry | `product-list-screen.tsx`, `AuctionCard.tsx`, `Skeleton.tsx`, `ImagePlaceholder.tsx`, catalog breakpoint/media tokens | `catalog-1440.png`, `catalog-1024.png`, `catalog-390.png`, plus loading and failed-image variants |
 
 <!-- Populated after audit units 5–9 -->
 
