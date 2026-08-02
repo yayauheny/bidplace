@@ -53,11 +53,14 @@ export function AppDialog({
           pointerEvents="box-none"
         >
           <Dialog.Content
+            asChild
+            nativeID="app-dialog-content"
             style={{
               width: '100%',
               maxWidth: 520,
               maxHeight: Math.max(height - viewportGutter * 2, 0),
               gap: modernTokens.space.x4,
+              zIndex: modernTokens.layer.modal,
               borderRadius: modernTokens.radius.panel,
               backgroundColor: modernTokens.color.surface,
               padding: modernTokens.space.x5,

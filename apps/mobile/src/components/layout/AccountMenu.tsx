@@ -27,6 +27,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     if (restoreFocus) {
       suppressNextFocusOpen.current = true;
       triggerRef.current?.focus?.();
+      queueMicrotask(() => {
+        suppressNextFocusOpen.current = false;
+      });
     }
   }, []);
 
@@ -100,10 +103,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   }
 
   return (
-    <View
-      nativeID="account-menu"
-      style={{ position: 'relative' }}
-    >
+    <View nativeID="account-menu" style={{ position: 'relative' }}>
       <Pressable
         ref={(node) => {
           triggerRef.current = node as unknown as {
@@ -118,12 +118,12 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
         onFocus={
           desktop
             ? () => {
+                if (suppressNextFocusOpen.current) {
+                  suppressNextFocusOpen.current = false;
+                  return;
+                }
                 focusOpened.current = true;
-              if (suppressNextFocusOpen.current) {
-                suppressNextFocusOpen.current = false;
-                return;
-              }
-              setOpen(true);
+                setOpen(true);
               }
             : undefined
         }
@@ -174,7 +174,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             label={label}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
-              inline
+            inline
           />
         )
       ) : null}

@@ -117,9 +117,10 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await page.keyboard.press('Escape');
     await expect(account).toBeFocused();
     await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
-    await account.focus();
+    await account.click();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
     await page.keyboard.press('Escape');
+    await expect(account).toBeFocused();
     await account.click();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
     await page.getByRole('button', { name: 'Выйти' }).click();
@@ -142,9 +143,9 @@ test('mobile account menu uses the shared overlay layer and viewport inset', asy
     const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
     await account.click();
 
-    const menu = page.locator('#app-overlay-host').locator(
-      '#account-menu-dropdown',
-    );
+    const menu = page
+      .locator('#app-overlay-host')
+      .locator('#account-menu-dropdown');
     await expect(menu).toBeVisible();
     await expect(menu).toHaveCSS('z-index', '20');
     const menuBox = await menu.boundingBox();
