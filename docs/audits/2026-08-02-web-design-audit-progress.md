@@ -3,9 +3,9 @@
 ## Current status
 
 - Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 12:03
-- Current audit unit: 8 — Admin moderation, destructive actions, loading/empty/error states
-- Next exact action: Inspect admin moderation, PageState and PageHeader plus current dialog screenshots; audit hierarchy, status readability, action density, destructive confirmations and all shared loading/empty/error patterns
+- Last completed checkpoint: 2026-08-02 12:06
+- Current audit unit: 9 — Accessibility, keyboard, long content, responsive regressions
+- Next exact action: Cross-check semantics, focus/Tab/Escape, 44px targets, contrast, reduced motion, long labels/content, auth screens and screenshot/E2E blind spots; add unit 9 findings and remaining screen rows
 - Blockers: none
 
 ## Audit queue
@@ -19,7 +19,7 @@
 | 5 | Catalog grid and AuctionCard at 1440/1024/390 | product-list-screen.tsx, AuctionCard.tsx, Skeleton.tsx, ImagePlaceholder.tsx, real fixtures, catalog screenshots | `complete` | F-CAT-01, F-CAT-02, F-CAT-03 |
 | 6 | Product detail, gallery, auction panel, linear sections | product-screen.tsx, ProductGallery.tsx, AuctionPanel.tsx, BottomActionBar.tsx, product screenshots, primary product reference | `complete` | F-PDP-01, F-PDP-02, F-PDP-03 |
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx, contracts and E2E | `complete` | F-AUTHOR-01, F-ACT-01, F-FORM-01, F-MEDIA-01 |
-| 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, PageState.tsx, PageHeader.tsx | `not_started` | — |
+| 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, order-screen.tsx, PageState.tsx, PageHeader.tsx, Skeleton.tsx, dialog screenshots and E2E | `complete` | F-ADM-01, F-ADM-02, F-STATE-01 |
 | 9 | Accessibility, keyboard, long content, responsive regressions | All components and screens cross-check | `not_started` | — |
 | 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9 | `not_started` | — |
 
@@ -53,6 +53,8 @@
 | activity-screen.tsx and activity contract/E2E | Checked compact row content, long status, price/deadline availability, order path and privacy | Contract already exposes listing price/deadline, but row omits them; E2E proves behavior, not layout | F-ACT-01 |
 | seller-profile, product-draft and listing-draft screens | Checked max width, group chrome, raw values, selection/date controls, action hierarchy and state locks | Forms fit 760px but expose backend enums/ISO and oversized button lists instead of labelled selectors | F-FORM-01 |
 | seller/profile and product-draft media code | Checked preview ratio/fit/fallback, upload wording, reorder/delete targets and confirmation | Profile preview can reach 720px square; product images crop to a 180px strip; upload lacks truthful count | F-MEDIA-01 |
+| admin-moderation-screen.tsx and dialog screenshots | Checked desktop/mobile queue geometry, status/evidence/action hierarchy, blocking explanations, destructive confirmation and order maintenance | Confirmations are explicit and centered; desktop queue underuses width and mixes evidence/actions vertically; raw English domain values remain | F-ADM-01, F-ADM-02 |
+| PageState.tsx, Skeleton.tsx and route state branches | Checked loading/empty/error semantics, retry, geometry and consistency | PageState duplicates loading copy without progress semantics; catalog skeleton is separate; several routes use ad-hoc state text | F-STATE-01 |
 
 ## Findings ledger
 
@@ -77,6 +79,9 @@
 | F-ACT-01 | P1 | Purchases rows omit available price and deadline | 4 / P1 | `confirmed` |
 | F-FORM-01 | P1 | Seller flows expose raw enums and ISO timestamps | 4 / P1 | `confirmed` |
 | F-MEDIA-01 | P1 | Seller media editors use unstable/cropped geometry | 4 / P1 | `confirmed` |
+| F-ADM-01 | P1 | Desktop moderation is a long narrow action queue | 4 / P1 | `confirmed` |
+| F-ADM-02 | P1 | Admin/order UI leaks internal English domain values | 4 / P1 | `confirmed` |
+| F-STATE-01 | P2 | Shared loading state duplicates copy and lacks progress semantics | 4 / P2 | `confirmed` |
 
 ## Decisions and assumptions
 
@@ -95,4 +100,4 @@
 
 ## Resume instructions
 
-Start audit unit 8: inspect `admin-moderation-screen.tsx`, `PageState.tsx` and `PageHeader.tsx`; compare moderation screenshots/dialogs and audit action density, status hierarchy, confirmations and shared loading/empty/error states.
+Start audit unit 9: cross-check all screens/components for semantics, keyboard/focus, touch targets, reduced motion, long labels/content and responsive/evidence blind spots; inspect auth screens and finish the screen specification.

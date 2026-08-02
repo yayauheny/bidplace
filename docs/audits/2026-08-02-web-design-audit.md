@@ -291,6 +291,26 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** profile media no longer dominates desktop form; product preview and fallback share 4:5 geometry without crop; move/delete are reachable by touch/keyboard and expose position; upload label includes the truthful selected count and geometry does not jump.
 - **Tests/evidence:** screenshots for empty/selected/broken/uploading/many-image states at all viewports; component tests for first/middle/last reorder disabled states and delete confirmation.
 
+### [P1] F-ADM-01 — Desktop moderation is a long narrow action queue
+
+- **Evidence:** Behind `dialog-1440.png`, moderation content is centered in a 760px column while the desktop canvas leaves substantial unused width. Sellers and products are sequential `FormSection`s; each `ModerationCard` puts title, muted status, metadata and 56px approve/destructive actions in one vertical stack. The same structure is appropriate at 390 but makes desktop scanning and seller↔item comparison slow.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/admin/admin-moderation-screen.tsx` (`AdminShell`, seller/product `FormSection`s, `ModerationCard`, action placement).
+- **Root cause:** the mobile form composition was reused unchanged at desktop instead of applying a moderation-specific responsive queue layout.
+- **Required change:** keep one route and the existing actions, but at 1025px+ widen moderation to 1180px and place seller and product queues in two equal columns; keep order cancellation/replacement as a full-width section below. In each row place title + localized status in one header, evidence text/media below, then approve and destructive actions in a wrapping content-width action row with at least 12px gap; keep destructive confirmation unchanged.
+- **Do not do:** build a generic SaaS dashboard, introduce tables that force horizontal scrolling, put dangerous icons without labels, or expose additional admin data/API fields.
+- **Acceptance criteria:** at 1440 both moderation queues are visible side by side with no content overlap and a clear title/status/action hierarchy; at 1024/390 they collapse to one column; long names/reasons wrap without moving destructive action into another card.
+- **Tests/evidence:** `/admin` screenshots at 1440/1024/390 with long seller/product names, blocking listing, last reason, missing image and all statuses; retain destructive dialog screenshots and action E2E.
+
+### [P1] F-ADM-02 — Admin and order UI leaks internal English domain values
+
+- **Evidence:** `/admin` displays `Order`, `active Order`, `replacement Bid`, `Listing` and the selected reason `BUYER_DECLINED`; the three reason buttons show raw enum constants. `/order/[publicId]` similarly prints raw `order.status`, contact type and `handoffInitiator`. The moderation dialog screenshot visibly includes technical action context behind otherwise clear Russian copy.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/admin/admin-moderation-screen.tsx` (`confirmationText`, cancel/replacement section, reason buttons); `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/orders/order-screen.tsx` (`Details` values and action copy).
+- **Root cause:** only seller/product moderation statuses have a presentation map; order, reason, contact and handoff enums are rendered directly.
+- **Required change:** add shared localized label maps for existing order status, cancellation reason, contact type and handoff initiator values; use `заказ`, `ставка` and `торги` in visible copy while preserving identifiers only where an administrator genuinely needs to paste/find them. Keep exact enum payloads behind the controls.
+- **Do not do:** rename API/domain enums, hide the order public ID, invent new cancellation reasons, or translate values inconsistently in admin versus buyer/seller order screens.
+- **Acceptance criteria:** no raw enum or mixed `Order/Bid/Listing` wording appears in visible UI; every admin choice remains unambiguous and maps one-to-one to the existing payload; confirmation copy states the consequence in Russian.
+- **Tests/evidence:** screenshot matrix for admin cancel/replacement and buyer/seller/admin order projections; unit tests for every enum label mapping; existing security/privacy E2E remains unchanged.
+
 **P2**
 
 ### [P2] F-BTN-01 — Loading changes content-width button geometry
@@ -333,6 +353,16 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 - **Acceptance criteria:** an open dialog always covers and blocks an already-open account dropdown or tooltip; the dialog remains centered at all three viewports, its backdrop covers the full viewport during scroll, and cancel/destructive controls remain reachable.
 - **Tests/evidence:** component stacking test plus Playwright scenario that opens a popover then a dialog and asserts modal z-index 30 > popover 20; screenshots at 1440×900, 1024×900 and 390×844.
 
+### [P2] F-STATE-01 — Shared loading state is duplicate text without progress semantics
+
+- **Evidence:** `PageState loading` renders the supplied title (usually already `Загружаем …`) and then a second literal `Загружаем…`; it has no activity indicator, `progressbar` role or live region. Admin, public author, activity and profile routes use this pattern. Catalog uses a separate skeleton, and several seller/order routes bypass `PageState` with ad-hoc text, so loading/error/empty presentation is inconsistent and absent from the current screenshot suite.
+- **Affected code:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/PageState.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/modern-ui/Skeleton.tsx`; loading/error branches in admin, public seller, activity, seller profile, product/listing draft and order screens.
+- **Root cause:** `PageState` is a generic centered container but not a complete state contract; screens supply state wording independently and only the catalog has geometry-preserving loading.
+- **Required change:** make loading one announced state: spinner or stable skeleton with `accessibilityRole="progressbar"`, one descriptive message and `accessibilityLiveRegion="polite"`; error keeps plain-language message + content-width retry; empty keeps title + concrete next step only when a real route/action exists. Use geometry-preserving skeletons for catalog/product media, and shared PageState for non-geometric list/form waits.
+- **Do not do:** add decorative illustrations/gradients, invent CTAs for unavailable flows, replace useful error copy with codes, or use indefinite shimmer that ignores reduced motion.
+- **Acceptance criteria:** no screen shows duplicate loading copy; all asynchronous page loads expose progress semantics; error always offers retry when retry is valid; empty states neither impersonate errors nor introduce unsupported actions.
+- **Tests/evidence:** component tests for loading/empty/error/retry semantics; route screenshots for each state at 1440/1024/390; reduced-motion check for any animated indicator.
+
 ## 5. Screen-by-screen implementation specification
 
 | Screen / route | Keep | Remove | Change | Components/files | Acceptance screenshot |
@@ -344,6 +374,7 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 | Seller profile (`/profile`) | Existing application fields, moderation lock, content-width save action | Raw enum copy; 100%-width profile preview | Localized shared selectors, 200px media preview/fallback, explicit disabled reason and stable loading | `seller-profile-screen.tsx`, `TextField.tsx`, new shared single-select adapter | New/pending/changes-requested/approved states at 1440/1024/390 |
 | Product draft | Staged existing fields, incomplete draft save, moderation submit, confirmed image delete | Raw statuses; 720×180 cover-cropped images; three stacked text actions per image | Localized statuses/category selection; compact 4:5 media rows; truthful upload count; preserved action hierarchy | `product-draft-screen.tsx`, `FormSection.tsx`, `TextField.tsx`, media/action primitives | Empty/filled/locked/uploading/error/many-image states at 1440/1024/390 |
 | Listing draft | Existing approved-product guard, schedule rules and two-step create/schedule behavior | Raw status in product button; ISO timestamp entry | Compact selectable product rows, localized status, date/time adapter with timezone, unchanged API serialization | `listing-draft-screen.tsx`, shared select/date controls | Empty/invalid/ready/created/scheduled states at 1440/1024/390 |
+| `/admin` | Existing queues, blocking-listing explanations, required-reason dialogs, privacy constraints and action rules | Raw English domain/enums; narrow desktop-only column; passive author rendered as heavy button | Two-column desktop moderation queues, clear row header/status/action anatomy, localized order/reason labels; preserve dialogs | `admin-moderation-screen.tsx`, `FormSection.tsx`, `AppDialog.tsx`, status/enum formatters | Admin queue and each destructive dialog at 1440/1024/390, including long/blocking/empty/error states |
 
 <!-- Populated after audit units 5–9 -->
 
