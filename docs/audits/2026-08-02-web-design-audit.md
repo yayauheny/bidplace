@@ -2,7 +2,15 @@
 
 ## 1. Verdict
 
-<!-- To be completed after all audit units are done -->
+- Current web UI is a credible functional Modern UI cutover, but it is **not ready for final design acceptance**: 1 P0, 20 P1 and 7 P2 findings remain.
+- Strong foundations are already present: white canvas, real product imagery, semantic text/type roles, content-width buttons, explicit auction facts, role-aware navigation and confirmed destructive dialogs.
+- The P0 is product-detail comprehension: at 1024 and 390 the first viewport does not expose the complete auction truth/action set, and the mobile bid dock is too tall.
+- Catalog structure is close, but 1024 uses two rather than three columns, narrow card footers break BYN/status, and loading geometry does not match loaded cards.
+- Author, activity, seller and admin screens still inherit prototype/form patterns: weak creator identity, omitted auction facts, raw enums/ISO values, unstable media previews and narrow stacked desktop moderation.
+- Accessibility is incomplete at the shared layer: no universal focus-visible treatment, reduced-motion branch or reliable focus return; navigation semantics, hit targets and several contrast pairs fail acceptance.
+- Header and destructive-dialog regressions from recent commits are genuinely closed: 1440 rail/account, unified 1024/390 mobile header, centered 520px dialog and destructive-before-cancel hierarchy all pass available evidence.
+- Nine runtime screenshots and all approved local references were inspected, but current E2E cannot prove buyer CTA, max-role navigation, long/state layouts or deterministic image opacity; fresh regeneration also failed before Playwright due package-manager signature verification.
+- Implementation should begin with **Wave A — Structural responsive fixes**, then shared visual-system corrections, then screen polish/acceptance. Do not start with isolated screen styling.
 
 ## 2. Evidence reviewed
 
@@ -62,9 +70,9 @@
 | Font family — body | `Inter_400Regular/500Medium/600SemiBold/700Bold` | Keep | All body text, labels and headings | All four faces are registered through Expo `useFonts` in `apps/mobile/src/app/_layout.tsx`, including web |
 | Font family — mono | `PTMono_400Regular` | Keep | Prices, metadata, buttons and captions | Registered through Expo `useFonts` in `apps/mobile/src/app/_layout.tsx` |
 | Font family — brand | Legacy `brand.fontFamily: 'CormorantGaramond_500Medium'` is unused | No runtime font token required for the current raster wordmark | `BrandLogo` renders approved image assets | Do not load an unused brand font or redesign the wordmark without a founder decision |
-| Display | `fontSize: 32, lineHeight: 38, weight: 700` | Keep | Screen titles on mobile, hero text | |
-| Screen title | `fontSize: 28, lineHeight: 34, weight: 700` | Keep | Page headers when used | |
-| Section title | `fontSize: 20, lineHeight: 26, weight: 600` | Keep | Section headings within pages | |
+| Display | `fontSize: 32, lineHeight: 38, weight: 700` at all widths | Keep 32/38 mobile; approved desktop target 36/42 | Mobile hero; desktop product/author hero only | Responsive desktop role is in approved Modern UI docs but missing from active tokens |
+| Screen title | `fontSize: 28, lineHeight: 34, weight: 700` at all widths | Keep 28/34 mobile; approved desktop target 30/36 | Page headers when used | Avoid enlarging catalog because its heading is intentionally absent |
+| Section title | `fontSize: 20, lineHeight: 26, weight: 600` at all widths | Keep 20/26 mobile; approved desktop target 22/28 | Linear section headings and major form groups | |
 | Card title | `fontSize: 16, lineHeight: 21, weight: 600` | Keep | AuctionCard item name | |
 | Body | `fontSize: 17, lineHeight: 26, weight: 400` | Keep | Primary body text, descriptions | |
 | Body small | `fontSize: 15, lineHeight: 22, weight: 400` | Keep | Secondary body text, longer descriptions | |
@@ -101,6 +109,16 @@
 | Content max width | Legacy `layout.contentMaxWidth: 1280`; not consumed by current app | **Proposed active token: `layout.contentMaxWidth: 1280`**. Founder approval required | Reading/form/detail content where an explicit maximum is needed; not the full catalog grid | Keeps a documented legacy value available without applying it indiscriminately |
 | Desktop rail width | Hardcoded `72` in `AppHeader` | **Proposed token: `layout.railWidth: 72`**. Founder approval required | Desktop icon-only navigation rail and shell offsets | Preserves current compact width and gives shell/overlay geometry one source of truth; final assessment in audit unit 3 |
 | Catalog grid breakpoints | Hardcoded `1025` and `1440` in `ProductListScreen` | Confirmed target: 2 cols below 900px, 3 cols at 900–1439px, 4 cols at 1440px+. **Proposed tokens: `breakpoint.catalogThreeColumn: 900`, `breakpoint.catalogFourColumn: 1440`**. Founder approval required | Catalog grid only; it remains independent from the shell rail breakpoint | Target behavior is confirmed, but active layout tokens do not contain the values; final finding in audit unit 5 |
+| Shell breakpoint | Hardcoded `1025` in `AppShell` and `AppHeader` | **Proposed token: `breakpoint.desktopShell: 1025`** | Switch unified mobile header to desktop rail/account row | Preserves the visually validated transition and prevents duplicated magic values |
+| Product-detail breakpoint | Reuses shell `1025` | **Proposed token: `breakpoint.productDetailWide: 900`**. Founder approval required | Two-column gallery + title/auction block at 900px+ | Required to satisfy 1024 first-viewport auction hierarchy; see F-PDP-01 |
+| Product detail max width | Hardcoded `1180` | **Proposed token: `layout.productDetailMaxWidth: 1180`** | Unified hero and linear detail page container | Preserves current 1440 composition while centralizing the invariant |
+| Product hero width | Hardcoded `300` at all widths | `300` below 900; **Proposed token: `layout.productHeroWide: 440`** at 900px+. Founder approval required | Loaded and failed gallery images | See F-PDP-02 |
+| Form/list max width | Repeated `760` in activity/seller/admin/order shells | **Proposed token: `layout.formMaxWidth: 760`** | Single-column forms and compact lists only | Preserve current readable measure; moderation widens separately on desktop |
+| Author avatar | Hardcoded `64` public; full-width editor preview | **Proposed tokens: `size.authorAvatar: 120`, `size.profileEditorPreview: 200`**. Founder approval required | Public identity and profile form preview/fallback | See F-AUTHOR-01 and F-MEDIA-01 |
+| Desktop account control | 56px account row; 32px horizontal gutter; 44px trigger | Keep exactly | Top-right control above desktop content; dropdown through popover layer | Confirmed by 1440 screenshots |
+| Mobile header | 56px brand/account row + 44px-min nav row + one outer divider | Target 56px brand row + 56px equal-width nav row + one bottom divider | 390/1024 unified header; icon above up-to-two-line label | Preserves the closed divider fix and accommodates approved-seller labels; see F-NAV-01 |
+| Dialog | `maxWidth: 520`, 20px viewport gutter, radius 22, centered | Keep; add viewport-fixed wrapper, `maxHeight: calc(100dvh - 40px)`, internal overflow and `layer.modal: 30` | Bid/destructive confirmations at all widths | Current geometry passes; layer/long-content contract is incomplete; see F-DLG-01 |
+| Bottom action | Content-dependent column containing full bid form | 56–64px row + safe area; summary + one CTA | Mobile product bidding only; amount input remains in auction panel | See F-PDP-01 |
 
 ### 3.5 Layer (z-index) tokens
 
@@ -136,8 +154,6 @@
 Shell/header validation (audit unit 3): no new finding. The 1440×900 screenshot and current code confirm a 72px icon rail with hover/focus tooltips and a separate top-right account control. The 1024×900 and 390×844 screenshots confirm one compact mobile header block with logo/account row, navigation row and exactly one bottom divider. The removed mobile spacer and duplicate divider from `e672dda` are not re-reported. Role variants with four mobile destinations remain a regression-evidence gap covered in F-VR-01 during audit unit 9.
 
 **P0**
-
-No token- or button-level P0 finding was confirmed in audit unit 2.
 
 ### [P0] F-PDP-01 — Auction truth and action do not fit the first product viewport
 
@@ -437,34 +453,67 @@ No token- or button-level P0 finding was confirmed in audit unit 2.
 | `/admin` | Existing queues, blocking-listing explanations, required-reason dialogs, privacy constraints and action rules | Raw English domain/enums; narrow desktop-only column; passive author rendered as heavy button | Two-column desktop moderation queues, clear row header/status/action anatomy, localized order/reason labels; preserve dialogs | `admin-moderation-screen.tsx`, `FormSection.tsx`, `AppDialog.tsx`, status/enum formatters | Admin queue and each destructive dialog at 1440/1024/390, including long/blocking/empty/error states |
 | Login/register | Auth routes without global navigation; one task; labelled fields; content-width primary and text-link switch | Registration promise of admin access; non-scrollable keyboard-obscured composition | Keyboard-aware scroll, centered 540px max only when fitting, truthful buyer/seller-application copy, deterministic loading/error geometry | `(auth)/login.tsx`, `(auth)/register.tsx`, `auth-form.tsx`, `TextField.tsx`, `Button.tsx` | Login/register at 1440/1024/390 plus keyboard, 200% zoom, validation, loading and server-error states |
 
-<!-- Populated after audit units 5–9 -->
-
 ## 6. Implementation waves
 
 ### Wave A — Structural responsive fixes
 
 | Order | Task | Exact files/components | Dependencies | Acceptance criteria | Required checks |
 |---|---|---|---|---|---|
+| 1 | Centralize shell/catalog/product breakpoints and layout dimensions | `packages/design-tokens/src/modern.ts`; `AppShell.tsx`; `AppHeader.tsx`; `product-list-screen.tsx`; `product-screen.tsx` | Founder decisions on new product-detail size tokens | One 1025 shell threshold; catalog 900/1440 independent; product detail wide from 900; no route/role changes | Design-token unit tests; mobile typecheck/lint; boundary tests at 899/900/1024/1025/1439/1440 |
+| 2 | Fix overlay geometry and modal ordering | `OverlayHost.tsx`/`OverlayPortal`; `AccountMenu.tsx`; `AppDialog.tsx` | Layout/layer tokens; no screen changes | Account menu portals at all web widths with 8px collision inset; modal 30 always above popover 20; Escape focus return | `navigation.spec.ts`; overlay/dialog component tests; open-menu/open-dialog screenshots at all viewports |
+| 3 | Make catalog loaded/loading/fallback grids identical | `product-list-screen.tsx` (`CatalogLoading`, shared column helper); `AuctionCard.tsx`; `Skeleton.tsx`; `ImagePlaceholder.tsx` | Breakpoint and 4:5 ratio tokens | Exact 2/3/4 columns; same card edges and media bounds in loading/success/failure | Unit boundary tests; bounding-box E2E; catalog screenshots at all viewports/states |
+| 4 | Recompose product top block and mobile action geometry | `product-screen.tsx`; `ProductGallery.tsx`; `AuctionPanel.tsx`; `BottomActionBar.tsx` | Product breakpoint/hero decision; button remains content width | 1024 becomes two-column; 390 dock is one 56–64px row + safe area; amount input stays visible/scrollable in panel; auction truth meets F-PDP-01 | Buyer/admin product E2E; keyboard viewport test; first-viewport bounding boxes; screenshots at all widths |
+| 5 | Stabilize maximum-role mobile nav and auth viewport containers | `AppHeader.tsx`; `(auth)/login.tsx`; `(auth)/register.tsx` | Shell breakpoint unchanged | Four seller destinations fit 390 without overflow; auth scrolls above keyboard/at 200% zoom; header keeps one divider | Role matrix navigation E2E; auth keyboard/zoom screenshots; no-horizontal-scroll assertion |
 
 ### Wave B — Shared component and visual-system fixes
 
 | Order | Task | Exact files/components | Dependencies | Acceptance criteria | Required checks |
 |---|---|---|---|---|---|
+| 1 | Approve and apply semantic contrast/focus tokens; isolate legacy exports | `packages/design-tokens/src/modern.ts`, `index.ts`; `AppText.tsx`; theme provider | Founder palette decision | Accent text/danger labels pass 4.5:1; focus passes 3:1; app has one canonical token surface; no visual change from export cleanup | Contrast unit tests; repository import/type check; package build |
+| 2 | Complete press/focus/reduced-motion/accessibility primitives | `MotionPressable.tsx`; `AppIcon.tsx`; `BrandLogo.tsx`; `ImagePlaceholder.tsx`; reduced-motion provider/hook; `global.css` | Focus token; existing motion durations | One focus-visible contract, 44px targets, one accessible name per composite, zero decorative motion in reduce mode | Component accessibility tests; Playwright accessibility snapshots; reduced-motion screenshots/native smoke test |
+| 3 | Stabilize button densities and state geometry | `Button.tsx`; `button-layout.ts`; `Button.spec.ts`; opacity/compact size tokens | Compact-density founder decision | Content width remains default; loading changes size ≤1px; compact is 44px only where explicitly requested; disabled/busy semantics readable | Button layout/state unit tests; long-label/loading screenshots; contrast checks |
+| 4 | Normalize card/media/detail primitives | `AuctionCard.tsx`; `ProductGallery.tsx`; `ImagePlaceholder.tsx`; `Skeleton.tsx`; new shared product-grid/detail-section primitive | Wave A grid; ratio/hero tokens | 4:5 loaded/fallback/loading parity; compact footer contract; plain editorial detail sections available without panel chrome | Component snapshots and visual stories for long/missing/failed media |
+| 5 | Finish dialog and shared page-state contracts | `AppDialog.tsx`; `PageState.tsx`; `PageHeader.tsx`; `Skeleton.tsx` | Wave A modal geometry; focus primitive | Dialog handles long content/focus/cancel; loading announced once; empty/error/retry variants consistent | Dialog focus/overflow tests; PageState role/live-region tests; state screenshot set |
+| 6 | Add presentation adapters for existing seller/admin values | Shared localized status/enum maps; shared single-select, date-time field and compact auction/product row; `TextField.tsx` | No API/domain changes; founder nav/compact typography decision | No raw enum/ISO copy; controls serialize existing values; compact rows retain 44px targets | Mapping/date serialization unit tests; mobile typecheck/lint; existing auction/security E2E |
 
 ### Wave C — Screen polish and acceptance
 
 | Order | Task | Exact files/components | Dependencies | Acceptance criteria | Required checks |
 |---|---|---|---|---|---|
-
-<!-- Populated in audit unit 10 -->
+| 1 | Apply final catalog card hierarchy | `product-list-screen.tsx`; `AuctionCard.tsx` | Waves A/B grid/card primitives | Remove publication row; compact price then status; description preserved; 1440 left edge/4-column density unchanged | Catalog loaded/loading/failure screenshots and bounding-box E2E |
+| 2 | Apply editorial product-detail sections and complete buyer/admin states | `product-screen.tsx`; `AuctionPanel.tsx`; `BottomActionBar.tsx`; bid confirmation | Waves A/B product/dialog primitives | Auction panel is sole transactional panel; story/provenance/history/bids are linear; buyer/admin first viewport passes; no tabs | Product state matrix, long-content, keyboard and bid-confirmation E2E |
+| 3 | Polish author and purchases compositions | `public-seller-screen.tsx`; `activity-screen.tsx` | Shared grid/compact row/media tokens | 120px author identity + responsive work grid; activity exposes existing price/deadline/status without new API | Author many/zero/failure screenshots; activity status/long-row screenshots; privacy E2E |
+| 4 | Replace technical seller controls and media layouts | `seller-profile-screen.tsx`; `product-draft-screen.tsx`; `listing-draft-screen.tsx`; `FormSection.tsx` | Shared adapters/media primitives | Human labels/date-time UI; 200px profile preview; 160×200 product rows; truthful upload count; existing state locks unchanged | Seller-flow screenshots; auction-creation E2E; edit/upload/reorder/delete tests |
+| 5 | Recompose moderation and localize order projections | `admin-moderation-screen.tsx`; `order-screen.tsx` | Shared compact rows/maps/dialog | 1180px two-column desktop queue, one-column smaller widths; localized status/reason/order copy; destructive rules unchanged | Admin/order role screenshots; moderation/order/security E2E |
+| 6 | Finish auth, long-content and all page states | auth routes/form; every PageState caller; long-label fixtures | Shared state/auth container | Keyboard/zoom safe auth; truthful registration copy; no duplicate loading; all required empty/error/disabled states | Auth/state screenshots at all widths; accessibility scan; long-label tests |
+| 7 | Run and persist full visual/accessibility acceptance | `apps/mobile/e2e/01-wave2-layout-screenshots.spec.ts` refactored matrix; CI artifacts | All prior tasks; reproducible pinned toolchain | Every row in section 7 passes; images fully opaque; artifact names include commit/viewport/role/state | Typecheck; lint without fix; unit/integration/E2E; build; Chromium plus manual Safari/Android/iPhone matrix |
 
 ## 7. Visual regression matrix
 
-<!-- Populated in audit unit 10 -->
+| Viewport | Routes / identity / state | Must be visible in the first viewport | Must not appear | Required proof |
+|---|---|---|---|---|
+| 1440×900 | `/` as guest/admin; loaded/loading/failed image | 72px rail, top-right account, four equal catalog tracks, real fully opaque 4:5 media, author/title/price/status | Large `Каталог` heading/count; mobile header; fewer-width 3-column cards; faded media | Column/card/image bounding boxes + loaded/loading/failure PNGs |
+| 1440×900 | `/product/seedLive002` as eligible buyer and admin | 440×550 hero, author/title/short story, auction status/current/minimum/time, buyer CTA or admin notice | Mobile dock; tabs; bordered story/history panels; cropped/faded hero | Separate buyer/admin PNGs + first-viewport bounding boxes |
+| 1440×900 | `/seller/[slug]`, `/me/activity`, seller profile/product draft/listing draft | Author identity + 2–3 work columns; compact price/deadline rows; 760px form measure and localized controls | 64px-only author; giant single work; raw enums/ISO; 720px media preview | Route/state PNGs with long values; media bounds; text assertions |
+| 1440×900 | `/admin`, `/order/[publicId]`, login/register | Two moderation columns, localized status/actions; centered 540px auth task; explicit role projection | Generic dashboard chrome; mixed English enums; global nav on auth | Admin/order role PNGs; auth PNGs; privacy assertions |
+| 1440×900 | Account open, tooltip focused, destructive/bid dialog over popover | Popover layer 20; modal 30; visible focus ring; centered ≤520px dialog | Card/panel above menu; popover above dialog; focus loss after Escape | z-index/activeElement assertions + overlay PNGs |
+| 1024×900 | `/` loaded/loading/failed image | Unified header with one divider, exactly three tracks, first-row image/author/title/BYN/status | Desktop rail; two oversized columns; duplicate account row/divider | Column/card bounding boxes + state PNGs |
+| 1024×900 | `/product/seedLive002` buyer/admin | Two-column unified top block and all auction truth/action without scroll | Single stacked 300px hero with auction timing below fold; tabs | Buyer/admin first-viewport bounding boxes + PNGs |
+| 1024×900 | Author/activity/seller/admin/auth routes | Responsive work grid, compact activity, one-column moderation, readable forms/auth | Desktop two-column moderation; raw enums; overflowed nav/account | Route PNGs with max role/long content and no-horizontal-scroll assertion |
+| 390×844 | `/` for guest/buyer/pending seller/approved seller/admin | One header block, four-role max nav contained, exactly two cards, intact amount+BYN then status | Empty spacer; extra divider; horizontal scroll; interleaved price/status | Role-parameterized header/catalog PNGs + target bounding boxes |
+| 390×844 | `/product/seedLive002` eligible buyer/admin; keyboard closed/open | Gallery/title/status/current visible; compact dock summary + CTA; input/error scrolls above keyboard | 180px full-form dock; obscured auction text; tabs; fixed clipped content | Buyer/admin/keyboard PNGs + visualViewport/bounding-box assertions |
+| 390×844 | `/seller/[slug]`, `/me/activity`, seller/admin/order flows | Stable media/compact rows, long status wrapping, content-width actions, localized controls | Cover-cropped product strips; raw enum/ISO; overlapping destructive actions | Long/empty/error/loading/media PNGs + accessibility scan |
+| 390×844 | Login/register; account open; dialog; 200% zoom/reduced motion | Scrollable focused auth input+error+CTA; in-bounds dropdown; scrollable centered dialog; full focus ring | Keyboard-obscured CTA; offscreen menu; faded media; duplicate announcements | Keyboard/zoom/reduce-motion PNGs, accessibility snapshot and Escape focus assertion |
 
 ## 8. Founder decisions required
 
-<!-- Populated incrementally; finalized in audit unit 10 -->
+| Decision | Why it is required | Options | Recommended option | Consequence |
+|---|---|---|---|---|
+| Approve accessible semantic action colors | Current accent text is 4.24:1 and white-on-danger is 4.40:1; changing semantic color is a visible palette decision | A: keep values and find different treatment; B: use existing `accentDark #BC3C1B` for small accent text and legacy negative `#B63B3B` for danger; C: commission another palette | **B** | Small links/errors/destructive buttons pass AA and destructive red separates from orange accent; no new color is invented |
+| Approve focus role `#2457E6` | Active tokens have no focus color; the legacy focus `#7FA1FF` is only 2.49:1 on white | A: proposed legacy primary blue `#2457E6`; B: derive another approved high-contrast color; C: ink-only focus | **A** | One 5.86:1 cross-screen focus ring becomes implementable; blue is reserved for focus, not brand CTA |
+| Approve responsive detail/identity sizes | Product 1024 and author/media editor need exact values not fully determined by current tokens | A: `productDetailWide 900`, hero 440, author avatar 120, editor preview 200; B: retain current 1025/300/64/full-width; C: provide designer values | **A** | Satisfies first-viewport/product hierarchy and prevents oversized/cropped seller media without new API |
+| Approve shared compact/navigation roles | Dense moderation/product rows need an explicit compact control and nav typography; active tokens have neither | A: `buttonCompact 44` with radius 14 and `nav` Inter 500 13/18; B: keep 56px buttons and caption mono nav everywhere; C: provide designer values | **A** | Dense screens become scannable while retaining 44px targets; default/form buttons remain 56px |
+| Approve semantic token additions that preserve current visuals | The audit requires new roles for existing repeated invariants (`disabled 0.5`, product ratio 4:5, rail 72, shell 1025, form 760, product max 1180, catalog 900/1440) | A: add named roles with current/confirmed values; B: leave literals; C: postpone governance | **A** | Removes drift without changing current visuals; enables Wave A/B to share one source of truth |
 
 ## 9. Explicit non-goals
 

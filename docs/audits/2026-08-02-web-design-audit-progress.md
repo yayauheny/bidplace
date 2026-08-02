@@ -2,11 +2,11 @@
 
 ## Current status
 
-- Status: `in_progress`
-- Last completed checkpoint: 2026-08-02 12:08
-- Current audit unit: 10 — Compile findings, waves, visual regression matrix, final review
-- Next exact action: Complete verdict, remaining target-system rows, three implementation waves, visual regression matrix, founder decisions and final counts; audit every requested item and close progress
-- Blockers: none
+- Status: `complete`
+- Last completed checkpoint: 2026-08-02 12:14
+- Current audit unit: complete
+- Next exact action: Implement Wave A only after the listed founder decisions are recorded
+- Blockers: Fresh screenshot regeneration is not reproducible in the current environment because pnpm signature verification attempts a failed registry fetch; nine existing artifacts were still inspected and the limitation is documented in F-VR-01
 
 ## Audit queue
 
@@ -21,7 +21,7 @@
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx, contracts and E2E | `complete` | F-AUTHOR-01, F-ACT-01, F-FORM-01, F-MEDIA-01 |
 | 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, order-screen.tsx, PageState.tsx, PageHeader.tsx, Skeleton.tsx, dialog screenshots and E2E | `complete` | F-ADM-01, F-ADM-02, F-STATE-01 |
 | 9 | Accessibility, keyboard, long content, responsive regressions | All components/screens, auth routes, global CSS, AppIcon, E2E and screenshot artifacts | `complete` | F-NAV-01, F-AUTH-01, F-ACC-04, F-ACC-05, F-ACC-06, F-VR-01 |
-| 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9 | `not_started` | — |
+| 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9, target decisions, screen spec and requirement checklist | `complete` | Final verdict; 1 P0 / 20 P1 / 7 P2; Waves A–C; 12-row regression matrix; 5 founder decisions |
 
 ## Reviewed evidence
 
@@ -59,6 +59,7 @@
 | AppHeader, BrandLogo, AppIcon, MotionPressable and interactive call sites | Checked roles, names, current state, touch targets, Tab order and composite icon semantics | Mobile route links are incorrectly in a tablist; compact logo/author targets are undersized; some composites duplicate icon labels | F-NAV-01, F-ACC-03, F-ACC-05, F-ACC-06 |
 | motion tokens, image transitions, global.css and screenshots | Checked reduced-motion branch and screenshot determinism | No preference adapter exists; first-width screenshots catch image fade; later cached widths do not | F-ACC-04, F-VR-01 |
 | screenshot E2E matrix and artifacts | Compared assertions/identities/states against every mandatory visual failure class | Current suite cannot prove columns, metadata geometry, buyer CTA, overlays, max-role nav, state layouts or long content; artifacts are ephemeral and fresh rerun failed before Playwright | F-VR-01 |
+| Final requirement-by-requirement audit | Checked report structure, every mandatory topic, screen row, finding field, three waves, viewport matrix, decisions, non-goals and evidence limitations | All requested report deliverables are present; source code/product/design docs remain unchanged | All 28 findings |
 
 ## Findings ledger
 
@@ -105,9 +106,11 @@
 - Existing `4/5` product-media ratio is preserved; audit unit 2 recommends tokenizing it, not changing the crop.
 - The current 1025px shell breakpoint is acceptable: 1440 uses the icon rail, while 1024/390 use the unified mobile header. Catalog and product-detail composition may use independent breakpoints, as explicitly confirmed by the task.
 - The local Modern UI docs use a warm canvas, content tabs and bottom mobile dock in places; the task's later explicit decisions take precedence: white canvas, linear product sections and one unified top mobile header.
+- Final finding count is 28: 1 P0, 20 P1 and 7 P2. Every finding has Evidence, Affected code, Root cause, Required change, Do not do, Acceptance criteria and Tests/evidence.
+- Recommended first implementation wave is Wave A — Structural responsive fixes. Five founder approvals in section 8 must be recorded before values marked `Founder approval required` are implemented.
 - `01-DESIGN-FOUNDATION.md` is protected — cannot be changed without founder/designer decision.
 - No Figma workspace is linked. No external design deliverables exist.
 
 ## Resume instructions
 
-Start audit unit 10: complete verdict, target system, three implementation waves, visual regression matrix, founder decisions and final counts; verify every mandatory audit topic, mark progress complete and perform final document checks.
+Audit complete. The final report is `docs/audits/2026-08-02-web-design-audit.md`. Begin only with Wave A after recording the section 8 founder decisions; do not repeat research unless new runtime evidence contradicts a finding.
