@@ -3,10 +3,10 @@
 ## Current status
 
 - Status: `complete`
-- Last completed checkpoint: 2026-08-02 12:14
+- Last completed checkpoint: 2026-08-02 15:04
 - Current audit unit: complete
-- Next exact action: Implement Wave A only after the listed founder decisions are recorded
-- Blockers: Fresh screenshot regeneration is not reproducible in the current environment because pnpm signature verification attempts a failed registry fetch; nine existing artifacts were still inspected and the limitation is documented in F-VR-01
+- Next exact action: Start Wave A tasks 1–4 immediately; start task 5 after founder decision 3 is recorded
+- Blockers: Fresh screenshot regeneration is not reproducible in the current environment because pnpm signature verification attempts a failed registry fetch; this is an evidence/toolchain blocker rather than a confirmed application defect, and visual acceptance must be repeated after Wave C
 
 ## Audit queue
 
@@ -21,7 +21,7 @@
 | 7 | Author page, purchases, seller screens, forms and media | public-seller-screen.tsx, activity-screen.tsx, seller-profile-screen.tsx, product-draft-screen.tsx, listing-draft-screen.tsx, FormSection.tsx, TextField.tsx, contracts and E2E | `complete` | F-AUTHOR-01, F-ACT-01, F-FORM-01, F-MEDIA-01 |
 | 8 | Admin moderation, destructive actions, loading/empty/error states | admin-moderation-screen.tsx, order-screen.tsx, PageState.tsx, PageHeader.tsx, Skeleton.tsx, dialog screenshots and E2E | `complete` | F-ADM-01, F-ADM-02, F-STATE-01 |
 | 9 | Accessibility, keyboard, long content, responsive regressions | All components/screens, auth routes, global CSS, AppIcon, E2E and screenshot artifacts | `complete` | F-NAV-01, F-AUTH-01, F-ACC-04, F-ACC-05, F-ACC-06, F-VR-01 |
-| 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9, target decisions, screen spec and requirement checklist | `complete` | Final verdict; 1 P0 / 20 P1 / 7 P2; Waves A–C; 12-row regression matrix; 5 founder decisions |
+| 10 | Compile findings, waves, visual regression matrix, final review | All findings from 1–9, target decisions, screen spec and requirement checklist | `complete` | Final verdict; 1 P0 / 20 P1 / 7 P2; Waves A–C; 12-row regression matrix; implementation constants; 4 founder decisions |
 
 ## Reviewed evidence
 
@@ -96,7 +96,7 @@
 
 ## Decisions and assumptions
 
-- Target decisions from user request are treated as confirmed founder decisions (white canvas, desktop rail, catalog grid breakpoints at 900/1440, content-width buttons, centered dialogs, no tabs in product detail, etc.)
+- Target decisions from the user request are confirmed requirements (white canvas, desktop rail, catalog grid breakpoints at 900/1440, content-width buttons, centered dialogs, no tabs in product detail, etc.); their unchanged invariant values are implementation constants, not pending founder decisions.
 - Nine screenshots at `/private/tmp/bidplace-wave2-screenshots/` are available, timestamped 2026-08-02 01:16. A fresh rerun failed before Playwright because pnpm could not verify/fetch its signed release; visual conclusions identify this reproducibility limit.
 - Recent commits db4f2d1, 933312d, d02ec40, e672dda already fixed: visible catalog heading, catalog description multi-line, dialog centering, mobile header spacer, mobile nav top divider. These are not reported as findings.
 - Two token files coexist: legacy `colors/spacing/radius/sizes/typography/shadows/layout/brand` in index.ts and active `modernTokens` in modern.ts. All current components use modernTokens.
@@ -107,10 +107,10 @@
 - The current 1025px shell breakpoint is acceptable: 1440 uses the icon rail, while 1024/390 use the unified mobile header. Catalog and product-detail composition may use independent breakpoints, as explicitly confirmed by the task.
 - The local Modern UI docs use a warm canvas, content tabs and bottom mobile dock in places; the task's later explicit decisions take precedence: white canvas, linear product sections and one unified top mobile header.
 - Final finding count is 28: 1 P0, 20 P1 and 7 P2. Every finding has Evidence, Affected code, Root cause, Required change, Do not do, Acceptance criteria and Tests/evidence.
-- Recommended first implementation wave is Wave A — Structural responsive fixes. Five founder approvals in section 8 must be recorded before values marked `Founder approval required` are implemented.
+- Recommended first implementation wave is Wave A — Structural responsive fixes. Tasks 1–4 are unblocked by the confirmed implementation constants in section 3.8; task 5 waits only for founder decision 3.
 - `01-DESIGN-FOUNDATION.md` is protected — cannot be changed without founder/designer decision.
 - No Figma workspace is linked. No external design deliverables exist.
 
 ## Resume instructions
 
-Audit complete. The final report is `docs/audits/2026-08-02-web-design-audit.md`. Begin only with Wave A after recording the section 8 founder decisions; do not repeat research unless new runtime evidence contradicts a finding.
+Audit complete. The final report is `docs/audits/2026-08-02-web-design-audit.md`. Begin Wave A tasks 1–4 immediately; record founder decision 3 before task 5. Do not repeat research unless new runtime evidence contradicts a finding.
