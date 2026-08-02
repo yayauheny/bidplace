@@ -11,8 +11,11 @@ import { Platform, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
+import { getBottomEndPosition } from './overlay-geometry';
+
 type Anchor = { getBoundingClientRect: () => DOMRect };
 type OverlayContextValue = { target: HTMLElement | null };
+const defaultPopoverWidth = 180;
 
 const OverlayContext = createContext<OverlayContextValue>({ target: null });
 
@@ -51,11 +54,15 @@ export function OverlayPortal({
   anchorRef,
   children,
   placement = 'bottom-end',
+  collisionInset = modernTokens.space.x2,
+  width = defaultPopoverWidth,
   testId,
 }: {
   anchorRef: { current: Anchor | null };
   children: ReactNode;
   placement?: 'bottom-end' | 'right-start';
+  collisionInset?: number;
+  width?: number;
   testId?: string;
 }) {
   const { target } = useContext(OverlayContext);
@@ -79,16 +86,23 @@ export function OverlayPortal({
   const anchorRect = rect ?? anchorRef.current?.getBoundingClientRect() ?? null;
   if (!target || !anchorRect) return null;
 
-  const style =
-    placement === 'right-start'
-      ? {
-          left: anchorRect.right + modernTokens.space.x2,
-          top: anchorRect.top,
-        }
-      : {
-          left: anchorRect.right - 180,
-          top: anchorRect.bottom + modernTokens.space.x2,
-        };
+  const style = (() => {
+    if (placement === 'right-start') {
+      return {
+        left: anchorRect.right + modernTokens.space.x2,
+        top: anchorRect.top,
+      };
+    }
+
+    return getBottomEndPosition({
+      anchorRight: anchorRect.right,
+      anchorBottom: anchorRect.bottom,
+      viewportWidth: window.innerWidth,
+      width,
+      collisionInset,
+      gap: modernTokens.space.x2,
+    });
+  })();
 
   return createPortal(
     <View
@@ -96,6 +110,7 @@ export function OverlayPortal({
       style={{
         position: 'fixed',
         ...style,
+        width: placement === 'bottom-end' ? width : undefined,
         zIndex: modernTokens.layer.popover,
         pointerEvents: 'auto',
       }}

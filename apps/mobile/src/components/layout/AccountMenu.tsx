@@ -14,14 +14,20 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const focusOpened = useRef(false);
-  const triggerRef = useRef<{ getBoundingClientRect: () => DOMRect } | null>(
-    null,
-  );
+  const suppressNextFocusOpen = useRef(false);
+  const triggerRef = useRef<{
+    getBoundingClientRect: () => DOMRect;
+    focus?: () => void;
+  } | null>(null);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const initial = label.slice(0, 1).toUpperCase();
-  const closeMenu = useCallback(() => {
+  const closeMenu = useCallback((restoreFocus = false) => {
     focusOpened.current = false;
     setOpen(false);
+    if (restoreFocus) {
+      suppressNextFocusOpen.current = true;
+      triggerRef.current?.focus?.();
+    }
   }, []);
 
   useEffect(() => {
@@ -41,7 +47,10 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     };
 
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMenu(true);
+      }
     };
     const closeOnPointerDown = (event: PointerEvent) =>
       closeIfOutside(event.target);
@@ -92,24 +101,29 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <View
-      ref={(node) => {
-        triggerRef.current = node as unknown as {
-          getBoundingClientRect: () => DOMRect;
-        } | null;
-      }}
       nativeID="account-menu"
       style={{ position: 'relative' }}
     >
       <Pressable
+        ref={(node) => {
+          triggerRef.current = node as unknown as {
+            getBoundingClientRect: () => DOMRect;
+            focus?: () => void;
+          } | null;
+        }}
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
-        onAccessibilityEscape={closeMenu}
+        onAccessibilityEscape={() => closeMenu(true)}
         onFocus={
           desktop
             ? () => {
                 focusOpened.current = true;
-                setOpen(true);
+              if (suppressNextFocusOpen.current) {
+                suppressNextFocusOpen.current = false;
+                return;
+              }
+              setOpen(true);
               }
             : undefined
         }
@@ -146,7 +160,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
         <AppIcon name="chevronDown" size={16} />
       </Pressable>
       {open ? (
-        desktop ? (
+        Platform.OS === 'web' ? (
           <OverlayPortal anchorRef={triggerRef} testId="account-menu-dropdown">
             <AccountDropdown
               label={label}
@@ -160,7 +174,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             label={label}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
-            inline
+              inline
           />
         )
       ) : null}

@@ -79,6 +79,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         .getByRole('button', { name: 'Приостановить' })
         .click();
       await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.getByRole('dialog')).toHaveCSS('z-index', '30');
       await page.screenshot({
         path: resolve(screenshotDir, `dialog-${width}.png`),
         fullPage: true,

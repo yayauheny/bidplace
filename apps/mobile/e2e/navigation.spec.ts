@@ -115,6 +115,7 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await expect(accountMenu).toBeVisible();
     await expect(accountMenu).toHaveCSS('z-index', '20');
     await page.keyboard.press('Escape');
+    await expect(account).toBeFocused();
     await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
     await account.focus();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
@@ -123,6 +124,37 @@ test('approved seller navigation exposes the seller cabinet and add product', as
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
     await page.getByRole('button', { name: 'Выйти' }).click();
     await expect(page.getByRole('link', { name: 'Войти' })).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
+test('mobile account menu uses the shared overlay layer and viewport inset', async ({
+  browser,
+}) => {
+  const fixture = await createAuctionFixture();
+  const { context, page } = await authenticatedPage(browser, fixture.buyerA);
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
+    await account.click();
+
+    const menu = page.locator('#app-overlay-host').locator(
+      '#account-menu-dropdown',
+    );
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveCSS('z-index', '20');
+    const menuBox = await menu.boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(menuBox!.x).toBeGreaterThanOrEqual(8);
+    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
+
+    await page.getByRole('link', { name: 'Каталог' }).click();
+    await expect(page.getByRole('link', { name: 'Каталог' })).toBeFocused();
+    await expect(menu).toHaveCount(0);
   } finally {
     await context.close();
   }
