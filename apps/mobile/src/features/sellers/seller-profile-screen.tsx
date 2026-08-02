@@ -364,7 +364,7 @@ export function SellerProfileScreen() {
 
         {!editable ? (
           <AppText role="bodySmall" tone="secondary">
-            Профиль можно редактировать только после статуса CHANGES_REQUESTED.
+            Профиль можно редактировать только после статуса «Нужны правки».
           </AppText>
         ) : null}
 

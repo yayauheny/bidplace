@@ -13,11 +13,11 @@
 
 ## Wave B — shared component and visual-system fixes — 2026-08-02
 
-- `Implemented`: B1 canonical semantic token surface and contrast roles are in `packages/design-tokens/src/modern.ts`; `AppText`, `TextField`, and the mobile runtime consume the modern surface. Verification: design-tokens build passed and `visual-token.spec.ts` passed 6 tests.
+- `Implemented`: B1 canonical semantic token surface and contrast roles are in `packages/design-tokens/src/modern.ts`; `AppText`, `TextField`, and the mobile runtime consume the modern surface. Verification: design-tokens build passed and `visual-token.spec.ts` passed 7 tests, including destructive button text on the danger surface.
 - `Implemented`: B2 shared focus-visible/reduced-motion contracts, 44px logo/author hit areas, and single-name composite image/icon semantics are in the mobile shared primitives. Mobile typecheck/lint passed; the targeted B2 suite passed 16 tests.
 - `Implemented`: B3 shared buttons preserve the original loading label, reserve a stable icon/spinner slot, and retain 56px default/44px compact geometry. Targeted button/token coverage passed 10 tests; mobile typecheck/lint passed.
 - `Implemented`: B4 centralizes the 4:5 media contract and narrow AuctionCard metadata geometry, and adds a reusable plain EditorialSection without changing Product order or auction flow. Targeted media/card coverage passed 11 tests; mobile typecheck/lint passed.
-- `Implemented`: B5 PageState separates loading/empty/error/retry and AppDialog preserves modal layer, bounded scroll, and accessibility semantics. Targeted state coverage passed 9 tests; mobile typecheck/lint passed; browser keyboard/long-content evidence passes.
+- `Implemented`: B5 PageState separates loading/empty/error/retry and AppDialog preserves modal layer, bounded scroll, and accessibility semantics, including focus return on cancel/Escape. Targeted state coverage passed 9 tests; mobile typecheck/lint passed; browser keyboard/long-content evidence passes.
 - `Implemented`: B6 localized seller/admin/order presentation paths and date-time normalization live in `apps/mobile/src/lib/presentation.ts`; `SelectableRow` preserves raw API values while presenting 44px localized choices. Adapter coverage passed 12 tests; mobile typecheck/lint passed.
 - `Implemented`: final Wave B evidence includes 13 Vitest files / 50 tests and 23/23 disposable PostgreSQL Playwright tests; 21 target-width screenshots are in `/private/tmp/bidplace-wave-b-screenshots`.
 - `Partial`: the overall product status remains Partial until founder physical-device, screen-reader, and visual acceptance is recorded; Wave C was not started.

@@ -27,12 +27,34 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
       await page.goto('/');
 
       const catalogLink = page.getByRole('link', { name: 'Каталог' }).first();
-      await catalogLink.focus();
+      await catalogLink.click();
+      await expect
+        .poll(() => catalogLink.evaluate((element) => element.matches(':focus-visible')))
+        .toBe(false);
+      await page.goto('/');
+      const keyboardCatalogLink = page.getByRole('link', { name: 'Каталог' }).first();
+      await keyboardCatalogLink.focus();
       await expect
         .poll(() =>
-          catalogLink.evaluate((element) => getComputedStyle(element).outlineWidth),
+          keyboardCatalogLink.evaluate((element) => getComputedStyle(element).outlineWidth),
         )
         .toBe('2px');
+
+      const account = page.getByRole('button', {
+        name: /Открыть меню аккаунта/,
+      });
+      await account.focus();
+      await expect
+        .poll(() =>
+          account.evaluate((element) => getComputedStyle(element).outlineWidth),
+        )
+        .toBe('2px');
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#account-menu-dropdown')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#account-menu-dropdown')).toBeHidden();
+      await expect(account).toBeFocused();
+
       const brand = page.getByRole('link', { name: 'bidplace — на главную' });
       const brandBox = await brand.boundingBox();
       expect(brandBox).not.toBeNull();
@@ -120,6 +142,26 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         .click();
       const dialog = page.getByRole('dialog');
       await expect(dialog).toBeVisible();
+      const suspendButton = page
+        .getByText(fixture.sellerName, { exact: true })
+        .first()
+        .locator('..')
+        .getByRole('button', { name: 'Приостановить' });
+      await expect(dialog.getByLabel('Причина')).toBeFocused();
+      await page.keyboard.press('Tab');
+      await expect(dialog).toContainText('Приостановить');
+      expect(
+        await page.evaluate(() =>
+          Boolean(document.activeElement?.closest('[role="dialog"]')),
+        ),
+      ).toBe(true);
+      await page.keyboard.press('Shift+Tab');
+      await expect(dialog.getByLabel('Причина')).toBeFocused();
+      await dialog.getByRole('button', { name: 'Отмена' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(suspendButton).toBeFocused();
+      await suspendButton.click();
+      await expect(dialog).toBeVisible();
       await expect(dialog.locator('#app-dialog-content')).toHaveCSS('z-index', '30');
       await dialog.getByLabel('Причина').fill('Подробная проверка передачи и состояния профиля. '.repeat(20));
       await page.screenshot({
@@ -131,8 +173,13 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         await route.continue();
       }, { times: 1 });
       const confirmButton = dialog.getByRole('button', { name: 'Приостановить' });
+      const initialButtonBox = await confirmButton.boundingBox();
+      expect(initialButtonBox).not.toBeNull();
       await confirmButton.click();
       await expect(confirmButton).toHaveAttribute('aria-busy', 'true');
+      const loadingButtonBox = await confirmButton.boundingBox();
+      expect(loadingButtonBox).not.toBeNull();
+      expect(Math.abs(loadingButtonBox!.width - initialButtonBox!.width)).toBeLessThanOrEqual(1);
       await page.screenshot({
         path: resolve(screenshotDir, `button-loading-${viewport.width}.png`),
         fullPage: true,

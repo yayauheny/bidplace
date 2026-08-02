@@ -1,5 +1,6 @@
 import * as Dialog from '@rn-primitives/dialog';
 import type { ReactNode } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -23,6 +24,19 @@ export function AppDialog({
 }: AppDialogProps) {
   const { height } = useWindowDimensions();
   const viewportGutter = modernTokens.space.x5;
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const restoreFocus = useCallback(() => {
+    if (Platform.OS !== 'web') return;
+    const element = returnFocusRef.current;
+    returnFocusRef.current = null;
+    if (element?.isConnected) {
+      queueMicrotask(() => element.focus());
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => restoreFocus();
+  }, [restoreFocus]);
 
   return (
     <Dialog.Root
@@ -54,6 +68,19 @@ export function AppDialog({
         >
           <Dialog.Content
             asChild
+            onOpenAutoFocus={() => {
+              if (
+                Platform.OS === 'web' &&
+                typeof document !== 'undefined' &&
+                document.activeElement instanceof HTMLElement
+              ) {
+                returnFocusRef.current = document.activeElement;
+              }
+            }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              restoreFocus();
+            }}
             nativeID="app-dialog-content"
             style={{
               width: '100%',

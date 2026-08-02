@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Finalize documentation, run the final static diff check, and commit the completed Wave B work.
+Run the final verification matrix after the audit-hardening follow-up, then commit the completed Wave B work.
 
 ## Completed slices
 
@@ -101,6 +101,15 @@ Finalize documentation, run the final static diff check, and commit the complete
 - Not done: full E2E and target screenshots remain.
 - Next: run final package/mobile checks, E2E, screenshots, and inspect worktree.
 - Risks: full E2E may require Docker PostgreSQL and local package-manager state.
+
+### Audit hardening follow-up
+
+- Done: danger-surface contrast now has an independent normal-text AA assertion; icon accents use the contrast-safe semantic role; the seller read-only explanation no longer exposes `CHANGES_REQUESTED`.
+- Done: AppDialog captures the invoking web control through the shared Radix auto-focus hooks and restores it on cancel/Escape/unmount; the browser evidence now checks initial focus, Tab containment, cancel/return, and modal layer.
+- Done: Wave B browser evidence now checks pointer-first `:focus-visible` behavior, keyboard focus on the account menu, Escape dismissal and focus return, and busy-button width change within 1px.
+- Changed: `apps/mobile/src/lib/visual-token.spec.ts`, `apps/mobile/src/components/modern-ui/AppDialog.tsx`, `apps/mobile/src/components/modern-ui/Button.tsx`, `apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `apps/mobile/e2e/wave-b-shared.spec.ts`.
+- Checks: targeted unit coverage passed 5 files / 19 tests; mobile typecheck and lint passed; targeted Wave B Playwright passed 1/1 after isolating pointer-first and keyboard-focus sequences.
+- Remaining: the mandatory full package/mobile matrix and final documentation/commit still need to be rerun after this follow-up; founder physical-device/screen-reader/visual acceptance remains separate.
 
 ## Final verification
 

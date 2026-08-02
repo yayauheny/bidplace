@@ -32,7 +32,13 @@ describe('modern semantic token contrast', () => {
     ['accent text', modernTokens.color.accentDark],
     ['danger text', modernTokens.color.danger],
   ])('%s meets normal-text AA on the canvas', (_name, color) => {
-    expect(contrastRatio(color, modernTokens.color.canvas)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(color, modernTokens.color.canvas)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps destructive button text at normal-text AA on the danger surface', () => {
+    expect(
+      contrastRatio(modernTokens.color.surface, modernTokens.color.danger),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it('provides a visible focus color for white surfaces', () => {

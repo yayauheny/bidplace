@@ -16,11 +16,11 @@ Mobile header correction (2026-08-02): below 1025 px `AppShell` no longer mounts
 
 ## Wave B — shared component and visual-system fixes — 2026-08-02
 
-- `Implemented`: B1 uses one canonical `modernTokens` public surface with contrast-safe accent/danger roles, a `#2457E6` focus role, disabled opacity, and preserved Wave A geometry. Independent contrast/unit evidence: `apps/mobile/src/lib/visual-token.spec.ts` (6 tests).
+- `Implemented`: B1 uses one canonical `modernTokens` public surface with contrast-safe accent/danger roles, a `#2457E6` focus role, disabled opacity, and preserved Wave A geometry. Independent contrast/unit evidence: `apps/mobile/src/lib/visual-token.spec.ts` (7 tests).
 - `Implemented`: B2 supplies focus-visible, reduced-motion, 44px compact hit-area and decorative-child contracts in shared primitives.
 - `Implemented`: B3 preserves 56px default and 44px compact button geometry with stable loading content and busy/disabled semantics.
 - `Implemented`: B4 provides shared loaded/skeleton/fallback/gallery media geometry and stable narrow `AuctionCard` rows; `EditorialSection` is prepared for later detail application.
-- `Implemented`: B5 provides one announced loading state and bounded modal dialog semantics with shared retry/empty/error distinctions.
+- `Implemented`: B5 provides one announced loading state and bounded modal dialog semantics with shared retry/empty/error distinctions; browser evidence covers initial focus, keyboard containment, cancel/Escape and focus return.
 - `Implemented`: B6 removes raw seller/admin/order enum presentation through shared localized adapters and keeps selectable controls at the compact 44px target.
 - `Implemented`: B3–B6 interaction, media, dialog/state, and presentation-adapter automated evidence passes; founder device/accessibility acceptance remains `Needs verification`.
 

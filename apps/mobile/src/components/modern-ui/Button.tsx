@@ -169,7 +169,7 @@ export function TextButton({
         }}
       >
         {icon ? (
-          <AppIcon name={icon} color={modernTokens.color.accent} />
+          <AppIcon name={icon} color={modernTokens.color.accentDark} />
         ) : null}
         <AppText
           role="label"
