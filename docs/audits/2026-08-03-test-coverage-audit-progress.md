@@ -20,7 +20,7 @@ Commit under review: `5be687c`
 - [x] Прочитаны package/test configuration files и `apps/mobile/AGENTS.md`.
 - [x] Собран начальный файловый инвентарь.
 - [x] Подтверждена доступность всех четырёх screenshot directories.
-- [ ] API/domain body-level audit.
+- [x] API/domain body-level audit.
 - [ ] Mobile unit/static body-level audit.
 - [ ] E2E/fixtures body-level audit.
 - [ ] Visual inspection of current screenshots.
@@ -50,7 +50,11 @@ Commit under review: `5be687c`
 
 ## Findings уже добавлены
 
-- Пока нет: findings не классифицируются до проверки тела тестов и соответствующего product/design owner contract.
+- P0: Order handoff/cancellation/replacement mutations have no behavioral automated coverage.
+- P1: scheduled-bid E2E uses the admin identity; stale Bid never reaches the server; soft close lacks integration evidence.
+- P1: pending-seller direct API matrix and successful seller application are missing.
+- P1: moderation reason/audit coverage is incomplete; seed Bid fixtures remain unapproved and weakly tested.
+- P2: auth transport round-trip and no-bid/tie close edges are missing.
 
 ## Фактические запуски
 
@@ -59,9 +63,9 @@ Commit under review: `5be687c`
 
 ## Следующий блок
 
-1. API/domain: auth, roles, seller/application, Product/Listing, bidding, lifecycle, Order/privacy, moderation, media, realtime.
-2. Contracts/database/seed trace.
-3. Обновить итоговую functional matrix и progress, затем сделать отдельный commit.
+1. Mobile unit/static: distinguish pure helper contracts from rendered-component behavior.
+2. E2E/fixtures: map each named scenario to the actual actor, state transition, DB/API assertion and screenshot.
+3. Update design/responsive matrix and make the next checkpoint commit.
 
 ## Ограничения и открытые решения
 
