@@ -32,7 +32,7 @@
 
 Files: `apps/mobile/src/components/modern-ui/AuctionCard.tsx`, `apps/mobile/src/features/products/product-list-screen.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C2 — Product detail и ставки
 
@@ -40,7 +40,7 @@ Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
 
 Files: `apps/mobile/src/features/products/product-screen.tsx`, `apps/mobile/src/components/modern-ui/BottomActionBar.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C3 — автор и покупки
 
@@ -48,7 +48,7 @@ Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
 
 Files: `apps/mobile/src/features/sellers/public-seller-screen.tsx`, `apps/mobile/src/features/activity/activity-screen.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C4 — seller profile, Product draft, Listing draft
 
@@ -56,7 +56,7 @@ Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
 
 Files: `apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `product-draft-screen.tsx`, `listing-draft-screen.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C5 — moderation и order
 
@@ -64,7 +64,7 @@ Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
 
 Files: `apps/mobile/src/features/admin/admin-moderation-screen.tsx`, `apps/mobile/src/features/orders/order-screen.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C6 — auth, long content, all page states
 
@@ -72,15 +72,15 @@ Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
 
 Files: `apps/mobile/src/features/auth/auth-form.tsx`, `apps/mobile/src/components/modern-ui/PageState.tsx`, `Skeleton.tsx`, `apps/mobile/src/features/products/product-list-screen.tsx`.
 
-Checks: mobile typecheck, lint and Vitest passed (15 files / 68 tests).
+Checks: mobile typecheck, lint and Vitest passed (15 files / 72 tests).
 
 ## C7 — visual/accessibility evidence
 
 Files: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts`, `apps/mobile/e2e/support/e2e-fixtures.ts`, `docs/design/02-USER-FLOWS-AND-SCREENS.md`, `docs/design/04-DESIGN-STATUS.md`, `docs/product/11-PROJECT-STATUS.md`.
 
-Targeted acceptance: `corepack pnpm --filter @bidplace/mobile exec playwright test wave-c-screen-acceptance.spec.ts` — 4/4 passed, 57.5s, with Docker PostgreSQL. Full repository `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed, 2.6m, with Docker PostgreSQL.
+Targeted acceptance: `corepack pnpm --filter @bidplace/mobile exec playwright test wave-c-screen-acceptance.spec.ts` — 4/4 passed, 1.4m, with Docker PostgreSQL. Full repository `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed, 3.0m, with Docker PostgreSQL.
 
-Screenshot manifest: 42 PNG files in `/private/tmp/bidplace-wave-c-screenshots/1a2efcf`, with the short commit hash in every filename. The matrix covers 1440×900, 1024×900 and 390×844 for author, seller, admin, purchases, order and auth, plus catalog loaded/loading/failed-media, seeded `seedLive002` buyer/admin, keyboard focus, four-work author fixture, account menu, rail tooltip, destructive dialog and bid dialog.
+Screenshot manifest: 66 PNG files in `/private/tmp/bidplace-wave-c-screenshots/953e04f`, with the short commit hash in every filename. The matrix covers 1440×900, 1024×900 and 390×844 for author loaded/empty/error, seller, admin, purchases, long activity rows and auth; catalog loaded/loading/failed-media for all widths, deterministic guest/admin/pending/approved-seller role sessions at 390, seeded `seedLive002` buyer/admin, mobile pre-focus and keyboard focus, four-work author fixture, account menu, responsive navigation/tooltip states, destructive dialog and bid dialog.
 
 ## Изменённые файлы
 
@@ -92,7 +92,7 @@ Screenshot manifest: 42 PNG files in `/private/tmp/bidplace-wave-c-screenshots/1
 - `corepack pnpm --filter @bidplace/design-tokens build` — passed.
 - `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
 - `corepack pnpm --filter @bidplace/mobile lint` — passed.
-- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 15 files / 68 tests passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 15 files / 72 tests passed.
 - `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed.
 - `corepack pnpm --filter @bidplace/mobile build` — blocked by nested pnpm 11.10.0 vs project-pinned 11.7.0 Corepack mismatch; equivalent `corepack pnpm@11.7.0 --filter @bidplace/design-tokens build` plus `corepack pnpm@11.7.0 --filter @bidplace/mobile exec expo export` passed and exported `apps/mobile/dist`.
 - `git diff --check` — passed with no trailing whitespace.
