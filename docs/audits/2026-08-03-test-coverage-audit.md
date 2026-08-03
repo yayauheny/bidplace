@@ -26,10 +26,19 @@
 | API unit | 33 | 114 вместе с API integration по синтаксическому подсчёту | Vitest, mocks/fakes | Body-level review complete; run pending |
 | API integration | 2 | входит в 114 | Vitest + PostgreSQL | Body-level review complete; run pending |
 | Mobile unit/static | 15 | 43 | Vitest, pure helpers/style/geometry contracts | Body-level review complete; run pending |
-| Browser E2E | 11 | 28 top-level Playwright tests | Chromium, real API, disposable PostgreSQL, screenshots | Pending body-level review/run |
-| Contracts | 2 | входит в 8 shared-package tests | Vitest/Zod contracts and seed contract | Pending body-level review |
-| Design tokens | 0 package-local specs | 0 | Build only; visual token tests live in mobile | Pending verification |
-| Database | 1 | входит в 8 shared-package tests | Vitest export smoke; schema/migration/seed require inspection | Pending body-level review |
+| Browser E2E | 11 | 28 top-level Playwright tests | Chromium; real API + fixture-created DB state; selected mocked network states; screenshots | Body-level review complete; run pending |
+| Contracts | 2 | входит в 8 shared-package tests | Vitest/Zod contracts and source-text seed contract | Body-level review complete; run pending |
+| Design tokens | 0 package-local specs | 0 | Build only; visual token tests live in mobile | Body-level review complete; run pending |
+| Database | 1 | входит в 8 shared-package tests | Export smoke; PostgreSQL invariants in API integration; seed source inspection | Body-level review complete; run pending |
+
+### Классы browser evidence
+
+| Класс | Что действительно выполняется | Примеры | Ограничение |
+|---|---|---|---|
+| Real workflow E2E | UI → HTTP API → NestJS → PostgreSQL | auction creation, two-buyer bidding, moderation, closing/read result | Initial users/auction time/state can be created directly by fixtures |
+| Fixture-backed API/browser | Prisma fixture establishes prerequisite state, then browser/API behavior is real | seeded demo, privacy read, role navigation, Wave C route matrix | Does not prove creation/lifecycle path that the fixture bypassed |
+| Mocked UI-state browser test | Browser renders a deliberately intercepted response or delayed request | Wave B catalog loading/empty/error; Wave C failed media and long activity row | Proves presentation only, not server error mapping or persistence |
+| Screenshot artifact | Pixel output from a named historical run | Waves A/B/C/2 directories | Must be visually inspected; cannot replace assertions or a matching current-commit run |
 
 ## 3. Результаты реальных запусков
 
@@ -64,14 +73,14 @@
 
 | Экран / состояние | 1440 | 1024 | 390 | Роли | Assertions | Screenshot evidence | Вердикт |
 |---|---|---|---|---|---|---|---|
-| Shell/navigation/overlays | Pending | Pending | Pending | guest/buyer/pending/approved/admin | Pending | Artifacts found | Pending visual review |
-| Catalog loaded/loading/failed media | Pending | Pending | Pending | public + role variants | Pending | Artifacts found | Pending visual review |
-| Product buyer/admin/keyboard/dialog | Pending | Pending | Pending | buyer/admin | Pending | Artifacts found | Pending visual review |
-| Author many/zero/error | Pending | Pending | Pending | public | Pending | Artifacts found | Pending visual review |
-| Purchases empty/error/long | Pending | Pending | Pending | buyer/admin absence | Pending | Artifacts found | Pending visual review |
-| Seller profile/Product/Listing drafts | Pending | Pending | Pending | pending/approved/changes | Pending | Artifacts found | Pending visual review |
-| Admin moderation and Order | Pending | Pending | Pending | admin/buyer/seller/outsider | Pending | Artifacts found | Pending visual review |
-| Login/register/loading/error/zoom | Pending | Pending | Pending | anonymous | Pending | Artifacts found | Pending visual review |
+| Shell/navigation/overlays | Asserted | Asserted | Asserted | guest/buyer/pending/approved/admin | role links, overflow, focus outline, menu/dialog focus return, z-index, hit area | Artifacts found | **Partial:** desktop tooltip is hover-only; no automated accessibility tree audit |
+| Catalog loaded/loading/failed media | Asserted | Asserted | Asserted | public + role variants | card count, first-row count, image decode/fallback, overflow, one progressbar | Artifacts found | **Partial:** 1440 “4 columns” accepts 3 because only 3 cards; media-state geometry parity not asserted |
+| Product buyer/admin/keyboard/dialog | Asserted | Asserted | Asserted | buyer/admin | buyer facts, admin denial, no overflow, mobile dock, focused input, dialog copy | Artifacts found | **Partial:** mobile keyboard is programmatic focus without visual-viewport shrink; bid dialog only 1440 |
+| Author many/zero/error | Asserted | Asserted | Asserted | public | exact 2/3 columns, no overflow, empty, not-found | Artifacts found | **Good for represented states;** “error” is 404, not retryable network/server error |
+| Purchases empty/error/long | Mixed | Mixed | Mixed | buyer; admin absence | seeded loaded, long mocked row and overflow; empty/retry in seeded demo | Artifacts found | **Partial:** no role/privacy matrix; long row is mocked; no Wave C loading/error screenshots |
+| Seller profile/Product/Listing drafts | Smoke | Smoke | Smoke | approved seller | route title and screenshot; loading semantics in separate test | Artifacts found | **Weak:** no detailed responsive/form/error/media/lock assertions; pending/changes/suspended role matrix absent |
+| Admin moderation and Order | Smoke | Smoke | Smoke | admin; buyer Order only | admin labels/overflow/dialog; buyer Order title | Artifacts found | **Critical Order gap:** no seller/admin/outsider/cancel/replacement UI; admin layout geometry is not asserted |
+| Login/register/loading/error/zoom | Smoke | Smoke | Smoke | anonymous | route labels, empty submit validation; 200% zoom scroll assertion | Artifacts found | **Partial:** no browser success/server-error/loading flow; screenshot does not itself prove CTA reachability under zoom |
 
 ## 6. Findings
 
@@ -87,6 +96,9 @@
 - **[P1] Pending-seller capability is not protected by an automated direct-API matrix.** Evidence: `apps/api/src/products/products.service.ts:46-56` and `apps/api/src/listings/listings.service.ts:18-35` enforce approval, but seller tests cover profile editing and the browser scenario only hides actions. Acceptance: direct API tests as guest, buyer, pending, changes-requested, suspended and approved seller for Product, Listing and image mutations, with unchanged DB assertions. Blocks: auth/roles and seller acceptance.
 - **[P1] Seller application and moderation audit evidence is incomplete.** Evidence: `apps/mobile/e2e/wave-one.spec.ts:36-55` checks that the form is visible but does not submit it; `apps/api/src/admin/admin-moderation.service.spec.ts:16-91` proves an AuditEvent only for one Product changes-request path. Acceptance: create an application through the public contract, assert stored normalized fields/status, then exercise approve/changes/suspend Product and Seller transitions with required reason, actor, old/new status and persisted audit event. Blocks: seller/moderation acceptance.
 - **[P1] Seed Bid fixtures are neither integrity-tested nor product-authorized.** Evidence: `packages/database/prisma/seed.js:332-356` directly inserts live/ended Bids and an Order; `packages/contracts/test/seed-contract.test.ts` validates identifiers by source text only. This is also the unresolved DEC-060 conflict with `09-TRUST-AND-AUCTION-INTEGRITY.md`. Acceptance: founder explicitly decides whether strictly local/test fixtures are permitted; then either remove them or codify the exception and add executable seed invariants for price/bidCount/winner/order/lifecycle. Blocks: seed/trust acceptance and final “Ready” verdict.
+- **[P1] The 1440 catalog assertion cannot prove the required four-column grid.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:112-120` expects `Math.min(expectedColumns, boxes.length)` and the deterministic public dataset contains only three cards, so a three-column layout also passes at 1440. Acceptance: provide at least four cards for this assertion (fixture or explicit presentation payload), expect exactly four distinct first-row columns and verify card/media width parity. Blocks: Wave C 1440 catalog acceptance.
+- **[P1] The mobile keyboard state is not an actual constrained-viewport test.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:246-280` calls `.focus()` at a fixed 390×844 viewport; it does not reduce `visualViewport.height`, assert CTA/input visibility after shrink, or emulate a mobile engine. Acceptance: test the supported mobile browser/device path with a reduced visual viewport or an explicit keyboard-inset harness; assert focused field, error and sticky action remain reachable without overlap. Blocks: Wave C Product mobile-keyboard acceptance.
+- **[P1] Accessibility automation is selective and has no page-level semantic scanner.** Evidence: Wave B checks focus outline, modal focus containment/return, `aria-live`, 44px brand hit area and reduced-motion body style, but no test audits axe-equivalent violations, heading/landmark structure, accessible names or contrast on rendered route matrices. Acceptance: run an accessibility scanner on the critical public/auth/bid/order/admin states with documented exceptions, plus keep screen-reader and physical-device checks manual. Blocks: automated accessibility acceptance, not the explicitly manual screen-reader gate.
 
 ### P2
 
@@ -95,6 +107,9 @@
 - **[P2] Mobile Vitest does not render a React/React Native component.** Evidence: all 15 specs call pure schemas, layout/style helpers, cache predicates or token functions; `Button.spec.ts`, `page-state-contract.spec.ts`, `product-media-style.spec.ts` and `reduced-motion.spec.ts` never mount the corresponding component. Risk: prop wiring, accessible names/roles, interaction, focus transfer and actual style composition can regress while the helpers remain green. Acceptance: add focused rendered-component tests for Button loading/disabled/accessibility, PageState loading/error/retry/empty semantics, ProductMedia loaded/error geometry and the shared overlay/account-menu focus lifecycle. Blocks: component-level acceptance, but browser evidence still covers selected integrated paths.
 - **[P2] Client auth validation covers login only.** Evidence: `apps/mobile/src/features/auth/schemas.spec.ts:5-20` tests invalid login email and missing password; registration field normalization, phone/password/confirmation boundaries and server-error mapping have no mobile unit contract. Acceptance: parameterized registration schema tests and one rendered submit/error-state test. Blocks: auth form hardening.
 - **[P2] Reduced-motion unit evidence stops at the duration helper.** Evidence: `apps/mobile/src/lib/reduced-motion.spec.ts:5-12` checks a numeric duration selector, not mounted animated/image components. Acceptance: mount the shared motion consumer or assert its computed browser styles under `prefers-reduced-motion`, including media transition behavior. Blocks: accessibility automation checklist.
+- **[P2] Desktop tooltip keyboard access is not asserted despite the screenshot state name.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:513-543` uses `.hover()` for desktop and captures `focused-rail-tooltip`; keyboard focus is used only in the mobile branch. Acceptance: focus each collapsed-rail link through keyboard navigation and assert the tooltip's accessible/visible text, then verify Escape/navigation behavior as applicable. Blocks: desktop navigation accessibility hardening.
+- **[P2] Wave C route screenshots are broader than their assertions.** Evidence: seller profile/Product/Listing draft and Order captures at `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:383-442` assert only route titles; admin asserts two section labels and overflow. Acceptance: add screen-specific geometry, primary-action, field/long-content, loading/empty/error and role-state assertions before treating these captures as acceptance evidence. Blocks: those individual Wave C screen checkboxes, not already-tested cross-cutting primitives.
+- **[P2] Browser E2E is Chromium-only.** Evidence: `apps/mobile/playwright.config.ts` defines the Chromium project and runs one worker. Acceptance: at minimum add the supported WebKit/mobile browser target for critical catalog/auth/bid/order smoke, or explicitly scope the release contract to Chromium and retain physical-device acceptance. Blocks: cross-browser confidence.
 
 ## 7. Что покрыто хорошо
 

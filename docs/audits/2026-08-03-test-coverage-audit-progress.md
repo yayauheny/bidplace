@@ -22,7 +22,7 @@ Commit under review: `5be687c`
 - [x] Подтверждена доступность всех четырёх screenshot directories.
 - [x] API/domain body-level audit.
 - [x] Mobile unit/static body-level audit.
-- [ ] E2E/fixtures body-level audit.
+- [x] E2E/fixtures body-level audit.
 - [ ] Visual inspection of current screenshots.
 - [ ] Real verification runs.
 - [ ] Final matrices, findings, verdict and acceptance checklist.
@@ -56,6 +56,8 @@ Commit under review: `5be687c`
 - P1: moderation reason/audit coverage is incomplete; seed Bid fixtures remain unapproved and weakly tested.
 - P2: auth transport round-trip and no-bid/tie close edges are missing.
 - P2: mobile Vitest covers pure contracts but mounts no components; registration schema and real reduced-motion consumers are not unit-tested.
+- P1: 1440 catalog assertion accepts three cards; mobile keyboard does not constrain the visual viewport; no page-level accessibility scanner.
+- P2: desktop tooltip is hover-tested under a focus-labelled screenshot, broad route captures have title-only assertions, and Playwright is Chromium-only.
 
 ## Фактические запуски
 
@@ -64,9 +66,9 @@ Commit under review: `5be687c`
 
 ## Следующий блок
 
-1. E2E/fixtures: map each named scenario to the actual actor, state transition, DB/API assertion and screenshot.
-2. Inspect all four screenshot directories visually, not only filenames or assertions.
-3. Update design/responsive matrix and make the next checkpoint commit.
+1. Inspect all four screenshot directories visually, not only filenames or assertions.
+2. Record visible clipping, overflow, state mismatch and evidence limitations per matrix row.
+3. Make the visual checkpoint commit, then run the complete verification command set.
 
 ## Ограничения и открытые решения
 
