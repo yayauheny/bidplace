@@ -57,6 +57,7 @@ async function createUser(
 export async function createAuctionFixture(options?: {
   live?: boolean;
   bids?: boolean;
+  title?: string;
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
   const prisma = new PrismaClient({
@@ -108,7 +109,7 @@ export async function createAuctionFixture(options?: {
       status: 'APPROVED',
     },
   });
-  const title = `E2E Auction ${suffix}`;
+  const title = options?.title ?? `E2E Auction ${suffix}`;
   const product = await prisma.product.create({
     data: {
       publicId: randomUUID().replace(/-/g, '').slice(0, 11),

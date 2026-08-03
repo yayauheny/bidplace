@@ -1,6 +1,6 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-08-02
+Дата снимка: 2026-08-03
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
 
@@ -35,6 +35,16 @@ Final foundation status: `modernTokens` and `components/modern-ui` provide targe
 Shared navigation is in partial final migration: `components/layout/AppShell.tsx` now owns the responsive safe-area shell and `AppHeader.tsx` renders role-filtered navigation with a full-height desktop rail, unified 44 px nav items, active Product context and keyboard focus state. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
 
 Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, seller profile and Product draft media; `ProductGallery` and `AuctionCard` expose a labeled unavailable-image fallback after `expo-image` errors; desktop Product places the gallery and auction panel at the same top level; Login validation uses Russian field messages; desktop `Link` styling keeps the active Catalog item visible and `AppIcon` no longer forwards `accessible` to web SVG DOM. Mobile typecheck and lint pass. The current 24-test disposable Playwright suite and target-width screenshots pass; founder visual/accessibility/device evidence remains pending.
+
+## Wave C — screen polish and visual acceptance — 2026-08-03
+
+- `Implemented`: C1 preserves the no-heading catalog, confirmed 2/3/4 columns and shared 4:5 bounds while separating price from status/deadline.
+- `Implemented`: C2 keeps `AuctionPanel` as the only transactional block; story, provenance and histories are linear `EditorialSection`s, and mobile dock remains summary + CTA.
+- `Implemented`: C3 adds 120px author identity/fallback, localized seller type, responsive shared AuctionCard grid and compact divider-led purchases with existing price/status/deadline.
+- `Implemented`: C4 adds 200px seller preview/fallback, 160×200 contain Product draft media rows and readable Listing dates while preserving ISO payloads and locks.
+- `Implemented`: C5 lays admin queues side by side within 1180px on desktop, stacks below the breakpoint, keeps author links lightweight and localizes existing Order cancellation reasons.
+- `Implemented`: C6 keeps auth isolated/scrollable, makes registration copy truthful and gives async states one loading announcement plus plain-language retry feedback.
+- `Implemented`: C7 targeted acceptance passed 4/4 with real seed/API state, role restrictions, first-viewport/overflow checks, naturalWidth/opacity, focus, dialogs and 33 screenshots in `/private/tmp/bidplace-wave-c-screenshots`. Full suite and founder physical-device/screen-reader acceptance remain separate gates.
 
 ## Functional screen status
 

@@ -1,7 +1,7 @@
 # bidplace — текущий статус проекта
 
 Последнее обновление: 2026-08-03
-Статус: Technical baseline is Partial; API/mobile static checks and the current 24-test Chromium/disposable Playwright suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
+Статус: Technical baseline is Partial; API/mobile static checks, targeted Wave C acceptance (4/4) and the current disposable Chromium suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
 ## Wave A — structural responsive fixes — 2026-08-02
 
@@ -20,7 +20,17 @@
 - `Implemented`: B5 PageState separates loading/empty/error/retry and is now used by ProductDraft, ListingDraft and Order route-level loading branches; AppDialog preserves modal layer, bounded scroll, and accessibility semantics, including focus return on cancel/Escape. Targeted state coverage passed 9 tests; route-level browser evidence passes for all three loading branches.
 - `Implemented`: B6 localized seller/admin/order presentation paths and date-time normalization live in `apps/mobile/src/lib/presentation.ts`; `SelectableRow` preserves raw API values while presenting 44px localized choices. Adapter coverage passed 12 tests; mobile typecheck/lint passed.
 - `Implemented`: final Wave B evidence includes 13 Vitest files / 58 tests and 24/24 disposable PostgreSQL Playwright tests; 21 target-width screenshots are in `/private/tmp/bidplace-wave-b-screenshots`.
-- `Partial`: the overall product status remains Partial until founder physical-device, screen-reader, and visual acceptance is recorded; Wave C was not started.
+- `Partial`: the overall product status remains Partial until founder physical-device, screen-reader, and visual acceptance is recorded.
+
+## Wave C — screen polish and final visual acceptance — 2026-08-03
+
+- `Implemented`: C1 catalog polish preserves the no-heading catalog, confirmed 2/3/4 columns, shared 4:5 bounds and separate price/status-deadline rows. Loading/loaded/failed-media evidence is in the C7 targeted spec.
+- `Implemented`: C2 Product detail uses `EditorialSection` for linear story/history/bids and keeps `AuctionPanel` as the only transaction block. `BottomActionBar` remains summary + CTA; bid validation, OTP/rules, realtime, privacy and API contracts are unchanged.
+- `Implemented`: C3 public author and purchases use 120px identity fallback, shared responsive AuctionCard grid and divider-led activity rows with existing role-safe data.
+- `Implemented`: C4 seller/profile/draft screens use capped previews, 160×200 contain media rows, truthful failed-media states and readable listing date input with existing ISO serialization and server lock/upload/delete/reorder behavior.
+- `Implemented`: C5 admin/order presentation uses two desktop queues within 1180px, compact moderation row actions, author text links, localized order cancellation reason and long-value-safe rows without changing permissions or lifecycle rules.
+- `Implemented`: C6 auth copy and shared PageState/Skeleton loading semantics cover truthful registration, one loading announcement, plain-language retry errors and keyboard/zoom-compatible existing forms.
+- `Partial`: C7 targeted `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts` passed 4/4 and produced 33 screenshots in `/private/tmp/bidplace-wave-c-screenshots` across the required route/role/state matrix. Full repository E2E and final founder physical-device/screen-reader acceptance are the remaining gates.
 
 ## Runtime defect hardening — 2026-07-31
 
@@ -52,7 +62,7 @@
 - `Partial`: desktop web now has a white canvas, 72 px icon rail and desktop right-side account menu; mobile keeps account access in the AppHeader brand row. `OverlayHost` portals account dropdowns and rail tooltips above content using trigger-rectangle positioning. Account menu supports click, desktop hover and keyboard focus, with Escape/outside dismissal resetting keyboard state and a visible pending-aware `Выйти` action. SellerProfile-derived navigation exposes cabinet/add-product only for `APPROVED`; admin navigation remains Catalog + Moderation.
 - `Implemented`: admin bid placement is denied in `BidsService`, admin buyer Activity is denied at `ActivityController`, and Product detail does not request buyer Activity or render a bid form for admin. `BidsService` unit coverage and admin browser API assertions cover the rule.
 - `Partial`: public catalog includes approved Products whose Listing is `SCHEDULED`, `LIVE` or `ENDED`, using a shared `LIVE` → `SCHEDULED` → latest `ENDED` selector; the open-only default filter is deferred. Current seed screenshots and browser `naturalWidth` checks pass for all three demo products. Final founder visual/device/accessibility acceptance is still pending.
-- `Partial`: shared `PageHeader`/`PageState` and Product three-tab presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states; bid history now distinguishes loading, error/retry and empty/data states. Browser automation covers mobile header placement, guest/pending/approved navigation, desktop account hover/focus, admin restrictions and seeded buyer/media states; prior 14/14 disposable evidence is not current verification. Final founder visual/device/accessibility acceptance is still pending.
+- `Partial`: shared `PageHeader`/`PageState` and Product linear section presentation cover the main loading, empty, retry, author, authored-item facts, publication date and public history states; bid history now distinguishes loading, error/retry and empty/data states. Browser automation covers mobile header placement, guest/pending/approved navigation, desktop account hover/focus, admin restrictions and seeded buyer/media states; Wave C targeted evidence is current, while final founder visual/device/accessibility acceptance is still pending.
 
 ## Local seed password handling — 2026-07-30
 
@@ -64,7 +74,7 @@
 - `Implemented`: the light branding source assets are stored in `apps/mobile/assets/branding/`; `BrandLogo.tsx` uses the black wordmark on desktop and black mark on compact/mobile navigation, while `app.json` uses the light favicon. The previous placeholder border and duplicated text lockup were removed. Expo web/native rendering still needs founder visual/device acceptance because the supplied source assets are SVG.
 - `Partial`: `apps/mobile/src/components/layout/AppShell.tsx` now provides the shared 1025 px responsive shell; all screens that used the repeated `SafeAreaView + AppHeader` composition use the shell, with mobile bottom actions and scroll ownership preserved.
 - `Partial`: `apps/mobile/src/lib/environment.ts` provides `getApiAssetUrl`; Catalog/Product/seller profile/Product draft media use it. `ProductGallery` and `AuctionCard` display labeled unavailable-image states after load errors. API image authorization and seeded live-media/device behavior still need direct founder/device verification.
-- `Partial`: `product-screen.tsx` places desktop gallery and auction panel in the same row and keeps mobile gallery → auction facts → tabs → bottom action ordering. Auction business logic, realtime refetch, privacy and contracts are unchanged.
+- `Partial`: `product-screen.tsx` places desktop gallery and auction panel in the same row and keeps mobile gallery → auction facts → linear detail sections → bottom action ordering. Auction business logic, realtime refetch, privacy and contracts are unchanged.
 - `Partial`: `AppHeader.tsx` applies desktop nav geometry on the Expo Router `Link` itself, so the active Catalog item remains visible on web; `AppIcon.tsx` no longer forwards the native-only `accessible` prop to SVG DOM nodes. `apps/mobile/e2e/navigation.spec.ts` covers the visible root link and the warning regression.
 - `Partial`: Login field validation now maps invalid email/password input to Russian messages, while server error handling remains generic/safe for unrecognized errors.
 - Automated evidence for this snapshot: mobile typecheck, lint, unit tests (33/33), E2E fence, Expo web export and isolated headless web smoke passed; the smoke found a visible `/` Catalog link and no `accessible` warning. Founder visual/accessibility/device acceptance remains required; no route status is changed to `Implemented`.
