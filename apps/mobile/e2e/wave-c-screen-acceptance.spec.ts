@@ -529,8 +529,8 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       const moderationLink = adminSession.page.getByRole('link', {
         name: 'Модерация',
       });
-      await moderationLink.hover();
       if (viewport.width >= 1025) {
+        await moderationLink.hover();
         await expect(
           adminSession.page.locator('#navigation-tooltip'),
         ).toHaveText('Модерация');
@@ -542,7 +542,8 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
           viewport,
         );
       } else {
-        await expect(moderationLink).toBeVisible();
+        await moderationLink.focus();
+        await expect(moderationLink).toBeFocused();
         await capture(
           adminSession.page,
           'admin',

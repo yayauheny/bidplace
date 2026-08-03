@@ -8,6 +8,7 @@ describe('listing date-time parser', () => {
     '31.04.2026, 12:00',
     '28.02.2026, 24:00',
     '28.02.2026, 12:60',
+    'February 31, 2026 12:00',
   ])('rejects invalid calendar or time input: %s', (value) => {
     expect(parseListingDateTime(value)).toBeNull();
   });

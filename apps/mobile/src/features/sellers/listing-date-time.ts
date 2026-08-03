@@ -78,5 +78,5 @@ export function parseListingDateTime(value: string): string | null {
     return parseDateTimeInputValue(trimmedValue);
   }
 
-  return parseDateTimeInputValue(trimmedValue);
+  return null;
 }
