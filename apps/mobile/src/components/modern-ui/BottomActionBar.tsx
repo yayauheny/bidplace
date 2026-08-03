@@ -28,8 +28,8 @@ export function BottomActionBar({
         paddingBottom: Math.max(insets.bottom, modernTokens.space.x1),
       }}
     >
-      {summary}
-      {children}
+      <View style={{ flex: 1, minWidth: 0 }}>{summary}</View>
+      <View style={{ flexShrink: 1 }}>{children}</View>
     </View>
   );
 }

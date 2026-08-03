@@ -59,6 +59,21 @@
 
 - См. C1 выше.
 
+## C2 — Product detail и ставки
+
+Решение: `AuctionPanel` остаётся единственным транзакционным блоком. Story/provenance, история ставок и история предмета используют существующий `EditorialSection` без panel chrome. Mobile `BottomActionBar` ограничен summary и CTA; поле суммы, validation error и retry остаются внутри scrollable auction panel.
+
+Изменённые файлы:
+
+- `apps/mobile/src/features/products/product-screen.tsx`
+- `apps/mobile/src/components/modern-ui/BottomActionBar.tsx`
+
+Результаты проверок:
+
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
+
 ## Результаты проверок
 
 - Создана ветка `feature/wave-c-screen-polish` от `ea93e84`.

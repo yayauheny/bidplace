@@ -12,6 +12,7 @@ import {
   AppText,
   AuctionPanel,
   BottomActionBar,
+  EditorialSection,
   PageState,
   PrimaryButton,
   ProductGallery,
@@ -377,7 +378,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     </SurfacePanel>
   );
   const itemStory = (
-    <SurfacePanel eyebrow="О предмете">
+    <EditorialSection title="О предмете">
       <View style={{ gap: modernTokens.space.x3 }}>
         {product.story ? <AppText role="body">{product.story}</AppText> : null}
         {product.provenance ? (
@@ -417,10 +418,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           </AppText>
         ) : null}
       </View>
-    </SurfacePanel>
+    </EditorialSection>
   );
   const bidHistory = (
-    <SurfacePanel eyebrow="История ставок">
+    <EditorialSection title="История ставок">
       {bids.isLoading ? (
         <AppText role="bodySmall" tone="secondary">
           Загружаем историю ставок…
@@ -461,10 +462,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           Ставок ещё нет.
         </AppText>
       )}
-    </SurfacePanel>
+    </EditorialSection>
   );
   const itemHistory = (
-    <SurfacePanel eyebrow="История предмета">
+    <EditorialSection title="История предмета">
       <View style={{ gap: modernTokens.space.x3 }}>
         <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
         {product.year ? (
@@ -487,7 +488,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           </AppText>
         )}
       </View>
-    </SurfacePanel>
+    </EditorialSection>
   );
 
   return (
