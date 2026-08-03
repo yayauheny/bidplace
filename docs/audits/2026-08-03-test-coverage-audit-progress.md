@@ -23,7 +23,7 @@ Commit under review: `5be687c`
 - [x] API/domain body-level audit.
 - [x] Mobile unit/static body-level audit.
 - [x] E2E/fixtures body-level audit.
-- [ ] Visual inspection of current screenshots.
+- [x] Visual inspection of all supplied screenshots (112/112).
 - [ ] Real verification runs.
 - [ ] Final matrices, findings, verdict and acceptance checklist.
 
@@ -43,10 +43,10 @@ Commit under review: `5be687c`
 
 | Directory | PNG files | Статус |
 |---|---:|---|
-| `/private/tmp/bidplace-wave-c-screenshots/a852f68` | 66 | Available; visual review pending; older than current `5be687c` |
-| `/private/tmp/bidplace-wave-b-screenshots` | 21 | Available; visual review pending |
-| `/private/tmp/bidplace-wave-a-screenshots` | 7 | Available; visual review pending |
-| `/private/tmp/bidplace-wave2-screenshots` | 18 | Available; visual review pending |
+| `/private/tmp/bidplace-wave-c-screenshots/a852f68` | 66/66 viewed | Reviewed; same source/tests as `5be687c`, but historical commit label |
+| `/private/tmp/bidplace-wave-b-screenshots` | 21/21 viewed | Reviewed |
+| `/private/tmp/bidplace-wave-a-screenshots` | 7/7 viewed | Reviewed |
+| `/private/tmp/bidplace-wave2-screenshots` | 18/18 viewed | Reviewed |
 
 ## Findings уже добавлены
 
@@ -58,6 +58,8 @@ Commit under review: `5be687c`
 - P2: mobile Vitest covers pure contracts but mounts no components; registration schema and real reduced-motion consumers are not unit-tested.
 - P1: 1440 catalog assertion accepts three cards; mobile keyboard does not constrain the visual viewport; no page-level accessibility scanner.
 - P2: desktop tooltip is hover-tested under a focus-labelled screenshot, broad route captures have title-only assertions, and Playwright is Chromium-only.
+- P1 visual: PageState retry button is visibly left-aligned; registration leaks English phone validation; two role-model “loaded” captures contain skeletons only.
+- P2 determinism: catalog visual data depends on records accumulated by earlier specs.
 
 ## Фактические запуски
 
@@ -66,9 +68,9 @@ Commit under review: `5be687c`
 
 ## Следующий блок
 
-1. Inspect all four screenshot directories visually, not only filenames or assertions.
-2. Record visible clipping, overflow, state mismatch and evidence limitations per matrix row.
-3. Make the visual checkpoint commit, then run the complete verification command set.
+1. Run pinned-pnpm design/API/mobile/contracts/database checks and PostgreSQL integration when infrastructure is available.
+2. Run the complete Chromium E2E suite and inspect the newly generated evidence directory for the known visual defects.
+3. Finalize verdict, debt order and acceptance checklist; make the final audit commit.
 
 ## Ограничения и открытые решения
 
