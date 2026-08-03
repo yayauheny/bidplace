@@ -10,6 +10,7 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AppText,
   FormSection,
+  PageState,
   PrimaryButton,
   SecondaryButton,
   TextButton,
@@ -146,9 +147,7 @@ export function ListingDraftScreen({
     return (
       <ListingShell>
         {products.isLoading ? (
-          <AppText role="bodySmall" tone="secondary">
-            Загружаем ваши предметы…
-          </AppText>
+          <PageState title="Загружаем ваши предметы…" loading />
         ) : (
           <>
             <AppText role="sectionTitle">Не удалось загрузить предметы</AppText>
@@ -185,7 +184,7 @@ export function ListingDraftScreen({
         {products.data.products.map((product) => (
           <View key={product.id} style={{ gap: modernTokens.space.x1 }}>
             <SecondaryButton
-              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Статус предмета')}`}
+              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Неизвестный статус предмета')}`}
               disabled={product.status !== 'APPROVED' || isLocked}
               onPress={() => {
                 hasHandledInitialProductIdRef.current = true;

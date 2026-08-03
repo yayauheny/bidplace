@@ -214,10 +214,19 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={seller.id}
             title={seller.fullName}
-            status={presentEnum(seller.status, sellerStatusLabels, 'Статус продавца')}
+            status={presentEnum(
+              seller.status,
+              sellerStatusLabels,
+              'Неизвестный статус продавца',
+            )}
           >
             <AppText role="bodySmall" tone="secondary">
-              {presentEnum(seller.sellerType, sellerTypeLabels, 'Тип продавца')} · {seller.slug} · {seller.country}
+              {presentEnum(
+                seller.sellerType,
+                sellerTypeLabels,
+                'Неизвестный тип продавца',
+              )}{' '}
+              · {seller.slug} · {seller.country}
             </AppText>
             <AppText role="bodySmall" tone="secondary">
               {seller.shortDescription}
@@ -271,7 +280,11 @@ export function AdminModerationScreen() {
           <ModerationCard
             key={product.id}
             title={product.title ?? 'Без названия'}
-            status={presentEnum(product.status, productStatusLabels, 'Статус предмета')}
+            status={presentEnum(
+              product.status,
+              productStatusLabels,
+              'Неизвестный статус предмета',
+            )}
           >
             {product.images[0] ? (
               <Image
@@ -367,7 +380,7 @@ export function AdminModerationScreen() {
           Причина отмены: {presentEnum(
             cancelReason,
             cancellationReasonLabels,
-            'Причина отмены',
+            'Неизвестная причина отмены',
           )}
         </AppText>
         {(
@@ -378,7 +391,7 @@ export function AdminModerationScreen() {
             label={`${cancelReason === reason ? '✓ ' : ''}${presentEnum(
               reason,
               cancellationReasonLabels,
-              'Причина отмены',
+              'Неизвестная причина отмены',
             )}`}
             onPress={() => setCancelReason(reason)}
           />

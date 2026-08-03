@@ -60,7 +60,7 @@ function sellerStatusTone(
 }
 
 function sellerStatusLabel(status: SellerStatus): string {
-  return presentEnum(status, sellerStatusLabels, 'Статус продавца');
+  return presentEnum(status, sellerStatusLabels, 'Неизвестный статус продавца');
 }
 
 export function SellerProfileScreen() {
@@ -347,7 +347,7 @@ export function SellerProfileScreen() {
                 {presentEnum(
                   profile.handoffContactType,
                   handoffContactTypeLabels,
-                  'Тип контакта',
+                  'Неизвестный тип контакта',
                 )}: {profile.handoffContactValue}
               </AppText>
               <AppText role="bodySmall" tone="secondary">
@@ -355,7 +355,7 @@ export function SellerProfileScreen() {
                 {presentEnum(
                   profile.handoffInitiator,
                   handoffInitiatorLabels,
-                  'Режим контакта',
+                  'Неизвестный режим контакта',
                 )}
               </AppText>
             </View>

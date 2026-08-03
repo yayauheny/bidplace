@@ -10,6 +10,7 @@ import {
   AppDialog,
   AppText,
   DestructiveButton,
+  PageState,
   PrimaryButton,
   SecondaryButton,
 } from '../../components/modern-ui';
@@ -136,9 +137,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
   if (!auth.isAuthenticated || query.isLoading)
     return (
       <Shell>
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем заказ…
-        </AppText>
+        <PageState title="Загружаем заказ…" loading />
       </Shell>
     );
   if (query.isError || !query.data) {
@@ -194,7 +193,11 @@ export function OrderScreen({ publicId }: { publicId: string }) {
               },
               {
                 label: 'Статус',
-                value: presentEnum(order.status, orderStatusLabels, 'Статус заказа'),
+                value: presentEnum(
+                  order.status,
+                  orderStatusLabels,
+                  'Неизвестный статус заказа',
+                ),
               },
             ]}
           />
@@ -209,7 +212,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                     value: presentEnum(
                       buyer.sellerHandoffType,
                       handoffContactTypeLabels,
-                      'Тип контакта',
+                      'Неизвестный тип контакта',
                     ),
                   },
                   { label: 'Контакт', value: buyer.sellerHandoffValue },
@@ -269,7 +272,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                     ? presentEnum(
                         admin.sellerHandoffType,
                         handoffContactTypeLabels,
-                        'Тип контакта',
+                        'Неизвестный тип контакта',
                       )
                     : '—',
                 },
@@ -282,7 +285,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                   value: presentEnum(
                     admin.handoffInitiator,
                     handoffInitiatorLabels,
-                    'Режим контакта',
+                    'Неизвестный режим контакта',
                   ),
                 },
               ]}

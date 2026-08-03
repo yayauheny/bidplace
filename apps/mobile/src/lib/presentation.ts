@@ -56,9 +56,9 @@ export const handoffInitiatorLabels = {
 export function presentEnum(
   value: string,
   labels: Readonly<Record<string, string>>,
-  noun: string,
+  fallback: string,
 ) {
-  return labels[value] ?? `${noun} недоступен`;
+  return labels[value] ?? fallback;
 }
 
 function pad(value: number) {

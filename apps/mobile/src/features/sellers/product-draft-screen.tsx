@@ -13,6 +13,7 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
+  PageState,
   PrimaryButton,
   SecondaryButton,
   TextButton,
@@ -147,9 +148,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
   if (categories.isLoading || (productId && products.isLoading))
     return (
       <DraftShell>
-        <AppText role="bodySmall" tone="secondary">
-          Загружаем предмет…
-        </AppText>
+        <PageState title="Загружаем предмет…" loading />
       </DraftShell>
     );
   if (
@@ -211,7 +210,11 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
             }
           >
             {productStatus
-              ? presentEnum(productStatus, productStatusLabels, 'Статус предмета')
+              ? presentEnum(
+                  productStatus,
+                  productStatusLabels,
+                  'Неизвестный статус предмета',
+                )
               : null}
           </AppText>
           <SecondaryButton

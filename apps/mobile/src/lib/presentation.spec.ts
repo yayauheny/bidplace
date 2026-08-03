@@ -2,23 +2,50 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cancellationReasonLabels,
+  handoffContactTypeLabels,
+  handoffInitiatorLabels,
+  orderStatusLabels,
+  productStatusLabels,
   parseDateTimeInputValue,
   presentEnum,
+  sellerStatusLabels,
+  sellerTypeLabels,
   toDateTimeInputValue,
 } from './presentation';
 
 describe('presentation adapters', () => {
   it('localizes known enum values without changing their API values', () => {
-    expect(presentEnum('BUYER_DECLINED', cancellationReasonLabels, 'Причина')).toBe(
-      'Покупатель отказался',
-    );
+    expect(
+      presentEnum(
+        'BUYER_DECLINED',
+        cancellationReasonLabels,
+        'Неизвестная причина отмены',
+      ),
+    ).toBe('Покупатель отказался');
     expect('BUYER_DECLINED').toBe('BUYER_DECLINED');
   });
 
   it('uses explicit copy for an unknown enum instead of leaking raw values', () => {
-    expect(presentEnum('FUTURE_STATUS', cancellationReasonLabels, 'Причина')).toBe(
-      'Причина недоступен',
+    expect(
+      presentEnum(
+        'FUTURE_STATUS',
+        cancellationReasonLabels,
+        'Неизвестная причина отмены',
+      ),
+    ).toBe(
+      'Неизвестная причина отмены',
     );
+  });
+
+  it.each([
+    [sellerStatusLabels, 'Неизвестный статус продавца'],
+    [productStatusLabels, 'Неизвестный статус предмета'],
+    [orderStatusLabels, 'Неизвестный статус заказа'],
+    [sellerTypeLabels, 'Неизвестный тип продавца'],
+    [handoffContactTypeLabels, 'Неизвестный тип контакта'],
+    [handoffInitiatorLabels, 'Неизвестный режим контакта'],
+  ] as const)('uses the explicit fallback for each presentation group', (labels, fallback) => {
+    expect(presentEnum('FUTURE_VALUE', labels, fallback)).toBe(fallback);
   });
 
   it('round-trips a date-time input through ISO serialization', () => {

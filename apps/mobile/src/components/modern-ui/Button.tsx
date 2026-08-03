@@ -6,8 +6,9 @@ import { AppIcon, type AppIconName } from './AppIcon';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
 import {
-  buttonContentIconSlotStyle,
+  buttonContentLayoutStyle,
   buttonLayoutStyle,
+  buttonLoadingOverlayStyle,
   type ButtonWidth,
 } from './button-layout';
 
@@ -28,22 +29,29 @@ function ButtonContent({
   icon,
   color,
 }: Pick<ButtonProps, 'label' | 'loading' | 'icon'> & { color: string }) {
+  const hasIcon = Boolean(icon);
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: modernTokens.space.x2,
-      }}
-    >
-      <View style={buttonContentIconSlotStyle()}>
-        {loading ? <ActivityIndicator color={color} size="small" /> : null}
-        {!loading && icon ? <AppIcon name={icon} color={color} /> : null}
+    <View style={buttonContentLayoutStyle(hasIcon)}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: hasIcon ? modernTokens.space.x2 : 0,
+          opacity: loading ? 0 : 1,
+        }}
+      >
+        {icon ? <AppIcon name={icon} color={color} /> : null}
+        <AppText role="button" style={{ color }} numberOfLines={1}>
+          {label}
+        </AppText>
       </View>
-      <AppText role="button" style={{ color }} numberOfLines={1}>
-        {label}
-      </AppText>
+      {loading ? (
+        <ActivityIndicator
+          color={color}
+          size="small"
+          style={buttonLoadingOverlayStyle()}
+        />
+      ) : null}
     </View>
   );
 }

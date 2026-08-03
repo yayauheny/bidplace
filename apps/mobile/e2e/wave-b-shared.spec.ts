@@ -148,6 +148,18 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         .locator('..')
         .getByRole('button', { name: 'Приостановить' });
       await expect(dialog.getByLabel('Причина')).toBeFocused();
+      const cancelButton = dialog.getByRole('button', { name: 'Отмена' });
+      const cancelLabel = cancelButton.getByText('Отмена', { exact: true });
+      const cancelButtonBox = await cancelButton.boundingBox();
+      const cancelLabelBox = await cancelLabel.boundingBox();
+      expect(cancelButtonBox).not.toBeNull();
+      expect(cancelLabelBox).not.toBeNull();
+      expect(
+        Math.abs(
+          cancelButtonBox!.x + cancelButtonBox!.width / 2 -
+            (cancelLabelBox!.x + cancelLabelBox!.width / 2),
+        ),
+      ).toBeLessThanOrEqual(1);
       await page.keyboard.press('Tab');
       await expect(dialog).toContainText('Приостановить');
       expect(

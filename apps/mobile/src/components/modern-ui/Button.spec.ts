@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
-import { buttonContentIconSlotStyle, buttonLayoutStyle } from './button-layout';
+import {
+  buttonContentLayoutStyle,
+  buttonLayoutStyle,
+  buttonLoadingOverlayStyle,
+} from './button-layout';
 
 describe('button layout variants', () => {
   it('uses content width by default', () => {
@@ -28,10 +32,19 @@ describe('button layout variants', () => {
     });
   });
 
-  it('reserves a stable icon slot for loading and icon states', () => {
-    expect(buttonContentIconSlotStyle()).toMatchObject({
-      width: modernTokens.size.icon,
-      height: modernTokens.size.icon,
+  it('does not add an idle gap when a button has no icon', () => {
+    expect(buttonContentLayoutStyle(false)).toMatchObject({
+      position: 'relative',
+      gap: 0,
+    });
+    expect(buttonContentLayoutStyle(true).gap).toBe(modernTokens.space.x2);
+  });
+
+  it('overlays the busy spinner on an invisible sizing layer', () => {
+    expect(buttonLoadingOverlayStyle()).toMatchObject({
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
     });
   });
 });
