@@ -76,7 +76,7 @@ Checks: mobile typecheck, lint and Vitest passed (13 files / 58 tests).
 
 Files: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts`, `apps/mobile/e2e/support/e2e-fixtures.ts`, `docs/design/02-USER-FLOWS-AND-SCREENS.md`, `docs/design/04-DESIGN-STATUS.md`, `docs/product/11-PROJECT-STATUS.md`.
 
-Targeted acceptance: `corepack pnpm --filter @bidplace/mobile exec playwright test wave-c-screen-acceptance.spec.ts` — 4/4 passed, 47.8s, with Docker PostgreSQL.
+Targeted acceptance: `corepack pnpm --filter @bidplace/mobile exec playwright test wave-c-screen-acceptance.spec.ts` — 4/4 passed, 47.8s, with Docker PostgreSQL. Full repository `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed, 2.6m, with Docker PostgreSQL.
 
 Screenshot manifest: 33 PNG files in `/private/tmp/bidplace-wave-c-screenshots`, covering required viewports, catalog loaded/loading/failed-media, seeded `seedLive002` buyer/admin, keyboard focus, author, purchases, seller profile, Product draft, Listing draft, admin, order, login/register, account menu, rail tooltip, destructive dialog and bid dialog.
 
@@ -85,7 +85,16 @@ Screenshot manifest: 33 PNG files in `/private/tmp/bidplace-wave-c-screenshots`,
 - See C1–C7 sections above.
 - Protected product/design foundations were not changed.
 
+## Post-C7 checks
+
+- `corepack pnpm --filter @bidplace/design-tokens build` — passed.
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
+- `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed.
+- `corepack pnpm --filter @bidplace/mobile build` — blocked by nested pnpm 11.10.0 vs project-pinned 11.7.0 Corepack mismatch; equivalent `corepack pnpm@11.7.0 --filter @bidplace/design-tokens build` plus `corepack pnpm@11.7.0 --filter @bidplace/mobile exec expo export` passed and exported `apps/mobile/dist`.
+- `git diff --check` — passed.
+
 ## Незакрытые риски
 
-- Post-C7 full repository checks are still running/not yet recorded here.
 - Founder physical-device, screen-reader and final visual acceptance remain `Needs verification`.

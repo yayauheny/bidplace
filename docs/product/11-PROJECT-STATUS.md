@@ -30,7 +30,7 @@
 - `Implemented`: C4 seller/profile/draft screens use capped previews, 160×200 contain media rows, truthful failed-media states and readable listing date input with existing ISO serialization and server lock/upload/delete/reorder behavior.
 - `Implemented`: C5 admin/order presentation uses two desktop queues within 1180px, compact moderation row actions, author text links, localized order cancellation reason and long-value-safe rows without changing permissions or lifecycle rules.
 - `Implemented`: C6 auth copy and shared PageState/Skeleton loading semantics cover truthful registration, one loading announcement, plain-language retry errors and keyboard/zoom-compatible existing forms.
-- `Partial`: C7 targeted `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts` passed 4/4 and produced 33 screenshots in `/private/tmp/bidplace-wave-c-screenshots` across the required route/role/state matrix. Full repository E2E and final founder physical-device/screen-reader acceptance are the remaining gates.
+- `Implemented`: C7 targeted `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts` passed 4/4 and the full repository `mobile test:e2e` passed 28/28 with Docker PostgreSQL; 33 screenshots are in `/private/tmp/bidplace-wave-c-screenshots` across the required route/role/state matrix. Final founder physical-device/screen-reader acceptance remains the remaining gate.
 
 ## Runtime defect hardening — 2026-07-31
 
