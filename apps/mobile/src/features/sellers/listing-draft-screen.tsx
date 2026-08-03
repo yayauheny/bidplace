@@ -17,6 +17,7 @@ import {
   TextField,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
+import { formatDateTime } from '../../lib/formatters';
 import {
   parseDateTimeInputValue,
   presentEnum,
@@ -35,6 +36,26 @@ type CreatedListing = { id: string; productPublicId: string };
 
 function parseMoneyInput(value: string): number {
   return Number(value.trim().replace(',', '.'));
+}
+
+function parseListingDateTime(value: string): string | null {
+  const isoValue = parseDateTimeInputValue(value);
+  if (isoValue) return isoValue;
+
+  const match = value
+    .trim()
+    .match(/^(\d{2})\.(\d{2})\.(\d{4}),?\s+(\d{2}):(\d{2})$/);
+  if (!match) return null;
+
+  const [, day, month, year, hours, minutes] = match;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hours),
+    Number(minutes),
+  );
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export function ListingDraftScreen({
@@ -67,8 +88,8 @@ export function ListingDraftScreen({
   const trimmedEndsAt = endsAt.trim();
   const trimmedStartPrice = startPrice.trim();
   const request = listingCreateRequestSchema.safeParse({
-    startsAt: parseDateTimeInputValue(trimmedStartsAt) ?? trimmedStartsAt,
-    endsAt: parseDateTimeInputValue(trimmedEndsAt) ?? trimmedEndsAt,
+    startsAt: parseListingDateTime(trimmedStartsAt) ?? trimmedStartsAt,
+    endsAt: parseListingDateTime(trimmedEndsAt) ?? trimmedEndsAt,
     startPrice: parseMoneyInput(trimmedStartPrice),
   });
   const create = useMutation({
@@ -215,7 +236,8 @@ export function ListingDraftScreen({
           label="Начало"
           value={startsAt}
           onChangeText={setStartsAt}
-          placeholder="2026-07-20T12:00:00.000Z"
+          hint="Например: 03.08.2026, 12:00"
+          placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
           autoCapitalize="none"
           editable={!isLocked}
         />
@@ -223,7 +245,8 @@ export function ListingDraftScreen({
           label="Окончание"
           value={endsAt}
           onChangeText={setEndsAt}
-          placeholder="2026-07-21T12:00:00.000Z"
+          hint="Например: 04.08.2026, 18:00"
+          placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
           autoCapitalize="none"
           editable={!isLocked}
         />
@@ -236,6 +259,12 @@ export function ListingDraftScreen({
           editable={!isLocked}
         />
       </FormSection>
+      {request.success && !createdListing ? (
+        <AppText role="metadata" tone="secondary">
+          Период: {formatDateTime(request.data.startsAt)} —{' '}
+          {formatDateTime(request.data.endsAt)}
+        </AppText>
+      ) : null}
       {(trimmedStartsAt || trimmedEndsAt || trimmedStartPrice) &&
       !request.success &&
       !createdListing ? (

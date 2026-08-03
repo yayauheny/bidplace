@@ -73,6 +73,7 @@ export function SellerProfileScreen() {
   });
   const [fields, setFields] = useState<ProfileFields>(emptyFields);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const profile = query.data?.sellerProfile;
   const editable = !profile || profile.status === 'CHANGES_REQUESTED';
@@ -81,6 +82,7 @@ export function SellerProfileScreen() {
     if (!profile) {
       setFields(emptyFields);
       setPhotoUri(null);
+      setPhotoFailed(false);
       setPhotoBlob(null);
       return;
     }
@@ -96,6 +98,7 @@ export function SellerProfileScreen() {
       handoffInitiator: profile.handoffInitiator,
     });
     setPhotoUri(getApiAssetUrl(profile.profilePhotoUrl));
+    setPhotoFailed(false);
     setPhotoBlob(null);
   }, [profile]);
 
@@ -160,6 +163,7 @@ export function SellerProfileScreen() {
 
     const blob = await fetch(asset.uri).then((response) => response.blob());
     setPhotoUri(asset.uri);
+    setPhotoFailed(false);
     setPhotoBlob(blob);
   };
 
@@ -230,18 +234,23 @@ export function SellerProfileScreen() {
             <AppText role="metadata" tone="secondary">
               Фото профиля
             </AppText>
-            {photoPreview ? (
+            {photoPreview && !photoFailed ? (
               <Image
                 source={{ uri: photoPreview }}
                 style={{
-                  width: '100%',
-                  aspectRatio: 1,
+                  width: 200,
+                  height: 200,
                   borderRadius: modernTokens.radius.image,
                 }}
                 contentFit="cover"
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
-              <ImagePlaceholder ratio={1} label="Фото профиля не выбрано" />
+              <ImagePlaceholder
+                ratio={1}
+                label="Фото профиля недоступно или не выбрано"
+                style={{ width: 200, height: 200 }}
+              />
             )}
             <SecondaryButton
               label={photoPreview ? 'Изменить фото' : 'Добавить фото'}

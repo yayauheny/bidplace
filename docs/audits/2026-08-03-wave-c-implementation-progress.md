@@ -70,6 +70,22 @@
 - `corepack pnpm --filter @bidplace/mobile lint` — passed.
 - `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
 
+## C4 — seller profile, Product draft, Listing draft
+
+Решение: формы сохраняют существующие fields, mutations, ISO payloads, upload/delete/reorder и lock rules, но читаются как последовательные задачи. Seller profile preview ограничен 200px с broken-photo fallback; Product draft media — 160×200 contain rows; Listing draft принимает и человекочитаемый `ДД.ММ.ГГГГ, ЧЧ:ММ`, и прежний ISO input, отправляя прежний ISO payload.
+
+Изменённые файлы:
+
+- `apps/mobile/src/features/sellers/seller-profile-screen.tsx`
+- `apps/mobile/src/features/sellers/product-draft-screen.tsx`
+- `apps/mobile/src/features/sellers/listing-draft-screen.tsx`
+
+Результаты проверок:
+
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed после добавления `ImagePlaceholder` в imports.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
+
 ## Изменённые файлы
 
 - См. C1 выше.

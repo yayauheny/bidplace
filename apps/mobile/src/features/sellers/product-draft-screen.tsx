@@ -13,6 +13,7 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
+  ImagePlaceholder,
   PageState,
   PrimaryButton,
   SecondaryButton,
@@ -22,6 +23,79 @@ import {
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
+
+function DraftImageRow({
+  url,
+  position,
+  editable,
+  isLast,
+  isReordering,
+  isRemoving,
+  onMove,
+  onDelete,
+}: {
+  url: string;
+  position: number;
+  editable: boolean;
+  isLast: boolean;
+  isReordering: boolean;
+  isRemoving: boolean;
+  onMove: (direction: -1 | 1) => void;
+  onDelete: () => void;
+}) {
+  const [failed, setFailed] = useState(false);
+  const mediaStyle = {
+    width: 160,
+    height: 200,
+    borderRadius: modernTokens.radius.image,
+    backgroundColor: modernTokens.color.placeholder,
+  };
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: modernTokens.space.x3,
+      }}
+    >
+      {failed ? (
+        <ImagePlaceholder
+          ratio={4 / 5}
+          label={`Изображение ${position + 1} недоступно`}
+          style={mediaStyle}
+        />
+      ) : (
+        <Image
+          source={{ uri: getApiAssetUrl(url) }}
+          style={mediaStyle}
+          contentFit="contain"
+          accessibilityLabel={`Изображение предмета ${position + 1}`}
+          onError={() => setFailed(true)}
+        />
+      )}
+      {editable ? (
+        <View style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x1 }}>
+          <TextButton
+            label="Переместить выше"
+            disabled={position === 0 || isReordering}
+            onPress={() => onMove(-1)}
+          />
+          <TextButton
+            label="Переместить ниже"
+            disabled={isLast || isReordering}
+            onPress={() => onMove(1)}
+          />
+          <TextButton
+            label="Удалить изображение"
+            disabled={isRemoving}
+            onPress={onDelete}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+}
 
 export function ProductDraftScreen({ productId }: { productId?: string }) {
   const api = useApiClient();
@@ -394,40 +468,17 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
             </AppText>
           ) : null}
           {existingProduct.images.map((image) => (
-            <View key={image.id} style={{ gap: modernTokens.space.x2 }}>
-              <Image
-                source={{ uri: getApiAssetUrl(image.url) }}
-                style={{
-                  width: '100%',
-                  height: 180,
-                  borderRadius: modernTokens.radius.image,
-                }}
-                contentFit="cover"
-                alt={`Изображение предмета ${image.position + 1}`}
-              />
-              {editable ? (
-                <View style={{ gap: modernTokens.space.x1 }}>
-                  <TextButton
-                    label="Переместить выше"
-                    disabled={image.position === 0 || reorderImages.isPending}
-                    onPress={() => reorder(image.id, -1)}
-                  />
-                  <TextButton
-                    label="Переместить ниже"
-                    disabled={
-                      image.position === existingProduct.images.length - 1 ||
-                      reorderImages.isPending
-                    }
-                    onPress={() => reorder(image.id, 1)}
-                  />
-                  <TextButton
-                    label="Удалить изображение"
-                    disabled={removeImage.isPending}
-                    onPress={() => setImagePendingDelete(image.id)}
-                  />
-                </View>
-              ) : null}
-            </View>
+            <DraftImageRow
+              key={image.id}
+              url={image.url}
+              position={image.position}
+              editable={editable}
+              isLast={image.position === existingProduct.images.length - 1}
+              isReordering={reorderImages.isPending}
+              isRemoving={removeImage.isPending}
+              onMove={(direction) => reorder(image.id, direction)}
+              onDelete={() => setImagePendingDelete(image.id)}
+            />
           ))}
           {editable ? (
             <SecondaryButton
