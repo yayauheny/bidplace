@@ -1,17 +1,90 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { ScrollView, View } from 'react-native';
+import {
+  ScrollView,
+  View,
+  useWindowDimensions,
+  type DimensionValue,
+} from 'react-native';
+import { useState } from 'react';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { modernTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
-import { AuctionCard, AppText, PageHeader, PageState } from '../../components/modern-ui';
+import {
+  AuctionCard,
+  AppText,
+  ImagePlaceholder,
+  PageHeader,
+  PageState,
+} from '../../components/modern-ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
+import { getCatalogColumnCount } from '../products/catalog-layout';
+
+function AuthorWorkGrid({
+  products,
+  columns,
+}: {
+  products: React.ComponentProps<typeof AuctionCard>['item'][];
+  columns: 2 | 3 | 4;
+}) {
+  const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        margin: -modernTokens.space.x2,
+      }}
+    >
+      {products.map((item) => (
+        <View
+          key={item.product.id}
+          style={{ width: cardWidth, padding: modernTokens.space.x2 }}
+        >
+          <AuctionCard item={item} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function AuthorPhoto({ url, name }: { url: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const style = {
+    width: 120,
+    height: 120,
+    borderRadius: modernTokens.radius.pill,
+  };
+
+  if (failed) {
+    return (
+      <ImagePlaceholder
+        ratio={1}
+        label={`Фото автора недоступно: ${name}`}
+        style={style}
+      />
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: getApiAssetUrl(url) }}
+      accessibilityLabel={`Фото автора ${name}`}
+      contentFit="cover"
+      onError={() => setFailed(true)}
+      style={style}
+    />
+  );
+}
 
 export function PublicSellerScreen({ slug }: { slug: string }) {
   const api = useApiClient();
+  const { width } = useWindowDimensions();
   const query = useQuery({
     queryKey: ['public-seller', slug],
     queryFn: () => api.sellers.getPublicDetail(slug),
@@ -39,11 +112,10 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
     content = <PageState title="У автора пока нет опубликованных предметов" />;
   } else {
     content = (
-      <View style={{ gap: modernTokens.space.x4 }}>
-        {query.data.products.map((item) => (
-          <AuctionCard key={item.product.id} item={item} />
-        ))}
-      </View>
+      <AuthorWorkGrid
+        products={query.data.products}
+        columns={getCatalogColumnCount(width)}
+      />
     );
   }
 
@@ -60,16 +132,20 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
       >
         {query.data ? (
           <View style={{ gap: modernTokens.space.x3 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: modernTokens.space.x3 }}>
-              <Image
-                source={{ uri: getApiAssetUrl(query.data.sellerProfile.profilePhotoUrl) }}
-                accessibilityLabel={`Фото автора ${query.data.sellerProfile.fullName}`}
-                style={{ width: 64, height: 64, borderRadius: modernTokens.radius.pill }}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: modernTokens.space.x4 }}>
+              <AuthorPhoto
+                url={query.data.sellerProfile.profilePhotoUrl}
+                name={query.data.sellerProfile.fullName}
               />
               <View style={{ flex: 1, gap: modernTokens.space.x1 }}>
                 <PageHeader title={query.data.sellerProfile.fullName} />
                 <AppText role="metadata" tone="secondary">
-                  {query.data.sellerProfile.sellerType} · {query.data.sellerProfile.country}
+                  {presentEnum(
+                    query.data.sellerProfile.sellerType,
+                    sellerTypeLabels,
+                    'Автор',
+                  )}{' '}
+                  · {query.data.sellerProfile.country}
                 </AppText>
               </View>
             </View>

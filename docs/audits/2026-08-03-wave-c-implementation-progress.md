@@ -55,6 +55,21 @@
 - `corepack pnpm --filter @bidplace/mobile lint` — passed.
 - `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
 
+## C3 — автор и покупки
+
+Решение: публичная identity-зона использует только существующие публичные поля, 120px photo/fallback и локализованный тип автора. Works используют responsive grid с общими `AuctionCard`; purchases остаются divider-led и показывают текущие status, price и deadline без лишней строки действия.
+
+Изменённые файлы:
+
+- `apps/mobile/src/features/sellers/public-seller-screen.tsx`
+- `apps/mobile/src/features/activity/activity-screen.tsx`
+
+Результаты проверок:
+
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed после исправления импорта `DimensionValue`.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
+
 ## Изменённые файлы
 
 - См. C1 выше.

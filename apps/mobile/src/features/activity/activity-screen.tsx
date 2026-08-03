@@ -13,6 +13,7 @@ import {
   PageState,
   SecondaryButton,
 } from '../../components/modern-ui';
+import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { useApiClient } from '../../providers/api-provider';
 
 type ActivityData = Awaited<ReturnType<ApiClient['activity']['get']>>;
@@ -63,13 +64,14 @@ function ActivityRow({ item }: { item: ActivityItem }) {
             accessibilityLabel={`Открыть предмет ${item.product.title ?? 'Предмет'}`}
             onPress={() => undefined}
             preset="card"
-            style={{ flex: 1, gap: modernTokens.space.x1 }}
+            style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x1 }}
           >
             <AppText role="cardTitle">
               {item.product.title ?? 'Предмет'}
             </AppText>
-            <AppText role="bodySmall" tone="secondary">
-              Открыть предмет
+            <AppText role="metadata" tone="secondary">
+              {formatCurrencyAmount(item.listing.currentPrice)} · до{' '}
+              {formatDateTime(item.listing.endsAt)}
             </AppText>
           </MotionPressable>
         </Link>
