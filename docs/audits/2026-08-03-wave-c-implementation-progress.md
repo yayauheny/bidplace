@@ -126,6 +126,26 @@
 
 Результаты проверок:
 
+- Выполняются ниже.
+
+## C6 — auth, long content, all page states
+
+Решение: регистрационный copy описывает buyer flow и будущую seller application без обещания admin-доступа. `PageState` сохраняет один polite loading announcement и добавляет plain-language error message, если retryable caller не передал собственный текст. Auth viewport, validation, focus/zoom и существующие redirects не меняются.
+
+Изменённые файлы:
+
+- `apps/mobile/src/features/auth/auth-form.tsx`
+- `apps/mobile/src/components/modern-ui/PageState.tsx`
+
+Дополнение C6: декоративные `Skeleton` больше не объявляются отдельными progressbar; loading announcement остаётся единственным shared `PageState` announcement.
+
+Изменённый файл:
+
+- `apps/mobile/src/components/modern-ui/Skeleton.tsx`
+- `apps/mobile/src/features/products/product-list-screen.tsx` — catalog-specific single loading announcement.
+
+Результаты проверок:
+
 - `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
 - `corepack pnpm --filter @bidplace/mobile lint` — passed.
 - `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.

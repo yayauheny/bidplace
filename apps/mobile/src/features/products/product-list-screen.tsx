@@ -70,6 +70,19 @@ function CatalogCardSkeleton() {
   );
 }
 
+function CatalogLoadingAnnouncement() {
+  return (
+    <AppText
+      role="caption"
+      accessibilityRole="progressbar"
+      accessibilityLiveRegion="polite"
+      style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+    >
+      Загружаем каталог…
+    </AppText>
+  );
+}
+
 export function ProductListScreen() {
   const api = useApiClient();
   const { width } = useWindowDimensions();
@@ -127,6 +140,7 @@ export function ProductListScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {query.isLoading ? <CatalogLoadingAnnouncement /> : null}
         {content}
         {query.isFetching && !query.isLoading ? (
           <AppText

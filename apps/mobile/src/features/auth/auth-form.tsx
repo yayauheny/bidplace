@@ -186,7 +186,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   return (
     <AuthCard
       title="Регистрация"
-      description="Создайте аккаунт, чтобы открыть seller- и admin-сценарии."
+      description="Создайте аккаунт, чтобы участвовать в торгах и при необходимости подать заявку продавца."
     >
       <View style={{ gap: modernTokens.space.x3 }}>
         <Controller

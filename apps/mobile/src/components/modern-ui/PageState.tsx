@@ -17,7 +17,9 @@ export function PageState({
   loading?: boolean;
   retry?: () => void;
 }) {
-  if (getPageStateMode({ loading, retry: Boolean(retry) }) === 'loading') {
+  const mode = getPageStateMode({ loading, retry: Boolean(retry) });
+
+  if (mode === 'loading') {
     return (
       <View
         style={{
@@ -49,9 +51,9 @@ export function PageState({
       }}
     >
       <AppText role="sectionTitle">{title}</AppText>
-      {message ? (
+      {message || mode === 'error' ? (
         <AppText role="bodySmall" tone="secondary" style={{ textAlign: 'center' }}>
-          {message}
+          {message ?? 'Проверьте соединение и повторите попытку.'}
         </AppText>
       ) : null}
       {retry ? <PrimaryButton label="Повторить" onPress={retry} /> : null}
