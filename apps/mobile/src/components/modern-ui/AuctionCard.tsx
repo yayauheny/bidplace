@@ -55,26 +55,14 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
           <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
             {description}
           </AppText>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'baseline',
-              gap: modernTokens.space.x2,
-              minWidth: 0,
-            }}
+          <AppText role="numeric">{price}</AppText>
+          <AppText
+            role="caption"
+            tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
+            numberOfLines={2}
           >
-            <AppText role="numeric" numberOfLines={1} style={{ flexShrink: 0 }}>
-              {price}
-            </AppText>
-            <AppText
-              role="caption"
-              tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
-              numberOfLines={1}
-              style={{ flex: 1, flexShrink: 1, textAlign: 'right' }}
-            >
-              {status} · {deadline}
-            </AppText>
-          </View>
+            {status} · {deadline}
+          </AppText>
         </View>
       </MotionPressable>
     </Link>

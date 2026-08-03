@@ -40,9 +40,24 @@
 - Проверять целевые ширины `1440×900`, `1024×900`, `390×844`; evidence хранить вне репозитория.
 - При недоступной инфраструктуре фиксировать точный блокер и оставлять соответствующий статус `Needs verification`.
 
+## C1 — каталог
+
+Решение: сохранить единую grid-композицию и 4:5 media bounds, но разделить цену и строку статуса/дедлайна в `AuctionCard`. Skeleton повторяет те же media и metadata bounds; дата публикации не добавляется.
+
+Изменённые файлы:
+
+- `apps/mobile/src/components/modern-ui/AuctionCard.tsx`
+- `apps/mobile/src/features/products/product-list-screen.tsx`
+
+Результаты проверок:
+
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.
+
 ## Изменённые файлы
 
-- Пока нет. Этот журнал создан до первой code-правки.
+- См. C1 выше.
 
 ## Результаты проверок
 

@@ -63,7 +63,8 @@ function CatalogCardSkeleton() {
         <Skeleton style={{ width: '50%', height: 16 }} />
         <Skeleton style={{ width: '85%', height: 42 }} />
         <Skeleton style={{ width: '100%', height: 22 }} />
-        <Skeleton style={{ width: '52%', height: 18 }} />
+        <Skeleton style={{ width: '42%', height: 18 }} />
+        <Skeleton style={{ width: '88%', height: 30 }} />
       </View>
     </View>
   );
