@@ -44,7 +44,7 @@ Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, se
 - `Implemented`: C4 adds 200px seller preview/fallback, 160×200 contain Product draft media rows and strict calendar/time validation for readable Listing dates while preserving ISO payloads and locks.
 - `Implemented`: C5 lays admin queues side by side within 1180px on desktop, stacks below the breakpoint, keeps author links lightweight and localizes existing Order cancellation reasons.
 - `Implemented`: C6 keeps auth isolated/scrollable, makes registration copy truthful and gives async states one loading announcement plus plain-language retry feedback.
-- `Implemented`: C7 targeted acceptance passed 4/4 and the full repository Playwright suite passed 28/28 with real seed/API state, role restrictions, first-viewport bounds, overflow checks, naturalWidth/opacity, focus, empty/error/long-content states and dialogs. 66 commit-stamped screenshots are in `/private/tmp/bidplace-wave-c-screenshots/953e04f`; founder physical-device/screen-reader acceptance remains separate.
+- `Implemented`: C7 targeted acceptance passed 4/4 and the full repository Playwright suite passed 28/28 with real seed/API state, role restrictions, first-viewport bounds, overflow checks, naturalWidth/opacity, focus, empty/error/long-content states and dialogs. 66 commit-stamped screenshots are in `/private/tmp/bidplace-wave-c-screenshots/a852f68`; founder physical-device/screen-reader acceptance remains separate.
 
 ## Functional screen status
 
