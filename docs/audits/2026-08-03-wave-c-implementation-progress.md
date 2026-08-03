@@ -114,3 +114,18 @@
 
 - Требуется детальный screen-by-screen audit и реализация C1–C7.
 - Требуется проверить доступность Docker PostgreSQL/Playwright и physical-device/screen-reader acceptance.
+
+## C5 — moderation и order
+
+Решение: `/admin` получает две очереди в max 1180px на desktop и один столбец ниже desktop breakpoint. Moderation rows сохраняют status/context/reason и существующие confirmations, но author остаётся лёгкой text-link, а row approvals/destructive actions — compact. Order сохраняет role-safe projection, добавляет локализованную причину отмены только если API её уже вернул и делает long-value rows устойчивыми.
+
+Изменённые файлы:
+
+- `apps/mobile/src/features/admin/admin-moderation-screen.tsx`
+- `apps/mobile/src/features/orders/order-screen.tsx`
+
+Результаты проверок:
+
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed.
+- `corepack pnpm --filter @bidplace/mobile lint` — passed.
+- `corepack pnpm --filter @bidplace/mobile exec vitest run` — 13 files / 58 tests passed.

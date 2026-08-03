@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
@@ -17,6 +17,7 @@ import {
   PageState,
   PrimaryButton,
   SecondaryButton,
+  TextButton,
   TextField,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
@@ -47,6 +48,7 @@ type Confirmation =
 
 export function AdminModerationScreen() {
   const api = useApiClient();
+  const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const sellers = useQuery({
     queryKey: ['admin', 'seller-profiles'],
@@ -209,7 +211,15 @@ export function AdminModerationScreen() {
         title="Модерация"
         description="Проверка продавцов и предметов перед публикацией."
       />
-      <FormSection title="Продавцы">
+      <View
+        style={{
+          flexDirection: width >= modernTokens.breakpoint.desktopShell ? 'row' : 'column',
+          gap: modernTokens.space.x5,
+          alignItems: 'flex-start',
+        }}
+      >
+        <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
+          <FormSection title="Продавцы">
         {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
           <ModerationCard
             key={seller.id}
@@ -238,6 +248,7 @@ export function AdminModerationScreen() {
             ) : null}
             {seller.status === 'PENDING_REVIEW' ? (
               <PrimaryButton
+                compact
                 label="Одобрить"
                 loading={sellerStatus.isPending}
                 onPress={() =>
@@ -246,6 +257,7 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
+              compact
               disabled={
                 seller.status === 'SUSPENDED' || seller.hasBlockingListing
               }
@@ -274,8 +286,10 @@ export function AdminModerationScreen() {
             активных торгов.
           </AppText>
         ) : null}
-      </FormSection>
-      <FormSection title="Предметы">
+          </FormSection>
+        </View>
+        <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
+          <FormSection title="Предметы">
         {products.data.products.map((product: AdminProduct) => (
           <ModerationCard
             key={product.id}
@@ -307,7 +321,7 @@ export function AdminModerationScreen() {
               }
               asChild
             >
-              <SecondaryButton
+              <TextButton
                 label={`Автор: ${product.sellerProfile.fullName}`}
                 onPress={() => undefined}
               />
@@ -329,6 +343,7 @@ export function AdminModerationScreen() {
             ) : null}
             {product.status === 'PENDING_REVIEW' ? (
               <PrimaryButton
+                compact
                 label="Одобрить"
                 loading={productStatus.isPending}
                 onPress={() =>
@@ -337,6 +352,7 @@ export function AdminModerationScreen() {
               />
             ) : null}
             <DestructiveButton
+              compact
               disabled={
                 !['APPROVED', 'PENDING_REVIEW'].includes(product.status) ||
                 product.hasBlockingListing
@@ -360,7 +376,9 @@ export function AdminModerationScreen() {
             состояние активных торгов.
           </AppText>
         ) : null}
-      </FormSection>
+          </FormSection>
+        </View>
+      </View>
       <FormSection title="Отмена и переназначение заказа">
         <AppText role="bodySmall" tone="secondary">
           После внешнего согласования отмените активный заказ и выберите
@@ -515,7 +533,7 @@ function AdminShell({ children }: { children: ReactNode }) {
       <ScrollView
         contentContainerStyle={{
           width: '100%',
-          maxWidth: 760,
+          maxWidth: 1180,
           alignSelf: 'center',
           padding: modernTokens.space.x5,
         }}

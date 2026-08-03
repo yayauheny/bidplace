@@ -17,6 +17,7 @@ import {
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getUserFacingErrorMessage } from '../../lib/errors';
 import {
+  cancellationReasonLabels,
   handoffContactTypeLabels,
   handoffInitiatorLabels,
   orderStatusLabels,
@@ -74,12 +75,16 @@ function Details({ items }: { items: { label: string; value: string }[] }) {
             gap: modernTokens.space.x4,
           }}
         >
-          <AppText role="bodySmall" tone="secondary">
+          <AppText
+            role="bodySmall"
+            tone="secondary"
+            style={{ flex: 1, minWidth: 0 }}
+          >
             {item.label}
           </AppText>
           <AppText
             role="bodySmall"
-            style={{ flexShrink: 1, textAlign: 'right' }}
+            style={{ flex: 1, minWidth: 0, textAlign: 'right' }}
           >
             {item.value}
           </AppText>
@@ -199,6 +204,18 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                   'Неизвестный статус заказа',
                 ),
               },
+              ...(order.cancellationReason
+                ? [
+                    {
+                      label: 'Причина отмены',
+                      value: presentEnum(
+                        order.cancellationReason,
+                        cancellationReasonLabels,
+                        'Неизвестная причина отмены',
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         </Panel>
