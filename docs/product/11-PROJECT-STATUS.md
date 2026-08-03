@@ -1,6 +1,6 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-08-02
+Последнее обновление: 2026-08-03
 Статус: Technical baseline is Partial; API/mobile static checks and the current 24-test Chromium/disposable Playwright suite pass with Docker PostgreSQL. Founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
 ## Wave A — structural responsive fixes — 2026-08-02

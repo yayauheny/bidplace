@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Implement the four post-Wave-B audit fixes, rerun the full verification matrix, and record the updated evidence.
+Post-Wave-B audit fixes, verification, documentation and commits are complete; only founder physical-device, screen-reader and visual acceptance remains.
 
 ## Completed slices
 
@@ -109,7 +109,7 @@ Implement the four post-Wave-B audit fixes, rerun the full verification matrix, 
 - Done: Wave B browser evidence now checks pointer-first `:focus-visible` behavior, keyboard focus on the account menu, Escape dismissal and focus return, and busy-button width change within 1px.
 - Changed: `apps/mobile/src/lib/visual-token.spec.ts`, `apps/mobile/src/components/modern-ui/AppDialog.tsx`, `apps/mobile/src/components/modern-ui/Button.tsx`, `apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `apps/mobile/e2e/wave-b-shared.spec.ts`.
 - Checks: targeted unit coverage passed 5 files / 19 tests; mobile typecheck and lint passed; targeted Wave B Playwright passed 1/1 after isolating pointer-first and keyboard-focus sequences.
-- Remaining: the mandatory full package/mobile matrix and final documentation/commit still need to be rerun after this follow-up; founder physical-device/screen-reader/visual acceptance remains separate.
+- Remaining: founder physical-device, screen-reader and visual acceptance remains separate; no code or verification work is pending.
 
 ## Final verification
 
@@ -131,9 +131,8 @@ Implement the four post-Wave-B audit fixes, rerun the full verification matrix, 
 - Done: the Design System token inventory now reflects `modern.ts`, the actual 4–64 spacing scale, radius names/values, sizes and typography roles.
 - Changed: `Button.tsx`, `button-layout.ts`, `Button.spec.ts`, ProductDraft/ListingDraft/Order screens, `presentation.ts`/spec, `wave-b-shared.spec.ts`, `wave-b-route-states.spec.ts`, and `docs/design/03-DESIGN-SYSTEM.md`.
 - Checks: targeted unit coverage passed 3 files / 17 tests; targeted Wave B browser passed 1/1 (43.9s); route-level PageState browser passed 1/1 (19.7s); full package/mobile matrix passed with 13 files / 58 Vitest tests and 24/24 Playwright tests; mobile typecheck and lint passed.
-- Remaining: final static diff/worktree check and commit are pending; API/domain logic and Wave C remain unchanged.
+- Remaining: founder physical-device, screen-reader and visual acceptance; API/domain logic and Wave C remain unchanged.
 
 ## Open risks
 
-- Full Playwright E2E may depend on Docker PostgreSQL and local package-manager/network state.
 - Founder visual/device/accessibility acceptance remains separate from automated verification.
