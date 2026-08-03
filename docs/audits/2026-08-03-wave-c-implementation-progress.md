@@ -78,7 +78,7 @@ Files: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts`, `apps/mobile/e2e/supp
 
 Targeted acceptance: `corepack pnpm --filter @bidplace/mobile exec playwright test wave-c-screen-acceptance.spec.ts` — 4/4 passed, 47.8s, with Docker PostgreSQL. Full repository `corepack pnpm --filter @bidplace/mobile test:e2e` — 28/28 passed, 2.6m, with Docker PostgreSQL.
 
-Screenshot manifest: 33 PNG files in `/private/tmp/bidplace-wave-c-screenshots`, covering required viewports, catalog loaded/loading/failed-media, seeded `seedLive002` buyer/admin, keyboard focus, author, purchases, seller profile, Product draft, Listing draft, admin, order, login/register, account menu, rail tooltip, destructive dialog and bid dialog.
+Screenshot manifest: 29 PNG files in `/private/tmp/bidplace-wave-c-screenshots`, covering required viewports, catalog loaded/loading/failed-media, seeded `seedLive002` buyer/admin, keyboard focus, author, purchases, seller profile, Product draft, Listing draft, admin, order, login/register, account menu, rail tooltip, destructive dialog and bid dialog.
 
 ## Изменённые файлы
 

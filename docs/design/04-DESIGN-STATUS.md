@@ -30,7 +30,7 @@ Wave 1 state verification: activity distinguishes the truthful empty response fr
 
 Wave 2 web UI polish: `AppShell` now provides a white canvas, 72 px desktop icon rail and desktop right-side `AccountMenu`, while `AppHeader` keeps the account control in the mobile brand row and derives seller actions from the private SellerProfile query. `OverlayHost` portals desktop account and navigation overlays above ordinary content; account positioning follows the trigger rectangle. The account menu supports click, hover and keyboard focus with reset-safe dismissal. `PageHeader`/`PageState` are shared by Catalog, Activity, SellerProfile, Admin and Product loading/error/empty paths; catalog background refetch uses a compact status line. Current seeded browser/media/overlay verification is 24/24 Playwright tests passed.
 
-Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck and lint pass; current disposable Chromium Playwright execution passes 24/24 with Docker PostgreSQL. Founder visual/device/accessibility acceptance remains `Needs verification`; no route may be marked `Implemented` until founder acceptance evidence is recorded.
+Final foundation status: `modernTokens` and `components/modern-ui` provide target typography, semantic palette, accessible basic controls, skeleton and image placeholder. Mobile typecheck and lint pass; current disposable Chromium Playwright execution passes 28/28 with Docker PostgreSQL. Founder visual/device/accessibility acceptance remains `Needs verification`; no route may be marked `Implemented` until founder acceptance evidence is recorded.
 
 Shared navigation is in partial final migration: `components/layout/AppShell.tsx` now owns the responsive safe-area shell and `AppHeader.tsx` renders role-filtered navigation with a full-height desktop rail, unified 44 px nav items, active Product context and keyboard focus state. Legacy drawer, desktop navigation, Tamagui provider/config and legacy UI kit have been removed; founder device and accessibility acceptance remains.
 
@@ -44,7 +44,7 @@ Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, se
 - `Implemented`: C4 adds 200px seller preview/fallback, 160×200 contain Product draft media rows and readable Listing dates while preserving ISO payloads and locks.
 - `Implemented`: C5 lays admin queues side by side within 1180px on desktop, stacks below the breakpoint, keeps author links lightweight and localizes existing Order cancellation reasons.
 - `Implemented`: C6 keeps auth isolated/scrollable, makes registration copy truthful and gives async states one loading announcement plus plain-language retry feedback.
-- `Implemented`: C7 targeted acceptance passed 4/4 and the full repository Playwright suite passed 28/28 with real seed/API state, role restrictions, first-viewport/overflow checks, naturalWidth/opacity, focus and dialogs. 33 screenshots are in `/private/tmp/bidplace-wave-c-screenshots`; founder physical-device/screen-reader acceptance remains separate.
+- `Implemented`: C7 targeted acceptance passed 4/4 and the full repository Playwright suite passed 28/28 with real seed/API state, role restrictions, first-viewport/overflow checks, naturalWidth/opacity, focus and dialogs. 29 screenshots are in `/private/tmp/bidplace-wave-c-screenshots`; founder physical-device/screen-reader acceptance remains separate.
 
 ## Functional screen status
 
