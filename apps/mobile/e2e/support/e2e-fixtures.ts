@@ -201,6 +201,7 @@ export async function createSellerFixture(
 ): Promise<{
   seller: E2EUser;
   categoryId: string;
+  slug: string;
 }> {
   const suffix = randomUUID().slice(0, 8);
   const prisma = new PrismaClient({
@@ -217,10 +218,11 @@ export async function createSellerFixture(
   const photo = readFileSync(
     resolve(__dirname, '../fixtures/profile-photo.png'),
   );
+  const slug = `seller-${suffix}`;
   await prisma.sellerProfile.create({
     data: {
       userId: seller.id,
-      slug: `seller-${suffix}`,
+      slug,
       sellerType: 'creator',
       fullName: `E2E Seller ${suffix}`,
       country: 'BY',
@@ -236,7 +238,7 @@ export async function createSellerFixture(
     },
   });
   await prisma.$disconnect();
-  return { seller, categoryId: category.id };
+  return { seller, categoryId: category.id, slug };
 }
 
 export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {

@@ -38,18 +38,44 @@ export function parseListingDateTime(value: string): string | null {
     );
   }
 
-  const isoLocalMatch = trimmedValue.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/,
-  );
-  if (isoLocalMatch) {
-    const [, year, month, day, hours, minutes] = isoLocalMatch;
-    return serializeLocalDateTime(
-      Number(year),
-      Number(month),
-      Number(day),
-      Number(hours),
-      Number(minutes),
+  const isoLike = /^\d{4}-\d{2}-\d{2}/.test(trimmedValue);
+  if (isoLike) {
+    const isoMatch = trimmedValue.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:?\d{2})?$/,
     );
+    if (!isoMatch) return null;
+
+    const [, year, month, day, hours, minutes, seconds, fraction, offset] =
+      isoMatch;
+    const calendarDate = new Date(
+      Date.UTC(Number(year), Number(month) - 1, Number(day)),
+    );
+    const validCalendar =
+      calendarDate.getUTCFullYear() === Number(year) &&
+      calendarDate.getUTCMonth() === Number(month) - 1 &&
+      calendarDate.getUTCDate() === Number(day);
+    const validClock =
+      Number(hours) <= 23 &&
+      Number(minutes) <= 59 &&
+      (seconds === undefined || Number(seconds) <= 59);
+    const validFraction =
+      fraction === undefined || Number(fraction.padEnd(3, '0')) <= 999;
+    const validOffset =
+      offset === undefined ||
+      offset === 'Z' ||
+      (() => {
+        const offsetMatch = offset.match(/[+-](\d{2}):?(\d{2})/);
+        return (
+          offsetMatch !== null &&
+          Number(offsetMatch[1]) <= 23 &&
+          Number(offsetMatch[2]) <= 59
+        );
+      })();
+
+    if (!validCalendar || !validClock || !validFraction || !validOffset) {
+      return null;
+    }
+    return parseDateTimeInputValue(trimmedValue);
   }
 
   return parseDateTimeInputValue(trimmedValue);

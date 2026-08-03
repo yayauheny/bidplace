@@ -18,7 +18,18 @@ describe('listing date-time parser', () => {
     );
   });
 
-  it('rejects an impossible ISO local date-time as well', () => {
-    expect(parseListingDateTime('2026-02-31T12:00')).toBeNull();
+  it.each([
+    '2026-02-31T12:00',
+    '2026-02-31T12:00:00Z',
+    '2026-02-31T12:00:00.000Z',
+    '2026-02-31T12:00:00.000+03:00',
+  ])('rejects impossible full ISO date-time: %s', (value) => {
+    expect(parseListingDateTime(value)).toBeNull();
+  });
+
+  it('preserves valid ISO seconds, milliseconds and UTC offset', () => {
+    expect(parseListingDateTime('2026-02-28T12:00:01.123Z')).toBe(
+      '2026-02-28T12:00:01.123Z',
+    );
   });
 });

@@ -126,39 +126,98 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       await capture(page, 'catalog', 'buyer', 'loaded', viewport);
     }
 
-    const loadingPage = await context.newPage();
-    await loadingPage.setViewportSize(viewports[2]);
-    await loadingPage.route(
-      '**/api/products*',
-      async (route) => {
-        await new Promise((resolveDelay) => setTimeout(resolveDelay, 600));
-        await route.continue();
-      },
-      { times: 1 },
-    );
-    const loadingNavigation = loadingPage.goto('/', {
-      waitUntil: 'domcontentloaded',
-    });
-    await expect(loadingPage.getByRole('progressbar')).toHaveCount(1);
-    await loadingNavigation;
-    await capture(loadingPage, 'catalog', 'buyer', 'loading', viewports[2]);
-    await loadingPage.close();
+    for (const viewport of viewports) {
+      const loadingPage = await context.newPage();
+      await loadingPage.setViewportSize(viewport);
+      await loadingPage.route(
+        '**/api/products*',
+        async (route) => {
+          await new Promise((resolveDelay) => setTimeout(resolveDelay, 600));
+          await route.continue();
+        },
+        { times: 1 },
+      );
+      const loadingNavigation = loadingPage.goto('/', {
+        waitUntil: 'domcontentloaded',
+      });
+      await expect(loadingPage.getByRole('progressbar')).toHaveCount(1);
+      await loadingNavigation;
+      await capture(loadingPage, 'catalog', 'buyer', 'loading', viewport);
+      await loadingPage.close();
 
-    const failedPage = await context.newPage();
-    await failedPage.setViewportSize(viewports[2]);
-    await failedPage.route('**/*', async (route) => {
-      if (route.request().resourceType() === 'image') {
-        await route.abort();
-        return;
-      }
-      await route.continue();
+      const failedPage = await context.newPage();
+      await failedPage.setViewportSize(viewport);
+      await failedPage.route('**/*', async (route) => {
+        if (route.request().resourceType() === 'image') {
+          await route.abort();
+          return;
+        }
+        await route.continue();
+      });
+      await failedPage.goto('/');
+      await expect(
+        failedPage.getByLabel(/Изображение недоступно/).first(),
+      ).toBeVisible();
+      await capture(failedPage, 'catalog', 'buyer', 'failed-media', viewport);
+      await failedPage.close();
+    }
+
+    const pendingSeller = await createSellerFixture({
+      status: 'PENDING_REVIEW',
     });
-    await failedPage.goto('/');
-    await expect(
-      failedPage.getByLabel(/Изображение недоступно/).first(),
-    ).toBeVisible();
-    await capture(failedPage, 'catalog', 'buyer', 'failed-media', viewports[2]);
-    await failedPage.close();
+    const approvedSeller = await createSellerFixture({ status: 'APPROVED' });
+    const guestContext = await browser.newContext({
+      baseURL: 'http://localhost:8081',
+    });
+    const guestPage = await guestContext.newPage();
+    const adminSession = await authenticatedPage(browser, seededAdmin);
+    const pendingSession = await authenticatedPage(
+      browser,
+      pendingSeller.seller,
+    );
+    const approvedSession = await authenticatedPage(
+      browser,
+      approvedSeller.seller,
+    );
+    const roleSessions = [
+      { role: 'guest', context: guestContext, page: guestPage },
+      adminSession && { role: 'admin', ...adminSession },
+      pendingSession && { role: 'pending-seller', ...pendingSession },
+      approvedSession && { role: 'approved-seller', ...approvedSession },
+    ].filter(Boolean) as Array<{
+      role: string;
+      context: typeof guestContext;
+      page: typeof guestPage;
+    }>;
+    try {
+      for (const session of roleSessions) {
+        await session.page.setViewportSize(viewports[2]);
+        await session.page.goto('/');
+        await expect(
+          session.page.locator('a[href="/product/seedLive002"]'),
+        ).toBeVisible();
+        if (session.role === 'approved-seller') {
+          await expect(
+            session.page.getByRole('link', { name: 'Добавить предмет' }),
+          ).toBeVisible();
+        } else {
+          await expect(
+            session.page.getByRole('link', { name: 'Добавить предмет' }),
+          ).toHaveCount(0);
+        }
+        await capture(
+          session.page,
+          'catalog',
+          session.role,
+          'loaded-role-model',
+          viewports[2],
+        );
+      }
+    } finally {
+      for (const session of roleSessions) {
+        await session.context.close();
+      }
+    }
   } finally {
     await context.close();
   }
@@ -201,6 +260,13 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
         await assertInFirstViewport(
           buyer.page,
           buyer.page.getByTestId('mobile-bottom-action-bar'),
+          viewport,
+        );
+        await capture(
+          buyer.page,
+          'product-seedLive002',
+          'buyer',
+          'loaded-mobile',
           viewport,
         );
         await buyer.page.getByLabel('Ваша ставка, BYN').focus();
@@ -271,6 +337,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     ],
   });
   const seller = await createSellerFixture();
+  const emptySeller = await createSellerFixture();
   const adminFixture = await createAdminModerationFixture();
   const sellerSession = await authenticatedPage(browser, seller.seller);
   const adminSession = await authenticatedPage(browser, adminFixture.admin);
@@ -302,6 +369,16 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       );
       await assertNoHorizontalOverflow(page);
       await capture(page, 'author', 'guest', 'loaded-four-works', viewport);
+
+      await page.goto(`/seller/${emptySeller.slug}`);
+      await expect(
+        page.getByText('У автора пока нет опубликованных предметов'),
+      ).toBeVisible();
+      await capture(page, 'author', 'guest', 'empty', viewport);
+
+      await page.goto('/seller/wave-c-missing-author');
+      await expect(page.getByText('Автор не найден')).toBeVisible();
+      await capture(page, 'author', 'guest', 'error-not-found', viewport);
 
       await sellerSession.page.setViewportSize(viewport);
       await sellerSession.page.goto('/profile');
@@ -368,6 +445,53 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await seeded.context.close();
     }
 
+    const longActivity = await authenticatedPage(browser, seededBuyer);
+    const longActivityTitle =
+      'Очень длинное название предмета для проверки переноса текста в строке покупок и отсутствия горизонтального переполнения';
+    await longActivity.page.route('**/api/me/activity', async (route) => {
+      const response = await route.fetch();
+      const payload = (await response.json()) as {
+        activity: Array<{
+          product: { title: string | null };
+          [key: string]: unknown;
+        }>;
+      };
+      expect(payload.activity.length).toBeGreaterThan(0);
+      await route.fulfill({
+        response,
+        body: JSON.stringify({
+          ...payload,
+          activity: payload.activity.map((item, index) =>
+            index === 0
+              ? {
+                  ...item,
+                  product: { ...item.product, title: longActivityTitle },
+                }
+              : item,
+          ),
+        }),
+      });
+    });
+    try {
+      for (const viewport of viewports) {
+        await longActivity.page.setViewportSize(viewport);
+        await longActivity.page.goto('/me/activity');
+        await expect(
+          longActivity.page.getByText(longActivityTitle),
+        ).toBeVisible();
+        await assertNoHorizontalOverflow(longActivity.page);
+        await capture(
+          longActivity.page,
+          'purchases',
+          'buyer',
+          'loaded-long-row',
+          viewport,
+        );
+      }
+    } finally {
+      await longActivity.context.close();
+    }
+
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await page.goto('/register');
@@ -380,47 +504,68 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await capture(page, 'login', 'guest', 'loaded', viewport);
     }
 
-    await adminSession.page.setViewportSize(viewports[0]);
-    await adminSession.page.goto('/');
-    await adminSession.page
-      .getByRole('button', { name: /Открыть меню аккаунта/ })
-      .hover();
-    await expect(
-      adminSession.page.locator('#account-menu-dropdown'),
-    ).toBeVisible();
-    await capture(
-      adminSession.page,
-      'account-menu',
-      'admin',
-      'open',
-      viewports[0],
-    );
-    await adminSession.page.goto('/admin');
-    await adminSession.page.getByRole('link', { name: 'Модерация' }).hover();
-    await expect(adminSession.page.locator('#navigation-tooltip')).toHaveText(
-      'Модерация',
-    );
-    await capture(
-      adminSession.page,
-      'admin',
-      'admin',
-      'focused-rail-tooltip',
-      viewports[0],
-    );
-    await adminSession.page
-      .getByText(adminFixture.sellerName, { exact: true })
-      .first()
-      .locator('..')
-      .getByRole('button', { name: 'Приостановить' })
-      .click();
-    await expect(adminSession.page.getByRole('dialog')).toBeVisible();
-    await capture(
-      adminSession.page,
-      'moderation-dialog',
-      'admin',
-      'destructive-open',
-      viewports[0],
-    );
+    for (const viewport of viewports) {
+      await adminSession.page.setViewportSize(viewport);
+      await adminSession.page.goto('/');
+      const accountTrigger = adminSession.page.getByRole('button', {
+        name: /Открыть меню аккаунта/,
+      });
+      if (viewport.width >= 1025) {
+        await accountTrigger.hover();
+      } else {
+        await accountTrigger.click();
+      }
+      await expect(
+        adminSession.page.locator('#account-menu-dropdown'),
+      ).toBeVisible();
+      await capture(
+        adminSession.page,
+        'account-menu',
+        'admin',
+        'open',
+        viewport,
+      );
+      await adminSession.page.goto('/admin');
+      const moderationLink = adminSession.page.getByRole('link', {
+        name: 'Модерация',
+      });
+      await moderationLink.hover();
+      if (viewport.width >= 1025) {
+        await expect(
+          adminSession.page.locator('#navigation-tooltip'),
+        ).toHaveText('Модерация');
+        await capture(
+          adminSession.page,
+          'admin',
+          'admin',
+          'focused-rail-tooltip',
+          viewport,
+        );
+      } else {
+        await expect(moderationLink).toBeVisible();
+        await capture(
+          adminSession.page,
+          'admin',
+          'admin',
+          'focused-mobile-navigation',
+          viewport,
+        );
+      }
+      await adminSession.page
+        .getByText(adminFixture.sellerName, { exact: true })
+        .first()
+        .locator('..')
+        .getByRole('button', { name: 'Приостановить' })
+        .click();
+      await expect(adminSession.page.getByRole('dialog')).toBeVisible();
+      await capture(
+        adminSession.page,
+        'moderation-dialog',
+        'admin',
+        'destructive-open',
+        viewport,
+      );
+    }
   } finally {
     await sellerSession.context.close();
     await adminSession.context.close();
