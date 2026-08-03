@@ -36,7 +36,7 @@ Scope: shared component and visual-system fixes only; Wave C screen redesign is 
 
 ## Current step
 
-Final verification passed; update the exact evidence counts, run the final static diff/worktree check, and commit the documentation-only follow-up.
+Implement the four post-Wave-B audit fixes, rerun the full verification matrix, and record the updated evidence.
 
 ## Completed slices
 
@@ -116,12 +116,22 @@ Final verification passed; update the exact evidence counts, run the final stati
 - Design-tokens build: passed.
 - Mobile typecheck: passed.
 - Mobile lint: passed.
-- Full mobile Vitest: 13 files / 51 tests passed.
+- Full mobile Vitest: 13 files / 58 tests passed.
 - Targeted Wave B Playwright: 1 test / 1 passed (43.1s); browser evidence covers 1440/1024/390 focus-visible, reduced motion, PageState loading/empty/error, dialog long content, loading button, and compact logo hit area.
-- Full mobile Playwright: 23 tests / 23 passed (1.9m), including existing auction, security/privacy, navigation, Wave A, Wave One, and Wave B coverage.
+- Full mobile Playwright: 24 tests / 24 passed (1.9m), including existing auction, security/privacy, navigation, Wave A, Wave One, and Wave B coverage.
 - Screenshots: 21 PNG files in `/private/tmp/bidplace-wave-b-screenshots`.
 - Required command matrix: `corepack pnpm --filter @bidplace/design-tokens build`, mobile `typecheck`, mobile `lint`, mobile Vitest, mobile Playwright E2E, and `git diff --check` all passed.
 - Final remaining acceptance: founder physical-device and screen-reader/visual acceptance; no Wave C work started.
+
+### Post-Wave-B audit fixes — 2026-08-03
+
+- Done: `ButtonContent` no longer reserves an idle icon slot for text-only buttons. It keeps an invisible content sizing layer during loading and overlays the spinner; unit coverage checks zero idle gap, icon gap and absolute loading overlay, while browser evidence checks label centering and busy width stability.
+- Done: ProductDraft, ListingDraft and Order route loading branches now render `PageState` with `progressbar` and polite live-region semantics. `wave-b-route-states.spec.ts` covers all three routes with delayed API responses.
+- Done: `presentEnum` accepts an explicit fallback phrase; seller/product/order status, seller type, cancellation reason and handoff groups now use grammatical unknown-value copy. Unit coverage exercises every presentation group.
+- Done: the Design System token inventory now reflects `modern.ts`, the actual 4–64 spacing scale, radius names/values, sizes and typography roles.
+- Changed: `Button.tsx`, `button-layout.ts`, `Button.spec.ts`, ProductDraft/ListingDraft/Order screens, `presentation.ts`/spec, `wave-b-shared.spec.ts`, `wave-b-route-states.spec.ts`, and `docs/design/03-DESIGN-SYSTEM.md`.
+- Checks: targeted unit coverage passed 3 files / 17 tests; targeted Wave B browser passed 1/1 (43.9s); route-level PageState browser passed 1/1 (19.7s); full package/mobile matrix passed with 13 files / 58 Vitest tests and 24/24 Playwright tests; mobile typecheck and lint passed.
+- Remaining: final static diff/worktree check and commit are pending; API/domain logic and Wave C remain unchanged.
 
 ## Open risks
 
