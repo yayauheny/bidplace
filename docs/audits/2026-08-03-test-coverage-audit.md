@@ -25,7 +25,7 @@
 |---|---:|---:|---|---|
 | API unit | 33 | 114 вместе с API integration по синтаксическому подсчёту | Vitest, mocks/fakes | Body-level review complete; run pending |
 | API integration | 2 | входит в 114 | Vitest + PostgreSQL | Body-level review complete; run pending |
-| Mobile unit/static | 15 | 43 | Vitest, source/style/geometry contracts | Pending body-level review |
+| Mobile unit/static | 15 | 43 | Vitest, pure helpers/style/geometry contracts | Body-level review complete; run pending |
 | Browser E2E | 11 | 28 top-level Playwright tests | Chromium, real API, disposable PostgreSQL, screenshots | Pending body-level review/run |
 | Contracts | 2 | входит в 8 shared-package tests | Vitest/Zod contracts and seed contract | Pending body-level review |
 | Design tokens | 0 package-local specs | 0 | Build only; visual token tests live in mobile | Pending verification |
@@ -92,6 +92,9 @@
 
 - **[P2] Auth transport policy is unit-tested but not proven through a real HTTP/browser round-trip.** Evidence: auth service, guards, controller and env helpers have focused tests, while browser authentication is bootstrapped by an API helper and does not assert production cookie attributes, allowed/disallowed Origin headers and logout invalidation end to end. Acceptance: isolated HTTP integration tests for registration/login/me/logout cookie lifecycle and CORS allow/deny behavior. Blocks: none for local UI evidence; remains release hardening debt.
 - **[P2] Closing coverage omits no-bid and deterministic tie-break edge cases.** Evidence: `apps/api/src/lifecycle/listing-lifecycle.service.spec.ts:6-40` only checks the activation predicate; integration closes one auction with a clear top Bid and a close-vs-bid race. Acceptance: integration tests for expired zero-Bid listing, exact tie ordering (`amount`, `createdAt`, `id`) and rerun idempotency in each outcome. Blocks: lifecycle hardening checklist.
+- **[P2] Mobile Vitest does not render a React/React Native component.** Evidence: all 15 specs call pure schemas, layout/style helpers, cache predicates or token functions; `Button.spec.ts`, `page-state-contract.spec.ts`, `product-media-style.spec.ts` and `reduced-motion.spec.ts` never mount the corresponding component. Risk: prop wiring, accessible names/roles, interaction, focus transfer and actual style composition can regress while the helpers remain green. Acceptance: add focused rendered-component tests for Button loading/disabled/accessibility, PageState loading/error/retry/empty semantics, ProductMedia loaded/error geometry and the shared overlay/account-menu focus lifecycle. Blocks: component-level acceptance, but browser evidence still covers selected integrated paths.
+- **[P2] Client auth validation covers login only.** Evidence: `apps/mobile/src/features/auth/schemas.spec.ts:5-20` tests invalid login email and missing password; registration field normalization, phone/password/confirmation boundaries and server-error mapping have no mobile unit contract. Acceptance: parameterized registration schema tests and one rendered submit/error-state test. Blocks: auth form hardening.
+- **[P2] Reduced-motion unit evidence stops at the duration helper.** Evidence: `apps/mobile/src/lib/reduced-motion.spec.ts:5-12` checks a numeric duration selector, not mounted animated/image components. Acceptance: mount the shared motion consumer or assert its computed browser styles under `prefers-reduced-motion`, including media transition behavior. Blocks: accessibility automation checklist.
 
 ## 7. Что покрыто хорошо
 
@@ -101,6 +104,7 @@
 - Media tests validate byte signatures, claimed MIME mismatch, SVG/corrupt payload rejection, public/private delivery and actual browser decoding.
 - Order read projections explicitly distinguish seller, buyer contact modes, outsider and admin visibility; realtime payload schemas reject buyer contact data.
 - Auth unit coverage includes password hashing, duplicate identity, invalid/valid login, banned users, stale session versions and logout invalidation.
+- Mobile helper tests precisely lock bid increment math, strict local date parsing, responsive column breakpoints, 4:5 media geometry, button sizing, auth-cache boundaries and WCAG contrast/token constants.
 
 ## 8. Test debt и порядок исправлений
 

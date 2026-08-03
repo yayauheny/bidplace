@@ -21,7 +21,7 @@ Commit under review: `5be687c`
 - [x] Собран начальный файловый инвентарь.
 - [x] Подтверждена доступность всех четырёх screenshot directories.
 - [x] API/domain body-level audit.
-- [ ] Mobile unit/static body-level audit.
+- [x] Mobile unit/static body-level audit.
 - [ ] E2E/fixtures body-level audit.
 - [ ] Visual inspection of current screenshots.
 - [ ] Real verification runs.
@@ -55,6 +55,7 @@ Commit under review: `5be687c`
 - P1: pending-seller direct API matrix and successful seller application are missing.
 - P1: moderation reason/audit coverage is incomplete; seed Bid fixtures remain unapproved and weakly tested.
 - P2: auth transport round-trip and no-bid/tie close edges are missing.
+- P2: mobile Vitest covers pure contracts but mounts no components; registration schema and real reduced-motion consumers are not unit-tested.
 
 ## Фактические запуски
 
@@ -63,8 +64,8 @@ Commit under review: `5be687c`
 
 ## Следующий блок
 
-1. Mobile unit/static: distinguish pure helper contracts from rendered-component behavior.
-2. E2E/fixtures: map each named scenario to the actual actor, state transition, DB/API assertion and screenshot.
+1. E2E/fixtures: map each named scenario to the actual actor, state transition, DB/API assertion and screenshot.
+2. Inspect all four screenshot directories visually, not only filenames or assertions.
 3. Update design/responsive matrix and make the next checkpoint commit.
 
 ## Ограничения и открытые решения
