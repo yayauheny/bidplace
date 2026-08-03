@@ -27,10 +27,10 @@
 - `Implemented`: C1 catalog polish preserves the no-heading catalog, confirmed 2/3/4 columns, shared 4:5 bounds and separate price/status-deadline rows. Loading/loaded/failed-media evidence is in the C7 targeted spec.
 - `Implemented`: C2 Product detail uses `EditorialSection` for linear story/history/bids and keeps `AuctionPanel` as the only transaction block. `BottomActionBar` remains summary + CTA; bid validation, OTP/rules, realtime, privacy and API contracts are unchanged.
 - `Implemented`: C3 public author and purchases use 120px identity fallback, shared responsive AuctionCard grid and divider-led activity rows with existing role-safe data.
-- `Implemented`: C4 seller/profile/draft screens use capped previews, 160×200 contain media rows, truthful failed-media states and readable listing date input with existing ISO serialization and server lock/upload/delete/reorder behavior.
+- `Implemented`: C4 seller/profile/draft screens use capped previews, 160×200 contain media rows, truthful failed-media states and strict calendar/time validation for readable listing date input with existing ISO serialization and server lock/upload/delete/reorder behavior.
 - `Implemented`: C5 admin/order presentation uses two desktop queues within 1180px, compact moderation row actions, author text links, localized order cancellation reason and long-value-safe rows without changing permissions or lifecycle rules.
 - `Implemented`: C6 auth copy and shared PageState/Skeleton loading semantics cover truthful registration, one loading announcement, plain-language retry errors and keyboard/zoom-compatible existing forms.
-- `Implemented`: C7 targeted `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts` passed 4/4 and the full repository `mobile test:e2e` passed 28/28 with Docker PostgreSQL; 29 screenshots are in `/private/tmp/bidplace-wave-c-screenshots` across the required route/role/state matrix. Final founder physical-device/screen-reader acceptance remains the remaining gate.
+- `Implemented`: C7 targeted `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts` passed 4/4 and the full repository `mobile test:e2e` passed 28/28 with Docker PostgreSQL; 42 commit-stamped screenshots are in `/private/tmp/bidplace-wave-c-screenshots/1a2efcf` across the 1440×900, 1024×900 and 390×844 route/role/state matrix. Final founder physical-device/screen-reader acceptance remains the remaining gate.
 
 ## Runtime defect hardening — 2026-07-31
 

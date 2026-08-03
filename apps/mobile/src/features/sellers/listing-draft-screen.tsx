@@ -18,11 +18,8 @@ import {
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
 import { formatDateTime } from '../../lib/formatters';
-import {
-  parseDateTimeInputValue,
-  presentEnum,
-  productStatusLabels,
-} from '../../lib/presentation';
+import { presentEnum, productStatusLabels } from '../../lib/presentation';
+import { parseListingDateTime } from './listing-date-time';
 
 type ListingDraftScreenProps = { initialProductId?: string };
 type CreateListingVariables = {
@@ -36,26 +33,6 @@ type CreatedListing = { id: string; productPublicId: string };
 
 function parseMoneyInput(value: string): number {
   return Number(value.trim().replace(',', '.'));
-}
-
-function parseListingDateTime(value: string): string | null {
-  const isoValue = parseDateTimeInputValue(value);
-  if (isoValue) return isoValue;
-
-  const match = value
-    .trim()
-    .match(/^(\d{2})\.(\d{2})\.(\d{4}),?\s+(\d{2}):(\d{2})$/);
-  if (!match) return null;
-
-  const [, day, month, year, hours, minutes] = match;
-  const date = new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hours),
-    Number(minutes),
-  );
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 export function ListingDraftScreen({

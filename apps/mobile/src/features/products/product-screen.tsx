@@ -602,13 +602,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   {product.title ?? 'Предмет'}
                 </AppText>
                 {product.story ? (
-                  <AppText role="bodySmall" tone="secondary" numberOfLines={3}>
+                  <AppText role="bodySmall" tone="secondary" numberOfLines={2}>
                     {product.story}
-                  </AppText>
-                ) : null}
-                {product.publishedAt ? (
-                  <AppText role="caption" tone="secondary">
-                    Размещено на bidplace: {formatDateTime(product.publishedAt)}
                   </AppText>
                 ) : null}
               </View>

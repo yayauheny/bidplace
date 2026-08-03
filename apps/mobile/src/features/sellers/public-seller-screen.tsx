@@ -22,14 +22,14 @@ import {
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { getCatalogColumnCount } from '../products/catalog-layout';
+import { getAuthorWorkColumnCount } from './author-layout';
 
 function AuthorWorkGrid({
   products,
   columns,
 }: {
   products: React.ComponentProps<typeof AuctionCard>['item'][];
-  columns: 2 | 3 | 4;
+  columns: 2 | 3;
 }) {
   const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 
@@ -100,7 +100,9 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
     query.error instanceof ApiClientError &&
     query.error.kind === 'not_found'
   ) {
-    content = <PageState title="Автор не найден" message="Профиль больше недоступен." />;
+    content = (
+      <PageState title="Автор не найден" message="Профиль больше недоступен." />
+    );
   } else if (query.isError || !query.data) {
     content = (
       <PageState
@@ -114,7 +116,7 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
     content = (
       <AuthorWorkGrid
         products={query.data.products}
-        columns={getCatalogColumnCount(width)}
+        columns={getAuthorWorkColumnCount(width)}
       />
     );
   }
@@ -132,7 +134,13 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
       >
         {query.data ? (
           <View style={{ gap: modernTokens.space.x3 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: modernTokens.space.x4 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: modernTokens.space.x4,
+              }}
+            >
               <AuthorPhoto
                 url={query.data.sellerProfile.profilePhotoUrl}
                 name={query.data.sellerProfile.fullName}

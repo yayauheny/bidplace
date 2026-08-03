@@ -58,6 +58,7 @@ export async function createAuctionFixture(options?: {
   live?: boolean;
   bids?: boolean;
   title?: string;
+  additionalTitles?: string[];
 }): Promise<AuctionFixture> {
   const suffix = randomUUID().slice(0, 8);
   const prisma = new PrismaClient({
@@ -110,46 +111,54 @@ export async function createAuctionFixture(options?: {
     },
   });
   const title = options?.title ?? `E2E Auction ${suffix}`;
-  const product = await prisma.product.create({
-    data: {
-      publicId: randomUUID().replace(/-/g, '').slice(0, 11),
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title,
-      story: 'A real authored item for the auction proof.',
-      technique: 'Mixed media',
-      materials: 'Paper, ink',
-      dimensions: '30x40',
-      year: 2026,
-      condition: 'New',
-      uniqueness: 'One',
-      provenance: 'E2E fixture',
-      city: 'Minsk',
-      deliveryInfo: 'Pickup',
-      status: 'APPROVED',
-      publishedAt: now,
-      images: {
-        create: {
-          position: 0,
-          mimeType: 'image/png',
-          byteLength: photo.byteLength,
-          data: photo,
-          checksum: '0'.repeat(64),
+  const createPublishedAuction = async (productTitle: string) => {
+    const product = await prisma.product.create({
+      data: {
+        publicId: randomUUID().replace(/-/g, '').slice(0, 11),
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: productTitle,
+        story: 'A real authored item for the auction proof.',
+        technique: 'Mixed media',
+        materials: 'Paper, ink',
+        dimensions: '30x40',
+        year: 2026,
+        condition: 'New',
+        uniqueness: 'One',
+        provenance: 'E2E fixture',
+        city: 'Minsk',
+        deliveryInfo: 'Pickup',
+        status: 'APPROVED',
+        publishedAt: now,
+        images: {
+          create: {
+            position: 0,
+            mimeType: 'image/png',
+            byteLength: photo.byteLength,
+            data: photo,
+            checksum: '0'.repeat(64),
+          },
         },
       },
-    },
-  });
-  const listing = await prisma.listing.create({
-    data: {
-      productId: product.id,
-      status: options?.live === false ? 'SCHEDULED' : 'LIVE',
-      startsAt,
-      originalEndsAt: endsAt,
-      endsAt,
-      currentPrice: 10,
-      auctionRules: { create: { startPrice: 10 } },
-    },
-  });
+    });
+    const listing = await prisma.listing.create({
+      data: {
+        productId: product.id,
+        status: options?.live === false ? 'SCHEDULED' : 'LIVE',
+        startsAt,
+        originalEndsAt: endsAt,
+        endsAt,
+        currentPrice: 10,
+        auctionRules: { create: { startPrice: 10 } },
+      },
+    });
+    return { product, listing };
+  };
+  const { product, listing } = await createPublishedAuction(title);
+
+  for (const additionalTitle of options?.additionalTitles ?? []) {
+    await createPublishedAuction(additionalTitle);
+  }
 
   if (options?.bids) {
     await prisma.bid.createMany({
@@ -185,9 +194,11 @@ export async function createAuctionFixture(options?: {
   };
 }
 
-export async function createSellerFixture(options: {
-  status?: 'APPROVED' | 'PENDING_REVIEW';
-} = {}): Promise<{
+export async function createSellerFixture(
+  options: {
+    status?: 'APPROVED' | 'PENDING_REVIEW';
+  } = {},
+): Promise<{
   seller: E2EUser;
   categoryId: string;
 }> {
