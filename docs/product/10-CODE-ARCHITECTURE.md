@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-07-31
+Последнее обновление: 2026-08-05
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -11,7 +11,7 @@
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
 - `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns and rail tooltips are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
-- `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed.
+- `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
 
 ## Persistence model
@@ -38,7 +38,7 @@ The following is a confirmed target, not a claim about the current schema or API
 - one own Product image is the MVP technical minimum. Condition is not mandatory for creator-made Product; the current optional field is preserved until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
 - buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version, and `otp.service.ts` uses SMTP/nodemailer in production with a test-only bypass that cannot activate in production;
-- active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. Buyer, seller and admin receive role-scoped projections, and admin cancellation/replacement preserves the original record with append-only audit;
+- active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. Buyer, seller and admin receive role-scoped projections, seller actions and admin cancellation/replacement enforce actor role at the service boundary, terminal handoff transitions are not repeatable, and admin cancellation/replacement preserves the original record with append-only audit;
 - Order audience is resolved from the Order relation itself: admin sees the full admin projection, the seller sees the seller projection when `order.sellerId === userId`, and the buyer sees the buyer projection when `order.buyerId === userId`. Cancelled Orders stay hidden from buyer and seller projections when historical contacts must remain private.
 - Public Socket.IO is anonymous but fenced: handshake origins are allow-listed from `CORS_ORIGIN`, public transports do not send credentials, joins are rate-limited per IP, public listing rooms are capped per socket, and socket-local room tracking is cleared on disconnect.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`; `SMTP_USERNAME` and `SMTP_PASSWORD` must be configured together and partially configured auth is rejected before transport creation.
@@ -60,4 +60,4 @@ The API currently assumes a single scheduler and Socket.IO instance. The pilot d
 
 ## Verification
 
-The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-19. Closed-pilot Chromium verification starts real API and Expo web servers against isolated `bidplace_e2e`, provisions deterministic users/data, writes email verification codes only to a test-only file configured by `TEST_EMAIL_FILE`, uses a controlled close fixture to assert the canonical Order route, and the dedicated `apps/mobile:test:e2e-fence` check verifies the destructive-reset guard. `packages/api-client` wraps the selected fetch implementation so browser-native `fetch` retains its receiver. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.
+The baseline migration and seed were reset from scratch on local PostgreSQL on 2026-07-19. Closed-pilot Chromium verification starts real API and Expo web servers against isolated `bidplace_e2e`, provisions deterministic users/data, writes email verification codes only to a test-only file configured by `TEST_EMAIL_FILE`, uses a controlled close fixture to assert the canonical Order route, and the dedicated `apps/mobile:test:e2e-fence` check verifies the destructive-reset guard. Wave 1 adds isolated PostgreSQL Order mutation fixtures and an executable seed contract; `order-handoff.spec.ts` verifies the existing seller route and persisted transition. `packages/api-client` wraps the selected fetch implementation so browser-native `fetch` retains its receiver. Current implementation status and remaining tests/UI work are owned by `11-PROJECT-STATUS.md`.

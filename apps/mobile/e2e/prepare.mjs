@@ -25,7 +25,9 @@ const adminClient = new PrismaClient({
 });
 
 try {
-  await adminClient.$executeRawUnsafe(`CREATE DATABASE "${guard.databaseName}"`);
+  await adminClient.$executeRawUnsafe(
+    `CREATE DATABASE "${guard.databaseName}"`,
+  );
 } catch (error) {
   if (
     !(
@@ -72,6 +74,7 @@ execFileSync(
       NODE_ENV: 'test',
       DATABASE_URL: databaseUrl,
       ALLOW_DESTRUCTIVE_DEMO_SEED: 'true',
+      APP_ENV: 'local',
       SEED_ADMIN_EMAIL: 'admin@bidplace.test',
       SEED_ADMIN_PASSWORD: 'password123',
     },

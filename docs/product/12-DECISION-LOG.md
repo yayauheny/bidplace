@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-07-18
+Последнее обновление: 2026-08-05
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -841,18 +841,34 @@ Public catalog включает `APPROVED` Product с `SCHEDULED`, `LIVE` или
 
 ---
 
-## DEC-060 — Founder decision required for local demo Bid fixtures
+## DEC-060 — Local/test-only demo Bid fixtures are allowed
 
 Date: 2026-07-31
-Status: Needs founder decision
+Status: Confirmed
 
-### Conflict
+### Decision
 
-The deterministic local seed creates one Bid for the seeded buyer on the live Listing and one Bid on the ended Listing so browser demos can show bid history and the ended result. `docs/product/09-TRUST-AND-AUCTION-INTEGRITY.md` currently prohibits platform seed bids.
+Explicitly local/test-only Bid and Order fixtures are allowed solely in isolated
+development and test databases. They support deterministic UI demos and E2E
+fixtures; they are not platform bids and must never reach production runtime or
+real auctions. E2E fixtures may dynamically create buyer/Bid/Order state in a
+disposable PostgreSQL database.
 
-### Required decision
+### Constraints
 
-Confirm whether explicitly local/test-only seeded buyer fixtures are allowed when they cannot reach production data or production runtime. Until confirmed, this remains a documented implementation risk rather than a product-policy exception.
+- The seed runs only for `NODE_ENV=development|test`, `APP_ENV=local` and an
+  explicit destructive-demo-seed flag.
+- Production-like profiles fail closed before any database write.
+- An executable PostgreSQL test verifies seeded price, bid count, winner and
+  Order consistency, and confirms that production-like denial leaves the
+  database unchanged.
+- Demo Bid fixtures are removed from the ordinary local/demo seed or replaced
+  with neutral data before the real MVP release.
+
+### Revises
+
+Clarifies the technical-fixture boundary of `DEC-011`; its prohibition on
+artificial bids remains unchanged for production and real auctions.
 
 ---
 

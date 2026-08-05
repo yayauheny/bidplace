@@ -76,26 +76,31 @@ export class OrdersService {
     return this.toResponse(order, audience);
   }
 
-  async markContacted(userId: string, publicId: string) {
-    return this.updateSellerStatus(userId, publicId, 'CONTACTED', [
+  async markContacted(userId: string, role: string, publicId: string) {
+    return this.updateSellerStatus(userId, role, publicId, 'CONTACTED', [
       'PENDING_CONTACT',
     ]);
   }
 
-  async markCompleted(userId: string, publicId: string) {
-    return this.updateSellerStatus(userId, publicId, 'COMPLETED', [
+  async markCompleted(userId: string, role: string, publicId: string) {
+    return this.updateSellerStatus(userId, role, publicId, 'COMPLETED', [
       'CONTACTED',
     ]);
   }
 
-  async markHandoffFailed(userId: string, publicId: string) {
-    return this.updateSellerStatus(userId, publicId, 'HANDOFF_FAILED', [
+  async markHandoffFailed(userId: string, role: string, publicId: string) {
+    return this.updateSellerStatus(userId, role, publicId, 'HANDOFF_FAILED', [
       'PENDING_CONTACT',
       'CONTACTED',
     ]);
   }
 
-  async listRankedBids(listingId: string) {
+  async listRankedBids(userId: string, role: string, listingId: string) {
+    void userId;
+    if (role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
       select: { id: true },
@@ -128,7 +133,16 @@ export class OrdersService {
     };
   }
 
-  async cancel(adminUserId: string, publicId: string, input: AdminOrderCancellationRequest) {
+  async cancel(
+    adminUserId: string,
+    role: string,
+    publicId: string,
+    input: AdminOrderCancellationRequest,
+  ) {
+    if (role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+
     await runSerializableTransaction(this.prisma, async (tx) => {
       const order = await tx.order.findUnique({
         where: { publicId },
@@ -139,7 +153,11 @@ export class OrdersService {
         throw new NotFoundException('Order not found');
       }
 
-      if (!['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'].includes(order.status)) {
+      if (
+        !['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'].includes(
+          order.status,
+        )
+      ) {
         throw new ConflictException('Order cannot be cancelled');
       }
 
@@ -171,114 +189,128 @@ export class OrdersService {
     return this.toResponse(updated, 'admin');
   }
 
-  async replace(adminUserId: string, publicId: string, input: AdminOrderReplacementRequest) {
-    const replacement = await runSerializableTransaction(this.prisma, async (tx) => {
-      const original = await tx.order.findUnique({
-        where: { publicId },
-        include: {
-          listing: {
-            include: {
-              product: {
-                include: {
-                  sellerProfile: true,
+  async replace(
+    adminUserId: string,
+    role: string,
+    publicId: string,
+    input: AdminOrderReplacementRequest,
+  ) {
+    if (role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    const replacement = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const original = await tx.order.findUnique({
+          where: { publicId },
+          include: {
+            listing: {
+              include: {
+                product: {
+                  include: {
+                    sellerProfile: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      if (!original || original.status !== 'CANCELLED') {
-        throw new ConflictException('Order is not eligible for replacement');
-      }
+        if (!original || original.status !== 'CANCELLED') {
+          throw new ConflictException('Order is not eligible for replacement');
+        }
 
-      if (input.bidId === original.sourceBidId) {
-        throw new ConflictException('Replacement bid must differ from the original source bid');
-      }
+        if (input.bidId === original.sourceBidId) {
+          throw new ConflictException(
+            'Replacement bid must differ from the original source bid',
+          );
+        }
 
-      const active = await tx.order.findFirst({
-        where: {
-          listingId: original.listingId,
-          status: { in: ['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'] },
-        },
-        select: { id: true },
-      });
+        const active = await tx.order.findFirst({
+          where: {
+            listingId: original.listingId,
+            status: { in: ['PENDING_CONTACT', 'CONTACTED', 'HANDOFF_FAILED'] },
+          },
+          select: { id: true },
+        });
 
-      if (active) {
-        throw new ConflictException('Listing already has an active Order');
-      }
+        if (active) {
+          throw new ConflictException('Listing already has an active Order');
+        }
 
-      const bid = await tx.bid.findFirst({
-        where: { id: input.bidId, listingId: original.listingId },
-      });
+        const bid = await tx.bid.findFirst({
+          where: { id: input.bidId, listingId: original.listingId },
+        });
 
-      if (!bid) {
-        throw new NotFoundException('Bid not found for Listing');
-      }
+        if (!bid) {
+          throw new NotFoundException('Bid not found for Listing');
+        }
 
-      const buyer = await tx.user.findUnique({
-        where: { id: bid.bidderUserId },
-        select: { email: true },
-      });
+        const buyer = await tx.user.findUnique({
+          where: { id: bid.bidderUserId },
+          select: { email: true },
+        });
 
-      if (!buyer) {
-        throw new NotFoundException('Buyer not found');
-      }
+        if (!buyer) {
+          throw new NotFoundException('Buyer not found');
+        }
 
-      const sellerProfile = original.listing.product.sellerProfile;
-      if (
-        !sellerProfile.handoffContactType ||
-        !sellerProfile.handoffContactValue
-      ) {
-        throw new ConflictException('Seller handoff contact is missing');
-      }
+        const sellerProfile = original.listing.product.sellerProfile;
+        if (
+          !sellerProfile.handoffContactType ||
+          !sellerProfile.handoffContactValue
+        ) {
+          throw new ConflictException('Seller handoff contact is missing');
+        }
 
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        try {
-          const created = await tx.order.create({
-            data: {
-              publicId: this.publicIds.generate(),
-              listingId: original.listingId,
-              sellerId: original.sellerId,
-              buyerId: bid.bidderUserId,
-              sourceBidId: bid.id,
-              finalAmount: bid.amount,
-              contactDueAt: new Date(),
-              ...createOrderSnapshot({
-                sellerHandoffType: sellerProfile.handoffContactType,
-                sellerHandoffValue: sellerProfile.handoffContactValue,
-                buyerEmailAtClose: buyer.email,
-                handoffInitiator: sellerProfile.handoffInitiator,
-              }),
-            },
-          });
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          try {
+            const created = await tx.order.create({
+              data: {
+                publicId: this.publicIds.generate(),
+                listingId: original.listingId,
+                sellerId: original.sellerId,
+                buyerId: bid.bidderUserId,
+                sourceBidId: bid.id,
+                finalAmount: bid.amount,
+                contactDueAt: new Date(),
+                ...createOrderSnapshot({
+                  sellerHandoffType: sellerProfile.handoffContactType,
+                  sellerHandoffValue: sellerProfile.handoffContactValue,
+                  buyerEmailAtClose: buyer.email,
+                  handoffInitiator: sellerProfile.handoffInitiator,
+                }),
+              },
+            });
 
-          await this.recordAudit(tx, {
-            actorUserId: adminUserId,
-            targetType: 'ORDER',
-            targetId: original.id,
-            oldStatus: 'CANCELLED',
-            newStatus: 'REPLACED',
-            reason: 'Manual replacement selected by admin',
-          });
+            await this.recordAudit(tx, {
+              actorUserId: adminUserId,
+              targetType: 'ORDER',
+              targetId: original.id,
+              oldStatus: 'CANCELLED',
+              newStatus: 'REPLACED',
+              reason: `Manual replacement selected by admin after ${original.cancellationReason ?? 'cancelled Order'}: originalBid=${original.sourceBidId}; replacementBid=${bid.id}`,
+            });
 
-          return created;
-        } catch (error) {
-          if (
-            !(
-              typeof error === 'object' &&
-              error !== null &&
-              'code' in error &&
-              error.code === 'P2002'
-            )
-          ) {
-            throw error;
+            return created;
+          } catch (error) {
+            if (
+              !(
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                error.code === 'P2002'
+              )
+            ) {
+              throw error;
+            }
           }
         }
-      }
 
-      throw new ConflictException('Could not assign Order number');
-    });
+        throw new ConflictException('Could not assign Order number');
+      },
+    );
 
     const response = await this.findWithProduct(replacement.publicId);
     if (!response) {
@@ -290,10 +322,15 @@ export class OrdersService {
 
   private async updateSellerStatus(
     userId: string,
+    role: string,
     publicId: string,
     nextStatus: 'CONTACTED' | 'COMPLETED' | 'HANDOFF_FAILED',
     allowedStatuses: Array<'PENDING_CONTACT' | 'CONTACTED'>,
   ) {
+    if (role !== 'user') {
+      throw new ForbiddenException('Seller action requires a user account');
+    }
+
     const result = await runSerializableTransaction(this.prisma, async (tx) => {
       const order = await tx.order.findUnique({
         where: { publicId },
@@ -307,8 +344,14 @@ export class OrdersService {
         throw new ForbiddenException('Order is not owned by seller');
       }
 
-      if (!allowedStatuses.includes(order.status as 'PENDING_CONTACT' | 'CONTACTED')) {
-        throw new ConflictException('Order cannot transition to the requested status');
+      if (
+        !allowedStatuses.includes(
+          order.status as 'PENDING_CONTACT' | 'CONTACTED',
+        )
+      ) {
+        throw new ConflictException(
+          'Order cannot transition to the requested status',
+        );
       }
 
       const updated = await tx.order.update({

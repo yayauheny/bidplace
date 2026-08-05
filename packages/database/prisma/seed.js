@@ -4,12 +4,16 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const argon2 = require('argon2');
 
-if (
-  process.env.NODE_ENV === 'production' ||
-  process.env.ALLOW_DESTRUCTIVE_DEMO_SEED !== 'true'
-) {
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+const appEnv = process.env.APP_ENV ?? 'local';
+const demoSeedAllowed =
+  ['development', 'test'].includes(nodeEnv) &&
+  appEnv === 'local' &&
+  process.env.ALLOW_DESTRUCTIVE_DEMO_SEED === 'true';
+
+if (!demoSeedAllowed) {
   throw new Error(
-    'Refusing to run destructive seed in production or without ALLOW_DESTRUCTIVE_DEMO_SEED=true',
+    'Refusing demo-bid seed outside an explicitly allowed local/test profile (NODE_ENV=development|test, APP_ENV=local, ALLOW_DESTRUCTIVE_DEMO_SEED=true)',
   );
 }
 
@@ -19,7 +23,11 @@ const seedPhotoBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0nM9sAAAAASUVORK5CYII=',
   'base64',
 );
-const productImageFixturesDirectory = join(__dirname, 'fixtures', 'product-images');
+const productImageFixturesDirectory = join(
+  __dirname,
+  'fixtures',
+  'product-images',
+);
 
 function requiredEnvironment(name) {
   const value = process.env[name];
@@ -168,10 +176,13 @@ async function main() {
       fullName: 'Анна Морозова',
       country: 'BY',
       socialLink: 'https://example.com/anna-morozova',
-      shortDescription: 'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
+      shortDescription:
+        'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: seedPhotoBuffer.byteLength,
-      profilePhotoChecksum: createHash('sha256').update(seedPhotoBuffer).digest('hex'),
+      profilePhotoChecksum: createHash('sha256')
+        .update(seedPhotoBuffer)
+        .digest('hex'),
       profilePhotoData: seedPhotoBuffer,
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@anna_morozova',
@@ -191,7 +202,9 @@ async function main() {
       shortDescription: 'Профиль продавца для проверки очереди модерации.',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: seedPhotoBuffer.byteLength,
-      profilePhotoChecksum: createHash('sha256').update(seedPhotoBuffer).digest('hex'),
+      profilePhotoChecksum: createHash('sha256')
+        .update(seedPhotoBuffer)
+        .digest('hex'),
       profilePhotoData: seedPhotoBuffer,
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@pending_seller',
@@ -218,7 +231,8 @@ async function main() {
       provenance:
         'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
       city: 'Минск',
-      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+      deliveryInfo:
+        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
       imageFileName: 'painted-planter.png',
     }),
@@ -238,7 +252,8 @@ async function main() {
       provenance:
         'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
       city: 'Минск',
-      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+      deliveryInfo:
+        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
       imageFileName: 'ceramic-brush-holder.png',
     }),
@@ -258,7 +273,8 @@ async function main() {
       provenance:
         'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
       city: 'Минск',
-      deliveryInfo: 'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+      deliveryInfo:
+        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
       publishedAt: now,
       imageFileName: 'handmade-mug.png',
     }),

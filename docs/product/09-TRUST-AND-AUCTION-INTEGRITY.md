@@ -1,8 +1,8 @@
 # bidplace — доверие и честность аукциона
 
-Последнее обновление: 2026-07-23
+Последнее обновление: 2026-08-05
 Статус: Confirmed  
-Связанные решения: `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`, `DEC-039`, `DEC-045`, `DEC-047`, `DEC-050`, `DEC-051`, `DEC-054`
+Связанные решения: `DEC-010`, `DEC-011`, `DEC-018`, `DEC-019`, `DEC-039`, `DEC-045`, `DEC-047`, `DEC-050`, `DEC-051`, `DEC-054`, `DEC-060`
 
 ## 1. Роль доверия
 
@@ -59,12 +59,19 @@ Evidence:
 - seller bids;
 - employee bids;
 - друзья по просьбе;
-- platform seed bids;
+- platform or demo bids in production runtime;
 - linked accounts;
 - price raising without intent;
 - отмена fake winner.
 
 Статус: Rejected, не пересматривается.
+
+Подтверждённое исключение для test/local fixtures (`DEC-060`) не является
+исключением для platform bids: demo Bids могут существовать только в
+изолированной local/test database при явно разрешённом non-production seed
+profile. Они не являются platform bids, не попадают в production runtime или
+production seed и должны быть удалены из обычного demo seed либо заменены
+нейтральными данными до реального MVP release.
 
 Альтернативы:
 
@@ -305,3 +312,13 @@ Fix without changing bid facts.
 ## Implementation verification — 2026-07-19
 
 Task A closes the closed-pilot gate with unit/integration evidence for bid idempotency, soft close, close-vs-Bid concurrency and Order privacy, plus Chromium coverage for verified-phone bidding, outsider Order denial and ordinary-user admin denial. Production SMS delivery, multi-instance scheduler coordination and broader browser/device rehearsal remain future operational work.
+
+## Wave 1 verification — 2026-08-05
+
+PostgreSQL integration tests cover seller handoff transitions, terminal repeats,
+admin cancellation, ranked manual replacement, role denial, immutable contact
+snapshots, privacy projections, append-only audit events and the one-active-
+Order invariant. The existing seller Order route has a real Chromium flow that
+marks an Order contacted and verifies the persisted API state. The executable
+seed contract validates local/test Bid and Order invariants and rejects
+production-like profiles before any write.

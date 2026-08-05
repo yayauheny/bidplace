@@ -63,7 +63,9 @@ export class AdminController {
         where: {
           id: { in: ids },
           products: {
-            some: { listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } } },
+            some: {
+              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+            },
           },
         },
         select: { id: true },
@@ -155,25 +157,31 @@ export class AdminController {
       parseBody(adminProductStatusUpdateRequestSchema, body),
     );
 
-    return toProductResponse(await this.prisma.product.findUniqueOrThrow({
-      where: { id: product.id },
-      select: productSelect,
-    }));
+    return toProductResponse(
+      await this.prisma.product.findUniqueOrThrow({
+        where: { id: product.id },
+        select: productSelect,
+      }),
+    );
   }
 
   @Get('listings/:listingId/bids')
-  listRankedBids(@Param('listingId') listingId: string) {
-    return this.orders.listRankedBids(listingId);
+  listRankedBids(
+    @CurrentUser() auth: { sub: string; role: string },
+    @Param('listingId') listingId: string,
+  ) {
+    return this.orders.listRankedBids(auth.sub, auth.role, listingId);
   }
 
   @Post('orders/:publicId/cancel')
   cancelOrder(
-    @CurrentUser() auth: { sub: string },
+    @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
     @Body() body: unknown,
   ) {
     return this.orders.cancel(
       auth.sub,
+      auth.role,
       publicId,
       parseBody(adminOrderCancellationRequestSchema, body),
     );
@@ -181,12 +189,13 @@ export class AdminController {
 
   @Post('orders/:publicId/replacement')
   replaceOrder(
-    @CurrentUser() auth: { sub: string },
+    @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
     @Body() body: unknown,
   ) {
     return this.orders.replace(
       auth.sub,
+      auth.role,
       publicId,
       parseBody(adminOrderReplacementRequestSchema, body),
     );

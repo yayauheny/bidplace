@@ -21,7 +21,7 @@ export class OrdersController {
     @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
   ) {
-    return this.orders.markContacted(auth.sub, publicId);
+    return this.orders.markContacted(auth.sub, auth.role, publicId);
   }
 
   @Post(':publicId/completed')
@@ -29,7 +29,7 @@ export class OrdersController {
     @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
   ) {
-    return this.orders.markCompleted(auth.sub, publicId);
+    return this.orders.markCompleted(auth.sub, auth.role, publicId);
   }
 
   @Post(':publicId/handoff-failed')
@@ -37,6 +37,6 @@ export class OrdersController {
     @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
   ) {
-    return this.orders.markHandoffFailed(auth.sub, publicId);
+    return this.orders.markHandoffFailed(auth.sub, auth.role, publicId);
   }
 }
