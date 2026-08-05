@@ -57,3 +57,18 @@ Status: Implemented
 - No production defect was found. The fixture initially used an invalid
   underscore-containing slug for `CHANGES_REQUESTED`; the fixture now applies
   the existing slug normalization rule.
+
+## Block B — seller application and moderation audit
+
+Status: Implemented
+
+- `apps/api/test/integration/moderation.integration.spec.ts`: 3/3
+  PostgreSQL-backed HTTP tests passed.
+- A real ordinary-user multipart application persists normalized profile data
+  and `PENDING_REVIEW` state without an audit event for the application itself.
+- Admin approval, `CHANGES_REQUESTED`, re-approval and suspension persist the
+  actor, old/new status and required reason with exactly one append-only
+  `AuditEvent` per accepted transition.
+- Missing reasons, repeated transitions and scheduled-listing moderation locks
+  return existing errors and leave all persisted rows and audit state unchanged.
+- No product rule, status machine or API contract was changed.
