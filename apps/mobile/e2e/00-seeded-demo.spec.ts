@@ -65,6 +65,18 @@ test('demo seed exposes three public products and real media', async ({
       page.getByText(`Изображение недоступно: ${item.product.title}`),
     ).toHaveCount(0);
   }
+
+  await page.goto('/seller/anna-morozova');
+  const authorPhoto = page.locator('img[alt="Фото автора Анна Морозова"]');
+  await expect(authorPhoto).toBeVisible();
+  await expect
+    .poll(() =>
+      authorPhoto.evaluate((element) => ({
+        width: (element as HTMLImageElement).naturalWidth,
+        height: (element as HTMLImageElement).naturalHeight,
+      })),
+    )
+    .toEqual({ width: 740, height: 493 });
 });
 
 test('seeded buyer sees bid history, empty state, retry and ended result', async ({

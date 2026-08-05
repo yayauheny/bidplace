@@ -23,6 +23,9 @@ const seedPhotoBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0nM9sAAAAASUVORK5CYII=',
   'base64',
 );
+const annaMorozovaPhotoBuffer = readFileSync(
+  join(__dirname, 'fixtures', 'seller-profile', 'anna-morozova.png'),
+);
 const productImageFixturesDirectory = join(
   __dirname,
   'fixtures',
@@ -179,11 +182,11 @@ async function main() {
       shortDescription:
         'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
       profilePhotoMimeType: 'image/png',
-      profilePhotoByteLength: seedPhotoBuffer.byteLength,
+      profilePhotoByteLength: annaMorozovaPhotoBuffer.byteLength,
       profilePhotoChecksum: createHash('sha256')
-        .update(seedPhotoBuffer)
+        .update(annaMorozovaPhotoBuffer)
         .digest('hex'),
-      profilePhotoData: seedPhotoBuffer,
+      profilePhotoData: annaMorozovaPhotoBuffer,
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@anna_morozova',
       handoffInitiator: 'BUYER_CONTACTS_SELLER',

@@ -3,6 +3,10 @@
 Последнее обновление: 2026-08-05
 Статус: Technical baseline is Partial; Wave 1 trust-critical Order coverage, Wave 2 auction-integrity evidence and Wave 3 core permission/moderation/lifecycle evidence are Implemented, while founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
+## Test/demo author media — 2026-08-05
+
+- `Implemented`: the local/test-only seed now uses the supplied 740×493 PNG for the approved demo author `Анна Морозова` (`anna-morozova`); the existing seed Chromium test verifies that the public author photo loads at its natural dimensions. Pending moderation fixtures continue using the technical 1×1 placeholder.
+
 ## Wave 1 — trust-critical Order flows and test-only seed boundary — 2026-08-05
 
 - `Implemented`: `apps/api/src/orders/orders.service.ts` and the existing controllers now enforce actor roles at the service boundary. Seller `contacted`, `completed` and `handoff-failed` transitions retain the existing statuses and payloads, while terminal repeats are rejected without a second audit event.
