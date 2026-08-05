@@ -109,7 +109,7 @@ export class SellersController {
   async getPhoto(
     @Param('slug') slug: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
-    @Res({ passthrough: true })
+    @Res()
     response: {
       setHeader(name: string, value: string): void;
       type(value: string): void;

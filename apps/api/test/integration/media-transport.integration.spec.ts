@@ -1,0 +1,75 @@
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import type { PrismaClient } from '@bidplace/database';
+
+import {
+  createIntegrationDatabaseContext,
+  type IntegrationDatabaseContext,
+} from './test-database';
+import {
+  createPermissionFixture,
+  permissionImage,
+  resetPermissionFixture,
+} from './permission-fixtures';
+import {
+  createHttpTestApp,
+  HttpTestClient,
+  type HttpTestApp,
+} from './http-test-app';
+
+let database: IntegrationDatabaseContext;
+let http: HttpTestApp;
+let prisma: PrismaClient;
+
+beforeAll(async () => {
+  database = await createIntegrationDatabaseContext();
+  prisma = database.prisma;
+  http = await createHttpTestApp(database.databaseUrl);
+});
+
+afterEach(async () => resetPermissionFixture(prisma));
+
+afterAll(async () => {
+  await http?.close();
+  await database?.cleanup();
+});
+
+async function expectImageResponse(response: Response): Promise<void> {
+  expect(response.status).toBe(200);
+  expect(response.headers.get('content-type')).toMatch(/^image\/png/);
+  expect(Buffer.from(await response.arrayBuffer())).toEqual(permissionImage);
+}
+
+describe('public media transport over HTTP and PostgreSQL', () => {
+  it('serves guest ProductImage and SellerProfile photo responses without breaking the next API request', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const seller = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true },
+    });
+    const productImage = await prisma.productImage.findFirstOrThrow({
+      where: { productId: fixture.approvedProductId },
+      select: { id: true },
+    });
+
+    await prisma.listing.update({
+      where: { id: fixture.approvedListingId },
+      data: { status: 'SCHEDULED' },
+    });
+
+    const guest = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.3.2',
+    );
+
+    await expectImageResponse(await guest.get(`/images/${productImage.id}`));
+    expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
+      200,
+    );
+
+    await expectImageResponse(await guest.get(`/sellers/${seller.slug}/photo`));
+    expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
+      200,
+    );
+  });
+});

@@ -63,8 +63,8 @@ export function AppDialog({
             justifyContent: 'center',
             paddingHorizontal: viewportGutter,
             zIndex: modernTokens.layer.modal,
+            pointerEvents: 'box-none',
           }}
-          pointerEvents="box-none"
         >
           <Dialog.Content
             asChild

@@ -85,7 +85,7 @@ export class ImagesController {
   async get(
     @Param('id') id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
-    @Res({ passthrough: true })
+    @Res()
     response: {
       setHeader(name: string, value: string): void;
       type(value: string): void;

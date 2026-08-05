@@ -31,6 +31,13 @@
 - `Implemented`: `apps/api/test/integration/lifecycle-close.integration.spec.ts` proves no-bid close without winner/Order, canonical equal-amount/equal-timestamp tie ordering, aligned persisted Order/realtime event state and idempotent repeated close.
 - `Verified`: API typecheck/lint, unit 136/136, PostgreSQL integration 37/37, mobile typecheck/lint, relevant Chromium Wave 3 5/5, full Chromium E2E 30/30 and `git diff --check` passed on 2026-08-05. No production product rule, status machine, API contract, UI or seed behavior changed.
 
+## Runtime media and moderation hardening — 2026-08-05
+
+- `Implemented`: `apps/api/src/images/images.controller.ts` and `apps/api/src/sellers/sellers.controller.ts` use terminal `@Res()` handling for manual binary responses. `apps/api/test/integration/media-transport.integration.spec.ts` requests an approved Product image and public SellerProfile photo anonymously, verifies `200`, `image/png` and exact bytes, then makes another API request after each response to cover the server lifecycle after media delivery.
+- `Implemented`: `apps/mobile/src/features/admin/admin-moderation-screen.tsx` disables Product approval until the related SellerProfile is `APPROVED`, shows `Сначала одобрите автора`, refreshes both moderation queues after SellerProfile approval, and reports Product mutation errors according to the actual action. A new action clears the previous error state.
+- `Implemented`: `apps/mobile/src/components/modern-ui/AppDialog.tsx` expresses `pointerEvents` through the style object, removing the web warning without changing dialog behavior.
+- `Verified`: API unit 136/136, PostgreSQL integration 38/38, mobile typecheck/lint, and the relevant Chromium moderation scenario 5/5 passed on 2026-08-05. No product rule, API contract, seed behavior or architecture boundary changed.
+
 ## Wave A — structural responsive fixes — 2026-08-02
 
 - `Implemented`: A1 centralizes the confirmed responsive contracts in `packages/design-tokens/src/modern.ts`: desktop shell `1025`, catalog columns `900`/`1440`, rail width `72`, product portrait ratio `4/5` and the existing product detail measure `1180`. `AppShell`, `AppHeader`, Catalog and Product consumers use these shared values; `catalog-layout.spec.ts` covers 899/900/1024/1025/1439/1440 boundaries.

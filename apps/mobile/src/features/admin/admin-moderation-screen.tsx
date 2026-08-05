@@ -45,6 +45,7 @@ type Confirmation =
   | { kind: 'product-changes'; id: string }
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
+type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
 
 export function AdminModerationScreen() {
   const api = useApiClient();
@@ -68,10 +69,8 @@ export function AdminModerationScreen() {
   } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [moderationReason, setModerationReason] = useState('');
-  const openConfirmation = (next: Confirmation) => {
-    setModerationReason('');
-    setConfirmation(next);
-  };
+  const [productAction, setProductAction] =
+    useState<ProductModerationAction | null>(null);
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: ['admin', 'seller-profiles'],
@@ -90,9 +89,26 @@ export function AdminModerationScreen() {
     }) => api.admin.updateSellerStatus(id, { status, reason }),
     onSuccess: () => {
       refresh();
+      setProductAction(null);
       setConfirmation(null);
     },
   });
+  const openConfirmation = (next: Confirmation) => {
+    sellerStatus.reset();
+    productStatus.reset();
+    setProductAction(null);
+    setModerationReason('');
+    setConfirmation(next);
+  };
+  const mutateProductStatus = (input: {
+    id: string;
+    status: ProductModerationAction;
+    reason?: string;
+  }) => {
+    productStatus.reset();
+    setProductAction(input.status);
+    productStatus.mutate(input);
+  };
   const productStatus = useMutation({
     mutationFn: ({
       id,
@@ -167,7 +183,7 @@ export function AdminModerationScreen() {
         reason: moderationReason.trim(),
       });
     if (confirmation.kind === 'product-changes')
-      productStatus.mutate({
+      mutateProductStatus({
         id: confirmation.id,
         status: 'CHANGES_REQUESTED',
         reason: moderationReason.trim(),
@@ -213,169 +229,192 @@ export function AdminModerationScreen() {
       />
       <View
         style={{
-          flexDirection: width >= modernTokens.breakpoint.desktopShell ? 'row' : 'column',
+          flexDirection:
+            width >= modernTokens.breakpoint.desktopShell ? 'row' : 'column',
           gap: modernTokens.space.x5,
           alignItems: 'flex-start',
         }}
       >
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
           <FormSection title="Продавцы">
-        {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
-          <ModerationCard
-            key={seller.id}
-            title={seller.fullName}
-            status={presentEnum(
-              seller.status,
-              sellerStatusLabels,
-              'Неизвестный статус продавца',
-            )}
-          >
-            <AppText role="bodySmall" tone="secondary">
-              {presentEnum(
-                seller.sellerType,
-                sellerTypeLabels,
-                'Неизвестный тип продавца',
-              )}{' '}
-              · {seller.slug} · {seller.country}
-            </AppText>
-            <AppText role="bodySmall" tone="secondary">
-              {seller.shortDescription}
-            </AppText>
-            {seller.lastModerationReason ? (
+            {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
+              <ModerationCard
+                key={seller.id}
+                title={seller.fullName}
+                status={presentEnum(
+                  seller.status,
+                  sellerStatusLabels,
+                  'Неизвестный статус продавца',
+                )}
+              >
+                <AppText role="bodySmall" tone="secondary">
+                  {presentEnum(
+                    seller.sellerType,
+                    sellerTypeLabels,
+                    'Неизвестный тип продавца',
+                  )}{' '}
+                  · {seller.slug} · {seller.country}
+                </AppText>
+                <AppText role="bodySmall" tone="secondary">
+                  {seller.shortDescription}
+                </AppText>
+                {seller.lastModerationReason ? (
+                  <AppText role="bodySmall" tone="secondary">
+                    Последняя причина: {seller.lastModerationReason}
+                  </AppText>
+                ) : null}
+                {seller.status === 'PENDING_REVIEW' ? (
+                  <PrimaryButton
+                    compact
+                    label="Одобрить"
+                    loading={sellerStatus.isPending}
+                    onPress={() =>
+                      sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
+                    }
+                  />
+                ) : null}
+                <DestructiveButton
+                  compact
+                  disabled={
+                    seller.status === 'SUSPENDED' || seller.hasBlockingListing
+                  }
+                  label="Приостановить"
+                  loading={sellerStatus.isPending}
+                  onPress={() =>
+                    openConfirmation({ kind: 'seller-suspend', id: seller.id })
+                  }
+                />
+                {seller.hasBlockingListing ? (
+                  <AppText role="bodySmall" tone="secondary">
+                    Запланированный или активный лот: приостановка продавца
+                    недоступна до завершения торгов.
+                  </AppText>
+                ) : null}
+              </ModerationCard>
+            ))}
+            {sellers.data.sellerProfiles.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
-                Последняя причина: {seller.lastModerationReason}
+                Нет продавцов
               </AppText>
             ) : null}
-            {seller.status === 'PENDING_REVIEW' ? (
-              <PrimaryButton
-                compact
-                label="Одобрить"
-                loading={sellerStatus.isPending}
-                onPress={() =>
-                  sellerStatus.mutate({ id: seller.id, status: 'APPROVED' })
-                }
-              />
-            ) : null}
-            <DestructiveButton
-              compact
-              disabled={
-                seller.status === 'SUSPENDED' || seller.hasBlockingListing
-              }
-              label="Приостановить"
-              loading={sellerStatus.isPending}
-              onPress={() =>
-                openConfirmation({ kind: 'seller-suspend', id: seller.id })
-              }
-            />
-            {seller.hasBlockingListing ? (
-              <AppText role="bodySmall" tone="secondary">
-                Запланированный или активный лот: приостановка продавца
-                недоступна до завершения торгов.
+            {sellerStatus.isError ? (
+              <AppText role="bodySmall" tone="danger">
+                Не удалось приостановить продавца. Проверьте причину и состояние
+                активных торгов.
               </AppText>
             ) : null}
-          </ModerationCard>
-        ))}
-        {sellers.data.sellerProfiles.length === 0 ? (
-          <AppText role="bodySmall" tone="secondary">
-            Нет продавцов
-          </AppText>
-        ) : null}
-        {sellerStatus.isError ? (
-          <AppText role="bodySmall" tone="danger">
-            Не удалось приостановить продавца. Проверьте причину и состояние
-            активных торгов.
-          </AppText>
-        ) : null}
           </FormSection>
         </View>
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
           <FormSection title="Предметы">
-        {products.data.products.map((product: AdminProduct) => (
-          <ModerationCard
-            key={product.id}
-            title={product.title ?? 'Без названия'}
-            status={presentEnum(
-              product.status,
-              productStatusLabels,
-              'Неизвестный статус предмета',
-            )}
-          >
-            {product.images[0] ? (
-              <Image
-                source={{ uri: getApiAssetUrl(product.images[0].url) }}
-                contentFit="contain"
-                accessibilityLabel={`Предмет: ${product.title ?? 'Без названия'}`}
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: modernTokens.radius.image,
-                }}
-              />
-            ) : null}
-            <Link
-              href={
-                {
-                  pathname: '/seller/[slug]',
-                  params: { slug: product.sellerProfile.slug },
-                } as Href
-              }
-              asChild
-            >
-              <TextButton
-                label={`Автор: ${product.sellerProfile.fullName}`}
-                onPress={() => undefined}
-              />
-            </Link>
-            <AppText role="bodySmall" tone="secondary">
-              {product.city ?? 'Город не указан'} ·{' '}
-              {product.story ?? 'Описание не указано'}
-            </AppText>
-            {product.lastModerationReason ? (
+            {products.data.products.map((product: AdminProduct) => {
+              const productSellerStatus = sellers.data.sellerProfiles.find(
+                (seller) => seller.slug === product.sellerProfile.slug,
+              )?.status;
+              const productSellerApproved = productSellerStatus === 'APPROVED';
+
+              return (
+                <ModerationCard
+                  key={product.id}
+                  title={product.title ?? 'Без названия'}
+                  status={presentEnum(
+                    product.status,
+                    productStatusLabels,
+                    'Неизвестный статус предмета',
+                  )}
+                >
+                  {product.images[0] ? (
+                    <Image
+                      source={{ uri: getApiAssetUrl(product.images[0].url) }}
+                      contentFit="contain"
+                      accessibilityLabel={`Предмет: ${product.title ?? 'Без названия'}`}
+                      style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: modernTokens.radius.image,
+                      }}
+                    />
+                  ) : null}
+                  <Link
+                    href={
+                      {
+                        pathname: '/seller/[slug]',
+                        params: { slug: product.sellerProfile.slug },
+                      } as Href
+                    }
+                    asChild
+                  >
+                    <TextButton
+                      label={`Автор: ${product.sellerProfile.fullName}`}
+                      onPress={() => undefined}
+                    />
+                  </Link>
+                  <AppText role="bodySmall" tone="secondary">
+                    {product.city ?? 'Город не указан'} ·{' '}
+                    {product.story ?? 'Описание не указано'}
+                  </AppText>
+                  {product.lastModerationReason ? (
+                    <AppText role="bodySmall" tone="secondary">
+                      Последняя причина: {product.lastModerationReason}
+                    </AppText>
+                  ) : null}
+                  {product.hasBlockingListing ? (
+                    <AppText role="bodySmall" tone="secondary">
+                      Запланированный или активный лот: обычное снятие с
+                      публикации недоступно.
+                    </AppText>
+                  ) : null}
+                  {product.status === 'PENDING_REVIEW' ? (
+                    <PrimaryButton
+                      compact
+                      label="Одобрить"
+                      loading={productStatus.isPending}
+                      disabled={!productSellerApproved}
+                      onPress={() =>
+                        mutateProductStatus({
+                          id: product.id,
+                          status: 'APPROVED',
+                        })
+                      }
+                    />
+                  ) : null}
+                  {product.status === 'PENDING_REVIEW' &&
+                  !productSellerApproved ? (
+                    <AppText role="bodySmall" tone="secondary">
+                      Сначала одобрите автора.
+                    </AppText>
+                  ) : null}
+                  <DestructiveButton
+                    compact
+                    disabled={
+                      !['APPROVED', 'PENDING_REVIEW'].includes(
+                        product.status,
+                      ) || product.hasBlockingListing
+                    }
+                    label="Запросить изменения"
+                    loading={productStatus.isPending}
+                    onPress={() =>
+                      openConfirmation({
+                        kind: 'product-changes',
+                        id: product.id,
+                      })
+                    }
+                  />
+                </ModerationCard>
+              );
+            })}
+            {products.data.products.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
-                Последняя причина: {product.lastModerationReason}
+                Нет предметов
               </AppText>
             ) : null}
-            {product.hasBlockingListing ? (
-              <AppText role="bodySmall" tone="secondary">
-                Запланированный или активный лот: обычное снятие с публикации
-                недоступно.
+            {productStatus.isError ? (
+              <AppText role="bodySmall" tone="danger">
+                {productAction === 'APPROVED'
+                  ? 'Не удалось одобрить предмет. Проверьте, одобрен ли автор и заполнены ли обязательные поля.'
+                  : 'Не удалось запросить изменения по предмету. Проверьте причину и состояние активных торгов.'}
               </AppText>
             ) : null}
-            {product.status === 'PENDING_REVIEW' ? (
-              <PrimaryButton
-                compact
-                label="Одобрить"
-                loading={productStatus.isPending}
-                onPress={() =>
-                  productStatus.mutate({ id: product.id, status: 'APPROVED' })
-                }
-              />
-            ) : null}
-            <DestructiveButton
-              compact
-              disabled={
-                !['APPROVED', 'PENDING_REVIEW'].includes(product.status) ||
-                product.hasBlockingListing
-              }
-              label="Запросить изменения"
-              loading={productStatus.isPending}
-              onPress={() =>
-                openConfirmation({ kind: 'product-changes', id: product.id })
-              }
-            />
-          </ModerationCard>
-        ))}
-        {products.data.products.length === 0 ? (
-          <AppText role="bodySmall" tone="secondary">
-            Нет предметов
-          </AppText>
-        ) : null}
-        {productStatus.isError ? (
-          <AppText role="bodySmall" tone="danger">
-            Не удалось запросить изменения по предмету. Проверьте причину и
-            состояние активных торгов.
-          </AppText>
-        ) : null}
           </FormSection>
         </View>
       </View>
@@ -395,7 +434,8 @@ export function AdminModerationScreen() {
           autoCapitalize="none"
         />
         <AppText role="bodySmall" tone="secondary">
-          Причина отмены: {presentEnum(
+          Причина отмены:{' '}
+          {presentEnum(
             cancelReason,
             cancellationReasonLabels,
             'Неизвестная причина отмены',

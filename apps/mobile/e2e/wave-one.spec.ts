@@ -116,6 +116,11 @@ test('admin reviews and approves pending seller and product', async ({
       .first()
       .locator('..');
 
+    await expect(
+      productCard.getByRole('button', { name: 'Одобрить' }),
+    ).toBeDisabled();
+    await expect(productCard).toContainText('Сначала одобрите автора.');
+
     await sellerCard.getByRole('button', { name: 'Одобрить' }).click();
     await expect
       .poll(async () => {
@@ -128,6 +133,30 @@ test('admin reviews and approves pending seller and product', async ({
         )?.status;
       })
       .toBe('APPROVED');
+
+    await expect(
+      productCard.getByRole('button', { name: 'Одобрить' }),
+    ).toBeEnabled();
+
+    await page.route(
+      `**/api/admin/products/${fixture.productId}/status`,
+      async (route) =>
+        route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            statusCode: 409,
+            message: 'Product moderation failed',
+          }),
+        }),
+    );
+    await productCard.getByRole('button', { name: 'Одобрить' }).click();
+    await expect(
+      page.getByText(
+        'Не удалось одобрить предмет. Проверьте, одобрен ли автор и заполнены ли обязательные поля.',
+      ),
+    ).toBeVisible();
+    await page.unroute(`**/api/admin/products/${fixture.productId}/status`);
 
     await productCard.getByRole('button', { name: 'Одобрить' }).click();
     await expect
