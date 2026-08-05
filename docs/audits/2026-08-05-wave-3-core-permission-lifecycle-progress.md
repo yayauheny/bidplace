@@ -56,6 +56,10 @@ Status: Implemented
   and SellerProfile writes, including Listing `PATCH` and ProductImage
   `DELETE`. Every denied mutation compares persisted Product, Listing,
   ProductImage, SellerProfile and AuditEvent state before and after.
+- Pending, `CHANGES_REQUESTED` and suspended sellers now each target their own
+  fixture Listing and own ProductImage for the denied Listing `PATCH` and image
+  `DELETE` cases, proving the seller status gate rather than an ownership
+  rejection.
 - No production defect was found. The fixture initially used an invalid
   underscore-containing slug for `CHANGES_REQUESTED`; the fixture now applies
   the existing slug normalization rule.
@@ -123,6 +127,7 @@ All required Wave 3 checks passed on 2026-08-05:
 - mobile typecheck — passed;
 - mobile lint — passed;
 - relevant Chromium Wave 3 scenarios (`wave-one.spec.ts`) — 5/5 passed;
+- full Chromium E2E suite — 30/30 passed;
 - `git diff --check` — passed;
 - branch: `feature/core-permission-lifecycle-coverage`.
 

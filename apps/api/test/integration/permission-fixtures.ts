@@ -21,6 +21,8 @@ export type PermissionFixture = {
       password: string;
       profileId: string;
       productId: string;
+      imageId: string;
+      listingId: string;
     }
   >;
   categoryId: string;
@@ -87,11 +89,38 @@ async function createSeller(
       title: `${status} product`,
       story: 'Wave 3 permission fixture',
       status: 'DRAFT',
+      images: {
+        create: {
+          position: 0,
+          mimeType: 'image/png',
+          byteLength: permissionImage.byteLength,
+          data: permissionImage,
+          checksum: `${status.length}`.repeat(64).slice(0, 64),
+        },
+      },
+    },
+    select: { id: true, images: { select: { id: true } } },
+  });
+  const listing = await prisma.listing.create({
+    data: {
+      productId: product.id,
+      status: 'DRAFT',
+      startsAt: new Date(fixtureDate.getTime() + 3_600_000),
+      originalEndsAt: new Date(fixtureDate.getTime() + 7_200_000),
+      endsAt: new Date(fixtureDate.getTime() + 7_200_000),
+      currentPrice: new Prisma.Decimal(10),
+      auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
     },
     select: { id: true },
   });
 
-  return { ...user, profileId: profile.id, productId: product.id };
+  return {
+    ...user,
+    profileId: profile.id,
+    productId: product.id,
+    imageId: product.images[0]!.id,
+    listingId: listing.id,
+  };
 }
 
 export async function resetPermissionFixture(

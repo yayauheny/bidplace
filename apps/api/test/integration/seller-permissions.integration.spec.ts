@@ -275,11 +275,24 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
       403,
     );
 
+    for (const [client, listingId] of [
+      [clients.pending, fixture.sellers.pending.listingId],
+      [clients.changes, fixture.sellers.changes.listingId],
+      [clients.suspended, fixture.sellers.suspended.listingId],
+    ] as const) {
+      const before = await permissionState(prisma);
+      await expectUnchanged(
+        before,
+        await client.patch(`/listings/${listingId}`, {
+          action: 'CANCEL',
+        }),
+        403,
+      );
+    }
+
     for (const [client, expectedStatus] of [
+      [clients.guest, 401],
       [clients.buyer, 403],
-      [clients.pending, 403],
-      [clients.changes, 403],
-      [clients.suspended, 403],
       [clients.otherApproved, 403],
     ] as const) {
       const before = await permissionState(prisma);
@@ -349,12 +362,34 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
       ).status,
     ).toBe(200);
 
+    for (const [client, productId, imageId] of [
+      [
+        clients.pending,
+        fixture.sellers.pending.productId,
+        fixture.sellers.pending.imageId,
+      ],
+      [
+        clients.changes,
+        fixture.sellers.changes.productId,
+        fixture.sellers.changes.imageId,
+      ],
+      [
+        clients.suspended,
+        fixture.sellers.suspended.productId,
+        fixture.sellers.suspended.imageId,
+      ],
+    ] as const) {
+      const before = await permissionState(prisma);
+      await expectUnchanged(
+        before,
+        await client.delete(`/products/${productId}/images/${imageId}`),
+        403,
+      );
+    }
+
     for (const [client, expectedStatus] of [
       [clients.guest, 401],
       [clients.buyer, 403],
-      [clients.pending, 403],
-      [clients.changes, 403],
-      [clients.suspended, 403],
       [clients.otherApproved, 403],
     ] as const) {
       const before = await permissionState(prisma);
