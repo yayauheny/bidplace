@@ -72,3 +72,19 @@ Status: Implemented
 - Missing reasons, repeated transitions and scheduled-listing moderation locks
   return existing errors and leave all persisted rows and audit state unchanged.
 - No product rule, status machine or API contract was changed.
+
+## Block C — auth transport
+
+Status: Implemented
+
+- `apps/api/test/integration/auth-transport.integration.spec.ts`: 3/3
+  PostgreSQL-backed HTTP tests passed.
+- Allowed-origin login sets the existing HttpOnly, SameSite=Lax, Path and
+  12-hour session cookie; the cookie authenticates `/auth/me`.
+- Logout clears the cookie using the existing epoch-`Expires` contract and
+  increments the persisted session version. The old cookie and invalid tokens
+  are rejected by the real guard.
+- Allowed-origin CORS headers are present; a forbidden origin does not match
+  `Access-Control-Allow-Origin`, including for preflight, so the browser cannot
+  use the authenticated response.
+- No cookie, CORS, CSRF or guard behavior was changed.
