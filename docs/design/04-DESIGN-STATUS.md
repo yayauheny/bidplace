@@ -1,8 +1,19 @@
 # bidplace — статус дизайна
 
-Дата снимка: 2026-08-03
+Дата снимка: 2026-08-05
 
 Статус документа: Partial final migration — clean Modern UI cutover реализован без pilot bridge или fallback. Все маршруты используют target shell; до статуса `Implemented` остаются founder device/visual/accessibility acceptance и зафиксированное evidence.
+
+## Pen workspace — 2026-08-05
+
+- `Implemented`: `design/pen/bidplace-web.pen` is the versioned editable canvas
+  for founder-reviewed prototypes; `design/pen/01-SCREEN-PROMPTS.md` maps the
+  current MVP routes to bounded prototype prompts. The workspace, prompt index,
+  and Pen handoff convention are documented in `00-DESIGN-INDEX.md` and
+  `05-DESIGN-HANDOFF.md`.
+- `Not implemented`: no new visual direction has been approved or transferred
+  to production from Pen. Existing components, `modernTokens`, routes, and
+  product behavior remain unchanged.
 
 ## Wave A — structural responsive fixes — 2026-08-02
 

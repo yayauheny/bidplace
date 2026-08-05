@@ -3,6 +3,18 @@
 Последнее обновление: 2026-08-05
 Статус: Technical baseline is Partial; Wave 1 trust-critical Order coverage, Wave 2 auction-integrity evidence and Wave 3 core permission/moderation/lifecycle evidence are Implemented, while founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
+## Pen prototype workspace — 2026-08-05
+
+- `Implemented`: `design/pen/bidplace-web.pen` is the versioned editable canvas
+  for founder-reviewed visual prototypes. `design/pen/01-SCREEN-PROMPTS.md`
+  maps the current MVP routes to bounded design tasks, while
+  `docs/design/05-DESIGN-HANDOFF.md` records the required Pen source/frame and
+  approved export for implementation handoff.
+- `Not implemented`: no product or UI behavior is changed by this workspace;
+  no Pen visual direction is approved for implementation yet. Production
+  behavior, `modernTokens`, shared Expo components, and owner documents remain
+  authoritative.
+
 ## Test/demo author media — 2026-08-05
 
 - `Implemented`: the local/test-only seed now uses the supplied 740×493 PNG for the approved demo author `Анна Морозова` (`anna-morozova`); anonymous `GET /api/sellers/:slug/photo` is intentionally allowed for approved public profiles, and the seeded Chromium test verifies both the direct guest HTTP response and the rendered natural dimensions. Existing databases must be re-seeded explicitly to replace the former transparent 1×1 row. Pending moderation fixtures continue using the technical 1×1 placeholder.

@@ -4,12 +4,16 @@
 
 Статус: Confirmed workflow; no Figma workspace linked
 
-## Связь Figma и кода
+## Связь Pen/Figma и кода
 
 - Каждый screen frame содержит стабильный screen name, platform/viewport, state и scope.
-- В handoff записываются фактическая Figma URL и route; URL не придумывается.
+- В handoff записываются фактическая Figma URL или путь к Pen canvas/frame и
+  route; ссылки и пути не придумываются.
 - Route связывается с product flow из `02-USER-FLOWS-AND-SCREENS.md`, а поведение — с `docs/product/05-MVP-RFC.md`.
 - Если route отсутствует, пишется `Not implemented`, а не предварительный путь как факт.
+- Pen canvas служит только для утверждения visual direction. `modernTokens` и
+  shared Expo primitives остаются implementation source of truth; нельзя
+  вставлять сгенерированный Pen HTML/CSS в production без отдельной адаптации.
 
 ## Именование
 
@@ -67,13 +71,21 @@ Domain/Component/Variant/State
 5. Зафиксировать расхождения с severity и owner.
 6. После исправлений обновить `04-DESIGN-STATUS.md`; без QA оставлять `Needs verification`.
 
-## Где хранить ссылки
+## Где хранить ссылки и Pen source
 
 - Общую Figma project/file URL — в этом документе после её получения.
 - Screen-specific node URL — в handoff-записи и при необходимости в `04-DESIGN-STATUS.md`.
+- Главный Pen canvas — `../../design/pen/bidplace-web.pen`; screen frame
+  указывается стабильным названием из canvas, approved export — относительным
+  путём из `../../design/pen/exports/`.
+- Нумерованные prompts текущих экранов —
+  `../../design/pen/01-SCREEN-PROMPTS.md`; они не заменяют owner-документы.
 - Не хранить access tokens или private credentials в репозитории.
 
 Figma project: `Not provided`.
+
+Pen workspace: `../../design/pen/bidplace-web.pen` (initialized; no visual
+direction approved through Pen yet).
 
 ## Handoff template
 
@@ -81,6 +93,8 @@ Figma project: `Not provided`.
 ## Screen: Auction Details
 
 Figma:
+Pen source/frame:
+Approved export:
 Route:
 Product flow:
 MVP status:

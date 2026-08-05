@@ -5,6 +5,8 @@ Status: Initialized
 ## Main canvas
 
 - `bidplace-web.pen` — editable Pen canvas for bidplace web prototypes.
+- `01-SCREEN-PROMPTS.md` — numbered, copy-ready prompts based on the current
+  MVP routes and screen source files.
 
 ## Current task
 
@@ -28,3 +30,6 @@ Open questions: None
 Use `bidplace-web.pen` as the single editable prototype. Production tokens in
 `packages/design-tokens` and shared Expo UI components remain the implementation
 source of truth.
+
+Choose one numbered prompt at a time. An approved Pen frame is a visual
+decision, not permission to alter product behavior or production code.
