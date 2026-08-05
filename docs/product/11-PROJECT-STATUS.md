@@ -5,7 +5,7 @@
 
 ## Test/demo author media — 2026-08-05
 
-- `Implemented`: the local/test-only seed now uses the supplied 740×493 PNG for the approved demo author `Анна Морозова` (`anna-morozova`); the existing seed Chromium test verifies that the public author photo loads at its natural dimensions. Pending moderation fixtures continue using the technical 1×1 placeholder.
+- `Implemented`: the local/test-only seed now uses the supplied 740×493 PNG for the approved demo author `Анна Морозова` (`anna-morozova`); anonymous `GET /api/sellers/:slug/photo` is intentionally allowed for approved public profiles, and the seeded Chromium test verifies both the direct guest HTTP response and the rendered natural dimensions. Existing databases must be re-seeded explicitly to replace the former transparent 1×1 row. Pending moderation fixtures continue using the technical 1×1 placeholder.
 
 ## Wave 1 — trust-critical Order flows and test-only seed boundary — 2026-08-05
 

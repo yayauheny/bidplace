@@ -13,6 +13,20 @@ test('demo seed exposes three public products and real media', async ({
   page,
   request,
 }) => {
+  const authorDetailResponse = await request.get(
+    `${apiBaseURL}/api/sellers/anna-morozova/detail`,
+  );
+  expect(authorDetailResponse.ok()).toBeTruthy();
+  const authorDetail = await authorDetailResponse.json();
+  const authorPhotoResponse = await request.get(
+    new URL(authorDetail.sellerProfile.profilePhotoUrl, apiBaseURL).toString(),
+  );
+  expect(authorPhotoResponse.status()).toBe(200);
+  expect(authorPhotoResponse.headers()['content-type']).toMatch(/^image\/png/);
+  expect((await authorPhotoResponse.body()).byteLength).toBeGreaterThan(
+    100_000,
+  );
+
   const response = await request.get(
     `${apiBaseURL}/api/products?page=1&limit=20`,
   );
