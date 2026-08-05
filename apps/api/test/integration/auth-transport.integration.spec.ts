@@ -7,6 +7,7 @@ import {
 } from './test-database';
 import {
   createPermissionFixture,
+  permissionState,
   resetPermissionFixture,
 } from './permission-fixtures';
 import {
@@ -49,6 +50,56 @@ function cookiePair(setCookie: string): string {
 }
 
 describe('auth HTTP transport', () => {
+  it('registers over HTTP with normalized identity fields, establishes a session and rejects duplicates without a write', async () => {
+    await createPermissionFixture(prisma);
+    const client = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.2.5',
+    );
+
+    const registration = await client.post('/auth/register', {
+      email: 'New.User@Wave3.Test',
+      phone: '  +375291234567  ',
+      displayName: '  New Wave 3 User  ',
+      password: 'password123',
+    });
+    expect(registration.status).toBe(201);
+    expect(registration.headers.getSetCookie()[0]).toContain('HttpOnly');
+
+    const registered = await prisma.user.findUniqueOrThrow({
+      where: { email: 'new.user@wave3.test' },
+      select: { id: true, email: true, phone: true, displayName: true },
+    });
+    expect(registered).toEqual({
+      id: expect.any(String),
+      email: 'new.user@wave3.test',
+      phone: '+375291234567',
+      displayName: 'New Wave 3 User',
+    });
+
+    const me = await client.get('/auth/me');
+    expect(me.status).toBe(200);
+    expect(((await me.json()) as { user: { id: string } }).user.id).toBe(
+      registered.id,
+    );
+
+    const duplicateBefore = await permissionState(prisma);
+    const duplicateClient = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.2.6',
+    );
+    const duplicate = await duplicateClient.post('/auth/register', {
+      email: 'NEW.USER@WAVE3.TEST',
+      phone: '+375291234567',
+      displayName: 'Another User',
+      password: 'password123',
+    });
+    expect(duplicate.status).toBe(409);
+    expect(await permissionState(prisma)).toEqual(duplicateBefore);
+  });
+
   it('round-trips the session cookie through /me and logout, then rejects the stale session', async () => {
     const fixture = await createPermissionFixture(prisma);
     const client = new HttpTestClient(

@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@bidplace/database';
 
 import {
@@ -242,6 +243,49 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       ).status,
     ).toBe('SUSPENDED');
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(4);
+
+    const rejectedSellerBefore = await permissionState(prisma);
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
+          { status: 'REJECTED' },
+        )
+      ).status,
+    ).toBe(400);
+    expect(await permissionState(prisma)).toEqual(rejectedSellerBefore);
+    expect(
+      await auditFor('SELLER_PROFILE', fixture.sellers.pending.profileId),
+    ).toHaveLength(0);
+
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
+          {
+            status: 'REJECTED',
+            reason: 'Application does not meet the creator criteria',
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.pending.profileId },
+      }),
+    ).toMatchObject({ status: 'REJECTED' });
+    expect(
+      await auditFor('SELLER_PROFILE', fixture.sellers.pending.profileId),
+    ).toEqual([
+      {
+        actorUserId: admin.id,
+        targetType: 'SELLER_PROFILE',
+        targetId: fixture.sellers.pending.profileId,
+        oldStatus: 'PENDING_REVIEW',
+        newStatus: 'REJECTED',
+        reason: 'Application does not meet the creator criteria',
+      },
+    ]);
   });
 
   it('preserves moderation locks for scheduled listings and product audit transitions', async () => {
@@ -334,6 +378,50 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
     ).toHaveLength(2);
 
+    const rejectedProductBefore = await permissionState(prisma);
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/products/${fixture.approvedDraftProductId}/status`,
+          { status: 'REJECTED' },
+        )
+      ).status,
+    ).toBe(400);
+    expect(await permissionState(prisma)).toEqual(rejectedProductBefore);
+    expect(
+      await auditFor('PRODUCT', fixture.approvedDraftProductId),
+    ).toHaveLength(2);
+
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/products/${fixture.approvedDraftProductId}/status`,
+          {
+            status: 'REJECTED',
+            reason: 'The item provenance could not be confirmed',
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await prisma.product.findUniqueOrThrow({
+        where: { id: fixture.approvedDraftProductId },
+      }),
+    ).toMatchObject({ status: 'REJECTED' });
+    const rejectedProductAudit = await auditFor(
+      'PRODUCT',
+      fixture.approvedDraftProductId,
+    );
+    expect(rejectedProductAudit).toHaveLength(3);
+    expect(rejectedProductAudit[2]).toEqual({
+      actorUserId: admin.id,
+      targetType: 'PRODUCT',
+      targetId: fixture.approvedDraftProductId,
+      oldStatus: 'CHANGES_REQUESTED',
+      newStatus: 'REJECTED',
+      reason: 'The item provenance could not be confirmed',
+    });
+
     const lockedProductBefore = await permissionState(prisma);
     expect(
       (
@@ -350,5 +438,74 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await auditFor('PRODUCT', fixture.approvedProductId)).toHaveLength(
       0,
     );
+
+    const lockedArchiveBefore = await permissionState(prisma);
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/products/${fixture.approvedProductId}/status`,
+          {
+            status: 'ARCHIVED',
+            reason: 'Cannot archive an active product',
+          },
+        )
+      ).status,
+    ).toBe(409);
+    expect(await permissionState(prisma)).toEqual(lockedArchiveBefore);
+    expect(await auditFor('PRODUCT', fixture.approvedProductId)).toHaveLength(
+      0,
+    );
+
+    const archivedProduct = await prisma.product.create({
+      data: {
+        publicId: `w3arch${randomUUID().replace(/-/g, '').slice(0, 5)}`,
+        sellerProfileId: fixture.sellers.otherApproved.profileId,
+        categoryId: fixture.categoryId,
+        title: 'Product eligible for archival',
+        story: 'Product without an active listing',
+        uniqueness: 'One',
+        provenance: 'Wave 3 moderation fixture',
+        city: 'Minsk',
+        deliveryInfo: 'Pickup',
+        status: 'APPROVED',
+        images: {
+          create: {
+            position: 0,
+            mimeType: 'image/png',
+            byteLength: permissionImage.byteLength,
+            data: permissionImage,
+            checksum: '3'.repeat(64),
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    expect(
+      (
+        await adminClient.patch(
+          `/admin/products/${archivedProduct.id}/status`,
+          {
+            status: 'ARCHIVED',
+            reason: 'The item is no longer offered',
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      await prisma.product.findUniqueOrThrow({
+        where: { id: archivedProduct.id },
+      }),
+    ).toMatchObject({ status: 'ARCHIVED' });
+    expect(await auditFor('PRODUCT', archivedProduct.id)).toEqual([
+      {
+        actorUserId: admin.id,
+        targetType: 'PRODUCT',
+        targetId: archivedProduct.id,
+        oldStatus: 'APPROVED',
+        newStatus: 'ARCHIVED',
+        reason: 'The item is no longer offered',
+      },
+    ]);
   });
 });

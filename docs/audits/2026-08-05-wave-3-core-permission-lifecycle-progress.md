@@ -2,7 +2,7 @@
 
 Дата: 2026-08-05
 Ветка: `feature/core-permission-lifecycle-coverage`
-Статус: In progress
+Статус: Implemented
 
 ## Scope
 
@@ -19,12 +19,13 @@ product rules, statuses, API contracts, UI or seed behavior:
 
 ## Existing authority boundaries
 
-| Boundary            | Current implementation                                                                                                  | Wave 3 evidence                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| seller capability   | `assertApprovedSeller` in Product, Listing and image services; `SellersService.update` permits only `CHANGES_REQUESTED` | real HTTP actor/status matrix and unchanged persisted rows on denial                        |
-| HTTP authentication | `BearerAuthGuard`, `AdminGuard`, session-version check and HttpOnly cookie                                              | login → cookie → `/me` → logout → rejected stale session; allowed/disallowed Origin headers |
-| moderation          | `AdminModerationService` serializable status transition plus `AuditEvent`                                               | seller/Product transitions, required reasons, actor/old/new status, repeat/lock denial      |
-| lifecycle close     | `ListingLifecycleService.close` updates Listing and creates one winner Order transactionally                            | no-bid close, `amount DESC → createdAt ASC → id ASC` tie and idempotent repeat              |
+| Boundary            | Current implementation                                                                                                  | Wave 3 evidence                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| seller capability   | `assertApprovedSeller` in Product, Listing and image services; `SellersService.update` permits only `CHANGES_REQUESTED` | real HTTP actor/status matrix and unchanged persisted rows on denial                                                     |
+| HTTP authentication | `BearerAuthGuard`, `AdminGuard`, session-version check and HttpOnly cookie                                              | registration/login → cookie → `/me` → logout → rejected stale session; allowed/disallowed Origin headers                 |
+| HTTP bootstrap      | `loadServerEnv` and `resolveCorsOrigin` configure production CORS and proxy behavior                                    | `configureHttpApp` is shared by `main.ts` and the PostgreSQL HTTP test helper                                            |
+| moderation          | `AdminModerationService` serializable status transition plus `AuditEvent`                                               | seller/Product transitions including terminal reject/archive, required reasons, actor/old/new status, repeat/lock denial |
+| lifecycle close     | `ListingLifecycleService.close` updates Listing and creates one winner Order transactionally                            | no-bid close, `amount DESC → createdAt ASC → id ASC` tie and idempotent repeat                                           |
 
 ## Test architecture
 
@@ -52,8 +53,9 @@ Status: Implemented
   services and PostgreSQL.
 - Guest, ordinary buyer, pending/changes/suspended owner, approved owner and
   another approved seller are covered across Product, Listing, ProductImage
-  and SellerProfile writes. Every denied mutation compares persisted Product,
-  Listing, ProductImage, SellerProfile and AuditEvent state before and after.
+  and SellerProfile writes, including Listing `PATCH` and ProductImage
+  `DELETE`. Every denied mutation compares persisted Product, Listing,
+  ProductImage, SellerProfile and AuditEvent state before and after.
 - No production defect was found. The fixture initially used an invalid
   underscore-containing slug for `CHANGES_REQUESTED`; the fixture now applies
   the existing slug normalization rule.
@@ -71,14 +73,20 @@ Status: Implemented
   `AuditEvent` per accepted transition.
 - Missing reasons, repeated transitions and scheduled-listing moderation locks
   return existing errors and leave all persisted rows and audit state unchanged.
+- SellerProfile `REJECTED`, Product `REJECTED` and Product `ARCHIVED` are
+  exercised through HTTP with one audit event per accepted transition. The
+  active-listing archive lock is denied with unchanged PostgreSQL state.
 - No product rule, status machine or API contract was changed.
 
 ## Block C — auth transport
 
 Status: Implemented
 
-- `apps/api/test/integration/auth-transport.integration.spec.ts`: 3/3
+- `apps/api/test/integration/auth-transport.integration.spec.ts`: 4/4
   PostgreSQL-backed HTTP tests passed.
+- Registration normalizes email, phone and display name, establishes the same
+  session cookie used by `/auth/me`, and rejects a normalized duplicate without
+  an additional persisted row or related write.
 - Allowed-origin login sets the existing HttpOnly, SameSite=Lax, Path and
   12-hour session cookie; the cookie authenticates `/auth/me`.
 - Logout clears the cookie using the existing epoch-`Expires` contract and
@@ -108,18 +116,19 @@ Status: Implemented
 
 All required Wave 3 checks passed on 2026-08-05:
 
-- `corepack pnpm --filter @bidplace/api typecheck` — passed;
-- `corepack pnpm --filter @bidplace/api lint` — passed;
-- `corepack pnpm --filter @bidplace/api test` — 33 files, 136 tests passed;
-- `corepack pnpm --filter @bidplace/api test:integration` — 10 files, 36
-  PostgreSQL tests passed;
-- `corepack pnpm --filter @bidplace/mobile typecheck` — passed;
-- `corepack pnpm --filter @bidplace/mobile lint` — passed;
+- API typecheck — passed;
+- API lint — passed;
+- API unit — 33 files, 136 tests passed;
+- API PostgreSQL integration — 10 files, 37 tests passed;
+- mobile typecheck — passed;
+- mobile lint — passed;
+- relevant Chromium Wave 3 scenarios (`wave-one.spec.ts`) — 5/5 passed;
 - `git diff --check` — passed;
-- worktree is clean on `feature/core-permission-lifecycle-coverage`.
+- branch: `feature/core-permission-lifecycle-coverage`.
 
 ## Intentionally deferred
 
-No browser scenario was added because Wave 3 adds no user-facing behavior.
-Visual design, physical-device and screen-reader acceptance, WebKit/cross-
-browser coverage and the isolated 10-user rehearsal remain outside this wave.
+No new browser scenario was added because Wave 3 adds no user-facing behavior;
+the existing relevant Chromium Wave 3 scenario was rerun. Visual design,
+physical-device and screen-reader acceptance, WebKit/cross-browser coverage and
+the isolated 10-user rehearsal remain outside this wave.

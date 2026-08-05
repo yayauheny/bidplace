@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import type { INestApplication } from '@nestjs/common';
 
+import { configureHttpApp } from '../../src/bootstrap';
+import { loadServerEnv, resolveCorsOrigin } from '../../src/core/config';
+
 export type HttpTestApp = {
   app: INestApplication;
   baseUrl: string;
@@ -20,11 +23,14 @@ export async function createHttpTestApp(
   process.env.TEST_EMAIL_BYPASS = 'false';
 
   const { AppModule } = await import('../../src/app.module');
+  const serverEnv = loadServerEnv();
+  const runtimeEnv = {
+    ...serverEnv,
+    CORS_ORIGIN: resolveCorsOrigin(serverEnv),
+  };
   const app = await NestFactory.create(AppModule, { logger: false });
 
-  app.setGlobalPrefix('api');
-  app.getHttpAdapter().getInstance().set('trust proxy', true);
-  app.enableCors({ origin: corsOrigin, credentials: true });
+  configureHttpApp(app, runtimeEnv);
   await app.listen(0, '127.0.0.1');
 
   return {

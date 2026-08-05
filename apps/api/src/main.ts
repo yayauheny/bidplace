@@ -3,8 +3,8 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { configureHttpApp } from './bootstrap';
 import { loadServerEnv, resolveCorsOrigin } from './core/config';
-import { RealtimeSocketIoAdapter } from './realtime/realtime.adapter';
 
 async function bootstrap() {
   const serverEnv = loadServerEnv();
@@ -13,20 +13,7 @@ async function bootstrap() {
     CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
   const app = await NestFactory.create(AppModule);
-
-  app.setGlobalPrefix('api');
-  app.useWebSocketAdapter(new RealtimeSocketIoAdapter(app, runtimeEnv));
-
-  if (runtimeEnv.TRUST_PROXY) {
-    app.getHttpAdapter().getInstance().set('trust proxy', true);
-  }
-
-  if (runtimeEnv.CORS_ORIGIN) {
-    app.enableCors({
-      origin: runtimeEnv.CORS_ORIGIN,
-      credentials: true,
-    });
-  }
+  configureHttpApp(app, runtimeEnv);
 
   await app.listen(runtimeEnv.API_PORT);
 }
