@@ -103,3 +103,23 @@ Status: Implemented
   sole Order source, and the persisted Listing plus `listing.ended` payload
   agree on status, price, count and deadline.
 - No lifecycle rule or tie-break implementation was changed.
+
+## Final verification
+
+All required Wave 3 checks passed on 2026-08-05:
+
+- `corepack pnpm --filter @bidplace/api typecheck` — passed;
+- `corepack pnpm --filter @bidplace/api lint` — passed;
+- `corepack pnpm --filter @bidplace/api test` — 33 files, 136 tests passed;
+- `corepack pnpm --filter @bidplace/api test:integration` — 10 files, 36
+  PostgreSQL tests passed;
+- `corepack pnpm --filter @bidplace/mobile typecheck` — passed;
+- `corepack pnpm --filter @bidplace/mobile lint` — passed;
+- `git diff --check` — passed;
+- worktree is clean on `feature/core-permission-lifecycle-coverage`.
+
+## Intentionally deferred
+
+No browser scenario was added because Wave 3 adds no user-facing behavior.
+Visual design, physical-device and screen-reader acceptance, WebKit/cross-
+browser coverage and the isolated 10-user rehearsal remain outside this wave.
