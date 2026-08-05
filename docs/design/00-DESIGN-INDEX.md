@@ -18,6 +18,7 @@
 | `03-DESIGN-SYSTEM.md`          | Реализованные и целевые tokens/components/patterns    |
 | `04-DESIGN-STATUS.md`          | Часто меняющийся фактический статус UI и дизайн-долг  |
 | `05-DESIGN-HANDOFF.md`         | Передача макета в разработку и design QA              |
+| `06-ASSET-INVENTORY.md`        | Фактическая карта брендовых, фото-, icon- и UI-исходников |
 | `../../design/pen/README.md`   | Версионируемое Pen-пространство и текущий scope       |
 | `../../design/pen/01-SCREEN-PROMPTS.md` | Нумерованные prompts актуальных MVP-экранов |
 
@@ -31,6 +32,8 @@
 4. `04-DESIGN-STATUS.md`.
 5. `05-DESIGN-HANDOFF.md` перед передачей макета.
 6. `../../design/pen/README.md` и нужный prompt перед работой в Pen.
+7. `06-ASSET-INVENTORY.md` перед использованием логотипа, фотографии, шрифта,
+   иконки или кнопочного паттерна.
 
 ### Разработчику UI
 
