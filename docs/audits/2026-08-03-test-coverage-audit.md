@@ -2,12 +2,12 @@
 
 ## 1. Итоговый вердикт
 
-- Общий статус: **Pending audit completion**.
-- P0: pending classification.
-- P1: pending classification.
-- P2: pending classification.
-- Подтверждено: обязательные источники доступны; тестовый и screenshot-инвентарь собран.
-- Нельзя принимать без завершения: API/domain, mobile unit, E2E/fixtures, visual/accessibility evidence и реальные запуски ещё не сверены целиком.
+- Общий статус: **Not ready**.
+- P0: 1.
+- P1: 12.
+- P2: 9.
+- Подтверждено: все доступные static/unit/integration checks и полный 28-test Chromium suite воспроизводимо проходят на pinned `pnpm@11.7.0`; сильными доказательствами являются Bid idempotency/concurrency, основные DB uniqueness constraints, media bytes/privacy, auth service/guard behavior, public author navigation и responsive geometry представленных состояний.
+- Нельзя принимать без исправления: trust-critical Order mutations не имеют behavioral automation; stale Bid и soft close не доказаны end-to-end; pending-seller direct API matrix, seller application/moderation audit matrix, deterministic four-card 1440 evidence и page-level accessibility automation отсутствуют; seed Bid fixtures остаются без founder decision по `DEC-060`.
 
 ## 2. Scope и evidence
 
@@ -16,20 +16,20 @@
 - Прочитаны: `AGENTS.md`, обязательные product/design owner-документы, `2026-08-02-web-design-audit.md`, `2026-08-03-wave-c-implementation-progress.md`.
 - Просмотрены конфигурации: root/API/mobile/contracts/design-tokens/database `package.json`, `turbo.json`, `apps/mobile/playwright.config.ts`, `apps/mobile/AGENTS.md`.
 - Screenshot directories доступны и визуально просмотрены: Wave C — 66/66 PNG, Wave B — 21/21 PNG, Wave A — 7/7 PNG, Wave 2 — 18/18 PNG, всего 112/112.
-- Ограничение evidence: Wave C artifacts помечены commit `a852f68`, а commit under review — `5be687c`. Diff `a852f68..5be687c` меняет только три status/progress документа, не source/tests, поэтому изображения соответствуют тому же коду, но до matching rerun остаются `Historical agent evidence only`.
+- Историческое ограничение evidence устранено частично: исходные Wave C artifacts помечены commit `a852f68`, но полный suite повторно запущен на audit HEAD `042f599`, который отличается от commit under review только audit-документами. Свежие 66 PNG находятся в `/private/tmp/bidplace-wave-c-screenshots/042f599`; ключевые ранее найденные дефекты перепроверены визуально. Wave A/B/2 artifacts остаются historical evidence, хотя соответствующие тесты в полном suite прошли заново.
 - Важный product conflict для трассировки: `DEC-060` оставляет local/test seeded Bid fixtures без founder decision, хотя `09-TRUST-AND-AUCTION-INTEGRITY.md` запрещает platform seed bids.
 
 ### Начальная инвентаризация
 
 | Область | Файлы | Обнаруженные сценарии | Типы проверки | Текущий статус аудита |
 |---|---:|---:|---|---|
-| API unit | 33 | 114 вместе с API integration по синтаксическому подсчёту | Vitest, mocks/fakes | Body-level review complete; run pending |
-| API integration | 2 | входит в 114 | Vitest + PostgreSQL | Body-level review complete; run pending |
-| Mobile unit/static | 15 | 43 | Vitest, pure helpers/style/geometry contracts | Body-level review complete; run pending |
-| Browser E2E | 11 | 28 top-level Playwright tests | Chromium; real API + fixture-created DB state; selected mocked network states; screenshots | Body-level review complete; run pending |
-| Contracts | 2 | входит в 8 shared-package tests | Vitest/Zod contracts and source-text seed contract | Body-level review complete; run pending |
-| Design tokens | 0 package-local specs | 0 | Build only; visual token tests live in mobile | Body-level review complete; run pending |
-| Database | 1 | входит в 8 shared-package tests | Export smoke; PostgreSQL invariants in API integration; seed source inspection | Body-level review complete; run pending |
+| API unit | 33 | 136 | Vitest, mocks/fakes | Reviewed, classified and Passed |
+| API integration | 2 | 10 | Vitest + PostgreSQL | Reviewed, classified and Passed |
+| Mobile unit/static | 15 | 73 | Vitest, pure helpers/style/geometry contracts | Reviewed, classified and Passed |
+| Browser E2E | 11 | 28 top-level Playwright tests | Chromium; real API + fixture-created DB state; selected mocked network states; screenshots | Reviewed, classified and Passed |
+| Contracts | 2 | 7 | Vitest/Zod contracts and source-text seed contract | Reviewed, classified and Passed |
+| Design tokens | 0 package-local specs | 0 | Build only; visual token tests live in mobile | Reviewed; build Passed |
+| Database | 1 | 1 | Export smoke; PostgreSQL invariants in API integration; seed source inspection | Reviewed and Passed via direct Vitest invocation |
 
 ### Классы browser evidence
 
@@ -44,15 +44,20 @@
 
 | Проверка | Команда | Статус | Результат | Ограничения |
 |---|---|---|---|---|
-| Design tokens build | `corepack pnpm --filter @bidplace/design-tokens build` | Not run | Pending | — |
-| API typecheck | `corepack pnpm --filter @bidplace/api typecheck` | Not run | Pending | — |
-| API unit | `corepack pnpm --filter @bidplace/api test` | Not run | Pending | — |
-| Mobile typecheck | `corepack pnpm --filter @bidplace/mobile typecheck` | Not run | Pending | — |
-| Mobile lint | `corepack pnpm --filter @bidplace/mobile lint` | Not run | Pending | — |
-| Mobile Vitest | `corepack pnpm --filter @bidplace/mobile exec vitest run` | Not run | Pending | — |
-| Mobile Playwright | `corepack pnpm --filter @bidplace/mobile test:e2e` | Not run | Pending | Requires Docker/PostgreSQL |
-| Mobile build | `corepack pnpm --filter @bidplace/mobile build` | Not run | Pending | Pinned-pnpm equivalence may be needed |
-| Diff whitespace | `git diff --check` | Not run | Pending | — |
+| Design tokens build | `corepack pnpm@11.7.0 --filter @bidplace/design-tokens build` | Passed | TypeScript build completed | Explicit version matches root `packageManager` |
+| API typecheck | `corepack pnpm@11.7.0 --filter @bidplace/api typecheck` | Passed | `tsc --noEmit` | — |
+| API unit | `corepack pnpm@11.7.0 --filter @bidplace/api test` | Passed | 33 files, 136 tests | Mock/unit evidence only where classified above |
+| API integration | `corepack pnpm@11.7.0 --filter @bidplace/api test:integration` | Passed | 2 files, 10 tests | Required approved access to existing local PostgreSQL |
+| API build | `corepack pnpm@11.7.0 --filter @bidplace/api build` | Passed | Nest build completed | Additional check |
+| Contracts | `corepack pnpm@11.7.0 --filter @bidplace/contracts test` | Passed | 2 files, 7 tests | Includes source-text seed contract, not executable seed integrity |
+| Database export smoke | `corepack pnpm@11.7.0 --filter @bidplace/database exec vitest run src/index.spec.ts` | Passed | 1 file, 1 test | Package has no `test` script; direct pinned Vitest invocation used |
+| Mobile typecheck | `corepack pnpm@11.7.0 --filter @bidplace/mobile typecheck` | Passed | `tsc --noEmit` | — |
+| Mobile lint | `corepack pnpm@11.7.0 --filter @bidplace/mobile lint` | Passed | ESLint completed with no errors | No auto-fix |
+| Mobile Vitest | `corepack pnpm@11.7.0 --filter @bidplace/mobile exec vitest run` | Passed | 15 files, 73 tests | Pure/helper-level limitations remain |
+| Mobile Playwright | `corepack pnpm@11.7.0 --filter @bidplace/mobile test:e2e` | Passed | 28/28, 3.0 minutes | Chromium only; disposable `bidplace_e2e`; fresh Wave C screenshots at `042f599` |
+| Mobile build script | `corepack pnpm@11.7.0 --filter @bidplace/mobile build` | Failed | Stopped before export: nested `pnpm` resolved to 11.10.0 and rejected root pin 11.7.0 | Toolchain wrapper mismatch; not an application compile failure |
+| Mobile build equivalent | design-tokens build above + `corepack pnpm@11.7.0 --filter @bidplace/mobile exec expo export` | Passed | Web, iOS and Android bundles exported to `apps/mobile/dist` | Equivalent avoids the nested unpinned `pnpm` call |
+| Diff whitespace | `git diff --check` | Passed | No whitespace errors after final audit edits | Audit files only |
 
 ## 4. Матрица функционального покрытия
 
@@ -86,34 +91,207 @@
 
 ### P0
 
-- **[P0] Order handoff, administrative cancellation and winner replacement are not behaviorally tested.** Evidence: `apps/api/src/orders/orders.service.ts:79`, `:131`, `:174` implement seller state transitions, cancellation, ranked replacement, snapshots and audit writes, while `apps/api/src/orders/orders.service.spec.ts:26-86` only exercises `get()` privacy projections and no Playwright spec calls those mutation endpoints. Risk: unauthorized transition, lost audit event, wrong replacement winner/contact snapshot or multiple active orders can ship in the MVP's final trust-critical workflow. Acceptance: add PostgreSQL integration tests for every allowed/forbidden transition, idempotency/terminal states, cancellation audit, deterministic next-winner replacement and single-active-order constraint; add a real API/browser seller-to-handoff scenario and outsider/buyer/admin negative checks. Blocks: full production/pilot readiness and automated `bidding/order/moderation` acceptance.
+#### [P0] Order mutations are not behaviorally tested
+
+- **Риск:** unauthorized transition, lost audit event, wrong replacement winner/contact snapshot or multiple active Orders can break the final handoff.
+- **Evidence:** `apps/api/src/orders/orders.service.ts:79`, `:131`, `:174` implement transitions/cancellation/replacement; `orders.service.spec.ts:26-86` tests only `get()`, and no Playwright spec calls these mutations.
+- **Почему текущая проверка недостаточна:** read-projection tests do not execute any trust-critical write path.
+- **Минимальное исправление:** PostgreSQL integration matrix for allowed/forbidden transitions, terminal idempotency, audit, ranked replacement and single-active-order; one real seller handoff browser/API flow.
+- **Acceptance criteria:** correct actor, state, snapshots, replacement winner and one append-only audit record are persisted; outsider/buyer/admin negatives leave DB unchanged.
+- **Тип:** integration + E2E.
 
 ### P1
 
-- **[P1] The “scheduled listings block ... bids” E2E proves admin denial, not pre-start buyer denial.** Evidence: `apps/mobile/e2e/wave-one.spec.ts:191-224` authenticates the admin once and uses that context for both moderation calls and the Bid call. Acceptance: authenticate a buyer for the Bid request, assert the scheduled-time domain error and unchanged Bid/listing state; keep the admin-denial case separately named. Blocks: auth/roles and bidding acceptance.
-- **[P1] The stale-price recovery contract is not tested.** Evidence: `apps/mobile/e2e/auction-bidding.spec.ts:51-59` reloads buyer A first, then enters the already-known current price and receives client-side minimum validation; it never submits against a stale snapshot, observes a server conflict, refetches canonical state and retries. `apps/api/src/bids/bids.service.spec.ts` has only admin/moderation denial tests. Acceptance: force a competing Bid after the first client reads, submit the stale amount, assert the documented server error, canonical cache/UI refresh and successful retry; add service/integration coverage for the transaction conflict path. Blocks: bidding acceptance.
-- **[P1] Soft close is not proven outside a pure pricing helper.** Evidence: `apps/api/src/core/auction/pricing-policy.spec.ts:45` covers only the inclusive boundary/cap calculation; the PostgreSQL integration and browser suites do not assert persisted `endsAt`, outside-window behavior, repeated extension or final close after extension. Acceptance: parameterized boundary tests plus integration tests for atomic extension/no-extension/cap and a browser-visible deadline update. Blocks: bidding acceptance.
-- **[P1] Pending-seller capability is not protected by an automated direct-API matrix.** Evidence: `apps/api/src/products/products.service.ts:46-56` and `apps/api/src/listings/listings.service.ts:18-35` enforce approval, but seller tests cover profile editing and the browser scenario only hides actions. Acceptance: direct API tests as guest, buyer, pending, changes-requested, suspended and approved seller for Product, Listing and image mutations, with unchanged DB assertions. Blocks: auth/roles and seller acceptance.
-- **[P1] Seller application and moderation audit evidence is incomplete.** Evidence: `apps/mobile/e2e/wave-one.spec.ts:36-55` checks that the form is visible but does not submit it; `apps/api/src/admin/admin-moderation.service.spec.ts:16-91` proves an AuditEvent only for one Product changes-request path. Acceptance: create an application through the public contract, assert stored normalized fields/status, then exercise approve/changes/suspend Product and Seller transitions with required reason, actor, old/new status and persisted audit event. Blocks: seller/moderation acceptance.
-- **[P1] Seed Bid fixtures are neither integrity-tested nor product-authorized.** Evidence: `packages/database/prisma/seed.js:332-356` directly inserts live/ended Bids and an Order; `packages/contracts/test/seed-contract.test.ts` validates identifiers by source text only. This is also the unresolved DEC-060 conflict with `09-TRUST-AND-AUCTION-INTEGRITY.md`. Acceptance: founder explicitly decides whether strictly local/test fixtures are permitted; then either remove them or codify the exception and add executable seed invariants for price/bidCount/winner/order/lifecycle. Blocks: seed/trust acceptance and final “Ready” verdict.
-- **[P1] The 1440 catalog assertion cannot prove the required four-column grid.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:112-120` expects `Math.min(expectedColumns, boxes.length)` and the deterministic public dataset contains only three cards, so a three-column layout also passes at 1440. Acceptance: provide at least four cards for this assertion (fixture or explicit presentation payload), expect exactly four distinct first-row columns and verify card/media width parity. Blocks: Wave C 1440 catalog acceptance.
-- **[P1] The mobile keyboard state is not an actual constrained-viewport test.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:246-280` calls `.focus()` at a fixed 390×844 viewport; it does not reduce `visualViewport.height`, assert CTA/input visibility after shrink, or emulate a mobile engine. Acceptance: test the supported mobile browser/device path with a reduced visual viewport or an explicit keyboard-inset harness; assert focused field, error and sticky action remain reachable without overlap. Blocks: Wave C Product mobile-keyboard acceptance.
-- **[P1] Accessibility automation is selective and has no page-level semantic scanner.** Evidence: Wave B checks focus outline, modal focus containment/return, `aria-live`, 44px brand hit area and reduced-motion body style, but no test audits axe-equivalent violations, heading/landmark structure, accessible names or contrast on rendered route matrices. Acceptance: run an accessibility scanner on the critical public/auth/bid/order/admin states with documented exceptions, plus keep screen-reader and physical-device checks manual. Blocks: automated accessibility acceptance, not the explicitly manual screen-reader gate.
-- **[P1] Shared PageState error evidence contains a visible alignment regression that the test accepts.** Evidence: all three `page-state-error-{1440,1024,390}.png` images center the title/message but place “Повторить” at the content's left edge. `PageState.tsx:43-60` centers children, while `button-layout.ts:26-32` gives content-width buttons `alignSelf: 'flex-start'`; Wave B asserts only text visibility and takes a screenshot. Acceptance: resolve the intended centered geometry, then assert the retry button center against the state container at all three widths and add a rendered PageState test. Blocks: shared error-state visual acceptance across every route using PageState.
-- **[P1] Registration exposes untranslated validation copy and the test misses it.** Evidence: all three Wave C registration validation screenshots display `String must contain at least 1 character(s)` under “Телефон”; `apps/mobile/src/features/auth/schemas.ts:18` has `.min(1)` without Russian copy, and the E2E only asserts “Введите имя” at `wave-c-screen-acceptance.spec.ts:495-501`. Acceptance: provide canonical Russian phone validation text, unit-test it, and assert every displayed validation message in the browser. Blocks: auth localization/validation acceptance.
-- **[P1] Two Wave C role-model artifacts labelled loaded visibly contain only skeletons.** Evidence: `catalog-approved-seller-loaded-role-model-390x844-a852f68.png` and `catalog-pending-seller-loaded-role-model-390x844-a852f68.png` show header plus four skeleton blocks with no Product content, while the test checks one link before capture at `wave-c-screen-acceptance.spec.ts:193-214`. Acceptance: wait for the same loaded-media/content predicate used by the main catalog, assert absence of skeleton/progress state before capture, and generate artifacts from an isolated fixture with an explicit card count. Blocks: role-specific Wave C catalog visual evidence.
+#### [P1] Scheduled-bid E2E uses the admin identity
+
+- **Риск:** pre-start buyer Bid denial can regress while the named E2E stays green.
+- **Evidence:** `apps/mobile/e2e/wave-one.spec.ts:191-224` reuses the admin session for moderation and Bid.
+- **Почему текущая проверка недостаточна:** it proves admin denial, not the scheduled-time rule.
+- **Минимальное исправление:** submit through a buyer session and keep admin denial separate.
+- **Acceptance criteria:** scheduled domain error and unchanged Bid/listing rows.
+- **Тип:** E2E/API.
+
+#### [P1] Stale-price recovery never reaches the server
+
+- **Риск:** a stale client can show the wrong result or fail to refetch canonical price.
+- **Evidence:** `auction-bidding.spec.ts:51-59` reloads first and triggers client minimum validation; Bid service specs cover only denials.
+- **Почему текущая проверка недостаточна:** no stale transaction conflict is submitted.
+- **Минимальное исправление:** compete after snapshot, submit stale amount, observe rejection/refetch/retry.
+- **Acceptance criteria:** no accepted stale Bid; UI shows canonical minimum and retry succeeds.
+- **Тип:** integration + E2E.
+
+#### [P1] Soft close has only pure-function evidence
+
+- **Риск:** persisted deadline/close can disagree with pricing math.
+- **Evidence:** `pricing-policy.spec.ts:45` covers calculation; integration/E2E do not assert persisted `endsAt` or repeat/cap behavior.
+- **Почему текущая проверка недостаточна:** transaction atomicity and lifecycle consumption are bypassed.
+- **Минимальное исправление:** boundary/cap integration matrix plus browser deadline refresh.
+- **Acceptance criteria:** window/no-window/repeat/cap persist atomically and final close uses extended time.
+- **Тип:** integration + E2E.
+
+#### [P1] Pending-seller direct API permission matrix is absent
+
+- **Риск:** hidden UI actions may remain callable directly.
+- **Evidence:** `products.service.ts:46-56` and `listings.service.ts:18-35` enforce capability; browser tests only hide actions.
+- **Почему текущая проверка недостаточна:** no cross-role mutation request is made.
+- **Минимальное исправление:** guest/buyer/pending/changes/suspended/approved Product, Listing and image writes.
+- **Acceptance criteria:** only approved succeeds; every denial leaves DB unchanged.
+- **Тип:** integration/API.
+
+#### [P1] Seller application and moderation audit matrix is incomplete
+
+- **Риск:** application normalization, reason or actor/history can be lost.
+- **Evidence:** `wave-one.spec.ts:36-55` does not submit; `admin-moderation.service.spec.ts:16-91` checks one Product changes path.
+- **Почему текущая проверка недостаточна:** one transition cannot prove the status/audit matrix.
+- **Минимальное исправление:** real application plus seller/product approve/changes/suspend transitions.
+- **Acceptance criteria:** normalized data, required reason, actor, old/new state and one persisted audit event per transition.
+- **Тип:** integration + E2E.
+
+#### [P1] Seed Bid fixtures lack authorization and executable invariants
+
+- **Риск:** demo data can contradict auction trust or become internally inconsistent.
+- **Evidence:** `seed.js:332-356` inserts Bids/Order; `seed-contract.test.ts` checks identifiers as source text; `DEC-060` is unresolved.
+- **Почему текущая проверка недостаточна:** it neither authorizes the product exception nor executes seed invariants.
+- **Минимальное исправление:** founder decision, then remove or codify fixtures and test seeded price/count/winner/Order.
+- **Acceptance criteria:** canonical policy and executable DB state agree.
+- **Тип:** founder decision + integration.
+
+#### [P1] 1440 catalog assertion accepts three columns
+
+- **Риск:** required four-column geometry can regress unnoticed.
+- **Evidence:** `wave-c-screen-acceptance.spec.ts:112-120` uses `Math.min(expectedColumns, boxes.length)` with three deterministic cards.
+- **Почему текущая проверка недостаточна:** three cards cannot distinguish three from four tracks.
+- **Минимальное исправление:** isolated four-card fixture and exact first-row assertion.
+- **Acceptance criteria:** four distinct equal tracks and matching media widths at 1440.
+- **Тип:** E2E/screenshot.
+
+#### [P1] Mobile keyboard test only calls focus
+
+- **Риск:** software keyboard can cover input/error/CTA.
+- **Evidence:** `wave-c-screen-acceptance.spec.ts:246-280` keeps 390×844 and only invokes `.focus()`.
+- **Почему текущая проверка недостаточна:** visual viewport never shrinks.
+- **Минимальное исправление:** supported mobile device/browser or keyboard-inset harness.
+- **Acceptance criteria:** focused field, error and sticky action remain reachable without overlap after shrink.
+- **Тип:** E2E/device.
+
+#### [P1] No page-level accessibility scanner
+
+- **Риск:** landmark/name/heading/contrast violations can ship across critical routes.
+- **Evidence:** Wave B checks selected focus/modal/live-region/target rules but runs no axe-equivalent route scan.
+- **Почему текущая проверка недостаточна:** isolated assertions do not audit the composed accessibility tree.
+- **Минимальное исправление:** scanner on public/auth/bid/order/admin states with documented exceptions.
+- **Acceptance criteria:** zero unapproved serious/critical violations; manual screen-reader gate retained.
+- **Тип:** accessibility E2E.
+
+#### [P1] PageState screenshot accepts misaligned retry
+
+- **Риск:** a shared error state is visibly inconsistent on every caller.
+- **Evidence:** `page-state-error-*` centers copy but left-aligns “Повторить”; `PageState.tsx:43-60`, `button-layout.ts:26-32`; fresh review confirms it.
+- **Почему текущая проверка недостаточна:** test asserts visibility only.
+- **Минимальное исправление:** rendered geometry assertion after intended alignment is decided.
+- **Acceptance criteria:** retry center matches state container at 1440/1024/390.
+- **Тип:** component + screenshot.
+
+#### [P1] Registration test misses untranslated phone validation
+
+- **Риск:** Russian MVP exposes internal English validation copy.
+- **Evidence:** all Wave C register screenshots, including fresh `042f599`, show `String must contain...`; `schemas.ts:18`; E2E asserts only name error.
+- **Почему текущая проверка недостаточна:** it ignores other displayed errors.
+- **Минимальное исправление:** schema unit assertion and browser assertion for every validation message.
+- **Acceptance criteria:** canonical Russian copy for all invalid fields at all widths.
+- **Тип:** unit + E2E/screenshot.
+
+#### [P1] “Loaded” role screenshots are race-dependent
+
+- **Риск:** acceptance artifacts can capture loading instead of the claimed state.
+- **Evidence:** historical approved/pending captures are skeletons; fresh approved loaded but fresh pending remains skeleton; `wave-c-screen-acceptance.spec.ts:193-214` waits only for navigation.
+- **Почему текущая проверка недостаточна:** no catalog-loaded predicate precedes capture.
+- **Минимальное исправление:** wait for cards/media and absence of progress/skeleton using isolated data.
+- **Acceptance criteria:** each loaded artifact has explicit card count and no loading state.
+- **Тип:** E2E/screenshot.
 
 ### P2
 
-- **[P2] Auth transport policy is unit-tested but not proven through a real HTTP/browser round-trip.** Evidence: auth service, guards, controller and env helpers have focused tests, while browser authentication is bootstrapped by an API helper and does not assert production cookie attributes, allowed/disallowed Origin headers and logout invalidation end to end. Acceptance: isolated HTTP integration tests for registration/login/me/logout cookie lifecycle and CORS allow/deny behavior. Blocks: none for local UI evidence; remains release hardening debt.
-- **[P2] Closing coverage omits no-bid and deterministic tie-break edge cases.** Evidence: `apps/api/src/lifecycle/listing-lifecycle.service.spec.ts:6-40` only checks the activation predicate; integration closes one auction with a clear top Bid and a close-vs-bid race. Acceptance: integration tests for expired zero-Bid listing, exact tie ordering (`amount`, `createdAt`, `id`) and rerun idempotency in each outcome. Blocks: lifecycle hardening checklist.
-- **[P2] Mobile Vitest does not render a React/React Native component.** Evidence: all 15 specs call pure schemas, layout/style helpers, cache predicates or token functions; `Button.spec.ts`, `page-state-contract.spec.ts`, `product-media-style.spec.ts` and `reduced-motion.spec.ts` never mount the corresponding component. Risk: prop wiring, accessible names/roles, interaction, focus transfer and actual style composition can regress while the helpers remain green. Acceptance: add focused rendered-component tests for Button loading/disabled/accessibility, PageState loading/error/retry/empty semantics, ProductMedia loaded/error geometry and the shared overlay/account-menu focus lifecycle. Blocks: component-level acceptance, but browser evidence still covers selected integrated paths.
-- **[P2] Client auth validation covers login only.** Evidence: `apps/mobile/src/features/auth/schemas.spec.ts:5-20` tests invalid login email and missing password; registration field normalization, phone/password/confirmation boundaries and server-error mapping have no mobile unit contract. Acceptance: parameterized registration schema tests and one rendered submit/error-state test. Blocks: auth form hardening.
-- **[P2] Reduced-motion unit evidence stops at the duration helper.** Evidence: `apps/mobile/src/lib/reduced-motion.spec.ts:5-12` checks a numeric duration selector, not mounted animated/image components. Acceptance: mount the shared motion consumer or assert its computed browser styles under `prefers-reduced-motion`, including media transition behavior. Blocks: accessibility automation checklist.
-- **[P2] Desktop tooltip keyboard access is not asserted despite the screenshot state name.** Evidence: `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:513-543` uses `.hover()` for desktop and captures `focused-rail-tooltip`; keyboard focus is used only in the mobile branch. Acceptance: focus each collapsed-rail link through keyboard navigation and assert the tooltip's accessible/visible text, then verify Escape/navigation behavior as applicable. Blocks: desktop navigation accessibility hardening.
-- **[P2] Wave C route screenshots are broader than their assertions.** Evidence: seller profile/Product/Listing draft and Order captures at `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts:383-442` assert only route titles; admin asserts two section labels and overflow. Acceptance: add screen-specific geometry, primary-action, field/long-content, loading/empty/error and role-state assertions before treating these captures as acceptance evidence. Blocks: those individual Wave C screen checkboxes, not already-tested cross-cutting primitives.
-- **[P2] Browser E2E is Chromium-only.** Evidence: `apps/mobile/playwright.config.ts` defines the Chromium project and runs one worker. Acceptance: at minimum add the supported WebKit/mobile browser target for critical catalog/auth/bid/order smoke, or explicitly scope the release contract to Chromium and retain physical-device acceptance. Blocks: cross-browser confidence.
-- **[P2] Catalog layout evidence depends on accumulated suite data.** Evidence: the reviewed Wave C buyer screenshot has four-plus fixture Products although the stable seed exposes three; tests share one reset database and individual specs add records without per-test cleanup. Acceptance: make each responsive assertion own its exact dataset or reset within the spec, and prove the Wave C spec passes alone as well as in the full suite. Blocks: deterministic standalone visual acceptance.
+#### [P2] Auth transport lacks real HTTP round-trip coverage
+
+- **Риск:** cookie/CORS/logout integration can differ from unit helpers.
+- **Evidence:** browser auth uses an API bootstrap helper and does not assert cookie attributes or Origin allow/deny.
+- **Почему текущая проверка недостаточна:** service/guard units bypass HTTP transport.
+- **Минимальное исправление:** registration/login/me/logout and CORS HTTP integration tests.
+- **Acceptance criteria:** allowed origin receives correct cookie lifecycle; disallowed origin and stale session fail.
+- **Тип:** integration.
+
+#### [P2] Closing omits no-bid and tie edges
+
+- **Риск:** empty auction or deterministic winner ordering can regress.
+- **Evidence:** lifecycle unit covers activation; integration has one clear winner and one race.
+- **Почему текущая проверка недостаточна:** zero-Bid and `amount/createdAt/id` tie paths are absent.
+- **Минимальное исправление:** parameterized PostgreSQL close cases and rerun.
+- **Acceptance criteria:** no winner for zero bids; exact deterministic winner; repeat is idempotent.
+- **Тип:** integration.
+
+#### [P2] Mobile Vitest mounts no components
+
+- **Риск:** prop wiring, roles, focus and composed styles can break while helpers pass.
+- **Evidence:** all 15 specs call schemas/helpers; Button/PageState/media/motion specs do not mount UI.
+- **Почему текущая проверка недостаточна:** pure contracts bypass rendered behavior.
+- **Минимальное исправление:** focused rendered Button, PageState, media and overlay/account tests.
+- **Acceptance criteria:** actual roles/names/states/interactions/styles match contracts.
+- **Тип:** component.
+
+#### [P2] Client registration validation lacks unit coverage
+
+- **Риск:** normalization and boundary copy regressions reach users.
+- **Evidence:** `schemas.spec.ts:5-20` covers login only.
+- **Почему текущая проверка недостаточна:** registration phone/password/confirmation paths are absent.
+- **Минимальное исправление:** parameterized registration schema and rendered submit-error cases.
+- **Acceptance criteria:** every boundary maps to the intended Russian message.
+- **Тип:** unit + component.
+
+#### [P2] Reduced-motion unit test covers only duration selection
+
+- **Риск:** real media/animation consumers may ignore the preference.
+- **Evidence:** `reduced-motion.spec.ts:5-12` tests a number, not mounted consumers.
+- **Почему текущая проверка недостаточна:** adapter wiring is bypassed.
+- **Минимальное исправление:** rendered/computed-style test under `prefers-reduced-motion`.
+- **Acceptance criteria:** decorative transitions are zero while state feedback remains.
+- **Тип:** component/E2E.
+
+#### [P2] Desktop tooltip “focus” evidence uses hover
+
+- **Риск:** keyboard users may not receive rail labels.
+- **Evidence:** `wave-c-screen-acceptance.spec.ts:513-543` calls `.hover()` on desktop; focus is mobile-only.
+- **Почему текущая проверка недостаточна:** hover does not prove keyboard focus.
+- **Минимальное исправление:** keyboard-focus rail links and assert tooltip text/state.
+- **Acceptance criteria:** each collapsed rail destination exposes its label on focus.
+- **Тип:** accessibility E2E.
+
+#### [P2] Broad route screenshots have title-only assertions
+
+- **Риск:** seller/admin/order layouts can regress below the heading.
+- **Evidence:** `wave-c-screen-acceptance.spec.ts:383-442` mostly asserts route/section titles.
+- **Почему текущая проверка недостаточна:** screenshot presence is not behavioral acceptance.
+- **Минимальное исправление:** screen-specific action/field/state/long-content/role assertions.
+- **Acceptance criteria:** each claimed state has a user-result assertion before capture.
+- **Тип:** E2E/screenshot.
+
+#### [P2] Browser E2E is Chromium-only
+
+- **Риск:** supported WebKit/mobile browser regressions remain invisible.
+- **Evidence:** `playwright.config.ts` defines only Chromium.
+- **Почему текущая проверка недостаточна:** one engine cannot establish cross-browser behavior.
+- **Минимальное исправление:** WebKit/mobile smoke or explicit Chromium-only release scope.
+- **Acceptance criteria:** critical catalog/auth/bid/order smoke passes on every supported engine.
+- **Тип:** E2E/device.
+
+#### [P2] Catalog evidence depends on accumulated suite data
+
+- **Риск:** standalone visual tests can fail or pass differently by order.
+- **Evidence:** stable seed has three Products; Wave C buyer evidence has records created by earlier specs in one shared reset DB.
+- **Почему текущая проверка недостаточна:** test does not own its dataset.
+- **Минимальное исправление:** per-spec isolated/reset exact catalog fixture.
+- **Acceptance criteria:** Wave C passes alone and in full suite with identical card count/geometry.
+- **Тип:** E2E fixture.
 
 ## 7. Что покрыто хорошо
 
@@ -128,15 +306,19 @@
 
 ## 8. Test debt и порядок исправлений
 
-Pending finding classification.
+1. Add PostgreSQL integration and real API/browser coverage for seller handoff, terminal transitions, admin cancellation, ranked replacement, snapshots, authorization and append-only audit. This closes the only P0 and the highest-value trust boundary.
+2. Close the auction-integrity P1 set: genuine stale-snapshot rejection/refetch/retry, persisted soft-close boundary/repeat/cap behavior, and a buyer-authenticated scheduled Bid denial.
+3. Add direct role/capability matrices for pending/changes-requested/suspended sellers and complete seller application + reasoned moderation audit persistence.
+4. Resolve `DEC-060`; then make seed execution/invariants and visual datasets deterministic, including four-card 1440 and loaded role-model evidence.
+5. Add rendered component and page-level accessibility automation, then strengthen seller/admin/order/auth state assertions. Chromium cross-browser expansion and lifecycle tie/no-bid edges can follow after the trust-critical gaps.
 
 ## 9. Финальный acceptance checklist
 
-- [ ] API/domain
-- [ ] auth/roles
-- [ ] bidding/order/moderation
-- [ ] media/seed
-- [ ] responsive visual behavior
-- [ ] accessibility automation
-- [ ] browser E2E
+- [ ] API/domain — static/unit/integration run passed; lifecycle and Order mutation gaps remain
+- [ ] auth/roles — unit/browser run passed; direct pending-seller and HTTP cookie/CORS matrices remain
+- [ ] bidding/order/moderation — P0/P1 gaps remain
+- [ ] media/seed — media is strong; seed integrity and `DEC-060` remain open
+- [ ] responsive visual behavior — suite passed; deterministic 1440/role evidence and known visual failures remain
+- [ ] accessibility automation — shared checks exist; page-level scanner and real mobile keyboard evidence remain
+- [ ] browser E2E — Chromium 28/28 passed; scenario/assertion and cross-browser gaps remain
 - [ ] founder manual acceptance

@@ -24,20 +24,20 @@ Commit under review: `5be687c`
 - [x] Mobile unit/static body-level audit.
 - [x] E2E/fixtures body-level audit.
 - [x] Visual inspection of all supplied screenshots (112/112).
-- [ ] Real verification runs.
-- [ ] Final matrices, findings, verdict and acceptance checklist.
+- [x] Real verification runs.
+- [x] Final matrices, findings, verdict and acceptance checklist.
 
 ## Инвентарь
 
 | Область | Файлы | Наблюдение |
 |---|---:|---|
-| `apps/api/src/**/*.spec.ts` | 33 | Unit/controller/service/config/realtime coverage; assertions not yet classified |
-| `apps/api/test/**` | 2 specs + helper | PostgreSQL integration; not yet run |
+| `apps/api/src/**/*.spec.ts` | 33 | Reviewed/classified; 136 tests Passed |
+| `apps/api/test/**` | 2 specs + helper | PostgreSQL integration; 10 tests Passed |
 | `apps/mobile/src/**/*.spec.ts` | 15 | Geometry, tokens, adapters, auth/bid validation and cache/environment contracts |
 | `apps/mobile/e2e/**/*.spec.ts` | 11 | 28 top-level Playwright scenarios, one worker, real API and disposable `bidplace_e2e` database |
 | `packages/contracts/test/**` | 2 | Contract and seed-contract tests |
 | `packages/design-tokens/**/*.spec.ts` | 0 | Package has build/typecheck only; visual token assertions are under mobile |
-| `packages/database/**/*.spec.ts` | 1 | Export smoke only; schema/migration/seed need source-level audit |
+| `packages/database/**/*.spec.ts` | 1 | Export smoke 1/1 Passed; schema/migration/seed reviewed separately |
 
 ## Screenshot evidence
 
@@ -58,21 +58,34 @@ Commit under review: `5be687c`
 - P2: mobile Vitest covers pure contracts but mounts no components; registration schema and real reduced-motion consumers are not unit-tested.
 - P1: 1440 catalog assertion accepts three cards; mobile keyboard does not constrain the visual viewport; no page-level accessibility scanner.
 - P2: desktop tooltip is hover-tested under a focus-labelled screenshot, broad route captures have title-only assertions, and Playwright is Chromium-only.
-- P1 visual: PageState retry button is visibly left-aligned; registration leaks English phone validation; two role-model “loaded” captures contain skeletons only.
+- P1 visual: PageState retry button is visibly left-aligned; registration leaks English phone validation; role-model “loaded” captures are race-dependent and the fresh pending-seller artifact still contains skeletons.
 - P2 determinism: catalog visual data depends on records accumulated by earlier specs.
 
 ## Фактические запуски
 
-- Все обязательные команды: `Not run`.
-- Исторические результаты из project status/Wave progress: `Historical agent evidence only`; они не считаются результатом этого аудита.
+- `Passed`: design-tokens build.
+- `Passed`: API typecheck, build and unit suite — 33 files / 136 tests.
+- `Passed`: API PostgreSQL integration — 2 files / 10 tests. Первый sandboxed запуск не видел localhost; разрешённый rerun к существующему `bidplace-postgres` прошёл.
+- `Passed`: contracts — 2 files / 7 tests.
+- `Passed`: database export smoke — 1 file / 1 test via direct Vitest (package has no `test` script).
+- `Passed`: mobile typecheck, lint and Vitest — 15 files / 73 tests.
+- `Passed`: full mobile Chromium Playwright — 28/28, 3.0 minutes, disposable `bidplace_e2e`.
+- `Failed`: literal mobile `build` script stopped before export because its nested `pnpm` resolved to 11.10.0 against root pin 11.7.0.
+- `Passed`: project-equivalent pinned build — design-tokens build plus direct Expo export; web/iOS/Android bundles generated.
+- `Passed`: final `git diff --check`.
+- Historical project-status/Wave results remain `Historical agent evidence only`; none were substituted for these runs.
+
+## Свежий visual rerun
+
+- 66 current-run Wave C PNG generated in `/private/tmp/bidplace-wave-c-screenshots/042f599`.
+- Visually rechecked the known-risk artifacts: registration still shows the English phone error; PageState retry remains left-aligned; pending-seller “loaded” capture still shows skeletons; approved-seller loaded successfully on this run, confirming a race-dependent evidence wait; programmatic Product focus does not emulate a shrunken mobile visual viewport.
 
 ## Следующий блок
 
-1. Run pinned-pnpm design/API/mobile/contracts/database checks and PostgreSQL integration when infrastructure is available.
-2. Run the complete Chromium E2E suite and inspect the newly generated evidence directory for the known visual defects.
-3. Finalize verdict, debt order and acceptance checklist; make the final audit commit.
+1. Run final diff/status checks.
+2. Commit the completed audit only.
 
 ## Ограничения и открытые решения
 
 - `DEC-060`: local/test seed содержит Bid fixtures, конфликтующие с буквальным запретом platform seed bids; founder decision отсутствует.
-- Wave C screenshot names target `a852f68`, while the current commit is `5be687c`; artifacts must not be described as current-commit proof without a matching rerun or diff-based qualification.
+- Fresh Wave C screenshots target audit HEAD `042f599`; source and tests are unchanged from commit under review `5be687c`, while audit-only commits account for the hash difference.
