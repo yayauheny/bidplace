@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import {
   ScrollView,
   View,
   useWindowDimensions,
   type DimensionValue,
 } from 'react-native';
-import { useState } from 'react';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { modernTokens } from '@bidplace/design-tokens';
@@ -15,9 +13,9 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AuctionCard,
   AppText,
-  ImagePlaceholder,
   PageHeader,
   PageState,
+  ResilientRemoteImage,
 } from '../../components/modern-ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
@@ -54,30 +52,20 @@ function AuthorWorkGrid({
 }
 
 function AuthorPhoto({ url, name }: { url: string; name: string }) {
-  const [failed, setFailed] = useState(false);
   const style = {
     width: 120,
     height: 120,
     borderRadius: modernTokens.radius.pill,
   };
 
-  if (failed) {
-    return (
-      <ImagePlaceholder
-        ratio={1}
-        label={`Фото автора недоступно: ${name}`}
-        style={style}
-      />
-    );
-  }
-
   return (
-    <Image
-      source={{ uri: getApiAssetUrl(url) }}
+    <ResilientRemoteImage
+      uri={getApiAssetUrl(url)}
+      component="AuthorPhoto"
       accessibilityLabel={`Фото автора ${name}`}
-      contentFit="cover"
-      onError={() => setFailed(true)}
+      fallbackLabel={`Фото автора недоступно: ${name}`}
       style={style}
+      contentFit="cover"
     />
   );
 }

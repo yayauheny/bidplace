@@ -11,6 +11,7 @@ export * from './ImagePlaceholder';
 export * from './MotionPressable';
 export * from './BottomActionBar';
 export * from './ProductGallery';
+export * from './ResilientRemoteImage';
 export * from './Separator';
 export * from './Skeleton';
 export * from './TextField';

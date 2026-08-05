@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { ScrollView, View } from 'react-native';
 
 import { modernTokens } from '@bidplace/design-tokens';
@@ -13,9 +12,9 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
-  ImagePlaceholder,
   PageState,
   PrimaryButton,
+  ResilientRemoteImage,
   SecondaryButton,
   TextButton,
   TextField,
@@ -43,7 +42,6 @@ function DraftImageRow({
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
 }) {
-  const [failed, setFailed] = useState(false);
   const mediaStyle = {
     width: 160,
     height: 200,
@@ -59,21 +57,14 @@ function DraftImageRow({
         gap: modernTokens.space.x3,
       }}
     >
-      {failed ? (
-        <ImagePlaceholder
-          ratio={4 / 5}
-          label={`Изображение ${position + 1} недоступно`}
-          style={mediaStyle}
-        />
-      ) : (
-        <Image
-          source={{ uri: getApiAssetUrl(url) }}
-          style={mediaStyle}
-          contentFit="contain"
-          accessibilityLabel={`Изображение предмета ${position + 1}`}
-          onError={() => setFailed(true)}
-        />
-      )}
+      <ResilientRemoteImage
+        uri={getApiAssetUrl(url)}
+        component="ProductGallery"
+        accessibilityLabel={`Изображение предмета ${position + 1}`}
+        fallbackLabel={`Изображение ${position + 1} недоступно`}
+        style={mediaStyle}
+        contentFit="contain"
+      />
       {editable ? (
         <View style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x1 }}>
           <TextButton
@@ -441,7 +432,8 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
       </FormSection>
 
       <AppText role="bodySmall" tone="secondary">
-        Дата размещения установится автоматически при первой публичной публикации.
+        Дата размещения установится автоматически при первой публичной
+        публикации.
       </AppText>
 
       {editable ? (

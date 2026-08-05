@@ -11,6 +11,7 @@ import {
   PageHeader,
   PageState,
   PrimaryButton,
+  ResilientRemoteImage,
   SelectableRow,
   SecondaryButton,
   TextField,
@@ -202,7 +203,11 @@ export function SellerProfileScreen() {
         <View style={{ gap: modernTokens.space.x2 }}>
           <PageHeader
             title="Профиль продавца"
-            description={!profile ? 'Заполните профиль, чтобы подать заявку на модерацию.' : undefined}
+            description={
+              !profile
+                ? 'Заполните профиль, чтобы подать заявку на модерацию.'
+                : undefined
+            }
           />
           {profile ? (
             <AppText
@@ -235,16 +240,31 @@ export function SellerProfileScreen() {
               Фото профиля
             </AppText>
             {photoPreview && !photoFailed ? (
-              <Image
-                source={{ uri: photoPreview }}
-                style={{
-                  width: 200,
-                  height: 200,
-                  borderRadius: modernTokens.radius.image,
-                }}
-                contentFit="cover"
-                onError={() => setPhotoFailed(true)}
-              />
+              photoBlob ? (
+                <Image
+                  source={{ uri: photoPreview }}
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: modernTokens.radius.image,
+                  }}
+                  contentFit="cover"
+                  onError={() => setPhotoFailed(true)}
+                />
+              ) : (
+                <ResilientRemoteImage
+                  uri={photoPreview}
+                  component="AuthorPhoto"
+                  accessibilityLabel="Фото профиля"
+                  fallbackLabel="Фото профиля недоступно"
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: modernTokens.radius.image,
+                  }}
+                  contentFit="cover"
+                />
+              )
             ) : (
               <ImagePlaceholder
                 ratio={1}
@@ -357,7 +377,8 @@ export function SellerProfileScreen() {
                   profile.handoffContactType,
                   handoffContactTypeLabels,
                   'Неизвестный тип контакта',
-                )}: {profile.handoffContactValue}
+                )}
+                : {profile.handoffContactValue}
               </AppText>
               <AppText role="bodySmall" tone="secondary">
                 Инициатор:{' '}

@@ -1,6 +1,4 @@
-import { Image } from 'expo-image';
 import { ScrollView, useWindowDimensions } from 'react-native';
-import { useState } from 'react';
 
 import { modernTokens } from '@bidplace/design-tokens';
 
@@ -8,6 +6,7 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { productMediaStyle } from './product-media-style';
+import { ResilientRemoteImage } from './ResilientRemoteImage';
 
 type ProductGalleryImage = { id: string; url: string };
 
@@ -65,28 +64,18 @@ function GalleryImage({
   label: string;
   width: number;
 }) {
-  const [failed, setFailed] = useState(false);
   const reducedMotion = useReducedMotion();
   const imageLabel = `Изображение предмета: ${label}`;
 
-  if (failed) {
-    return (
-      <ImagePlaceholder
-        ratio={modernTokens.ratio.productPortrait}
-        label={`Изображение недоступно: ${label}`}
-        style={productMediaStyle(width)}
-      />
-    );
-  }
-
   return (
-    <Image
-      source={{ uri: getApiAssetUrl(image.url) }}
+    <ResilientRemoteImage
+      uri={getApiAssetUrl(image.url)}
+      component="ProductGallery"
+      accessibilityLabel={imageLabel}
+      fallbackLabel={`Изображение недоступно: ${label}`}
+      style={productMediaStyle(width)}
       contentFit="contain"
       transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
-      accessibilityLabel={imageLabel}
-      onError={() => setFailed(true)}
-      style={productMediaStyle(width)}
     />
   );
 }

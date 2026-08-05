@@ -62,6 +62,8 @@ Visual polish evidence: `getApiAssetUrl` is used by Catalog, Product gallery, se
 - `Implemented`: C6 keeps auth isolated/scrollable, makes registration copy truthful and gives async states one loading announcement plus plain-language retry feedback.
 - `Implemented`: C7 targeted acceptance passed 4/4 and the full repository Playwright suite passed 28/28 with real seed/API state, role restrictions, first-viewport bounds, overflow checks, naturalWidth/opacity, focus, empty/error/long-content states and dialogs. 66 commit-stamped screenshots are in `/private/tmp/bidplace-wave-c-screenshots/a852f68`; founder physical-device/screen-reader acceptance remains separate.
 
+Remote media resilience (2026-08-05): shared remote images preserve the existing media geometry while showing a placeholder during bounded 1/3/8-second retries, then expose `Повторить` after exhaustion. Public author/product media and remote seller/admin previews use this component; local picker previews remain immediate local images. Automated cold-start, recovery, retry-cap and accessibility-label evidence passes.
+
 Moderation correction (2026-08-05): the admin Product queue disables approval until the related author is approved, shows `Сначала одобрите автора`, refreshes both queues after author approval, and presents errors for the actual moderation action. The behavior is covered by `apps/mobile/e2e/wave-one.spec.ts`; the AppDialog web `pointerEvents` warning is also removed. Founder visual/device/accessibility acceptance remains separate.
 
 ## Functional screen status

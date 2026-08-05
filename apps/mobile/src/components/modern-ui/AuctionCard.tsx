@@ -1,7 +1,5 @@
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import type { z } from 'zod';
-import { useState } from 'react';
 import { View } from 'react-native';
 
 import type { publicProductListItemSchema } from '@bidplace/contracts';
@@ -14,6 +12,7 @@ import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
 import { productMediaStyle } from './product-media-style';
+import { ResilientRemoteImage } from './ResilientRemoteImage';
 
 type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 
@@ -80,27 +79,18 @@ function AuctionCardImage({
   label: string;
   productId: string;
 }) {
-  const [failed, setFailed] = useState(false);
   const reducedMotion = useReducedMotion();
 
-  if (failed) {
-    return (
-      <ImagePlaceholder
-        label={`Изображение недоступно: ${label}`}
-        style={productMediaStyle()}
-      />
-    );
-  }
-
   return (
-    <Image
-      source={{ uri: getApiAssetUrl(imageUrl) }}
+    <ResilientRemoteImage
+      uri={getApiAssetUrl(imageUrl)}
+      component="AuctionCard"
+      accessibilityLabel={`Изображение предмета: ${label}`}
+      fallbackLabel={`Изображение недоступно: ${label}`}
+      style={productMediaStyle()}
       contentFit="contain"
       transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
       recyclingKey={`${productId}-${imageId}`}
-      accessibilityLabel={`Изображение предмета: ${label}`}
-      onError={() => setFailed(true)}
-      style={productMediaStyle()}
     />
   );
 }

@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
-import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 
@@ -16,6 +15,7 @@ import {
   PageHeader,
   PageState,
   PrimaryButton,
+  ResilientRemoteImage,
   SecondaryButton,
   TextButton,
   TextField,
@@ -324,15 +324,17 @@ export function AdminModerationScreen() {
                   )}
                 >
                   {product.images[0] ? (
-                    <Image
-                      source={{ uri: getApiAssetUrl(product.images[0].url) }}
-                      contentFit="contain"
+                    <ResilientRemoteImage
+                      uri={getApiAssetUrl(product.images[0].url)}
+                      component="ProductGallery"
                       accessibilityLabel={`Предмет: ${product.title ?? 'Без названия'}`}
+                      fallbackLabel={`Изображение недоступно: ${product.title ?? 'Без названия'}`}
                       style={{
                         width: 96,
                         height: 96,
                         borderRadius: modernTokens.radius.image,
                       }}
+                      contentFit="contain"
                     />
                   ) : null}
                   <Link
