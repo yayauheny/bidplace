@@ -88,3 +88,18 @@ Status: Implemented
   `Access-Control-Allow-Origin`, including for preflight, so the browser cannot
   use the authenticated response.
 - No cookie, CORS, CSRF or guard behavior was changed.
+
+## Block D — lifecycle close outcomes
+
+Status: Implemented
+
+- `apps/api/test/integration/lifecycle-close.integration.spec.ts`: 2/2
+  PostgreSQL tests passed.
+- An expired LIVE Listing with no bids becomes `ENDED` without a winner or
+  Order; repeat close leaves persisted state unchanged and emits no second
+  event.
+- Equal amount/equal timestamp bids use the existing canonical
+  `amount DESC → createdAt ASC → id ASC` ordering. The selected Bid becomes the
+  sole Order source, and the persisted Listing plus `listing.ended` payload
+  agree on status, price, count and deadline.
+- No lifecycle rule or tie-break implementation was changed.
