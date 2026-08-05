@@ -10,15 +10,15 @@ Status: Initialized
 
 ## Current task
 
-Screen: Not selected  
-Route: Not selected  
-Role: Not selected  
-Scope: Not selected  
-Approved references: None  
-Existing implementation: Not selected  
-Known problems: None recorded  
-Must not change: Product behavior, shared tokens, and production UI without approval  
-Open questions: None
+Screen: Public catalog — first MVP screen
+Route: `/`
+Role: Public buyer / guest
+Scope: 1440, 1024, 390 px; default, loading, empty, error; long-title and unavailable-image card coverage
+Approved references: Current Expo implementation and `01-SCREEN-PROMPTS.md` prompt 1
+Existing implementation: `apps/mobile/src/features/products/product-list-screen.tsx`, `apps/mobile/src/components/modern-ui/AuctionCard.tsx`, `apps/mobile/src/components/layout/AppShell.tsx`
+Known problems: Founder-approved production photography is not yet final; the prototype uses explicit neutral missing-asset placeholders
+Must not change: Product behavior, shared tokens, production UI, navigation, API, filters, tags, favorites, pagination, recommendations, cart, or fake actions
+Open questions: Primary button color is mirrored to production black `#111111`; final brand approval and founder visual/device/accessibility acceptance remain open
 
 ## Directories
 

@@ -14,6 +14,11 @@
 - `Not implemented`: no new visual direction has been approved or transferred
   to production from Pen. Existing components, `modernTokens`, routes, and
   product behavior remain unchanged.
+- `Needs review`: the public catalog prototype is available in
+  `design/pen/bidplace-web.pen`, with the 2x review export at
+  `design/pen/exports/catalog-review.png`. It covers 1440/1024/390 px default,
+  loading, empty, network-error, long-title and unavailable-image states; no
+  visual direction is approved for implementation yet.
 
 ## Wave A — structural responsive fixes — 2026-08-02
 

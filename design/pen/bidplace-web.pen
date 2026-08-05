@@ -1,0 +1,4144 @@
+{
+  "version": "2.15",
+  "children": [
+    {
+      "type": "frame",
+      "id": "mkwP7",
+      "x": 0,
+      "y": 0,
+      "name": "Component / Catalog Card / Missing Asset",
+      "reusable": true,
+      "width": 306,
+      "layout": "vertical",
+      "gap": 10,
+      "children": [
+        {
+          "type": "frame",
+          "id": "rEwar",
+          "name": "Media Placeholder",
+          "width": "fill_container",
+          "height": 383,
+          "fill": "$catalog-soft",
+          "cornerRadius": 8,
+          "stroke": "$catalog-border",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 10,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "XIDEI",
+              "name": "Image Icon",
+              "width": 28,
+              "height": 28,
+              "icon": "image",
+              "library": "Material Symbols Outlined",
+              "fill": "$catalog-muted"
+            },
+            {
+              "type": "text",
+              "id": "VXfpE",
+              "name": "Media Label",
+              "fill": "$catalog-muted",
+              "content": "Фото ожидается",
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FV8rW",
+          "name": "Card Body",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 5,
+          "children": [
+            {
+              "type": "text",
+              "id": "mO4bo",
+              "name": "Author",
+              "fill": "$catalog-muted",
+              "content": "Анна Морозова",
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "E0cg0D",
+              "name": "Title",
+              "fill": "$catalog-text",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Фарфоровая форма с ручной глазурью",
+              "lineHeight": 1.22,
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "qPjgH",
+              "name": "One Line Description",
+              "fill": "$catalog-muted",
+              "textGrowth": "fixed-width-height",
+              "width": "fill_container",
+              "height": 18,
+              "content": "Небольшая работа из авторской серии",
+              "lineHeight": 1.25,
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "bZd8I",
+              "name": "Atomic Price",
+              "fill": "$catalog-text",
+              "content": "120 BYN",
+              "fontFamily": "$catalog-data-font",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "MMfUT",
+              "name": "Status And Deadline",
+              "fill": "$catalog-muted",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Идёт до 18:00",
+              "lineHeight": 1.25,
+              "fontFamily": "$catalog-font",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "P1byHq",
+      "x": 346,
+      "y": 0,
+      "name": "Component / Catalog Card / Unavailable Image",
+      "reusable": true,
+      "width": 306,
+      "layout": "vertical",
+      "gap": 10,
+      "children": [
+        {
+          "type": "frame",
+          "id": "H5q4vM",
+          "name": "Media Unavailable",
+          "width": "fill_container",
+          "height": 383,
+          "fill": "#FAFAF8",
+          "cornerRadius": 8,
+          "stroke": "#C9C9C1",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 10,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "x6Bc3",
+              "name": "Unavailable Icon",
+              "width": 30,
+              "height": 30,
+              "icon": "broken_image",
+              "library": "Material Symbols Outlined",
+              "fill": "$catalog-muted"
+            },
+            {
+              "type": "text",
+              "id": "h5yDq8",
+              "name": "Unavailable Label",
+              "fill": "$catalog-muted",
+              "content": "Фото недоступно",
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "I9sNA",
+          "name": "Card Body",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 5,
+          "children": [
+            {
+              "type": "text",
+              "id": "eoxYx",
+              "name": "Author",
+              "fill": "$catalog-muted",
+              "content": "Таисия Борисова",
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "500"
+            },
+            {
+              "type": "text",
+              "id": "l1hEr",
+              "name": "Title",
+              "fill": "$catalog-text",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Керамический объект с фактурной поверхностью",
+              "lineHeight": 1.22,
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "LhzzA",
+              "name": "One Line Description",
+              "fill": "$catalog-muted",
+              "textGrowth": "fixed-width-height",
+              "width": "fill_container",
+              "height": 18,
+              "content": "Фото не загрузилось, данные сохранены",
+              "lineHeight": 1.25,
+              "fontFamily": "$catalog-font",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "YS3ab",
+              "name": "Atomic Price",
+              "fill": "$catalog-text",
+              "content": "95 BYN",
+              "fontFamily": "$catalog-data-font",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "qMPqU",
+              "name": "Status And Deadline",
+              "fill": "$catalog-muted",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Начнётся завтра",
+              "lineHeight": 1.25,
+              "fontFamily": "$catalog-font",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Dhmxg",
+      "x": 692,
+      "y": 0,
+      "name": "Component / Catalog Card / Loading Skeleton",
+      "reusable": true,
+      "width": 306,
+      "layout": "vertical",
+      "gap": 10,
+      "children": [
+        {
+          "type": "rectangle",
+          "cornerRadius": 8,
+          "id": "D1C69m",
+          "name": "Skeleton Media",
+          "fill": "$catalog-soft",
+          "width": "fill_container",
+          "height": 383
+        },
+        {
+          "type": "frame",
+          "id": "JQBv4",
+          "name": "Skeleton Body",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 7,
+          "children": [
+            {
+              "type": "rectangle",
+              "cornerRadius": 4,
+              "id": "EAhR3",
+              "name": "Skeleton Author",
+              "fill": "$catalog-soft-2",
+              "width": 108,
+              "height": 13
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 4,
+              "id": "gUrAS",
+              "name": "Skeleton Title",
+              "fill": "$catalog-soft-2",
+              "width": "fill_container",
+              "height": 18
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 4,
+              "id": "uvXXC",
+              "name": "Skeleton Description",
+              "fill": "$catalog-soft-2",
+              "width": "fill_container",
+              "height": 13
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 4,
+              "id": "t5fFU",
+              "name": "Skeleton Price",
+              "fill": "$catalog-soft-2",
+              "width": 74,
+              "height": 15
+            },
+            {
+              "type": "rectangle",
+              "cornerRadius": 4,
+              "id": "X23MMv",
+              "name": "Skeleton Status",
+              "fill": "$catalog-soft-2",
+              "width": 130,
+              "height": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OjWd2",
+      "x": 0,
+      "y": 611,
+      "name": "MVP / Public / Catalog / 1440 / Default",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Pt7iC",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "u1XCoI",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "TVFC7",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "pVhkj",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "lHycY",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "y29hsu",
+              "name": "Catalog Grid 4 Columns",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 30,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vGrxq",
+                  "name": "Catalog Row 1",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "XexgX",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Фарфоровая форма с ручной глазурью",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Фарфоровая форма с ручной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Небольшая работа из авторской серии"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    },
+                    {
+                      "id": "DRWSE",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Объект из шамотной глины",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Объект из шамотной глины"
+                        },
+                        "qPjgH": {
+                          "content": "Единственный экземпляр для пилота"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "KrGVO",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Малый текстильный коллаж",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Елена Ракова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Авторская работа, смешанная техника"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    },
+                    {
+                      "id": "vOe10",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Деревянная чаша с подписью",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Никита Орлов"
+                        },
+                        "E0cg0D": {
+                          "content": "Деревянная чаша с подписью"
+                        },
+                        "qPjgH": {
+                          "content": "Ручная обработка и масло"
+                        },
+                        "bZd8I": {
+                          "content": "75 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 21:30"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "hi3Zh",
+      "x": 1530,
+      "y": 611,
+      "name": "MVP / Public / Catalog / 1024 / Default",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "x4nzKz",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "mQtPY",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "opbz9",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "ZyWh8",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "aIAG4",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TKaAE",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "uolfl",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "t0LoE",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Md60o",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "OqT9T",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            40,
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "xwbBg",
+              "name": "Catalog Grid 3 Columns",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kohxy",
+                  "name": "Catalog Row 1",
+                  "width": "fill_container",
+                  "gap": 28,
+                  "children": [
+                    {
+                      "id": "s5IE0d",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Фарфоровая форма с ручной глазурью",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Фарфоровая форма с ручной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Небольшая работа из авторской серии"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    },
+                    {
+                      "id": "IfvKQ",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Объект из шамотной глины",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Объект из шамотной глины"
+                        },
+                        "qPjgH": {
+                          "content": "Единственный экземпляр для пилота"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "ZF48H",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Малый текстильный коллаж",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Елена Ракова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Авторская работа, смешанная техника"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "IKfUU",
+      "x": 2644,
+      "y": 611,
+      "name": "MVP / Public / Catalog / 390 / Default",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "s04tr",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wQqbw",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SEBFY",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "jdPo7",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "p8D2A",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vynbB",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Oxxzr",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nYvBF",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ungD0",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "hLHNY",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            18,
+            20,
+            24,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "aVERc",
+              "name": "Catalog Grid 2 Columns",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 22,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iHgYn",
+                  "name": "Catalog Row 1",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "fdLed",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Фарфоровая форма с ручной глазурью",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Фарфоровая форма с ручной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Небольшая работа из авторской серии"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    },
+                    {
+                      "id": "GWT8o",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Объект из шамотной глины",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Объект из шамотной глины"
+                        },
+                        "qPjgH": {
+                          "content": "Единственный экземпляр для пилота"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IP3gy",
+                  "name": "Catalog Row 2",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "hM0NZ",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Малый текстильный коллаж",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Елена Ракова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Авторская работа, смешанная техника"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    },
+                    {
+                      "id": "sJ1Cz",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Catalog Card / Деревянная чаша с подписью",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Никита Орлов"
+                        },
+                        "E0cg0D": {
+                          "content": "Деревянная чаша с подписью"
+                        },
+                        "qPjgH": {
+                          "content": "Ручная обработка и масло"
+                        },
+                        "bZd8I": {
+                          "content": "75 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 21:30"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "g7P4U",
+      "x": 0,
+      "y": 1725,
+      "name": "MVP / Public / Catalog / 1440 / Loading Skeleton",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "QmwoB",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "d9LTxz",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "as8Ey",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "i6z4j",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "meme0",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "x0Yh56",
+              "name": "Catalog Loading Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qhQbJ",
+                  "name": "Skeleton Row 1",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "nCvZa",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 306,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 383
+                        }
+                      }
+                    },
+                    {
+                      "id": "g47dw",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 306,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 383
+                        }
+                      }
+                    },
+                    {
+                      "id": "kaA0c",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 306,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 383
+                        }
+                      }
+                    },
+                    {
+                      "id": "shDn5",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 306,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 383
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Hbhet",
+      "x": 0,
+      "y": 2839,
+      "name": "MVP / Public / Catalog / 1024 / Loading Skeleton",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "W0Ebsh",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "fPRcp",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bLZrf",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "Q1YyY",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "RXeXG",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Ztuzx",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KaWzn",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "L5iR6G",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FXo0D",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "eAMKL",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            40,
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "VDslj",
+              "name": "Catalog Loading Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Uxd3v",
+                  "name": "Skeleton Row 1",
+                  "width": "fill_container",
+                  "gap": 28,
+                  "children": [
+                    {
+                      "id": "LVbJH",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 288,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 360
+                        }
+                      }
+                    },
+                    {
+                      "id": "iMJ5x",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 288,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 360
+                        }
+                      }
+                    },
+                    {
+                      "id": "JjfWc",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 288,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 360
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "eAhXJ",
+      "x": 0,
+      "y": 3953,
+      "name": "MVP / Public / Catalog / 390 / Loading Skeleton",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "gFT6e",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "wL9ou",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "PDOdH",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "JyIOY",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "g9XySz",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "HB6UQ",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yFDRc",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "u7z3V",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vh9tg",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nLzxw",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            20,
+            32,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "lV8c1",
+              "name": "Catalog Loading Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YKnSN",
+                  "name": "Skeleton Row 1",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "y9fS3",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 164,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 205
+                        }
+                      }
+                    },
+                    {
+                      "id": "fxjAJ",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 164,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 205
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mZfbh",
+                  "name": "Skeleton Row 2",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "qizdl",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 164,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 205
+                        }
+                      }
+                    },
+                    {
+                      "id": "vWHs9",
+                      "type": "ref",
+                      "ref": "Dhmxg",
+                      "name": "Loading Catalog Card",
+                      "width": 164,
+                      "descendants": {
+                        "D1C69m": {
+                          "height": 205
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f4t8Ak",
+      "x": 3124,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 1440 / Empty",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ySH7S",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "yR8zj",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "y3UJE",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "mdvVj",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "D9h74P",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog State Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "eaLfn",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "I4VLXq",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Пока нет опубликованных предметов",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "HShDl",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Когда авторы опубликуют approved работы, они появятся здесь без дополнительных фильтров.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fP0QD",
+      "x": 4654,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 1024 / Empty",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "D4pYm",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "iIroz",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "u10UnZ",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "hRRl4",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tITjo",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ownEH",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "dYzTd",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EkhhG",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "SwcFm",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "F1bqoL",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog State Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "AX2Yn",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WNwvy",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Пока нет опубликованных предметов",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "Nm3pH",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Когда авторы опубликуют approved работы, они появятся здесь без дополнительных фильтров.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "V1nCwB",
+      "x": 5768,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 390 / Empty",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "vcGmz",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "njoNe",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "wqv83",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "fkntk",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "A7iso",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fIg0f",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VXTJt",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kuDJx",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nG6aV",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "lW1XJ",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog State Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "jjQFl",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Jvf24",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Пока нет опубликованных предметов",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "UNJRs",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Когда авторы опубликуют approved работы, они появятся здесь без дополнительных фильтров.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YQ9hu",
+      "x": 6248,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 1440 / Network Error",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "yiP44",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "xohOJ",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "fW21Y",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "r1PcyQ",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Jo1hX",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog State Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "qlyfF",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "fBvDw",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Не удалось загрузить каталог",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "z9Tmt",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Проверьте соединение и попробуйте снова. Уже опубликованные предметы не меняются на этой странице.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "PzIrw",
+                  "name": "Retry Button",
+                  "height": 44,
+                  "fill": "$catalog-text",
+                  "cornerRadius": 14,
+                  "padding": [
+                    0,
+                    18
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kHdtR",
+                      "name": "Retry Button Label",
+                      "fill": "#FFFFFF",
+                      "content": "Повторить",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Bf3eH",
+      "x": 7778,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 1024 / Network Error",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "q6Ol5",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "PudQy",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XwoWe",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "wdaYJ",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "z5CMxV",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "B2AtK",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AbSRI",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fII1v",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zwQPi",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "eFrRf",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog State Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "y5WYg",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dW8fq",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Не удалось загрузить каталог",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "xRI9u",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Проверьте соединение и попробуйте снова. Уже опубликованные предметы не меняются на этой странице.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "KfcAB",
+                  "name": "Retry Button",
+                  "height": 44,
+                  "fill": "$catalog-text",
+                  "cornerRadius": 14,
+                  "padding": [
+                    0,
+                    18
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "xQ2C5",
+                      "name": "Retry Button Label",
+                      "fill": "#FFFFFF",
+                      "content": "Повторить",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "p3cCeO",
+      "x": 8892,
+      "y": 0,
+      "name": "MVP / Public / Catalog / 390 / Network Error",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "jMFj2",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Hm8gv",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "fH6Wb",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "RzeeG",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WiXrE",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pOxDl",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "uYvlX",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zpMOX",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yNPl1",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "v9f5P",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog State Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "uAGyc",
+              "name": "State Group",
+              "width": 360,
+              "layout": "vertical",
+              "gap": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SlWKH",
+                  "name": "State Title",
+                  "fill": "$catalog-text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Не удалось загрузить каталог",
+                  "lineHeight": 1.2,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 20,
+                  "fontWeight": "650"
+                },
+                {
+                  "type": "text",
+                  "id": "ytm0Z",
+                  "name": "State Explanation",
+                  "fill": "$catalog-muted",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Проверьте соединение и попробуйте снова. Уже опубликованные предметы не меняются на этой странице.",
+                  "lineHeight": 1.35,
+                  "textAlign": "center",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "N8jJU",
+                  "name": "Retry Button",
+                  "height": 44,
+                  "fill": "$catalog-text",
+                  "cornerRadius": 14,
+                  "padding": [
+                    0,
+                    18
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZqRpp",
+                      "name": "Retry Button Label",
+                      "fill": "#FFFFFF",
+                      "content": "Повторить",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "VjhX2",
+      "x": 0,
+      "y": 5067,
+      "name": "MVP / Public / Catalog / 1440 / Long Title Card Variant",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "QLkLg",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "H5HCEk",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "ui6rA",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "AMWIl",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "YI5b5",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "HIpIL",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "B645F",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "TuVys",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Одна строка описания остаётся краткой"
+                        },
+                        "bZd8I": {
+                          "content": "1250 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 20:45"
+                        }
+                      }
+                    },
+                    {
+                      "id": "pFqpp",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Форма с ручной глазурью",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Форма с ручной глазурью",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    },
+                    {
+                      "id": "f685p",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малая серия керамики",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малая серия керамики",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "kX0ln",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малая серия керамики",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малая серия керамики",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vi3NY",
+      "x": 0,
+      "y": 6181,
+      "name": "MVP / Public / Catalog / 1024 / Long Title Card Variant",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Y0mrx",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ji3jA",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "lIbq5",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "Pvg5S",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UF8q9",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BItYO",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Oyx74",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "P4bDaq",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TriPD",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pxjUp",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            40,
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "xI2nd",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e88aM9",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 28,
+                  "children": [
+                    {
+                      "id": "LonCt",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Одна строка описания остаётся краткой"
+                        },
+                        "bZd8I": {
+                          "content": "1250 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 20:45"
+                        }
+                      }
+                    },
+                    {
+                      "id": "vhx2E",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Форма с ручной глазурью",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Форма с ручной глазурью",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Ii22R",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малая серия керамики",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малая серия керамики",
+                          "textGrowth": "fixed-width-height",
+                          "height": 78
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "95 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "B5e5v",
+      "x": 0,
+      "y": 7295,
+      "name": "MVP / Public / Catalog / 390 / Long Title Card Variant",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "J2czz",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "j4sNrt",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "QECbH",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "KiCan",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pgGwP",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lvpdO",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "BlAO5",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "D8RUu",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VWHv9",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "GPJvE",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            20,
+            32,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "mrFn9",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wpkGy",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "gaKuQ",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Таисия Борисова"
+                        },
+                        "E0cg0D": {
+                          "content": "Очень длинное название авторского предмета, которое переносится на несколько строк без разрыва цены",
+                          "textGrowth": "fixed-width-height",
+                          "height": 136
+                        },
+                        "qPjgH": {
+                          "content": "Одна строка описания остаётся краткой"
+                        },
+                        "bZd8I": {
+                          "content": "1250 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 20:45"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Cp312",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Форма с ручной глазурью",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Форма с ручной глазурью",
+                          "textGrowth": "fixed-width-height",
+                          "height": 136
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "120 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до 18:00"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "m5ILjT",
+      "x": 0,
+      "y": 8409,
+      "name": "MVP / Public / Catalog / 1440 / Unavailable Image Card Variant",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "bo90W",
+          "x": 0,
+          "y": 0,
+          "name": "Desktop Rail",
+          "width": 72,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "right": 1
+          },
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            20,
+            14
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "IQzkU",
+              "name": "Brand Mark",
+              "fill": "$catalog-text",
+              "content": "bp",
+              "fontFamily": "$catalog-font",
+              "fontSize": 16,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "VFno4",
+              "name": "Catalog Rail Item",
+              "width": 44,
+              "height": 44,
+              "fill": "$catalog-soft",
+              "cornerRadius": 14,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "EWL2c",
+                  "name": "Catalog Icon",
+                  "width": 21,
+                  "height": 21,
+                  "icon": "grid_view",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "D5QR52",
+          "x": 72,
+          "y": 0,
+          "name": "Catalog Content",
+          "width": 1368,
+          "height": 1024,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            32,
+            32,
+            32
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "sarqa",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z0AQK",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "id": "dAupM",
+                      "type": "ref",
+                      "ref": "P1byHq",
+                      "name": "Unavailable Image Card / Керамический объект без доступного изображения",
+                      "width": 306,
+                      "descendants": {
+                        "H5q4vM": {
+                          "height": 383
+                        },
+                        "eoxYx": {
+                          "content": "Таисия Борисова"
+                        },
+                        "l1hEr": {
+                          "content": "Керамический объект без доступного изображения"
+                        },
+                        "LhzzA": {
+                          "content": "Данные предмета доступны без фото"
+                        },
+                        "YS3ab": {
+                          "content": "95 BYN"
+                        },
+                        "qMPqU": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Yzj4G",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Сосуд с молочной глазурью",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Сосуд с молочной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "140 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "pE9dE",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малый текстильный коллаж",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    },
+                    {
+                      "id": "yqVwK",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малый текстильный коллаж",
+                      "width": 306,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 383
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fyaVa",
+      "x": 0,
+      "y": 9523,
+      "name": "MVP / Public / Catalog / 1024 / Unavailable Image Card Variant",
+      "clip": true,
+      "width": 1024,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ybWmd",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 1024,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ETyDs",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "UCZs2",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "cb9v6",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "aWQ5z",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TfEpG",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QpTGk",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XPaGr",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Y4wubG",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KEDej",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 1024,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            40,
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "YT2Tb",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Sd6cx",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 28,
+                  "children": [
+                    {
+                      "id": "M474zc",
+                      "type": "ref",
+                      "ref": "P1byHq",
+                      "name": "Unavailable Image Card / Керамический объект без доступного изображения",
+                      "width": 288,
+                      "descendants": {
+                        "H5q4vM": {
+                          "height": 360
+                        },
+                        "eoxYx": {
+                          "content": "Таисия Борисова"
+                        },
+                        "l1hEr": {
+                          "content": "Керамический объект без доступного изображения"
+                        },
+                        "LhzzA": {
+                          "content": "Данные предмета доступны без фото"
+                        },
+                        "YS3ab": {
+                          "content": "95 BYN"
+                        },
+                        "qMPqU": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "qsmTX",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Сосуд с молочной глазурью",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Сосуд с молочной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "140 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "S6MhZo",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Малый текстильный коллаж",
+                      "width": 288,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 360
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Малый текстильный коллаж"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "180 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Завершён"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "u7U9D5",
+      "x": 0,
+      "y": 10637,
+      "name": "MVP / Public / Catalog / 390 / Unavailable Image Card Variant",
+      "clip": true,
+      "width": 390,
+      "height": 1024,
+      "fill": "$catalog-bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "nj7jc",
+          "x": 0,
+          "y": 0,
+          "name": "Mobile Header",
+          "width": 390,
+          "height": 100,
+          "fill": "$catalog-bg",
+          "stroke": "#EAEAE5",
+          "strokeWidth": {
+            "bottom": 1
+          },
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "s1hbwX",
+              "name": "Brand Row",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "R7SiMP",
+                  "name": "Brand",
+                  "fill": "$catalog-text",
+                  "content": "bidplace",
+                  "fontFamily": "$catalog-font",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "icon",
+                  "id": "c7dWO",
+                  "name": "Account Icon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "account_circle",
+                  "library": "Material Symbols Outlined",
+                  "fill": "$catalog-muted"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "b2gqi",
+              "name": "Mobile Navigation",
+              "width": "fill_container",
+              "height": 48,
+              "gap": 4,
+              "padding": [
+                0,
+                10
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CN1Jn",
+                  "name": "Каталог Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "$catalog-soft",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fl3Gb",
+                      "name": "Каталог Label",
+                      "fill": "$catalog-text",
+                      "content": "Каталог",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w0K0RA",
+                  "name": "Покупки Nav Cell",
+                  "width": "fill_container",
+                  "height": 44,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "h7uLK",
+                      "name": "Покупки Label",
+                      "fill": "$catalog-muted",
+                      "content": "Покупки",
+                      "fontFamily": "$catalog-font",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "M6uwiA",
+          "x": 0,
+          "y": 100,
+          "name": "Catalog Content",
+          "width": 390,
+          "height": 924,
+          "fill": "$catalog-bg",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            24,
+            20,
+            32,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "uP4qX",
+              "name": "Variant Grid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "U7D4wQ",
+                  "name": "Variant Row",
+                  "width": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "id": "fubLM",
+                      "type": "ref",
+                      "ref": "P1byHq",
+                      "name": "Unavailable Image Card / Керамический объект без доступного изображения",
+                      "width": 164,
+                      "descendants": {
+                        "H5q4vM": {
+                          "height": 205
+                        },
+                        "eoxYx": {
+                          "content": "Таисия Борисова"
+                        },
+                        "l1hEr": {
+                          "content": "Керамический объект без доступного изображения"
+                        },
+                        "LhzzA": {
+                          "content": "Данные предмета доступны без фото"
+                        },
+                        "YS3ab": {
+                          "content": "95 BYN"
+                        },
+                        "qMPqU": {
+                          "content": "Начнётся завтра"
+                        }
+                      }
+                    },
+                    {
+                      "id": "P3BF37",
+                      "type": "ref",
+                      "ref": "mkwP7",
+                      "name": "Long Title Card / Сосуд с молочной глазурью",
+                      "width": 164,
+                      "descendants": {
+                        "rEwar": {
+                          "height": 205
+                        },
+                        "mO4bo": {
+                          "content": "Анна Морозова"
+                        },
+                        "E0cg0D": {
+                          "content": "Сосуд с молочной глазурью"
+                        },
+                        "qPjgH": {
+                          "content": "Короткое описание предмета"
+                        },
+                        "bZd8I": {
+                          "content": "140 BYN"
+                        },
+                        "MMfUT": {
+                          "content": "Идёт до завтра"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "catalog-bg": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "catalog-text": {
+      "type": "color",
+      "value": "#1A1A1A"
+    },
+    "catalog-muted": {
+      "type": "color",
+      "value": "#6B6B66"
+    },
+    "catalog-soft": {
+      "type": "color",
+      "value": "#F6F6F3"
+    },
+    "catalog-soft-2": {
+      "type": "color",
+      "value": "#ECECE7"
+    },
+    "catalog-border": {
+      "type": "color",
+      "value": "#DADAD3"
+    },
+    "catalog-focus": {
+      "type": "color",
+      "value": "#2457E6"
+    },
+    "catalog-font": {
+      "type": "string",
+      "value": "Inter"
+    },
+    "catalog-data-font": {
+      "type": "string",
+      "value": "Geist Mono"
+    }
+  },
+  "fileToken": "e1e5bb62-da68-4706-90e7-f0b8802272d7"
+}
