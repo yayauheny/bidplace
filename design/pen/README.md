@@ -1,35 +1,65 @@
 # Pen workspace
 
-Status: Initialized
+Статус: **Canonical v2 restored and protected**
 
-## Main canvas
+## Canonical design source
 
-- `bidplace-web.pen` — editable Pen canvas for bidplace web prototypes.
-- `01-SCREEN-PROMPTS.md` — numbered, copy-ready prompts based on the current
-  MVP routes and screen source files.
+`bidplace-web-v2.pen` — единственный визуальный эталон нового публичного UI.
+Его ожидаемый repository path:
 
-## Current task
+```text
+design/pen/bidplace-web-v2.pen
+```
 
-Screen: Public catalog — first MVP screen
-Route: `/`
-Role: Public buyer / guest
-Scope: 1440, 1024, 390 px; default, loading, empty, error; long-title and unavailable-image card coverage
-Approved references: Current Expo implementation and `01-SCREEN-PROMPTS.md` prompt 1
-Existing implementation: `apps/mobile/src/features/products/product-list-screen.tsx`, `apps/mobile/src/components/modern-ui/AuctionCard.tsx`, `apps/mobile/src/components/layout/AppShell.tsx`
-Known problems: Founder-approved production photography is not yet final; the prototype uses explicit neutral missing-asset placeholders
-Must not change: Product behavior, shared tokens, production UI, navigation, API, filters, tags, favorites, pagination, recommendations, cart, or fake actions
-Open questions: Primary button color is mirrored to production black `#111111`; final brand approval and founder visual/device/accessibility acceptance remain open
+## Permanent protection rule
 
-## Directories
+Во время реализации, code refactor, bugfix, тестирования и документационных
+задач canonical Pen запрещено редактировать, удалять, переименовывать,
+перемещать, заменять, форматировать или пересохранять. Код подгоняется под Pen,
+а не Pen под текущий код.
 
-- `references/` — approved references and owned assets only.
-- `exports/` — approved PNGs for review only.
+Изменение допускается только в отдельно сформулированной design-задаче по
+прямому решению основателя или назначенного дизайнера. Даже такая задача не
+разрешает удаление canonical файла; новое направление должно сохранять историю
+и явную преемственность.
 
-## Workflow
+Перед и после implementation-задачи проверить, что diff не содержит `.pen`.
+Если нужный node отсутствует, повреждён или конфликтует с product contract,
+задача блокируется на соответствующей части. Исправлять canonical Pen внутри
+code task запрещено.
 
-Use `bidplace-web.pen` as the single editable prototype. Production tokens in
-`packages/design-tokens` and shared Expo UI components remain the implementation
-source of truth.
+## Current repository state
 
-Choose one numbered prompt at a time. An approved Pen frame is a visual
-decision, not permission to alter product behavior or production code.
+- `bidplace-web-v2.pen` — восстановлен byte-for-byte из founder-provided local
+  archive; canonical SHA-256:
+  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+- Current restoration is an intentional one-time repository addition. Accept it
+  in the documentation/design baseline before code implementation; from the
+  next task onward any `.pen` diff is a hard failure.
+- `images/logo-transparent-tight.png` — canonical Pen logo asset; SHA-256:
+  `3b5032d840da6713e1e7b167bd10787d236e06e069506d413f86494a58470b6b`.
+- Public read-only review:
+  <https://app.pen.dev/s/r32fdudQVyiuEZ5htTMYdcv40WDQ4v3vwLT82lS27uk>.
+- `bidplace-web.pen` — исторический canvas, не visual source.
+- `target-solution/bidplace-youthful.pen` — историческое/неполное направление,
+  не visual source.
+- `exports/` — review evidence, не source of truth.
+- `target-solution/` — вспомогательные screenshots, только если они явно
+  сопоставлены canonical v2 nodes.
+
+## Implementation workflow
+
+1. Прочитать `docs/design/00-DESIGN-INDEX.md` и
+   `docs/design/05-DESIGN-HANDOFF.md`.
+2. Открывать canonical v2 только read-only.
+3. Сверять SHA-256 до и после работы; любое изменение блокирует handoff.
+4. Использовать node registry из
+   `docs/design/07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md`.
+5. Для поведения, которое не видно в static frame, использовать motion contract
+   из `docs/design/03-DESIGN-SYSTEM.md`, а не менять Pen.
+6. Реализовывать visual structure в code tokens/shared components.
+7. Сравнивать runtime screenshots с verified exports.
+8. Завершать task только при нулевом `.pen` diff и неизменном checksum.
+
+Pen не меняет product behavior, auction rules, routes, API, permissions или
+privacy без отдельного owner-document decision.

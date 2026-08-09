@@ -1,62 +1,141 @@
-# bidplace — пользовательские маршруты и экраны
+# bidplace — пользовательские потоки и экраны
 
-Последнее обновление: 2026-08-03
+Последнее обновление: 2026-08-10
 
-Статус: MVP flow confirmed by product docs; implementation snapshot is Partial
+Статус: **Target mapped; route and data gaps remain**
 
-## Web UI polish — 2026-07-30
+## 1. Граница текущего редизайна
 
-- Desktop uses a 72 px icon rail with hover/focus labels and a right-side account control; mobile keeps the account control in the top brand row. Navigation derives seller actions from `SellerProfile.status`; only `APPROVED` exposes the seller cabinet and add-product action.
-- Catalog, Activity, SellerProfile, Admin and Product use shared loading, empty and retry states. The catalog desktop grid starts after the rail and expands across the available page area; the visible Catalog title/count were removed because the active rail item supplies context.
-- Product detail exposes author, authored-item facts, publication date, public bids and linear sections: «О предмете», «История предмета», «История ставок». No private contacts or internal identifiers are shown; tabs are not used to hide the core story.
+Pen v2 задаёт публичный web-модуль: Global Header, Home, Browse Works, Browse
+Authors, Product tabs, AuctionPlayer и Creator Profile. Остальные работающие
+routes сохраняют поведение и должны пережить смену общего shell, но не имеют
+нового утверждённого визуального target в текущем Pen-реестре.
 
-## Правила карты
+## 2. Карта экранов
 
-- Поведение определяет `../product/05-MVP-RFC.md`; этот документ фиксирует маршруты и фактические UI-состояния.
-- Для каждого экрана обязательны loading, empty, error, responsive и accessibility states; realtime-экраны также явно показывают reconnect/offline state.
-- Публичные страницы не выводят internal UUID, телефон, email или иные контакты участников.
+| Экран              | Pen node | Route                 | Contract status                                            |
+| ------------------ | -------- | --------------------- | ---------------------------------------------------------- |
+| Global Header      | `L9UV9`  | общий shell           | role logic существует; новый shell не реализован           |
+| Home               | `BJd1P`  | не решён              | нужен отдельный IA/data decision                           |
+| Browse Works       | `H5vf2`  | текущий `/`           | каталог существует; search/filter/sort не поддержаны       |
+| Browse Authors     | `N4ebBk` | отсутствует           | directory route и list API отсутствуют                     |
+| Product / About    | `L7ytbv` | `/product/[publicId]` | основной public contract существует                        |
+| Product / Creation | `cK8kD`  | тот же Product route  | dedicated process model не подтверждён                     |
+| Product / Bids     | `XIzHe`  | тот же Product route  | participant/bid/time доступны в текущем contract           |
+| Creator Profile    | `MqUMz`  | `/seller/[slug]`      | basic public profile существует; links ограничены contract |
 
-## Канонические buyer routes
+Нельзя назначать Home или Authors маршрут, менять `/` или добавлять API только
+на основании макета. Это отдельные продуктовые/архитектурные решения.
 
-| Экран               | Route                 | Реализованное поведение                                                                                                                                                                                                                                                                                                                                                                                                                        | Статус / remaining work                                                                                                               |
-| ------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Public Product list | `/`                   | Список approved Product из API, включая `SCHEDULED`, `LIVE` и `ENDED` Listing; loading, empty и error. На desktop shared `AppShell` ставит rail слева, рабочая сетка начинается от его края и расширяется; карточка целиком кликабельна и всегда показывает media, автора, название, короткое описание, цену и отдельный вторичный статус/deadline row.                                                                                                         | Partial final migration: open-only default filter, 10–15 works, pagination and founder visual/device/accessibility acceptance remain. |
-| Product detail      | `/product/[publicId]` | Изображения, seller, value fields, scheduled/live/ended Listing, BYN price, server-deadline countdown, minimum next Bid, aliases, OTP actions, idempotent retry and socket-driven refetch. На desktop gallery, author/title and auction share one top block; below it are linear story, provenance, characteristics, author/history and bids sections. На mobile сохраняется gallery → author/title → auction → linear story order and bottom action. | Partial: auth, device/accessibility QA and state-specific copy remain.                                                                |
-| Public seller       | `/seller/[slug]`      | Публичный профиль автора из существующего seller-detail API: identity zone с 120px photo/fallback, имя, тип, страна, описание и опубликованные предметы в responsive AuctionCard grid; экран имеет loading, empty, error и 404 состояния.                                                                                                                                                                                                                                                                    | Partial: browser, device and accessibility QA remain.                                                                                 |
-| My purchases        | `/me/activity`        | Derived Activity statuses, Product links and allowed Order links.                                                                                                                                                                                                                                                                                                                                                                              | Partial: visual QA and richer state copy remain.                                                                                      |
-| Order               | `/order/[publicId]`   | Backend-authorized Order summary for buyer, seller or admin; buyer sees the allowed seller contact projection, seller sees `buyerEmailAtClose`, and seller action states cover `contacted`, `completed` and `handoffFailed`. Auction E2E covers winner Order visibility and loser privacy after lifecycle close.                                                                                                                               | Partial: seller actions, outsider/admin and role-specific mobile QA remain.                                                           |
+## 3. Global Header и роли
 
-The retired `/auctions/[slug]` public route is not a Product route and must not be restored as a compatibility screen. Chromium closed-pilot verification confirms the route is unmatched, and verifies canonical Product, Activity and Order navigation.
+Canonical header: `L9UV9`.
 
-## Seller routes
+| Роль   | Pen evidence | Обязательное поведение                                                |
+| ------ | ------------ | --------------------------------------------------------------------- |
+| Guest  | `H4bCnh`     | public discovery + login/register actions                             |
+| Buyer  | `GEnsG`      | public discovery + доступные buyer actions                            |
+| Seller | `S5B4C2`     | buyer/public actions + seller capability routes только при разрешении |
+| Admin  | `kilAz`      | catalog/moderation; без bidding и buyer activity                      |
 
-| Экран               | Route                     | Реализованное поведение                                                                                                                                                                                                                                      | Статус / remaining work                                                                   |
-| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Seller profile      | `/(seller)/profile`       | Create/update SellerProfile, upload a public profile photo, edit handoff corrections while `CHANGES_REQUESTED`, show status, and keep fields read-only outside that state. Closed-pilot Chromium coverage passed for real file upload and moderation gating. | Closed-pilot verified; device/accessibility QA remains.                                   |
-| New Product draft   | `/(seller)/products/new`  | Creates an incomplete Product draft through final form sections. Creator input does not ask for condition. Auction E2E covers draft create, image upload and submit; approval is a fixture precondition for Listing creation.                                | Partial final migration; edit-media, device/accessibility QA remain.                      |
-| Edit Product draft  | `/(seller)/products/[id]` | Owner can update unlocked draft fields and review, upload, delete or reorder Product images. Server blocks locked Product edits and images; deletion requires a dialog while reorder remains direct.                                                         | Partial final migration; automated regression and founder device/accessibility QA remain. |
-| New Auction Listing | `/(seller)/listings/new`  | Select owner Product, set BYN start price and server-validated dates, create then explicitly schedule the Listing through final form sections. Auction E2E covers server rejection, retryable creation, explicit schedule and scheduled public preview.      | Partial final migration; device/accessibility QA remain.                                  |
+Discovery group `SYE9r`, Search `VKsEM`, user actions `AG6gK`, search bar
+`Uulvx`, navigation `BF8Nr`, menu trigger `MsOKe`, menu `SHHWu`, Works item
+`B0EaXH`, Authors item `VUDwA`, actions `hLoyZ`.
 
-## Admin route
+Search и Authors могут появиться как enabled controls только после появления
+поддержанного route/API contract. До этого нужно согласовать честное состояние,
+а не подключать client-only псевдопоиск.
 
-| Экран      | Route      | Реализованное поведение                                                                                                                                                                                                                                                                                                                   | Статус / remaining work                                                                 |
-| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Moderation | `/(admin)` | Admin-only SellerProfile approve/suspend with mandatory reason, Product approve or `CHANGES_REQUESTED` correction request with mandatory reason, and confirmed manual Order cancellation followed by a selected anonymous ranked Bid replacement. LIVE-listing correction is explained and blocked; API permissions remain authoritative. | Partial final migration; browser regression and founder device/accessibility QA remain. |
+## 4. Discovery flow
 
-## Flow constraints
+Целевой путь: discovery entry → Works/Authors → карточка → Product или Creator
+Profile → связанная работа.
 
-- Email verification and versioned rules acceptance are required by the backend before a first Bid; the Product screen presents the progressive flow and must never treat a failed Bid as accepted.
-- The HTTP Product snapshot is canonical. Listing socket events only trigger refetch; reconnect performs the same authoritative refresh.
-- The Product screen derives participation from `GET /api/me/activity`, never from public Bid identity or event order.
-- A seller or admin does not receive bidder contacts from ranked Bid inspection; contact is only revealed through the authorized active Order.
-- Seller Product edits and image operations are allowed only while the backend considers the Product unlocked.
-- Seller profile edits are allowed only while the backend returns `CHANGES_REQUESTED`; `PENDING_REVIEW`, `APPROVED`, `REJECTED` and `SUSPENDED` are read-only. Handoff contact, handoff initiator and public profile data can all be corrected in that state.
-- Public seller detail uses `fullName`, profile photo URL and a public verification link; private handoff contact stays off public routes.
-- Product author links target `/seller/[slug]`; the generic ended-auction Activity CTA is absent, while a winner with an Order sees only that contextual Order link.
-- Order actions are seller-scoped and include `contacted`, `completed` and `handoffFailed`; after each action the mobile client refetches both the Order and activity projections.
+### Home `BJd1P`
 
-## Required manual QA
+Секции: header `CV9fF`, Works intro `t0SBW8`, section `mGtKx`, auction card
+`WxEOg`, creator card `b8iVxg`, editorial work card `b60Eaa`.
 
-- iPhone Safari, Android Chrome, macOS Chrome/Safari and Windows Chrome for Product, OTP, Bid, Activity, Order, seller and admin flows;
-- keyboard, screen reader, focus, long-content, empty, error and reconnect states;
-- ProductImage deletion/reordering flow against the implemented backend contract.
+Открытые решения: route, критерии Top/New, набор authors, pagination/carousel и
+источники данных. Пока решения нет, Home — visual target, не implementation
+scope.
+
+### Browse Works `H5vf2`
+
+Header `WT8GE`, title `MO2OC`, toolbar `Evfb1`, grid `nWd4G`. Controls:
+primary tabs `Jefsy`, auction tabs `g7INs`, state chip `yFl4g`, sort `s2ARGu`.
+
+Сохраняются текущие public visibility, states `SCHEDULED`/`LIVE`/`ENDED`,
+pagination и API contract. Неподдержанные search, filters и sorting остаются
+blocked до отдельного решения.
+
+AuctionCard media масштабируется только внутри clipped viewport; toolbar menu
+открывается с shared panel motion. Hover/focus/open states определены в `03` и
+обязательны, хотя static screen показывает только отдельные snapshots.
+
+### Browse Authors `N4ebBk`
+
+Header `FnXJy`, Works/Authors navigation `LuxiL`, title `wiPHC`, controls
+`usLfn`, grid `O8lu9`. Используется CreatorCard `SrXPq` с photo `k9hN07`, name
+`atoev`, discipline `sUQFf`.
+
+Bio variant `S1BHg` и comparison board `BvSRz` не являются production target.
+Никаких ratings, sales, followers, verified, awards или ranking.
+
+## 5. Product flow
+
+Один route `/product/[publicId]` использует общую рамку, ProductTabs `Jh9jr` и
+AuctionPlayer `X6Ksg`.
+
+- About `L7ytbv`: integrated header/hero `iSDm7`, tabs `TrdWx`, content
+  `QSHsB`.
+- Creation `cK8kD`: tabs `a6wx43`, story `kuP8Q`, sticky player `i1AJd`.
+- Bids `XIzHe`: tabs `BNobs`, history `Ko0lA`, sticky player `BOdiT`.
+- Tabs: About `CBb5S`, Creation `bzabH`, Bids `ryIwP`, underline `KSVlN`.
+- Player: bid `w8O9kE`, time `k7l1d`, action `xozqk`.
+
+Bid history показывает только participant alias, bid amount и time. Wallet,
+NFT, blockchain, identity leakage и новые financial fields запрещены.
+
+Tabs могут быть URL state или локальным accessible state только после фиксации
+deep-link/back behavior. Bid action сохраняет confirmation, OTP/rules gate,
+canonical refetch и server error handling.
+
+Hero может использовать artwork-derived blurred atmosphere по `03`, но sharp
+artwork, readable transaction data и единственный AuctionPlayer всегда выше
+декоративного слоя. Tab и inline→sticky transitions не размножают state.
+
+## 6. Creator Profile `MqUMz`
+
+Header `P7BDB`, creator hero `aAJ8B`, works `NFpuI`; карточки работ переиспользуют
+AuctionCard `k5vYGf`. Это публичная авторская страница, не seller dashboard.
+
+Creator hero использует restrained atmosphere только при наличии real public
+photo/artwork; grid cards наследуют тот же media-hover contract, что Browse.
+
+Показываются только разрешённые публичные данные. Текущий contract имеет один
+`socialLink`; три независимых social links из визуального target не реализуются
+до изменения contract. Private handoff contact никогда не появляется здесь.
+
+## 7. Остальные routes
+
+Auth, Activity, Order, seller application/profile, Product/Listing draft и
+admin moderation остаются функционально обязательными. Смена Global Header или
+tokens не должна делать их недоступными. Их визуальная миграция требует
+отдельных Pen targets или явного правила наследования новой системы.
+
+## 8. Обязательные состояния каждого реализуемого экрана
+
+- default и realistic long content;
+- loading/skeleton;
+- empty;
+- recoverable error + retry;
+- missing/failed media;
+- disabled/permission denied;
+- keyboard focus, hover, pressed и validation;
+- guest и релевантные authenticated roles;
+- 1440 desktop, 1024 tablet и 390 mobile;
+- zoom/text scaling и reduced motion.
+
+Статус `Implemented` запрещён, пока состояния и responsive behavior не
+проверены.

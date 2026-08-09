@@ -1,195 +1,180 @@
-# bidplace — карта исходников для дизайнера
+# bidplace — реестр дизайн-ресурсов
 
-Последнее обновление: 2026-08-05
+Последнее обновление: 2026-08-10
 
-Фактическая карта исходников текущего интерфейса для дизайнера или
-design-agent. Здесь разделены локальные assets, runtime-фотографии из API,
-UI-компоненты и временные файлы, которые нельзя считать source of truth.
+Статус: **Canonical source and reference archives verified; runtime mapping pending**
 
-## Быстрый маршрут
+## 1. Защищённый источник
 
-1. Бренд: `apps/mobile/src/components/layout/BrandLogo.tsx`.
-2. Брендовые файлы: `apps/mobile/assets/branding/`.
-3. Typography/tokens: `packages/design-tokens/src/modern.ts`.
-4. Загрузка шрифтов: `apps/mobile/src/app/_layout.tsx`.
-5. Shell/navigation: `apps/mobile/src/components/layout/AppShell.tsx`,
-   `apps/mobile/src/components/layout/AppHeader.tsx`.
-6. Кнопки: `apps/mobile/src/components/modern-ui/Button.tsx` и
-   `apps/mobile/src/components/modern-ui/button-layout.ts`.
-7. Иконки: `apps/mobile/src/components/modern-ui/AppIcon.tsx`.
-8. Экранные источники: `apps/mobile/src/features/`.
-9. Editable Pen canvas: `design/pen/bidplace-web.pen`.
+| Asset                            | Роль                    | Статус                 | Правило                        |
+| -------------------------------- | ----------------------- | ---------------------- | ------------------------------ |
+| `design/pen/bidplace-web-v2.pen` | canonical visual design | restored byte-for-byte | never edit/delete in code work |
 
-## Логотип и брендовые assets
+Canonical SHA-256:
+`bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+Исходная локальная копия:
+`/Users/yayauheny/Downloads/bidplace-web-v2/bidplace-web-v2.pen`.
+Публичная read-only публикация:
+[pen.dev — bidplace-web-v2.pen](https://app.pen.dev/s/r32fdudQVyiuEZ5htTMYdcv40WDQ4v3vwLT82lS27uk).
 
-| Назначение | Файл | Формат/размер | Реальное использование |
-|---|---|---:|---|
-| Полный логотип `bidplace` | `apps/mobile/assets/branding/bidplace-wordmark-light.png` | PNG, 1922×478 | `BrandLogo.tsx`, отображается как 180×45 |
-| Знак/mark | `apps/mobile/assets/branding/bidplace-mark-light.png` | PNG, 512×512 RGBA | `BrandLogo.tsx`, compact-режим, отображается 32×32 |
-| Полный логотип, вектор | `apps/mobile/assets/branding/bidplace-wordmark-light.svg` | SVG | Design/export reference, напрямую текущим `BrandLogo` не используется |
-| Знак, вектор | `apps/mobile/assets/branding/bidplace-mark-light.svg` | SVG | Design/export reference, напрямую текущим `BrandLogo` не используется |
-| Favicon | `apps/mobile/assets/branding/bidplace-favicon-light.png` | PNG, 256×256 | `apps/mobile/app.json`, web favicon |
-| Favicon, вектор | `apps/mobile/assets/branding/bidplace-favicon-light.svg` | SVG | Design/export reference |
+Файл остаётся по canonical path. Checksum фиксируется до и после каждой
+implementation-задачи. Экспорты и публичная ссылка помогают review, но не
+заменяют repository source.
 
-Desktop/mobile placement и hit-area находятся в `BrandLogo.tsx`, `AppHeader.tsx`
-и `AppShell.tsx`.
+## 2. Неканонические Pen-материалы
 
-Не считать текущим logo source:
+| Asset                                              | Статус                    | Использование                       |
+| -------------------------------------------------- | ------------------------- | ----------------------------------- |
+| `design/pen/bidplace-web.pen`                      | historical                | не брать visual decisions           |
+| `design/pen/target-solution/bidplace-youthful.pen` | historical/incomplete     | не брать visual decisions           |
+| `design/pen/target-solution/` screenshots          | review context only       | только при явной привязке к v2 node |
+| `design/pen/exports/`                              | generated review evidence | не source of truth                  |
 
-- `apps/mobile/assets/brand-mark.png` — старый/резервный PNG, существует, но
-  `BrandLogo.tsx` его не импортирует;
-- `apps/mobile/assets/BRAND-MARK-README.md` — устаревшая инструкция, всё ещё
-  ссылается на `brand-mark.png`;
-- `apps/mobile/assets/icon.png`, `splash-icon.png`,
-  `android-icon-background.png`, `android-icon-foreground.png`,
-  `android-icon-monochrome.png` — app/splash/adaptive Android assets;
-- `apps/mobile/favicon.png` — отдельный 48×48 файл, не текущий web favicon.
+Наличие исторического файла не разрешает удалить его в рамках code refactor.
+Любые `.pen` files защищены от incidental edits; v2 имеет canonical статус.
 
-Финальный brand asset, logo treatment и iconography имеют статус `Needs
-verification`; знак не перерисовывать без решения дизайнера/основателя.
+## 3. Runtime assets
 
-## Фотографии предметов и авторов
+Перед реализацией каждого экрана нужно инвентаризировать реальные imports из
+`apps/mobile` и public media endpoints, не открывая `.env` и credentials.
 
-Локальные development seed-фотографии:
+Категории:
 
-- `packages/database/prisma/fixtures/product-images/ceramic-brush-holder.png`
-  — 900×1200;
-- `packages/database/prisma/fixtures/product-images/handmade-mug.png`
-  — 736×981;
-- `packages/database/prisma/fixtures/product-images/painted-planter.png`
-  — 1000×1500;
-- `packages/database/prisma/fixtures/seller-profile/anna-morozova.png`
-  — 740×493.
+- logo/wordmark;
+- Product images и missing/error placeholders;
+- SellerProfile public photo и placeholder;
+- UI icons;
+- font files and loading strategy;
+- local/test-only demo media;
+- Pen-only reference imagery.
 
-Это seed sources: приложение не импортирует их напрямую, а получает runtime
-изображения из API/БД.
+Production UI не должен зависеть от случайного локального файла, clipboard
+asset или изображения без подтверждённых прав.
 
-Runtime URLs и владельцы:
+### Approved logo input
 
-- product image: `/api/images/:imageId`, см.
-  `apps/api/src/images/image-url.ts` и `apps/api/src/products/products.mapper.ts`;
-- seller photo: `/api/sellers/:slug/photo`, см.
-  `apps/api/src/sellers/seller-profile.mapper.ts`;
-- relative URL → API origin: `apps/mobile/src/lib/environment.ts`,
-  `getApiAssetUrl`;
-- catalog card: `apps/mobile/src/components/modern-ui/AuctionCard.tsx`;
-- product gallery: `apps/mobile/src/components/modern-ui/ProductGallery.tsx`;
-- public seller: `apps/mobile/src/features/sellers/public-seller-screen.tsx`;
-- seller upload/preview: `apps/mobile/src/features/sellers/seller-profile-screen.tsx`;
-- draft media: `apps/mobile/src/features/sellers/product-draft-screen.tsx`;
-- admin preview: `apps/mobile/src/features/admin/admin-moderation-screen.tsx`.
+Founder-provided source pack:
+`/Users/yayauheny/Downloads/Telegram Desktop/logo_assets_web_expo`.
 
-Placeholder: `apps/mobile/src/components/modern-ui/ImagePlaceholder.tsx`,
-иконка `imageOff`. Обязательные состояния для дизайна: real image, no image,
-loading/failed image, portrait 4:5 product media, author fallback и gallery с
-несколькими images.
+- Pen использует `logo-transparent-tight.png`; repository copy находится в
+  `design/pen/images/logo-transparent-tight.png`.
+- Web pack содержит transparent PNG, square PNG и favicons.
+- Expo pack содержит icon/adaptive/splash/favicon/notification derivatives.
+- `web/logo.svg` является SVG-container с embedded raster JPEG, а не настоящей
+  векторной геометрией; не использовать его как доказательство бесконечного
+  vector scaling.
+- Production mapping выбирается по platform consumer, затем проверяется на
+  sharpness, transparency, favicon crop и Android monochrome notification rule.
+- Нельзя перерисовывать бренд или генерировать новый логотип в UI-refactor.
 
-Pen README фиксирует: approved product photography сейчас не была доступна в
-workspace, поэтому `design/pen/bidplace-web.pen` использует neutral
-placeholders. Это не финальные фотографии.
+## 4. Fonts
 
-## Шрифты и надпись `bidplace`
+Точные font families, weights, sizes и line heights извлекаются из v2 Pen и
+сверяются с лицензиями и доступными runtime files. Нельзя объявить системный
+fallback визуально эквивалентным без проверки. До canvas verification текущие
+Inter/PT Mono — только существующий runtime baseline.
 
-Локальных `.ttf`, `.otf`, `.woff` или `.woff2` в `apps/mobile/assets` нет.
-Шрифты подключаются в `apps/mobile/src/app/_layout.tsx`:
+Для каждого используемого начертания проверить:
 
-- `@expo-google-fonts/inter`: `Inter_400Regular`, `Inter_500Medium`,
-  `Inter_600SemiBold`, `Inter_700Bold`;
-- `@expo-google-fonts/pt-mono`: `PTMono_400Regular`.
+- bundled или легально доступный source;
+- web/native loading;
+- Cyrillic glyph coverage;
+- fallback metrics и layout shift;
+- required weights without synthetic rendering.
 
-Роли и размеры — `packages/design-tokens/src/modern.ts`: display 32/38 Inter
-700; screenTitle 28/34 Inter 700; sectionTitle 20/26 Inter 600; cardTitle
-16/21 Inter 600; body 17/26 Inter 400; bodySmall 15/22 Inter 400; label 14/19
-Inter 500; nav 13/18 Inter 500; metadata/numeric/button/caption — PT Mono 400.
+## 5. Icons
 
-Надпись `bidplace` в header — raster wordmark asset, а не случайный текстовый
-label. Для дизайна использовать `bidplace-wordmark-light.svg` как vector
-reference. Обычный UI-текст идёт через
-`apps/mobile/src/components/modern-ui/AppText.tsx`.
+Иконка должна иметь один проверенный runtime source и семантическое имя.
+Случайные emoji, copied SVG и визуально похожие glyphs не используются. Social
+icons на Creator Profile появляются только вместе с поддержанными public link
+contracts и безопасным external-link behavior.
 
-## Иконки и «кнопки-картинки»
+## 6. Photography and media
 
-Отдельных PNG/SVG UI-иконок нет. `AppIcon` использует `lucide-react-native`
-(`apps/mobile/package.json`, 1.27.0), source:
-`apps/mobile/src/components/modern-ui/AppIcon.tsx`.
+- Product image сохраняет исходное соотношение внутри правила canonical card.
+- Creator photo не подменяется generic avatar, если Pen требует фотографию;
+  используется честный missing state.
+- Pen mock imagery не становится production content автоматически.
+- Test/demo media остаётся local/test-only и не доказывает production rights.
+- Alt text берётся из real public content, а не из filename.
 
-| Код | Lucide | Роль |
-|---|---|---|
-| `catalog` | `LayoutGrid` | Каталог |
-| `moderation` | `ShieldCheck` | Модерация |
-| `purchases` | `ShoppingBag` | Покупки |
-| `seller` | `Store` | Кабинет/заявка продавца |
-| `plus` | `Plus` | Добавить предмет |
-| `account` | `CircleUserRound` | Account menu |
-| `chevronDown` | `ChevronDown` | Account menu |
-| `chevronLeft` | `ChevronLeft` | Назад |
-| `imageOff` | `ImageOff` | Нет изображения |
-| `logOut` | `LogOut` | Выйти |
-| `trash` | `Trash2` | Удаление |
-| `user` | `User` | Identity fallback |
-| `x` | `X` | Закрытие |
+## 7. Asset gate template
 
-## Кнопочные паттерны
+```text
+Asset:
+Consumer screen/component:
+Canonical Pen node:
+Repository/runtime source:
+Owner:
+Rights/status:
+Responsive variants:
+Missing/error behavior:
+Optimization performed:
+Verified:
+```
 
-Source: `apps/mobile/src/components/modern-ui/Button.tsx`.
+Статус экрана не повышается до `Implemented`, если critical asset имеет
+неясное происхождение, отсутствующий runtime source или непроверенный loading
+behavior.
 
-| Компонент | Текущая поверхность | Геометрия |
-|---|---|---:|
-| `PrimaryButton` | сейчас чёрный `#111111`, текст белый | 56 px, radius 18 |
-| `SecondaryButton` | белый, border `#E2DDD4`, текст `#111111` | 56 px, radius 18 |
-| `DestructiveButton` | `#B63B3B`, текст белый | 56 px, radius 18 |
-| `TextButton` | accent text + underline | min-height 44 px |
-| `IconButton` | transparent или selected ink circle | 44×44 |
-| `BackButton` | `IconButton` + `chevronLeft` | 44×44 |
+## 8. Approved reference sources
 
-Width по умолчанию `content`; есть `compact` 44 px и явный `width="block"`.
-Loading сохраняет ширину, disabled использует opacity 0.5, touch target — 44×44.
+Reference hierarchy не меняет canonical Pen:
 
-### Важное расхождение по цвету
+| Source             | Location                                             | Status                                                                   | Разрешено брать                                                    |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Foundation archive | `/Users/yayauheny/Downloads/Foundation web Jul 2023` | historical founder reference, 251 PNG                                    | card/media hierarchy, auction surfaces, overlays, blur, atmosphere |
+| Gamma archive      | `/Users/yayauheny/Downloads/Gamma web Oct 2023`      | historical founder reference, 290 PNG; cards/positioning partly outdated | controls, menus, profile/product structure, states, motion grammar |
+| Avant Arte         | [artists](https://avantarte.com/artists/1)           | live reference checked 2026-08-10                                        | restrained grid, artwork framing, clipped `scale(1.05)` hover      |
+| Foundation live    | [foundation.app](https://foundation.app/)            | site currently offline at audit time                                     | use supplied/archive screenshots, not unverified current behavior  |
+| Gamma live         | [gamma.io](https://gamma.io/)                        | live reference checked 2026-08-10                                        | surface/motion comparison only                                     |
 
-На приложенном Pen screenshot primary/error button оранжевая и соответствует
-`modernTokens.color.accent = #D94A24`. В production `PrimaryButton` сейчас
-чёрная и использует `modernTokens.color.ink = #111111`. Источник не согласован.
-Перед реализацией нужно выбрать: оранжевая primary, чёрная primary или
-семантические variants (например, чёрная основная и оранжевая retry/accent).
-Дизайнер не должен молча менять цвет всех кнопок.
+Нельзя переносить wallet, NFT, mint, ETH/BTC, blockchain, follower/sales или
+verified semantics. Референс подтверждает presentation pattern, а не bidplace
+product contract.
 
-## Palette и geometry для сверки
+## 9. Selected archive index
 
-Источник: `packages/design-tokens/src/modern.ts`.
+Архивы идут последовательностями прохождения сайта. Ниже минимальный индекс,
+которого достаточно агенту; весь архив просматривать перед каждой задачей не
+нужно. Полное имя строится как `<folder name> <number>.png`.
 
-- canvas/surface `#FFFFFF`, surfaceMuted `#F7F7F7`;
-- ink `#111111`, textSecondary `#77736D`, border `#E2DDD4`;
-- placeholder `#D8D4CD`, accent `#D94A24`, accentDark `#BC3C1B`;
-- success `#3F7A48`, danger `#B63B3B`, focus `#2457E6`;
-- product media ratio 4:5; desktop rail 72 px;
-- desktop breakpoint 1025 px; catalog 2/3/4 columns at 0/900/1440 px;
-- default button 56 px, compact button 44 px; touch target 44 px.
+### Foundation web Jul 2023
 
-Это implementation tokens, не окончательное founder-approved branding. Не
-добавлять gradients, shadows, dark mode, badges, verification marks или новую
-iconography без отдельного решения.
+| Files   | Сценарий                                          | Использование в bidplace                                              |
+| ------- | ------------------------------------------------- | --------------------------------------------------------------------- |
+| `0`     | artwork auction detail                            | hero/action hierarchy                                                 |
+| `1–4`   | connect-wallet modal and provider/QR states       | только modal geometry, backdrop, focus order                          |
+| `5–6`   | message-signing login step                        | только multi-step auth feedback, не wallet semantics                  |
+| `7–9`   | connected header/account dropdown                 | compact account/menu states                                           |
+| `10`    | empty activity                                    | honest empty state                                                    |
+| `15–18` | browse/list/detail progression                    | media-first discovery and detail transition                           |
+| `19–23` | bid history, collection and blurred related works | information hierarchy; `23` — atmosphere/blur reference               |
+| `25–28` | collection hero, grid, empty/activity table       | collection composition and state coverage                             |
+| `29–31` | place-bid modal progression                       | confirmation/error/loading anatomy only; server remains authoritative |
+| `32–34` | Worlds loading → cards/grid                       | skeleton-to-content and dark media cards                              |
+| `62`    | creator/profile overlay                           | profile atmosphere and account popover                                |
+| `75`    | Editions card grid                                | black media stage, pill CTA, edition count                            |
+| `92`    | dark auction cards                                | image/card/footer contrast and deadline grouping                      |
 
-## Pen и screenshots
+### Gamma web Oct 2023
 
-- editable source: `design/pen/bidplace-web.pen`;
-- prompts: `design/pen/01-SCREEN-PROMPTS.md`;
-- review export: `design/pen/exports/catalog-review.png`;
-- references: `design/pen/references/` (сейчас только `.gitkeep`);
-- handoff rules: `docs/design/05-DESIGN-HANDOFF.md`.
+| Files   | Сценарий                                      | Использование в bidplace                   |
+| ------- | --------------------------------------------- | ------------------------------------------ |
+| `0`     | home/feature landing                          | editorial hero and card rhythm             |
+| `1`     | Bitcoin wallet chooser                        | только modal/card/close anatomy            |
+| `2`     | connected profile/account                     | identity hierarchy only                    |
+| `4–5`   | header dropdown states                        | menu alignment, shadow, open/close state   |
+| `8`     | search autocomplete                           | query/results keyboard pattern             |
+| `9`     | collection detail                             | header-to-content rhythm                   |
+| `10–15` | charts/table loading and populated states     | table density, skeleton and empty behavior |
+| `16–18` | ordinal collection grids                      | catalog spacing and artwork variety        |
+| `19`    | collection preview/detail                     | detail surface hierarchy                   |
+| `20–24` | eligibility/review/transaction modal sequence | step progression and feedback only         |
+| `25–28` | review and QR/confirmation states             | asynchronous modal states only             |
+| `29–34` | detail and follow-up/check-status sequence    | status feedback, confirmation and recovery |
 
-Пути `/var/folders/.../codex-clipboard-*.png` из сообщения пользователя —
-временные clipboard-файлы сессии, не versioned assets. Если screenshot станет
-постоянным reference, его нужно скопировать в `design/pen/references/` с
-понятным именем и зафиксировать назначение/права.
-
-## Что отсутствует
-
-- approved final product photography package;
-- approved brand guideline и typography decision;
-- отдельная design asset library для UI icons;
-- согласованный primary button color;
-- founder visual/device/accessibility acceptance.
-
-Пока эти пункты не закрыты, дизайн остаётся `Partial` / `Needs verification`,
-а placeholders и текущие tokens нельзя выдавать как финальную визуальную систему.
+Founder-provided 29 clipboard screenshots remain audit evidence for newer card,
+filter, product, profile, Avant Arte and blur patterns. Their stable conclusions
+are transcribed in `03` and `07`; temporary clipboard paths are not runtime
+assets.

@@ -1,19 +1,36 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-08-05
+Последнее обновление: 2026-08-10
 Статус: Technical baseline is Partial; Wave 1 trust-critical Order coverage, Wave 2 auction-integrity evidence and Wave 3 core permission/moderation/lifecycle evidence are Implemented, while founder visual/device/accessibility acceptance and the 10-user rehearsal remain Needs verification.
 
-## Pen prototype workspace — 2026-08-05
+## Canonical Pen v2 design direction — 2026-08-10
 
-- `Implemented`: `design/pen/bidplace-web.pen` is the versioned editable canvas
-  for founder-reviewed visual prototypes. `design/pen/01-SCREEN-PROMPTS.md`
-  maps the current MVP routes to bounded design tasks, while
-  `docs/design/05-DESIGN-HANDOFF.md` records the required Pen source/frame and
-  approved export for implementation handoff.
-- `Not implemented`: no product or UI behavior is changed by this workspace;
-  no Pen visual direction is approved for implementation yet. Production
-  behavior, `modernTokens`, shared Expo components, and owner documents remain
-  authoritative.
+- `Implemented` as documentation: `docs/design/00`–`07` is rebuilt as the
+  canonical Pen-led design module. The former `docs/modern-ui/` design system
+  and the old screen-prompt workflow are retired and removed.
+- `Confirmed`: `design/pen/bidplace-web-v2.pen` is the immutable visual
+  reference for UI implementation. Code work must never edit, delete, rename,
+  move, replace, format, or resave it; only a separately authorized design task
+  may change it, and it must never be deleted. See `DEC-062`.
+- `Implemented` as protected source restoration: the founder-provided local
+  file is restored byte-for-byte at `design/pen/bidplace-web-v2.pen`; SHA-256 is
+  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  Canonical roots and the public read-only Pen publication were verified without
+  modifying the canvas.
+- `Implemented` as specification: selected Foundation/Gamma/Avant Arte patterns,
+  card hover, button/menu/tab/sticky motion, artwork-derived blur/atmosphere and
+  reduced-motion rules are recorded in design docs. These references do not add
+  wallet/NFT/crypto or unsupported marketplace behavior.
+- `Not implemented`: production UI still uses the current functional visual
+  system. GlobalHeader, Home, Browse Works/Authors, Product states and Creator
+  Profile have not been migrated to Pen v2.
+- `Needs decision`: Home/Works routing, Authors directory/API,
+  search/filter/sort contracts, creation-process data and multiple public social
+  links. Pen does not authorize these product or API changes.
+- `Needs verification`: WP0 still needs semantic token clustering, runtime
+  Onest/Inter proof, instance audit, fixed-scale exports and approved 1024/390
+  compositions. After implementation, founder/designer visual acceptance,
+  responsive/motion evidence, accessibility and full affected checks remain.
 
 ## Test/demo author media — 2026-08-05
 
@@ -168,11 +185,11 @@ Current verification (2026-08-05): API build/typecheck and unit tests, contracts
 | Tests                         | API typecheck and 136 unit tests, contracts tests, PostgreSQL integration (including Order mutation/replacement, executable seed contracts, Wave 2 auction-integrity boundaries and Wave 3 permission/moderation/auth/lifecycle boundaries), mobile typecheck/lint, seed contract checks and current disposable Chromium Playwright execution passed.                                     | WebKit/cross-browser, physical-device and founder accessibility acceptance remain deferred; the isolated 10-user rehearsal remains.       |
 | Operations                    | Single-process scheduler and Socket.IO gateway work for MVP. Root `dev` and direct mobile start commands build workspace dependencies first, preventing stale package output at runtime.                                                                                                                                                                                                  | Multi-instance deployment requires a distributed lock or external queue before scaling; binary database image storage remains pilot-only. |
 
-## Planned final Modern UI cutover — 2026-07-27
+## Historical Modern UI implementation baseline — 2026-07-27
 
 - `feature/modern-ui-final` starts from the documentation baseline before the experimental pilot; the pilot bridge is not the accepted production strategy.
 - The redesign has migrated all existing working mobile routes and removed Tamagui, the legacy mobile UI kit, legacy palette/theme exports and Cormorant runtime loading. Server-authoritative auctions, email/rules gates, privacy projections, moderation and seller locks remain unchanged.
-- Bid confirmation and client-side increment validation are confirmed UI behaviour; backend remains authoritative. See `DEC-055`, `DEC-056` and `docs/modern-ui/10-final-cutover-plan.md`.
+- Bid confirmation and client-side increment validation remain confirmed UI behaviour; backend remains authoritative. See `DEC-055`, `DEC-056` and the current design handoff in `docs/design/05-DESIGN-HANDOFF.md`.
 - Final UI cutover is Partial final migration: `apps/mobile` has one light-only React Navigation theme derived from `modernTokens`, Inter and PT Mono loading, no production Tamagui or `components/ui` callers, and final navigation on every route. Catalog (`/`) retains its existing API query and public route. Founder iOS/Android, browser/device visual and accessibility acceptance remain required.
 - Product/Bid final content is Partial: `features/products/product-screen.tsx`, `features/auth/email-rules-gate.tsx` and `components/modern-ui/AuctionPanel.tsx` render the Product facts, desktop contextual auction panel, mobile safe-area action, OTP/rules gate, confirmation and retry through final primitives. `bid-validation.ts` still validates the confirmed BYN increment table; unknown/no participation requires confirmation; same-amount retry preserves its idempotency key; stale/rejected mutations refetch canonical Product/Bid/Activity projections. The API remains authoritative for minimum, Listing state and close. Final global navigation, iOS/Android smoke and accessibility evidence remain.
 - Activity final content is Partial: `features/activity/activity-screen.tsx` renders the server-projected participation and authorized Order link through final `ActivityRow` UI. Shared navigation, device smoke and accessibility evidence remain.
@@ -200,7 +217,7 @@ Current verification (2026-08-05): API build/typecheck and unit tests, contracts
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.
 - Manual admin replacement preserves cancelled Order history; automatic replacement is Planned.
-- Domain/security tasks do not absorb incidental visual work. The separately confirmed final Modern UI cutover is governed by `DEC-055`, `DEC-056` and `docs/modern-ui/10-final-cutover-plan.md`.
+- Domain/security tasks do not absorb incidental visual work. The new Pen v2 refactor is governed by `DEC-062` and `docs/design/07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md`; `DEC-056` remains authoritative for bid confirmation and client validation.
 
 ## Historical closed-pilot verification — 2026-07-19
 

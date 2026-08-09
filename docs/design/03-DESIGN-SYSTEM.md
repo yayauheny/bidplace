@@ -1,99 +1,215 @@
-# bidplace — дизайн-система
+# bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-08-02
+Последнее обновление: 2026-08-10
 
-Статус: final Modern UI cutover is in Partial final migration pending founder acceptance. Automated regression has passed; the experimental bridge/pilot is not the accepted implementation strategy.
+Статус: **Measured baseline; motion and responsive verification remain**
 
-Wave A token update: `modernTokens.layout` now owns `railWidth` and the existing Product detail measure; `modernTokens.breakpoint` owns the desktop shell and catalog transitions; `modernTokens.ratio.productPortrait` owns the confirmed 4:5 product media ratio. No page/content max-width token was added.
+## 1. Архитектура источников
 
-Wave A overlay update: `OverlayPortal` is the web adapter for account popovers at every viewport, with `layer.popover` and an 8px collision inset; `AppDialog` uses `layer.modal` and a viewport-bounded internal scroll container.
+```text
+protected Pen masters
+        ↓ visual extraction
+code design tokens + shared primitives
+        ↓ composition
+shared feature components
+        ↓
+route screens and verified states
+```
 
-Wave A catalog update: `CatalogGrid`, `AuctionCard`, `Skeleton` and `ImagePlaceholder` share the confirmed `ratio.productPortrait` geometry. Compact cards keep the amount with `BYN` on one line and put listing status/deadline on the next line; loading and failed-image wrappers use the same grid cells as loaded cards.
+Pen masters не импортируются и не генерируются автоматически в production.
+Точные значения измеряются из `bidplace-web-v2.pen`, документируются в pull
+request и реализуются в существующей архитектуре. Любой exporter работает
+только read-only и не может сохранить изменения в canonical Pen.
 
-Wave A responsive detail/navigation update: the requested product-wide threshold is `900px`, the wide hero is `440px` with the shared `4:5` ratio, and the mobile bid dock is limited to a summary plus one compact `44px` action with safe-area padding. Mobile navigation uses equal-width icon-over-label cells with `Inter 500 / 13 / 18`, while auth routes use a keyboard-aware scroll viewport. These values follow the explicit Wave A implementation request; visual/device/accessibility acceptance remains separate.
+## 2. Token policy
 
-Wave 2 additions: `modernTokens` uses a white canvas with neutral muted/chip surfaces and semantic content/chrome/popover/modal layers; `AppShell` owns the 72 px desktop rail, account row and web `OverlayHost`; `AppHeader` owns role-derived icon navigation. Catalog uses the available page width after the rail, while Product detail keeps gallery, author/title and auction in one responsive top block and renders the item story as linear sections. Product detail uses the existing public Product/SellerProfile/Listing data for author, facts, publication date and history.
+Canonical canvas, local byte copy and public read-only publication проверены.
+Ниже закреплены повторяющиеся значения, реально встречающиеся в экспортированных
+canonical nodes; это baseline, а не разрешение копировать одноразовые magic
+values.
 
-## Current implementation
+После проверки values группируются как минимум в:
 
-Это фактическая инвентаризация committed final UI; она не является утверждением бренда и остаётся Partial до founder acceptance.
+- color: canvas, surface, surface-warm, text, muted, divider, action,
+  destructive, success, warning, focus;
+- typography: display, title, body, label, metadata, numeric/auction;
+- spacing: page gutters, section gaps, component gaps, compact gaps;
+- shape: control, card, media and panel radii;
+- elevation/border: только реально используемые Pen levels;
+- motion: menu, tab, sticky player и loading transitions;
+- layout: content max-width, grid columns, card width and breakpoints.
 
-| Область             | Фактическая реализация                                                                                                                                                                     | Путь                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Colors/themes       | light-only semantic palette through `modernTokens`; web canvas and surface are white with neutral muted surfaces and semantic borders                                                      | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/providers/theme-provider.tsx`                           |
-| Spacing             | `space.x1`–`space.x16`: 4/8/12/16/20/24/32/40/48/64 px                                                                                                                                     | `packages/design-tokens/src/modern.ts`                                                                            |
-| Radius              | `small: 8`, `control/compact: 14`, `image: 16`, `button: 18`, `panel: 22`, `sheet: 28`, `pill`                                                                                          | `packages/design-tokens/src/modern.ts`                                                                            |
-| Size/touch          | `touch: 44`, `input: 52`, `button: 56`, `buttonCompact: 44`, `icon: 20`                                                                                                                   | `packages/design-tokens/src/modern.ts`                                                                            |
-| Typography tokens   | `display`, `screenTitle`, `sectionTitle`, `cardTitle`, `body`, `bodySmall`, `label`, `metadata`, `button`, `nav`, `caption`, `numeric`                                                    | `packages/design-tokens/src/modern.ts`                                                                            |
-| Fonts               | Inter and PT Mono runtime loading                                                                                                                                                          | `apps/mobile/src/app/_layout.tsx`                                                                                |
-| Layout              | `railWidth: 72` and `productDetailMaxWidth: 1180`; shared `AppShell` keeps the desktop rail/account row and flexible page area                                                               | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/layout/AppShell.tsx`, `AppHeader.tsx`         |
-| Breakpoints         | final responsive shell: mobile below 1025 px and desktop rail from 1025 px; Product detail uses the wide two-column transition at 900 px                                                           | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/layout/AppHeader.tsx`, `apps/mobile/src/features/products/product-screen.tsx` |
-| Elevation           | semantic surface and overlay tokens                                                                                                                                                        | `packages/design-tokens/src/modern.ts`                                                                           |
-| Buttons             | semantic primary, secondary and destructive actions with loading/disabled/accessibility state; `content` default, `compact` inline and explicit `block` width variants; compact action is 44 px with a 14 px radius | `apps/mobile/src/components/modern-ui/Button.tsx`, `button-layout.ts`                                      |
-| Fields/forms        | `TextField`, form sections and route-level RHF forms                                                                                                                                       | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                                               |
-| Cards/panels        | `AuctionCard`, `AuctionPanel`, `FormSection` and route-local surfaces                                                                                                                      | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                                               |
-| Status              | semantic text tones, auction panel facts and server-projected route states                                                                                                                 | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features`                                               |
-| Auction patterns    | gallery, auction panel, bid history and seller summary                                                                                                                                     | `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/products`                                      |
-| Navigation          | role-derived icon rail with hover/focus labels, seller capability actions and shared account menu; mobile uses equal-width icon-over-label cells and no tablist role | `apps/mobile/src/components/layout/AppHeader.tsx`, `apps/mobile/src/components/layout/AccountMenu.tsx` |
-| Feedback            | shared `PageHeader` and `PageState` provide consistent loading, empty, error and retry states                                                                                              | `apps/mobile/src/components/modern-ui/PageHeader.tsx`, `PageState.tsx`                                           |
-| Media               | Expo Image, `getApiAssetUrl`, loading surface, missing/error placeholder, image picker and truthful seller image count                                                                     | `apps/mobile/src/lib/environment.ts`, `apps/mobile/src/components/modern-ui`, `apps/mobile/src/features/sellers` |
-| Final UI foundation | Final semantic namespace, AppText/Icon/press, buttons, text field, skeleton, image placeholder and auction panel                                                                           | `packages/design-tokens/src/modern.ts`, `apps/mobile/src/components/modern-ui/`                                  |
-| Form sections       | Semantic section container for seller/admin forms; presentation-only children                                                                                                              | `apps/mobile/src/components/modern-ui/FormSection.tsx`                                                           |
+### Measured visual baseline
 
-Final Modern UI uses Lucide only through `AppIcon`, one overlay adapter and a light-only MVP theme; semantic tokens keep a future dark-mode option without shipping it now. `AppDialog` is required for destructive seller media and admin moderation actions.
+| Role                         | Pen value / evidence                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| Primary type                 | `Onest` для headings, cards и content; `Inter` для header/navigation и части overlays |
+| Canvas/surfaces              | `#FFFFFF`, `#FAFAF8`, `#F6F6F3`, `#F1F1ED`                                            |
+| Primary text/action          | `#111111`, `#1A1A1A`, header action `#090909`                                         |
+| Muted text                   | `#3E3E3A`, `#6B6B66`, `#6F6F69`, `#777771`/`#777772`                                  |
+| Dividers/borders             | `#E3E1DC`, `#E5E2DE`                                                                  |
+| Header search                | 480×48, radius 24, fill `#F1F1ED`                                                     |
+| Header primary action        | height 40, radius 20, dark fill, white text                                           |
+| Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
+| Auction card example         | 400×576, media 400×430, radius 16, content padding 18/20/20                           |
+| Card title                   | `Onest` 18/700, line-height 23                                                        |
+| Card creator/metadata        | 14/500; metric label 12/500; metric value 18/700                                      |
+| Creator profile card example | 340×526, media 340×380                                                                |
 
-Every route uses the final shell and primitives. `AppShell` preserves the mobile header/bottom-action composition and provides the desktop rail/page split; the account control stays in the mobile brand row and desktop right-side account row respectively. `FormSection` groups seller/admin forms; seller media retains truthful count, direct reorder and confirmed deletion. No bridge or legacy UI import remains; image fallback is a truthful unavailable-media state, not a substitute for a valid asset URL.
+Exact semantic token names and repeated-value clustering выполняются в WP1.
+Card dimensions in the table are canonical screen variants; the reusable
+`k5vYGf` reference below remains 322×456. Implementation selects the measured
+variant by canonical consumer, not by stretching one card with arbitrary CSS.
+Onest/Inter weights, Cyrillic coverage, licenses and fallback metrics должны
+быть подтверждены до runtime cutover. Текущие `modernTokens` — только migration
+input и не являются authority.
 
-## Target principles
+## 3. Canonical components
 
-- semantic tokens вместо screen-local hex/spacing;
-- один canonical component на роль;
-- variants отражают смысл, а не конкретный экран;
-- состояние различается текстом, структурой и при необходимости цветом;
-- минимум 44 px для интерактивной цели;
-- формы связывают label, hint, error и focus;
-- destructive/admin actions имеют явное подтверждение;
-- bid confirmation показывает amount, minimum, auction и необратимость;
-- countdown устойчив к background/resume и опирается на server snapshot;
-- bid history использует public alias и не раскрывает identity;
-- responsive layout проектируется для mobile и desktop, а не только переносится;
-- animation не скрывает задержку сети и поддерживает reduced motion;
-- media имеет aspect ratio, placeholder, error и accessible description;
-- loading/empty/error/offline/reconnect покрываются на уровне каждого flow.
+### GlobalHeader `L9UV9`
 
-## Missing foundations
+Единая composition для public surfaces. Включает DiscoveryGroup `SYE9r`,
+Search `VKsEM`, UserActionsGroup `AG6gK`, SearchBar `Uulvx`, HeaderNav `BF8Nr`,
+NavDropdownTrigger `MsOKe`, NavDropdownMenu `SHHWu`, Works item `B0EaXH`,
+Authors item `VUDwA`, HeaderActions `hLoyZ`.
 
-- утверждённые brand tokens, typography и assets;
-- token governance и документированная семантика colors;
-- focus/keyboard/screen-reader test matrix;
-- component documentation или visual regression tests;
-- offline/reconnect banner и stale-data state;
-- participation status pattern;
-- verified seller/provenance patterns;
-- complete countdown/bid/auction state specification;
-- image gallery states для обязательных трёх изображений;
-- final light-mode contrast audit;
-- design QA evidence на целевых устройствах.
+Implementation invariants: route-aware links, capability-derived actions,
+semantic nav/menu/search, full keyboard model, Escape/outside close, focus
+return и mobile alternative. Disabled product concepts не маскируются под
+рабочие actions.
 
-## Wave B shared-system progress
+### AuctionCard `k5vYGf`
 
-- `Implemented`: B1 semantic contrast roles are canonical in `packages/design-tokens/src/modern.ts`; normal text/action roles, destructive button text and keyboard focus meet the tested contrast thresholds, while `textMuted` remains reserved for non-essential/disabled/placeholder content.
-- `Implemented`: runtime consumers use `modernTokens`; conflicting legacy token exports were removed after an import audit found no current workspace consumers. Wave A canvas, success color, layout, radius, and ratio values remain unchanged.
-- `Needs verification`: founder physical-device and screen-reader/visual acceptance remains open after automated Wave B evidence.
-- `Implemented`: B2 supplies the shared focus-visible CSS contract, web/native reduced-motion adapter, 44px compact hit areas, and single-name composite icon semantics. Target-width browser evidence passes; founder device/screen-reader acceptance remains `Needs verification`.
-- `Implemented`: B3 keeps default/compact button geometry tokenized; text-only buttons have no idle icon gap, while busy buttons use an invisible sizing layer and absolute spinner to preserve width.
-- `Implemented`: B4 centralizes the 4:5 product media geometry, stable narrow-card metadata rows, and a plain `EditorialSection` primitive prepared for Wave C without changing current Product section order.
-- `Implemented`: B5 separates shared loading/empty/error PageState semantics and applies the announced loading contract to ProductDraft, ListingDraft and Order route states; AppDialog retains initial-focus, trap, cancel/Escape, focus-return and bounded-scroll accessibility.
-- `Implemented`: B6 provides localized presentation maps, date-time normalization, and 44px selectable rows for existing seller/admin values without changing API serialization or business statuses.
+Размер reference: 322×456, media 322×322. Artwork `frTbO`, information `jKYlO`.
+Один master используется в Browse Works и Creator Profile; Home variants могут
+переиспользовать его данные, но не создавать несовместимую auction semantics.
 
-## Do not invent without designer approval
+Обязательные данные: image state, title, creator, current/starting bid,
+status/deadline. Entire-card navigation не должна конфликтовать с вложенными
+interactive controls. Цена и countdown приходят из canonical snapshot.
 
-- финальные цвета, gradients, shadows и decorative motifs;
-- финальные font families и typographic scale;
-- логотип, иллюстрации, photo treatment и iconography;
-- новый layout breakpoint;
-- dark mode как обязательный продуктовый scope;
-- animation timings и celebration;
-- badges, verification marks и trust language;
-- новый component variant, если существующий pattern можно использовать;
-- изменение flow или business state ради удобства макета.
+### CreatorCard `SrXPq`
+
+Размер reference: 322×383. Photo `k9hN07`, name `atoev`, discipline `sUQFf`.
+Production variant — базовый A. Bio `S1BHg` и board `BvSRz` — comparison only.
+Карточка не вычисляет и не показывает неподдержанные creator metrics.
+
+### AuctionPlayer `X6Ksg`
+
+Bid `w8O9kE`, time `k7l1d`, button `xozqk`. Это одна transaction composition,
+которая может находиться inline или sticky, но не раздваивает state.
+
+Обязательные states: scheduled, live/eligible, live/needs OTP or rules,
+submitting, accepted, stale/refetch, validation error, ended/won/lost, disabled
+by role. Server остаётся источником minimum, status, deadline и acceptance.
+
+### ProductTabs `Jh9jr`
+
+About `CBb5S`, Creation `bzabH`, Bids `ryIwP`, active underline `KSVlN`.
+Реализация использует semantic tablist/tab/tabpanel, arrow-key navigation,
+focus visibility и согласованный URL/back contract.
+
+## 4. Screen compositions
+
+| Composition      | Root     | Reuses                                        |
+| ---------------- | -------- | --------------------------------------------- |
+| Home             | `BJd1P`  | GlobalHeader, auction/creator/editorial cards |
+| Browse Works     | `H5vf2`  | GlobalHeader, AuctionCard, controls           |
+| Browse Authors   | `N4ebBk` | GlobalHeader, CreatorCard, controls           |
+| Product About    | `L7ytbv` | GlobalHeader, ProductTabs, AuctionPlayer      |
+| Product Creation | `cK8kD`  | ProductTabs, AuctionPlayer                    |
+| Product Bids     | `XIzHe`  | ProductTabs, AuctionPlayer, semantic table    |
+| Creator Profile  | `MqUMz`  | GlobalHeader, AuctionCard                     |
+
+## 5. Controls and interaction rules
+
+- Buttons and links remain visually and semantically distinct.
+- Dropdown/menu is not a generic select; sort/filter controls use appropriate
+  listbox/select semantics.
+- Status chips are informational unless the contract makes them controls.
+- Loading disables only the action in progress and keeps result/error legible.
+- Destructive actions retain explicit confirmation where product docs require
+  it.
+- Focus cannot be clipped by overflow, sticky surfaces or rounded media.
+- Animation supports reduced motion and never delays bid feedback.
+
+### Motion tokens
+
+| Token / pattern  | Target                            | Easing                       | Invariant                                |
+| ---------------- | --------------------------------- | ---------------------------- | ---------------------------------------- |
+| `motion.fast`    | 120–180 ms                        | `cubic-bezier(0, 0, 0.2, 1)` | press, icon, focus-color                 |
+| `motion.control` | 180–220 ms                        | same                         | button/chip/fill/border                  |
+| `motion.media`   | 300 ms                            | same                         | card artwork scale/crossfade             |
+| `motion.panel`   | 180–240 ms open; 120–180 ms close | same                         | menu, popover, toast                     |
+| `motion.layout`  | 220–300 ms                        | same                         | tabs underline, accordion, inline→sticky |
+
+Live Avant Arte verification on 2026-08-10 showed artwork hover
+`transform: scale(1.05)` with a 300 ms `cubic-bezier(0, 0, 0.2, 1)` transition.
+This becomes the default catalog-card media pattern unless canonical crop QA
+requires an explicitly documented per-component exception.
+
+### Auction/Product card states
+
+- Media viewport uses `overflow: hidden`; outer bounds never change.
+- Default artwork is `scale(1)`; pointer hover and appropriate
+  `focus-within` emphasis use `scale(1.05)` over `motion.media`.
+- Only the image transforms. Title, creator, price, deadline and surrounding
+  grid do not translate or reflow.
+- Primary dark action uses semantic action fill; hover becomes visibly darker,
+  pressed state is immediate and never lowers text contrast.
+- Secondary/bottom pill may use a translucent neutral surface; hover increases
+  opacity/contrast instead of making the label faint.
+- Card remains usable on touch; hover is enhancement, not the only discovery
+  or action signal.
+
+### Menus, filters, tabs and feedback
+
+- Menu/popover enters from `opacity: 0` and `translateY(-4px)` to rest;
+  closing is shorter. Caret rotates 180° with `motion.control`.
+- Backdrop blur is permitted only on overlay/sticky surfaces with an opaque
+  semantic fallback and WCAG-compliant text contrast.
+- Tab underline moves with `motion.layout`; panel content crossfades in
+  160–200 ms without delaying data or focus.
+- Toast enters in 180–240 ms, remains long enough to read, exposes an
+  accessible live-region message and never covers the auction action.
+- AuctionPlayer inline→sticky transition keeps one state owner and the same
+  focused control; no remount, duplicate countdown or duplicated mutation.
+
+### Artwork-derived atmosphere
+
+Product/creator hero may render a duplicate of the same artwork behind the
+sharp media. The atmospheric layer is absolute, covers the section, is enlarged
+approximately 1.08–1.15, blurred 40–80 px and covered by a neutral veil chosen
+for text contrast. It is decorative, hidden from the accessibility tree and
+never replaces the canonical image. Media changes crossfade around 260 ms;
+there is no continuous parallax.
+
+### Reduced motion and performance
+
+Under `prefers-reduced-motion`, disable scale/translate/parallax and use an
+instant change or opacity transition no longer than 100 ms. Animate only
+compositor-friendly `transform`/`opacity`; do not animate layout dimensions for
+cards or filters. Large blur layers must be clipped, size-bounded and profiled
+on target devices; a static semantic surface is the accepted performance
+fallback.
+
+## 6. Responsive derivation
+
+Desktop measurements are exact acceptance targets. Tablet/mobile states are
+derived before coding each component and recorded in handoff:
+
+- 1440: canonical composition and grid;
+- 1024: reduced gutters/columns with preserved content order;
+- 390: single-column reading flow, safe-area actions and non-overlapping header;
+- intermediate widths: no accidental horizontal scroll or orphan controls.
+
+Breakpoints follow composition pressure, not device names. A component is not
+complete if it matches only the 1440 frame.
+
+## 7. Old system boundary
+
+`docs/modern-ui` and its design language are retired. Existing runtime modules
+named `modern-ui` remain only because they contain current production behavior;
+they may be refactored incrementally but cannot be cited as the new visual
+specification. No compatibility layer or second token system should survive the
+final cutover.

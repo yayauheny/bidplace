@@ -139,6 +139,28 @@ After changing UI:
 
 `docs/design/01-DESIGN-FOUNDATION.md` is protected and changes only by direct decision of the founder or assigned designer.
 
+### Canonical Pen Reference Protection
+
+`design/pen/bidplace-web-v2.pen` is the canonical visual reference for the current UI direction.
+
+- Never edit, delete, rename, move, replace, format, or resave this file during implementation, refactoring, testing, review, or documentation work.
+- Adapt production code to the canonical Pen reference; never adapt the Pen file to current code.
+- Pen changes are allowed only in a separately scoped design task with an explicit founder or assigned-designer instruction.
+- Even an authorized design task must not delete the canonical file; preserve history and explicit version lineage.
+- If a Pen node is missing, damaged, ambiguous, or conflicts with a product contract, stop the affected implementation and record the required decision. Do not repair Pen during a code task.
+- Before completing any UI task, verify that no `.pen` file appears in the diff.
+- Pen controls visual composition and styling. Product owner documents and server contracts continue to control routes, data, permissions, privacy, and auction behavior.
+
+### Pen UI Implementation Quality
+
+- Use only durable solutions for the Pen v2 migration. If a durable implementation is blocked by route, data, or contract ambiguity, stop the affected scope instead of adding a workaround.
+- Maintain one semantic token layer in `packages/design-tokens`, one shared primitive per UI role, and one production master per canonical Pen component.
+- Keep screens thin. Fix shared visual rules in tokens or shared components, never with duplicated route-local patches.
+- Do not use repeated magic values, duplicate token systems, fake data or controls, client-only API approximations, giant boolean-flag components, silent fallbacks, type/lint suppressions, or a hybrid final shell.
+- Implement exact Pen measurements only after reading the canonical nodes. Never guess missing geometry, fonts, assets, responsive behavior, or interactions.
+- Static Pen frames do not exhaust interaction behavior. Implement hover, focus, open/close, blur, artwork atmosphere, sticky transitions and reduced-motion exactly from `docs/design/03-DESIGN-SYSTEM.md`; never add route-local animation guesses or edit Pen to show them.
+- Verify visual parity at 1440, 1024, and 390 px with matched screenshots, plus required content, role, state, keyboard, zoom, and reduced-motion coverage.
+
 ### Task Completion
 
 Before the final response:

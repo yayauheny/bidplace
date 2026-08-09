@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-08-05
+Последнее обновление: 2026-08-10
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -888,3 +888,110 @@ These values are explicitly confirmed in the Wave B implementation request and p
 ### Scope
 
 Wave B shared tokens and primitives only; product flows, API contracts, and protected product/design foundations remain unchanged.
+
+---
+
+## DEC-062 — Canonical Pen v2 is immutable during implementation
+
+Date: 2026-08-10
+Status: Confirmed
+
+### Decision
+
+`design/pen/bidplace-web-v2.pen` is the canonical visual reference for the new
+bidplace public UI. During implementation, refactoring, testing, review and
+documentation work it must never be edited, deleted, renamed, moved, replaced,
+formatted or resaved. Production code is adapted to the Pen reference, not the
+other way around.
+
+The canonical file may change only in a separately scoped design task with an
+explicit founder or assigned-designer instruction. Even such a task does not
+authorize deletion: design history and explicit version lineage must be
+preserved.
+
+The former `docs/modern-ui/` design system and Pen screen-prompt workflow are
+retired. `docs/design/00`–`07` becomes the clean documentation module for
+source hierarchy, visual principles, screen mapping, shared components,
+status, assets, handoff and implementation planning.
+
+### Boundaries
+
+Pen owns visual composition, styling and canonical component anatomy. It does
+not independently change routes, API contracts, data models, permissions,
+privacy or auction rules; product owner documents and server contracts retain
+those responsibilities. Unsupported Pen concepts require a separate decision
+or remain blocked.
+
+### Revises
+
+Revises `DEC-055`, `DEC-057` and `DEC-061` only where they define the previous
+visual target or its implementation documentation. Their product boundaries,
+server-authoritative auction behavior and accessibility obligations remain in
+force.
+
+---
+
+## DEC-063 — Pen v2 UI uses durable shared architecture only
+
+Date: 2026-08-10
+Status: Confirmed
+
+### Decision
+
+The Pen v2 production migration must use one semantic token layer, reusable
+shared primitives, one production master for each canonical Pen component and
+thin route screens. Exact design measurements are taken from the immutable Pen
+source and verified by matched runtime screenshots at 1440, 1024 and 390 px.
+
+Workarounds and hacks are not accepted as final or interim product solutions.
+This includes duplicated route-local styles/components, repeated magic values,
+parallel token systems, fake data or controls, client-side approximations of
+missing API behavior, type/lint suppressions, silent fallbacks and hybrid final
+shells. When a durable solution requires an unresolved route, field, data or
+API decision, only that scope remains Blocked until the owner decision exists.
+
+### Rationale
+
+The founder is delegating detailed design implementation and requires the
+result to remain visually exact, scalable, understandable and maintainable
+without relying on subjective design judgment during coding.
+
+---
+
+## DEC-064 — Foundation, Gamma and Avant Arte define approved interaction references
+
+Date: 2026-08-10
+Status: Confirmed
+
+### Decision
+
+The immutable `design/pen/bidplace-web-v2.pen` remains the only source of exact
+static visual composition. Founder-provided Foundation and Gamma archives,
+the supplied screenshot set and Avant Arte are approved supporting references
+for interaction details that are impractical to encode in static Pen frames:
+card image hover zoom, button/menu/tab transitions, translucent controls,
+artwork-derived edge blur and atmosphere, sticky surfaces, feedback and
+reduced-motion behavior.
+
+The approved logo source is
+`/Users/yayauheny/Downloads/Telegram Desktop/logo_assets_web_expo`; it may be
+mapped into runtime platform assets without redesigning the mark.
+
+### Boundaries
+
+- Pen is never changed merely to illustrate motion and never loses canonical
+  priority.
+- Reference archives are historical visual evidence. Gamma cards/positioning
+  may be outdated and are not copied over a newer Pen decision.
+- Wallet, NFT, mint, blockchain, ETH/BTC, followers, sales and verified badges
+  are not bidplace behavior and must not be introduced from a reference.
+- Motion values and accessibility fallbacks are centralized in
+  `docs/design/03-DESIGN-SYSTEM.md`; route-local animation guesses are rejected.
+- Production auction, auth, permissions, privacy and data contracts remain
+  server/product-authoritative.
+
+### Rationale
+
+The founder explicitly requires a polished, maintainable implementation with
+smooth transitions and artwork-led atmosphere while acknowledging that static
+design frames cannot efficiently show every interactive state.
