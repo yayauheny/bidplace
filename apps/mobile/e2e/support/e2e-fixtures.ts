@@ -21,6 +21,12 @@ export type AdminModerationFixture = {
 export type AuctionFixture = {
   seller: E2EUser;
   sellerProfileId: string;
+  sellerProfile: {
+    id: string;
+    slug: string;
+    fullName: string;
+    privateContact: string;
+  };
   buyerA: E2EUser;
   buyerB: E2EUser;
   product: { id: string; publicId: string; title: string };
@@ -90,13 +96,16 @@ export async function createAuctionFixture(options?: {
   const photo = readFileSync(
     resolve(__dirname, '../fixtures/profile-photo.png'),
   );
+  const sellerName = `E2E Seller ${suffix}`;
+  const sellerSlug = `seller-${suffix}`;
+  const privateContact = `@seller_${suffix}`;
 
   const sellerProfile = await prisma.sellerProfile.create({
     data: {
       userId: seller.id,
-      slug: `seller-${suffix}`,
+      slug: sellerSlug,
       sellerType: 'creator',
-      fullName: `E2E Seller ${suffix}`,
+      fullName: sellerName,
       country: 'BY',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
@@ -105,7 +114,7 @@ export async function createAuctionFixture(options?: {
       socialLink: 'https://example.com/e2e',
       shortDescription: 'E2E seller',
       handoffContactType: 'TELEGRAM',
-      handoffContactValue: `@seller_${suffix}`,
+      handoffContactValue: privateContact,
       handoffInitiator: 'BUYER_CONTACTS_SELLER',
       status: 'APPROVED',
     },
@@ -187,6 +196,12 @@ export async function createAuctionFixture(options?: {
   return {
     seller,
     sellerProfileId: sellerProfile.id,
+    sellerProfile: {
+      id: sellerProfile.id,
+      slug: sellerSlug,
+      fullName: sellerName,
+      privateContact,
+    },
     buyerA,
     buyerB,
     product: { id: product.id, publicId: product.publicId, title },

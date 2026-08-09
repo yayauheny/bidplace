@@ -23,8 +23,8 @@
 | WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784`    |
 | WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa`    |
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
-| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | текущий этап |
-| WP6 — Creator Profile               | В работе               | Публичный профиль автора                           | —            |
+| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
+| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | текущий этап |
 | WP7 — Auth/create/supporting routes | Ожидает                | Единый язык для экранов без полного Pen target     | —            |
 | WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
 
@@ -88,13 +88,29 @@ active navigation сохраняют геометрию и семантику. C
 Проверки: typecheck, lint, 27 unit-тестов, реальный two-buyer bidding E2E и
 отдельный Product composition E2E на 1440×900/390×844.
 
+Commit: `eaa0dd8`.
+
+### 2026-08-10 — WP6
+
+- `/seller/[slug]` приведён к creator-first composition `MqUMz`: центрированный
+  портрет, имя, публичные метаданные, описание и ссылка автора.
+- Работы автора используют тот же shared `AuctionCard`, что и основной каталог,
+  без параллельной реализации карточки.
+- Сетка адаптируется 4/3/2/1, использует общие breakpoints и не создаёт
+  горизонтального overflow на mobile.
+- Публичный контракт не расширялся: handoff contact, buyer email и внутренние
+  данные не выводятся.
+
+Проверки: typecheck, lint, 16 focused unit-тестов и реальный public profile E2E
+на 1440×900/390×844 с privacy assertions.
+
 ## Текущая работа
 
-### WP6 — Creator Profile
+### WP7 — Auth/create/supporting routes
 
-- привести `/seller/[slug]` к creator-first composition `MqUMz`;
-- переиспользовать shared `AuctionCard` для работ автора;
-- сохранить текущий narrow public seller contract и privacy boundary.
+- привести auth, seller onboarding и создание предмета к единому Pen v2 языку;
+- сохранить текущие validation, permissions и server-driven states;
+- переиспользовать foundation и form primitives без локальных token-систем.
 
 ## Заблокировано решениями продукта
 
@@ -110,5 +126,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Завершить Creator Profile, выполнить public-data и responsive QA, проверить
-отсутствие diff у canonical Pen и зафиксировать отдельным commit.
+Зафиксировать Creator Profile отдельным commit, затем начать WP7 с аудита
+общих auth/form primitives и базовых маршрутов.

@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link, type Href } from 'expo-router';
 import {
   ScrollView,
-  View,
   useWindowDimensions,
+  View,
   type DimensionValue,
 } from 'react-native';
 
@@ -11,9 +12,9 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
-  AuctionCard,
   AppText,
-  PageHeader,
+  AuctionCard,
+  MotionPressable,
   PageState,
   ResilientRemoteImage,
 } from '../../components/modern-ui';
@@ -27,7 +28,7 @@ function AuthorWorkGrid({
   columns,
 }: {
   products: React.ComponentProps<typeof AuctionCard>['item'][];
-  columns: 2 | 3;
+  columns: 1 | 2 | 3 | 4;
 }) {
   const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 
@@ -52,21 +53,94 @@ function AuthorWorkGrid({
 }
 
 function AuthorPhoto({ url, name }: { url: string; name: string }) {
-  const style = {
-    width: 120,
-    height: 120,
-    borderRadius: designTokens.radius.pill,
-  };
-
   return (
     <ResilientRemoteImage
       uri={getApiAssetUrl(url)}
       component="AuthorPhoto"
       accessibilityLabel={`Фото автора ${name}`}
       fallbackLabel={`Фото автора недоступно: ${name}`}
-      style={style}
+      style={{
+        width: 112,
+        height: 112,
+        borderRadius: designTokens.radius.pill,
+        borderWidth: 1,
+        borderColor: designTokens.color.border,
+      }}
       contentFit="cover"
     />
+  );
+}
+
+function AuthorHero({
+  compact,
+  country,
+  description,
+  name,
+  photoUrl,
+  socialLink,
+  type,
+}: {
+  compact: boolean;
+  country: string;
+  description: string;
+  name: string;
+  photoUrl: string;
+  socialLink: string;
+  type: string;
+}) {
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        gap: designTokens.space.x4,
+        paddingBottom: designTokens.space.x12,
+        paddingTop: designTokens.space.x10,
+      }}
+    >
+      <AuthorPhoto url={photoUrl} name={name} />
+      <View style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
+        <AppText
+          role={compact ? 'screenTitle' : 'display'}
+          style={{ textAlign: 'center' }}
+        >
+          {name}
+        </AppText>
+        <AppText role="metadata" tone="secondary">
+          {type} · {country}
+        </AppText>
+      </View>
+      <AppText
+        role="body"
+        tone="secondary"
+        style={{ maxWidth: 720, textAlign: 'center' }}
+      >
+        {description}
+      </AppText>
+      <Link href={socialLink as Href} target="_blank" asChild>
+        <MotionPressable
+          accessibilityRole="link"
+          accessibilityLabel={`Открыть публичную страницу автора ${name}`}
+          preset="button"
+          style={{
+            minHeight: designTokens.size.touch,
+            justifyContent: 'center',
+            borderRadius: designTokens.radius.pill,
+            borderWidth: 1,
+            borderColor: designTokens.color.border,
+            backgroundColor: designTokens.color.surface,
+            paddingHorizontal: designTokens.space.x4,
+          }}
+          interactionStyle={({ hovered, pressed }) => ({
+            backgroundColor:
+              hovered || pressed
+                ? designTokens.color.surfaceStrong
+                : designTokens.color.surface,
+          })}
+        >
+          <AppText role="label">Страница автора</AppText>
+        </MotionPressable>
+      </Link>
+    </View>
   );
 }
 
@@ -99,13 +173,16 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
       />
     );
   } else if (query.data.products.length === 0) {
-    content = <PageState title="У автора пока нет опубликованных предметов" />;
+    content = <PageState title="У автора пока нет опубликованных работ" />;
   } else {
     content = (
-      <AuthorWorkGrid
-        products={query.data.products}
-        columns={getAuthorWorkColumnCount(width)}
-      />
+      <View style={{ gap: designTokens.space.x6 }}>
+        <AppText role="sectionTitle">Работы</AppText>
+        <AuthorWorkGrid
+          products={query.data.products}
+          columns={getAuthorWorkColumnCount(width)}
+        />
+      </View>
     );
   }
 
@@ -113,47 +190,39 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
     <AppShell>
       <ScrollView
         contentContainerStyle={{
-          width: '100%',
-          maxWidth: 960,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-          gap: designTokens.space.x5,
+          paddingHorizontal:
+            width >= designTokens.breakpoint.desktopShell
+              ? designTokens.layout.desktopGutter
+              : designTokens.layout.mobileGutter,
+          paddingBottom: designTokens.space.x20,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        {query.data ? (
-          <View style={{ gap: designTokens.space.x3 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: designTokens.space.x4,
-              }}
-            >
-              <AuthorPhoto
-                url={query.data.sellerProfile.profilePhotoUrl}
-                name={query.data.sellerProfile.fullName}
-              />
-              <View style={{ flex: 1, gap: designTokens.space.x1 }}>
-                <PageHeader title={query.data.sellerProfile.fullName} />
-                <AppText role="metadata" tone="secondary">
-                  {presentEnum(
-                    query.data.sellerProfile.sellerType,
-                    sellerTypeLabels,
-                    'Автор',
-                  )}{' '}
-                  · {query.data.sellerProfile.country}
-                </AppText>
-              </View>
-            </View>
-            <AppText role="bodySmall" tone="secondary">
-              {query.data.sellerProfile.shortDescription}
-            </AppText>
-            <AppText role="caption" tone="secondary">
-              {query.data.sellerProfile.socialLink}
-            </AppText>
-          </View>
-        ) : null}
-        {content}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: designTokens.layout.contentMaxWidth,
+            alignSelf: 'center',
+            gap: designTokens.space.x8,
+          }}
+        >
+          {query.data ? (
+            <AuthorHero
+              compact={width < designTokens.breakpoint.compactHeader}
+              country={query.data.sellerProfile.country}
+              description={query.data.sellerProfile.shortDescription}
+              name={query.data.sellerProfile.fullName}
+              photoUrl={query.data.sellerProfile.profilePhotoUrl}
+              socialLink={query.data.sellerProfile.socialLink}
+              type={presentEnum(
+                query.data.sellerProfile.sellerType,
+                sellerTypeLabels,
+                'Автор',
+              )}
+            />
+          ) : null}
+          {content}
+        </View>
       </ScrollView>
     </AppShell>
   );

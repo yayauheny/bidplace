@@ -4,11 +4,15 @@ import { getAuthorWorkColumnCount } from './author-layout';
 
 describe('author work grid layout', () => {
   it.each([
-    [390, 2],
-    [1024, 2],
-    [1025, 3],
-    [1440, 3],
-  ])('uses %i columns at %i px', (width, columns) => {
+    [390, 1],
+    [619, 1],
+    [620, 2],
+    [899, 2],
+    [900, 3],
+    [1279, 3],
+    [1280, 4],
+    [1440, 4],
+  ])('uses %i px as a %i-column grid', (width, columns) => {
     expect(getAuthorWorkColumnCount(width)).toBe(columns);
   });
 });
