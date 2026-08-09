@@ -33,18 +33,17 @@ function AuthCard({
     <View
       style={{
         width: '100%',
-        maxWidth: 540,
-        gap: designTokens.space.x5,
-        borderRadius: designTokens.radius.panel,
+        gap: designTokens.space.x6,
+        borderRadius: designTokens.radius.sheet,
         borderWidth: 1,
         borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
-        padding: designTokens.space.x6,
+        backgroundColor: designTokens.color.surfaceWarm,
+        padding: designTokens.space.x8,
       }}
     >
       <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="screenTitle">{title}</AppText>
-        <AppText role="bodySmall" tone="secondary">
+        <AppText role="sectionTitle">{title}</AppText>
+        <AppText role="body" tone="secondary">
           {description}
         </AppText>
       </View>
@@ -124,7 +123,11 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           )}
         />
         {submitError ? (
-          <AppText role="bodySmall" tone="danger">
+          <AppText
+            role="bodySmall"
+            tone="danger"
+            accessibilityLiveRegion="polite"
+          >
             {submitError}
           </AppText>
         ) : null}
@@ -253,7 +256,11 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           )}
         />
         {submitError ? (
-          <AppText role="bodySmall" tone="danger">
+          <AppText
+            role="bodySmall"
+            tone="danger"
+            accessibilityLiveRegion="polite"
+          >
             {submitError}
           </AppText>
         ) : null}

@@ -25,7 +25,7 @@
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
 | WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
 | WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | текущий этап |
-| WP7 — Auth/create/supporting routes | Ожидает                | Единый язык для экранов без полного Pen target     | —            |
+| WP7 — Auth/create/supporting routes | В работе               | Auth готов; seller forms — следующий подэтап       | текущий этап |
 | WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
 
 ## Выполнено
@@ -104,11 +104,24 @@ Commit: `eaa0dd8`.
 Проверки: typecheck, lint, 16 focused unit-тестов и реальный public profile E2E
 на 1440×900/390×844 с privacy assertions.
 
+Commit: `0304ce7`.
+
+### 2026-08-10 — WP7.1 Auth
+
+- Login и registration получили единый responsive auth-shell: editorial intro
+  и form surface рядом на desktop, последовательная композиция на mobile.
+- Routes больше не дублируют контейнеры и размеры формы.
+- `TextField` унифицирован для focus, disabled и multiline states; validation,
+  redirect и auth mutations не менялись.
+
+Проверки: typecheck, lint, 14 focused unit-тестов, существующий mobile/200% zoom
+auth E2E и отдельная проверка split/stacked composition.
+
 ## Текущая работа
 
 ### WP7 — Auth/create/supporting routes
 
-- привести auth, seller onboarding и создание предмета к единому Pen v2 языку;
+- привести seller onboarding и создание предмета к единому Pen v2 языку;
 - сохранить текущие validation, permissions и server-driven states;
 - переиспользовать foundation и form primitives без локальных token-систем.
 
@@ -126,5 +139,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Зафиксировать Creator Profile отдельным commit, затем начать WP7 с аудита
-общих auth/form primitives и базовых маршрутов.
+Зафиксировать auth-shell отдельным commit, затем переиспользовать общий form
+language в seller profile, product draft и listing draft.
