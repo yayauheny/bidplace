@@ -21,10 +21,10 @@
 | WP0 — canonical baseline            | Готово                 | Pen v2, аудит и новая структура docs зафиксированы | `ef5b7c2`    |
 | WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784`    |
 | WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784`    |
-| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | текущий этап |
+| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa`    |
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
-| WP5 — Product                       | Ожидает                | About/Creation/Bids и AuctionPlayer                | —            |
-| WP6 — Creator Profile               | Ожидает                | Публичный профиль автора                           | —            |
+| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | текущий этап |
+| WP6 — Creator Profile               | В работе               | Публичный профиль автора                           | —            |
 | WP7 — Auth/create/supporting routes | Ожидает                | Единый язык для экранов без полного Pen target     | —            |
 | WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
 
@@ -69,15 +69,32 @@ active navigation сохраняют геометрию и семантику. C
   filters не имитируются.
 
 Проверки: typecheck, lint, 29 unit-тестов, production Expo export, runtime
-1440×900/390×844 без horizontal overflow.
+1440×900/390×844 без horizontal overflow. Commit: `861b7aa`.
+
+### 2026-08-10 — WP5
+
+- Product hero перестроен в Pen composition: story/author, центральная gallery
+  и единый `AuctionPlayer`.
+- Добавлен artwork-derived atmosphere из того же изображения с neutral veil;
+  sharp artwork остаётся основным доступным media.
+- Добавлены shared semantic `ProductTabs`: «О работе», «Создание», «Ставки»,
+  включая arrow/Home/End keyboard navigation и tabpanel linkage.
+- Bids представлены таблицей participant/bid/time без раскрытия PII.
+- Creation использует только подтверждённые Product fields и не создаёт новую
+  data model.
+- Bid mutation, idempotency key, server minimum, first-participation confirm,
+  `EmailRulesGate`, admin restriction и canonical refetch не менялись.
+
+Проверки: typecheck, lint, 27 unit-тестов, реальный two-buyer bidding E2E и
+отдельный Product composition E2E на 1440×900/390×844.
 
 ## Текущая работа
 
-### WP5 — Product
+### WP6 — Creator Profile
 
-- собрать Product About/Bids вокруг shared ProductTabs и AuctionPlayer;
-- сохранить существующий bid/auth/OTP/rules contract без изменения;
-- Creation оставить на текущих подтверждённых полях, не создавая новую model.
+- привести `/seller/[slug]` к creator-first composition `MqUMz`;
+- переиспользовать shared `AuctionCard` для работ автора;
+- сохранить текущий narrow public seller contract и privacy boundary.
 
 ## Заблокировано решениями продукта
 
@@ -93,5 +110,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Завершить Product About/Bids, выполнить transaction-state regression QA,
-проверить отсутствие diff у canonical Pen и зафиксировать отдельным commit.
+Завершить Creator Profile, выполнить public-data и responsive QA, проверить
+отсутствие diff у canonical Pen и зафиксировать отдельным commit.

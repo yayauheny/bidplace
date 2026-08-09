@@ -163,6 +163,7 @@ export const designTokens = {
     compactHeader: 760,
     catalogTwoColumn: 620,
     productDetailWide: 900,
+    productHeroThreeColumn: 1180,
     catalogThreeColumn: 900,
     catalogFourColumn: 1280,
   },

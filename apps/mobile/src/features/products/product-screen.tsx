@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
-import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
@@ -10,18 +16,21 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
-  AuctionPanel,
+  AuctionPlayer,
   BottomActionBar,
   EditorialSection,
   PageState,
   PrimaryButton,
   ProductGallery,
+  ProductTabs,
+  type ProductTabId,
   SecondaryButton,
   Separator,
   TextField,
   MotionPressable,
 } from '../../components/modern-ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
@@ -181,6 +190,34 @@ function ProductShell({
   return <AppShell bottomAction={bottomAction}>{children}</AppShell>;
 }
 
+function ProductAtmosphere({ imageUrl }: { imageUrl?: string }) {
+  if (!imageUrl) return null;
+
+  return (
+    <View
+      aria-hidden
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}
+    >
+      <Image
+        source={{ uri: getApiAssetUrl(imageUrl) }}
+        contentFit="cover"
+        blurRadius={64}
+        style={[
+          StyleSheet.absoluteFill,
+          { opacity: 0.18, transform: [{ scale: 1.15 }] },
+        ]}
+      />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: 'rgba(250, 250, 248, 0.78)' },
+        ]}
+      />
+    </View>
+  );
+}
+
 export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
   const auth = useAuth();
@@ -188,6 +225,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= designTokens.breakpoint.desktopShell;
   const isProductWide = width >= designTokens.breakpoint.productDetailWide;
+  const isHeroThreeColumn =
+    width >= designTokens.breakpoint.productHeroThreeColumn;
+  const [activeTab, setActiveTab] = useState<ProductTabId>('about');
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
@@ -342,8 +382,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         Администратор не участвует в торгах.
       </AppText>
     ) : null;
-  const auctionPanel = listing ? (
-    <AuctionPanel
+  const auctionPlayer = listing ? (
+    <AuctionPlayer
       statusLabel={listingStatusLabel(listing.status)}
       statusTone={listingStatusTone(listing.status)}
       participationLabel={
@@ -369,7 +409,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
     >
       {bidForm ?? adminBidNotice}
-    </AuctionPanel>
+    </AuctionPlayer>
   ) : (
     <SurfacePanel>
       <AppText role="bodySmall" tone="secondary">
@@ -437,7 +477,36 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           />
         </View>
       ) : bids.data?.bids?.length ? (
-        <View style={{ gap: designTokens.space.x3 }}>
+        <View>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: designTokens.space.x3,
+              borderBottomWidth: 1,
+              borderBottomColor: designTokens.color.border,
+              paddingBottom: designTokens.space.x3,
+            }}
+          >
+            <AppText role="metadata" tone="secondary" style={{ flex: 1 }}>
+              Участник
+            </AppText>
+            <AppText
+              role="metadata"
+              tone="secondary"
+              style={{ width: 120, textAlign: 'right' }}
+            >
+              Ставка
+            </AppText>
+            {isProductWide ? (
+              <AppText
+                role="metadata"
+                tone="secondary"
+                style={{ width: 180, textAlign: 'right' }}
+              >
+                Время
+              </AppText>
+            ) : null}
+          </View>
           {bids.data.bids.map((item: BidItem) => (
             <View
               key={item.id}
@@ -446,14 +515,29 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 gap: designTokens.space.x3,
+                borderBottomWidth: 1,
+                borderBottomColor: designTokens.color.border,
+                paddingVertical: designTokens.space.x3,
               }}
             >
-              <AppText role="bodySmall" tone="secondary">
+              <AppText role="bodySmall" tone="secondary" style={{ flex: 1 }}>
                 {item.bidderAlias}
               </AppText>
-              <AppText role="numeric">
+              <AppText
+                role="numeric"
+                style={{ width: 120, textAlign: 'right' }}
+              >
                 {formatCurrencyAmount(item.amount)}
               </AppText>
+              {isProductWide ? (
+                <AppText
+                  role="bodySmall"
+                  tone="secondary"
+                  style={{ width: 180, textAlign: 'right' }}
+                >
+                  {formatDateTime(item.createdAt)}
+                </AppText>
+              ) : null}
             </View>
           ))}
         </View>
@@ -545,34 +629,34 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         >
           <View
             style={{
-              flexDirection: isProductWide ? 'row' : 'column',
-              alignItems: 'flex-start',
-              gap: designTokens.space.x6,
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: designTokens.radius.sheet,
+              backgroundColor: designTokens.color.surfaceWarm,
+              padding: isDesktop
+                ? designTokens.space.x8
+                : designTokens.space.x4,
             }}
           >
+            <ProductAtmosphere imageUrl={product.images[0]?.url} />
             <View
               style={{
-                flex: isProductWide ? 1 : undefined,
-                minWidth: 0,
-                width: isProductWide ? undefined : '100%',
-                gap: designTokens.space.x4,
+                position: 'relative',
+                flexDirection: isHeroThreeColumn ? 'row' : 'column',
+                alignItems: isHeroThreeColumn ? 'center' : 'stretch',
+                gap: isDesktop ? designTokens.space.x8 : designTokens.space.x6,
               }}
             >
-              <ProductGallery
-                images={product.images}
-                label={product.title ?? 'Предмет'}
-              />
-            </View>
-            <View
-              style={{
-                flex: isProductWide ? 1 : undefined,
-                minWidth: 0,
-                width: isProductWide ? 360 : '100%',
-                maxWidth: '100%',
-                gap: designTokens.space.x4,
-              }}
-            >
-              <View style={{ gap: designTokens.space.x2 }}>
+              <View
+                style={{
+                  width: isHeroThreeColumn ? 260 : '100%',
+                  minWidth: 0,
+                  gap: designTokens.space.x3,
+                }}
+              >
+                <AppText role={isDesktop ? 'display' : 'screenTitle'}>
+                  {product.title ?? 'Предмет'}
+                </AppText>
                 <Link
                   href={
                     {
@@ -590,41 +674,55 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                       alignSelf: 'flex-start',
                       minHeight: designTokens.size.touch,
                       justifyContent: 'center',
-                      paddingHorizontal: designTokens.space.x1,
                     }}
                   >
-                    <AppText role="metadata" tone="secondary">
-                      Автор: {sellerProfile.fullName}
+                    <AppText
+                      role="label"
+                      style={{ textDecorationLine: 'underline' }}
+                    >
+                      {sellerProfile.fullName}
                     </AppText>
                   </MotionPressable>
                 </Link>
-                <AppText role="screenTitle">
-                  {product.title ?? 'Предмет'}
-                </AppText>
                 {product.story ? (
-                  <AppText role="bodySmall" tone="secondary" numberOfLines={2}>
+                  <AppText role="bodySmall" tone="secondary" numberOfLines={4}>
                     {product.story}
                   </AppText>
                 ) : null}
               </View>
-              {!isProductWide ? auctionPanel : null}
-              {isProductWide ? (
-                <View
-                  style={
-                    Platform.OS === 'web'
-                      ? { position: 'sticky', top: designTokens.space.x6 }
-                      : undefined
-                  }
-                >
-                  {auctionPanel}
-                </View>
-              ) : null}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <ProductGallery
+                  images={product.images}
+                  label={product.title ?? 'Предмет'}
+                />
+              </View>
+              <View
+                style={{
+                  width: isHeroThreeColumn ? 320 : '100%',
+                  maxWidth: '100%',
+                }}
+              >
+                {auctionPlayer}
+              </View>
             </View>
           </View>
-          <View style={{ gap: designTokens.space.x4 }}>
-            {itemStory}
-            {itemHistory}
-            {bidHistory}
+          <View style={{ gap: designTokens.space.x6 }}>
+            <ProductTabs
+              activeTab={activeTab}
+              bidCount={bids.data?.bids.length}
+              onChange={setActiveTab}
+            />
+            <View
+              nativeID={`product-panel-${activeTab}`}
+              role="tabpanel"
+              accessibilityLabelledBy={`product-tab-${activeTab}`}
+            >
+              {activeTab === 'about'
+                ? itemStory
+                : activeTab === 'creation'
+                  ? itemHistory
+                  : bidHistory}
+            </View>
             {participation?.orderPublicId ? (
               <Link
                 href={{

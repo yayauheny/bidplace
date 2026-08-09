@@ -1,4 +1,9 @@
-import { useState, type ComponentProps } from 'react';
+import {
+  forwardRef,
+  useState,
+  type ComponentProps,
+  type ElementRef,
+} from 'react';
 import {
   Platform,
   Pressable,
@@ -31,17 +36,23 @@ const pressedOpacity = {
   primaryAction: 0.9,
 } as const;
 
-export function MotionPressable({
-  preset = 'button',
-  disabled,
-  interactionStyle,
-  onBlur,
-  onFocus,
-  onHoverIn,
-  onHoverOut,
-  style,
-  ...props
-}: MotionPressableProps) {
+export const MotionPressable = forwardRef<
+  ElementRef<typeof Pressable>,
+  MotionPressableProps
+>(function MotionPressable(
+  {
+    preset = 'button',
+    disabled,
+    interactionStyle,
+    onBlur,
+    onFocus,
+    onHoverIn,
+    onHoverOut,
+    style,
+    ...props
+  },
+  ref,
+) {
   const reducedMotion = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -58,6 +69,7 @@ export function MotionPressable({
   return (
     <Pressable
       {...props}
+      ref={ref}
       disabled={disabled}
       onBlur={(event) => {
         setFocused(false);
@@ -93,4 +105,4 @@ export function MotionPressable({
       ]}
     />
   );
-}
+});

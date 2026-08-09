@@ -1,15 +1,15 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-08-05
+Последнее обновление: 2026-08-10
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
-- `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell: below 1025 px it preserves the mobile header/content composition, and from 1025 px it places the full-height `AppHeader` rail beside a flexible page area. Route screens remain responsible for their own scroll/content and business interactions.
+- `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
-- `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns and rail tooltips are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
+- `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.

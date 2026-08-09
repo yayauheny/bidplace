@@ -1,7 +1,7 @@
 export * from './AppIcon';
 export * from './AppDialog';
 export * from './AppText';
-export * from './AuctionPanel';
+export * from './AuctionPlayer';
 export * from './AuctionCard';
 export * from './Button';
 export * from './FormSection';
@@ -11,6 +11,8 @@ export * from './ImagePlaceholder';
 export * from './MotionPressable';
 export * from './BottomActionBar';
 export * from './ProductGallery';
+export * from './ProductTabs';
+export type { ProductTabId } from './product-tabs';
 export * from './ResilientRemoteImage';
 export * from './Separator';
 export * from './Skeleton';
