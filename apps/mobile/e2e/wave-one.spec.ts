@@ -98,8 +98,9 @@ test('admin reviews and approves pending seller and product', async ({
     expect(bidResponse.status()).toBe(403);
 
     await page.goto('/admin');
-    await page.getByRole('link', { name: 'Модерация' }).hover();
-    await expect(page.locator('#navigation-tooltip')).toHaveText('Модерация');
+    const moderationLink = page.getByRole('link', { name: 'Модерация' });
+    await moderationLink.focus();
+    await expect(moderationLink).toBeFocused();
     await expect(
       page.getByText(fixture.sellerName, { exact: true }),
     ).toBeVisible();

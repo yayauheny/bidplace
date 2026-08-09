@@ -1,15 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { FormPageShell } from '../../components/layout/FormPageShell';
 import {
   AppDialog,
   AppText,
   DestructiveButton,
+  FormSection,
   PageState,
   PrimaryButton,
   SecondaryButton,
@@ -43,23 +44,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <View
-      style={{
-        gap: designTokens.space.x4,
-        borderRadius: designTokens.radius.panel,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
-        padding: designTokens.space.x5,
-      }}
-    >
-      {eyebrow ? (
-        <AppText role="metadata" tone="secondary">
-          {eyebrow}
-        </AppText>
-      ) : null}
-      {children}
-    </View>
+    <FormSection title={eyebrow ?? 'Детали заказа'}>{children}</FormSection>
   );
 }
 
@@ -253,16 +238,19 @@ export function OrderScreen({ publicId }: { publicId: string }) {
               <SecondaryButton
                 label="Отметить контакт"
                 loading={contacted.isPending}
+                width="block"
                 onPress={() => contacted.mutate()}
               />
               <PrimaryButton
                 label="Передача завершена"
                 loading={completed.isPending}
+                width="block"
                 onPress={() => completed.mutate()}
               />
               <DestructiveButton
                 label="Срыв передачи"
                 loading={handoffFailed.isPending}
+                width="block"
                 onPress={() => setConfirmFailure(true)}
               />
             </View>
@@ -332,20 +320,5 @@ export function OrderScreen({ publicId }: { publicId: string }) {
 }
 
 function Shell({ children }: { children: ReactNode }) {
-  return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-          gap: designTokens.space.x6,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    </AppShell>
-  );
+  return <FormPageShell maxWidth={760}>{children}</FormPageShell>;
 }

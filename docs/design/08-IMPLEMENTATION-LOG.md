@@ -25,7 +25,7 @@
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
 | WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
 | WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | текущий этап |
-| WP7 — Auth/create/supporting routes | В работе               | Auth и seller editors готовы; supporting routes    | текущий этап |
+| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | текущий этап |
 | WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
 
 ## Выполнено
@@ -135,13 +135,29 @@ Commit: `af351b3`.
 Проверки: typecheck, lint, 23 focused unit-теста и полная route-matrix на
 1440×900/1024×900/390×844, включая horizontal overflow и empty state.
 
+Commit: `b4f51b4`.
+
+### 2026-08-10 — WP7.3 Supporting routes
+
+- Purchases используют компактные warm cards, единые status chips и
+  полноширинное действие заказа.
+- Order panels переведены на общий `FormSection`; role-specific buyer, seller и
+  admin projections, PII boundaries и status transitions не менялись.
+- Moderation переведена на общий responsive shell; approve/suspend,
+  request-changes, cancel/replace workflows сохранены.
+- Удалены оставшиеся acceptance-ожидания legacy rail tooltip в проверенных
+  сценариях горизонтального header.
+
+Проверки: typecheck, lint, order handoff E2E, полный Wave One moderation E2E и
+route-matrix на 1440×900/1024×900/390×844.
+
 ## Текущая работа
 
-### WP7.3 — Supporting routes
+### WP8 — Cleanup and full QA
 
-- привести purchases, order и moderation к единому Pen v2 языку;
-- сохранить текущие validation, permissions и server-driven states;
-- переиспользовать foundation, cards и form primitives без локальных систем.
+- удалить legacy visual naming и устаревшие acceptance-ожидания;
+- проверить отсутствие параллельных token/component систем;
+- выполнить полный mobile test/lint/typecheck/build и canonical Pen integrity.
 
 ## Заблокировано решениями продукта
 
@@ -157,5 +173,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Зафиксировать seller editors отдельным commit, затем завершить supporting routes
-и перейти к удалению legacy visual naming/layer.
+Зафиксировать supporting routes отдельным commit, затем выполнить WP8 cleanup и
+полный regression QA.

@@ -2,11 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import { Link, type Href } from 'expo-router';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { FormPageShell } from '../../components/layout/FormPageShell';
 import {
   AppDialog,
   AppText,
@@ -570,18 +570,5 @@ function ModerationCard({
   );
 }
 function AdminShell({ children }: { children: ReactNode }) {
-  return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 1180,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-        }}
-      >
-        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
-      </ScrollView>
-    </AppShell>
-  );
+  return <FormPageShell>{children}</FormPageShell>;
 }

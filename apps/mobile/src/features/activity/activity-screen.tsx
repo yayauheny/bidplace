@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { FormPageShell } from '../../components/layout/FormPageShell';
 import {
   AppText,
   MotionPressable,
@@ -45,9 +45,11 @@ function ActivityRow({ item }: { item: ActivityItem }) {
     <View
       style={{
         gap: designTokens.space.x3,
-        borderBottomWidth: 1,
-        borderBottomColor: designTokens.color.border,
-        paddingBottom: designTokens.space.x4,
+        borderWidth: 1,
+        borderColor: designTokens.color.border,
+        borderRadius: designTokens.radius.panel,
+        backgroundColor: designTokens.color.surfaceWarm,
+        padding: designTokens.space.x5,
       }}
     >
       <View
@@ -97,7 +99,11 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           }}
           asChild
         >
-          <SecondaryButton label="Открыть заказ" onPress={() => undefined} />
+          <SecondaryButton
+            label="Открыть заказ"
+            width="block"
+            onPress={() => undefined}
+          />
         </Link>
       ) : null}
     </View>
@@ -139,24 +145,12 @@ export function ActivityScreen() {
   }
 
   return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-          paddingHorizontal: designTokens.space.x5,
-          paddingVertical: designTokens.space.x8,
-          gap: designTokens.space.x6,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <PageHeader
-          title="Мои покупки"
-          description="Статусы ваших ставок и заказов."
-        />
-        {content}
-      </ScrollView>
-    </AppShell>
+    <FormPageShell maxWidth={760}>
+      <PageHeader
+        title="Мои покупки"
+        description="Статусы ваших ставок и заказов."
+      />
+      {content}
+    </FormPageShell>
   );
 }

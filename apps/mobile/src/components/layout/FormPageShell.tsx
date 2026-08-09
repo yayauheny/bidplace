@@ -6,7 +6,13 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from './AppShell';
 import { getFormPageGutter, isFormPageCompact } from './form-page-layout';
 
-export function FormPageShell({ children }: { children: ReactNode }) {
+export function FormPageShell({
+  children,
+  maxWidth = designTokens.layout.productDetailMaxWidth,
+}: {
+  children: ReactNode;
+  maxWidth?: number;
+}) {
   const { width } = useWindowDimensions();
 
   return (
@@ -24,7 +30,7 @@ export function FormPageShell({ children }: { children: ReactNode }) {
         <View
           style={{
             width: '100%',
-            maxWidth: designTokens.layout.productDetailMaxWidth,
+            maxWidth,
             alignSelf: 'center',
             gap: designTokens.space.x6,
           }}
