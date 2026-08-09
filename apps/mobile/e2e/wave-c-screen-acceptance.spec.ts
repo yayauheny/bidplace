@@ -372,7 +372,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
 
       await page.goto(`/seller/${emptySeller.slug}`);
       await expect(
-        page.getByText('У автора пока нет опубликованных предметов'),
+        page.getByText('У автора пока нет опубликованных работ'),
       ).toBeVisible();
       await capture(page, 'author', 'guest', 'empty', viewport);
 
@@ -395,6 +395,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       );
       await sellerSession.page.goto('/products/new');
       await expect(sellerSession.page.getByText('Новый предмет')).toBeVisible();
+      await assertNoHorizontalOverflow(sellerSession.page);
       await capture(
         sellerSession.page,
         'product-draft',
@@ -406,6 +407,12 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await expect(
         sellerSession.page.getByText('Новое размещение'),
       ).toBeVisible();
+      await expect(
+        sellerSession.page.getByText(
+          'Сначала создайте предмет и дождитесь одобрения модерации.',
+        ),
+      ).toBeVisible();
+      await assertNoHorizontalOverflow(sellerSession.page);
       await capture(
         sellerSession.page,
         'listing-draft',
@@ -530,15 +537,13 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         name: 'Модерация',
       });
       if (viewport.width >= 1025) {
-        await moderationLink.hover();
-        await expect(
-          adminSession.page.locator('#navigation-tooltip'),
-        ).toHaveText('Модерация');
+        await moderationLink.focus();
+        await expect(moderationLink).toBeFocused();
         await capture(
           adminSession.page,
           'admin',
           'admin',
-          'focused-rail-tooltip',
+          'focused-header-navigation',
           viewport,
         );
       } else {

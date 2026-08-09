@@ -25,7 +25,7 @@
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
 | WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
 | WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | текущий этап |
-| WP7 — Auth/create/supporting routes | В работе               | Auth готов; seller forms — следующий подэтап       | текущий этап |
+| WP7 — Auth/create/supporting routes | В работе               | Auth и seller editors готовы; supporting routes    | текущий этап |
 | WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
 
 ## Выполнено
@@ -117,13 +117,31 @@ Commit: `0304ce7`.
 Проверки: typecheck, lint, 14 focused unit-тестов, существующий mobile/200% zoom
 auth E2E и отдельная проверка split/stacked composition.
 
+Commit: `af351b3`.
+
+### 2026-08-10 — WP7.2 Seller editors
+
+- Добавлен единый responsive `FormPageShell` и двухколоночный
+  `FormPageColumns`; локальные shell-дубли удалены из seller profile, product
+  draft и listing draft.
+- `FormSection` получил единый warm surface, заголовок и optional description.
+- Профиль продавца разделён на публичные данные, фото и приватные параметры
+  передачи; privacy boundary и mutations сохранены.
+- Создание предмета разделено на основную информацию, характеристики и
+  логистику. Существующее поле состояния снова доступно для редактирования.
+- Создание размещения разделено на выбор предмета и расписание; для пустого
+  списка добавлен честный следующий шаг без client-only данных.
+
+Проверки: typecheck, lint, 23 focused unit-теста и полная route-matrix на
+1440×900/1024×900/390×844, включая horizontal overflow и empty state.
+
 ## Текущая работа
 
-### WP7 — Auth/create/supporting routes
+### WP7.3 — Supporting routes
 
-- привести seller onboarding и создание предмета к единому Pen v2 языку;
+- привести purchases, order и moderation к единому Pen v2 языку;
 - сохранить текущие validation, permissions и server-driven states;
-- переиспользовать foundation и form primitives без локальных token-систем.
+- переиспользовать foundation, cards и form primitives без локальных систем.
 
 ## Заблокировано решениями продукта
 
@@ -139,5 +157,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Зафиксировать auth-shell отдельным commit, затем переиспользовать общий form
-language в seller profile, product draft и listing draft.
+Зафиксировать seller editors отдельным commit, затем завершить supporting routes
+и перейти к удалению legacy visual naming/layer.

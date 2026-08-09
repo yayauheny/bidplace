@@ -7,26 +7,33 @@ import { AppText } from './AppText';
 
 export function FormSection({
   title,
+  description,
   children,
 }: {
   title: string;
+  description?: string;
   children: ReactNode;
 }) {
   return (
     <View
       style={{
-        gap: designTokens.space.x4,
+        gap: designTokens.space.x5,
         borderRadius: designTokens.radius.panel,
         borderWidth: 1,
         borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
-        padding: designTokens.space.x5,
+        backgroundColor: designTokens.color.surfaceWarm,
+        padding: designTokens.space.x6,
       }}
     >
-      <AppText role="metadata" tone="secondary">
-        {title}
-      </AppText>
-      <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+      <View style={{ gap: designTokens.space.x1 }}>
+        <AppText role="cardTitle">{title}</AppText>
+        {description ? (
+          <AppText role="bodySmall" tone="secondary">
+            {description}
+          </AppText>
+        ) : null}
+      </View>
+      <View style={{ gap: designTokens.space.x4 }}>{children}</View>
     </View>
   );
 }

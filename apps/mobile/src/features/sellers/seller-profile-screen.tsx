@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
+  FormSection,
   ImagePlaceholder,
   PageHeader,
   PageState,
@@ -16,7 +17,10 @@ import {
   SecondaryButton,
   TextField,
 } from '../../components/modern-ui';
-import { AppShell } from '../../components/layout/AppShell';
+import {
+  FormPageColumns,
+  FormPageShell,
+} from '../../components/layout/FormPageShell';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
@@ -225,172 +229,174 @@ export function SellerProfileScreen() {
           ) : null}
         </View>
 
-        <View style={{ gap: designTokens.space.x3 }}>
-          <View
-            style={{
-              gap: designTokens.space.x3,
-              borderRadius: designTokens.radius.panel,
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              backgroundColor: designTokens.color.surface,
-              padding: designTokens.space.x5,
-            }}
-          >
-            <AppText role="metadata" tone="secondary">
-              Фото профиля
-            </AppText>
-            {photoPreview && !photoFailed ? (
-              photoBlob ? (
-                <Image
-                  source={{ uri: photoPreview }}
-                  style={{
-                    width: 200,
-                    height: 200,
-                    borderRadius: designTokens.radius.image,
-                  }}
-                  contentFit="cover"
-                  onError={() => setPhotoFailed(true)}
-                />
-              ) : (
-                <ResilientRemoteImage
-                  uri={photoPreview}
-                  component="AuthorPhoto"
-                  accessibilityLabel="Фото профиля"
-                  fallbackLabel="Фото профиля недоступно"
-                  style={{
-                    width: 200,
-                    height: 200,
-                    borderRadius: designTokens.radius.image,
-                  }}
-                  contentFit="cover"
-                />
-              )
-            ) : (
-              <ImagePlaceholder
-                ratio={1}
-                label="Фото профиля недоступно или не выбрано"
-                style={{ width: 200, height: 200 }}
-              />
-            )}
-            <SecondaryButton
-              label={photoPreview ? 'Изменить фото' : 'Добавить фото'}
-              disabled={!editable}
-              onPress={() => void choosePhoto()}
-            />
-            {!profile ? (
-              <AppText role="bodySmall" tone="secondary">
-                Фото обязательно для подачи заявки.
-              </AppText>
-            ) : null}
-          </View>
-
-          <TextField
-            label="URL-slug"
-            value={fields.slug}
-            onChangeText={(value) => update('slug', value)}
-            placeholder="my-store"
-            autoCapitalize="none"
-            editable={editable}
-          />
-          <TextField
-            label="Имя или название"
-            value={fields.fullName}
-            onChangeText={(value) => update('fullName', value)}
-            placeholder="Иван Иванов"
-            editable={editable}
-          />
-          <TextField
-            label="Страна"
-            value={fields.country}
-            onChangeText={(value) => update('country', value)}
-            placeholder="BY"
-            autoCapitalize="characters"
-            editable={editable}
-          />
-          <TextField
-            label="Публичная ссылка"
-            value={fields.socialLink}
-            onChangeText={(value) => update('socialLink', value)}
-            placeholder="https://t.me/..."
-            autoCapitalize="none"
-            editable={editable}
-          />
-          <TextField
-            label="Короткое описание"
-            value={fields.shortDescription}
-            onChangeText={(value) => update('shortDescription', value)}
-            placeholder="Расскажите о себе и своих работах"
-            multiline
-            editable={editable}
-          />
-          {!profile || editable ? (
-            <>
-              <SelectableRow
-                label="Способ передачи"
-                value={fields.handoffContactType}
-                options={Object.entries(handoffContactTypeLabels).map(
-                  ([value, label]) => ({ value, label }),
-                )}
-                onChange={(value) =>
-                  update(
-                    'handoffContactType',
-                    value as ProfileFields['handoffContactType'],
-                  )
-                }
-                disabled={!editable}
-              />
-              <TextField
-                label="Контакт для передачи"
-                value={fields.handoffContactValue}
-                onChangeText={(value) => update('handoffContactValue', value)}
-                placeholder="@username или +375..."
-                autoCapitalize="none"
-                editable={editable}
-              />
-              <SelectableRow
-                label="Кто начинает контакт"
-                value={fields.handoffInitiator}
-                options={Object.entries(handoffInitiatorLabels).map(
-                  ([value, label]) => ({ value, label }),
-                )}
-                onChange={(value) =>
-                  update(
-                    'handoffInitiator',
-                    value as ProfileFields['handoffInitiator'],
-                  )
-                }
-                disabled={!editable}
-              />
-            </>
-          ) : (
-            <View
-              style={{
-                gap: designTokens.space.x1,
-                borderRadius: designTokens.radius.panel,
-                borderWidth: 1,
-                borderColor: designTokens.color.border,
-                padding: designTokens.space.x5,
-              }}
+        <FormPageColumns
+          sidebarFirstOnCompact
+          sidebar={
+            <FormSection
+              title="Фото профиля"
+              description="Квадратный портрет или логотип автора."
             >
-              <AppText role="bodySmall" tone="secondary">
-                {presentEnum(
-                  profile.handoffContactType,
-                  handoffContactTypeLabels,
-                  'Неизвестный тип контакта',
-                )}
-                : {profile.handoffContactValue}
-              </AppText>
-              <AppText role="bodySmall" tone="secondary">
-                Инициатор:{' '}
-                {presentEnum(
-                  profile.handoffInitiator,
-                  handoffInitiatorLabels,
-                  'Неизвестный режим контакта',
-                )}
-              </AppText>
-            </View>
-          )}
-        </View>
+              {photoPreview && !photoFailed ? (
+                photoBlob ? (
+                  <Image
+                    source={{ uri: photoPreview }}
+                    style={{
+                      width: '100%',
+                      aspectRatio: 1,
+                      borderRadius: designTokens.radius.image,
+                    }}
+                    contentFit="cover"
+                    onError={() => setPhotoFailed(true)}
+                  />
+                ) : (
+                  <ResilientRemoteImage
+                    uri={photoPreview}
+                    component="AuthorPhoto"
+                    accessibilityLabel="Фото профиля"
+                    fallbackLabel="Фото профиля недоступно"
+                    style={{
+                      width: '100%',
+                      aspectRatio: 1,
+                      borderRadius: designTokens.radius.image,
+                    }}
+                    contentFit="cover"
+                  />
+                )
+              ) : (
+                <ImagePlaceholder
+                  ratio={1}
+                  label="Фото профиля недоступно или не выбрано"
+                  style={{ width: '100%', aspectRatio: 1 }}
+                />
+              )}
+              <SecondaryButton
+                label={photoPreview ? 'Изменить фото' : 'Добавить фото'}
+                disabled={!editable}
+                width="block"
+                onPress={() => void choosePhoto()}
+              />
+              {!profile ? (
+                <AppText role="bodySmall" tone="secondary">
+                  Фото обязательно для подачи заявки.
+                </AppText>
+              ) : null}
+            </FormSection>
+          }
+        >
+          <FormSection
+            title="Публичный профиль"
+            description="Эти данные увидят коллекционеры на странице автора."
+          >
+            <TextField
+              label="URL-slug"
+              value={fields.slug}
+              onChangeText={(value) => update('slug', value)}
+              placeholder="my-store"
+              autoCapitalize="none"
+              editable={editable}
+              required
+            />
+            <TextField
+              label="Имя или название"
+              value={fields.fullName}
+              onChangeText={(value) => update('fullName', value)}
+              placeholder="Иван Иванов"
+              editable={editable}
+              required
+            />
+            <TextField
+              label="Страна"
+              value={fields.country}
+              onChangeText={(value) => update('country', value)}
+              placeholder="BY"
+              autoCapitalize="characters"
+              editable={editable}
+              required
+            />
+            <TextField
+              label="Публичная ссылка"
+              value={fields.socialLink}
+              onChangeText={(value) => update('socialLink', value)}
+              placeholder="https://t.me/..."
+              autoCapitalize="none"
+              editable={editable}
+              required
+            />
+            <TextField
+              label="Короткое описание"
+              value={fields.shortDescription}
+              onChangeText={(value) => update('shortDescription', value)}
+              placeholder="Расскажите о себе и своих работах"
+              multiline
+              editable={editable}
+              required
+            />
+          </FormSection>
+          <FormSection
+            title="Передача предмета"
+            description="Контакт используется для передачи предмета после завершения аукциона."
+          >
+            {!profile || editable ? (
+              <>
+                <SelectableRow
+                  label="Способ передачи"
+                  value={fields.handoffContactType}
+                  options={Object.entries(handoffContactTypeLabels).map(
+                    ([value, label]) => ({ value, label }),
+                  )}
+                  onChange={(value) =>
+                    update(
+                      'handoffContactType',
+                      value as ProfileFields['handoffContactType'],
+                    )
+                  }
+                  disabled={!editable}
+                />
+                <TextField
+                  label="Контакт для передачи"
+                  value={fields.handoffContactValue}
+                  onChangeText={(value) => update('handoffContactValue', value)}
+                  placeholder="@username или +375..."
+                  autoCapitalize="none"
+                  editable={editable}
+                />
+                <SelectableRow
+                  label="Кто начинает контакт"
+                  value={fields.handoffInitiator}
+                  options={Object.entries(handoffInitiatorLabels).map(
+                    ([value, label]) => ({ value, label }),
+                  )}
+                  onChange={(value) =>
+                    update(
+                      'handoffInitiator',
+                      value as ProfileFields['handoffInitiator'],
+                    )
+                  }
+                  disabled={!editable}
+                />
+              </>
+            ) : (
+              <View style={{ gap: designTokens.space.x2 }}>
+                <AppText role="bodySmall" tone="secondary">
+                  {presentEnum(
+                    profile.handoffContactType,
+                    handoffContactTypeLabels,
+                    'Неизвестный тип контакта',
+                  )}
+                  : {profile.handoffContactValue}
+                </AppText>
+                <AppText role="bodySmall" tone="secondary">
+                  Инициатор:{' '}
+                  {presentEnum(
+                    profile.handoffInitiator,
+                    handoffInitiatorLabels,
+                    'Неизвестный режим контакта',
+                  )}
+                </AppText>
+              </View>
+            )}
+          </FormSection>
+        </FormPageColumns>
 
         {!editable ? (
           <AppText role="bodySmall" tone="secondary">
@@ -403,11 +409,16 @@ export function SellerProfileScreen() {
           disabled={!canSave}
           onPress={() => mutation.mutate()}
           label={profile ? 'Сохранить' : 'Создать профиль'}
+          width="block"
         />
 
         {profile?.status === 'APPROVED' ? (
           <Link href="/products/new" asChild>
-            <PrimaryButton label="Создать лот" onPress={() => undefined} />
+            <PrimaryButton
+              label="Создать предмет"
+              width="block"
+              onPress={() => undefined}
+            />
           </Link>
         ) : null}
 
@@ -422,18 +433,5 @@ export function SellerProfileScreen() {
 }
 
 function ProfileShell({ children }: { children: React.ReactNode }) {
-  return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-        }}
-      >
-        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
-      </ScrollView>
-    </AppShell>
-  );
+  return <FormPageShell>{children}</FormPageShell>;
 }

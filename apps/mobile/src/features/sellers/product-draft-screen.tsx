@@ -2,11 +2,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import {
+  FormPageColumns,
+  FormPageShell,
+} from '../../components/layout/FormPageShell';
 import {
   AppDialog,
   AppText,
@@ -323,113 +326,136 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         </AppText>
       ) : null}
 
-      <FormSection title="Категория">
-        {categories.data.categories.map((category) => (
-          <SecondaryButton
-            key={category.id}
-            label={
-              categoryId === category.id ? `✓ ${category.name}` : category.name
-            }
-            disabled={!editable}
-            onPress={() => setCategoryId(category.id)}
+      <FormPageColumns
+        sidebar={
+          <>
+            <FormSection
+              title="Характеристики"
+              description="Параметры помогают точно описать работу."
+            >
+              <TextField
+                label="Техника"
+                value={technique}
+                onChangeText={setTechnique}
+                placeholder="Необязательно"
+                editable={editable}
+              />
+              <TextField
+                label="Материал"
+                value={materials}
+                onChangeText={setMaterials}
+                placeholder="Необязательно"
+                editable={editable}
+              />
+              <TextField
+                label="Размеры"
+                value={dimensions}
+                onChangeText={setDimensions}
+                placeholder="Необязательно"
+                editable={editable}
+              />
+              <TextField
+                label="Вес"
+                value={weight}
+                onChangeText={setWeight}
+                placeholder="Необязательно"
+                editable={editable}
+              />
+              <TextField
+                label="Год создания"
+                value={year}
+                onChangeText={setYear}
+                placeholder="Необязательно"
+                keyboardType="number-pad"
+                editable={editable}
+              />
+            </FormSection>
+            <FormSection title="Логистика">
+              <TextField
+                label="Город"
+                value={city}
+                onChangeText={setCity}
+                placeholder="Город"
+                editable={editable}
+                required
+              />
+              <TextField
+                label="Передача или доставка"
+                value={deliveryInfo}
+                onChangeText={setDeliveryInfo}
+                placeholder="Передача или доставка"
+                multiline
+                editable={editable}
+                required
+              />
+            </FormSection>
+          </>
+        }
+      >
+        <FormSection title="Категория">
+          {categories.data.categories.map((category) => (
+            <SecondaryButton
+              key={category.id}
+              label={
+                categoryId === category.id
+                  ? `✓ ${category.name}`
+                  : category.name
+              }
+              disabled={!editable}
+              width="block"
+              onPress={() => setCategoryId(category.id)}
+            />
+          ))}
+        </FormSection>
+
+        <FormSection
+          title="О работе"
+          description="Основная информация для каталога и страницы предмета."
+        >
+          <TextField
+            label="Название"
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Название"
+            editable={editable}
+            required
           />
-        ))}
-      </FormSection>
-
-      <FormSection title="Основное">
-        <TextField
-          label="Название"
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Название"
-          editable={editable}
-        />
-        <TextField
-          label="История предмета"
-          value={story}
-          onChangeText={setStory}
-          placeholder="История предмета"
-          multiline
-          editable={editable}
-        />
-        <TextField
-          label="Уникальность или тираж"
-          value={uniqueness}
-          onChangeText={setUniqueness}
-          placeholder="Уникальность или тираж"
-          editable={editable}
-        />
-        <TextField
-          label="Происхождение"
-          value={provenance}
-          onChangeText={setProvenance}
-          placeholder="Происхождение"
-          multiline
-          editable={editable}
-        />
-        {condition ? (
-          <AppText role="bodySmall" tone="secondary">
-            Состояние: {condition}
-          </AppText>
-        ) : null}
-      </FormSection>
-
-      <FormSection title="Технические характеристики">
-        <TextField
-          label="Техника"
-          value={technique}
-          onChangeText={setTechnique}
-          placeholder="Необязательно"
-          editable={editable}
-        />
-        <TextField
-          label="Материал"
-          value={materials}
-          onChangeText={setMaterials}
-          placeholder="Необязательно"
-          editable={editable}
-        />
-        <TextField
-          label="Размеры"
-          value={dimensions}
-          onChangeText={setDimensions}
-          placeholder="Необязательно"
-          editable={editable}
-        />
-        <TextField
-          label="Вес"
-          value={weight}
-          onChangeText={setWeight}
-          placeholder="Необязательно"
-          editable={editable}
-        />
-        <TextField
-          label="Год создания"
-          value={year}
-          onChangeText={setYear}
-          placeholder="Необязательно"
-          keyboardType="number-pad"
-          editable={editable}
-        />
-      </FormSection>
-
-      <FormSection title="Логистика">
-        <TextField
-          label="Город"
-          value={city}
-          onChangeText={setCity}
-          placeholder="Город"
-          editable={editable}
-        />
-        <TextField
-          label="Передача или доставка"
-          value={deliveryInfo}
-          onChangeText={setDeliveryInfo}
-          placeholder="Передача или доставка"
-          multiline
-          editable={editable}
-        />
-      </FormSection>
+          <TextField
+            label="История предмета"
+            value={story}
+            onChangeText={setStory}
+            placeholder="История предмета"
+            multiline
+            editable={editable}
+            required
+          />
+          <TextField
+            label="Уникальность или тираж"
+            value={uniqueness}
+            onChangeText={setUniqueness}
+            placeholder="Уникальность или тираж"
+            editable={editable}
+            required
+          />
+          <TextField
+            label="Состояние"
+            value={condition}
+            onChangeText={setCondition}
+            placeholder="Опишите состояние предмета"
+            editable={editable}
+            required
+          />
+          <TextField
+            label="Происхождение"
+            value={provenance}
+            onChangeText={setProvenance}
+            placeholder="Происхождение"
+            multiline
+            editable={editable}
+            required
+          />
+        </FormSection>
+      </FormPageColumns>
 
       <AppText role="bodySmall" tone="secondary">
         Дата размещения установится автоматически при первой публичной
@@ -440,6 +466,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
         <PrimaryButton
           label={existingProduct ? 'Сохранить изменения' : 'Сохранить черновик'}
           loading={save.isPending}
+          width="block"
           onPress={() => save.mutate()}
         />
       ) : null}
@@ -519,18 +546,5 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 }
 
 function DraftShell({ children }: { children: ReactNode }) {
-  return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-        }}
-      >
-        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
-      </ScrollView>
-    </AppShell>
-  );
+  return <FormPageShell>{children}</FormPageShell>;
 }

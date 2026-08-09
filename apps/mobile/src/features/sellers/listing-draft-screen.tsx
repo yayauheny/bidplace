@@ -2,11 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { listingCreateRequestSchema } from '@bidplace/contracts';
 import { useRouter } from 'expo-router';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import {
+  FormPageColumns,
+  FormPageShell,
+} from '../../components/layout/FormPageShell';
 import {
   AppText,
   FormSection,
@@ -166,76 +169,105 @@ export function ListingDraftScreen({
           Укажите расписание аукциона и стартовую цену. Валюта: BYN.
         </AppText>
       </View>
-      <FormSection title="Предмет">
-        {products.isRefetchError ? (
-          <>
+      <FormPageColumns
+        sidebar={
+          <FormSection
+            title="Расписание"
+            description="Дата окончания должна быть позже даты начала."
+          >
+            <TextField
+              label="Начало"
+              value={startsAt}
+              onChangeText={setStartsAt}
+              hint="Например: 03.08.2026, 12:00"
+              placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
+              autoCapitalize="none"
+              editable={!isLocked}
+              required
+            />
+            <TextField
+              label="Окончание"
+              value={endsAt}
+              onChangeText={setEndsAt}
+              hint="Например: 04.08.2026, 18:00"
+              placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
+              autoCapitalize="none"
+              editable={!isLocked}
+              required
+            />
+            <TextField
+              label="Стартовая цена, BYN"
+              value={startPrice}
+              onChangeText={setStartPrice}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              editable={!isLocked}
+              required
+            />
+          </FormSection>
+        }
+      >
+        <FormSection
+          title="Предмет"
+          description="Для аукциона доступна только одобренная работа."
+        >
+          {products.isRefetchError ? (
+            <>
+              <AppText role="bodySmall" tone="danger">
+                Не удалось обновить список предметов.
+              </AppText>
+              <SecondaryButton
+                label="Повторить обновление"
+                loading={products.isFetching}
+                width="block"
+                onPress={() => void products.refetch()}
+              />
+            </>
+          ) : null}
+          {products.data.products.length === 0 ? (
+            <>
+              <AppText role="bodySmall" tone="secondary">
+                Сначала создайте предмет и дождитесь одобрения модерации.
+              </AppText>
+              <SecondaryButton
+                label="Создать предмет"
+                width="block"
+                disabled={isLocked}
+                onPress={() => router.push('/(seller)/products/new')}
+              />
+            </>
+          ) : null}
+          {products.data.products.map((product) => (
+            <View key={product.id} style={{ gap: designTokens.space.x1 }}>
+              <SecondaryButton
+                label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Неизвестный статус предмета')}`}
+                disabled={product.status !== 'APPROVED' || isLocked}
+                width="block"
+                onPress={() => {
+                  hasHandledInitialProductIdRef.current = true;
+                  setProductId(product.id);
+                  setProductSelectionError(null);
+                }}
+              />
+              <TextButton
+                label="Редактировать предмет"
+                disabled={isLocked}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(seller)/products/[id]',
+                    params: { id: product.id },
+                  })
+                }
+              />
+            </View>
+          ))}
+          {productSelectionError ? (
             <AppText role="bodySmall" tone="danger">
-              Не удалось обновить список предметов.
+              {productSelectionError}
             </AppText>
-            <SecondaryButton
-              label="Повторить обновление"
-              loading={products.isFetching}
-              onPress={() => void products.refetch()}
-            />
-          </>
-        ) : null}
-        {products.data.products.map((product) => (
-          <View key={product.id} style={{ gap: designTokens.space.x1 }}>
-            <SecondaryButton
-              label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Неизвестный статус предмета')}`}
-              disabled={product.status !== 'APPROVED' || isLocked}
-              onPress={() => {
-                hasHandledInitialProductIdRef.current = true;
-                setProductId(product.id);
-                setProductSelectionError(null);
-              }}
-            />
-            <TextButton
-              label="Редактировать предмет"
-              disabled={isLocked}
-              onPress={() =>
-                router.push({
-                  pathname: '/(seller)/products/[id]',
-                  params: { id: product.id },
-                })
-              }
-            />
-          </View>
-        ))}
-        {productSelectionError ? (
-          <AppText role="bodySmall" tone="danger">
-            {productSelectionError}
-          </AppText>
-        ) : null}
-      </FormSection>
-      <FormSection title="Расписание">
-        <TextField
-          label="Начало"
-          value={startsAt}
-          onChangeText={setStartsAt}
-          hint="Например: 03.08.2026, 12:00"
-          placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
-          autoCapitalize="none"
-          editable={!isLocked}
-        />
-        <TextField
-          label="Окончание"
-          value={endsAt}
-          onChangeText={setEndsAt}
-          hint="Например: 04.08.2026, 18:00"
-          placeholder="ДД.ММ.ГГГГ, ЧЧ:ММ"
-          autoCapitalize="none"
-          editable={!isLocked}
-        />
-        <TextField
-          label="Стартовая цена, BYN"
-          value={startPrice}
-          onChangeText={setStartPrice}
-          placeholder="0"
-          keyboardType="decimal-pad"
-          editable={!isLocked}
-        />
-      </FormSection>
+          ) : null}
+        </FormSection>
+      </FormPageColumns>
       {request.success && !createdListing ? (
         <AppText role="metadata" tone="secondary">
           Период: {formatDateTime(request.data.startsAt)} —{' '}
@@ -255,6 +287,7 @@ export function ListingDraftScreen({
           label="Создать размещение"
           loading={create.isPending}
           disabled={!canCreate}
+          width="block"
           onPress={() => {
             if (selectedProduct && request.success)
               create.mutate({
@@ -271,6 +304,7 @@ export function ListingDraftScreen({
         <PrimaryButton
           label="Запланировать размещение"
           loading={schedule.isPending}
+          width="block"
           onPress={() => schedule.mutate(createdListing.id)}
         />
       ) : null}
@@ -340,18 +374,5 @@ export function ListingDraftScreen({
 }
 
 function ListingShell({ children }: { children: ReactNode }) {
-  return (
-    <AppShell>
-      <ScrollView
-        contentContainerStyle={{
-          width: '100%',
-          maxWidth: 760,
-          alignSelf: 'center',
-          padding: designTokens.space.x5,
-        }}
-      >
-        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
-      </ScrollView>
-    </AppShell>
-  );
+  return <FormPageShell>{children}</FormPageShell>;
 }
