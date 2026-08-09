@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
+import { useState } from 'react';
+import { Platform, View, type ViewStyle } from 'react-native';
 import type { z } from 'zod';
-import { View } from 'react-native';
 
 import type { publicProductListItemSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -11,7 +12,6 @@ import { getAuctionCardContent } from './auction-card-layout';
 import { AppText } from './AppText';
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
-import { productMediaStyle } from './product-media-style';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
 type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
@@ -19,67 +19,148 @@ type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
   const firstImage = product.images[0];
-  const { title, description, price, status, deadline } =
-    getAuctionCardContent(item);
-  const label = `${title} — ${sellerProfile.fullName}. ${price}. ${status} до ${deadline}`;
+  const { title, price, status, deadline } = getAuctionCardContent(item);
+  const [mediaEmphasized, setMediaEmphasized] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const label = `${title} — ${sellerProfile.fullName}. ${price}. ${status}: ${deadline}`;
+  const live = listing?.status === 'LIVE';
 
   return (
     <Link href={`/product/${product.publicId}`} asChild>
       <MotionPressable
         accessibilityRole="link"
         accessibilityLabel={label}
+        onBlur={() => setMediaEmphasized(false)}
+        onFocus={() => setMediaEmphasized(true)}
+        onHoverIn={() => setMediaEmphasized(true)}
+        onHoverOut={() => setMediaEmphasized(false)}
         preset="card"
-        style={{ gap: designTokens.space.x3 }}
+        style={{
+          width: '100%',
+          overflow: 'hidden',
+          borderRadius: designTokens.radius.card,
+          backgroundColor: designTokens.color.surfaceMuted,
+        }}
       >
-        {firstImage ? (
-          <AuctionCardImage
-            imageId={firstImage.id}
-            imageUrl={firstImage.url}
-            label={title}
-            productId={product.id}
-          />
-        ) : (
-          <ImagePlaceholder
-            label={`Нет изображения: ${title}`}
-            style={{ width: '100%' }}
-          />
-        )}
-        <View style={{ gap: designTokens.space.x1 }}>
-          <AppText role="metadata" tone="secondary" numberOfLines={1}>
-            {sellerProfile.fullName}
-          </AppText>
-          <AppText role="cardTitle" numberOfLines={2}>
-            {title}
-          </AppText>
-          <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
-            {description}
-          </AppText>
-          <AppText role="numeric">{price}</AppText>
-          <AppText
-            role="caption"
-            tone={listing?.status === 'LIVE' ? 'success' : 'secondary'}
-            numberOfLines={2}
+        <View
+          style={{
+            width: '100%',
+            aspectRatio: designTokens.ratio.auctionCardMedia,
+            overflow: 'hidden',
+            backgroundColor: designTokens.color.surfaceStrong,
+          }}
+        >
+          {firstImage ? (
+            <AuctionCardImage
+              emphasized={mediaEmphasized}
+              imageId={firstImage.id}
+              imageUrl={firstImage.url}
+              label={title}
+              productId={product.id}
+              reducedMotion={reducedMotion}
+            />
+          ) : (
+            <ImagePlaceholder
+              label={`Нет изображения: ${title}`}
+              ratio={1}
+              style={{ width: '100%', borderRadius: 0 }}
+            />
+          )}
+        </View>
+        <View
+          style={{
+            minHeight: 134,
+            justifyContent: 'space-between',
+            gap: designTokens.space.x4,
+            paddingHorizontal: designTokens.space.x4,
+            paddingBottom: designTokens.space.x4,
+            paddingTop: designTokens.space.x3,
+          }}
+        >
+          <View style={{ gap: designTokens.space.x1 }}>
+            <AppText role="cardTitle" numberOfLines={2}>
+              {title}
+            </AppText>
+            <AppText role="label" tone="secondary" numberOfLines={1}>
+              {sellerProfile.fullName}
+            </AppText>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              gap: designTokens.space.x3,
+              borderTopWidth: 1,
+              borderTopColor: designTokens.color.border,
+              paddingTop: designTokens.space.x3,
+            }}
           >
-            {status} · {deadline}
-          </AppText>
+            <Metric label={live ? 'Текущая ставка' : 'Цена'} value={price} />
+            <Metric
+              align="right"
+              label={status}
+              value={deadline}
+              tone={live ? 'success' : 'secondary'}
+            />
+          </View>
         </View>
       </MotionPressable>
     </Link>
   );
 }
 
+function Metric({
+  align = 'left',
+  label,
+  tone = 'secondary',
+  value,
+}: {
+  align?: 'left' | 'right';
+  label: string;
+  tone?: 'secondary' | 'success';
+  value: string;
+}) {
+  return (
+    <View
+      style={{
+        minWidth: 0,
+        alignItems: align === 'right' ? 'flex-end' : 'flex-start',
+      }}
+    >
+      <AppText role="metadata" tone={tone} numberOfLines={1}>
+        {label}
+      </AppText>
+      <AppText role="numeric" numberOfLines={1}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
 function AuctionCardImage({
+  emphasized,
   imageId,
   imageUrl,
   label,
   productId,
+  reducedMotion,
 }: {
+  emphasized: boolean;
   imageId: string;
   imageUrl: string;
   label: string;
   productId: string;
+  reducedMotion: boolean;
 }) {
-  const reducedMotion = useReducedMotion();
+  const webTransition =
+    Platform.OS === 'web'
+      ? ({
+          transitionDuration: `${getMotionDuration(reducedMotion, designTokens.motion.media)}ms`,
+          transitionProperty: 'transform',
+          transitionTimingFunction: designTokens.motion.easing,
+        } as unknown as ViewStyle)
+      : undefined;
 
   return (
     <ResilientRemoteImage
@@ -87,7 +168,16 @@ function AuctionCardImage({
       component="AuctionCard"
       accessibilityLabel={`Изображение предмета: ${label}`}
       fallbackLabel={`Изображение недоступно: ${label}`}
-      style={productMediaStyle()}
+      style={[
+        {
+          width: '100%',
+          height: '100%',
+          borderRadius: 0,
+          backgroundColor: designTokens.color.surfaceStrong,
+          transform: [{ scale: emphasized && !reducedMotion ? 1.05 : 1 }],
+        },
+        webTransition,
+      ]}
       contentFit="contain"
       transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
       recyclingKey={`${productId}-${imageId}`}

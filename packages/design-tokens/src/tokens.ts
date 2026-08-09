@@ -161,6 +161,7 @@ export const designTokens = {
   breakpoint: {
     desktopShell: 1025,
     compactHeader: 760,
+    catalogTwoColumn: 620,
     productDetailWide: 900,
     catalogThreeColumn: 900,
     catalogFourColumn: 1280,

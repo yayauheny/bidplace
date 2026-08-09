@@ -11,21 +11,22 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
-  AuctionCard,
   AppText,
+  AuctionCard,
   PageState,
-  productMediaStyle,
   Skeleton,
 } from '../../components/modern-ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
+
+type CatalogColumnCount = 1 | 2 | 3 | 4;
 
 function CatalogGrid({
   columns,
   count,
   renderCard,
 }: {
-  columns: 2 | 3 | 4;
+  columns: CatalogColumnCount;
   count: number;
   renderCard: (index: number) => ReactNode;
 }) {
@@ -53,18 +54,25 @@ function CatalogGrid({
 
 function CatalogCardSkeleton() {
   return (
-    <View style={{ gap: designTokens.space.x3 }}>
-      <Skeleton
+    <View
+      style={{
+        overflow: 'hidden',
+        borderRadius: designTokens.radius.card,
+        backgroundColor: designTokens.color.surfaceMuted,
+      }}
+    >
+      <Skeleton style={{ width: '100%', aspectRatio: 1, borderRadius: 0 }} />
+      <View
         style={{
-          ...productMediaStyle(),
+          minHeight: 134,
+          gap: designTokens.space.x2,
+          padding: designTokens.space.x4,
         }}
-      />
-      <View style={{ gap: designTokens.space.x1 }}>
-        <Skeleton style={{ width: '50%', height: 16 }} />
-        <Skeleton style={{ width: '85%', height: 42 }} />
-        <Skeleton style={{ width: '100%', height: 22 }} />
-        <Skeleton style={{ width: '42%', height: 18 }} />
-        <Skeleton style={{ width: '88%', height: 30 }} />
+      >
+        <Skeleton style={{ width: '78%', height: 23 }} />
+        <Skeleton style={{ width: '48%', height: 20 }} />
+        <View style={{ flex: 1 }} />
+        <Skeleton style={{ width: '100%', height: 40 }} />
       </View>
     </View>
   );
@@ -78,7 +86,7 @@ function CatalogLoadingAnnouncement() {
       accessibilityLiveRegion="polite"
       style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
     >
-      Загружаем каталог…
+      Загружаем работы…
     </AppText>
   );
 }
@@ -97,14 +105,14 @@ export function ProductListScreen() {
     content = (
       <CatalogGrid
         columns={columns}
-        count={4}
+        count={columns === 1 ? 2 : columns * 2}
         renderCard={() => <CatalogCardSkeleton />}
       />
     );
   } else if (query.isError || !query.data) {
     content = (
       <PageState
-        title="Не удалось загрузить каталог"
+        title="Не удалось загрузить работы"
         message="Проверьте соединение и повторите."
         retry={() => void query.refetch()}
       />
@@ -112,7 +120,7 @@ export function ProductListScreen() {
   } else if (query.data.products.length === 0) {
     content = (
       <PageState
-        title="Пока нет предметов"
+        title="Пока нет работ"
         message="Здесь появятся авторские предметы для торгов. Загляните позже."
       />
     );
@@ -132,25 +140,52 @@ export function ProductListScreen() {
     <AppShell>
       <ScrollView
         contentContainerStyle={{
-          width: '100%',
           paddingHorizontal:
-            width >= 768 ? designTokens.space.x6 : designTokens.space.x5,
-          paddingVertical: designTokens.space.x6,
-          gap: designTokens.space.x6,
+            width >= designTokens.breakpoint.desktopShell
+              ? designTokens.layout.desktopGutter
+              : designTokens.layout.mobileGutter,
+          paddingBottom: designTokens.space.x20,
+          paddingTop:
+            width >= designTokens.breakpoint.compactHeader
+              ? designTokens.space.x16
+              : designTokens.space.x10,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {query.isLoading ? <CatalogLoadingAnnouncement /> : null}
-        {content}
-        {query.isFetching && !query.isLoading ? (
-          <AppText
-            role="caption"
-            tone="secondary"
-            accessibilityLiveRegion="polite"
-          >
-            Обновляем каталог…
-          </AppText>
-        ) : null}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: designTokens.layout.contentMaxWidth,
+            alignSelf: 'center',
+            gap: designTokens.space.x10,
+          }}
+        >
+          <View style={{ maxWidth: 720, gap: designTokens.space.x3 }}>
+            <AppText
+              role={
+                width >= designTokens.breakpoint.compactHeader
+                  ? 'display'
+                  : 'screenTitle'
+              }
+            >
+              Работы
+            </AppText>
+            <AppText role="body" tone="secondary">
+              Авторские предметы и живые аукционы bidplace.
+            </AppText>
+          </View>
+          {query.isLoading ? <CatalogLoadingAnnouncement /> : null}
+          {content}
+          {query.isFetching && !query.isLoading ? (
+            <AppText
+              role="caption"
+              tone="secondary"
+              accessibilityLiveRegion="polite"
+            >
+              Обновляем работы…
+            </AppText>
+          ) : null}
+        </View>
       </ScrollView>
     </AppShell>
   );

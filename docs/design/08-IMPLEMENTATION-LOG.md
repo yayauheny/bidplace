@@ -19,9 +19,9 @@
 | Этап                                | Статус                 | Результат                                          | Commit       |
 | ----------------------------------- | ---------------------- | -------------------------------------------------- | ------------ |
 | WP0 — canonical baseline            | Готово                 | Pen v2, аудит и новая структура docs зафиксированы | `ef5b7c2`    |
-| WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | текущий этап |
-| WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | текущий этап |
-| WP3 — AuctionCard/Browse Works      | В работе               | Shared card и каталог по `H5vf2`                   | —            |
+| WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784`    |
+| WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784`    |
+| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | текущий этап |
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
 | WP5 — Product                       | Ожидает                | About/Creation/Bids и AuctionPlayer                | —            |
 | WP6 — Creator Profile               | Ожидает                | Публичный профиль автора                           | —            |
@@ -53,16 +53,31 @@
 - Подключён утверждённый логотип из founder asset pack.
 
 Проверено на 1440×900 и 390×844: горизонтального overflow нет, guest header и
-active navigation сохраняют геометрию и семантику.
+active navigation сохраняют геометрию и семантику. Commit: `cdfc784`.
+
+### 2026-08-10 — WP3
+
+- Shared `AuctionCard` приведён к квадратной media anatomy `k5vYGf` и
+  134-pixel information area.
+- На hover/focus масштабируется только изображение: `1 → 1.05`, 300 ms,
+  canonical easing; reduced motion отключает scale.
+- Карточка показывает только подтверждённые contract values: автор, цена,
+  status и deadline.
+- `/` перестроен в Browse Works composition с Pen typography, max-width и
+  responsive сеткой 4/3/2/1.
+- Loading/error/empty/refetch states сохранены; неподдержанные search, sort и
+  filters не имитируются.
+
+Проверки: typecheck, lint, 29 unit-тестов, production Expo export, runtime
+1440×900/390×844 без horizontal overflow.
 
 ## Текущая работа
 
-### WP3 — AuctionCard и Browse Works
+### WP5 — Product
 
-- привести shared `AuctionCard` к anatomy `k5vYGf`;
-- реализовать media-only hover scale и точные content/metric styles;
-- перестроить текущий `/` по composition `H5vf2`, сохранив API pagination и
-  существующие состояния.
+- собрать Product About/Bids вокруг shared ProductTabs и AuctionPlayer;
+- сохранить существующий bid/auth/OTP/rules contract без изменения;
+- Creation оставить на текущих подтверждённых полях, не создавая новую model.
 
 ## Заблокировано решениями продукта
 
@@ -78,5 +93,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Завершить WP3, выполнить responsive/runtime QA, проверить отсутствие diff у
-canonical Pen и зафиксировать отдельным commit.
+Завершить Product About/Bids, выполнить transaction-state regression QA,
+проверить отсутствие diff у canonical Pen и зафиксировать отдельным commit.
