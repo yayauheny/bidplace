@@ -1,6 +1,6 @@
 import { ScrollView, useWindowDimensions } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
@@ -19,14 +19,14 @@ export function ProductGallery({
 }) {
   const { width } = useWindowDimensions();
   const imageWidth =
-    width >= modernTokens.breakpoint.productDetailWide
-      ? modernTokens.productHeroWide
+    width >= designTokens.breakpoint.productDetailWide
+      ? designTokens.productHeroWide
       : 300;
 
   if (images.length === 0)
     return (
       <ImagePlaceholder
-        ratio={modernTokens.ratio.productPortrait}
+        ratio={designTokens.ratio.productPortrait}
         label={`Нет изображения: ${label}`}
         style={{ width: imageWidth, alignSelf: 'center' }}
       />
@@ -38,7 +38,7 @@ export function ProductGallery({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
         minWidth: '100%',
-        gap: modernTokens.space.x3,
+        gap: designTokens.space.x3,
         justifyContent: images.length === 1 ? 'center' : 'flex-start',
       }}
       accessibilityLabel={`Галерея: ${label}`}
@@ -75,7 +75,7 @@ function GalleryImage({
       fallbackLabel={`Изображение недоступно: ${label}`}
       style={productMediaStyle(width)}
       contentFit="contain"
-      transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
+      transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
     />
   );
 }

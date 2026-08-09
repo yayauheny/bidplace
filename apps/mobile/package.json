@@ -8,7 +8,7 @@
     "@bidplace/contracts": "workspace:*",
     "@bidplace/design-tokens": "workspace:*",
     "@expo-google-fonts/inter": "^0.4.2",
-    "@expo-google-fonts/pt-mono": "0.4.1",
+    "@expo-google-fonts/onest": "0.4.1",
     "@gorhom/bottom-sheet": "5.2.14",
     "@hookform/resolvers": "5.4.0",
     "@react-native/normalize-colors": "^0.74.1",

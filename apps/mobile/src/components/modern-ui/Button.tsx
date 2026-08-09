@@ -1,10 +1,11 @@
 import { ActivityIndicator, View, type ViewStyle } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppIcon, type AppIconName } from './AppIcon';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
+import type { MotionPressableState } from './MotionPressable';
 import {
   buttonContentLayoutStyle,
   buttonLayoutStyle,
@@ -36,7 +37,7 @@ function ButtonContent({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: hasIcon ? modernTokens.space.x2 : 0,
+          gap: hasIcon ? designTokens.space.x2 : 0,
           opacity: loading ? 0 : 1,
         }}
       >
@@ -67,7 +68,10 @@ function ButtonBase({
   compact = false,
   style,
   textColor,
-}: ButtonProps & { style: ViewStyle; textColor: string }) {
+}: ButtonProps & {
+  style: ViewStyle | ((state: MotionPressableState) => ViewStyle);
+  textColor: string;
+}) {
   const inactive = disabled || loading;
   return (
     <MotionPressable
@@ -79,15 +83,15 @@ function ButtonBase({
       disabled={inactive}
       onPress={onPress}
       preset="primaryAction"
-      style={[
+      style={(state: MotionPressableState) => [
         {
           minHeight: compact
-            ? modernTokens.size.buttonCompact
-            : modernTokens.size.button,
+            ? designTokens.size.buttonCompact
+            : designTokens.size.button,
           justifyContent: 'center',
           ...buttonLayoutStyle(width),
         },
-        style,
+        typeof style === 'function' ? style(state) : style,
       ]}
     >
       <ButtonContent
@@ -104,13 +108,16 @@ export function PrimaryButton(props: ButtonProps) {
   return (
     <ButtonBase
       {...props}
-      textColor={modernTokens.color.surface}
-      style={{
+      textColor={designTokens.color.surface}
+      style={({ hovered, pressed }) => ({
         borderRadius: props.compact
-          ? modernTokens.radius.compact
-          : modernTokens.radius.button,
-        backgroundColor: modernTokens.color.ink,
-      }}
+          ? designTokens.radius.compact
+          : designTokens.radius.button,
+        backgroundColor:
+          hovered || pressed
+            ? designTokens.color.actionHover
+            : designTokens.color.action,
+      })}
     />
   );
 }
@@ -119,15 +126,21 @@ export function SecondaryButton(props: ButtonProps) {
   return (
     <ButtonBase
       {...props}
-      textColor={modernTokens.color.ink}
-      style={{
+      textColor={designTokens.color.ink}
+      style={({ hovered, pressed }) => ({
         borderRadius: props.compact
-          ? modernTokens.radius.compact
-          : modernTokens.radius.button,
+          ? designTokens.radius.compact
+          : designTokens.radius.button,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-      }}
+        borderColor:
+          hovered || pressed
+            ? designTokens.color.borderStrong
+            : designTokens.color.border,
+        backgroundColor:
+          hovered || pressed
+            ? designTokens.color.surfaceStrong
+            : designTokens.color.surface,
+      })}
     />
   );
 }
@@ -136,13 +149,14 @@ export function DestructiveButton(props: ButtonProps) {
   return (
     <ButtonBase
       {...props}
-      textColor={modernTokens.color.surface}
-      style={{
+      textColor={designTokens.color.surface}
+      style={({ hovered, pressed }) => ({
         borderRadius: props.compact
-          ? modernTokens.radius.compact
-          : modernTokens.radius.button,
-        backgroundColor: modernTokens.color.danger,
-      }}
+          ? designTokens.radius.compact
+          : designTokens.radius.button,
+        backgroundColor:
+          hovered || pressed ? '#963030' : designTokens.color.danger,
+      })}
     />
   );
 }
@@ -164,7 +178,7 @@ export function TextButton({
       onPress={onPress}
       preset="button"
       style={{
-        minHeight: modernTokens.size.touch,
+        minHeight: designTokens.size.touch,
         alignSelf: 'flex-start',
         justifyContent: 'center',
       }}
@@ -173,11 +187,11 @@ export function TextButton({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: modernTokens.space.x1,
+          gap: designTokens.space.x1,
         }}
       >
         {icon ? (
-          <AppIcon name={icon} color={modernTokens.color.accentDark} />
+          <AppIcon name={icon} color={designTokens.color.accentDark} />
         ) : null}
         <AppText
           role="label"
@@ -212,18 +226,22 @@ export function IconButton({
       disabled={disabled}
       onPress={onPress}
       preset="icon"
-      style={{
-        width: modernTokens.size.touch,
-        minHeight: modernTokens.size.touch,
+      style={({ hovered, pressed }) => ({
+        width: designTokens.size.touch,
+        minHeight: designTokens.size.touch,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: modernTokens.radius.pill,
-        backgroundColor: selected ? modernTokens.color.ink : 'transparent',
-      }}
+        borderRadius: designTokens.radius.pill,
+        backgroundColor: selected
+          ? designTokens.color.action
+          : hovered || pressed
+            ? designTokens.color.surfaceStrong
+            : 'transparent',
+      })}
     >
       <AppIcon
         name={icon}
-        color={selected ? modernTokens.color.surface : modernTokens.color.ink}
+        color={selected ? designTokens.color.surface : designTokens.color.ink}
       />
     </MotionPressable>
   );

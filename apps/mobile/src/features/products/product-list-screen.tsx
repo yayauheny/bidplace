@@ -7,7 +7,7 @@ import {
   type DimensionValue,
 } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -36,13 +36,13 @@ function CatalogGrid({
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        margin: -modernTokens.space.x2,
+        margin: -designTokens.space.x2,
       }}
     >
       {Array.from({ length: count }, (_, index) => (
         <View
           key={index}
-          style={{ width: cardWidth, padding: modernTokens.space.x2 }}
+          style={{ width: cardWidth, padding: designTokens.space.x2 }}
         >
           {renderCard(index)}
         </View>
@@ -53,13 +53,13 @@ function CatalogGrid({
 
 function CatalogCardSkeleton() {
   return (
-    <View style={{ gap: modernTokens.space.x3 }}>
+    <View style={{ gap: designTokens.space.x3 }}>
       <Skeleton
         style={{
           ...productMediaStyle(),
         }}
       />
-      <View style={{ gap: modernTokens.space.x1 }}>
+      <View style={{ gap: designTokens.space.x1 }}>
         <Skeleton style={{ width: '50%', height: 16 }} />
         <Skeleton style={{ width: '85%', height: 42 }} />
         <Skeleton style={{ width: '100%', height: 22 }} />
@@ -134,9 +134,9 @@ export function ProductListScreen() {
         contentContainerStyle={{
           width: '100%',
           paddingHorizontal:
-            width >= 768 ? modernTokens.space.x6 : modernTokens.space.x5,
-          paddingVertical: modernTokens.space.x6,
-          gap: modernTokens.space.x6,
+            width >= 768 ? designTokens.space.x6 : designTokens.space.x5,
+          paddingVertical: designTokens.space.x6,
+          gap: designTokens.space.x6,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -1,12 +1,12 @@
 import type { DimensionValue, ImageStyle } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function productMediaStyle(width: DimensionValue = '100%'): ImageStyle {
   return {
     width,
-    aspectRatio: modernTokens.ratio.productPortrait,
-    borderRadius: modernTokens.radius.image,
-    backgroundColor: modernTokens.color.placeholder,
+    aspectRatio: designTokens.ratio.productPortrait,
+    borderRadius: designTokens.radius.image,
+    backgroundColor: designTokens.color.placeholder,
   };
 }

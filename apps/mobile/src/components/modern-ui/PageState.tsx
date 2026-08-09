@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { PrimaryButton } from './Button';
@@ -26,7 +26,7 @@ export function PageState({
           minHeight: 220,
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: modernTokens.space.x8,
+          paddingVertical: designTokens.space.x8,
         }}
       >
         <AppText
@@ -46,8 +46,8 @@ export function PageState({
         minHeight: 220,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: modernTokens.space.x3,
-        paddingVertical: modernTokens.space.x8,
+        gap: designTokens.space.x3,
+        paddingVertical: designTokens.space.x8,
       }}
     >
       <AppText role="sectionTitle">{title}</AppText>

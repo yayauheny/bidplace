@@ -4,7 +4,7 @@ import type { ApiClient } from '@bidplace/api-client';
 import { Link, type Href } from 'expo-router';
 import { ScrollView, View, useWindowDimensions } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -230,8 +230,8 @@ export function AdminModerationScreen() {
       <View
         style={{
           flexDirection:
-            width >= modernTokens.breakpoint.desktopShell ? 'row' : 'column',
-          gap: modernTokens.space.x5,
+            width >= designTokens.breakpoint.desktopShell ? 'row' : 'column',
+          gap: designTokens.space.x5,
           alignItems: 'flex-start',
         }}
       >
@@ -332,7 +332,7 @@ export function AdminModerationScreen() {
                       style={{
                         width: 96,
                         height: 96,
-                        borderRadius: modernTokens.radius.image,
+                        borderRadius: designTokens.radius.image,
                       }}
                       contentFit="contain"
                     />
@@ -467,7 +467,7 @@ export function AdminModerationScreen() {
           </AppText>
         ) : null}
         {cancelledOrder ? (
-          <View style={{ gap: modernTokens.space.x2 }}>
+          <View style={{ gap: designTokens.space.x2 }}>
             <AppText role="bodySmall" tone="secondary">
               Выберите replacement Bid для Listing {cancelledOrder.listingId}.
             </AppText>
@@ -555,10 +555,10 @@ function ModerationCard({
   return (
     <View
       style={{
-        gap: modernTokens.space.x2,
+        gap: designTokens.space.x2,
         borderBottomWidth: 1,
-        borderBottomColor: modernTokens.color.border,
-        paddingBottom: modernTokens.space.x4,
+        borderBottomColor: designTokens.color.border,
+        paddingBottom: designTokens.space.x4,
       }}
     >
       <AppText role="label">{title}</AppText>
@@ -577,10 +577,10 @@ function AdminShell({ children }: { children: ReactNode }) {
           width: '100%',
           maxWidth: 1180,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
+          padding: designTokens.space.x5,
         }}
       >
-        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
       </ScrollView>
     </AppShell>
   );

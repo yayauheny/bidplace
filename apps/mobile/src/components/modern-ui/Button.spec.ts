@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import {
   buttonContentLayoutStyle,
@@ -12,7 +12,7 @@ describe('button layout variants', () => {
   it('uses content width by default', () => {
     expect(buttonLayoutStyle()).toMatchObject({
       alignSelf: 'flex-start',
-      paddingHorizontal: modernTokens.space.x5,
+      paddingHorizontal: designTokens.space.x5,
     });
     expect(buttonLayoutStyle()).not.toHaveProperty('width');
   });
@@ -20,7 +20,7 @@ describe('button layout variants', () => {
   it('uses compact padding without stretching', () => {
     expect(buttonLayoutStyle('compact')).toMatchObject({
       alignSelf: 'flex-start',
-      paddingHorizontal: modernTokens.space.x3,
+      paddingHorizontal: designTokens.space.x3,
     });
     expect(buttonLayoutStyle('compact')).not.toHaveProperty('width');
   });
@@ -37,7 +37,7 @@ describe('button layout variants', () => {
       position: 'relative',
       gap: 0,
     });
-    expect(buttonContentLayoutStyle(true).gap).toBe(modernTokens.space.x2);
+    expect(buttonContentLayoutStyle(true).gap).toBe(designTokens.space.x2);
   });
 
   it('overlays the busy spinner on an invisible sizing layer', () => {

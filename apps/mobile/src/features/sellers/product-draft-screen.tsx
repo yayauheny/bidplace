@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -45,8 +45,8 @@ function DraftImageRow({
   const mediaStyle = {
     width: 160,
     height: 200,
-    borderRadius: modernTokens.radius.image,
-    backgroundColor: modernTokens.color.placeholder,
+    borderRadius: designTokens.radius.image,
+    backgroundColor: designTokens.color.placeholder,
   };
 
   return (
@@ -54,7 +54,7 @@ function DraftImageRow({
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: modernTokens.space.x3,
+        gap: designTokens.space.x3,
       }}
     >
       <ResilientRemoteImage
@@ -66,7 +66,7 @@ function DraftImageRow({
         contentFit="contain"
       />
       {editable ? (
-        <View style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x1 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
           <TextButton
             label="Переместить выше"
             disabled={position === 0 || isReordering}
@@ -249,7 +249,7 @@ export function ProductDraftScreen({ productId }: { productId?: string }) {
 
   return (
     <DraftShell>
-      <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="screenTitle">
           {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
         </AppText>
@@ -526,10 +526,10 @@ function DraftShell({ children }: { children: ReactNode }) {
           width: '100%',
           maxWidth: 760,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
+          padding: designTokens.space.x5,
         }}
       >
-        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
       </ScrollView>
     </AppShell>
   );

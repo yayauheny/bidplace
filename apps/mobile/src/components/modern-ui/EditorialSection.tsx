@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 
@@ -15,8 +15,8 @@ export function EditorialSection({
   return (
     <View
       style={{
-        gap: modernTokens.space.x3,
-        paddingVertical: modernTokens.space.x2,
+        gap: designTokens.space.x3,
+        paddingVertical: designTokens.space.x2,
       }}
     >
       <AppText role="sectionTitle">{title}</AppText>

@@ -1,11 +1,11 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppIcon } from './AppIcon';
 
 export function ImagePlaceholder({
-  ratio = modernTokens.ratio.productPortrait,
+  ratio = designTokens.ratio.productPortrait,
   label = 'Изображение недоступно',
   style,
 }: {
@@ -22,15 +22,15 @@ export function ImagePlaceholder({
           aspectRatio: ratio,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: modernTokens.color.placeholder,
-          borderRadius: modernTokens.radius.image,
+          backgroundColor: designTokens.color.placeholder,
+          borderRadius: designTokens.radius.image,
         },
         style,
       ]}
     >
       <AppIcon
         name="imageOff"
-        color={modernTokens.color.textSecondary}
+        color={designTokens.color.textSecondary}
       />
     </View>
   );

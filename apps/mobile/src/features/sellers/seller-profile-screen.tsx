@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { ScrollView, View } from 'react-native';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
   ImagePlaceholder,
@@ -199,8 +199,8 @@ export function SellerProfileScreen() {
 
   return (
     <ProfileShell>
-      <View style={{ gap: modernTokens.space.x5 }}>
-        <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x5 }}>
+        <View style={{ gap: designTokens.space.x2 }}>
           <PageHeader
             title="Профиль продавца"
             description={
@@ -225,15 +225,15 @@ export function SellerProfileScreen() {
           ) : null}
         </View>
 
-        <View style={{ gap: modernTokens.space.x3 }}>
+        <View style={{ gap: designTokens.space.x3 }}>
           <View
             style={{
-              gap: modernTokens.space.x3,
-              borderRadius: modernTokens.radius.panel,
+              gap: designTokens.space.x3,
+              borderRadius: designTokens.radius.panel,
               borderWidth: 1,
-              borderColor: modernTokens.color.border,
-              backgroundColor: modernTokens.color.surface,
-              padding: modernTokens.space.x5,
+              borderColor: designTokens.color.border,
+              backgroundColor: designTokens.color.surface,
+              padding: designTokens.space.x5,
             }}
           >
             <AppText role="metadata" tone="secondary">
@@ -246,7 +246,7 @@ export function SellerProfileScreen() {
                   style={{
                     width: 200,
                     height: 200,
-                    borderRadius: modernTokens.radius.image,
+                    borderRadius: designTokens.radius.image,
                   }}
                   contentFit="cover"
                   onError={() => setPhotoFailed(true)}
@@ -260,7 +260,7 @@ export function SellerProfileScreen() {
                   style={{
                     width: 200,
                     height: 200,
-                    borderRadius: modernTokens.radius.image,
+                    borderRadius: designTokens.radius.image,
                   }}
                   contentFit="cover"
                 />
@@ -365,11 +365,11 @@ export function SellerProfileScreen() {
           ) : (
             <View
               style={{
-                gap: modernTokens.space.x1,
-                borderRadius: modernTokens.radius.panel,
+                gap: designTokens.space.x1,
+                borderRadius: designTokens.radius.panel,
                 borderWidth: 1,
-                borderColor: modernTokens.color.border,
-                padding: modernTokens.space.x5,
+                borderColor: designTokens.color.border,
+                padding: designTokens.space.x5,
               }}
             >
               <AppText role="bodySmall" tone="secondary">
@@ -429,10 +429,10 @@ function ProfileShell({ children }: { children: React.ReactNode }) {
           width: '100%',
           maxWidth: 760,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
+          padding: designTokens.space.x5,
         }}
       >
-        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
       </ScrollView>
     </AppShell>
   );

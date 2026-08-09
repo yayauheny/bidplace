@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 const icons = {
   chevronLeft: ChevronLeft,
@@ -43,8 +43,8 @@ type AppIconProps = {
 
 export function AppIcon({
   name,
-  size = modernTokens.size.icon,
-  color = modernTokens.color.ink,
+  size = designTokens.size.icon,
+  color = designTokens.color.ink,
   label,
 }: AppIconProps) {
   const Icon = icons[name];

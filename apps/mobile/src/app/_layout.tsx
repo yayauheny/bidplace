@@ -4,12 +4,17 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { PTMono_400Regular } from '@expo-google-fonts/pt-mono';
+import {
+  Onest_400Regular,
+  Onest_500Medium,
+  Onest_600SemiBold,
+  Onest_700Bold,
+} from '@expo-google-fonts/onest';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppProviders } from '../providers/app-providers';
 import '../../global.css';
@@ -20,12 +25,15 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    PTMono_400Regular,
+    Onest_400Regular,
+    Onest_500Medium,
+    Onest_600SemiBold,
+    Onest_700Bold,
   });
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: modernTokens.color.canvas }} />
+      <View style={{ flex: 1, backgroundColor: designTokens.color.canvas }} />
     );
   }
 

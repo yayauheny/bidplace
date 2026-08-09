@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -36,13 +36,13 @@ function AuthorWorkGrid({
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        margin: -modernTokens.space.x2,
+        margin: -designTokens.space.x2,
       }}
     >
       {products.map((item) => (
         <View
           key={item.product.id}
-          style={{ width: cardWidth, padding: modernTokens.space.x2 }}
+          style={{ width: cardWidth, padding: designTokens.space.x2 }}
         >
           <AuctionCard item={item} />
         </View>
@@ -55,7 +55,7 @@ function AuthorPhoto({ url, name }: { url: string; name: string }) {
   const style = {
     width: 120,
     height: 120,
-    borderRadius: modernTokens.radius.pill,
+    borderRadius: designTokens.radius.pill,
   };
 
   return (
@@ -116,24 +116,24 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
           width: '100%',
           maxWidth: 960,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
-          gap: modernTokens.space.x5,
+          padding: designTokens.space.x5,
+          gap: designTokens.space.x5,
         }}
       >
         {query.data ? (
-          <View style={{ gap: modernTokens.space.x3 }}>
+          <View style={{ gap: designTokens.space.x3 }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: modernTokens.space.x4,
+                gap: designTokens.space.x4,
               }}
             >
               <AuthorPhoto
                 url={query.data.sellerProfile.profilePhotoUrl}
                 name={query.data.sellerProfile.fullName}
               />
-              <View style={{ flex: 1, gap: modernTokens.space.x1 }}>
+              <View style={{ flex: 1, gap: designTokens.space.x1 }}>
                 <PageHeader title={query.data.sellerProfile.fullName} />
                 <AppText role="metadata" tone="secondary">
                   {presentEnum(

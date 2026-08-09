@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 import { ScrollView, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -45,12 +45,12 @@ function Panel({
   return (
     <View
       style={{
-        gap: modernTokens.space.x4,
-        borderRadius: modernTokens.radius.panel,
+        gap: designTokens.space.x4,
+        borderRadius: designTokens.radius.panel,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x5,
+        borderColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x5,
       }}
     >
       {eyebrow ? (
@@ -65,14 +65,14 @@ function Panel({
 
 function Details({ items }: { items: { label: string; value: string }[] }) {
   return (
-    <View style={{ gap: modernTokens.space.x3 }}>
+    <View style={{ gap: designTokens.space.x3 }}>
       {items.map((item) => (
         <View
           key={item.label}
           style={{
             flexDirection: 'row',
             justifyContent: 'space-between',
-            gap: modernTokens.space.x4,
+            gap: designTokens.space.x4,
           }}
         >
           <AppText
@@ -152,7 +152,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
         : 'Не удалось загрузить заказ';
     return (
       <Shell>
-        <View style={{ gap: modernTokens.space.x4 }}>
+        <View style={{ gap: designTokens.space.x4 }}>
           <AppText role="sectionTitle">{message}</AppText>
           <SecondaryButton
             label="Повторить"
@@ -176,8 +176,8 @@ export function OrderScreen({ publicId }: { publicId: string }) {
   };
   return (
     <Shell>
-      <View style={{ gap: modernTokens.space.x6 }}>
-        <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x6 }}>
+        <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="metadata" tone="secondary">
             Заказ {order.publicId}
           </AppText>
@@ -249,7 +249,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
                 { label: 'Email покупателя', value: seller.buyerEmailAtClose },
               ]}
             />
-            <View style={{ gap: modernTokens.space.x2 }}>
+            <View style={{ gap: designTokens.space.x2 }}>
               <SecondaryButton
                 label="Отметить контакт"
                 loading={contacted.isPending}
@@ -267,7 +267,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
               />
             </View>
             {actionError ? (
-              <View style={{ gap: modernTokens.space.x2 }}>
+              <View style={{ gap: designTokens.space.x2 }}>
                 <AppText role="bodySmall" tone="danger">
                   {actionError}
                 </AppText>
@@ -339,8 +339,8 @@ function Shell({ children }: { children: ReactNode }) {
           width: '100%',
           maxWidth: 760,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
-          gap: modernTokens.space.x6,
+          padding: designTokens.space.x5,
+          gap: designTokens.space.x6,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { SecondaryButton } from './Button';
@@ -21,9 +21,9 @@ export function SelectableRow({
   disabled?: boolean;
 }) {
   return (
-    <View style={{ gap: modernTokens.space.x2 }}>
+    <View style={{ gap: designTokens.space.x2 }}>
       <AppText role="label">{label}</AppText>
-      <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x2 }}>
         {options.map((option) => (
           <SecondaryButton
             key={option.value}

@@ -2,7 +2,7 @@ import { Image, type ImageProps } from 'expo-image';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { SecondaryButton } from './Button';
 import { ImagePlaceholder } from './ImagePlaceholder';
@@ -159,7 +159,7 @@ export function ResilientRemoteImage({
           style={StyleSheet.absoluteFill}
         />
         {visibleRecovery.exhausted ? (
-          <View style={{ position: 'absolute', bottom: modernTokens.space.x2 }}>
+          <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
             <SecondaryButton
               compact
               label="Повторить"

@@ -132,7 +132,7 @@ importers:
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
         version: 0.4.2
-      '@expo-google-fonts/pt-mono':
+      '@expo-google-fonts/onest':
         specifier: 0.4.1
         version: 0.4.1
       '@gorhom/bottom-sheet':
@@ -978,8 +978,8 @@ packages:
   '@expo-google-fonts/material-symbols@0.4.38':
     resolution: {integrity: sha512-IJkBtN1o8u9BW5fvSii1MyHPQ7Q0HxbWcVBvOrOzgMLpVtZw7R2w94wBTVR7kZwv3w1JNTESMmLA5Sqn1+Z36A==}
 
-  '@expo-google-fonts/pt-mono@0.4.1':
-    resolution: {integrity: sha512-f9YMfoZAVovNtt30vOJ1Awpv6Tzzowm8hxqia506pyJi6w2mPKswz0yTB1jzeS7GCoRZnLcagUcu+uuxzYUVyA==}
+  '@expo-google-fonts/onest@0.4.1':
+    resolution: {integrity: sha512-g+onvw0be9D/W/5WPYaEP+PT/MUma+Gb6O1n/T0FvRBMRx5fMHDMwjwzd3vY95G5zEAxPv1e53XIpxHiKd5DoA==}
 
   '@expo/cli@57.0.6':
     resolution: {integrity: sha512-14wEb2e8lctlxGARbinUEr+9EmrTR2jIgcaPBBkZXDFMRJmdoY0ic18JuFJPi+7CuQ4XWiGK6obN4VK2PXosLA==}
@@ -7097,7 +7097,7 @@ snapshots:
 
   '@expo-google-fonts/material-symbols@0.4.38': {}
 
-  '@expo-google-fonts/pt-mono@0.4.1': {}
+  '@expo-google-fonts/onest@0.4.1': {}
 
   '@expo/cli@57.0.6(@expo/dom-webview@57.0.0)(@expo/metro-runtime@57.0.3)(expo-constants@57.0.3)(expo-font@57.0.0)(expo-router@57.0.4)(expo@57.0.4)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@18.3.31)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)':
     dependencies:

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { Separator } from './Separator';
@@ -35,21 +35,21 @@ export function AuctionPanel({
     <View
       accessibilityLabel={`Торги. ${statusLabel}. ${currentPriceLabel}. ${deadlineLabel}`}
       style={{
-        gap: modernTokens.space.x4,
-        borderRadius: modernTokens.radius.panel,
+        gap: designTokens.space.x4,
+        borderRadius: designTokens.radius.panel,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x5,
+        borderColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x5,
       }}
     >
-      <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x2 }}>
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: modernTokens.space.x3,
+            gap: designTokens.space.x3,
           }}
         >
           <AppText role="metadata" tone="secondary">
@@ -74,7 +74,7 @@ export function AuctionPanel({
         ) : null}
       </View>
 
-      <View style={{ gap: modernTokens.space.x1 }}>
+      <View style={{ gap: designTokens.space.x1 }}>
         <AppText role="metadata" tone="secondary">
           Текущая цена
         </AppText>
@@ -86,7 +86,7 @@ export function AuctionPanel({
       </View>
 
       <Separator />
-      <View style={{ gap: modernTokens.space.x1 }}>
+      <View style={{ gap: designTokens.space.x1 }}>
         <AppText accessibilityLiveRegion="polite" role="bodySmall">
           {timingLabel}
         </AppText>
@@ -97,7 +97,7 @@ export function AuctionPanel({
       {children ? (
         <>
           <Separator />
-          <View style={{ gap: modernTokens.space.x3 }}>{children}</View>
+          <View style={{ gap: designTokens.space.x3 }}>{children}</View>
         </>
       ) : null}
     </View>

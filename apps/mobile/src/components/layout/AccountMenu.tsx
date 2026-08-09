@@ -1,11 +1,16 @@
 import { Link, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { useAuth } from '../../providers/auth-provider';
-import { AppIcon, AppText, SecondaryButton } from '../modern-ui';
+import {
+  AppIcon,
+  AppText,
+  MotionPressable,
+  SecondaryButton,
+} from '../modern-ui';
 import { OverlayPortal } from './OverlayHost';
 
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
@@ -84,27 +89,35 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   if (!auth.isAuthenticated) {
     return (
       <Link href="/login" asChild>
-        <Pressable
+        <MotionPressable
           accessibilityRole="link"
           accessibilityLabel="Войти"
+          preset="primaryAction"
           style={{
-            minHeight: modernTokens.size.touch,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: modernTokens.space.x2,
-            paddingHorizontal: modernTokens.space.x2,
+            minHeight: designTokens.size.buttonCompact,
+            justifyContent: 'center',
+            borderRadius: designTokens.radius.pill,
+            backgroundColor: designTokens.color.action,
+            paddingHorizontal: designTokens.space.x5,
           }}
+          interactionStyle={({ hovered, pressed }) => ({
+            backgroundColor:
+              hovered || pressed
+                ? designTokens.color.actionHover
+                : designTokens.color.action,
+          })}
         >
-          <AppIcon name="account" />
-          <AppText role="label">Войти</AppText>
-        </Pressable>
+          <AppText role="button" style={{ color: designTokens.color.surface }}>
+            Войти
+          </AppText>
+        </MotionPressable>
       </Link>
     );
   }
 
   return (
     <View nativeID="account-menu" style={{ position: 'relative' }}>
-      <Pressable
+      <MotionPressable
         ref={(node) => {
           triggerRef.current = node as unknown as {
             getBoundingClientRect: () => DOMRect;
@@ -135,14 +148,15 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           }
           setOpen((current) => !current);
         }}
-        style={({ pressed }) => ({
-          minHeight: modernTokens.size.touch,
+        style={({ hovered, pressed }) => ({
+          minHeight: designTokens.size.touch,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: modernTokens.space.x1,
-          borderRadius: modernTokens.radius.pill,
-          backgroundColor: pressed ? modernTokens.color.chip : 'transparent',
-          paddingHorizontal: modernTokens.space.x1,
+          gap: designTokens.space.x1,
+          borderRadius: designTokens.radius.pill,
+          backgroundColor:
+            hovered || pressed ? designTokens.color.chip : 'transparent',
+          paddingHorizontal: designTokens.space.x1,
         })}
       >
         <View
@@ -151,14 +165,14 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             height: 32,
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: modernTokens.radius.pill,
-            backgroundColor: modernTokens.color.chip,
+            borderRadius: designTokens.radius.pill,
+            backgroundColor: designTokens.color.chip,
           }}
         >
           <AppText role="label">{initial}</AppText>
         </View>
         <AppIcon name="chevronDown" size={16} />
-      </Pressable>
+      </MotionPressable>
       {open ? (
         Platform.OS === 'web' ? (
           <OverlayPortal anchorRef={triggerRef} testId="account-menu-dropdown">
@@ -197,15 +211,15 @@ function AccountDropdown({
     <View
       style={{
         position: inline ? 'absolute' : undefined,
-        top: inline ? modernTokens.size.touch : undefined,
+        top: inline ? designTokens.size.touch : undefined,
         right: inline ? 0 : undefined,
         minWidth: 180,
-        gap: modernTokens.space.x2,
+        gap: designTokens.space.x2,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        borderRadius: modernTokens.radius.control,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x2,
+        borderColor: designTokens.color.border,
+        borderRadius: designTokens.radius.control,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x2,
         shadowColor: '#000',
         shadowOpacity: 0.08,
         shadowRadius: 12,

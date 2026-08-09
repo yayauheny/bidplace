@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../modern-ui';
 import { useAuth } from '../../providers/auth-provider';
@@ -25,7 +25,7 @@ export function ProtectedRoute({
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: modernTokens.color.canvas,
+          backgroundColor: designTokens.color.canvas,
         }}
       >
         <AppText role="bodySmall" tone="secondary">

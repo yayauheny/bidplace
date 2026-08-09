@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { Platform, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { getBottomEndPosition } from './overlay-geometry';
 
@@ -37,7 +37,7 @@ export function OverlayHost({ children }: { children: ReactNode }) {
           right: 0,
           bottom: 0,
           left: 0,
-          zIndex: modernTokens.layer.popover,
+          zIndex: designTokens.layer.popover,
           pointerEvents: 'none',
         }}
       >
@@ -54,7 +54,7 @@ export function OverlayPortal({
   anchorRef,
   children,
   placement = 'bottom-end',
-  collisionInset = modernTokens.space.x2,
+  collisionInset = designTokens.space.x2,
   width = defaultPopoverWidth,
   testId,
 }: {
@@ -89,7 +89,7 @@ export function OverlayPortal({
   const style = (() => {
     if (placement === 'right-start') {
       return {
-        left: anchorRect.right + modernTokens.space.x2,
+        left: anchorRect.right + designTokens.space.x2,
         top: anchorRect.top,
       };
     }
@@ -100,7 +100,7 @@ export function OverlayPortal({
       viewportWidth: window.innerWidth,
       width,
       collisionInset,
-      gap: modernTokens.space.x2,
+      gap: designTokens.space.x2,
     });
   })();
 
@@ -111,7 +111,7 @@ export function OverlayPortal({
         position: 'fixed',
         ...style,
         width: placement === 'bottom-end' ? width : undefined,
-        zIndex: modernTokens.layer.popover,
+        zIndex: designTokens.layer.popover,
         pointerEvents: 'auto',
       }}
     >

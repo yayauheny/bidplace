@@ -1,6 +1,6 @@
 import type { ViewStyle } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export type ButtonWidth = 'content' | 'compact' | 'block';
 
@@ -10,7 +10,7 @@ export function buttonContentLayoutStyle(hasIcon: boolean): ViewStyle {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: hasIcon ? modernTokens.space.x2 : 0,
+    gap: hasIcon ? designTokens.space.x2 : 0,
   };
 }
 
@@ -19,7 +19,7 @@ export function buttonLoadingOverlayStyle(): ViewStyle {
     position: 'absolute',
     left: '50%',
     top: '50%',
-    transform: [{ translateX: -modernTokens.size.icon / 2 }, { translateY: -modernTokens.size.icon / 2 }],
+    transform: [{ translateX: -designTokens.size.icon / 2 }, { translateY: -designTokens.size.icon / 2 }],
   };
 }
 
@@ -27,7 +27,7 @@ export function buttonLayoutStyle(width: ButtonWidth = 'content'): ViewStyle {
   return {
     alignSelf: width === 'block' ? 'stretch' : 'flex-start',
     paddingHorizontal:
-      width === 'compact' ? modernTokens.space.x3 : modernTokens.space.x5,
+      width === 'compact' ? designTokens.space.x3 : designTokens.space.x5,
     ...(width === 'block' ? { width: '100%' } : {}),
   };
 }

@@ -9,7 +9,7 @@ import {
   SecondaryButton,
   TextField,
 } from '../../components/modern-ui';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 
@@ -65,7 +65,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   if (!auth.isAuthenticated) {
     return (
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall" tone="secondary">
           Войдите, чтобы продолжить.
         </AppText>
@@ -78,7 +78,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   if (!auth.user) {
     return (
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall" tone="danger">
           Не удалось восстановить сессию
         </AppText>
@@ -92,7 +92,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   if (rulesQuery.isError) {
     return (
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall" tone="danger">
           Не удалось загрузить правила
         </AppText>
@@ -106,7 +106,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   if (!auth.user.emailVerifiedAt) {
     return (
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall" tone="secondary">
           Чтобы сделать первую ставку, подтвердите email. Мы отправим код на
           этот адрес. После подтверждения можно будет сделать ставку.
@@ -147,7 +147,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   if (auth.user.acceptedRulesVersion !== rulesQuery.data.rules.version) {
     return (
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="label">Перед первой ставкой нужно принять правила сервиса.</AppText>
         <AppText role="bodySmall" tone="secondary">
           {rulesQuery.data.rules.text}

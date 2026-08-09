@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { View } from 'react-native';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
   PrimaryButton,
@@ -34,15 +34,15 @@ function AuthCard({
       style={{
         width: '100%',
         maxWidth: 540,
-        gap: modernTokens.space.x5,
-        borderRadius: modernTokens.radius.panel,
+        gap: designTokens.space.x5,
+        borderRadius: designTokens.radius.panel,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x6,
+        borderColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x6,
       }}
     >
-      <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="screenTitle">{title}</AppText>
         <AppText role="bodySmall" tone="secondary">
           {description}
@@ -90,7 +90,7 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       title="Вход"
       description="Войдите или создайте аккаунт, чтобы продолжить работу с аукционами."
     >
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <Controller
           control={form.control}
           name="email"
@@ -188,7 +188,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       title="Регистрация"
       description="Создайте аккаунт, чтобы участвовать в торгах и при необходимости подать заявку продавца."
     >
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <Controller
           control={form.control}
           name="displayName"

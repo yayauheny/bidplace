@@ -2,15 +2,15 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function AuthViewport({ children }: { children: ReactNode }) {
   return (
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: modernTokens.color.canvas,
-        paddingHorizontal: modernTokens.space.x5,
+        backgroundColor: designTokens.color.canvas,
+        paddingHorizontal: designTokens.space.x5,
       }}
     >
       <KeyboardAvoidingView
@@ -21,7 +21,7 @@ export function AuthViewport({ children }: { children: ReactNode }) {
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingVertical: modernTokens.space.x5,
+            paddingVertical: designTokens.space.x5,
           }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"

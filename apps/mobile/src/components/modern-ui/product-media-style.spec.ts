@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { productMediaStyle } from './product-media-style';
 
 describe('product media geometry', () => {
   it('keeps one 4:5 contract for every media state', () => {
     expect(productMediaStyle()).toMatchObject({
-      aspectRatio: modernTokens.ratio.productPortrait,
-      borderRadius: modernTokens.radius.image,
-      backgroundColor: modernTokens.color.placeholder,
+      aspectRatio: designTokens.ratio.productPortrait,
+      borderRadius: designTokens.radius.image,
+      backgroundColor: designTokens.color.placeholder,
     });
   });
 

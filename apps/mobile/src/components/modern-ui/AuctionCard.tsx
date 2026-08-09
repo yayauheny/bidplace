@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { View } from 'react-native';
 
 import type { publicProductListItemSchema } from '@bidplace/contracts';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
@@ -29,7 +29,7 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
         accessibilityRole="link"
         accessibilityLabel={label}
         preset="card"
-        style={{ gap: modernTokens.space.x3 }}
+        style={{ gap: designTokens.space.x3 }}
       >
         {firstImage ? (
           <AuctionCardImage
@@ -44,7 +44,7 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
             style={{ width: '100%' }}
           />
         )}
-        <View style={{ gap: modernTokens.space.x1 }}>
+        <View style={{ gap: designTokens.space.x1 }}>
           <AppText role="metadata" tone="secondary" numberOfLines={1}>
             {sellerProfile.fullName}
           </AppText>
@@ -89,7 +89,7 @@ function AuctionCardImage({
       fallbackLabel={`Изображение недоступно: ${label}`}
       style={productMediaStyle()}
       contentFit="contain"
-      transition={getMotionDuration(reducedMotion, modernTokens.motion.fast)}
+      transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
       recyclingKey={`${productId}-${imageId}`}
     />
   );

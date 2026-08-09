@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -44,10 +44,10 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   return (
     <View
       style={{
-        gap: modernTokens.space.x3,
+        gap: designTokens.space.x3,
         borderBottomWidth: 1,
-        borderBottomColor: modernTokens.color.border,
-        paddingBottom: modernTokens.space.x4,
+        borderBottomColor: designTokens.color.border,
+        paddingBottom: designTokens.space.x4,
       }}
     >
       <View
@@ -55,7 +55,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          gap: modernTokens.space.x3,
+          gap: designTokens.space.x3,
         }}
       >
         <Link href={`/product/${item.product.publicId}`} asChild>
@@ -64,7 +64,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
             accessibilityLabel={`Открыть предмет ${item.product.title ?? 'Предмет'}`}
             onPress={() => undefined}
             preset="card"
-            style={{ flex: 1, minWidth: 0, gap: modernTokens.space.x1 }}
+            style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}
           >
             <AppText role="cardTitle">
               {item.product.title ?? 'Предмет'}
@@ -79,11 +79,11 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           role="caption"
           tone={activityStatusTone(item.status)}
           style={{
-            backgroundColor: modernTokens.color.chip,
-            borderRadius: modernTokens.radius.pill,
+            backgroundColor: designTokens.color.chip,
+            borderRadius: designTokens.radius.pill,
             overflow: 'hidden',
-            paddingHorizontal: modernTokens.space.x2,
-            paddingVertical: modernTokens.space.x1,
+            paddingHorizontal: designTokens.space.x2,
+            paddingVertical: designTokens.space.x1,
           }}
         >
           {status}
@@ -130,7 +130,7 @@ export function ActivityScreen() {
     );
   } else {
     content = (
-      <View style={{ gap: modernTokens.space.x4 }}>
+      <View style={{ gap: designTokens.space.x4 }}>
         {query.data.activity.map((item) => (
           <ActivityRow key={item.listing.id} item={item} />
         ))}
@@ -145,9 +145,9 @@ export function ActivityScreen() {
           width: '100%',
           maxWidth: 760,
           alignSelf: 'center',
-          paddingHorizontal: modernTokens.space.x5,
-          paddingVertical: modernTokens.space.x8,
-          gap: modernTokens.space.x6,
+          paddingHorizontal: designTokens.space.x5,
+          paddingVertical: designTokens.space.x8,
+          gap: designTokens.space.x6,
         }}
         showsVerticalScrollIndicator={false}
       >

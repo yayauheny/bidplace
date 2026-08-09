@@ -4,7 +4,7 @@ import { listingCreateRequestSchema } from '@bidplace/contracts';
 import { useRouter } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -160,7 +160,7 @@ export function ListingDraftScreen({
 
   return (
     <ListingShell>
-      <View style={{ gap: modernTokens.space.x2 }}>
+      <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="screenTitle">Новое размещение</AppText>
         <AppText role="bodySmall" tone="secondary">
           Укажите расписание аукциона и стартовую цену. Валюта: BYN.
@@ -180,7 +180,7 @@ export function ListingDraftScreen({
           </>
         ) : null}
         {products.data.products.map((product) => (
-          <View key={product.id} style={{ gap: modernTokens.space.x1 }}>
+          <View key={product.id} style={{ gap: designTokens.space.x1 }}>
             <SecondaryButton
               label={`${product.id === productId ? '✓ ' : ''}${product.title ?? product.id} · ${presentEnum(product.status, productStatusLabels, 'Неизвестный статус предмета')}`}
               disabled={product.status !== 'APPROVED' || isLocked}
@@ -347,10 +347,10 @@ function ListingShell({ children }: { children: ReactNode }) {
           width: '100%',
           maxWidth: 760,
           alignSelf: 'center',
-          padding: modernTokens.space.x5,
+          padding: designTokens.space.x5,
         }}
       >
-        <View style={{ gap: modernTokens.space.x5 }}>{children}</View>
+        <View style={{ gap: designTokens.space.x5 }}>{children}</View>
       </ScrollView>
     </AppShell>
   );

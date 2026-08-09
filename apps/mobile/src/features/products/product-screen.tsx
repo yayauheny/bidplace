@@ -4,7 +4,7 @@ import { Link, type Href } from 'expo-router';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
 import {
@@ -101,12 +101,12 @@ function SurfacePanel({
   return (
     <View
       style={{
-        gap: modernTokens.space.x4,
-        borderRadius: modernTokens.radius.panel,
+        gap: designTokens.space.x4,
+        borderRadius: designTokens.radius.panel,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x5,
+        borderColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x5,
       }}
     >
       {eyebrow ? (
@@ -141,7 +141,7 @@ function BidForm({
   showPrimaryAction?: boolean;
 }) {
   return (
-    <View style={{ gap: modernTokens.space.x3 }}>
+    <View style={{ gap: designTokens.space.x3 }}>
       <TextField
         label="Ваша ставка, BYN"
         value={amount}
@@ -186,8 +186,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= modernTokens.breakpoint.desktopShell;
-  const isProductWide = width >= modernTokens.breakpoint.productDetailWide;
+  const isDesktop = width >= designTokens.breakpoint.desktopShell;
+  const isProductWide = width >= designTokens.breakpoint.productDetailWide;
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
@@ -379,12 +379,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   );
   const itemStory = (
     <EditorialSection title="О предмете">
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         {product.story ? <AppText role="body">{product.story}</AppText> : null}
         {product.provenance ? (
           <>
             <Separator />
-            <View style={{ gap: modernTokens.space.x1 }}>
+            <View style={{ gap: designTokens.space.x1 }}>
               <AppText role="label">Происхождение</AppText>
               <AppText role="bodySmall" tone="secondary">
                 {product.provenance}
@@ -398,7 +398,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              gap: modernTokens.space.x4,
+              gap: designTokens.space.x4,
             }}
           >
             <AppText role="bodySmall" tone="secondary">
@@ -427,7 +427,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           Загружаем историю ставок…
         </AppText>
       ) : bids.isError ? (
-        <View style={{ gap: modernTokens.space.x3 }}>
+        <View style={{ gap: designTokens.space.x3 }}>
           <AppText role="bodySmall" tone="secondary">
             Не удалось загрузить историю ставок.
           </AppText>
@@ -437,7 +437,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           />
         </View>
       ) : bids.data?.bids?.length ? (
-        <View style={{ gap: modernTokens.space.x3 }}>
+        <View style={{ gap: designTokens.space.x3 }}>
           {bids.data.bids.map((item: BidItem) => (
             <View
               key={item.id}
@@ -445,7 +445,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: modernTokens.space.x3,
+                gap: designTokens.space.x3,
               }}
             >
               <AppText role="bodySmall" tone="secondary">
@@ -466,7 +466,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   );
   const itemHistory = (
     <EditorialSection title="История предмета">
-      <View style={{ gap: modernTokens.space.x3 }}>
+      <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
         {product.year ? (
           <AppText role="bodySmall" tone="secondary">
@@ -497,7 +497,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
         !isProductWide && bidForm ? (
           <BottomActionBar
             summary={
-              <View style={{ gap: modernTokens.space.x1 }}>
+              <View style={{ gap: designTokens.space.x1 }}>
                 <AppText role="metadata" tone="secondary">
                   Минимальная ставка
                 </AppText>
@@ -525,29 +525,29 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: isDesktop
-            ? modernTokens.space.x8
-            : modernTokens.space.x5,
-          paddingVertical: modernTokens.space.x6,
+            ? designTokens.space.x8
+            : designTokens.space.x5,
+          paddingVertical: designTokens.space.x6,
           paddingBottom:
             !isProductWide && bidForm
-              ? modernTokens.space.x16
-              : modernTokens.space.x8,
+              ? designTokens.space.x16
+              : designTokens.space.x8,
         }}
         showsVerticalScrollIndicator={false}
       >
         <View
           style={{
             width: '100%',
-            maxWidth: modernTokens.layout.productDetailMaxWidth,
+            maxWidth: designTokens.layout.productDetailMaxWidth,
             alignSelf: 'center',
-            gap: modernTokens.space.x6,
+            gap: designTokens.space.x6,
           }}
         >
           <View
             style={{
               flexDirection: isProductWide ? 'row' : 'column',
               alignItems: 'flex-start',
-              gap: modernTokens.space.x6,
+              gap: designTokens.space.x6,
             }}
           >
             <View
@@ -555,7 +555,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 flex: isProductWide ? 1 : undefined,
                 minWidth: 0,
                 width: isProductWide ? undefined : '100%',
-                gap: modernTokens.space.x4,
+                gap: designTokens.space.x4,
               }}
             >
               <ProductGallery
@@ -569,10 +569,10 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 minWidth: 0,
                 width: isProductWide ? 360 : '100%',
                 maxWidth: '100%',
-                gap: modernTokens.space.x4,
+                gap: designTokens.space.x4,
               }}
             >
-              <View style={{ gap: modernTokens.space.x2 }}>
+              <View style={{ gap: designTokens.space.x2 }}>
                 <Link
                   href={
                     {
@@ -588,9 +588,9 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                     onPress={() => undefined}
                     style={{
                       alignSelf: 'flex-start',
-                      minHeight: modernTokens.size.touch,
+                      minHeight: designTokens.size.touch,
                       justifyContent: 'center',
-                      paddingHorizontal: modernTokens.space.x1,
+                      paddingHorizontal: designTokens.space.x1,
                     }}
                   >
                     <AppText role="metadata" tone="secondary">
@@ -612,7 +612,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 <View
                   style={
                     Platform.OS === 'web'
-                      ? { position: 'sticky', top: modernTokens.space.x6 }
+                      ? { position: 'sticky', top: designTokens.space.x6 }
                       : undefined
                   }
                 >
@@ -621,7 +621,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               ) : null}
             </View>
           </View>
-          <View style={{ gap: modernTokens.space.x4 }}>
+          <View style={{ gap: designTokens.space.x4 }}>
             {itemStory}
             {itemHistory}
             {bidHistory}

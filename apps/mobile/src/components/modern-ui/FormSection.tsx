@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 
@@ -15,18 +15,18 @@ export function FormSection({
   return (
     <View
       style={{
-        gap: modernTokens.space.x4,
-        borderRadius: modernTokens.radius.panel,
+        gap: designTokens.space.x4,
+        borderRadius: designTokens.radius.panel,
         borderWidth: 1,
-        borderColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        padding: modernTokens.space.x5,
+        borderColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x5,
       }}
     >
       <AppText role="metadata" tone="secondary">
         {title}
       </AppText>
-      <View style={{ gap: modernTokens.space.x3 }}>{children}</View>
+      <View style={{ gap: designTokens.space.x3 }}>{children}</View>
     </View>
   );
 }

@@ -1,19 +1,13 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { MotionPressable } from '../modern-ui';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const brandMark = require('../../../assets/branding/bidplace-mark-light.png');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const brandWordmark = require(
-  '../../../assets/branding/bidplace-wordmark-light.png',
-);
+const brandLogo = require('../../../assets/branding/bidplace-logo.png');
 
-export function BrandLogo({ compact = false }: { compact?: boolean }) {
-  const source = compact ? brandMark : brandWordmark;
-  const size = compact ? 32 : undefined;
+export function BrandLogo() {
   return (
     <Link href="/" asChild>
       <MotionPressable
@@ -21,24 +15,18 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
         accessibilityLabel="bidplace — на главную"
         preset="icon"
         style={{
-          width: compact ? modernTokens.size.touch : undefined,
-          height: compact ? modernTokens.size.touch : undefined,
-          minWidth: modernTokens.size.touch,
-          minHeight: modernTokens.size.touch,
-          flexDirection: 'row',
+          width: designTokens.size.touch,
+          height: designTokens.size.touch,
+          minWidth: designTokens.size.touch,
+          minHeight: designTokens.size.touch,
           alignItems: 'center',
           justifyContent: 'center',
-          gap: modernTokens.space.x2,
         }}
       >
         <Image
-          source={source}
+          source={brandLogo}
           contentFit="contain"
-          style={
-            compact
-              ? { width: size, height: size }
-              : { width: 180, height: 45 }
-          }
+          style={{ width: 38, height: 30 }}
         />
       </MotionPressable>
     </Link>

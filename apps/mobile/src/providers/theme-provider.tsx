@@ -4,7 +4,7 @@ import {
 } from '@react-navigation/native';
 import { type ReactNode } from 'react';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 // MVP is light-only. Dark mode is not implemented.
 // To add dark theme in the future: provide a new token map here, do not rewrite components.
@@ -12,12 +12,12 @@ const navigationTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: modernTokens.color.canvas,
-    card: modernTokens.color.surface,
-    primary: modernTokens.color.accent,
-    border: modernTokens.color.border,
-    text: modernTokens.color.ink,
-    notification: modernTokens.color.accent,
+    background: designTokens.color.canvas,
+    card: designTokens.color.surface,
+    primary: designTokens.color.accent,
+    border: designTokens.color.border,
+    text: designTokens.color.ink,
+    notification: designTokens.color.accent,
   },
 };
 

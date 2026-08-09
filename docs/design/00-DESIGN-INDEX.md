@@ -60,6 +60,7 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 | `05-DESIGN-HANDOFF.md`                          | обязательный процесс Pen → code → QA              |
 | `06-ASSET-INVENTORY.md`                         | разрешённые assets, fonts, icons и ограничения    |
 | `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | полный аудит, node registry и этапы реализации    |
+| `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 
 ## Обязательное чтение
 

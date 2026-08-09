@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 
@@ -23,7 +23,7 @@ export function AppDialog({
   children,
 }: AppDialogProps) {
   const { height } = useWindowDimensions();
-  const viewportGutter = modernTokens.space.x5;
+  const viewportGutter = designTokens.space.x5;
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const restoreFocus = useCallback(() => {
     if (Platform.OS !== 'web') return;
@@ -51,8 +51,8 @@ export function AppDialog({
           style={{
             position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
-            backgroundColor: modernTokens.color.overlay,
-            zIndex: modernTokens.layer.modal,
+            backgroundColor: designTokens.color.overlay,
+            zIndex: designTokens.layer.modal,
           }}
         />
         <View
@@ -62,7 +62,7 @@ export function AppDialog({
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: viewportGutter,
-            zIndex: modernTokens.layer.modal,
+            zIndex: designTokens.layer.modal,
             pointerEvents: 'box-none',
           }}
         >
@@ -86,11 +86,11 @@ export function AppDialog({
               width: '100%',
               maxWidth: 520,
               maxHeight: Math.max(height - viewportGutter * 2, 0),
-              gap: modernTokens.space.x4,
-              zIndex: modernTokens.layer.modal,
-              borderRadius: modernTokens.radius.panel,
-              backgroundColor: modernTokens.color.surface,
-              padding: modernTokens.space.x5,
+              gap: designTokens.space.x4,
+              zIndex: designTokens.layer.modal,
+              borderRadius: designTokens.radius.panel,
+              backgroundColor: designTokens.color.surface,
+              padding: designTokens.space.x5,
             }}
           >
             <ScrollView
@@ -99,8 +99,8 @@ export function AppDialog({
               nestedScrollEnabled
               showsVerticalScrollIndicator
               contentContainerStyle={{
-                gap: modernTokens.space.x4,
-                paddingBottom: modernTokens.space.x1,
+                gap: designTokens.space.x4,
+                paddingBottom: designTokens.space.x1,
               }}
             >
               <Dialog.Title asChild>
@@ -113,7 +113,7 @@ export function AppDialog({
                   </AppText>
                 </Dialog.Description>
               ) : null}
-              <View style={{ gap: modernTokens.space.x3 }}>{children}</View>
+              <View style={{ gap: designTokens.space.x3 }}>{children}</View>
             </ScrollView>
           </Dialog.Content>
         </View>

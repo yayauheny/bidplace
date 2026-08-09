@@ -1,6 +1,6 @@
 import { View, type ViewStyle } from 'react-native';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function Skeleton({ style }: { style?: ViewStyle }) {
   return (
@@ -8,8 +8,8 @@ export function Skeleton({ style }: { style?: ViewStyle }) {
       accessible={false}
       style={[
         {
-          backgroundColor: modernTokens.color.placeholder,
-          borderRadius: modernTokens.radius.small,
+          backgroundColor: designTokens.color.placeholder,
+          borderRadius: designTokens.radius.small,
         },
         style,
       ]}

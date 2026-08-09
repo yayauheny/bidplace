@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { modernTokens } from '@bidplace/design-tokens';
+import { designTokens } from '@bidplace/design-tokens';
 
 export function BottomActionBar({
   summary,
@@ -16,16 +16,16 @@ export function BottomActionBar({
     <View
       testID="mobile-bottom-action-bar"
       style={{
-        minHeight: modernTokens.size.buttonCompact + modernTokens.space.x3,
+        minHeight: designTokens.size.buttonCompact + designTokens.space.x3,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: modernTokens.space.x3,
+        gap: designTokens.space.x3,
         borderTopWidth: 1,
-        borderTopColor: modernTokens.color.border,
-        backgroundColor: modernTokens.color.surface,
-        paddingHorizontal: modernTokens.space.x5,
-        paddingTop: modernTokens.space.x1,
-        paddingBottom: Math.max(insets.bottom, modernTokens.space.x1),
+        borderTopColor: designTokens.color.border,
+        backgroundColor: designTokens.color.surface,
+        paddingHorizontal: designTokens.space.x5,
+        paddingTop: designTokens.space.x1,
+        paddingBottom: Math.max(insets.bottom, designTokens.space.x1),
       }}
     >
       <View style={{ flex: 1, minWidth: 0 }}>{summary}</View>
