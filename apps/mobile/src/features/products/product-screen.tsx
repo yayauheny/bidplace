@@ -28,7 +28,7 @@ import {
   Separator,
   TextField,
   MotionPressable,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';

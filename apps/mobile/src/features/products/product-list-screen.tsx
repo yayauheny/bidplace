@@ -15,7 +15,7 @@ import {
   AuctionCard,
   PageState,
   Skeleton,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
 

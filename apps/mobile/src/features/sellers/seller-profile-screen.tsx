@@ -16,7 +16,7 @@ import {
   SelectableRow,
   SecondaryButton,
   TextField,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import {
   FormPageColumns,
   FormPageShell,

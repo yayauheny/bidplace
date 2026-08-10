@@ -141,7 +141,7 @@ Responsive states должны быть согласованы до статус
 ## 7. Запрещённые подмены
 
 - Изменять Pen, чтобы он совпал с текущим кодом.
-- Принимать существующие `modernTokens` за новый visual source.
+- Принимать runtime `designTokens` за замену Pen/design documentation.
 - Добавлять fake content, fake bids, seller metrics или неподдержанные CTA.
 - Делать search/filter/dropdown визуально рабочими без честного contract state.
 - Использовать NFT, wallet, blockchain или marketplace semantics.

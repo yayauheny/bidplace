@@ -17,7 +17,7 @@ import {
   MotionPressable,
   PageState,
   ResilientRemoteImage,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
@@ -100,6 +100,7 @@ function AuthorHero({
       <AuthorPhoto url={photoUrl} name={name} />
       <View style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
         <AppText
+          accessibilityRole="header"
           role={compact ? 'screenTitle' : 'display'}
           style={{ textAlign: 'center' }}
         >

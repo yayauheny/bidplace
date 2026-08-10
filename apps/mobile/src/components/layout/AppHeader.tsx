@@ -5,7 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
-import { AppText, MotionPressable } from '../modern-ui';
+import { AppText, MotionPressable } from '../ui';
 import { AccountMenu } from './AccountMenu';
 import { BrandLogo } from './BrandLogo';
 
@@ -187,17 +187,19 @@ export function AppHeader() {
         <AccountMenu desktop={desktop} />
       </View>
       {!desktop ? (
-        <ScrollView
-          horizontal
-          contentContainerStyle={{
-            gap: designTokens.space.x2,
-            paddingHorizontal: designTokens.layout.mobileGutter,
-            paddingBottom: designTokens.space.x3,
-          }}
-          showsHorizontalScrollIndicator={false}
-        >
-          {links}
-        </ScrollView>
+        <View role="navigation" accessibilityLabel="Основная навигация">
+          <ScrollView
+            horizontal
+            contentContainerStyle={{
+              gap: designTokens.space.x2,
+              paddingHorizontal: designTokens.layout.mobileGutter,
+              paddingBottom: designTokens.space.x3,
+            }}
+            showsHorizontalScrollIndicator={false}
+          >
+            {links}
+          </ScrollView>
+        </View>
       ) : null}
     </View>
   );

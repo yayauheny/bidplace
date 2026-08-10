@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText } from '../modern-ui';
+import { AppText } from '../ui';
 import { BrandLogo } from './BrandLogo';
 import { getAuthLayoutGutter, getAuthLayoutMode } from './auth-layout';
 

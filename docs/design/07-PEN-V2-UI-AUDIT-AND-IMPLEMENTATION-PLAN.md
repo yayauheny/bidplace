@@ -441,14 +441,14 @@ card не реализует auction rules, а route не копирует share
 
 | Target             | Canonical Pen              | Primary current code                                                                     | Durable implementation owner             |
 | ------------------ | -------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Visual tokens      | measured styles            | `packages/design-tokens/src/modern.ts`                                                   | существующий token package               |
+| Visual tokens      | measured styles            | `packages/design-tokens/src/tokens.ts`                                                   | существующий token package               |
 | App shell          | `L9UV9`                    | `components/layout/AppShell.tsx`                                                         | shared layout composition                |
 | GlobalHeader       | `L9UV9`                    | `components/layout/AppHeader.tsx`, `AccountMenu.tsx`, `BrandLogo.tsx`, `OverlayHost.tsx` | один role-aware header                   |
-| AuctionCard        | `k5vYGf`                   | `components/modern-ui/AuctionCard.tsx`, `auction-card-layout.ts`                         | один public work-card component          |
+| AuctionCard        | `k5vYGf`                   | `components/ui/AuctionCard.tsx`, `auction-card-layout.ts`                                | один public work-card component          |
 | Browse Works       | `H5vf2`                    | `features/products/product-list-screen.tsx`, `catalog-layout.ts`                         | thin catalog screen                      |
 | CreatorCard        | `SrXPq`                    | нового production master нет                                                             | новый shared component рядом с public UI |
 | Browse Authors     | `N4ebBk`                   | route/list contract отсутствуют                                                          | blocked до IA/API decision               |
-| AuctionPlayer      | `X6Ksg`                    | `components/modern-ui/AuctionPanel.tsx`, Product bid state                               | один controlled transaction component    |
+| AuctionPlayer      | `X6Ksg`                    | `components/ui/AuctionPlayer.tsx`, Product bid state                                     | один controlled transaction component    |
 | ProductTabs        | `Jh9jr`                    | current Product composition                                                              | один accessible tabs component           |
 | Product screens    | `L7ytbv`, `cK8kD`, `XIzHe` | `features/products/product-screen.tsx`, `ProductGallery.tsx`, `EditorialSection.tsx`     | thin route composition                   |
 | Realtime/bid rules | visual states only         | `lib/use-listing-realtime.ts`, `features/products/bid-validation.ts`                     | сохраняются без visual duplication       |
@@ -456,8 +456,8 @@ card не реализует auction rules, а route не копирует share
 | Page states/media  | Pen state frames           | `PageState.tsx`, `ResilientRemoteImage.tsx`, `ImagePlaceholder.tsx`, `Skeleton.tsx`      | reused shared states                     |
 
 Новые файлы создаются только когда существующий owner действительно не может
-нести устойчивую ответственность. Нельзя переименовывать весь runtime слой до
-того, как migration доказала новую boundary.
+нести устойчивую ответственность. Runtime boundary подтверждена и использует
+единый `components/ui` без legacy bridge.
 
 ## 15. Work packages for the implementation agent
 

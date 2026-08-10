@@ -35,8 +35,22 @@ export function AppDialog({
   }, []);
 
   useEffect(() => {
-    return () => restoreFocus();
-  }, [restoreFocus]);
+    if (!open || Platform.OS !== 'web' || typeof document === 'undefined') {
+      return;
+    }
+    const focusTimer = window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>(
+          '[role="dialog"] input:not([disabled]), [role="dialog"] textarea:not([disabled]), [role="dialog"] select:not([disabled]), [role="dialog"] button:not([disabled]), [role="dialog"] a[href]',
+        )
+        ?.focus();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      restoreFocus();
+    };
+  }, [open, restoreFocus]);
 
   return (
     <Dialog.Root
@@ -69,11 +83,10 @@ export function AppDialog({
           <Dialog.Content
             asChild
             onOpenAutoFocus={() => {
-              if (
-                Platform.OS === 'web' &&
-                typeof document !== 'undefined' &&
-                document.activeElement instanceof HTMLElement
-              ) {
+              if (Platform.OS !== 'web' || typeof document === 'undefined') {
+                return;
+              }
+              if (document.activeElement instanceof HTMLElement) {
                 returnFocusRef.current = document.activeElement;
               }
             }}

@@ -25,19 +25,29 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
 
       await page.goto('/');
-      await expect(page.getByRole('heading', { name: 'Каталог' })).toHaveCount(
-        0,
-      );
+      await expect(
+        page.getByTestId('app-shell-content').getByText('Работы', {
+          exact: true,
+        }),
+      ).toBeVisible();
       if (width === 390) {
         const mobileNavigation = page.getByLabel('Основная навигация');
+        const pageTitle = page
+          .getByTestId('app-shell-content')
+          .getByText('Работы', { exact: true });
         const firstCard = page.locator('a[href^="/product/"]').first();
         const navigationBox = await mobileNavigation.boundingBox();
+        const pageTitleBox = await pageTitle.boundingBox();
         const firstCardBox = await firstCard.boundingBox();
         expect(navigationBox).not.toBeNull();
+        expect(pageTitleBox).not.toBeNull();
         expect(firstCardBox).not.toBeNull();
-        expect(
-          firstCardBox!.y - (navigationBox!.y + navigationBox!.height),
-        ).toBeLessThan(56);
+        expect(pageTitleBox!.y).toBeGreaterThan(
+          navigationBox!.y + navigationBox!.height,
+        );
+        expect(firstCardBox!.y).toBeGreaterThan(
+          pageTitleBox!.y + pageTitleBox!.height,
+        );
       }
       const catalogCards = page.locator('a[href^="/product/"]');
       await expect(catalogCards).toHaveCount(seededProducts.length);

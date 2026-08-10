@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText } from '../modern-ui';
+import { AppText } from '../ui';
 import { useAuth } from '../../providers/auth-provider';
 
 type ProtectedRouteProps = {

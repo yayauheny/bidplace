@@ -21,16 +21,16 @@
   card hover, button/menu/tab/sticky motion, artwork-derived blur/atmosphere and
   reduced-motion rules are recorded in design docs. These references do not add
   wallet/NFT/crypto or unsupported marketplace behavior.
-- `Not implemented`: production UI still uses the current functional visual
-  system. GlobalHeader, Home, Browse Works/Authors, Product states and Creator
-  Profile have not been migrated to Pen v2.
+- `Implemented`: production UI uses Pen v2 foundation for GlobalHeader, Browse
+  Works, Product states, Creator Profile, auth, seller editors and supporting
+  routes. Home and Browse Authors remain blocked by explicit route/data
+  decisions rather than simulated UI.
 - `Needs decision`: Home/Works routing, Authors directory/API,
   search/filter/sort contracts, creation-process data and multiple public social
   links. Pen does not authorize these product or API changes.
-- `Needs verification`: WP0 still needs semantic token clustering, runtime
-  Onest/Inter proof, instance audit, fixed-scale exports and approved 1024/390
-  compositions. After implementation, founder/designer visual acceptance,
-  responsive/motion evidence, accessibility and full affected checks remain.
+- `Verified`: semantic tokens, Onest/Inter runtime loading, 1440/1024/390
+  compositions, focused accessibility behavior, E2E and production Expo export.
+  Founder/device visual acceptance remains a release gate.
 
 ## Test/demo author media — 2026-08-05
 
@@ -38,8 +38,8 @@
 
 ## Resilient remote media — 2026-08-05
 
-- `Implemented`: `apps/mobile/src/components/modern-ui/ResilientRemoteImage.tsx` centralizes public and seller/admin remote-image loading. It shows the existing layout-preserving placeholder on failure, retries at 1/3/8 seconds with a bounded three-retry schedule, changes the request URL/key for each retry, resets on successful load or URL change, and exposes a final `Повторить` action after the automatic retry budget is exhausted. Local `ImagePicker` previews remain outside this network retry path.
-- `Implemented`: `apps/mobile/src/components/modern-ui/media-recovery.ts` owns the retry state machine, cache-bust URL construction and query-string-free diagnostic sanitization. Development failures emit structured `media_load_failed` records without cookies, tokens or other URL query credentials.
+- `Implemented`: `apps/mobile/src/components/ui/ResilientRemoteImage.tsx` centralizes public and seller/admin remote-image loading. It shows the existing layout-preserving placeholder on failure, retries at 1/3/8 seconds with a bounded three-retry schedule, changes the request URL/key for each retry, resets on successful load or URL change, and exposes a final `Повторить` action after the automatic retry budget is exhausted. Local `ImagePicker` previews remain outside this network retry path.
+- `Implemented`: `apps/mobile/src/components/ui/media-recovery.ts` owns the retry state machine, cache-bust URL construction and query-string-free diagnostic sanitization. Development failures emit structured `media_load_failed` records without cookies, tokens or other URL query credentials.
 - `Implemented`: AuctionCard, ProductGallery, public AuthorPhoto, admin Product media and remote seller/Product-draft previews use the shared component. `apps/mobile/e2e/media-resilience.spec.ts` covers first guest opening, aborted media recovery, bounded retries, diagnostic logs and manual recovery; the state-machine suite covers success, URL reset and cache-bust behavior.
 - `Verified`: mobile typecheck/lint, media recovery unit 5/5 and targeted Chromium media resilience 2/2 passed on 2026-08-05. The API media terminal `@Res()` fix remains separate and unchanged.
 
@@ -71,7 +71,7 @@
 
 - `Implemented`: `apps/api/src/images/images.controller.ts` and `apps/api/src/sellers/sellers.controller.ts` use terminal `@Res()` handling for manual binary responses. `apps/api/test/integration/media-transport.integration.spec.ts` requests an approved Product image and public SellerProfile photo anonymously, verifies `200`, `image/png` and exact bytes, then makes another API request after each response to cover the server lifecycle after media delivery.
 - `Implemented`: `apps/mobile/src/features/admin/admin-moderation-screen.tsx` disables Product approval until the related SellerProfile is `APPROVED`, shows `Сначала одобрите автора`, refreshes both moderation queues after SellerProfile approval, and reports Product mutation errors according to the actual action. A new action clears the previous error state.
-- `Implemented`: `apps/mobile/src/components/modern-ui/AppDialog.tsx` expresses `pointerEvents` through the style object, removing the web warning without changing dialog behavior.
+- `Implemented`: `apps/mobile/src/components/ui/AppDialog.tsx` expresses `pointerEvents` through the style object, removing the web warning without changing dialog behavior.
 - `Verified`: API unit 136/136, PostgreSQL integration 38/38, mobile typecheck/lint, and the relevant Chromium moderation scenario 5/5 passed on 2026-08-05. No product rule, API contract, seed behavior or architecture boundary changed.
 
 ## Wave A — structural responsive fixes — 2026-08-02

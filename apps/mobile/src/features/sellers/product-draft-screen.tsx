@@ -21,7 +21,7 @@ import {
   SecondaryButton,
   TextButton,
   TextField,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';

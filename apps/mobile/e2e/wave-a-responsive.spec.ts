@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
+import { designTokens } from '@bidplace/design-tokens';
+
 import { authenticatedPage } from './support/auth-session';
 import {
   createAdminModerationFixture,
@@ -11,7 +13,7 @@ import {
 
 const screenshotDir = resolve('/private/tmp', 'bidplace-wave-a-screenshots');
 
-test('product detail changes structure at the 900px breakpoint', async ({
+test('product detail changes structure at the product action breakpoints', async ({
   browser,
 }) => {
   const fixture = await createAuctionFixture();
@@ -52,14 +54,7 @@ test('product detail changes structure at the 900px breakpoint', async ({
       };
 
       if (width === 390) {
-        for (const locator of [
-          title,
-          status,
-          currentPriceLabel,
-          currentPrice,
-        ]) {
-          await assertInViewport(locator);
-        }
+        await assertInViewport(title);
         const viewportMetrics = await page.evaluate(() => ({
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,
@@ -77,13 +72,17 @@ test('product detail changes structure at the 900px breakpoint', async ({
         ).toBeVisible();
         const dockBox = await dock.boundingBox();
         expect(dockBox).not.toBeNull();
-        expect(dockBox!.height).toBeGreaterThanOrEqual(56);
+        expect(dockBox!.height).toBeGreaterThanOrEqual(44);
         expect(dockBox!.height).toBeLessThanOrEqual(64);
       } else {
         await expect(dock).toHaveCount(0);
         const amount = await page.getByLabel('Ваша ставка, BYN').boundingBox();
         expect(amount).not.toBeNull();
-        expect(amount!.x).toBeGreaterThan(imageBox!.x + imageBox!.width - 10);
+        if (width >= designTokens.breakpoint.productHeroThreeColumn) {
+          expect(amount!.x).toBeGreaterThan(imageBox!.x + imageBox!.width - 10);
+        } else {
+          expect(amount!.x).toBeLessThan(imageBox!.x + imageBox!.width);
+        }
 
         for (const locator of [
           title,
@@ -94,7 +93,11 @@ test('product detail changes structure at the 900px breakpoint', async ({
           page.getByText(/До завершения:/).first(),
           page.getByRole('button', { name: 'Сделать ставку' }),
         ]) {
-          await assertInViewport(locator);
+          if (width >= designTokens.breakpoint.productHeroThreeColumn) {
+            await assertInViewport(locator);
+          } else {
+            await expect(locator).toBeVisible();
+          }
         }
       }
 

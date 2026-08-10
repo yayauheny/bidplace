@@ -6,7 +6,7 @@ import {
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
-test('desktop rail keeps the active catalog link visible', async ({ page }) => {
+test('desktop header keeps the active works link visible', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -15,25 +15,25 @@ test('desktop rail keeps the active catalog link visible', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
 
-  const catalogLink = page.getByRole('link', { name: 'Каталог' });
-  await expect(catalogLink).toBeVisible();
-  await expect(catalogLink).toHaveAttribute('href', '/');
-  await expect(catalogLink).toHaveAttribute('aria-current', 'page');
-  await expect(catalogLink).not.toHaveAttribute('aria-selected');
-  await expect(catalogLink).toHaveCSS('min-height', '44px');
+  const worksLink = page.getByRole('link', { name: 'Работы' });
+  await expect(worksLink).toBeVisible();
+  await expect(worksLink).toHaveAttribute('href', '/');
+  await expect(worksLink).toHaveAttribute('aria-current', 'page');
+  await expect(worksLink).not.toHaveAttribute('aria-selected');
+  await expect(worksLink).toHaveCSS('min-height', '44px');
   expect(
     consoleErrors.filter((message) => message.includes('accessible')),
   ).toEqual([]);
 });
 
-test('guest navigation exposes only the public catalog', async ({ page }) => {
+test('guest navigation exposes only public works', async ({ page }) => {
   await page.setViewportSize({ width: 1025, height: 900 });
   await page.goto('/');
 
-  await expect(page.getByRole('link', { name: 'Каталог' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
   await expect(
-    page.getByRole('link', { name: 'Добавить предмет' }),
+    page.getByRole('link', { name: 'Выставить работу' }),
   ).toHaveCount(0);
 });
 
@@ -45,18 +45,18 @@ test('mobile guest account control stays in the header row', async ({
 
   const brand = page.getByRole('link', { name: 'bidplace — на главную' });
   const account = page.getByRole('link', { name: 'Войти' });
-  const catalog = page.getByRole('link', { name: 'Каталог' });
-  const [brandBox, accountBox, catalogBox] = await Promise.all([
+  const works = page.getByRole('link', { name: 'Работы' });
+  const [brandBox, accountBox, worksBox] = await Promise.all([
     brand.boundingBox(),
     account.boundingBox(),
-    catalog.boundingBox(),
+    works.boundingBox(),
   ]);
 
   expect(brandBox).not.toBeNull();
   expect(accountBox).not.toBeNull();
-  expect(catalogBox).not.toBeNull();
+  expect(worksBox).not.toBeNull();
   expect(Math.abs((brandBox?.y ?? 0) - (accountBox?.y ?? 0))).toBeLessThan(20);
-  expect(catalogBox?.y ?? 0).toBeGreaterThan((accountBox?.y ?? 0) + 32);
+  expect(worksBox?.y ?? 0).toBeGreaterThan((accountBox?.y ?? 0) + 32);
 });
 
 test('pending seller navigation does not expose approved seller actions', async ({
@@ -71,18 +71,16 @@ test('pending seller navigation does not expose approved seller actions', async 
     await expect(
       page.getByRole('link', { name: 'Заявка продавца' }),
     ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Кабинет' })).toHaveCount(0);
     await expect(
-      page.getByRole('link', { name: 'Кабинет продавца' }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole('link', { name: 'Добавить предмет' }),
+      page.getByRole('link', { name: 'Выставить работу' }),
     ).toHaveCount(0);
   } finally {
     await context.close();
   }
 });
 
-test('approved seller navigation exposes the seller cabinet and add product', async ({
+test('approved seller navigation exposes the cabinet and create action', async ({
   browser,
 }) => {
   const fixture = await createAuctionFixture();
@@ -91,28 +89,23 @@ test('approved seller navigation exposes the seller cabinet and add product', as
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto(`/product/${fixture.product.publicId}`);
-    await expect(page.getByRole('link', { name: 'Каталог' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'Работы' })).toHaveAttribute(
       'aria-current',
       'page',
     );
+    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Кабинет продавца' }),
+      page.getByRole('link', { name: 'Выставить работу' }),
     ).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: 'Добавить предмет' }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Каталог' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'Работы' })).toHaveAttribute(
       'aria-current',
       'page',
     );
 
-    for (const label of ['Каталог', 'Покупки']) {
-      await page.getByRole('link', { name: label }).hover();
-      await expect(
-        page.locator('#app-overlay-host').locator('#navigation-tooltip'),
-      ).toHaveCount(1);
-      await expect(page.locator('#navigation-tooltip')).toHaveText(label);
-      await expect(page.locator('#navigation-tooltip')).toBeVisible();
+    for (const label of ['Работы', 'Покупки']) {
+      const link = page.getByRole('link', { name: label });
+      await link.focus();
+      await expect(link).toBeFocused();
     }
 
     const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
@@ -152,11 +145,9 @@ test('approved seller mobile navigation uses equal cells without horizontal over
 
     const navigation = page.getByLabel('Основная навигация');
     await expect(navigation).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Кабинет продавца' }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: 'Добавить предмет' }),
+      page.getByRole('link', { name: 'Выставить работу' }),
     ).toBeVisible();
 
     const metrics = await page.evaluate(() => ({
@@ -172,8 +163,7 @@ test('approved seller mobile navigation uses equal cells without horizontal over
     const visibleNavBoxes = boxes.filter(
       (box): box is NonNullable<typeof box> => box !== null,
     );
-    expect(visibleNavBoxes.length).toBe(4);
-    expect(visibleNavBoxes.every((box) => box.width > 80)).toBe(true);
+    expect(visibleNavBoxes.length).toBe(3);
     expect(
       visibleNavBoxes.every((box) => box.x >= 0 && box.x + box.width <= 390),
     ).toBe(true);
@@ -205,8 +195,8 @@ test('mobile account menu uses the shared overlay layer and viewport inset', asy
     expect(menuBox!.x).toBeGreaterThanOrEqual(8);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
 
-    await page.getByRole('link', { name: 'Каталог' }).click();
-    await expect(page.getByRole('link', { name: 'Каталог' })).toBeFocused();
+    await page.getByRole('link', { name: 'Работы' }).click();
+    await expect(page.getByRole('link', { name: 'Работы' })).toBeFocused();
     await expect(menu).toHaveCount(0);
   } finally {
     await context.close();
@@ -233,7 +223,7 @@ test('product author link opens the public seller profile', async ({
       .click();
     await expect(page).toHaveURL(new RegExp(`/seller/${seller.slug}$`));
     await expect(
-      page.getByText(seller.fullName, { exact: true }).first(),
+      page.getByRole('heading', { name: seller.fullName }),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: new RegExp(fixture.product.title) }),

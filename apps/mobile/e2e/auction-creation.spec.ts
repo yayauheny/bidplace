@@ -132,7 +132,11 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       )
       .toBeGreaterThan(0);
     await expect(page.getByText('Торги запланированы').first()).toBeVisible();
-    await expect(page.getByText(/Автор:/).first()).toBeVisible();
+    await expect(
+      page.getByRole('link', {
+        name: `Открыть профиль автора ${publicPayload.sellerProfile.fullName}`,
+      }),
+    ).toBeVisible();
     await expect(page.getByText('Обновления подключены')).toHaveCount(0);
     await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
   } finally {

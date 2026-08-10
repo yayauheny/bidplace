@@ -10,7 +10,7 @@ import {
   AppText,
   MotionPressable,
   SecondaryButton,
-} from '../modern-ui';
+} from '../ui';
 import { OverlayPortal } from './OverlayHost';
 
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {

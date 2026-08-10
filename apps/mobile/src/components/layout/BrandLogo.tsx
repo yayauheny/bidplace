@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { MotionPressable } from '../modern-ui';
+import { MotionPressable } from '../ui';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const brandLogo = require('../../../assets/branding/bidplace-logo.png');

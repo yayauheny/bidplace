@@ -9,7 +9,7 @@ import {
   PrimaryButton,
   TextButton,
   TextField,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { useAuth } from '../../providers/auth-provider';
 import { getUserFacingErrorMessage } from '../../lib/errors';
 import {

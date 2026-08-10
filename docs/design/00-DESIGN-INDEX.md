@@ -77,7 +77,7 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 - удалённый `docs/modern-ui/`;
 - старый `design/pen/bidplace-web.pen`;
 - `design/pen/target-solution/bidplace-youthful.pen`;
-- production `modernTokens` и существующие компоненты;
+- runtime `designTokens` и существующие компоненты сами по себе;
 - исторические screenshots, prompts и audit snapshots;
 - внешние сайты и изображения вне approved registry в `06`/`DEC-064`.
 

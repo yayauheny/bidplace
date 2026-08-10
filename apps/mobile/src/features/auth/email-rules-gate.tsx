@@ -8,7 +8,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   TextField,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { designTokens } from '@bidplace/design-tokens';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';

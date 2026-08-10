@@ -19,7 +19,7 @@ import {
   SecondaryButton,
   TextButton,
   TextField,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getApiAssetUrl } from '../../lib/environment';
 import {

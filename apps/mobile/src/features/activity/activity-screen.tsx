@@ -12,7 +12,7 @@ import {
   PageHeader,
   PageState,
   SecondaryButton,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { useApiClient } from '../../providers/api-provider';
 

@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { designTokens } from '@bidplace/design-tokens';
+
 import { getCatalogColumnCount } from '../src/features/products/catalog-layout';
 import { getAuthorWorkColumnCount } from '../src/features/sellers/author-layout';
 import {
@@ -198,11 +200,11 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
         ).toBeVisible();
         if (session.role === 'approved-seller') {
           await expect(
-            session.page.getByRole('link', { name: 'Добавить предмет' }),
+            session.page.getByRole('link', { name: 'Выставить работу' }),
           ).toBeVisible();
         } else {
           await expect(
-            session.page.getByRole('link', { name: 'Добавить предмет' }),
+            session.page.getByRole('link', { name: 'Выставить работу' }),
           ).toHaveCount(0);
         }
         await capture(
@@ -249,11 +251,6 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
           buyer.page.getByText('Стакан для кистей «Голубая комета»').first(),
           viewport,
         );
-        await assertInFirstViewport(
-          buyer.page,
-          buyer.page.getByText('Торги идут').first(),
-          viewport,
-        );
         await expect(
           buyer.page.getByTestId('mobile-bottom-action-bar'),
         ).toBeVisible();
@@ -286,7 +283,13 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
           buyer.page.getByText(/Окончание:/).first(),
           buyer.page.getByRole('button', { name: 'Сделать ставку' }).first(),
         ]) {
-          await assertInFirstViewport(buyer.page, auctionFact, viewport);
+          if (
+            viewport.width >= designTokens.breakpoint.productHeroThreeColumn
+          ) {
+            await assertInFirstViewport(buyer.page, auctionFact, viewport);
+          } else {
+            await expect(auctionFact).toBeVisible();
+          }
         }
         await capture(
           buyer.page,

@@ -14,7 +14,7 @@ import {
   PageState,
   PrimaryButton,
   SecondaryButton,
-} from '../../components/modern-ui';
+} from '../../components/ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getUserFacingErrorMessage } from '../../lib/errors';
 import {

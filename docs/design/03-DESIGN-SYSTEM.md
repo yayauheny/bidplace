@@ -60,9 +60,9 @@ Exact semantic token names and repeated-value clustering выполняются 
 Card dimensions in the table are canonical screen variants; the reusable
 `k5vYGf` reference below remains 322×456. Implementation selects the measured
 variant by canonical consumer, not by stretching one card with arbitrary CSS.
-Onest/Inter weights, Cyrillic coverage, licenses and fallback metrics должны
-быть подтверждены до runtime cutover. Текущие `modernTokens` — только migration
-input и не являются authority.
+Onest/Inter weights and Cyrillic coverage подтверждены runtime-сборкой.
+`designTokens` в `packages/design-tokens/src/tokens.ts` — единственный runtime
+контракт; визуальным authority остаётся immutable Pen v2.
 
 ## 3. Canonical components
 
@@ -208,8 +208,7 @@ complete if it matches only the 1440 frame.
 
 ## 7. Old system boundary
 
-`docs/modern-ui` and its design language are retired. Existing runtime modules
-named `modern-ui` remain only because they contain current production behavior;
-they may be refactored incrementally but cannot be cited as the new visual
-specification. No compatibility layer or second token system should survive the
-final cutover.
+`docs/modern-ui` and its design language are retired. Runtime components живут
+в `apps/mobile/src/components/ui`; параллельного legacy component/token layer
+нет. `components/ui` реализует текущую систему, но не заменяет Pen и design docs
+как визуальный source of truth.

@@ -24,9 +24,9 @@
 | WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa`    |
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
 | WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
-| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | текущий этап |
-| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | текущий этап |
-| WP8 — cleanup and full QA           | Ожидает                | Удаление legacy visual layer и regression QA       | —            |
+| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7`    |
+| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042`    |
+| WP8 — cleanup and full QA           | Готово                 | Единый UI layer и полный regression QA             | текущий этап |
 
 ## Выполнено
 
@@ -151,13 +151,32 @@ Commit: `b4f51b4`.
 Проверки: typecheck, lint, order handoff E2E, полный Wave One moderation E2E и
 route-matrix на 1440×900/1024×900/390×844.
 
+Commit: `2f6b042`.
+
+### 2026-08-10 — WP8 Cleanup and full QA
+
+- Runtime-компоненты перенесены из временного `components/modern-ui` в
+  канонический `components/ui`; все рабочие imports обновлены.
+- Подтверждено отсутствие параллельных token/component systems: приложение
+  использует один `designTokens` contract и один UI component layer.
+- Acceptance-сценарии синхронизированы с Pen v2 terminology, горизонтальным
+  header, вкладками Product и актуальными responsive breakpoints.
+- `AppDialog` получил детерминированный initial focus, focus containment и
+  возврат фокуса на исходное действие; профиль автора — семантический heading.
+- Canonical Pen не менялся: SHA-256 совпадает с зафиксированным baseline, diff
+  отсутствует.
+
+Проверки: typecheck, lint, 19 unit suites / 107 tests, 35 Playwright E2E,
+production Expo export для web/iOS/Android, `git diff --check`, Pen SHA-256 и
+Pen diff guard.
+
 ## Текущая работа
 
-### WP8 — Cleanup and full QA
+### Release acceptance
 
-- удалить legacy visual naming и устаревшие acceptance-ожидания;
-- проверить отсутствие параллельных token/component систем;
-- выполнить полный mobile test/lint/typecheck/build и canonical Pen integrity.
+- founder visual review по canonical Pen и реальным данным;
+- smoke check на физических iOS/Android устройствах;
+- отдельные продуктовые решения для заблокированных новых routes/contracts.
 
 ## Заблокировано решениями продукта
 
@@ -173,5 +192,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Зафиксировать supporting routes отдельным commit, затем выполнить WP8 cleanup и
-полный regression QA.
+Зафиксировать WP8 отдельным commit, затем провести founder/device acceptance и
+принимать Home/Authors/search/filter/sort только после утверждения их contracts.
