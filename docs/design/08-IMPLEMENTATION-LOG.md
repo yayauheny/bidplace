@@ -16,17 +16,17 @@
 
 ## Статус этапов
 
-| Этап                                | Статус                 | Результат                                          | Commit       |
-| ----------------------------------- | ---------------------- | -------------------------------------------------- | ------------ |
-| WP0 — canonical baseline            | Готово                 | Pen v2, аудит и новая структура docs зафиксированы | `ef5b7c2`    |
-| WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784`    |
-| WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784`    |
-| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa`    |
-| WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —            |
-| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8`    |
-| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7`    |
-| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042`    |
-| WP8 — cleanup and full QA           | Готово                 | Единый UI layer и полный regression QA             | текущий этап |
+| Этап                                | Статус                 | Результат                                          | Commit    |
+| ----------------------------------- | ---------------------- | -------------------------------------------------- | --------- |
+| WP0 — canonical baseline            | Готово                 | Pen v2, аудит и новая структура docs зафиксированы | `ef5b7c2` |
+| WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784` |
+| WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784` |
+| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa` |
+| WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —         |
+| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8` |
+| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7` |
+| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042` |
+| WP8 — cleanup and full QA           | Готово                 | Единый UI layer и полный regression QA             | `a1beb72` |
 
 ## Выполнено
 
@@ -192,5 +192,5 @@ product detail и существующий public seller route.
 
 ## Следующая контрольная точка
 
-Зафиксировать WP8 отдельным commit, затем провести founder/device acceptance и
-принимать Home/Authors/search/filter/sort только после утверждения их contracts.
+Провести founder/device acceptance и принимать Home/Authors/search/filter/sort
+только после утверждения их contracts.
