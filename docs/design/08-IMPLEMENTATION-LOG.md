@@ -23,10 +23,11 @@
 | WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784` |
 | WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa` |
 | WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —         |
-| WP5 — Product                       | Готово                 | About/Creation/Bids и AuctionPlayer                | `eaa0dd8` |
+| WP5 — Product                       | Готово                 | About/Creation/Bids, URL tabs, related works       | `a5af90f` |
 | WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7` |
 | WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042` |
 | WP8 — cleanup and full QA           | Готово                 | Единый UI layer и полный regression QA             | `a1beb72` |
+| WP9 — backend/security audit        | Готово                 | Public boundaries, uploads and private bid aliases | `84336e9` |
 
 ## Выполнено
 
@@ -89,6 +90,21 @@ active navigation сохраняют геометрию и семантику. C
 отдельный Product composition E2E на 1440×900/390×844.
 
 Commit: `eaa0dd8`.
+
+### 2026-08-10 — Product completion audit
+
+- ProductTabs переведены с route-local state на URL как единый источник:
+  `?tab=creation` и `?tab=bids` поддерживают deep link и browser back; invalid
+  значения безопасно возвращают About.
+- Явный `aria-selected` дополняет tab/tablist/tabpanel contract.
+- About получил блок реальных публичных работ того же автора. Текущий предмет
+  исключается, используется существующий public seller contract и один shared
+  `AuctionCardGrid`; recommendation ranking не выдумывается.
+
+Проверки: ProductTabs unit 11/11, Product/Creator focused unit 18/18,
+Product/Creator Playwright 2/2, typecheck и lint.
+
+Commits: `113f857`, `a5af90f`.
 
 ### 2026-08-10 — WP6
 
@@ -169,6 +185,26 @@ Commit: `2f6b042`.
 Проверки: typecheck, lint, 19 unit suites / 107 tests, 35 Playwright E2E,
 production Expo export для web/iOS/Android, `git diff --check`, Pen SHA-256 и
 Pen diff guard.
+
+### 2026-08-10 — Backend/security and test audit
+
+- Единый public Listing predicate теперь защищает public Bid history и
+  realtime joins теми же Product/SellerProfile status gates, что и каталог.
+- ProductImage перестаёт быть публичным при непубличном авторе или отсутствии
+  public Listing; cache-control вычисляется по фактической публичности.
+- Количество и суммарный объём изображений проверяются по всему Product внутри
+  serializable-транзакции, а не только на один multipart request.
+- Bidder alias стал детерминированным внутри Listing и различным между
+  Listings; внутренний `userId` больше не используется как публичный suffix.
+- Concurrent duplicate SellerProfile/slug возвращает предсказуемый conflict.
+- Протухшая абсолютная дата permission test заменена относительной; E2E seed
+  сверяет alias через публичный API, не копируя backend algorithm.
+
+Проверки: contracts 7/7, API unit 145/145, API PostgreSQL integration 39/39,
+mobile unit 113/113, полный Chromium Playwright 35/35, monorepo typecheck 7/7,
+lint 2/2 и production build 7/7.
+
+Commits: `84336e9`, `d9f0ed4`, `348ac36`.
 
 ## Текущая работа
 

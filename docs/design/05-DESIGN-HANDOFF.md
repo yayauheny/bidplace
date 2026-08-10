@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-08-10
 
-Статус: **Required workflow**
+Статус: **Approved runtime scope implemented; workflow remains mandatory**
 
 ## 1. Главный запрет
 
@@ -117,18 +117,34 @@ Pen diff: none
 
 ## 6. Acceptance checklist
 
-- [ ] canonical Pen file доступен и не изменён;
-- [ ] node IDs совпадают с реестром;
-- [ ] нет новых неподтверждённых product behaviors;
-- [ ] shared component не продублирован по routes;
-- [ ] server-authoritative auction state сохранён;
-- [ ] public/private data boundary сохранена;
-- [ ] required states и roles покрыты;
-- [ ] card media zoom не меняет bounds/grid и имеет focus/reduced-motion state;
-- [ ] buttons, menus, tabs, toast и sticky player используют shared motion tokens;
-- [ ] blur/atmosphere сохраняет sharp artwork, contrast и bounded performance;
-- [ ] responsive evidence приложено;
-- [ ] accessibility evidence приложено;
-- [ ] relevant checks зелёные;
-- [ ] design/project statuses обновлены;
-- [ ] `git diff --name-only` не содержит `.pen`.
+- [x] canonical Pen file доступен и не изменён;
+- [x] node IDs совпадают с реестром;
+- [x] нет новых неподтверждённых product behaviors;
+- [x] shared component не продублирован по routes;
+- [x] server-authoritative auction state сохранён;
+- [x] public/private data boundary сохранена;
+- [x] required states и roles покрыты;
+- [x] card media zoom не меняет bounds/grid и имеет focus/reduced-motion state;
+- [x] buttons, menus, tabs, toast и sticky player используют shared motion tokens;
+- [x] blur/atmosphere сохраняет sharp artwork, contrast и bounded performance;
+- [x] responsive automated evidence приложено;
+- [x] accessibility automated evidence приложено;
+- [x] relevant checks зелёные;
+- [x] design/project statuses обновлены;
+- [x] `git diff --name-only` не содержит `.pen`.
+
+## 7. Закрытие runtime handoff — 2026-08-10
+
+- Canonical SHA-256 до и после реализации:
+  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+- Реализованы GlobalHeader, Browse Works, AuctionCard, Product About/Creation/
+  Bids, AuctionPlayer, URL-backed ProductTabs, related creator works, Creator
+  Profile, auth, seller editors, Activity, Order и moderation.
+- Home, Browse Authors, search/filter/sort, отдельная Creation model и multiple
+  social links остаются заблокированы подтверждёнными IA/data decisions; fake
+  routes и controls не создавались.
+- Финальная автоматическая матрица: monorepo typecheck 7/7 workspaces, lint 2/2,
+  contracts 7/7, API unit 145/145, mobile unit 113/113, API PostgreSQL
+  integration 39/39, Chromium Playwright 35/35 и production build 7/7.
+- Остался внешний release gate: founder visual review и smoke на физических
+  iOS/Android устройствах. Он не маскируется как автоматизированный результат.

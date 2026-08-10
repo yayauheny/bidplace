@@ -2,7 +2,7 @@
 
 Последнее обновление: 2026-08-10
 
-Общий статус: **Pen v2 runtime migration implemented; final full-suite QA in progress**
+Общий статус: **Pen v2 approved runtime scope implemented and automated QA verified; founder/device acceptance pending**
 
 ## Текущий результат
 
@@ -24,7 +24,11 @@
   Works, Product/Auction, Creator Profile, auth, seller editors и supporting
   routes.
 - `Verified`: 1440/1024/390 runtime compositions, Onest/Inter loading,
-  responsive overflow, focused E2E and production Expo exports.
+  responsive overflow, Product URL/back tabs, related public works, focused E2E
+  and production Expo exports.
+- `Verified`: post-implementation API/security audit aligned public Product,
+  Bid history, realtime and image visibility; aggregate image limits are
+  transactional and bidder aliases are Listing-scoped.
 - `Needs decision`: route/IA для Home и Browse Authors, а также contracts для
   search/filter/sort/author directory и creation story.
 
@@ -49,7 +53,7 @@
 | AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid |
 | CreatorCard   | `SrXPq`  | not implemented as reusable production component             |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                 |
-| ProductTabs   | `Jh9jr`  | implemented accessible keyboard tabs                         |
+| ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history        |
 
 ## Legacy production state
 
@@ -62,11 +66,12 @@ remain protected by tests; runtime code does not replace Pen as visual authority
 1. Keep zero `.pen` diff and verify the canonical checksum after every UI stage.
 2. Resolve Home/Browse Authors/search/filter/sort data and route decisions before
    implementing those blocked surfaces.
-3. Complete full-suite regression QA and founder/device visual acceptance.
+3. Complete founder visual review and physical iOS/Android smoke acceptance.
 
 ## Definition of complete
 
-A screen can become `Implemented` only after visual comparison at 1440/1024/390,
-loading/empty/error/media states, keyboard/accessibility checks, affected
-typecheck/lint/tests/build and founder/designer acceptance. Documentation-only
+A screen can become code-level `Implemented` only after comparison at
+1440/1024/390, loading/empty/error/media states, keyboard/accessibility checks
+and affected typecheck/lint/tests/build. Release-level `Accepted` additionally
+requires founder/designer and physical-device approval. Documentation-only
 mapping or a desktop screenshot is insufficient.

@@ -2,9 +2,11 @@
 
 Последнее обновление: 2026-08-10
 
-Статус: **Audit ready; canonical Pen verified; baseline commit and WP0 acceptance required**
+Статус: **Approved runtime scope implemented and audited; automated QA green; external founder/device acceptance pending**
 
-Scope: документация и будущий refactor публичного web UI; код не изменён
+Scope: фактический Pen v2 cutover публичного web UI, supporting routes,
+post-implementation backend/security audit и честно заблокированные IA/data
+расширения
 
 ## 1. Цель
 
@@ -13,12 +15,12 @@ production UI через единую документацию и shared system,
 product contracts. Pen остаётся неизменяемым эталоном; все адаптации происходят
 в коде и документации.
 
-## 2. Критерии успеха будущей реализации
+## 2. Критерии успеха реализации
 
 - canonical Pen присутствует, читается и не имеет diff до/после работ;
 - exact tokens и anatomy извлечены из canonical nodes;
-- GlobalHeader, AuctionCard, CreatorCard, AuctionPlayer и ProductTabs имеют по
-  одному production master;
+- GlobalHeader, AuctionCard, AuctionPlayer и ProductTabs имеют по одному
+  production master; CreatorCard не создаётся без Authors route/API consumer;
 - все утверждённые публичные screens совпадают с Pen на 1440 и имеют
   согласованное поведение на 1024/390;
 - существующие auction, auth, roles, privacy, moderation и media behaviors не
@@ -35,8 +37,8 @@ product contracts. Pen остаётся неизменяемым эталоно�
 - Expo Router уже имеет `/`, `/product/[publicId]`, `/seller/[slug]`,
   `/me/activity`, `/order/[publicId]`, seller routes, `/admin`, `/login` и
   `/register`.
-- Desktop shell использует 72 px left rail, что структурно конфликтует с
-  horizontal GlobalHeader.
+- Baseline desktop shell использовал 72 px left rail; runtime теперь переведён
+  на horizontal GlobalHeader.
 - `/` сейчас является каталогом; отдельные Home и Authors directory отсутствуют.
 - Product list contract поддерживает page/limit, но не заявленные Pen search,
   sort и state filters.
@@ -63,14 +65,14 @@ product contracts. Pen остаётся неизменяемым эталоно�
 - Из canonical export подтверждены Onest/Inter, нейтральная палитра, header,
   controls, card geometry/type metrics и перечисленные node IDs.
 
-### Осталось проверить в WP0
+### Закрытие WP0 и внешний visual gate
 
-- exact clustering всех повторяющихся spacing/radius/type values в semantic
-  tokens;
-- master/instance integrity для всех variants и interaction-state nodes;
-- approved 1024/390 derivations, которых нет как полный canonical набор;
-- runtime files/licenses/weights/Cyrillic/fallback metrics для Onest и Inter;
-- fixed-scale screenshot fixtures для последующего pixel comparison.
+- semantic token clustering, runtime Onest/Inter weights, canonical node
+  registry, asset mapping и 1440/1024/390 runtime derivations зафиксированы;
+- automated screenshots покрывают route/role/state matrices, focus,
+  reduced-motion и responsive overflow;
+- полный founder-approved pixel overlay и physical iOS/Android smoke остаются
+  внешним release gate и не выдаются за автоматическую проверку.
 
 Старый `bidplace-web.pen` и `target-solution` не используются как замена.
 
@@ -186,19 +188,19 @@ author page, не seller dashboard.
 
 ## 5. CURRENT → TARGET gaps
 
-| Area               | Current                   | Target                          | Classification               |
-| ------------------ | ------------------------- | ------------------------------- | ---------------------------- |
-| Shell              | left rail + account row   | horizontal GlobalHeader         | visual/architecture refactor |
-| Home               | отсутствует               | long editorial landing          | IA/data decision             |
-| Works              | `/`, existing catalog     | 4-column discovery              | visual + contract gaps       |
-| Authors            | detail route only         | directory grid                  | route/API decision           |
-| Search/sort/filter | отсутствуют               | controls visible in Pen         | API/product decision         |
-| AuctionCard        | 4:5 media/current styling | 322 square media/light catalog  | shared visual refactor       |
-| Product            | current detail layout     | integrated hero/tabs/player     | shared + route refactor      |
-| Creation           | current value content     | staged process story            | data/content decision        |
-| Bids               | existing history          | compact table                   | compatible visual refactor   |
-| Creator            | basic public profile      | creator-first editorial profile | visual + public-link gap     |
-| Responsive         | current shell rules       | no verified v2 mobile frames    | design gate                  |
+| Area               | Runtime result                                      | Remaining target/gate                  | Classification        |
+| ------------------ | --------------------------------------------------- | -------------------------------------- | --------------------- |
+| Shell              | horizontal role-aware GlobalHeader                  | founder/device acceptance              | implemented           |
+| Home               | отсутствует                                         | route + real section queries           | blocked by IA/data    |
+| Works              | `/`, responsive 4/3/2/1 discovery                   | no unsupported controls                | implemented           |
+| Authors            | public detail route only                            | directory route/list API               | blocked by IA/API     |
+| Search/sort/filter | не показаны как рабочие                             | server contracts                       | blocked by product    |
+| AuctionCard        | shared square-media Pen v2 card                     | external visual acceptance             | implemented           |
+| Product            | hero, player, URL tabs, table, related public works | external visual acceptance             | implemented           |
+| Creation           | только подтверждённые Product fields                | separate process model                 | blocked expansion     |
+| Bids               | semantic table + Listing-scoped aliases             | —                                      | implemented           |
+| Creator            | creator-first public profile + shared work grid     | multiple social links only by decision | implemented           |
+| Responsive         | automated 1440/1024/390 matrices                    | physical iOS/Android smoke             | verified/pending ext. |
 
 ## 6. Решения и конфликты
 
@@ -207,7 +209,7 @@ author page, не seller dashboard.
 product boundaries: не добавляет Search, filters, Settings, saved items, new
 fields или API автоматически.
 
-До кода нужны решения:
+Для будущего расширения нужны отдельные решения:
 
 1. Home получает отдельный route или заменяет `/`?
 2. Какой route получает Works, если `/` становится Home?
@@ -240,19 +242,23 @@ product behavior сохраняется до проверенного atomic cut
 
 ### Phase 0 — restore and freeze design source
 
+**Статус: выполнено для code handoff; внешний founder pixel acceptance pending.**
+
 - [done] вернуть canonical v2 file по ожидаемому path без изменения байтов;
 - [done] зафиксировать checksum и защитное правило;
 - [done] прочитать canonical tree/measurements и экспортировать nodes read-only;
-- [remaining] принять восстановленный `.pen` и документы одним baseline commit;
-- [remaining] завершить semantic token clustering и instance audit;
-- [remaining] экспортировать fixed-scale acceptance frames;
-- сопоставить assets и responsive gaps;
-- получить решения из раздела 6 или явно выделить blocked scope.
+- [done] принять восстановленный `.pen` и документы baseline commit `ef5b7c2`;
+- [done] завершить semantic token clustering и runtime component mapping;
+- [done] сопоставить assets, font runtime и responsive gaps;
+- [done] явно выделить blocked scope по подтверждённым product decisions;
+- [external] founder-approved fixed-scale overlay и physical-device review.
 
 Выход: committed protected baseline, verified handoff pack, exact token table,
 approved scope. После baseline commit `.pen` diff всегда должен быть пустым.
 
 ### Phase 1 — foundation and GlobalHeader
+
+**Статус: выполнено (`cdfc784`).**
 
 - извлечь common typography/colors/spacing/radii/layout;
 - обновить один code token layer и shared primitives;
@@ -263,6 +269,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 Выход: shared foundation + header visual tests, без Pen diff.
 
 ### Phase 2 — AuctionCard and Browse Works
+
+**Статус: выполнено (`861b7aa`).**
 
 - реализовать `k5vYGf` на текущем Product/List contract;
 - покрыть image/loading/error/status/deadline states;
@@ -276,6 +284,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 
 ### Phase 3 — CreatorCard and Browse Authors
 
+**Статус: заблокировано подтверждённым отсутствием route/list API.**
+
 - реализовать `SrXPq` без fake metrics;
 - добавить directory route/API только после отдельного решения;
 - проверить public-only data, photo states и navigation.
@@ -283,6 +293,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 Выход: Authors screen либо честно зафиксированный blocked status.
 
 ### Phase 4 — AuctionPlayer and ProductTabs
+
+**Статус: выполнено (`eaa0dd8`, `113f857`).**
 
 - собрать единый `X6Ksg` поверх существующей bid state machine;
 - сохранить validation, confirmation, OTP/rules, idempotency, stale refetch,
@@ -293,6 +305,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 Выход: transaction primitives с unit/E2E evidence.
 
 ### Phase 5 — Product states
+
+**Статус: выполнено на подтверждённых данных (`eaa0dd8`, `a5af90f`).**
 
 - About `L7ytbv`;
 - добавить bounded artwork-derived blur/veil atmosphere там, где она поддержана
@@ -305,6 +319,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 
 ### Phase 6 — Creator Profile
 
+**Статус: выполнено (`0304ce7`).**
+
 - перенести `MqUMz` на public seller contract;
 - не показывать private handoff contact;
 - ограничить links текущим contract или реализовать отдельно утверждённое
@@ -315,6 +331,8 @@ approved scope. После baseline commit `.pen` diff всегда должен
 
 ### Phase 7 — Home
 
+**Статус: заблокировано DEC-057/IA/data decisions; fake Home не создан.**
+
 - начинать только после route/data decisions;
 - реализовать `BJd1P` секциями из реальных queries;
 - не вычислять Top/New из неполной client page;
@@ -323,6 +341,9 @@ approved scope. После baseline commit `.pen` diff всегда должен
 Выход: согласованный entry experience без конкурирующих route contracts.
 
 ### Phase 8 — remaining routes and cutover
+
+**Статус: выполнено для существующих routes (`af351b3`, `b4f51b4`,
+`2f6b042`, `a1beb72`). Founder/device acceptance остаётся внешним gate.**
 
 - распространить foundation/header на auth, Activity, Order, seller/admin
   routes по отдельным handoff rules;
@@ -358,15 +379,15 @@ approved scope. После baseline commit `.pen` diff всегда должен
   опасен для ставок.
 - Mock creator/social content может раскрыть или выдумать данные.
 
-## 11. Definition of ready
+## 11. Readiness closure
 
-UI implementation может начаться, когда restored source принят как repository
-baseline, canonical checksum зафиксирован,
-WP0 nodes/assets/font mapping завершён, responsive handoff согласован и каждый unresolved
-concept либо имеет decision/contract, либо явно исключён из phase scope.
+Code implementation gate закрыт: source принят baseline commit, checksum
+зафиксирован, nodes/assets/fonts mapped, responsive runtime evidence собрано, а
+каждый unsupported concept явно заблокирован без fake behavior. Правило
+неизменяемости любого `.pen` продолжает действовать после cutover.
 
-До этого разрешены только repository audit, documentation, contract mapping и
-подготовка test strategy. Редактирование любого `.pen` не разрешено.
+Release acceptance не смешивается с code readiness: founder visual review и
+physical-device smoke всё ещё должны быть записаны отдельно.
 
 ## 12. Engineering quality contract
 
@@ -439,21 +460,21 @@ card не реализует auction rules, а route не копирует share
 
 ## 14. Component reuse and code ownership map
 
-| Target             | Canonical Pen              | Primary current code                                                                     | Durable implementation owner             |
-| ------------------ | -------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Visual tokens      | measured styles            | `packages/design-tokens/src/tokens.ts`                                                   | существующий token package               |
-| App shell          | `L9UV9`                    | `components/layout/AppShell.tsx`                                                         | shared layout composition                |
-| GlobalHeader       | `L9UV9`                    | `components/layout/AppHeader.tsx`, `AccountMenu.tsx`, `BrandLogo.tsx`, `OverlayHost.tsx` | один role-aware header                   |
-| AuctionCard        | `k5vYGf`                   | `components/ui/AuctionCard.tsx`, `auction-card-layout.ts`                                | один public work-card component          |
-| Browse Works       | `H5vf2`                    | `features/products/product-list-screen.tsx`, `catalog-layout.ts`                         | thin catalog screen                      |
-| CreatorCard        | `SrXPq`                    | нового production master нет                                                             | новый shared component рядом с public UI |
-| Browse Authors     | `N4ebBk`                   | route/list contract отсутствуют                                                          | blocked до IA/API decision               |
-| AuctionPlayer      | `X6Ksg`                    | `components/ui/AuctionPlayer.tsx`, Product bid state                                     | один controlled transaction component    |
-| ProductTabs        | `Jh9jr`                    | current Product composition                                                              | один accessible tabs component           |
-| Product screens    | `L7ytbv`, `cK8kD`, `XIzHe` | `features/products/product-screen.tsx`, `ProductGallery.tsx`, `EditorialSection.tsx`     | thin route composition                   |
-| Realtime/bid rules | visual states only         | `lib/use-listing-realtime.ts`, `features/products/bid-validation.ts`                     | сохраняются без visual duplication       |
-| Creator Profile    | `MqUMz`                    | `features/sellers/public-seller-screen.tsx`, `author-layout.ts`                          | public profile composition               |
-| Page states/media  | Pen state frames           | `PageState.tsx`, `ResilientRemoteImage.tsx`, `ImagePlaceholder.tsx`, `Skeleton.tsx`      | reused shared states                     |
+| Target             | Canonical Pen              | Primary current code                                                                     | Durable implementation owner              |
+| ------------------ | -------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Visual tokens      | measured styles            | `packages/design-tokens/src/tokens.ts`                                                   | существующий token package                |
+| App shell          | `L9UV9`                    | `components/layout/AppShell.tsx`                                                         | shared layout composition                 |
+| GlobalHeader       | `L9UV9`                    | `components/layout/AppHeader.tsx`, `AccountMenu.tsx`, `BrandLogo.tsx`, `OverlayHost.tsx` | один role-aware header                    |
+| AuctionCard        | `k5vYGf`                   | `components/ui/AuctionCard.tsx`, `auction-card-layout.ts`                                | один public work-card component           |
+| Browse Works       | `H5vf2`                    | `features/products/product-list-screen.tsx`, `catalog-layout.ts`                         | thin catalog screen                       |
+| CreatorCard        | `SrXPq`                    | нового production master нет                                                             | новый shared component рядом с public UI  |
+| Browse Authors     | `N4ebBk`                   | route/list contract отсутствуют                                                          | blocked до IA/API decision                |
+| AuctionPlayer      | `X6Ksg`                    | `components/ui/AuctionPlayer.tsx`, Product bid state                                     | один controlled transaction component     |
+| ProductTabs        | `Jh9jr`                    | `components/ui/ProductTabs.tsx`, Product route URL state                                 | один accessible URL-backed tabs component |
+| Product screens    | `L7ytbv`, `cK8kD`, `XIzHe` | `features/products/product-screen.tsx`, `ProductGallery.tsx`, `EditorialSection.tsx`     | thin route composition                    |
+| Realtime/bid rules | visual states only         | `lib/use-listing-realtime.ts`, `features/products/bid-validation.ts`                     | сохраняются без visual duplication        |
+| Creator Profile    | `MqUMz`                    | `features/sellers/public-seller-screen.tsx`, `author-layout.ts`                          | public profile composition                |
+| Page states/media  | Pen state frames           | `PageState.tsx`, `ResilientRemoteImage.tsx`, `ImagePlaceholder.tsx`, `Skeleton.tsx`      | reused shared states                      |
 
 Новые файлы создаются только когда существующий owner действительно не может
 нести устойчивую ответственность. Runtime boundary подтверждена и использует
@@ -466,6 +487,8 @@ card не реализует auction rules, а route не копирует share
 
 ### WP0 — source verification and measurement
 
+**Результат: completed for runtime implementation; external visual sign-off pending.**
+
 **Вход:** восстановленный canonical Pen.
 
 **Работа:** checksum, `Get(node, depth: 4)`, exports, token/anatomy table,
@@ -474,8 +497,9 @@ asset mapping, desktop/tablet/mobile decisions.
 **Уже выполнено:** source restored, checksum/publication/canonical roots verified,
 read-only export сделан, logo asset reconciled, reference/motion rules записаны.
 
-**Осталось:** baseline commit, semantic token clustering, instance audit,
-fixed-scale exports, font/runtime proof и founder-approved 1024/390 compositions.
+**Закрыто:** baseline commit, semantic token clustering, instance/runtime map,
+font proof и automated 1440/1024/390 compositions. Founder-approved overlay и
+physical-device evidence остаются release acceptance, а не code blocker.
 
 **Не менять:** code и Pen.
 
@@ -484,6 +508,8 @@ visual guesswork for WP1–WP2.
 
 ### WP1 — tokens and primitives
 
+**Результат: completed.**
+
 **Files:** `packages/design-tokens`, font loading/theme provider, shared text,
 button, surface, focus and layout primitives.
 
@@ -491,6 +517,8 @@ button, surface, focus and layout primitives.
 theme; existing routes still render; contrast/focus/touch rules pass.
 
 ### WP2 — GlobalHeader
+
+**Результат: completed.**
 
 **Files:** `AppShell`, `AppHeader`, `AccountMenu`, `BrandLogo`, overlay geometry
 and focused tests.
@@ -501,6 +529,8 @@ focus return pass; no inaccessible route.
 
 ### WP3 — AuctionCard and Browse Works
 
+**Результат: completed.**
+
 **Files:** AuctionCard/layout tests, catalog layout and list screen.
 
 **Acceptance:** exact `k5vYGf` and `H5vf2`; one card implementation; real
@@ -509,6 +539,8 @@ unsupported controls do not pretend to work.
 
 ### WP4 — CreatorCard and Authors
 
+**Результат: blocked by confirmed IA/API scope; no unused component or mock route.**
+
 **Files:** new shared CreatorCard; route/client/contracts/API only after explicit
 decision.
 
@@ -516,6 +548,8 @@ decision.
 blocked rather than using mock authors when list contract is absent.
 
 ### WP5 — AuctionPlayer and ProductTabs
+
+**Результат: completed, включая URL/deep-link/back contract.**
 
 **Files:** controlled shared components plus existing bid validation/realtime
 integration.
@@ -526,6 +560,8 @@ existing bid E2E remains green.
 
 ### WP6 — Product About, Creation and Bids
 
+**Результат: completed on real contracts; related works reuse AuctionCardGrid.**
+
 **Files:** Product route composition, gallery/editorial blocks and history
 presentation.
 
@@ -535,6 +571,8 @@ works reuse AuctionCard.
 
 ### WP7 — Creator Profile
 
+**Результат: completed.**
+
 **Files:** public seller screen and layout tests.
 
 **Acceptance:** exact `MqUMz`; not a dashboard; private contact absent; links
@@ -542,12 +580,18 @@ limited to contract; works reuse AuctionCard.
 
 ### WP8 — Home and remaining routes
 
+**Результат:** existing routes migrated; Home/Authors expansion blocked by the
+documented gate.
+
 **Gate:** approved IA/data contracts and inheritance rules.
 
 **Acceptance:** exact `BJd1P` with real queries; no incomplete-page rankings;
 all existing routes use the shared foundation without a hybrid final system.
 
 ### WP9 — cutover and cleanup
+
+**Результат:** one runtime UI layer, automated regression complete; external
+founder/device acceptance pending.
 
 **Work:** full checks, screenshot comparison, device/accessibility acceptance,
 remove only now-unused legacy pieces, update statuses.
@@ -579,7 +623,8 @@ acceptance even if отдельные координаты близки.
 
 ## 17. Ready-to-run agent brief
 
-Следующий текст можно передать implementation-агенту после закрытия WP0:
+Следующий текст можно передать maintenance-агенту или implementation-агенту
+после отдельного approval одного из заблокированных packages:
 
 ```text
 Implement the bidplace Pen v2 UI strictly from the repository owner documents.
@@ -603,7 +648,8 @@ choose the durable fix. If Pen requires an unsupported route, field, API or
 behavior, mark only that scope Blocked and request the owner decision; do not
 guess and do not change Pen.
 
-Implement in order WP0–WP9. For every completed package run affected typecheck,
+Treat completed WP0–WP3/WP5–WP9 as the current baseline; do not rebuild them.
+For every changed or newly approved package run affected typecheck,
 lint, unit/integration/E2E checks; capture 1440/1024/390 runtime screenshots;
 compare them to the canonical Pen frames; verify required roles, loading,
 empty, error, media, long-content, keyboard, focus, zoom and reduced-motion
@@ -635,6 +681,39 @@ Founder/designer acceptance:
 
 Без заполненного отчёта, green checks и visual evidence работа остаётся
 `Needs verification`.
+
+### Фактическое закрытие approved runtime scope — 2026-08-10
+
+- **Canonical checksum before/after:**
+  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+- **Completed:** WP0–WP3, WP5–WP7, migration of all existing WP8 routes and
+  WP9 cleanup/regression. WP4 Authors and new Home remain decision-blocked.
+- **Shared system:** one `designTokens` layer and one `components/ui` layer;
+  GlobalHeader, AuctionCard/AuctionCardGrid, AuctionPlayer, ProductTabs,
+  ProductGallery and shared page/form/state primitives.
+- **Screens:** Browse Works, Product About/Creation/Bids, Creator Profile,
+  login/register, seller profile/Product/Listing editors, Activity, Order and
+  Admin moderation.
+- **Behavior:** Product tabs use URL/deep-link/back state; related works use
+  real public seller data; public visibility is shared across Product, Bid
+  history, images and realtime; image capacity is transactional; Bid aliases
+  are Listing-scoped.
+- **Blocked:** Home routing/queries, Authors directory/list API,
+  search/filter/sort, separate Creation process model and multiple social
+  links. DEC-057/DEC-063 prohibit pretending these work.
+- **Removed:** legacy Modern UI documentation, old visual token owner,
+  temporary `components/modern-ui` runtime layer and left-rail source only
+  after all active consumers migrated.
+- **Checks:** monorepo typecheck 7/7; lint 2/2; contracts 7/7; API unit 145/145;
+  mobile unit 113/113; PostgreSQL integration 39/39; Chromium Playwright 35/35;
+  production build 7/7 including web/iOS/Android export; E2E fence and
+  `git diff --check` green.
+- **Automated visual/accessibility evidence:** 1440×900, 1024×900 and 390×844
+  route/role/state captures; keyboard tab/menu/dialog flows, focus return,
+  zoom, reduced motion, missing media and overflow checks.
+- **Pen diff:** none.
+- **Remaining release risk:** founder/designer pixel review, screen-reader pass
+  and physical iOS/Android smoke are external and remain `Needs verification`.
 
 ## 19. Reference audit and usage boundary
 
