@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 
@@ -8,6 +8,28 @@ const seededBuyer = {
   email: 'buyer@bidplace.test',
   password: 'password123',
 };
+
+async function getPublicBidAlias(
+  request: APIRequestContext,
+  productPublicId: string,
+): Promise<string> {
+  const productResponse = await request.get(
+    `${apiBaseURL}/api/products/${productPublicId}`,
+  );
+  expect(productResponse.ok()).toBeTruthy();
+  const detail = (await productResponse.json()) as {
+    listing: { id: string };
+  };
+  const bidsResponse = await request.get(
+    `${apiBaseURL}/api/listings/${detail.listing.id}/bids`,
+  );
+  expect(bidsResponse.ok()).toBeTruthy();
+  const history = (await bidsResponse.json()) as {
+    bids: Array<{ bidderAlias: string }>;
+  };
+
+  return history.bids[0]!.bidderAlias;
+}
 
 test('demo seed exposes three public products and real media', async ({
   page,
@@ -99,15 +121,12 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
   const { context, page } = await authenticatedPage(browser, seededBuyer);
 
   try {
-    const me = await context.request.get(`${apiBaseURL}/api/auth/me`);
-    const user = await me.json();
-    seededBuyer.id = user.user.id;
+    const liveAlias = await getPublicBidAlias(context.request, 'seedLive002');
+    const endedAlias = await getPublicBidAlias(context.request, 'seedEnded03');
 
     await page.goto('/product/seedLive002');
     await page.getByRole('tab', { name: /Ставки/ }).click();
-    await expect(
-      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
-    ).toBeVisible();
+    await expect(page.getByText(liveAlias)).toBeVisible();
     await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
@@ -128,15 +147,11 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     ).toBeVisible();
     await page.unroute('**/api/listings/*/bids*');
     await page.getByRole('button', { name: 'Повторить' }).click();
-    await expect(
-      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
-    ).toBeVisible();
+    await expect(page.getByText(liveAlias)).toBeVisible();
 
     await page.goto('/product/seedEnded03');
     await page.getByRole('tab', { name: /Ставки/ }).click();
-    await expect(
-      page.getByText(`Bidder ${seededBuyer.id.slice(0, 6)}`),
-    ).toBeVisible();
+    await expect(page.getByText(endedAlias)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Открыть результат заказа' }),
     ).toBeVisible();
