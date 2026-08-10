@@ -93,10 +93,7 @@ export class ImagesController {
     },
   ) {
     const image = await this.images.get(id, auth?.sub, auth?.role);
-    response.setHeader(
-      'Cache-Control',
-      getImageCacheControl(image.product.status === 'APPROVED'),
-    );
+    response.setHeader('Cache-Control', getImageCacheControl(image.isPublic));
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));
   }

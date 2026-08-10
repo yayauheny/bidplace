@@ -30,6 +30,31 @@ export const productImageUploadLimits = {
   maxTotalBytes: serverEnv.LOT_IMAGE_MAX_TOTAL_BYTES,
 } as const;
 
+export function assertProductImageCapacity(
+  existingImages: readonly { byteLength: number }[],
+  incomingImages: readonly { byteLength: number }[],
+): void {
+  if (
+    existingImages.length + incomingImages.length >
+    productImageUploadLimits.maxFiles
+  ) {
+    throw new BadRequestException(
+      `A Product can have at most ${productImageUploadLimits.maxFiles} images`,
+    );
+  }
+
+  const totalBytes = [...existingImages, ...incomingImages].reduce(
+    (sum, image) => sum + image.byteLength,
+    0,
+  );
+
+  if (totalBytes > productImageUploadLimits.maxTotalBytes) {
+    throw new BadRequestException(
+      `A Product cannot exceed ${productImageUploadLimits.maxTotalBytes} total image bytes`,
+    );
+  }
+}
+
 const supportedImageMimeTypeSet = new Set<string>(supportedImageMimeTypes);
 
 function isPng(buffer: Buffer): boolean {
@@ -47,7 +72,12 @@ function isPng(buffer: Buffer): boolean {
 }
 
 function isJpeg(buffer: Buffer): boolean {
-  return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  return (
+    buffer.length >= 3 &&
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  );
 }
 
 function isGif(buffer: Buffer): boolean {
@@ -117,38 +147,42 @@ export async function validateProductImageUploads(
 
   let totalBytes = 0;
 
-  const validatedFiles = await Promise.all(files.map(async (file) => {
-    if (file.mimetype && !supportedImageMimeTypeSet.has(file.mimetype)) {
-      throw new BadRequestException('Unsupported image type');
-    }
+  const validatedFiles = await Promise.all(
+    files.map(async (file) => {
+      if (file.mimetype && !supportedImageMimeTypeSet.has(file.mimetype)) {
+        throw new BadRequestException('Unsupported image type');
+      }
 
-    if (file.buffer.length === 0) {
-      throw new BadRequestException('Image file is empty');
-    }
+      if (file.buffer.length === 0) {
+        throw new BadRequestException('Image file is empty');
+      }
 
-    if (file.buffer.length > productImageUploadLimits.maxFileBytes) {
-      throw new BadRequestException('Image file is too large');
-    }
+      if (file.buffer.length > productImageUploadLimits.maxFileBytes) {
+        throw new BadRequestException('Image file is too large');
+      }
 
-    totalBytes += file.buffer.length;
+      totalBytes += file.buffer.length;
 
-    const detectedMimeType = detectImageMimeType(file.buffer);
+      const detectedMimeType = detectImageMimeType(file.buffer);
 
-    if (!detectedMimeType) {
-      throw new BadRequestException('Unsupported or invalid image file');
-    }
+      if (!detectedMimeType) {
+        throw new BadRequestException('Unsupported or invalid image file');
+      }
 
-    if (file.mimetype && file.mimetype !== detectedMimeType) {
-      throw new BadRequestException('Image MIME type does not match file contents');
-    }
+      if (file.mimetype && file.mimetype !== detectedMimeType) {
+        throw new BadRequestException(
+          'Image MIME type does not match file contents',
+        );
+      }
 
-    await assertDecodableRasterImage(file.buffer, detectedMimeType);
+      await assertDecodableRasterImage(file.buffer, detectedMimeType);
 
-    return {
-      buffer: file.buffer,
-      mimeType: detectedMimeType,
-    };
-  }));
+      return {
+        buffer: file.buffer,
+        mimeType: detectedMimeType,
+      };
+    }),
+  );
 
   if (totalBytes > productImageUploadLimits.maxTotalBytes) {
     throw new BadRequestException(

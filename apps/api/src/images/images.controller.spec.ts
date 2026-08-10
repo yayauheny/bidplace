@@ -28,6 +28,7 @@ describe('ImagesController binary response', () => {
       get: vi.fn().mockResolvedValue({
         data: new Uint8Array(png),
         mimeType: 'image/png',
+        isPublic: true,
         product: { status: 'APPROVED' },
       }),
     };
@@ -38,9 +39,32 @@ describe('ImagesController binary response', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.type).toHaveBeenCalledWith('image/png');
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=31536000, immutable',
+    );
     expect(response.body).toEqual(png);
     expect(response.body?.subarray(0, 8)).toEqual(png);
     expect(response.body?.toString('utf8').startsWith('{')).toBe(false);
+  });
+
+  it('uses private caching for owner-visible non-public media', async () => {
+    const images = {
+      get: vi.fn().mockResolvedValue({
+        data: new Uint8Array(png),
+        mimeType: 'image/png',
+        isPublic: false,
+      }),
+    };
+    const controller = new ImagesController(images as never);
+    const response = responseMock();
+
+    await controller.get(
+      'image-id',
+      { sub: 'owner-id', role: 'user' },
+      response,
+    );
+
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=60');
   });
 
   it('does not expose private media to an anonymous request', async () => {

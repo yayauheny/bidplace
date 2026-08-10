@@ -7,9 +7,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { type SellerStatus } from '@bidplace/contracts';
+import { type Prisma } from '@bidplace/database';
 
-import { PrismaService } from '../core/database';
-import { type ValidatedImageUpload } from './image-policy';
+import { PrismaService, runSerializableTransaction } from '../core/database';
+import {
+  assertProductImageCapacity,
+  type ValidatedImageUpload,
+} from './image-policy';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import { isEditableProductStatus } from '../products/product-state';
@@ -23,33 +27,45 @@ export class ImagesService {
     productId: string,
     files: readonly ValidatedImageUpload[],
   ) {
-    const product = await this.requireEditableOwner(userId, productId, {
-      position: true,
-    });
+    await runSerializableTransaction(this.prisma, async (tx) => {
+      const product = await this.requireEditableOwner(tx, userId, productId, {
+        position: true,
+        byteLength: true,
+      });
 
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      assertProductImageCapacity(
+        product.images,
+        files.map((file) => ({ byteLength: file.buffer.byteLength })),
+      );
 
-    const start = product.images.length;
+      const start = product.images.length;
 
-    await this.prisma.productImage.createMany({
-      data: files.map((file, index) => ({
-        productId,
-        position: start + index,
-        mimeType: file.mimeType,
-        byteLength: file.buffer.byteLength,
-        data: Uint8Array.from(file.buffer),
-        checksum: createHash('sha256').update(file.buffer).digest('hex'),
-      })),
+      await tx.productImage.createMany({
+        data: files.map((file, index) => ({
+          productId,
+          position: start + index,
+          mimeType: file.mimeType,
+          byteLength: file.buffer.byteLength,
+          data: Uint8Array.from(file.buffer),
+          checksum: createHash('sha256').update(file.buffer).digest('hex'),
+        })),
+      });
     });
 
     return { ok: true as const };
   }
 
   async remove(userId: string, productId: string, imageId: string) {
-    const product = await this.requireEditableOwner(userId, productId, {
-      id: true,
-      position: true,
-    });
+    const product = await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+      {
+        id: true,
+        position: true,
+      },
+    );
 
     assertApprovedSeller(product.sellerProfile.status as SellerStatus);
 
@@ -91,9 +107,12 @@ export class ImagesService {
   }
 
   async reorder(userId: string, productId: string, imageIds: string[]) {
-    const product = await this.requireEditableOwner(userId, productId, {
-      id: true,
-    });
+    const product = await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+      { id: true },
+    );
 
     assertApprovedSeller(product.sellerProfile.status as SellerStatus);
 
@@ -164,21 +183,23 @@ export class ImagesService {
     const isAdmin = role === 'admin';
     const isPublic =
       image.product.status === 'APPROVED' &&
+      image.product.sellerProfile.status === 'APPROVED' &&
       image.product.listings.length > 0;
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Image not found');
     }
 
-    return image;
+    return { ...image, isPublic };
   }
 
   private async requireEditableOwner(
+    client: Pick<Prisma.TransactionClient, 'product'>,
     userId: string,
     productId: string,
-    imageSelect: { id?: true; position?: true },
+    imageSelect: { id?: true; position?: true; byteLength?: true },
   ) {
-    const product = await this.prisma.product.findUnique({
+    const product = await client.product.findUnique({
       where: { id: productId },
       include: {
         sellerProfile: {

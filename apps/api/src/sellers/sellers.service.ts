@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
-import { PrismaService } from '../core/database';
+import { isPrismaUniqueConstraintError, PrismaService } from '../core/database';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import { productSelect, toContractProduct } from '../products/products.mapper';
 import {
@@ -63,30 +63,39 @@ export class SellersService {
 
     const profilePhotoData = Uint8Array.from(profilePhoto.buffer);
 
-    const sellerProfile = await this.prisma.sellerProfile.create({
-      data: {
-        userId,
-        slug: input.slug,
-        sellerType: input.sellerType,
-        fullName: input.fullName,
-        country: input.country,
-        socialLink: input.socialLink,
-        shortDescription: input.shortDescription,
-        handoffContactType: input.handoffContactType,
-        handoffContactValue: input.handoffContactValue,
-        handoffInitiator:
-          input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
-        profilePhotoMimeType: profilePhoto.mimeType,
-        profilePhotoByteLength: profilePhoto.buffer.byteLength,
-        profilePhotoChecksum: createHash('sha256')
-          .update(profilePhoto.buffer)
-          .digest('hex'),
-        profilePhotoData,
-      },
-      select: sellerProfileResponseSelect,
-    });
+    try {
+      const sellerProfile = await this.prisma.sellerProfile.create({
+        data: {
+          userId,
+          slug: input.slug,
+          sellerType: input.sellerType,
+          fullName: input.fullName,
+          country: input.country,
+          socialLink: input.socialLink,
+          shortDescription: input.shortDescription,
+          handoffContactType: input.handoffContactType,
+          handoffContactValue: input.handoffContactValue,
+          handoffInitiator: input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
+          profilePhotoMimeType: profilePhoto.mimeType,
+          profilePhotoByteLength: profilePhoto.buffer.byteLength,
+          profilePhotoChecksum: createHash('sha256')
+            .update(profilePhoto.buffer)
+            .digest('hex'),
+          profilePhotoData,
+        },
+        select: sellerProfileResponseSelect,
+      });
 
-    return toSellerProfileResponse(sellerProfile);
+      return toSellerProfileResponse(sellerProfile);
+    } catch (error: unknown) {
+      if (isPrismaUniqueConstraintError(error)) {
+        throw new ConflictException(
+          'Seller profile already exists or slug is already taken',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async update(

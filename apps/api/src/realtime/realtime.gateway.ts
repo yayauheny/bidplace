@@ -13,6 +13,7 @@ import { uuidSchema } from '@bidplace/contracts';
 
 import { PrismaService } from '../core/database';
 import { RateLimitService } from '../core/rate-limit';
+import { publicListingWhere } from '../products/public-visibility';
 import { resolveSocketIp } from './realtime.options';
 
 const publicListingRoomLimit = 5;
@@ -38,7 +39,9 @@ export class RealtimeGateway {
     const bucket = ip === 'unknown' ? 'unknown' : ip;
     const limit = ip === 'unknown' ? anonymousConnectionLimit : 30;
 
-    if (!this.rateLimits.consume(`realtime:connect:ip:${bucket}`, limit, 60_000)) {
+    if (
+      !this.rateLimits.consume(`realtime:connect:ip:${bucket}`, limit, 60_000)
+    ) {
       socket.disconnect(true);
       return;
     }
@@ -56,7 +59,9 @@ export class RealtimeGateway {
     @MessageBody() payload: unknown,
   ): Promise<{ ok: true }> {
     const parsed = uuidSchema.safeParse(
-      typeof payload === 'string' ? payload : (payload as { listingId?: unknown })?.listingId,
+      typeof payload === 'string'
+        ? payload
+        : (payload as { listingId?: unknown })?.listingId,
     );
 
     if (!parsed.success) {
@@ -74,8 +79,7 @@ export class RealtimeGateway {
     const listing = await this.prisma.listing.findFirst({
       where: {
         id: parsed.data,
-        status: { in: ['SCHEDULED', 'LIVE'] },
-        product: { status: 'APPROVED' },
+        ...publicListingWhere(['SCHEDULED', 'LIVE']),
       },
       select: { id: true },
     });

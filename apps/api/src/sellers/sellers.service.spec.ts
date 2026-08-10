@@ -4,6 +4,34 @@ import { SellersService } from './sellers.service';
 import { publicSellerProfileSelect } from './seller-profile.mapper';
 
 describe('SellersService', () => {
+  it('maps a concurrent duplicate SellerProfile or slug to a conflict', async () => {
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockRejectedValue({ code: 'P2002' }),
+      },
+    };
+    const service = new SellersService(prisma as never, {} as never);
+
+    await expect(
+      service.create(
+        'user-id',
+        {
+          slug: 'taken-slug',
+          sellerType: 'creator',
+          fullName: 'Seller',
+          country: 'BY',
+          socialLink: 'https://example.com/seller',
+          shortDescription: 'Description',
+          handoffContactType: 'TELEGRAM',
+          handoffContactValue: '@seller',
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+        },
+        { buffer: Buffer.from([1]), mimeType: 'image/png' },
+      ),
+    ).rejects.toThrow('Seller profile already exists or slug is already taken');
+  });
+
   it.each(['PENDING_REVIEW', 'SUSPENDED'] as const)(
     'rejects edits while a SellerProfile is %s',
     async (status) => {
@@ -82,9 +110,12 @@ describe('SellersService', () => {
         }),
       },
     };
-    const service = new SellersService(prisma as never, {
-      toPublicProduct: vi.fn(),
-    } as never);
+    const service = new SellersService(
+      prisma as never,
+      {
+        toPublicProduct: vi.fn(),
+      } as never,
+    );
 
     await service.getPublic('seller-slug');
 

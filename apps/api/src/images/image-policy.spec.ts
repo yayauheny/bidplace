@@ -3,7 +3,9 @@ import sharp from 'sharp';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
+  assertProductImageCapacity,
   detectImageMimeType,
+  productImageUploadLimits,
   validateProductImageUploads,
 } from './image-policy';
 
@@ -27,6 +29,30 @@ beforeAll(async () => {
 });
 
 describe('image policy', () => {
+  it('enforces image count across existing and incoming files', () => {
+    const existing = Array.from(
+      { length: productImageUploadLimits.maxFiles },
+      () => ({ byteLength: 1 }),
+    );
+
+    expect(() =>
+      assertProductImageCapacity(existing, [{ byteLength: 1 }]),
+    ).toThrow(
+      `A Product can have at most ${productImageUploadLimits.maxFiles} images`,
+    );
+  });
+
+  it('enforces total bytes across existing and incoming files', () => {
+    expect(() =>
+      assertProductImageCapacity(
+        [{ byteLength: productImageUploadLimits.maxTotalBytes }],
+        [{ byteLength: 1 }],
+      ),
+    ).toThrow(
+      `A Product cannot exceed ${productImageUploadLimits.maxTotalBytes} total image bytes`,
+    );
+  });
+
   it('detects supported image signatures', () => {
     expect(detectImageMimeType(pngBuffer)).toBe('image/png');
   });

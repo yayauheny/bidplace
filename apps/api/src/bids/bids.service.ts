@@ -1,4 +1,7 @@
-import { type BidCreateRequest, type PaginationQuery } from '@bidplace/contracts';
+import {
+  type BidCreateRequest,
+  type PaginationQuery,
+} from '@bidplace/contracts';
 import {
   BadRequestException,
   ConflictException,
@@ -15,10 +18,12 @@ import {
 } from '../core/auction';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { RealtimeService } from '../realtime/realtime.service';
+import { publicListingWhere } from '../products/public-visibility';
 import {
   assertBidEligibility,
   bidEligibilityUserSelect,
 } from './bid-eligibility';
+import { createBidderAlias } from './bid-alias';
 
 @Injectable()
 export class BidsService {
@@ -102,7 +107,9 @@ export class BidsService {
       });
 
       if (amount.lessThan(minimum)) {
-        throw new BadRequestException(`Bid must be at least ${minimum.toFixed(2)}`);
+        throw new BadRequestException(
+          `Bid must be at least ${minimum.toFixed(2)}`,
+        );
       }
 
       const endsAt = resolveSoftCloseEndsAt(
@@ -154,7 +161,10 @@ export class BidsService {
         listingId: result.bid.listingId,
         amount: result.bid.amount.toNumber(),
         createdAt: result.bid.createdAt.toISOString(),
-        bidderAlias: `Bidder ${result.bid.bidderUserId.slice(0, 6)}`,
+        bidderAlias: createBidderAlias(
+          result.bid.listingId,
+          result.bid.bidderUserId,
+        ),
       },
       listing: {
         id: listing.id,
@@ -178,12 +188,12 @@ export class BidsService {
           softCloseMaxTotalSeconds: 600 as const,
         },
       },
-        minimumNextBid: resolveMinimumBidAmount({
-          currentPrice: listing.currentPrice,
-          startPrice: listing.auctionRules.startPrice,
-          bidCount: listing.bidCount,
-        }).toNumber(),
-      };
+      minimumNextBid: resolveMinimumBidAmount({
+        currentPrice: listing.currentPrice,
+        startPrice: listing.auctionRules.startPrice,
+        bidCount: listing.bidCount,
+      }).toNumber(),
+    };
 
     if (!result.replay) {
       this.realtime.emit(listingId, 'bid.placed', {
@@ -200,8 +210,8 @@ export class BidsService {
   }
 
   async list(listingId: string, query: PaginationQuery) {
-    const listing = await this.prisma.listing.findUnique({
-      where: { id: listingId },
+    const listing = await this.prisma.listing.findFirst({
+      where: { id: listingId, ...publicListingWhere() },
       select: { id: true },
     });
 
@@ -233,7 +243,7 @@ export class BidsService {
         listingId: bid.listingId,
         amount: bid.amount.toNumber(),
         createdAt: bid.createdAt.toISOString(),
-        bidderAlias: `Bidder ${bid.bidderUserId.slice(0, 6)}`,
+        bidderAlias: createBidderAlias(bid.listingId, bid.bidderUserId),
       })),
       pagination: { ...query, total },
     };

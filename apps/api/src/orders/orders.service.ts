@@ -16,6 +16,7 @@ import {
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import { createOrderSnapshot } from './order-snapshot';
+import { createBidderAlias } from '../bids/bid-alias';
 
 const orderWithProductSelect = {
   id: true,
@@ -128,7 +129,7 @@ export class OrdersService {
         listingId: bid.listingId,
         amount: bid.amount.toNumber(),
         createdAt: bid.createdAt.toISOString(),
-        bidderAlias: `Bidder ${bid.bidderUserId.slice(0, 6)}`,
+        bidderAlias: createBidderAlias(bid.listingId, bid.bidderUserId),
       })),
     };
   }

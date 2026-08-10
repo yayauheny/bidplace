@@ -3,6 +3,30 @@ import { describe, expect, it, vi } from 'vitest';
 import { BidsService } from './bids.service';
 
 describe('BidsService', () => {
+  it('lists bids only for a publicly visible Listing', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const service = new BidsService(
+      { listing: { findFirst } } as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.list('listing-id', { page: 1, limit: 20 }),
+    ).rejects.toThrow('Listing not found');
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'listing-id',
+        status: { in: ['LIVE', 'SCHEDULED', 'ENDED'] },
+        product: {
+          status: 'APPROVED',
+          sellerProfile: { status: 'APPROVED' },
+        },
+      },
+      select: { id: true },
+    });
+  });
+
   it('rejects admin accounts before evaluating a bid', async () => {
     const service = new BidsService({} as never, {} as never, {} as never);
 
@@ -50,8 +74,9 @@ describe('BidsService', () => {
         },
       };
       const prisma = {
-        $transaction: vi.fn(async (callback: (client: object) => Promise<unknown>) =>
-          callback(tx),
+        $transaction: vi.fn(
+          async (callback: (client: object) => Promise<unknown>) =>
+            callback(tx),
         ),
       };
       const service = new BidsService(

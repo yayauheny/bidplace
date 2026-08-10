@@ -24,9 +24,9 @@ describe('RealtimeGateway', () => {
       false,
     );
 
-    await expect(gateway.join(createSocket(), { listingId: 'bad-id' })).rejects.toThrow(
-      'Invalid listing id',
-    );
+    await expect(
+      gateway.join(createSocket(), { listingId: 'bad-id' }),
+    ).rejects.toThrow('Invalid listing id');
   });
 
   it('rejects private listings', async () => {
@@ -44,6 +44,17 @@ describe('RealtimeGateway', () => {
     await expect(
       gateway.join(createSocket('private-socket'), { listingId: randomUUID() }),
     ).rejects.toThrow('Listing is not public');
+    expect(prisma.listing.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: expect.any(String),
+        status: { in: ['SCHEDULED', 'LIVE'] },
+        product: {
+          status: 'APPROVED',
+          sellerProfile: { status: 'APPROVED' },
+        },
+      },
+      select: { id: true },
+    });
   });
 
   it('enforces socket room limits', async () => {
@@ -57,13 +68,21 @@ describe('RealtimeGateway', () => {
     ];
     const prisma = {
       listing: {
-        findFirst: vi.fn().mockImplementation(async ({ where }: { where: { id: string } }) => ({ id: where.id })),
+        findFirst: vi
+          .fn()
+          .mockImplementation(async ({ where }: { where: { id: string } }) => ({
+            id: where.id,
+          })),
       },
     };
     const rateLimits = {
       consume: vi.fn().mockReturnValue(true),
     };
-    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
+    const gateway = new RealtimeGateway(
+      prisma as never,
+      rateLimits as never,
+      false,
+    );
     const socket = createSocket();
 
     await expect(
@@ -71,9 +90,9 @@ describe('RealtimeGateway', () => {
     ).resolves.toEqual({ ok: true });
 
     for (const listingId of listingIds.slice(1, 5)) {
-      await expect(
-        gateway.join(socket, { listingId }),
-      ).resolves.toEqual({ ok: true });
+      await expect(gateway.join(socket, { listingId })).resolves.toEqual({
+        ok: true,
+      });
     }
 
     await expect(
@@ -90,9 +109,15 @@ describe('RealtimeGateway', () => {
     const rateLimits = {
       consume: vi
         .fn()
-        .mockImplementation((key: string) => !key.startsWith('realtime:connect')),
+        .mockImplementation(
+          (key: string) => !key.startsWith('realtime:connect'),
+        ),
     };
-    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
+    const gateway = new RealtimeGateway(
+      prisma as never,
+      rateLimits as never,
+      false,
+    );
     const socket = createSocket('socket-2');
 
     gateway.handleConnection(socket);
@@ -122,7 +147,11 @@ describe('RealtimeGateway', () => {
     const rateLimits = {
       consume: vi.fn().mockReturnValue(true),
     };
-    const gateway = new RealtimeGateway(prisma as never, rateLimits as never, false);
+    const gateway = new RealtimeGateway(
+      prisma as never,
+      rateLimits as never,
+      false,
+    );
     const socket = {
       id: 'socket-unknown',
       handshake: {

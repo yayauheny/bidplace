@@ -1,15 +1,27 @@
 import { type ListingStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-export const publicListingStatuses: ListingStatus[] = [
-  'LIVE',
-  'SCHEDULED',
-  'ENDED',
-];
 export type PublicListingStatus = Extract<
   ListingStatus,
   'LIVE' | 'SCHEDULED' | 'ENDED'
 >;
+export const publicListingStatuses: PublicListingStatus[] = [
+  'LIVE',
+  'SCHEDULED',
+  'ENDED',
+];
+
+export function publicListingWhere(
+  statuses: PublicListingStatus[] = publicListingStatuses,
+): Prisma.ListingWhereInput {
+  return {
+    status: { in: statuses },
+    product: {
+      status: 'APPROVED',
+      sellerProfile: { status: 'APPROVED' },
+    },
+  };
+}
 
 const publicListingPriority: Partial<Record<ListingStatus, number>> = {
   LIVE: 0,
@@ -17,16 +29,18 @@ const publicListingPriority: Partial<Record<ListingStatus, number>> = {
   ENDED: 2,
 };
 
-export function selectPublicListing<T extends { id: string; status: ListingStatus; createdAt: Date }>(
-  listings: T[],
-): T | null {
-  return [...listings].sort(
-    (left, right) =>
-      (publicListingPriority[left.status] ?? Number.MAX_SAFE_INTEGER) -
-        (publicListingPriority[right.status] ?? Number.MAX_SAFE_INTEGER) ||
-      right.createdAt.getTime() - left.createdAt.getTime() ||
-      right.id.localeCompare(left.id),
-  )[0] ?? null;
+export function selectPublicListing<
+  T extends { id: string; status: ListingStatus; createdAt: Date },
+>(listings: T[]): T | null {
+  return (
+    [...listings].sort(
+      (left, right) =>
+        (publicListingPriority[left.status] ?? Number.MAX_SAFE_INTEGER) -
+          (publicListingPriority[right.status] ?? Number.MAX_SAFE_INTEGER) ||
+        right.createdAt.getTime() - left.createdAt.getTime() ||
+        right.id.localeCompare(left.id),
+    )[0] ?? null
+  );
 }
 
 export const publicCatalogProductWhere = {
