@@ -16,6 +16,7 @@ import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
   AppText,
+  AuctionCardGrid,
   AuctionPlayer,
   BottomActionBar,
   EditorialSection,
@@ -36,6 +37,7 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { EmailRulesGate } from '../auth/email-rules-gate';
 import { validateBidAmount } from './bid-validation';
+import { getCatalogColumnCount } from './catalog-layout';
 
 type BidItem = Awaited<
   ReturnType<ApiClient['listings']['listBids']>
@@ -247,6 +249,13 @@ export function ProductScreen({
   const query = useQuery({
     queryKey: ['products', publicId],
     queryFn: () => api.products.get(publicId),
+  });
+  const sellerSlug = query.data?.sellerProfile.slug;
+  const relatedWorks = useQuery({
+    queryKey: ['public-seller', sellerSlug],
+    queryFn: () => api.sellers.getPublicDetail(sellerSlug!),
+    enabled: activeTab === 'about' && Boolean(sellerSlug),
+    retry: false,
   });
   const listingId = query.data?.listing?.id;
   const bids = useQuery({
@@ -581,6 +590,36 @@ export function ProductScreen({
       </View>
     </EditorialSection>
   );
+  const relatedItems =
+    relatedWorks.data?.products
+      .filter((item) => item.product.publicId !== product.publicId)
+      .slice(0, 3) ?? [];
+  const relatedWorksSection = relatedWorks.isLoading ? (
+    <EditorialSection title="Другие работы автора">
+      <AppText role="bodySmall" tone="secondary">
+        Загружаем работы…
+      </AppText>
+    </EditorialSection>
+  ) : relatedWorks.isError ? (
+    <EditorialSection title="Другие работы автора">
+      <View style={{ gap: designTokens.space.x3 }}>
+        <AppText role="bodySmall" tone="secondary">
+          Не удалось загрузить другие работы.
+        </AppText>
+        <SecondaryButton
+          label="Повторить"
+          onPress={() => void relatedWorks.refetch()}
+        />
+      </View>
+    </EditorialSection>
+  ) : relatedItems.length > 0 ? (
+    <EditorialSection title={`Другие работы ${sellerProfile.fullName}`}>
+      <AuctionCardGrid
+        items={relatedItems}
+        columns={Math.min(getCatalogColumnCount(width), 3) as 1 | 2 | 3}
+      />
+    </EditorialSection>
+  ) : null;
 
   return (
     <ProductShell
@@ -730,6 +769,7 @@ export function ProductScreen({
                   ? itemHistory
                   : bidHistory}
             </View>
+            {activeTab === 'about' ? relatedWorksSection : null}
             {participation?.orderPublicId ? (
               <Link
                 href={{

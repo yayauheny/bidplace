@@ -5,7 +5,11 @@ import { createAuctionFixture } from './support/e2e-fixtures';
 test('product composition exposes tabs and remains responsive', async ({
   page,
 }) => {
-  const fixture = await createAuctionFixture({ bids: true });
+  const relatedTitle = 'Related E2E artwork';
+  const fixture = await createAuctionFixture({
+    bids: true,
+    additionalTitles: [relatedTitle],
+  });
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/product/${fixture.product.publicId}`);
@@ -15,6 +19,7 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Ставки 2/ })).toBeVisible();
+  await expect(page.getByText(relatedTitle)).toBeVisible();
 
   await page.getByRole('tab', { name: 'Создание' }).click();
   await expect(page).toHaveURL(

@@ -3,6 +3,7 @@ export * from './AppDialog';
 export * from './AppText';
 export * from './AuctionPlayer';
 export * from './AuctionCard';
+export * from './AuctionCardGrid';
 export * from './Button';
 export * from './FormSection';
 export * from './PageHeader';

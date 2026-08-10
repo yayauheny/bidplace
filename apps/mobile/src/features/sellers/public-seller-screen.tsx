@@ -1,11 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, type Href } from 'expo-router';
-import {
-  ScrollView,
-  useWindowDimensions,
-  View,
-  type DimensionValue,
-} from 'react-native';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
@@ -13,7 +8,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout/AppShell';
 import {
   AppText,
-  AuctionCard,
+  AuctionCardGrid,
   MotionPressable,
   PageState,
   ResilientRemoteImage,
@@ -22,35 +17,6 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import { getAuthorWorkColumnCount } from './author-layout';
-
-function AuthorWorkGrid({
-  products,
-  columns,
-}: {
-  products: React.ComponentProps<typeof AuctionCard>['item'][];
-  columns: 1 | 2 | 3 | 4;
-}) {
-  const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        margin: -designTokens.space.x2,
-      }}
-    >
-      {products.map((item) => (
-        <View
-          key={item.product.id}
-          style={{ width: cardWidth, padding: designTokens.space.x2 }}
-        >
-          <AuctionCard item={item} />
-        </View>
-      ))}
-    </View>
-  );
-}
 
 function AuthorPhoto({ url, name }: { url: string; name: string }) {
   return (
@@ -179,8 +145,8 @@ export function PublicSellerScreen({ slug }: { slug: string }) {
     content = (
       <View style={{ gap: designTokens.space.x6 }}>
         <AppText role="sectionTitle">Работы</AppText>
-        <AuthorWorkGrid
-          products={query.data.products}
+        <AuctionCardGrid
+          items={query.data.products}
           columns={getAuthorWorkColumnCount(width)}
         />
       </View>
