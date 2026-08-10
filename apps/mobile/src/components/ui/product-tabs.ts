@@ -9,6 +9,15 @@ export const productTabs: ReadonlyArray<{
   { id: 'bids', label: 'Ставки' },
 ];
 
+export function parseProductTabParam(
+  value: string | readonly string[] | undefined,
+): ProductTabId {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return productTabs.some((tab) => tab.id === candidate)
+    ? (candidate as ProductTabId)
+    : 'about';
+}
+
 export function getProductTabAt(index: number): ProductTabId {
   const normalizedIndex =
     ((index % productTabs.length) + productTabs.length) % productTabs.length;

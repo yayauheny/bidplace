@@ -12,6 +12,7 @@ export * from './MotionPressable';
 export * from './BottomActionBar';
 export * from './ProductGallery';
 export * from './ProductTabs';
+export { parseProductTabParam } from './product-tabs';
 export type { ProductTabId } from './product-tabs';
 export * from './ResilientRemoteImage';
 export * from './Separator';

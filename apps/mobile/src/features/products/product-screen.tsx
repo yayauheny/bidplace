@@ -218,7 +218,15 @@ function ProductAtmosphere({ imageUrl }: { imageUrl?: string }) {
   );
 }
 
-export function ProductScreen({ publicId }: { publicId: string }) {
+export function ProductScreen({
+  publicId,
+  activeTab,
+  onTabChange,
+}: {
+  publicId: string;
+  activeTab: ProductTabId;
+  onTabChange: (tab: ProductTabId) => void;
+}) {
   const api = useApiClient();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -227,7 +235,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const isProductWide = width >= designTokens.breakpoint.productDetailWide;
   const isHeroThreeColumn =
     width >= designTokens.breakpoint.productHeroThreeColumn;
-  const [activeTab, setActiveTab] = useState<ProductTabId>('about');
   const [amount, setAmount] = useState('');
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
@@ -710,7 +717,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             <ProductTabs
               activeTab={activeTab}
               bidCount={bids.data?.bids.length}
-              onChange={setActiveTab}
+              onChange={onTabChange}
             />
             <View
               nativeID={`product-panel-${activeTab}`}

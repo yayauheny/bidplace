@@ -85,6 +85,7 @@ export function ProductTabs({
             accessibilityRole="tab"
             accessibilityLabel={label}
             accessibilityState={{ selected }}
+            aria-selected={selected}
             aria-controls={`product-panel-${tab.id}`}
             onBlur={() => setFocusedIndex(null)}
             onFocus={() => setFocusedIndex(index)}
