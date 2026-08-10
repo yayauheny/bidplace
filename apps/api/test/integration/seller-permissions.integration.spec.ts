@@ -194,9 +194,10 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
   it('protects Product submit, Listing create/change and image mutations through the same HTTP boundary', async () => {
     const fixture = await createPermissionFixture(prisma);
     const clients = await createClients(fixture);
+    const startsAt = new Date(Date.now() + 3_600_000);
     const listingInput = {
-      startsAt: '2026-08-05T14:00:00.000Z',
-      endsAt: '2026-08-05T15:00:00.000Z',
+      startsAt: startsAt.toISOString(),
+      endsAt: new Date(startsAt.getTime() + 3_600_000).toISOString(),
       startPrice: 10,
     };
 
