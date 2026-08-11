@@ -1,8 +1,8 @@
 # bidplace — пользовательские потоки и экраны
 
-Последнее обновление: 2026-08-11
+Последнее обновление: 2026-08-12
 
-Статус: **Target mapped; route and data gaps remain**
+Статус: **Runtime scope implemented; matched Pen overlay and founder/device acceptance pending**
 
 ## 1. Граница текущего редизайна
 
@@ -15,14 +15,14 @@ routes сохраняют поведение и должны пережить с
 
 | Экран              | Pen node | Route                 | Contract status                                            |
 | ------------------ | -------- | --------------------- | ---------------------------------------------------------- |
-| Global Header      | `L9UV9`  | общий shell           | role-aware shell and account/discovery overlays are partial pending visual QA |
-| Home               | `BJd1P`  | `/`                   | `/api/discovery/home` supplies top, creators and new works; acceptance pending |
-| Browse Works       | `H5vf2`  | `/works`              | server query, status chips and sort are implemented; filters and acceptance remain partial |
-| Browse Authors     | `N4ebBk` | `/authors`            | approved seller list API, route and discipline field exist; visual acceptance remains partial |
-| Product / About    | `L7ytbv` | `/product/[publicId]` | основной public contract существует                        |
-| Product / Creation | `cK8kD`  | тот же Product route  | dedicated process model не подтверждён                     |
-| Product / Bids     | `XIzHe`  | тот же Product route  | participant/bid/time доступны в текущем contract           |
-| Creator Profile    | `MqUMz`  | `/seller/[slug]`      | basic public profile существует; links ограничены contract |
+| Global Header      | `L9UV9`  | общий shell           | role-aware shell and account/discovery overlays implemented; visual gate pending |
+| Home               | `BJd1P`  | `/`                   | `/api/discovery/home` supplies top, creators and new works; visual gate pending |
+| Browse Works       | `H5vf2`  | `/works`              | server-backed search, sort, status, category, author, material, price and uniqueness |
+| Browse Authors     | `N4ebBk` | `/authors`            | approved seller directory API, route, photos and discipline |
+| Product / About    | `L7ytbv` | `/product/[publicId]` | public product hero, facts, related works and AuctionPlayer |
+| Product / Creation | `cK8kD`  | тот же Product route  | ordered ProductCreationStep data and safe process media |
+| Product / Bids     | `XIzHe`  | тот же Product route  | participant alias/bid/time with Listing-scoped privacy |
+| Creator Profile    | `MqUMz`  | `/seller/[slug]`      | `MVP v1` creator profile; structured public links only |
 
 Решение о `/`, `/works`, `/authors`, `/search?q=...` и server-authoritative
 discovery contracts зафиксировано в `DEC-065`. Pen по-прежнему управляет
@@ -44,8 +44,9 @@ Discovery group `SYE9r`, Search `VKsEM`, user actions `AG6gK`, search bar
 `B0EaXH`, Authors item `VUDwA`, actions `hLoyZ`.
 
 Search и Authors используют поддержанные API contracts; client-only matching и
-ranking не допускаются. Back/forward restoration и полный filter matrix остаются
-частью финальной acceptance-проверки.
+ranking не допускаются. Back/forward restoration и URL-backed discovery state
+реализованы; fixed-scale overlay и physical-device acceptance остаются внешним
+release gate.
 
 ## 4. Discovery flow
 
@@ -66,8 +67,9 @@ Header `WT8GE`, title `MO2OC`, toolbar `Evfb1`, grid `nWd4G`. Controls:
 primary tabs `Jefsy`, auction tabs `g7INs`, state chip `yFl4g`, sort `s2ARGu`.
 
 Сохраняются текущие public visibility, states `SCHEDULED`/`LIVE`/`ENDED`,
-pagination и API contract. Неподдержанные search, filters и sorting остаются
-blocked до отдельного решения.
+pagination и API contract. Реализованы server-backed search, sort, category,
+author, material, price, status и uniqueness controls. Pen `Тип работы`
+намеренно скрыт до появления подтверждённого domain field.
 
 AuctionCard media масштабируется только внутри clipped viewport; toolbar menu
 открывается с shared panel motion. Hover/focus/open states определены в `03` и
@@ -113,9 +115,9 @@ AuctionCard `k5vYGf`. Это публичная авторская страни�
 Creator hero использует restrained atmosphere только при наличии real public
 photo/artwork; grid cards наследуют тот же media-hover contract, что Browse.
 
-Показываются только разрешённые публичные данные. Текущий contract имеет один
-`socialLink`; три независимых social links из визуального target не реализуются
-до изменения contract. Private handoff contact никогда не появляется здесь.
+Показываются только разрешённые публичные данные. Structured Telegram,
+Instagram и website links отображаются только из public contract. Private
+handoff contact никогда не появляется здесь.
 
 ## 7. Остальные routes
 

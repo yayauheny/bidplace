@@ -16,18 +16,20 @@
 
 ## Статус этапов
 
-| Этап                                | Статус                 | Результат                                          | Commit    |
-| ----------------------------------- | ---------------------- | -------------------------------------------------- | --------- |
-| WP0 — canonical baseline            | Готово                 | Pen v2, аудит и новая структура docs зафиксированы | `ef5b7c2` |
-| WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784` |
-| WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784` |
-| WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa` |
-| WP4 — CreatorCard/Browse Authors    | Готово                 | CreatorCard, `/authors` API/list и responsive grid | `d1667b5` |
-| WP5 — Product                       | Готово                 | About/Creation/Bids, URL tabs, related works       | `a5af90f` |
-| WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7` |
-| WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042` |
-| WP8 — cleanup and full QA           | Готово                 | Единый UI layer и полный regression QA             | `a1beb72` |
-| WP9 — backend/security audit        | Готово                 | Public boundaries, uploads and private bid aliases | `84336e9` |
+| Этап                                  | Статус | Результат                                                | Фактический commit / commits                                  |
+| ------------------------------------- | ------ | -------------------------------------------------------- | ------------------------------------------------------------- |
+| Stage 0 — canonical baseline          | Готово | Pen v2 и protected baseline зафиксированы                | `f7450e4`                                                    |
+| Stage 1 — contracts and fixtures      | Готово | Content contracts, media metadata и seed foundation      | `1a0a400`, `e6b6afd`, `80de66c`                              |
+| Stage 2 — shared UI foundation        | Готово | Tokens, typography, icons, motion и shared primitives     | `23e154f`                                                    |
+| Stage 3 — GlobalHeader/account IA     | Готово | Responsive shell, account menu и role navigation          | `23e154f`, `f0e6627`                                         |
+| Stage 4 — AuctionCard/CreatorCard     | Готово | Shared card anatomy, media states и responsive grids       | `23e154f`, `d1667b5`                                         |
+| Stage 5 — Browse Works/Authors        | Готово | H5vf2/N4ebBk routes, query state, facets и test density   | `d1667b5`, `80de66c`                                         |
+| Stage 6 — Product About               | Готово | Product hero, facts, related works и AuctionPlayer        | `a05aa82`                                                    |
+| Stage 7 — Creation/Bids               | Готово | Creation steps/media, tabs, bids и transactional states   | `1a0a400`, `a05aa82`                                         |
+| Stage 8 — Creator Profile             | Готово | Только `MqUMz` — `MVP v1`, public data boundary           | `3778190`                                                    |
+| Stage 9 — responsive derivation       | Готово | 1440/1024/390 behavior, overflow и runtime matrices       | `770a406`, `9e82345`, `f0e6627`                              |
+| Stage 10 — cleanup and evidence       | Готово | Route acceptance, docs, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`                    |
+| Cross-cutting — backend/security      | Готово | Visibility, uploads, aliases и integrity boundaries       | `84336e9`                                                    |
 
 ## Выполнено
 

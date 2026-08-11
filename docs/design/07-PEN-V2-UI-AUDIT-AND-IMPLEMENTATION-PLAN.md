@@ -1,12 +1,28 @@
 # bidplace — аудит Pen v2 и план реализации UI
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-12
 
 Статус: **Approved runtime scope implemented and audited; automated QA green; external founder/device acceptance pending**
 
 Scope: фактический Pen v2 cutover публичного web UI, supporting routes,
 post-implementation backend/security audit и честно заблокированные IA/data
 расширения
+
+## Current reconciliation — 2026-08-12
+
+- The current branch contains the staged implementation through Stage 10; the
+  actual commit map is recorded in `docs/design/08-IMPLEMENTATION-LOG.md`.
+- Canonical Pen contains eight FINAL roots, including `MqUMz` and the excluded
+  alternative `HOXkZ`; only `MqUMz` is used for Creator Profile.
+- The canonical file references 17 image assets. All 17 referenced repository
+  paths exist and their SHA-256 values were checked against the restored asset
+  pack; unrelated founder files remain untouched.
+- Runtime evidence is green at 1440/1024/390, including full Chromium E2E
+  `35/35`, API integration `39/39`, and the current eight-product demo density.
+- Pen fixed-scale overlay, founder visual approval, physical iOS/Android smoke
+  and screen-reader acceptance remain external release gates. The Pen API was
+  unreachable during this audit, so no unsupported claim of overlay approval is
+  made.
 
 ## 1. Цель
 
@@ -19,8 +35,8 @@ product contracts. Pen остаётся неизменяемым эталоно�
 
 - canonical Pen присутствует, читается и не имеет diff до/после работ;
 - exact tokens и anatomy извлечены из canonical nodes;
-- GlobalHeader, AuctionCard, AuctionPlayer и ProductTabs имеют по одному
-  production master; CreatorCard не создаётся без Authors route/API consumer;
+- GlobalHeader, AuctionCard, CreatorCard, AuctionPlayer и ProductTabs имеют по
+  одному production master с реальным route/API consumer;
 - все утверждённые публичные screens совпадают с Pen на 1440 и имеют
   согласованное поведение на 1024/390;
 - существующие auction, auth, roles, privacy, moderation и media behaviors не
@@ -39,13 +55,16 @@ product contracts. Pen остаётся неизменяемым эталоно�
   `/register`.
 - Baseline desktop shell использовал 72 px left rail; runtime теперь переведён
   на horizontal GlobalHeader.
-- `/` сейчас является каталогом; отдельные Home и Authors directory отсутствуют.
-- Product list contract поддерживает page/limit, но не заявленные Pen search,
-  sort и state filters.
-- Public seller contract не предоставляет directory list и имеет один
-  `socialLink`, а не три независимых social fields.
+- `/`, `/works`, `/authors` и `/search` существуют; Home и Authors используют
+  server-backed discovery/seller list projections.
+- Product discovery contract поддерживает pagination, search, status, sort,
+  category, author, material, price and uniqueness query state; `Тип работы`
+  остаётся явно исключённым без подтверждённого domain field.
+- Public seller contract предоставляет directory list и структурированные
+  public social links; private handoff fields не проецируются.
 - Bid history совместима с колонками participant, bid и time.
-- Dedicated creation-process model не подтверждена.
+- Creation process model подтверждена через ProductCreationStep и безопасные
+  public image metadata/URLs; расширение остаётся ограничено этим contract.
 - Production UI содержит работающие auth, auction, role, privacy, moderation и
   error flows, которые визуальный refactor обязан сохранить.
 
@@ -113,7 +132,8 @@ Root `BJd1P`, reference size 1440×3702.
 | CreatorCard               | `b8iVxg` |
 | HomeWorkCard / Editorial  | `b60Eaa` |
 
-Route и data selection не определены; не придумывать.
+Production route `/` и `/search` используют `/api/discovery/home`; Home
+секция строится только из server-projected top auctions, creators и new works.
 
 ### Browse Works
 
@@ -191,15 +211,15 @@ author page, не seller dashboard.
 | Area               | Runtime result                                      | Remaining target/gate                  | Classification        |
 | ------------------ | --------------------------------------------------- | -------------------------------------- | --------------------- |
 | Shell              | horizontal role-aware GlobalHeader                  | founder/device acceptance              | implemented           |
-| Home               | отсутствует                                         | route + real section queries           | blocked by IA/data    |
-| Works              | `/`, responsive 4/3/2/1 discovery                   | no unsupported controls                | implemented           |
-| Authors            | public detail route only                            | directory route/list API               | blocked by IA/API     |
-| Search/sort/filter | не показаны как рабочие                             | server contracts                       | blocked by product    |
+| Home               | `/` with server-projected discovery sections        | matched visual/device acceptance       | implemented/pending ext. |
+| Works              | `/works`, responsive 4/3/2/1 discovery              | matched visual/device acceptance       | implemented/pending ext. |
+| Authors            | `/authors` directory and public detail route         | matched visual/device acceptance       | implemented/pending ext. |
+| Search/sort/filter | `/search` plus URL-backed server query/facets        | unsupported `Тип работы` remains hidden | implemented           |
 | AuctionCard        | shared square-media Pen v2 card                     | external visual acceptance             | implemented           |
 | Product            | hero, player, URL tabs, table, related public works | external visual acceptance             | implemented           |
-| Creation           | только подтверждённые Product fields                | separate process model                 | blocked expansion     |
+| Creation           | ordered ProductCreationStep data and safe media     | separate future fields only            | implemented           |
 | Bids               | semantic table + Listing-scoped aliases             | —                                      | implemented           |
-| Creator            | creator-first public profile + shared work grid     | multiple social links only by decision | implemented           |
+| Creator            | creator-first public profile + shared work grid     | external MqUMz overlay/device gate     | implemented/pending ext. |
 | Responsive         | automated 1440/1024/390 matrices                    | physical iOS/Android smoke             | verified/pending ext. |
 
 ## 6. Решения и конфликты
@@ -467,8 +487,8 @@ card не реализует auction rules, а route не копирует share
 | GlobalHeader       | `L9UV9`                    | `components/layout/AppHeader.tsx`, `AccountMenu.tsx`, `BrandLogo.tsx`, `OverlayHost.tsx` | один role-aware header                    |
 | AuctionCard        | `k5vYGf`                   | `components/ui/AuctionCard.tsx`, `auction-card-layout.ts`                                | один public work-card component           |
 | Browse Works       | `H5vf2`                    | `features/products/product-list-screen.tsx`, `catalog-layout.ts`                         | thin catalog screen                       |
-| CreatorCard        | `SrXPq`                    | нового production master нет                                                             | новый shared component рядом с public UI  |
-| Browse Authors     | `N4ebBk`                   | route/list contract отсутствуют                                                          | blocked до IA/API decision                |
+| CreatorCard        | `SrXPq`                    | `components/ui/CreatorCard.tsx`, `CreatorCardGrid.tsx`                                   | один public creator-card component        |
+| Browse Authors     | `N4ebBk`                   | `features/sellers/public-authors-screen.tsx`, `/authors`, sellers API/client             | thin directory screen with server data    |
 | AuctionPlayer      | `X6Ksg`                    | `components/ui/AuctionPlayer.tsx`, Product bid state                                     | один controlled transaction component     |
 | ProductTabs        | `Jh9jr`                    | `components/ui/ProductTabs.tsx`, Product route URL state                                 | один accessible URL-backed tabs component |
 | Product screens    | `L7ytbv`, `cK8kD`, `XIzHe` | `features/products/product-screen.tsx`, `ProductGallery.tsx`, `EditorialSection.tsx`     | thin route composition                    |
@@ -539,13 +559,13 @@ unsupported controls do not pretend to work.
 
 ### WP4 — CreatorCard and Authors
 
-**Результат: blocked by confirmed IA/API scope; no unused component or mock route.**
+**Результат: completed on confirmed public seller list/API scope.**
 
 **Files:** new shared CreatorCard; route/client/contracts/API only after explicit
 decision.
 
-**Acceptance:** exact `SrXPq`; no metrics; public data only; screen remains
-blocked rather than using mock authors when list contract is absent.
+**Acceptance:** exact `SrXPq`; no metrics; public data only; `/authors` uses
+approved seller data, discipline, photos and server-owned activity/name sort.
 
 ### WP5 — AuctionPlayer and ProductTabs
 
@@ -580,13 +600,15 @@ limited to contract; works reuse AuctionCard.
 
 ### WP8 — Home and remaining routes
 
-**Результат:** existing routes migrated; Home/Authors expansion blocked by the
-documented gate.
+**Результат: completed on existing route/API scope; visual/device sign-off remains
+external.**
 
-**Gate:** approved IA/data contracts and inheritance rules.
+**Gate:** approved IA/data contracts and inheritance rules are implemented in
+`apps/api/src/discovery`, public seller services and the shared mobile routes.
 
-**Acceptance:** exact `BJd1P` with real queries; no incomplete-page rankings;
-all existing routes use the shared foundation without a hybrid final system.
+**Acceptance:** `BJd1P` consumes real server queries; no incomplete-page
+rankings; all existing routes use the shared foundation without a hybrid final
+system. Matched Pen overlay and founder/device approval remain release gates.
 
 ### WP9 — cutover and cleanup
 
