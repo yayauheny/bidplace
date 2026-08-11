@@ -107,7 +107,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
   try {
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
-      await page.goto('/works');
+      await page.goto('/works?sort=newest');
       const cards = page.locator('a[href^="/product/"]');
       await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3);
       const seededCards = page.locator(

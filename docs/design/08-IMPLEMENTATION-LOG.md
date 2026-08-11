@@ -46,6 +46,7 @@
   was introduced.
 
 Проверки: targeted Wave 2 Playwright layout `1/1` across 1440/1024/390,
+targeted Wave C catalog matrix `1/1` with an explicit `newest` fixture query,
 mobile typecheck/lint, design-tokens build, visual-token test contract and
 `git diff --check`. Canonical Pen was exported read-only and not modified.
 
