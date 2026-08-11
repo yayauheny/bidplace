@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { adminProductStatusUpdateRequestSchema, adminSellerStatusUpdateRequestSchema, bidCreateRequestSchema, listingCreateRequestSchema, listingStatusSchema, productWriteRequestSchema, realtimeEventPayloadSchema } from '../src';
+import {
+  adminProductStatusUpdateRequestSchema,
+  adminSellerStatusUpdateRequestSchema,
+  bidCreateRequestSchema,
+  listingCreateRequestSchema,
+  listingStatusSchema,
+  productWriteRequestSchema,
+  publicDiscoveryQuerySchema,
+  realtimeEventPayloadSchema,
+} from '../src';
 
 describe('shared contracts', () => {
   it('accepts a draft Product without art-only fields', () => {
@@ -23,5 +32,37 @@ describe('shared contracts', () => {
     expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'SUSPENDED' }).success).toBe(false);
     expect(adminProductStatusUpdateRequestSchema.safeParse({ status: 'CHANGES_REQUESTED' }).success).toBe(false);
     expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'APPROVED' }).success).toBe(true);
+  });
+  it('normalizes optional discovery pagination and trims search text', () => {
+    expect(
+      publicDiscoveryQuerySchema.parse({
+        q: '  ceramic  ',
+        limit: '12',
+        materials: ' clay, wood ',
+      }),
+    ).toEqual({
+      page: 1,
+      limit: 12,
+      q: 'ceramic',
+      materials: ['clay', 'wood'],
+      sort: 'newest',
+    });
+  });
+  it('rejects invalid discovery ranges and unknown keys', () => {
+    expect(publicDiscoveryQuerySchema.safeParse({ page: 0 }).success).toBe(false);
+    expect(publicDiscoveryQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
+    expect(publicDiscoveryQuerySchema.safeParse({ extra: 'value' }).success).toBe(false);
+    expect(publicDiscoveryQuerySchema.safeParse({ q: '   ' }).success).toBe(false);
+    expect(
+      publicDiscoveryQuerySchema.safeParse({ q: 'a'.repeat(121) }).success,
+    ).toBe(false);
+    expect(
+      publicDiscoveryQuerySchema.safeParse({ priceMin: 20, priceMax: 10 })
+        .success,
+    ).toBe(false);
+    expect(
+      publicDiscoveryQuerySchema.safeParse({ yearFrom: 2024, yearTo: 2020 })
+        .success,
+    ).toBe(false);
   });
 });

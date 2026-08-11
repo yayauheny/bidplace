@@ -4,17 +4,18 @@ import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import {
   AppIcon,
   AppText,
   MotionPressable,
-  SecondaryButton,
 } from '../ui';
 import { OverlayPortal } from './OverlayHost';
 
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
+  const capability = useSellerCapability();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -25,6 +26,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     focus?: () => void;
   } | null>(null);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
+  const email = auth.user?.email ?? '';
   const initial = label.slice(0, 1).toUpperCase();
   const closeMenu = useCallback((restoreFocus = false) => {
     focusOpened.current = false;
@@ -175,9 +177,15 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
       </MotionPressable>
       {open ? (
         Platform.OS === 'web' ? (
-          <OverlayPortal anchorRef={triggerRef} testId="account-menu-dropdown">
+          <OverlayPortal
+            anchorRef={triggerRef}
+            testId="account-menu-dropdown"
+            width={designTokens.layout.accountPopoverWidth}
+          >
             <AccountDropdown
-              label={label}
+              displayName={label}
+              email={email}
+              canOpenCabinet={capability.status === 'APPROVED'}
               loggingOut={loggingOut}
               onLogout={() => void logout()}
               inline={false}
@@ -185,7 +193,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           </OverlayPortal>
         ) : (
           <AccountDropdown
-            label={label}
+            displayName={label}
+            email={email}
+            canOpenCabinet={capability.status === 'APPROVED'}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
             inline
@@ -197,12 +207,16 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
 }
 
 function AccountDropdown({
-  label,
+  displayName,
+  email,
+  canOpenCabinet,
   loggingOut,
   onLogout,
   inline,
 }: {
-  label: string;
+  displayName: string;
+  email: string;
+  canOpenCabinet: boolean;
   loggingOut: boolean;
   onLogout: () => void;
   inline: boolean;
@@ -213,11 +227,12 @@ function AccountDropdown({
         position: inline ? 'absolute' : undefined,
         top: inline ? designTokens.size.touch : undefined,
         right: inline ? 0 : undefined,
-        minWidth: 180,
+        width: inline ? undefined : designTokens.layout.accountPopoverWidth,
+        minWidth: inline ? designTokens.layout.accountPopoverWidth : undefined,
         gap: designTokens.space.x2,
         borderWidth: 1,
         borderColor: designTokens.color.border,
-        borderRadius: designTokens.radius.control,
+        borderRadius: designTokens.radius.panel,
         backgroundColor: designTokens.color.surface,
         padding: designTokens.space.x2,
         shadowColor: '#000',
@@ -226,10 +241,71 @@ function AccountDropdown({
         elevation: 4,
       }}
     >
-      <AppText role="caption" tone="secondary">
-        {label}
-      </AppText>
-      <SecondaryButton label="Выйти" loading={loggingOut} onPress={onLogout} />
+      <View style={{ gap: designTokens.space.x1, padding: designTokens.space.x2 }}>
+        <AppText role="label">{displayName}</AppText>
+        <AppText role="caption" tone="secondary">
+          {email}
+        </AppText>
+      </View>
+      {canOpenCabinet ? (
+        <Link href="/profile" asChild>
+          <MotionPressable
+            accessibilityRole="link"
+            accessibilityLabel="Кабинет"
+            preset="button"
+            style={{
+              minHeight: designTokens.size.touch,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: designTokens.space.x2,
+              borderRadius: designTokens.radius.small,
+              paddingHorizontal: designTokens.space.x2,
+            }}
+            interactionStyle={({ hovered, pressed }) => ({
+              backgroundColor:
+                hovered || pressed
+                  ? designTokens.color.surfaceStrong
+                  : 'transparent',
+            })}
+          >
+            <AppIcon name="account" size={18} />
+            <AppText role="label" style={{ flex: 1 }}>
+              Кабинет
+            </AppText>
+            <AppIcon name="chevronRight" size={18} />
+          </MotionPressable>
+        </Link>
+      ) : null}
+      {canOpenCabinet ? (
+        <View
+          style={{ height: 1, backgroundColor: designTokens.color.border }}
+        />
+      ) : null}
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel="Выйти"
+        accessibilityState={{ busy: loggingOut }}
+        disabled={loggingOut}
+        onPress={onLogout}
+        preset="button"
+        style={{
+          minHeight: designTokens.size.touch,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: designTokens.space.x2,
+          borderRadius: designTokens.radius.small,
+          paddingHorizontal: designTokens.space.x2,
+        }}
+        interactionStyle={({ hovered, pressed }) => ({
+          backgroundColor:
+            hovered || pressed ? designTokens.color.accentSoft : 'transparent',
+        })}
+      >
+        <AppIcon name="logOut" size={18} color={designTokens.color.danger} />
+        <AppText role="label" style={{ color: designTokens.color.danger }}>
+          {loggingOut ? 'Выходим…' : 'Выйти'}
+        </AppText>
+      </MotionPressable>
     </View>
   );
 }

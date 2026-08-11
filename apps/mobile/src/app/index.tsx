@@ -1,5 +1,5 @@
-import { ProductListScreen } from '../features/products/product-list-screen';
+import { HomeScreen } from '../features/home/home-screen';
 
 export default function IndexRoute() {
-  return <ProductListScreen />;
+  return <HomeScreen />;
 }

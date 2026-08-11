@@ -18,7 +18,15 @@ export type ApiClientOptions = {
 export type RequestOptions = {
   method?: string;
   body?: unknown;
-  query?: Record<string, string | number | boolean | null | undefined>;
+  query?: Record<
+    string,
+    | string
+    | number
+    | boolean
+    | readonly (string | number | boolean)[]
+    | null
+    | undefined
+  >;
   headers?: HeadersInit;
   asFormData?: boolean;
 };
@@ -35,7 +43,7 @@ function normalizeBaseUrl(baseUrl: string): string {
 }
 
 function normalizeQuery(
-  query?: Record<string, string | number | boolean | null | undefined>,
+  query?: RequestOptions['query'],
 ): string {
   if (!query) {
     return '';
@@ -48,7 +56,7 @@ function normalizeQuery(
       continue;
     }
 
-    params.set(key, String(value));
+    params.set(key, Array.isArray(value) ? value.join(',') : String(value));
   }
 
   const serialized = params.toString();

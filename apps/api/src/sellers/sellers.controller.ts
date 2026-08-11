@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UploadedFiles,
   UseGuards,
@@ -14,6 +15,7 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  publicDiscoveryQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
@@ -97,6 +99,13 @@ export class SellersController {
   @UseGuards(BearerAuthGuard)
   listProducts(@CurrentUser() auth: { sub: string }) {
     return this.sellers.listProducts(auth.sub);
+  }
+
+  @Get('sellers')
+  listPublic(@Query() query: unknown) {
+    return this.sellers.listPublic(
+      parseBody(publicDiscoveryQuerySchema, query),
+    );
   }
 
   @Get('sellers/:slug/detail')

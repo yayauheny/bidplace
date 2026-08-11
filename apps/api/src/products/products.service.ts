@@ -1,7 +1,9 @@
 import {
   publicProductDetailResponseSchema,
   productListResponseSchema,
-  type PaginationQuery,
+  type PublicDiscoveryQuery,
+  type PublicDiscoverySort,
+  type ListingStatus,
   type ProductWriteRequest,
   type SellerStatus,
 } from '@bidplace/contracts';
@@ -35,6 +37,73 @@ import {
 } from '../sellers/seller-profile.mapper';
 
 const lockedStatuses = ['SCHEDULED', 'LIVE'] as const;
+
+type DiscoveryProduct = {
+  id: string;
+  createdAt: Date;
+  listings: Array<{
+    id: string;
+    status: ListingStatus;
+    createdAt: Date;
+    endsAt: Date;
+    currentPrice: { toNumber(): number };
+    bidCount: number;
+  }>;
+};
+
+const discoveryStatusPriority: Partial<Record<ListingStatus, number>> = {
+  LIVE: 0,
+  SCHEDULED: 1,
+  ENDED: 2,
+} as const;
+
+function compareDiscoveryProducts(
+  left: DiscoveryProduct,
+  right: DiscoveryProduct,
+  sort: PublicDiscoverySort,
+) {
+  const leftListing = selectPublicListing(left.listings);
+  const rightListing = selectPublicListing(right.listings);
+
+  if (!leftListing || !rightListing) return left.id.localeCompare(right.id);
+
+  if (sort === 'activity') {
+    return (
+      (discoveryStatusPriority[leftListing.status] ?? Number.MAX_SAFE_INTEGER) -
+        (discoveryStatusPriority[rightListing.status] ?? Number.MAX_SAFE_INTEGER) ||
+      rightListing.bidCount - leftListing.bidCount ||
+      rightListing.currentPrice.toNumber() - leftListing.currentPrice.toNumber() ||
+      leftListing.endsAt.getTime() - rightListing.endsAt.getTime() ||
+      left.id.localeCompare(right.id)
+    );
+  }
+
+  if (sort === 'endingSoon') {
+    return (
+      leftListing.endsAt.getTime() - rightListing.endsAt.getTime() ||
+      left.id.localeCompare(right.id)
+    );
+  }
+
+  if (sort === 'priceAsc') {
+    return (
+      leftListing.currentPrice.toNumber() - rightListing.currentPrice.toNumber() ||
+      left.id.localeCompare(right.id)
+    );
+  }
+
+  if (sort === 'priceDesc') {
+    return (
+      rightListing.currentPrice.toNumber() - leftListing.currentPrice.toNumber() ||
+      left.id.localeCompare(right.id)
+    );
+  }
+
+  return (
+    right.createdAt.getTime() - left.createdAt.getTime() ||
+    left.id.localeCompare(right.id)
+  );
+}
 
 @Injectable()
 export class ProductsService {
@@ -265,33 +334,92 @@ export class ProductsService {
     });
   }
 
-  async listPublic(query: PaginationQuery) {
-    const where = publicCatalogProductWhere;
+  async listPublic(query: PublicDiscoveryQuery) {
+    const where: Prisma.ProductWhereInput = {
+      AND: [
+        publicCatalogProductWhere,
+        ...(query.q
+          ? [
+              {
+                OR: [
+                  { title: { contains: query.q, mode: 'insensitive' as const } },
+                  { story: { contains: query.q, mode: 'insensitive' as const } },
+                  { materials: { contains: query.q, mode: 'insensitive' as const } },
+                  {
+                    sellerProfile: {
+                      fullName: {
+                        contains: query.q,
+                        mode: 'insensitive' as const,
+                      },
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
+        ...(query.category ? [{ categoryId: query.category }] : []),
+        ...(query.yearFrom !== undefined || query.yearTo !== undefined
+          ? [
+              {
+                year: {
+                  ...(query.yearFrom !== undefined
+                    ? { gte: query.yearFrom }
+                    : {}),
+                  ...(query.yearTo !== undefined ? { lte: query.yearTo } : {}),
+                },
+              },
+            ]
+          : []),
+        ...(query.materials?.map((material) => ({
+          materials: { contains: material, mode: 'insensitive' as const },
+        })) ?? []),
+      ],
+    };
 
-    const [products, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        include: {
-          sellerProfile: {
-            select: publicSellerProfileSelect,
-          },
-          images: { orderBy: { position: 'asc' } },
-          listings: {
-            where: { status: { in: publicListingStatuses } },
-            include: { auctionRules: true },
-            orderBy: { createdAt: 'desc' },
-          },
+    const products = await this.prisma.product.findMany({
+      where,
+      include: {
+        sellerProfile: {
+          select: publicSellerProfileSelect,
         },
-        orderBy: { createdAt: 'desc' },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      }),
-      this.prisma.product.count({ where }),
-    ]);
+        images: { orderBy: { position: 'asc' } },
+        listings: {
+          where: { status: { in: publicListingStatuses } },
+          include: { auctionRules: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    });
+
+    const matchingProducts = products.filter((product) => {
+      const listing = selectPublicListing(product.listings);
+
+      if (!listing) return false;
+      if (query.status && listing.status !== query.status) return false;
+
+      const currentPrice = listing.currentPrice.toNumber();
+      if (query.priceMin !== undefined && currentPrice < query.priceMin) {
+        return false;
+      }
+      if (query.priceMax !== undefined && currentPrice > query.priceMax) {
+        return false;
+      }
+
+      return true;
+    });
+
+    const sortedProducts = [...matchingProducts].sort((left, right) =>
+      compareDiscoveryProducts(left, right, query.sort),
+    );
+    const pagedProducts = sortedProducts.slice(
+      (query.page - 1) * query.limit,
+      query.page * query.limit,
+    );
 
     return productListResponseSchema.parse({
-      products: products.map((product) => this.toPublicProduct(product)),
-      pagination: { ...query, total },
+      products: pagedProducts.map((product) => this.toPublicProduct(product)),
+      pagination: { page: query.page, limit: query.limit, total: sortedProducts.length },
     });
   }
 

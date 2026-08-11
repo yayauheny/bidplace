@@ -20,6 +20,7 @@ import { ActivityModule } from './activity/activity.module';
 import { ImagesModule } from './images/images.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { SellersModule } from './sellers/sellers.module';
+import { DiscoveryModule } from './discovery/discovery.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { SellersModule } from './sellers/sellers.module';
     ImagesModule,
     RealtimeModule,
     SellersModule,
+    DiscoveryModule,
   ],
   providers: [
     {

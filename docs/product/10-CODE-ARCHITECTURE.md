@@ -6,6 +6,9 @@
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
+- `apps/api/src/discovery` owns the public Home projection. Discovery delegates to
+  Product/Seller services, which select the canonical public Listing before
+  server-side filters, sort and pagination; clients do not rank a loaded page.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
@@ -50,7 +53,7 @@ SellerProfile
   approved Product/SellerProfile Listing predicate, are rate-limited per IP,
   public rooms are capped per socket, and socket-local room tracking is cleared
   on disconnect.
-- Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`; `SMTP_USERNAME` and `SMTP_PASSWORD` must be configured together and partially configured auth is rejected before transport creation.
+- Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy

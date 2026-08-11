@@ -4,6 +4,7 @@ export * from './admin';
 export * from './bid';
 export * from './category';
 export * from './dashboard';
+export * from './discovery';
 export * from './error';
 export * from './enums';
 export * from './events';

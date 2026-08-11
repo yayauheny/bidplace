@@ -1,42 +1,47 @@
-import { Link, usePathname } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import {
+  Link,
+  type Href,
+  useLocalSearchParams,
+  usePathname,
+  useRouter,
+} from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Platform,
+  ScrollView,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
-import { AppText, MotionPressable } from '../ui';
+import { AppIcon, AppText, MotionPressable } from '../ui';
 import { AccountMenu } from './AccountMenu';
 import { BrandLogo } from './BrandLogo';
+import { OverlayPortal } from './OverlayHost';
 
-type Href = '/' | '/me/activity' | '/profile' | '/admin' | '/products/new';
 type HeaderItem = { label: string; href: Href };
 
-function navigationItems(
+function utilityNavigationItems(
   auth: ReturnType<typeof useAuth>,
   capability: ReturnType<typeof useSellerCapability>,
 ): HeaderItem[] {
   if (auth.isAdmin) {
-    return [
-      { label: 'Работы', href: '/' },
-      { label: 'Модерация', href: '/admin' },
-    ];
+    return [{ label: 'Модерация', href: '/admin' }];
   }
 
   if (!auth.isAuthenticated) {
-    return [{ label: 'Работы', href: '/' }];
+    return [];
   }
 
   if (capability.status === 'APPROVED') {
-    return [
-      { label: 'Работы', href: '/' },
-      { label: 'Покупки', href: '/me/activity' },
-      { label: 'Кабинет', href: '/profile' },
-    ];
+    return [{ label: 'Покупки', href: '/me/activity' }];
   }
 
   return [
-    { label: 'Работы', href: '/' },
     { label: 'Покупки', href: '/me/activity' },
     {
       label: capability.profile ? 'Заявка продавца' : 'Стать продавцом',
@@ -46,20 +51,21 @@ function navigationItems(
 }
 
 function isActiveRoute(pathname: string, href: Href) {
-  if (href === '/') {
-    return pathname === '/' || pathname.startsWith('/product/');
-  }
-  return pathname === href || pathname.startsWith(href);
+  if (href === '/') return pathname === '/';
+  const value = String(href);
+  return pathname === value || pathname.startsWith(`${value}/`);
 }
 
 function NavigationLink({
   active,
   desktop,
   item,
+  onPress,
 }: {
   active: boolean;
   desktop: boolean;
   item: HeaderItem;
+  onPress?: () => void;
 }) {
   return (
     <Link href={item.href} asChild>
@@ -67,6 +73,7 @@ function NavigationLink({
         accessibilityRole="link"
         accessibilityLabel={item.label}
         aria-current={active ? 'page' : undefined}
+        onPress={onPress}
         preset="button"
         style={{
           minHeight: desktop
@@ -97,12 +104,239 @@ function NavigationLink({
   );
 }
 
+function DiscoveryDropdown({
+  desktop,
+  onNavigate,
+}: {
+  desktop: boolean;
+  onNavigate: () => void;
+}) {
+  const items: Array<HeaderItem & { icon: 'catalog' | 'user' }> = [
+    { label: 'Работы', href: '/works', icon: 'catalog' },
+    { label: 'Авторы', href: '/authors', icon: 'user' },
+  ];
+
+  return (
+    <View
+      accessibilityRole="menu"
+      style={{
+        position: desktop ? undefined : 'absolute',
+        top: desktop ? undefined : designTokens.size.touch,
+        left: desktop ? undefined : 0,
+        width: designTokens.layout.discoveryMenuWidth,
+        gap: designTokens.space.x1,
+        borderWidth: 1,
+        borderColor: designTokens.color.border,
+        borderRadius: designTokens.radius.menu,
+        backgroundColor: designTokens.color.surface,
+        padding: designTokens.space.x2,
+        ...designTokens.elevation.floating,
+      }}
+    >
+      {items.map((item) => (
+        <Link key={item.label} href={item.href} asChild>
+          <MotionPressable
+            accessibilityRole="link"
+            accessibilityLabel={item.label}
+            onPress={onNavigate}
+            preset="button"
+            style={{
+              minHeight: designTokens.size.touch,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: designTokens.space.x3,
+              borderRadius: designTokens.radius.small,
+              paddingHorizontal: designTokens.space.x3,
+            }}
+            interactionStyle={({ hovered, pressed }) => ({
+              backgroundColor:
+                hovered || pressed
+                  ? designTokens.color.surfaceStrong
+                  : 'transparent',
+            })}
+          >
+            <AppIcon name={item.icon} size={18} />
+            <AppText role="label">{item.label}</AppText>
+          </MotionPressable>
+        </Link>
+      ))}
+    </View>
+  );
+}
+
+function DiscoveryMenu({ desktop }: { desktop: boolean }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<{
+    getBoundingClientRect: () => DOMRect;
+    focus?: () => void;
+  } | null>(null);
+  const active =
+    pathname === '/works' ||
+    pathname === '/authors' ||
+    pathname === '/search' ||
+    pathname.startsWith('/product/') ||
+    pathname.startsWith('/seller/');
+
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus?.();
+    };
+    const closeOnPointerDown = (event: PointerEvent) => {
+      const trigger = document.getElementById('discovery-menu-trigger');
+      const dropdown = document.getElementById('discovery-menu-dropdown');
+      if (
+        event.target instanceof Node &&
+        !trigger?.contains(event.target) &&
+        !dropdown?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnPointerDown);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnPointerDown);
+    };
+  }, [open]);
+
+  const dropdown = (
+    <DiscoveryDropdown desktop={Platform.OS === 'web'} onNavigate={() => setOpen(false)} />
+  );
+
+  return (
+    <View nativeID="discovery-menu-trigger" style={{ position: 'relative' }}>
+      <MotionPressable
+        ref={(node) => {
+          triggerRef.current = node as unknown as {
+            getBoundingClientRect: () => DOMRect;
+            focus?: () => void;
+          } | null;
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Обзор"
+        accessibilityState={{ expanded: open, selected: active }}
+        onAccessibilityEscape={() => {
+          setOpen(false);
+          triggerRef.current?.focus?.();
+        }}
+        onPress={() => setOpen((current) => !current)}
+        style={{
+          minHeight: desktop
+            ? designTokens.size.touch
+            : designTokens.size.control,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: designTokens.space.x1,
+          borderBottomWidth: desktop && active ? 2 : 0,
+          borderBottomColor: designTokens.color.ink,
+          borderRadius: desktop ? 0 : designTokens.radius.pill,
+          paddingHorizontal: desktop
+            ? designTokens.space.x3
+            : designTokens.space.x4,
+        }}
+        interactionStyle={({ hovered, pressed }) => ({
+          backgroundColor:
+            !desktop && active
+              ? designTokens.color.surfaceStrong
+              : hovered || pressed
+                ? designTokens.color.surfaceMuted
+                : 'transparent',
+        })}
+      >
+        <AppText role="nav">Обзор</AppText>
+        <View
+          style={{
+            transform: [{ rotate: open ? '180deg' : '0deg' }],
+          }}
+        >
+          <AppIcon name="chevronDown" size={16} />
+        </View>
+      </MotionPressable>
+      {open ? (
+        Platform.OS === 'web' ? (
+          <OverlayPortal
+            anchorRef={triggerRef}
+            placement="bottom-start"
+            testId="discovery-menu-dropdown"
+            width={designTokens.layout.discoveryMenuWidth}
+          >
+            {dropdown}
+          </OverlayPortal>
+        ) : (
+          dropdown
+        )
+      ) : null}
+    </View>
+  );
+}
+
+function HeaderSearch({ inline }: { inline: boolean }) {
+  const router = useRouter();
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    setQuery(typeof q === 'string' ? q : '');
+  }, [q]);
+
+  const submit = () => {
+    const value = query.trim();
+    if (!value) return;
+    router.push({ pathname: '/search', params: { q: value } });
+  };
+
+  return (
+    <View
+      style={{
+        width: inline ? '100%' : undefined,
+        maxWidth: inline ? 480 : undefined,
+        flex: inline ? 1 : undefined,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: designTokens.space.x3,
+        minHeight: designTokens.size.input,
+        borderRadius: designTokens.radius.pill,
+        backgroundColor: designTokens.color.surfaceStrong,
+        paddingHorizontal: designTokens.space.x4,
+      }}
+    >
+      <AppIcon name="search" size={18} color={designTokens.color.textSecondary} />
+      <TextInput
+        accessibilityLabel="Найти предмет или автора"
+        value={query}
+        onChangeText={setQuery}
+        onSubmitEditing={submit}
+        returnKeyType="search"
+        placeholder="Найти предмет или автора"
+        placeholderTextColor={designTokens.color.textMuted}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          color: designTokens.color.ink,
+          fontFamily: designTokens.typography.bodySmall.fontFamily,
+          fontSize: designTokens.typography.bodySmall.fontSize,
+        }}
+      />
+    </View>
+  );
+}
+
 function CreateListingAction() {
   return (
     <Link href="/products/new" asChild>
       <MotionPressable
         accessibilityRole="link"
-        accessibilityLabel="Выставить работу"
+        accessibilityLabel="Добавить работу"
         preset="primaryAction"
         style={{
           minHeight: designTokens.size.buttonCompact,
@@ -123,7 +357,7 @@ function CreateListingAction() {
           numberOfLines={1}
           style={{ color: designTokens.color.surface }}
         >
-          Выставить работу
+          Добавить
         </AppText>
       </MotionPressable>
     </Link>
@@ -136,11 +370,24 @@ export function AppHeader() {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const desktop = width >= designTokens.breakpoint.compactHeader;
-  const items = navigationItems(auth, capability);
+  const searchInline =
+    width >= designTokens.breakpoint.headerSearchInline;
+  const items = utilityNavigationItems(auth, capability);
   const canCreate = !auth.isAdmin && capability.status === 'APPROVED';
-  const links = items.map((item) => (
+
+  const primaryNavigation = (
+    <>
+      <NavigationLink
+        active={pathname === '/'}
+        desktop={desktop}
+        item={{ label: 'Главная', href: '/' }}
+      />
+      <DiscoveryMenu desktop={desktop} />
+    </>
+  );
+  const utilityLinks = items.map((item) => (
     <NavigationLink
-      key={item.href}
+      key={String(item.href)}
       active={isActiveRoute(pathname, item.href)}
       desktop={desktop}
       item={item}
@@ -163,10 +410,9 @@ export function AppHeader() {
           minHeight: desktop
             ? designTokens.size.header
             : designTokens.size.mobileHeader,
-          alignSelf: 'center',
           flexDirection: 'row',
           alignItems: 'center',
-          gap: desktop ? designTokens.space.x8 : designTokens.space.x3,
+          gap: desktop ? designTokens.space.x6 : designTokens.space.x3,
           paddingHorizontal: desktop
             ? designTokens.space.x6
             : designTokens.layout.mobileGutter,
@@ -175,19 +421,40 @@ export function AppHeader() {
         <BrandLogo />
         {desktop ? (
           <View
-            role="navigation"
             accessibilityLabel="Основная навигация"
+            role="navigation"
             style={{ flexDirection: 'row', alignItems: 'center' }}
           >
-            {links}
+            {primaryNavigation}
           </View>
         ) : null}
-        <View style={{ flex: 1 }} />
+        {searchInline ? <HeaderSearch inline /> : <View style={{ flex: 1 }} />}
+        {desktop ? (
+          <View
+            accessibilityLabel="Навигация аккаунта"
+            role="navigation"
+            style={{ flexDirection: 'row', alignItems: 'center' }}
+          >
+            {utilityLinks}
+          </View>
+        ) : null}
         {canCreate ? <CreateListingAction /> : null}
         <AccountMenu desktop={desktop} />
       </View>
+      {!searchInline ? (
+        <View
+          style={{
+            paddingHorizontal: desktop
+              ? designTokens.space.x6
+              : designTokens.layout.mobileGutter,
+            paddingBottom: designTokens.space.x3,
+          }}
+        >
+          <HeaderSearch inline={false} />
+        </View>
+      ) : null}
       {!desktop ? (
-        <View role="navigation" accessibilityLabel="Основная навигация">
+        <View accessibilityLabel="Основная навигация" role="navigation">
           <ScrollView
             horizontal
             contentContainerStyle={{
@@ -197,7 +464,8 @@ export function AppHeader() {
             }}
             showsHorizontalScrollIndicator={false}
           >
-            {links}
+            {primaryNavigation}
+            {utilityLinks}
           </ScrollView>
         </View>
       ) : null}

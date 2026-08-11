@@ -1,6 +1,8 @@
 import {
+  publicSellerListResponseSchema,
   publicSellerDetailResponseSchema,
   sellerProductListResponseSchema,
+  type PublicDiscoveryQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
@@ -178,6 +180,73 @@ export class SellersService {
 
     return sellerProductListResponseSchema.parse({
       products: products.map(toContractProduct),
+    });
+  }
+
+  async listPublic(query: PublicDiscoveryQuery) {
+    const searchWhere = query.q
+      ? {
+          OR: [
+            { fullName: { contains: query.q, mode: 'insensitive' as const } },
+            { slug: { contains: query.q, mode: 'insensitive' as const } },
+            {
+              shortDescription: {
+                contains: query.q,
+                mode: 'insensitive' as const,
+              },
+            },
+          ],
+        }
+      : {};
+    const where = { status: 'APPROVED' as const, ...searchWhere };
+    const [sellers, total] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where,
+        select: {
+          id: true,
+          ...publicSellerProfileSelect,
+          products: {
+            where: publicCatalogProductWhere,
+            orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+            take: 1,
+            select: { createdAt: true },
+          },
+          _count: {
+            select: { products: { where: publicCatalogProductWhere } },
+          },
+        },
+      }),
+      this.prisma.sellerProfile.count({ where }),
+    ]);
+
+    const sortedSellers = [...sellers].sort((left, right) => {
+      if (query.sort === 'activity') {
+        const leftCreatedAt = left.products[0]?.createdAt.getTime() ?? 0;
+        const rightCreatedAt = right.products[0]?.createdAt.getTime() ?? 0;
+
+        return (
+          rightCreatedAt - leftCreatedAt ||
+          left.fullName.localeCompare(right.fullName) ||
+          left.id.localeCompare(right.id)
+        );
+      }
+
+      return (
+        left.fullName.localeCompare(right.fullName) ||
+        left.id.localeCompare(right.id)
+      );
+    });
+    const pagedSellers = sortedSellers.slice(
+      (query.page - 1) * query.limit,
+      query.page * query.limit,
+    );
+
+    return publicSellerListResponseSchema.parse({
+      sellers: pagedSellers.map((seller) => ({
+        sellerProfile: toPublicSellerProfile(seller),
+        workCount: seller._count.products,
+      })),
+      pagination: { page: query.page, limit: query.limit, total },
     });
   }
 

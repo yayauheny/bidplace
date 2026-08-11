@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-11
 
 Статус: **Target mapped; route and data gaps remain**
 
@@ -15,17 +15,18 @@ routes сохраняют поведение и должны пережить с
 
 | Экран              | Pen node | Route                 | Contract status                                            |
 | ------------------ | -------- | --------------------- | ---------------------------------------------------------- |
-| Global Header      | `L9UV9`  | общий shell           | role logic существует; новый shell не реализован           |
-| Home               | `BJd1P`  | не решён              | нужен отдельный IA/data decision                           |
-| Browse Works       | `H5vf2`  | текущий `/`           | каталог существует; search/filter/sort не поддержаны       |
-| Browse Authors     | `N4ebBk` | отсутствует           | directory route и list API отсутствуют                     |
+| Global Header      | `L9UV9`  | общий shell           | role-aware shell and account/discovery overlays are partial pending visual QA |
+| Home               | `BJd1P`  | `/`                   | `/api/discovery/home` supplies top, creators and new works; acceptance pending |
+| Browse Works       | `H5vf2`  | `/works`              | server query, status chips and sort are implemented; filters and acceptance remain partial |
+| Browse Authors     | `N4ebBk` | `/authors`            | approved seller list API and route exist; discipline field and acceptance remain partial |
 | Product / About    | `L7ytbv` | `/product/[publicId]` | основной public contract существует                        |
 | Product / Creation | `cK8kD`  | тот же Product route  | dedicated process model не подтверждён                     |
 | Product / Bids     | `XIzHe`  | тот же Product route  | participant/bid/time доступны в текущем contract           |
 | Creator Profile    | `MqUMz`  | `/seller/[slug]`      | basic public profile существует; links ограничены contract |
 
-Нельзя назначать Home или Authors маршрут, менять `/` или добавлять API только
-на основании макета. Это отдельные продуктовые/архитектурные решения.
+Решение о `/`, `/works`, `/authors`, `/search?q=...` и server-authoritative
+discovery contracts зафиксировано в `DEC-065`. Pen по-прежнему управляет
+композицией, а product/API boundaries — данными, видимостью и permissions.
 
 ## 3. Global Header и роли
 
@@ -42,9 +43,9 @@ Discovery group `SYE9r`, Search `VKsEM`, user actions `AG6gK`, search bar
 `Uulvx`, navigation `BF8Nr`, menu trigger `MsOKe`, menu `SHHWu`, Works item
 `B0EaXH`, Authors item `VUDwA`, actions `hLoyZ`.
 
-Search и Authors могут появиться как enabled controls только после появления
-поддержанного route/API contract. До этого нужно согласовать честное состояние,
-а не подключать client-only псевдопоиск.
+Search и Authors используют поддержанные API contracts; client-only matching и
+ranking не допускаются. Back/forward restoration и полный filter matrix остаются
+частью финальной acceptance-проверки.
 
 ## 4. Discovery flow
 
@@ -56,9 +57,8 @@ Profile → связанная работа.
 Секции: header `CV9fF`, Works intro `t0SBW8`, section `mGtKx`, auction card
 `WxEOg`, creator card `b8iVxg`, editorial work card `b60Eaa`.
 
-Открытые решения: route, критерии Top/New, набор authors, pagination/carousel и
-источники данных. Пока решения нет, Home — visual target, не implementation
-scope.
+Top/New и набор creators приходят из отдельного `/api/discovery/home`; экран
+остаётся Partial до matched responsive screenshots и проверки всех состояний.
 
 ### Browse Works `H5vf2`
 

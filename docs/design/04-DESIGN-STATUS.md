@@ -1,8 +1,8 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-11
 
-Общий статус: **Pen v2 approved runtime scope implemented and automated QA verified; founder/device acceptance pending**
+Общий статус: **Pen v2 public discovery implementation is Partial; automated type/lint/unit checks pass, while founder/device acceptance and metadata completion remain pending**
 
 ## Текущий результат
 
@@ -20,26 +20,29 @@
   публичная копия доступна по founder-provided Pen URL.
 - `Implemented`: reference hierarchy и motion/blur/hover specification внесены
   в `01`, `03`, `05`, `06` и основной аудит `07`.
-- `Implemented`: production UI перенесён на Pen v2 foundation, header, Browse
-  Works, Product/Auction, Creator Profile, auth, seller editors и supporting
-  routes.
+- `Partial`: production UI перенесён на Pen v2 foundation, header, Browse
+  Works, Home, Authors, Search, Product/Auction, Creator Profile, auth, seller
+  editors и supporting routes. Discovery data is server-authoritative, but
+  visual/device acceptance and remaining metadata are open.
 - `Verified`: 1440/1024/390 runtime compositions, Onest/Inter loading,
   responsive overflow, Product URL/back tabs, related public works, focused E2E
   and production Expo exports.
 - `Verified`: post-implementation API/security audit aligned public Product,
   Bid history, realtime and image visibility; aggregate image limits are
   transactional and bidder aliases are Listing-scoped.
-- `Needs decision`: route/IA для Home и Browse Authors, а также contracts для
-  search/filter/sort/author directory и creation story.
+- `Partial`: route/IA для Home, Browse Authors и Search, contracts для
+  search/filter/sort/author directory, header/account popover and shared
+  controls. Creation story, structured socials and dedicated creator discipline
+  remain unimplemented.
 
 ## Screen matrix
 
 | Target           | Pen      | Visual spec       | Data/route             | Code        | Acceptance |
 | ---------------- | -------- | ----------------- | ---------------------- | ----------- | ---------- |
-| Global Header    | `L9UV9`  | measured baseline | role logic exists      | implemented | verified   |
-| Home             | `BJd1P`  | exported/readable | blocked by IA/data     | none        | not run    |
-| Browse Works     | `H5vf2`  | exported/readable | compatible contract    | implemented | verified   |
-| Browse Authors   | `N4ebBk` | exported/readable | route/API absent       | none        | not run    |
+| Global Header    | `L9UV9`  | measured baseline | role logic and overlays exist | partial | pending visual QA |
+| Home             | `BJd1P`  | exported/readable | `/api/discovery/home` | partial | pending responsive QA |
+| Browse Works     | `H5vf2`  | exported/readable | server query + controls | partial | pending responsive QA |
+| Browse Authors   | `N4ebBk` | exported/readable | approved author list API | partial | pending discipline/QA |
 | Product About    | `L7ytbv` | exported/readable | compatible contract    | implemented | verified   |
 | Product Creation | `cK8kD`  | exported/readable | existing fields only   | implemented | verified   |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields | implemented | verified   |
@@ -51,7 +54,7 @@
 | ------------- | -------- | ------------------------------------------------------------ |
 | GlobalHeader  | `L9UV9`  | implemented horizontal responsive header                     |
 | AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid |
-| CreatorCard   | `SrXPq`  | not implemented as reusable production component             |
+| CreatorCard   | `SrXPq`  | reusable production component exists; dedicated discipline contract remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                 |
 | ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history        |
 
@@ -64,8 +67,8 @@ remain protected by tests; runtime code does not replace Pen as visual authority
 ## Remaining release gates
 
 1. Keep zero `.pen` diff and verify the canonical checksum after every UI stage.
-2. Resolve Home/Browse Authors/search/filter/sort data and route decisions before
-   implementing those blocked surfaces.
+2. Complete discipline, structured social and creation-story data contracts;
+   verify Home/Authors/Search/filter/sort states at 1440/1024/390.
 3. Complete founder visual review and physical iOS/Android smoke acceptance.
 
 ## Definition of complete

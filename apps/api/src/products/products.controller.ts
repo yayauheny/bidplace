@@ -8,7 +8,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { paginationQuerySchema, productWriteRequestSchema } from '@bidplace/contracts';
+import {
+  productWriteRequestSchema,
+  publicDiscoveryQuerySchema,
+} from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { parseBody } from '../core/validation';
@@ -20,7 +23,9 @@ export class ProductsController {
 
   @Get()
   list(@Query() query: unknown) {
-    return this.products.listPublic(parseBody(paginationQuerySchema, query));
+    return this.products.listPublic(
+      parseBody(publicDiscoveryQuerySchema, query),
+    );
   }
 
   @Get(':publicId')

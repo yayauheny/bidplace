@@ -56,7 +56,9 @@ export function PageState({
           {message ?? 'Проверьте соединение и повторите попытку.'}
         </AppText>
       ) : null}
-      {retry ? <PrimaryButton label="Повторить" onPress={retry} /> : null}
+      {retry ? (
+        <PrimaryButton label="Повторить" onPress={retry} alignSelf="center" />
+      ) : null}
     </View>
   );
 }

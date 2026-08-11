@@ -10,5 +10,6 @@ import { SellersService } from './sellers.service';
   imports: [AuthModule, DatabaseModule, ProductsModule],
   controllers: [SellersController],
   providers: [SellersService],
+  exports: [SellersService],
 })
 export class SellersModule {}

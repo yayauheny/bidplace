@@ -26,3 +26,27 @@ export function getBottomEndPosition({
     top: anchorBottom + gap,
   };
 }
+
+export function getBottomStartPosition({
+  anchorLeft,
+  anchorBottom,
+  viewportWidth,
+  width,
+  collisionInset,
+  gap,
+}: {
+  anchorLeft: number;
+  anchorBottom: number;
+  viewportWidth: number;
+  width: number;
+  collisionInset: number;
+  gap: number;
+}) {
+  return {
+    left: Math.min(
+      Math.max(anchorLeft, collisionInset),
+      Math.max(collisionInset, viewportWidth - width - collisionInset),
+    ),
+    top: anchorBottom + gap,
+  };
+}

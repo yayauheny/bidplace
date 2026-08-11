@@ -4,6 +4,8 @@ export * from './AppText';
 export * from './AuctionPlayer';
 export * from './AuctionCard';
 export * from './AuctionCardGrid';
+export * from './CreatorCard';
+export * from './CreatorCardGrid';
 export * from './Button';
 export * from './FormSection';
 export * from './PageHeader';

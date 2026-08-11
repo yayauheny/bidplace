@@ -15,4 +15,5 @@ export const paginationMetaSchema = z
   })
   .strict();
 
-export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+export type PaginationQueryInput = z.input<typeof paginationQuerySchema>;
+export type PaginationQuery = z.output<typeof paginationQuerySchema>;

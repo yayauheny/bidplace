@@ -16,7 +16,8 @@ describe('OtpService', () => {
         NODE_ENV: 'production',
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: 587,
-        SMTP_SECURE: false,
+      SMTP_SECURE: false,
+        SMTP_AUTH_MODE: 'none',
         SMTP_FROM: 'no-reply@example.com',
         SERVICE_RULES_OWNER: 'Bidplace',
         SERVICE_RULES_CONTACT: 'support@example.com',
@@ -31,7 +32,8 @@ describe('OtpService', () => {
         NODE_ENV: 'production',
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: 465,
-        SMTP_SECURE: true,
+      SMTP_SECURE: true,
+        SMTP_AUTH_MODE: 'login',
         SMTP_USERNAME: 'user',
         SMTP_FROM: 'no-reply@example.com',
         SERVICE_RULES_OWNER: 'Bidplace',
@@ -41,6 +43,19 @@ describe('OtpService', () => {
         JWT_SECRET: 'secret',
       } as never),
     ).toThrow('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
+  });
+
+  it('omits SMTP auth for an unauthenticated relay', () => {
+    expect(
+      buildSmtpTransportOptions({
+        NODE_ENV: 'development',
+        SMTP_AUTH_MODE: 'none',
+        SMTP_HOST: 'mailpit',
+        SMTP_PORT: 1025,
+        SMTP_SECURE: false,
+        SMTP_FROM: 'no-reply@example.com',
+      } as never),
+    ).not.toHaveProperty('auth');
   });
 
   it('rejects an expired code without marking the user verified', async () => {

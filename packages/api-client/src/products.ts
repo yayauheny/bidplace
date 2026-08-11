@@ -1,10 +1,10 @@
 import {
-  paginationQuerySchema,
   productListResponseSchema,
   productResponseSchema,
   productWriteRequestSchema,
+  publicDiscoveryQuerySchema,
   publicProductDetailResponseSchema,
-  type PaginationQuery,
+  type PublicDiscoveryQueryInput,
   type ProductWriteRequest,
 } from '@bidplace/contracts';
 
@@ -12,9 +12,9 @@ import { requestJson, type RequestContext } from './request';
 
 export function createProductsClient(context: RequestContext) {
   return {
-    list(query?: PaginationQuery) {
+    list(query?: PublicDiscoveryQueryInput) {
       return requestJson(context, '/api/products', productListResponseSchema, {
-        query: paginationQuerySchema.parse(query ?? {}),
+        query: publicDiscoveryQuerySchema.parse(query ?? {}),
       });
     },
     get(publicId: string) {

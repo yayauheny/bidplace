@@ -21,6 +21,7 @@ type ButtonProps = {
   icon?: AppIconName;
   accessibilityHint?: string;
   width?: ButtonWidth;
+  alignSelf?: ViewStyle['alignSelf'];
   compact?: boolean;
 };
 
@@ -66,6 +67,7 @@ function ButtonBase({
   accessibilityHint,
   width = 'content',
   compact = false,
+  alignSelf,
   style,
   textColor,
 }: ButtonProps & {
@@ -89,7 +91,7 @@ function ButtonBase({
             ? designTokens.size.buttonCompact
             : designTokens.size.button,
           justifyContent: 'center',
-          ...buttonLayoutStyle(width),
+          ...buttonLayoutStyle(width, alignSelf),
         },
         typeof style === 'function' ? style(state) : style,
       ]}

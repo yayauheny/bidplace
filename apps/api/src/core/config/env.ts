@@ -8,6 +8,11 @@ const booleanEnvSchema = z
   .optional()
   .transform((value) => value === 'true');
 
+const optionalNonEmptyStringEnvSchema = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const serverEnvSchema = z
   .object({
     NODE_ENV: z
@@ -37,12 +42,13 @@ const serverEnvSchema = z
       .positive()
       .default(40 * 1024 * 1024),
     JWT_SECRET: z.string().min(1),
-    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
-    SMTP_USERNAME: z.string().min(1).optional(),
-    SMTP_PASSWORD: z.string().min(1).optional(),
-    SMTP_FROM: z.string().min(1).optional(),
+    SMTP_AUTH_MODE: z.enum(['none', 'login']).default('none'),
+    SMTP_USERNAME: optionalNonEmptyStringEnvSchema,
+    SMTP_PASSWORD: optionalNonEmptyStringEnvSchema,
+    SMTP_FROM: optionalNonEmptyStringEnvSchema,
     SERVICE_RULES_OWNER: z.string().min(1).optional(),
     SERVICE_RULES_CONTACT: z.string().min(1).optional(),
     SERVICE_RULES_TEXT: z.string().min(1).optional(),
@@ -60,14 +66,22 @@ const serverEnvSchema = z
     },
   )
   .superRefine((env, context) => {
-    if (
-      (env.SMTP_USERNAME === undefined) !==
-      (env.SMTP_PASSWORD === undefined)
-    ) {
+    const hasUsername = env.SMTP_USERNAME !== undefined;
+    const hasPassword = env.SMTP_PASSWORD !== undefined;
+
+    if (env.SMTP_AUTH_MODE === 'login' && (!hasUsername || !hasPassword)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: env.SMTP_USERNAME === undefined ? ['SMTP_USERNAME'] : ['SMTP_PASSWORD'],
+        path: ['SMTP_AUTH_MODE'],
         message: 'SMTP_USERNAME and SMTP_PASSWORD must be configured together',
+      });
+    }
+
+    if (env.SMTP_AUTH_MODE === 'none' && (hasUsername || hasPassword)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_AUTH_MODE'],
+        message: 'SMTP_USERNAME and SMTP_PASSWORD require SMTP_AUTH_MODE=login',
       });
     }
 

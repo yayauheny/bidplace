@@ -91,6 +91,7 @@ describe('resolveServerEnvFilePath', () => {
         SMTP_HOST: 'smtp.example.com',
         SMTP_PORT: '587',
         SMTP_SECURE: 'false',
+        SMTP_AUTH_MODE: 'login',
         SMTP_USERNAME: 'user',
         SMTP_FROM: 'no-reply@example.com',
         SERVICE_RULES_OWNER: 'Bidplace',
@@ -99,6 +100,24 @@ describe('resolveServerEnvFilePath', () => {
         TEST_EMAIL_BYPASS: 'false',
       }),
     ).toThrow(/SMTP_USERNAME and SMTP_PASSWORD/);
+  });
+
+  it('accepts empty local relay credentials as unauthenticated SMTP config', () => {
+    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
+
+    expect(() =>
+      loadServerEnv({
+        NODE_ENV: 'development',
+        APP_ENV: 'local',
+        DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
+        JWT_SECRET: 'secret',
+        SMTP_HOST: 'mailpit',
+        SMTP_PORT: '1025',
+        SMTP_SECURE: 'false',
+        SMTP_USERNAME: '',
+        SMTP_PASSWORD: '',
+      }),
+    ).not.toThrow();
   });
 });
 

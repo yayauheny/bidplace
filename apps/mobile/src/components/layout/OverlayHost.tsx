@@ -11,7 +11,7 @@ import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { getBottomEndPosition } from './overlay-geometry';
+import { getBottomEndPosition, getBottomStartPosition } from './overlay-geometry';
 
 type Anchor = { getBoundingClientRect: () => DOMRect };
 type OverlayContextValue = { target: HTMLElement | null };
@@ -60,7 +60,7 @@ export function OverlayPortal({
 }: {
   anchorRef: { current: Anchor | null };
   children: ReactNode;
-  placement?: 'bottom-end' | 'right-start';
+  placement?: 'bottom-start' | 'bottom-end' | 'right-start';
   collisionInset?: number;
   width?: number;
   testId?: string;
@@ -94,14 +94,23 @@ export function OverlayPortal({
       };
     }
 
-    return getBottomEndPosition({
-      anchorRight: anchorRect.right,
-      anchorBottom: anchorRect.bottom,
-      viewportWidth: window.innerWidth,
-      width,
-      collisionInset,
-      gap: designTokens.space.x2,
-    });
+    return placement === 'bottom-start'
+      ? getBottomStartPosition({
+          anchorLeft: anchorRect.left,
+          anchorBottom: anchorRect.bottom,
+          viewportWidth: window.innerWidth,
+          width,
+          collisionInset,
+          gap: designTokens.space.x2,
+        })
+      : getBottomEndPosition({
+          anchorRight: anchorRect.right,
+          anchorBottom: anchorRect.bottom,
+          viewportWidth: window.innerWidth,
+          width,
+          collisionInset,
+          gap: designTokens.space.x2,
+        });
   })();
 
   return createPortal(
@@ -110,7 +119,7 @@ export function OverlayPortal({
       style={{
         position: 'fixed',
         ...style,
-        width: placement === 'bottom-end' ? width : undefined,
+        width: placement === 'right-start' ? undefined : width,
         zIndex: designTokens.layer.popover,
         pointerEvents: 'auto',
       }}

@@ -23,9 +23,12 @@ export function buttonLoadingOverlayStyle(): ViewStyle {
   };
 }
 
-export function buttonLayoutStyle(width: ButtonWidth = 'content'): ViewStyle {
+export function buttonLayoutStyle(
+  width: ButtonWidth = 'content',
+  alignSelf: ViewStyle['alignSelf'] = 'flex-start',
+): ViewStyle {
   return {
-    alignSelf: width === 'block' ? 'stretch' : 'flex-start',
+    alignSelf: width === 'block' ? 'stretch' : alignSelf,
     paddingHorizontal:
       width === 'compact' ? designTokens.space.x3 : designTokens.space.x5,
     ...(width === 'block' ? { width: '100%' } : {}),

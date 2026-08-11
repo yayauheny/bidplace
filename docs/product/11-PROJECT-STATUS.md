@@ -1,9 +1,10 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-08-10
-Статус: Pen v2 approved runtime scope, trust-critical backend boundaries and
-automated regression are Implemented; founder visual/device/screen-reader
-acceptance and the isolated 10-user rehearsal remain Needs verification.
+Последнее обновление: 2026-08-11
+Статус: Public discovery completion is Partial; trust-critical backend
+boundaries remain Implemented; founder visual/device/screen-reader acceptance,
+full metadata migration and isolated 10-user rehearsal remain Needs
+verification.
 
 ## Canonical Pen v2 design direction — 2026-08-10
 
@@ -23,17 +24,43 @@ acceptance and the isolated 10-user rehearsal remain Needs verification.
   card hover, button/menu/tab/sticky motion, artwork-derived blur/atmosphere and
   reduced-motion rules are recorded in design docs. These references do not add
   wallet/NFT/crypto or unsupported marketplace behavior.
-- `Implemented`: production UI uses Pen v2 foundation for GlobalHeader, Browse
+- `Partial`: production UI uses Pen v2 foundation for GlobalHeader, Browse
   Works, Product states, Creator Profile, auth, seller editors and supporting
-  routes. Home and Browse Authors remain blocked by explicit route/data
-  decisions rather than simulated UI.
-- `Needs decision`: Home/Works routing, Authors directory/API,
-  search/filter/sort contracts, creation-process data and multiple public social
-  links. Pen does not authorize these product or API changes.
+  routes. Public Home, Authors and Search routes now exist, but visual/device
+  acceptance and the remaining creator/creation metadata are not complete.
+- `Partial`: Home/Works routing, Authors directory/API and discovery
+  search/filter/sort contracts are implemented in `apps/api/src/discovery`,
+  the Product/Seller services and the corresponding mobile routes. Creation
+  process data, structured public social links and creator discipline remain
+  Needs verification/implementation.
 - `Verified`: semantic tokens, Onest/Inter runtime loading, 1440/1024/390
   compositions, focused accessibility behavior, Product deep-link/back tabs,
   related public works, E2E and production Expo export. Founder/device visual
   acceptance remains a release gate.
+
+## Public discovery WIP — 2026-08-11
+
+- `Implemented`: `packages/contracts/src/discovery.ts` defines normalized
+  public query input/output, status, material, price/year and server sort
+  contracts; contract tests cover defaults, trimming, unknown keys, length and
+  invalid ranges.
+- `Implemented`: `GET /api/discovery/home` returns separate top-auction,
+  creator and new-work projections. Product and seller list services select the
+  canonical public Listing before server-side filtering, sorting and
+  pagination; the client no longer derives Home rankings from a page slice.
+- `Partial`: `/`, `/works`, `/authors` and `/search` consume real API data and
+  expose loading, empty and retry states. URL-backed Works status/sort controls,
+  account popover and bottom-start discovery geometry are implemented, but
+  matched 1440/1024/390 screenshots, physical-device QA and full accessibility
+  acceptance remain open.
+- `Partial`: `CreatorCard` now follows the Pen anatomy by removing the outer
+  card surface, CTA and unsupported work count. The public contract still lacks
+  the dedicated `discipline` field required by `SrXPq`.
+- `Implemented`: local SMTP configuration accepts explicit `SMTP_AUTH_MODE`
+  (`none` or `login`), treats empty local relay credentials as absent, omits
+  Nodemailer auth in `none` mode, and keeps production TLS/credential checks.
+  Coverage is in `apps/api/src/core/config/env.spec.ts` and
+  `apps/api/src/otp/otp.service.spec.ts`.
 
 ## Pen v2 completion and backend/security audit — 2026-08-10
 

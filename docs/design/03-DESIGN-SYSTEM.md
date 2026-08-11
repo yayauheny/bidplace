@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-11
 
 Статус: **Measured baseline; motion and responsive verification remain**
 
@@ -50,6 +50,9 @@ values.
 | Dividers/borders             | `#E3E1DC`, `#E5E2DE`                                                                  |
 | Header search                | 480×48, radius 24, fill `#F1F1ED`                                                     |
 | Header primary action        | height 40, radius 20, dark fill, white text                                           |
+| Discovery menu               | 204 px, radius 18, bottom-start placement                                               |
+| Account popover              | 300 px target, radius 20, white surface and floating elevation                         |
+| Creator media                | square viewport, radius 12, no outer card surface                                      |
 | Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
 | Auction card example         | 400×576, media 400×430, radius 16, content padding 18/20/20                           |
 | Card title                   | `Onest` 18/700, line-height 23                                                        |

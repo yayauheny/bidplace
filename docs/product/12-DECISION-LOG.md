@@ -995,3 +995,38 @@ mapped into runtime platform assets without redesigning the mark.
 The founder explicitly requires a polished, maintainable implementation with
 smooth transitions and artwork-led atmosphere while acknowledging that static
 design frames cannot efficiently show every interactive state.
+
+---
+
+## DEC-065 — Public discovery uses explicit routes and server-owned query semantics
+
+Date: 2026-08-11
+Status: Confirmed
+
+### Decision
+
+The public discovery module uses `/` for Home, `/works` for public auctions and
+works, `/authors` for approved creators, and `/search?q=...` for combined work
+and author search. Discovery query state is represented in URL parameters and
+validated by shared Zod contracts. Product status, category, materials, price,
+year and sort semantics are applied by the API to the canonical public Listing
+before pagination; clients must not filter, rank or construct Home sections from
+an already loaded page.
+
+`GET /api/discovery/home` owns the Home projection for top auctions, creators and
+new works. The global header uses `Добавить` with accessibility label
+`Добавить работу`, and approved sellers access `Кабинет` from the account
+popover rather than a separate top-level utility item.
+
+### Boundaries
+
+This decision does not introduce wallets, NFT/crypto concepts, followers,
+verified badges, payments, or artificial bids. Product Creation steps/media,
+structured public social links and the dedicated creator `discipline` field
+remain separate data work and are not inferred from the Pen alone.
+
+### Revises
+
+Revises the unresolved route/data status recorded in `DEC-057` and the Pen v2
+mapping in `docs/design/02-USER-FLOWS-AND-SCREENS.md`; auction, auth, privacy and
+moderation rules remain unchanged.
