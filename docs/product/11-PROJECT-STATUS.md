@@ -26,14 +26,14 @@ verification.
   wallet/NFT/crypto or unsupported marketplace behavior.
 - `Partial`: production UI uses Pen v2 foundation for GlobalHeader, Browse
   Works, Product states, Creator Profile, auth, seller editors and supporting
-  routes. Public Home, Authors and Search routes now exist, but visual/device
-  acceptance and the remaining creator/creation metadata are not complete.
+  routes. Public Home, Authors and Search routes now exist; matched visual,
+  device and screen-reader acceptance remain open.
 - `Partial`: Home/Works routing, Authors directory/API and discovery
   search/filter/sort contracts are implemented in `apps/api/src/discovery`,
   the Product/Seller services and the corresponding mobile routes. Creation
-  process data and structured public social links remain Needs
-  verification/implementation; `SellerProfile.discipline` is now persisted and
-  projected for public CreatorCard/profile surfaces.
+  process data and structured public social links are implemented and projected;
+  matched visual/device acceptance remains open. `SellerProfile.discipline` is
+  persisted and projected for public CreatorCard/profile surfaces.
 - `Verified`: semantic tokens, Onest/Inter runtime loading, 1440/1024/390
   compositions, focused accessibility behavior, Product deep-link/back tabs,
   related public works, E2E and production Expo export. Founder/device visual
@@ -61,8 +61,8 @@ verification.
   public-visibility boundaries in `apps/api/src/products` and
   `apps/api/src/images`; contract, API unit and PostgreSQL integration checks
   remain required evidence for the final visual release.
-- `Partial`: Pen v2 screen composition still needs the shared-shell migration
-  and matched visual/runtime acceptance at 1440/1024/390. The canonical file
+- `Partial`: Pen v2 screen composition is implemented through the shared shell;
+  matched visual/runtime acceptance at 1440/1024/390 remains open. The canonical file
   `design/pen/bidplace-web-v2.pen` is locked at SHA-256
   `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 - `Implemented`: Browse Works and Browse Authors now use the shared Pen v2
@@ -257,7 +257,7 @@ verification.
 
 ## Visual polish — 2026-07-30
 
-- `Implemented`: the light branding source assets are stored in `apps/mobile/assets/branding/`; `BrandLogo.tsx` uses the black wordmark on desktop and black mark on compact/mobile navigation, while `app.json` uses the light favicon. The previous placeholder border and duplicated text lockup were removed. Expo web/native rendering still needs founder visual/device acceptance because the supplied source assets are SVG.
+- `Implemented`: the light branding source assets are stored in `apps/mobile/assets/branding/`; the current Pen v2 `BrandLogo.tsx` uses the black `bidplace-logo.png` mark at the canonical `38×30` header geometry, while `app.json` uses the light favicon. The separate `bidplace-wordmark-light.*` asset remains available but is not the current Pen v2 header target. The previous placeholder border and duplicated text lockup were removed. Expo web/native rendering still needs founder visual/device acceptance because the supplied source assets are SVG.
 - `Partial`: `apps/mobile/src/components/layout/AppShell.tsx` now provides the shared 1025 px responsive shell; all screens that used the repeated `SafeAreaView + AppHeader` composition use the shell, with mobile bottom actions and scroll ownership preserved.
 - `Partial`: `apps/mobile/src/lib/environment.ts` provides `getApiAssetUrl`; Catalog/Product/seller profile/Product draft media use it. `ProductGallery` and `AuctionCard` display labeled unavailable-image states after load errors. API image authorization and seeded live-media/device behavior still need direct founder/device verification.
 - `Partial`: `product-screen.tsx` places desktop gallery and auction panel in the same row and keeps mobile gallery → auction facts → linear detail sections → bottom action ordering. Auction business logic, realtime refetch, privacy and contracts are unchanged.
