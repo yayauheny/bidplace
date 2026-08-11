@@ -19,9 +19,11 @@ export function ProductGallery({
 }) {
   const { width } = useWindowDimensions();
   const imageWidth =
-    width >= designTokens.breakpoint.productDetailWide
-      ? designTokens.productHeroWide
-      : 300;
+    width >= designTokens.breakpoint.productHeroThreeColumn
+      ? 520
+      : width >= designTokens.breakpoint.productDetailWide
+        ? designTokens.productHeroWide
+        : 300;
 
   if (images.length === 0)
     return (

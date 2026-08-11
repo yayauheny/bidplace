@@ -15,6 +15,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout/AppShell';
 import {
   AppDialog,
+  AppIcon,
   AppText,
   AuctionCardGrid,
   AuctionPlayer,
@@ -24,6 +25,7 @@ import {
   PrimaryButton,
   ProductGallery,
   ProductTabs,
+  ResilientRemoteImage,
   type ProductTabId,
   SecondaryButton,
   Separator,
@@ -317,7 +319,14 @@ export function ProductScreen({
       </ProductShell>
     );
 
-  const { product, sellerProfile, listing, minimumNextBid } = query.data;
+  const {
+    product,
+    sellerProfile,
+    listing,
+    minimumNextBid,
+    creationIntro,
+    creationSteps,
+  } = query.data;
   const participation = listing
     ? activity.data?.activity.find((item) => item.listing.id === listing.id)
     : undefined;
@@ -388,7 +397,7 @@ export function ProductScreen({
           onRetry={() => {
             if (pendingAttempt) sendBid(pendingAttempt);
           }}
-          showPrimaryAction={isProductWide}
+          showPrimaryAction={false}
         />
       </EmailRulesGate>
     ) : null;
@@ -423,9 +432,11 @@ export function ProductScreen({
             : 'Торги завершены'
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
-    >
-      {bidForm ?? adminBidNotice}
-    </AuctionPlayer>
+      actionLabel={listing.status === 'LIVE' && !auth.isAdmin ? 'Поставить' : undefined}
+      actionDisabled={bid.isPending}
+      actionLoading={bid.isPending}
+      onAction={listing.status === 'LIVE' && !auth.isAdmin ? submitBid : undefined}
+    />
   ) : (
     <SurfacePanel>
       <AppText role="bodySmall" tone="secondary">
@@ -564,27 +575,47 @@ export function ProductScreen({
       )}
     </EditorialSection>
   );
-  const itemHistory = (
-    <EditorialSection title="История предмета">
-      <View style={{ gap: designTokens.space.x3 }}>
-        <AppText role="bodySmall">Автор: {sellerProfile.fullName}</AppText>
-        {product.year ? (
+  const creationStory = (
+    <EditorialSection title="История создания">
+      <View style={{ gap: designTokens.space.x6 }}>
+        {creationIntro ? <AppText role="body">{creationIntro}</AppText> : null}
+        {creationSteps.length > 0 ? (
+          <View style={{ gap: designTokens.space.x8 }}>
+            {creationSteps.map((step) => (
+              <View
+                key={step.id}
+                style={{
+                  flexDirection: isProductWide ? 'row' : 'column',
+                  gap: designTokens.space.x6,
+                }}
+              >
+                {step.image ? (
+                  <ResilientRemoteImage
+                    uri={getApiAssetUrl(step.image.url)}
+                    component="CreationStep"
+                    accessibilityLabel={`Изображение этапа: ${step.title}`}
+                    fallbackLabel={`Изображение этапа недоступно: ${step.title}`}
+                    style={{
+                      width: isProductWide ? 360 : '100%',
+                      aspectRatio: 1.2,
+                      borderRadius: designTokens.radius.media,
+                      backgroundColor: designTokens.color.surfaceMuted,
+                    }}
+                    contentFit="cover"
+                  />
+                ) : null}
+                <View style={{ flex: 1, gap: designTokens.space.x2 }}>
+                  <AppText role="cardTitle">{step.title}</AppText>
+                  <AppText role="body" tone="secondary">
+                    {step.body}
+                  </AppText>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : creationIntro ? null : (
           <AppText role="bodySmall" tone="secondary">
-            Год создания: {product.year}
-          </AppText>
-        ) : null}
-        {product.publishedAt ? (
-          <AppText role="bodySmall" tone="secondary">
-            Размещено на bidplace: {formatDateTime(product.publishedAt)}
-          </AppText>
-        ) : null}
-        {listing ? (
-          <AppText role="bodySmall" tone="secondary">
-            Состояние торгов: {listingStatusLabel(listing.status)}
-          </AppText>
-        ) : (
-          <AppText role="bodySmall" tone="secondary">
-            Размещение готовится.
+            История создания появится здесь.
           </AppText>
         )}
       </View>
@@ -689,66 +720,94 @@ export function ProductScreen({
               style={{
                 position: 'relative',
                 flexDirection: isHeroThreeColumn ? 'row' : 'column',
-                alignItems: isHeroThreeColumn ? 'center' : 'stretch',
+                alignItems: isHeroThreeColumn ? 'flex-start' : 'stretch',
                 gap: isDesktop ? designTokens.space.x8 : designTokens.space.x6,
               }}
             >
               <View
                 style={{
-                  width: isHeroThreeColumn ? 260 : '100%',
+                  width: isHeroThreeColumn ? 328 : '100%',
                   minWidth: 0,
-                  gap: designTokens.space.x3,
+                  gap: designTokens.space.x5,
                 }}
               >
-                <AppText role={isDesktop ? 'display' : 'screenTitle'}>
+                <AppText
+                  role={isDesktop ? 'display' : 'screenTitle'}
+                  style={
+                    isHeroThreeColumn
+                      ? {
+                          fontFamily: 'Inter_700Bold',
+                          fontSize: 52,
+                          lineHeight: 53,
+                          letterSpacing: -1.2,
+                        }
+                      : undefined
+                  }
+                >
                   {product.title ?? 'Предмет'}
                 </AppText>
-                <Link
-                  href={
-                    {
-                      pathname: '/seller/[slug]',
-                      params: { slug: sellerProfile.slug },
-                    } as Href
-                  }
-                  asChild
-                >
-                  <MotionPressable
-                    accessibilityRole="link"
-                    accessibilityLabel={`Открыть профиль автора ${sellerProfile.fullName}`}
-                    onPress={() => undefined}
-                    style={{
-                      alignSelf: 'flex-start',
-                      minHeight: designTokens.size.touch,
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AppText
-                      role="label"
-                      style={{ textDecorationLine: 'underline' }}
-                    >
-                      {sellerProfile.fullName}
-                    </AppText>
-                  </MotionPressable>
-                </Link>
                 {product.story ? (
-                  <AppText role="bodySmall" tone="secondary" numberOfLines={4}>
+                  <AppText role="body" tone="secondary" numberOfLines={5}>
                     {product.story}
                   </AppText>
                 ) : null}
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x4 }}>
                 <ProductGallery
                   images={product.images}
                   label={product.title ?? 'Предмет'}
                 />
+                {auctionPlayer}
+                {isProductWide ? bidForm ?? adminBidNotice : null}
               </View>
               <View
                 style={{
-                  width: isHeroThreeColumn ? 320 : '100%',
+                  width: isHeroThreeColumn ? 312 : '100%',
                   maxWidth: '100%',
+                  gap: designTokens.space.x5,
                 }}
               >
-                {auctionPlayer}
+                {detailItems.length > 0 ? (
+                  <View style={{ gap: designTokens.space.x4 }}>
+                    {detailItems.map((item) => (
+                      <View key={item.label} style={{ gap: designTokens.space.x1 }}>
+                        <AppText role="caption" tone="secondary">
+                          {item.label}
+                        </AppText>
+                        <AppText role="label">{item.value}</AppText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                <View style={{ gap: designTokens.space.x2 }}>
+                  <AppText role="caption" tone="secondary">
+                    Автор
+                  </AppText>
+                  <Link
+                    href={
+                      {
+                        pathname: '/seller/[slug]',
+                        params: { slug: sellerProfile.slug },
+                      } as Href
+                    }
+                    asChild
+                  >
+                    <MotionPressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`Открыть профиль автора ${sellerProfile.fullName}`}
+                      onPress={() => undefined}
+                      style={{
+                        minHeight: designTokens.size.touch,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: designTokens.space.x2,
+                      }}
+                    >
+                      <AppText role="label">@{sellerProfile.slug}</AppText>
+                      <AppIcon name="chevronRight" size={16} />
+                    </MotionPressable>
+                  </Link>
+                </View>
               </View>
             </View>
           </View>
@@ -766,7 +825,7 @@ export function ProductScreen({
               {activeTab === 'about'
                 ? itemStory
                 : activeTab === 'creation'
-                  ? itemHistory
+                  ? creationStory
                   : bidHistory}
             </View>
             {activeTab === 'about' ? relatedWorksSection : null}

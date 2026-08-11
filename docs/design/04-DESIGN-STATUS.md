@@ -43,6 +43,12 @@
   URL-backed. Browse Authors now exposes the API-backed activity/name sort
   control. The exact 1440 composition and 1024/390 derived states remain
   pending screenshot and device acceptance.
+- `Implemented`: Product hero now composes the Pen three-column identity,
+  artwork and object-facts regions where viewport pressure permits; the shared
+  AuctionPlayer is the measured compact inline/sticky transaction bar, while
+  the existing bid form and server mutation remain the single state owner.
+  Product Creation now renders ordered creation intro/steps and process media;
+  product screenshot and responsive acceptance remain pending.
 
 ## Screen matrix
 

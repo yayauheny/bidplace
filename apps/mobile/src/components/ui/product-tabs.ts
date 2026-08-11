@@ -6,7 +6,7 @@ export const productTabs: ReadonlyArray<{
 }> = [
   { id: 'about', label: 'О работе' },
   { id: 'creation', label: 'Создание' },
-  { id: 'bids', label: 'Ставки' },
+  { id: 'bids', label: 'Торги' },
 ];
 
 export function parseProductTabParam(

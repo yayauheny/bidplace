@@ -22,6 +22,7 @@ import {
 export type ResilientRemoteImageComponent =
   | 'AuctionCard'
   | 'CreatorCard'
+  | 'CreationStep'
   | 'ProductGallery'
   | 'AuthorPhoto';
 

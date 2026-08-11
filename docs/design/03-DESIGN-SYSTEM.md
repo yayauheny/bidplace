@@ -99,8 +99,10 @@ Production variant — базовый A. Bio `S1BHg` и board `BvSRz` — compar
 
 ### AuctionPlayer `X6Ksg`
 
-Bid `w8O9kE`, time `k7l1d`, button `xozqk`. Это одна transaction composition,
-которая может находиться inline или sticky, но не раздваивает state.
+Bid `w8O9kE`, time `k7l1d`, button `xozqk`. Это одна горизонтальная
+404×68 transaction composition с 124×44 action, которая может находиться
+inline или sticky, но не раздваивает state. Открытое поле суммы ставки остаётся
+соседним form-control, а action вызывает тот же server-backed mutation.
 
 Обязательные states: scheduled, live/eligible, live/needs OTP or rules,
 submitting, accepted, stale/refetch, validation error, ended/won/lost, disabled

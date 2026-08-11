@@ -63,8 +63,11 @@ export function ProductTabs({
       role="tablist"
       accessibilityLabel="Разделы страницы предмета"
       style={{
+        width: '100%',
+        maxWidth: 430,
+        height: 72,
         flexDirection: 'row',
-        gap: designTokens.space.x6,
+        gap: 20,
         borderBottomWidth: 1,
         borderBottomColor: designTokens.color.border,
       }}
@@ -92,17 +95,24 @@ export function ProductTabs({
             onPress={() => onChange(tab.id)}
             preset="button"
             style={{
-              minHeight: designTokens.size.touch,
+              width: index === 0 ? 82 : index === 1 ? 122 : 100,
+              minHeight: 72,
               justifyContent: 'center',
+              alignItems: 'flex-start',
               borderBottomWidth: selected ? 2 : 0,
               borderBottomColor: designTokens.color.ink,
-              paddingHorizontal: designTokens.space.x1,
+              paddingHorizontal: 0,
             }}
             interactionStyle={({ hovered }) => ({
               opacity: hovered || selected ? 1 : 0.72,
             })}
           >
-            <AppText role="label">{label}</AppText>
+            <AppText
+              role="label"
+              style={{ fontSize: 17, lineHeight: 22, fontWeight: '600' }}
+            >
+              {label}
+            </AppText>
           </MotionPressable>
         );
       })}

@@ -68,6 +68,11 @@ verification.
   header/card primitives and server-backed category/material/status/sort state;
   URL state is preserved by the public route screens. Exact visual parity and
   responsive/device acceptance remain `Needs verification`.
+- `Implemented`: Product hero uses the Pen three-region layout at desktop
+  pressure, the compact AuctionPlayer keeps one bid mutation owner, and the
+  Creation tab renders ordered API-backed intro/steps with safe process-image
+  URLs. Bid validation, role restrictions and privacy behavior remain covered
+  by the existing Product/Auction contracts and tests.
 
 ## Public discovery WIP — 2026-08-11
 
