@@ -1030,3 +1030,28 @@ remain separate data work and are not inferred from the Pen alone.
 Revises the unresolved route/data status recorded in `DEC-057` and the Pen v2
 mapping in `docs/design/02-USER-FLOWS-AND-SCREENS.md`; auction, auth, privacy and
 moderation rules remain unchanged.
+
+## DEC-066 — Creator profile uses the MVP v1 final frame
+
+Date: 2026-08-11
+Status: Confirmed
+
+### Decision
+
+The public creator page `/seller/[slug]` uses `MqUMz`, named `FINAL — Desktop
+Creator / Profile / MVP v1`, as its only canonical implementation and visual
+acceptance target. `HOXkZ`, named `FINAL — Desktop Creator / Profile / Editorial
+Refinement v1`, is a rejected alternative for this route and must not be used
+as a second target, fallback composition or separate implementation.
+
+### Rationale
+
+The founder selected the MVP v1 composition as the final creator-profile
+direction. One route and one shared implementation prevent visual drift and
+duplicate screen anatomy.
+
+### Boundaries
+
+This decision changes only the creator-profile visual target. It does not alter
+seller permissions, public data visibility, auction behavior or the requirement
+to use structured public social fields rather than private handoff contact.

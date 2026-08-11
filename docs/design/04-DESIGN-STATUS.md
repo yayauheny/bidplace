@@ -50,7 +50,7 @@
 | Product About    | `L7ytbv` | exported/readable | compatible contract    | implemented | verified   |
 | Product Creation | `cK8kD`  | exported/readable | existing fields only   | implemented | verified   |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields | implemented | verified   |
-| Creator Profile  | `MqUMz`  | exported/readable | current public links   | implemented | verified   |
+| Creator Profile  | `MqUMz`  | exported/readable | current public links   | partial | pending visual/data QA |
 
 ## Shared component matrix
 
