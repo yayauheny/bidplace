@@ -34,7 +34,7 @@ function AuthorSort({
   const current = authorSortOptions.find((option) => option.value === sort);
 
   return (
-    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+    <View style={{ position: 'relative', alignSelf: 'flex-end' }}>
       <MotionPressable
         accessibilityRole="button"
         accessibilityLabel="Сортировка авторов"
@@ -55,7 +55,11 @@ function AuthorSort({
         }}
       >
         <AppText role="label">{current?.label}</AppText>
-        <AppIcon name="chevronDown" size={16} color={designTokens.color.textSecondary} />
+        <AppIcon
+          name="chevronDown"
+          size={16}
+          color={designTokens.color.textSecondary}
+        />
       </MotionPressable>
       {open ? (
         <View
@@ -119,7 +123,8 @@ export function PublicAuthorsScreen({
   const { width } = useWindowDimensions();
   const result = useQuery({
     queryKey: ['public-sellers', { q: query, sort }],
-    queryFn: () => api.sellers.listPublic(query ? { q: query, sort } : { sort }),
+    queryFn: () =>
+      api.sellers.listPublic(query ? { q: query, sort } : { sort }),
   });
 
   let content: React.ReactNode;
@@ -162,9 +167,11 @@ export function PublicAuthorsScreen({
               : designTokens.layout.mobileGutter,
           paddingBottom: designTokens.space.x20,
           paddingTop:
-            width >= designTokens.breakpoint.compactHeader
-              ? designTokens.space.x16
-              : designTokens.space.x10,
+            width >= designTokens.breakpoint.desktopShell
+              ? designTokens.space.x20 + designTokens.space.x6
+              : width >= designTokens.breakpoint.compactHeader
+                ? designTokens.space.x16
+                : designTokens.space.x10,
         }}
         style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
@@ -172,27 +179,45 @@ export function PublicAuthorsScreen({
         <View
           style={{
             width: '100%',
-            maxWidth: designTokens.layout.contentMaxWidth,
+            maxWidth: designTokens.layout.discoveryMaxWidth,
             alignSelf: 'center',
-            gap: designTokens.space.x10,
           }}
         >
-          <View style={{ maxWidth: 720, gap: designTokens.space.x3 }}>
-            <AppText
-              role="screenTitle"
-              style={
-                width >= designTokens.breakpoint.compactHeader
-                  ? { fontSize: 72, lineHeight: 69, letterSpacing: -2.5 }
-                  : undefined
-              }
+          <View
+            style={{
+              gap:
+                width >= designTokens.breakpoint.desktopShell
+                  ? designTokens.space.x3
+                  : designTokens.space.x6,
+            }}
+          >
+            <View style={{ maxWidth: 720 }}>
+              <AppText
+                role="screenTitle"
+                style={
+                  width >= designTokens.breakpoint.compactHeader
+                    ? { fontSize: 72, lineHeight: 69, letterSpacing: -2.5 }
+                    : undefined
+                }
+              >
+                {query ? `Авторы: ${query}` : 'Авторы'}
+              </AppText>
+            </View>
+            <View
+              style={{
+                alignItems: 'flex-end',
+                paddingBottom:
+                  width >= designTokens.breakpoint.desktopShell
+                    ? designTokens.space.x1
+                    : 0,
+              }}
             >
-              {query ? `Авторы: ${query}` : 'Авторы'}
-            </AppText>
+              <AuthorSort
+                sort={sort}
+                onChange={(nextSort) => router.setParams({ sort: nextSort })}
+              />
+            </View>
           </View>
-          <AuthorSort
-            sort={sort}
-            onChange={(nextSort) => router.setParams({ sort: nextSort })}
-          />
           {content}
         </View>
       </ScrollView>

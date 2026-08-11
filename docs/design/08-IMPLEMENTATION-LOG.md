@@ -16,22 +16,38 @@
 
 ## Статус этапов
 
-| Этап                                  | Статус | Результат                                                | Фактический commit / commits                                  |
-| ------------------------------------- | ------ | -------------------------------------------------------- | ------------------------------------------------------------- |
-| Stage 0 — canonical baseline          | Готово | Pen v2 и protected baseline зафиксированы                | `f7450e4`                                                    |
-| Stage 1 — contracts and fixtures      | Готово | Content contracts, media metadata и seed foundation      | `1a0a400`, `e6b6afd`, `80de66c`                              |
-| Stage 2 — shared UI foundation        | Готово | Tokens, typography, icons, motion и shared primitives     | `23e154f`                                                    |
-| Stage 3 — GlobalHeader/account IA     | Готово | Responsive shell, account menu и role navigation          | `23e154f`, `f0e6627`                                         |
-| Stage 4 — AuctionCard/CreatorCard     | Готово | Shared card anatomy, media states и responsive grids       | `23e154f`, `d1667b5`                                         |
-| Stage 5 — Browse Works/Authors        | Готово | H5vf2/N4ebBk routes, query state, facets и test density   | `d1667b5`, `80de66c`                                         |
-| Stage 6 — Product About               | Готово | Product hero, facts, related works и AuctionPlayer        | `a05aa82`                                                    |
-| Stage 7 — Creation/Bids               | Готово | Creation steps/media, tabs, bids и transactional states   | `1a0a400`, `a05aa82`                                         |
-| Stage 8 — Creator Profile             | Готово | Только `MqUMz` — `MVP v1`, public data boundary           | `3778190`                                                    |
-| Stage 9 — responsive derivation       | Готово | 1440/1024/390 behavior, overflow и runtime matrices       | `770a406`, `9e82345`, `f0e6627`                              |
-| Stage 10 — cleanup and evidence       | Готово | Route acceptance, docs, asset inventory, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`, `338a2d1`       |
-| Cross-cutting — backend/security      | Готово | Visibility, uploads, aliases и integrity boundaries       | `84336e9`                                                    |
+| Этап                              | Статус | Результат                                                                  | Фактический commit / commits                          |
+| --------------------------------- | ------ | -------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Stage 0 — canonical baseline      | Готово | Pen v2 и protected baseline зафиксированы                                  | `f7450e4`                                             |
+| Stage 1 — contracts and fixtures  | Готово | Content contracts, media metadata и seed foundation                        | `1a0a400`, `e6b6afd`, `80de66c`                       |
+| Stage 2 — shared UI foundation    | Готово | Tokens, typography, icons, motion и shared primitives                      | `23e154f`                                             |
+| Stage 3 — GlobalHeader/account IA | Готово | Responsive shell, account menu и role navigation                           | `23e154f`, `f0e6627`                                  |
+| Stage 4 — AuctionCard/CreatorCard | Готово | Shared card anatomy, media states и responsive grids                       | `23e154f`, `d1667b5`                                  |
+| Stage 5 — Browse Works/Authors    | Готово | H5vf2/N4ebBk routes, query state, facets и test density                    | `d1667b5`, `80de66c`                                  |
+| Stage 6 — Product About           | Готово | Product hero, facts, related works и AuctionPlayer                         | `a05aa82`                                             |
+| Stage 7 — Creation/Bids           | Готово | Creation steps/media, tabs, bids и transactional states                    | `1a0a400`, `a05aa82`                                  |
+| Stage 8 — Creator Profile         | Готово | Только `MqUMz` — `MVP v1`, public data boundary                            | `3778190`                                             |
+| Stage 9 — responsive derivation   | Готово | 1440/1024/390 behavior, overflow и runtime matrices                        | `770a406`, `9e82345`, `f0e6627`                       |
+| Stage 10 — cleanup and evidence   | Готово | Route acceptance, docs, asset inventory, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`, `338a2d1` |
+| Cross-cutting — backend/security  | Готово | Visibility, uploads, aliases и integrity boundaries                        | `84336e9`                                             |
 
 ## Выполнено
+
+### 2026-08-12 — direct Pen export reconciliation for discovery geometry
+
+- Read-only Pencil exports of `H5vf2` and `N4ebBk` were compared with the
+  current runtime screenshots at 1440/1024/390. Browse Works now follows the
+  canonical order facets → title → state tabs/sort, defaults to `По активности`,
+  and uses the tokenized 1360 px desktop discovery container so four cards
+  resolve to the measured 322 px width.
+- Browse Authors keeps the desktop sort on the right below the title and uses
+  the same shared discovery width; mobile remains a vertical derived flow.
+- `Тип работы` remains omitted as the documented domain blocker; no fake filter
+  was introduced.
+
+Проверки: targeted Wave 2 Playwright layout `1/1` across 1440/1024/390,
+mobile typecheck/lint, design-tokens build, visual-token test contract and
+`git diff --check`. Canonical Pen was exported read-only and not modified.
 
 ### 2026-08-12 — discovery data density and confirmed H5vf2 facets
 

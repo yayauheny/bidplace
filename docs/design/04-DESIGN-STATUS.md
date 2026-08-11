@@ -46,8 +46,10 @@
   state tabs; server-side sort/query state is URL-backed. The unsupported Pen
   `Тип работы` control remains intentionally omitted because no domain field
   is confirmed. Browse Authors exposes the API-backed activity/name sort
-  control. The exact 1440 composition and 1024/390 derived states remain
-  pending screenshot and device acceptance.
+  control. The runtime now matches the measured discovery container at 1440px
+  (1360px content width, 40px outer gutter, four 322px cards with 24px gaps),
+  while the 1024/390 derived states remain pending screenshot and device
+  acceptance.
 - `Implemented`: Product hero now composes the Pen three-column identity,
   artwork and object-facts regions where viewport pressure permits; the shared
   AuctionPlayer is the measured compact inline/sticky transaction bar, while

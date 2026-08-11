@@ -54,6 +54,7 @@ describe('Pen v2 semantic token contract', () => {
     expect(designTokens.size.control).toBe(36);
     expect(designTokens.radius.button).toBe(22);
     expect(designTokens.radius.compact).toBe(18);
+    expect(designTokens.layout.discoveryMaxWidth).toBe(1360);
     expect(designTokens.ratio.productPortrait).toBe(4 / 5);
     expect(designTokens.opacity.disabled).toBe(0.48);
   });

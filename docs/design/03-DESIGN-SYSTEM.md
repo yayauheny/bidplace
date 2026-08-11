@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-08-11
+Последнее обновление: 2026-08-12
 
 Статус: **Measured baseline; motion and responsive verification remain**
 
@@ -45,16 +45,17 @@ values.
 | ---------------------------- | ------------------------------------------------------------------------------------- |
 | Primary type                 | `Onest` для headings, cards и content; `Inter` для header/navigation и части overlays |
 | Canvas/surfaces              | `#FFFFFF`, `#FBFBF8`, `#F7F7F5`, `#F1F1ED`                                            |
-| Primary text/action          | `#1A1A1A`, header action `#090909`                                                     |
+| Primary text/action          | `#1A1A1A`, header action `#090909`                                                    |
 | Muted text                   | `#3E3E3A`, `#6B6B66`, `#6F6F69`, `#777771`/`#777772`                                  |
 | Dividers/borders             | `#DADAD3`, `#E5E5E1`                                                                  |
 | Header search                | 480×48, radius 24, fill `#F1F1ED`                                                     |
 | Header primary action        | height 40, radius 20, dark fill, white text                                           |
-| Discovery menu               | 240 px, radius 26, bottom-start placement                                               |
-| Account popover              | 280 px target, radius 22, white surface and floating elevation                         |
-| Creator media                | square viewport, radius 12, no outer card surface                                      |
+| Discovery menu               | 240 px, radius 26, bottom-start placement                                             |
+| Account popover              | 280 px target, radius 22, white surface and floating elevation                        |
+| Creator media                | square viewport, radius 12, no outer card surface                                     |
 | Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
 | Auction card example         | 322×456, media 322×322, radius 12, info surface `#F7F7F5`                             |
+| Discovery grid container     | 1360 px at 1440 desktop, 40 px outer gutter, four 322 px cards with 24 px gaps        |
 | Card title                   | `Onest` 16/700, line-height 20                                                        |
 | Card creator/metadata        | 14/500; metric label 12/500; metric value 16/700                                      |
 | Creator profile card example | 340×526, media 340×380                                                                |
@@ -63,6 +64,10 @@ Exact semantic token names and repeated-value clustering выполняются 
 Card dimensions in the table are canonical screen variants; the reusable
 `k5vYGf` reference below remains 322×456. Implementation selects the measured
 variant by canonical consumer, not by stretching one card with arbitrary CSS.
+Browse Works and Browse Authors use the shared `discoveryMaxWidth` token for
+this four-column geometry. The H5vf2 toolbar order is facets → title → state
+tabs/sort; the unsupported `Тип работы` facet remains intentionally omitted
+until its domain field is approved.
 Onest/Inter weights and Cyrillic coverage подтверждены runtime-сборкой.
 `designTokens` в `packages/design-tokens/src/tokens.ts` — единственный runtime
 контракт; визуальным authority остаётся immutable Pen v2.

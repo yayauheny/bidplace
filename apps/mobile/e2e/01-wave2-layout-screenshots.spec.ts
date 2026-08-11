@@ -35,6 +35,9 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
           exact: true,
         }),
       ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Сортировка' }),
+      ).toContainText('По активности');
       if (width === 390) {
         const mobileNavigation = page.getByLabel('Основная навигация');
         const pageTitle = page
@@ -74,6 +77,10 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
           (box) => Math.abs((box?.y ?? 0) - (firstRowBoxes[0]?.y ?? 0)) < 1,
         ),
       ).toBe(true);
+      if (width === 1440) {
+        expect(firstRowBoxes[0]?.x).toBeCloseTo(40, 0);
+        expect(firstRowBoxes[0]?.width).toBeCloseTo(322, 0);
+      }
       if (expectedColumns < seededProducts.length) {
         expect(orderedCardBoxes[expectedColumns]?.y).toBeGreaterThan(
           orderedCardBoxes[0]?.y ?? 0,

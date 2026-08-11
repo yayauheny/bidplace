@@ -27,7 +27,7 @@ export default function WorksRoute() {
   return (
     <ProductListScreen
       status={params.status}
-      sort={params.sort ?? 'newest'}
+      sort={params.sort ?? 'activity'}
       category={params.category}
       material={params.material}
       author={params.author}

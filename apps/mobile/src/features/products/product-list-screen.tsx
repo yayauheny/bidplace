@@ -169,6 +169,7 @@ const facetMenuItemInteractionStyle = ({
 });
 
 function DiscoveryControls({
+  placement = 'all',
   status,
   sort,
   facets,
@@ -186,6 +187,7 @@ function DiscoveryControls({
   onUniquenessChange,
   onPriceChange,
 }: {
+  placement?: 'all' | 'facets' | 'states';
   status?: PublicListingStatus;
   sort: PublicDiscoverySort;
   facets?: {
@@ -217,188 +219,197 @@ function DiscoveryControls({
     { value: 'ENDED', label: 'Завершены' },
   ];
 
-  return (
-    <View style={{ gap: designTokens.space.x6 }}>
+  const facetsContent = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: designTokens.space.x2 }}
+    >
+      <FacetMenu
+        label="Категория"
+        value={category}
+        options={(facets?.categories ?? []).map((option) => ({
+          value: option.id,
+          label: `${option.name} · ${option.count}`,
+        }))}
+        onSelect={onCategoryChange}
+      />
+      <FacetMenu
+        label="Автор"
+        value={author}
+        options={(facets?.authors ?? []).map((option) => ({
+          value: option.slug,
+          label: `${option.name} · ${option.count}`,
+        }))}
+        onSelect={onAuthorChange}
+      />
+      <FacetMenu
+        label="Материал"
+        value={material}
+        options={(facets?.materials ?? []).map((option) => ({
+          value: option,
+          label: option,
+        }))}
+        onSelect={onMaterialChange}
+      />
+      <FacetMenu
+        label="Цена"
+        value={priceRangeKey(priceMin, priceMax)}
+        options={priceRangeOptions}
+        onSelect={(value) => {
+          const range = priceRangeOptions.find(
+            (option) => option.value === value,
+          );
+          onPriceChange(range ? { min: range.min, max: range.max } : undefined);
+        }}
+      />
+      <FacetMenu
+        label="Уникальность"
+        value={uniqueness}
+        options={(facets?.uniquenesses ?? []).map((option) => ({
+          value: option,
+          label: option,
+        }))}
+        onSelect={onUniquenessChange}
+      />
+    </ScrollView>
+  );
+
+  const statesContent = (
+    <View
+      style={{
+        minHeight: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: designTokens.space.x4,
+      }}
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: designTokens.space.x2 }}
+        contentContainerStyle={{ gap: designTokens.space.x6 }}
       >
-        <FacetMenu
-          label="Категория"
-          value={category}
-          options={(facets?.categories ?? []).map((option) => ({
-            value: option.id,
-            label: `${option.name} · ${option.count}`,
-          }))}
-          onSelect={onCategoryChange}
-        />
-        <FacetMenu
-          label="Автор"
-          value={author}
-          options={(facets?.authors ?? []).map((option) => ({
-            value: option.slug,
-            label: `${option.name} · ${option.count}`,
-          }))}
-          onSelect={onAuthorChange}
-        />
-        <FacetMenu
-          label="Материал"
-          value={material}
-          options={(facets?.materials ?? []).map((option) => ({
-            value: option,
-            label: option,
-          }))}
-          onSelect={onMaterialChange}
-        />
-        <FacetMenu
-          label="Цена"
-          value={priceRangeKey(priceMin, priceMax)}
-          options={priceRangeOptions}
-          onSelect={(value) => {
-            const range = priceRangeOptions.find(
-              (option) => option.value === value,
-            );
-            onPriceChange(
-              range ? { min: range.min, max: range.max } : undefined,
-            );
-          }}
-        />
-        <FacetMenu
-          label="Уникальность"
-          value={uniqueness}
-          options={(facets?.uniquenesses ?? []).map((option) => ({
-            value: option,
-            label: option,
-          }))}
-          onSelect={onUniquenessChange}
-        />
-      </ScrollView>
-      <View
-        style={{
-          minHeight: 40,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: designTokens.space.x4,
-        }}
-      >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: designTokens.space.x6 }}
-        >
-          {statusOptions.map((option) => {
-            const selected = status === option.value;
-            return (
-              <MotionPressable
-                key={option.value}
-                accessibilityRole="tab"
-                accessibilityLabel={option.label}
-                accessibilityState={{ selected }}
-                onPress={() => onStatusChange(option.value)}
-                preset="button"
-                style={{
-                  minHeight: 32,
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x2,
-                  borderBottomWidth: 1.5,
-                  borderBottomColor: selected
-                    ? designTokens.color.ink
-                    : 'transparent',
-                }}
-              >
-                <View
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                >
-                  <AppText
-                    role="caption"
-                    style={{
-                      color: selected
-                        ? designTokens.color.ink
-                        : designTokens.color.textSecondary,
-                    }}
-                  >
-                    {option.label}
-                  </AppText>
-                  <AppText role="caption" tone="muted" style={{ fontSize: 10 }}>
-                    {facets?.statusCounts[option.value] ?? 0}
-                  </AppText>
-                </View>
-              </MotionPressable>
-            );
-          })}
-        </ScrollView>
-        <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel="Сортировка"
-            accessibilityState={{ expanded: sortOpen }}
-            onPress={() => setSortOpen((current) => !current)}
-            preset="button"
-            style={{
-              height: 32,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 7,
-              borderRadius: designTokens.radius.pill,
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              paddingHorizontal: 12,
-            }}
-          >
-            <AppIcon
-              name="arrowUpDown"
-              size={13}
-              color={designTokens.color.ink}
-            />
-            <AppText role="caption" numberOfLines={1}>
-              {currentSort?.label}
-            </AppText>
-            <AppIcon
-              name="chevronDown"
-              size={12}
-              color={designTokens.color.textSecondary}
-            />
-          </MotionPressable>
-          {sortOpen ? (
-            <View
-              accessibilityRole="menu"
+        {statusOptions.map((option) => {
+          const selected = status === option.value;
+          return (
+            <MotionPressable
+              key={option.value}
+              accessibilityRole="tab"
+              accessibilityLabel={option.label}
+              accessibilityState={{ selected }}
+              onPress={() => onStatusChange(option.value)}
+              preset="button"
               style={{
-                position: 'absolute',
-                top: 40,
-                right: 0,
-                zIndex: designTokens.layer.popover,
-                minWidth: 200,
-                gap: designTokens.space.x1,
-                borderWidth: 1,
-                borderColor: designTokens.color.border,
-                borderRadius: designTokens.radius.menu,
-                backgroundColor: designTokens.color.surface,
-                padding: designTokens.space.x2,
-                ...designTokens.elevation.floating,
+                minHeight: 32,
+                justifyContent: 'space-between',
+                gap: designTokens.space.x2,
+                borderBottomWidth: 1.5,
+                borderBottomColor: selected
+                  ? designTokens.color.ink
+                  : 'transparent',
               }}
             >
-              {sortOptions.map((option) => (
-                <MotionPressable
-                  key={option.value}
-                  accessibilityRole="menuitem"
-                  accessibilityLabel={option.label}
-                  onPress={() => {
-                    onSortChange(option.value);
-                    setSortOpen(false);
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <AppText
+                  role="caption"
+                  style={{
+                    color: selected
+                      ? designTokens.color.ink
+                      : designTokens.color.textSecondary,
                   }}
-                  preset="button"
-                  style={facetMenuItemStyle}
-                  interactionStyle={facetMenuItemInteractionStyle}
                 >
-                  <AppText role="label">{option.label}</AppText>
-                </MotionPressable>
-              ))}
-            </View>
-          ) : null}
-        </View>
+                  {option.label}
+                </AppText>
+                <AppText role="caption" tone="muted" style={{ fontSize: 10 }}>
+                  {facets?.statusCounts[option.value] ?? 0}
+                </AppText>
+              </View>
+            </MotionPressable>
+          );
+        })}
+      </ScrollView>
+      <View style={{ position: 'relative', alignSelf: 'center' }}>
+        <MotionPressable
+          accessibilityRole="button"
+          accessibilityLabel="Сортировка"
+          accessibilityState={{ expanded: sortOpen }}
+          onPress={() => setSortOpen((current) => !current)}
+          preset="button"
+          style={{
+            height: 32,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 7,
+            borderRadius: designTokens.radius.pill,
+            borderWidth: 1,
+            borderColor: designTokens.color.border,
+            paddingHorizontal: 12,
+          }}
+        >
+          <AppIcon
+            name="arrowUpDown"
+            size={13}
+            color={designTokens.color.ink}
+          />
+          <AppText role="caption" numberOfLines={1}>
+            {currentSort?.label}
+          </AppText>
+          <AppIcon
+            name="chevronDown"
+            size={12}
+            color={designTokens.color.textSecondary}
+          />
+        </MotionPressable>
+        {sortOpen ? (
+          <View
+            accessibilityRole="menu"
+            style={{
+              position: 'absolute',
+              top: 40,
+              right: 0,
+              zIndex: designTokens.layer.popover,
+              minWidth: 200,
+              gap: designTokens.space.x1,
+              borderWidth: 1,
+              borderColor: designTokens.color.border,
+              borderRadius: designTokens.radius.menu,
+              backgroundColor: designTokens.color.surface,
+              padding: designTokens.space.x2,
+              ...designTokens.elevation.floating,
+            }}
+          >
+            {sortOptions.map((option) => (
+              <MotionPressable
+                key={option.value}
+                accessibilityRole="menuitem"
+                accessibilityLabel={option.label}
+                onPress={() => {
+                  onSortChange(option.value);
+                  setSortOpen(false);
+                }}
+                preset="button"
+                style={facetMenuItemStyle}
+                interactionStyle={facetMenuItemInteractionStyle}
+              >
+                <AppText role="label">{option.label}</AppText>
+              </MotionPressable>
+            ))}
+          </View>
+        ) : null}
       </View>
+    </View>
+  );
+
+  if (placement === 'facets') return facetsContent;
+  if (placement === 'states') return statesContent;
+
+  return (
+    <View style={{ gap: designTokens.space.x6 }}>
+      {facetsContent}
+      {statesContent}
     </View>
   );
 }
@@ -477,7 +488,7 @@ export function ProductListScreen({
   query: searchQuery,
   title = 'Работы',
   status,
-  sort = 'newest',
+  sort = 'activity',
   category,
   material,
   author,
@@ -565,6 +576,95 @@ export function ProductListScreen({
     );
   }
 
+  const discoveryControlProps = {
+    status,
+    sort,
+    facets: query.data?.facets,
+    category,
+    material,
+    author,
+    uniqueness,
+    priceMin,
+    priceMax,
+    onStatusChange: (nextStatus?: PublicListingStatus) =>
+      router.setParams({
+        status: nextStatus,
+        sort,
+        category,
+        material,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onSortChange: (nextSort: PublicDiscoverySort) =>
+      router.setParams({
+        status,
+        sort: nextSort,
+        category,
+        material,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onCategoryChange: (nextCategory?: string) =>
+      router.setParams({
+        status,
+        sort,
+        category: nextCategory,
+        material,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onMaterialChange: (nextMaterial?: string) =>
+      router.setParams({
+        status,
+        sort,
+        category,
+        material: nextMaterial,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onAuthorChange: (nextAuthor?: string) =>
+      router.setParams({
+        status,
+        sort,
+        category,
+        material,
+        author: nextAuthor,
+        uniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onUniquenessChange: (nextUniqueness?: string) =>
+      router.setParams({
+        status,
+        sort,
+        category,
+        material,
+        author,
+        uniqueness: nextUniqueness,
+        priceMin,
+        priceMax,
+      }),
+    onPriceChange: (range?: { min?: number; max?: number }) =>
+      router.setParams({
+        status,
+        sort,
+        category,
+        material,
+        author,
+        uniqueness,
+        priceMin: range?.min,
+        priceMax: range?.max,
+      }),
+  };
+
   return (
     <AppShell>
       <ScrollView
@@ -574,10 +674,7 @@ export function ProductListScreen({
               ? designTokens.layout.desktopGutter
               : designTokens.layout.mobileGutter,
           paddingBottom: designTokens.space.x20,
-          paddingTop:
-            width >= designTokens.breakpoint.compactHeader
-              ? designTokens.space.x16
-              : designTokens.space.x10,
+          paddingTop: designTokens.space.x3,
         }}
         style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
@@ -585,12 +682,22 @@ export function ProductListScreen({
         <View
           style={{
             width: '100%',
-            maxWidth: designTokens.layout.contentMaxWidth,
+            maxWidth: designTokens.layout.discoveryMaxWidth,
             alignSelf: 'center',
-            gap: designTokens.space.x10,
           }}
         >
-          <View style={{ maxWidth: 720, gap: designTokens.space.x3 }}>
+          <DiscoveryControls placement="facets" {...discoveryControlProps} />
+          <View
+            style={{
+              paddingTop:
+                width >= designTokens.breakpoint.compactHeader
+                  ? designTokens.space.x10
+                  : designTokens.space.x6,
+              paddingBottom: designTokens.space.x8,
+              borderBottomWidth: 1,
+              borderBottomColor: designTokens.color.border,
+            }}
+          >
             <AppText
               role="screenTitle"
               style={
@@ -602,101 +709,14 @@ export function ProductListScreen({
               {title}
             </AppText>
           </View>
-          <DiscoveryControls
-            status={status}
-            sort={sort}
-            facets={query.data?.facets}
-            category={category}
-            material={material}
-            author={author}
-            uniqueness={uniqueness}
-            priceMin={priceMin}
-            priceMax={priceMax}
-            onStatusChange={(nextStatus) =>
-              router.setParams({
-                status: nextStatus,
-                sort,
-                category,
-                material,
-                author,
-                uniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onSortChange={(nextSort) =>
-              router.setParams({
-                status,
-                sort: nextSort,
-                category,
-                material,
-                author,
-                uniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onCategoryChange={(nextCategory) =>
-              router.setParams({
-                status,
-                sort,
-                category: nextCategory,
-                material,
-                author,
-                uniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onMaterialChange={(nextMaterial) =>
-              router.setParams({
-                status,
-                sort,
-                category,
-                material: nextMaterial,
-                author,
-                uniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onAuthorChange={(nextAuthor) =>
-              router.setParams({
-                status,
-                sort,
-                category,
-                material,
-                author: nextAuthor,
-                uniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onUniquenessChange={(nextUniqueness) =>
-              router.setParams({
-                status,
-                sort,
-                category,
-                material,
-                author,
-                uniqueness: nextUniqueness,
-                priceMin,
-                priceMax,
-              })
-            }
-            onPriceChange={(range) =>
-              router.setParams({
-                status,
-                sort,
-                category,
-                material,
-                author,
-                uniqueness,
-                priceMin: range?.min,
-                priceMax: range?.max,
-              })
-            }
-          />
+          <View
+            style={{
+              paddingTop: designTokens.space.x7,
+              paddingBottom: designTokens.space.x7,
+            }}
+          >
+            <DiscoveryControls placement="states" {...discoveryControlProps} />
+          </View>
           {query.isLoading ? <CatalogLoadingAnnouncement /> : null}
           {content}
           {query.isFetching && !query.isLoading ? (
