@@ -127,8 +127,8 @@ Pen diff: none
 - [x] card media zoom не меняет bounds/grid и имеет focus/reduced-motion state;
 - [x] buttons, menus, tabs, toast и sticky player используют shared motion tokens;
 - [x] blur/atmosphere сохраняет sharp artwork, contrast и bounded performance;
-- [ ] responsive automated evidence приложено для текущего discovery среза;
-- [ ] accessibility automated evidence приложено для текущего discovery среза;
+- [x] responsive automated evidence приложено для текущего discovery среза;
+- [x] accessibility automated evidence приложено для текущего discovery среза;
 - [x] relevant checks зелёные;
 - [x] design/project statuses обновлены;
 - [x] `git diff --name-only` не содержит `.pen`.
@@ -137,20 +137,19 @@ Pen diff: none
 
 - Canonical SHA-256 до и после реализации:
   `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
-- Реализованы GlobalHeader с `Главная`/`Обзор`, Browse Works, Home, Browse
-  Authors, Search, AuctionCard, Product About/Creation/Bids, AuctionPlayer,
-  URL-backed ProductTabs, related creator works, Creator Profile, auth, seller
-  editors, Activity, Order и moderation.
+- Реализованы GlobalHeader с `Аукционы`/`Авторы`/`Создать`, Browse Works, Home,
+  Browse Authors, Search, AuctionCard, Product About/Creation/Bids,
+  AuctionPlayer, URL-backed ProductTabs, related creator works, Creator
+  Profile, auth, seller editors, Activity, Order и moderation.
 - `/api/discovery/home`, `/api/products` и `/api/sellers` используют отдельные
   server-owned query contracts. Catalog pagination/sort/filter выполняются в
   PostgreSQL до hydration, а catalog images выбираются без бинарного `data`;
   account popover переводит клавиатурный focus на первый пункт.
-- Creation process data model и multiple structured social links остаются
-  незавершёнными; fake routes и controls не создавались.
-- Автоматические unit/typecheck/lint/build проверки зелёные. PostgreSQL
-  integration и полный Chromium Playwright требуют доступной локальной БД и
-  остаются `Needs verification`; founder visual review и physical iOS/Android
-  smoke остаются внешним release gate.
+- Creation process data model и multiple structured social links реализованы;
+  fake routes и controls не создавались. API contract/unit/PostgreSQL coverage,
+  mobile unit/typecheck/lint и полный Wave C Chromium acceptance зелёные.
+  Founder visual review и physical iOS/Android smoke остаются внешним release
+  gate.
 
 ## 8. Runtime handoff addendum — 2026-08-11
 
