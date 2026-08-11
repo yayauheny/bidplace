@@ -36,6 +36,7 @@ export const sellerProfileSchema = z
     userId: uuidSchema,
     slug: slugSchema,
     sellerType: sellerTypeSchema,
+    discipline: z.string().trim().min(1),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
@@ -52,7 +53,8 @@ export const sellerProfileSchema = z
 
 export const publicSellerProfileSchema = sellerProfileSchema.pick({
   slug: true,
-  sellerType: true,
+    sellerType: true,
+  discipline: true,
   fullName: true,
   profilePhotoUrl: true,
   country: true,
@@ -64,6 +66,7 @@ const sellerProfileBaseWriteSchema = z
   .object({
     slug: slugSchema,
     sellerType: sellerTypeSchema,
+    discipline: z.string().trim().min(1).optional(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     socialLink: z.string().url(),
@@ -118,6 +121,7 @@ export const sellerProfileUpdateRequestSchema = z
   .object({
     slug: slugSchema.optional(),
     sellerType: sellerTypeSchema.optional(),
+    discipline: z.string().trim().min(1).optional(),
     fullName: z.string().trim().min(1).optional(),
     country: z.string().trim().min(1).optional(),
     socialLink: z.string().url().optional(),

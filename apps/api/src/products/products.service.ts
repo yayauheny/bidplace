@@ -430,6 +430,7 @@ export class ProductsService {
       sellerProfile: {
         slug: string;
         sellerType: 'creator' | 'influencer';
+        discipline: string;
         fullName: string;
         country: string;
         socialLink: string;

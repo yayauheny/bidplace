@@ -18,7 +18,7 @@ routes сохраняют поведение и должны пережить с
 | Global Header      | `L9UV9`  | общий shell           | role-aware shell and account/discovery overlays are partial pending visual QA |
 | Home               | `BJd1P`  | `/`                   | `/api/discovery/home` supplies top, creators and new works; acceptance pending |
 | Browse Works       | `H5vf2`  | `/works`              | server query, status chips and sort are implemented; filters and acceptance remain partial |
-| Browse Authors     | `N4ebBk` | `/authors`            | approved seller list API and route exist; discipline field and acceptance remain partial |
+| Browse Authors     | `N4ebBk` | `/authors`            | approved seller list API, route and discipline field exist; visual acceptance remains partial |
 | Product / About    | `L7ytbv` | `/product/[publicId]` | основной public contract существует                        |
 | Product / Creation | `cK8kD`  | тот же Product route  | dedicated process model не подтверждён                     |
 | Product / Bids     | `XIzHe`  | тот же Product route  | participant/bid/time доступны в текущем contract           |

@@ -34,6 +34,7 @@ import {
 type ProfileFields = {
   slug: string;
   fullName: string;
+  discipline: string;
   country: string;
   socialLink: string;
   shortDescription: string;
@@ -45,6 +46,7 @@ type ProfileFields = {
 const emptyFields: ProfileFields = {
   slug: '',
   fullName: '',
+  discipline: '',
   country: 'BY',
   socialLink: '',
   shortDescription: '',
@@ -95,6 +97,7 @@ export function SellerProfileScreen() {
     setFields({
       slug: profile.slug,
       fullName: profile.fullName,
+      discipline: profile.discipline,
       country: profile.country,
       socialLink: profile.socialLink,
       shortDescription: profile.shortDescription,
@@ -112,6 +115,7 @@ export function SellerProfileScreen() {
       const payload = {
         slug: fields.slug,
         fullName: fields.fullName,
+        discipline: fields.discipline,
         country: fields.country,
         socialLink: fields.socialLink,
         shortDescription: fields.shortDescription,
@@ -310,6 +314,14 @@ export function SellerProfileScreen() {
               onChangeText={(value) => update('country', value)}
               placeholder="BY"
               autoCapitalize="characters"
+              editable={editable}
+              required
+            />
+            <TextField
+              label="Дисциплина"
+              value={fields.discipline}
+              onChangeText={(value) => update('discipline', value)}
+              placeholder="Керамика, живопись, текстиль"
               editable={editable}
               required
             />

@@ -31,8 +31,9 @@ verification.
 - `Partial`: Home/Works routing, Authors directory/API and discovery
   search/filter/sort contracts are implemented in `apps/api/src/discovery`,
   the Product/Seller services and the corresponding mobile routes. Creation
-  process data, structured public social links and creator discipline remain
-  Needs verification/implementation.
+  process data and structured public social links remain Needs
+  verification/implementation; `SellerProfile.discipline` is now persisted and
+  projected for public CreatorCard/profile surfaces.
 - `Verified`: semantic tokens, Onest/Inter runtime loading, 1440/1024/390
   compositions, focused accessibility behavior, Product deep-link/back tabs,
   related public works, E2E and production Expo export. Founder/device visual
@@ -53,9 +54,10 @@ verification.
   account popover and bottom-start discovery geometry are implemented, but
   matched 1440/1024/390 screenshots, physical-device QA and full accessibility
   acceptance remain open.
-- `Partial`: `CreatorCard` now follows the Pen anatomy by removing the outer
-  card surface, CTA and unsupported work count. The public contract still lacks
-  the dedicated `discipline` field required by `SrXPq`.
+- `Implemented`: `CreatorCard` now follows the Pen anatomy by removing the
+  outer card surface, CTA and unsupported work count. `SellerProfile.discipline`
+  is persisted through the `20260811000000_add_creator_discipline` migration
+  and returned by public/profile contracts; visual acceptance remains open.
 - `Implemented`: local SMTP configuration accepts explicit `SMTP_AUTH_MODE`
   (`none` or `login`), treats empty local relay credentials as absent, omits
   Nodemailer auth in `none` mode, and keeps production TLS/credential checks.

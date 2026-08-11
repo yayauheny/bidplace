@@ -4,6 +4,7 @@ import { type Prisma } from '@bidplace/database';
 export const publicSellerProfileSelect = {
   slug: true,
   sellerType: true,
+  discipline: true,
   fullName: true,
   country: true,
   socialLink: true,
@@ -20,6 +21,7 @@ export const sellerProfileResponseSelect = {
   slug: true,
   fullName: true,
   sellerType: true,
+  discipline: true,
   country: true,
   socialLink: true,
   shortDescription: true,
@@ -57,6 +59,7 @@ export function toPublicSellerProfile(
   return {
     slug: sellerProfile.slug,
     sellerType: sellerProfile.sellerType,
+    discipline: sellerProfile.discipline,
     fullName: sellerProfile.fullName,
     profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
     country: sellerProfile.country,

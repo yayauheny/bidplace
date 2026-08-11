@@ -5,7 +5,6 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
-import { presentEnum, sellerTypeLabels } from '../../lib/presentation';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
@@ -50,11 +49,7 @@ export function CreatorCard({ item }: { item: PublicSellerListItem }) {
             {sellerProfile.fullName}
           </AppText>
           <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
-            {presentEnum(
-              sellerProfile.sellerType,
-              sellerTypeLabels,
-              'Автор',
-            )}
+            {sellerProfile.discipline}
           </AppText>
         </View>
       </MotionPressable>

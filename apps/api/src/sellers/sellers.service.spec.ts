@@ -19,6 +19,7 @@ describe('SellersService', () => {
         {
           slug: 'taken-slug',
           sellerType: 'creator',
+          discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
           socialLink: 'https://example.com/seller',
@@ -35,7 +36,7 @@ describe('SellersService', () => {
   it.each(['PENDING_REVIEW', 'SUSPENDED'] as const)(
     'rejects edits while a SellerProfile is %s',
     async (status) => {
-      const prisma = {
+        const prisma = {
         sellerProfile: {
           findUnique: vi.fn().mockResolvedValue({
             id: 'seller-profile-id',
@@ -69,6 +70,7 @@ describe('SellersService', () => {
           slug: 'seller-slug',
           fullName: 'Updated seller',
           sellerType: 'creator',
+          discipline: 'Керамика',
           country: 'BY',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Updated description',
@@ -102,6 +104,7 @@ describe('SellersService', () => {
         findFirst: vi.fn().mockResolvedValue({
           slug: 'seller-slug',
           sellerType: 'creator',
+          discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
           socialLink: 'https://example.com/seller',

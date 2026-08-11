@@ -71,6 +71,7 @@ export class SellersService {
           userId,
           slug: input.slug,
           sellerType: input.sellerType,
+          ...(input.discipline ? { discipline: input.discipline } : {}),
           fullName: input.fullName,
           country: input.country,
           socialLink: input.socialLink,

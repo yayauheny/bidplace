@@ -32,8 +32,8 @@
   transactional and bidder aliases are Listing-scoped.
 - `Partial`: route/IA для Home, Browse Authors и Search, contracts для
   search/filter/sort/author directory, header/account popover and shared
-  controls. Creation story, structured socials and dedicated creator discipline
-  remain unimplemented.
+  controls. Creation story and structured socials remain unimplemented; creator
+  discipline is now available from the public profile contract.
 
 ## Screen matrix
 
@@ -42,7 +42,7 @@
 | Global Header    | `L9UV9`  | measured baseline | role logic and overlays exist | partial | pending visual QA |
 | Home             | `BJd1P`  | exported/readable | `/api/discovery/home` | partial | pending responsive QA |
 | Browse Works     | `H5vf2`  | exported/readable | server query + controls | partial | pending responsive QA |
-| Browse Authors   | `N4ebBk` | exported/readable | approved author list API | partial | pending discipline/QA |
+| Browse Authors   | `N4ebBk` | exported/readable | approved author list API + discipline | partial | pending visual QA |
 | Product About    | `L7ytbv` | exported/readable | compatible contract    | implemented | verified   |
 | Product Creation | `cK8kD`  | exported/readable | existing fields only   | implemented | verified   |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields | implemented | verified   |
@@ -54,7 +54,7 @@
 | ------------- | -------- | ------------------------------------------------------------ |
 | GlobalHeader  | `L9UV9`  | implemented horizontal responsive header                     |
 | AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid |
-| CreatorCard   | `SrXPq`  | reusable production component exists; dedicated discipline contract remains |
+| CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                 |
 | ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history        |
 

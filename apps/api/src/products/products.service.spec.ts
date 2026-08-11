@@ -99,6 +99,7 @@ describe('ProductsService', () => {
           sellerProfile: {
             slug: 'seller-slug',
             sellerType: 'creator',
+            discipline: 'Керамика',
             fullName: 'Seller',
             country: 'BY',
             socialLink: 'https://example.com/seller',

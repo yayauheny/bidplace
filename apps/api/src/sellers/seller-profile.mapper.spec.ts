@@ -11,6 +11,7 @@ describe('toSellerProfileResponse', () => {
       slug: 'seller-slug',
       fullName: 'Seller',
       sellerType: 'creator',
+      discipline: 'Керамика',
       country: 'BY',
       socialLink: 'https://example.com/seller',
       shortDescription: 'Short',

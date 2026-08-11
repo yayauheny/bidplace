@@ -99,6 +99,7 @@ model SellerProfile {
   userId              String              @unique @map("user_id") @db.Uuid
   slug                String              @unique @db.VarChar(120)
   sellerType          String              @map("seller_type")
+  discipline          String              @default("Автор") @db.VarChar(160)
   fullName            String              @map("full_name") @db.VarChar(160)
   country             String              @db.VarChar(80)
   profilePhotoMimeType String              @map("profile_photo_mime_type") @db.VarChar(100)
