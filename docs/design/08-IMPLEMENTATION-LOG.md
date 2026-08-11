@@ -219,9 +219,10 @@ Commits: `84336e9`, `d9f0ed4`, `348ac36`.
   original defaults; this enabled disposable runtime checks without touching
   user processes on ports 3001/8081.
 - Targeted Product/Creator smoke, responsive matrix, catalog acceptance and
-  bid-confirmation acceptance passed. The broad route matrix produced the
-  required captures but remains too slow for its current five-minute test
-  budget; no visual assertion failure was reported before timeout.
+  bid-confirmation acceptance passed. The full Wave C visual/route acceptance
+  matrix now passes 4/4 on 1440/1024/390, including catalog media states,
+  Product buyer/admin boundaries, author/seller/purchases/order/auth/admin
+  routes and transactional bid confirmation.
 - The isolated functional Pen v2 acceptance subset passed 16/16: seeded demo,
   two-buyer bidding, closing/privacy, auction creation, stale-bid integrity,
   navigation and safe media fallback.

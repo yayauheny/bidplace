@@ -151,3 +151,25 @@ Pen diff: none
   integration и полный Chromium Playwright требуют доступной локальной БД и
   остаются `Needs verification`; founder visual review и physical iOS/Android
   smoke остаются внешним release gate.
+
+## 8. Runtime handoff addendum — 2026-08-11
+
+- Production UI now targets the current Pen v2 FINAL registry. The creator
+  route uses only `MqUMz` — `FINAL — Desktop Creator / Profile / MVP v1`;
+  `HOXkZ` — `Editorial Refinement v1` is explicitly excluded.
+- The isolated Wave C visual/route matrix passes `4/4` at 1440/1024/390:
+  catalog loading/loaded/failed-media and role states, Product buyer/admin
+  boundaries, author/seller/purchases/order/auth/admin routes, and bid
+  confirmation.
+- The functional acceptance subset passes `16/16`; mobile unit tests pass
+  `115/115`; mobile typecheck, lint, E2E fence and Expo exports pass. Evidence
+  captures are written under `/private/tmp/bidplace-wave-c-screenshots/<commit>`
+  and are disposable runtime artifacts, not Pen sources.
+- The route-matrix harness uses `waitUntil: 'domcontentloaded'` for the
+  client-rendered screens and explicitly opens the admin account menu before
+  focusing the moderation link. This changes test synchronization only; it
+  does not change production behavior.
+- Remaining release gates are matched visual overlay review against the
+  canonical Pen, founder approval and physical iOS/Android smoke. The
+  canonical Pen file remains unchanged at SHA-256
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.

@@ -56,7 +56,8 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 - `Implemented`: Creator status controls wrap at narrow widths instead of
   extending document width; Product keeps the same shared bid form in the
   mobile reading flow while the safe-area action remains sticky. Runtime smoke
-  passed for Product and Creator at 1440/1024/390; matched Pen overlay and
+  passed for Product and Creator at 1440/1024/390. Full Wave C visual/route
+  acceptance passes 4/4 across 1440/1024/390; matched Pen overlay review and
   founder/device acceptance remain release gates.
 
 ## Screen matrix

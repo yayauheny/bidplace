@@ -353,7 +353,9 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   try {
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
-      await page.goto(`/seller/${authorSlug}`);
+      await page.goto(`/seller/${authorSlug}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(
         page.getByText('Работы', { exact: true }).first(),
       ).toBeVisible();
@@ -375,18 +377,24 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await assertNoHorizontalOverflow(page);
       await capture(page, 'author', 'guest', 'loaded-four-works', viewport);
 
-      await page.goto(`/seller/${emptySeller.slug}`);
+      await page.goto(`/seller/${emptySeller.slug}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(
         page.getByText('У автора пока нет опубликованных работ'),
       ).toBeVisible();
       await capture(page, 'author', 'guest', 'empty', viewport);
 
-      await page.goto('/seller/wave-c-missing-author');
+      await page.goto('/seller/wave-c-missing-author', {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(page.getByText('Автор не найден')).toBeVisible();
       await capture(page, 'author', 'guest', 'error-not-found', viewport);
 
       await sellerSession.page.setViewportSize(viewport);
-      await sellerSession.page.goto('/profile');
+      await sellerSession.page.goto('/profile', {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(
         sellerSession.page.getByText('Профиль продавца'),
       ).toBeVisible();
@@ -398,7 +406,9 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         'loaded',
         viewport,
       );
-      await sellerSession.page.goto('/products/new');
+      await sellerSession.page.goto('/products/new', {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(sellerSession.page.getByText('Новый предмет')).toBeVisible();
       await assertNoHorizontalOverflow(sellerSession.page);
       await capture(
@@ -408,7 +418,9 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         'loaded',
         viewport,
       );
-      await sellerSession.page.goto('/listings/new');
+      await sellerSession.page.goto('/listings/new', {
+        waitUntil: 'domcontentloaded',
+      });
       await expect(
         sellerSession.page.getByText('Новое размещение'),
       ).toBeVisible();
@@ -427,7 +439,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       );
 
       await adminSession.page.setViewportSize(viewport);
-      await adminSession.page.goto('/admin');
+      await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
       await expect(adminSession.page.getByText('Продавцы')).toBeVisible();
       await expect(
         adminSession.page.getByText('Предметы', { exact: true }),
@@ -440,10 +452,14 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     try {
       for (const viewport of viewports) {
         await seeded.page.setViewportSize(viewport);
-        await seeded.page.goto('/me/activity');
+        await seeded.page.goto('/me/activity', {
+          waitUntil: 'domcontentloaded',
+        });
         await expect(seeded.page.getByText('Мои покупки')).toBeVisible();
         await capture(seeded.page, 'purchases', 'buyer', 'loaded', viewport);
-        await seeded.page.goto('/order/seedOrder01');
+        await seeded.page.goto('/order/seedOrder01', {
+          waitUntil: 'domcontentloaded',
+        });
         await expect(seeded.page.getByText('Заказ seedOrder01')).toBeVisible();
         await capture(
           seeded.page,
@@ -487,7 +503,9 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     try {
       for (const viewport of viewports) {
         await longActivity.page.setViewportSize(viewport);
-        await longActivity.page.goto('/me/activity');
+        await longActivity.page.goto('/me/activity', {
+          waitUntil: 'domcontentloaded',
+        });
         await expect(
           longActivity.page.getByText(longActivityTitle),
         ).toBeVisible();
@@ -506,19 +524,19 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
 
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
-      await page.goto('/register');
+      await page.goto('/register', { waitUntil: 'domcontentloaded' });
       await expect(page.getByText('Регистрация')).toBeVisible();
       await page.getByRole('button', { name: 'Создать аккаунт' }).click();
       await expect(page.getByText('Введите имя')).toBeVisible();
       await capture(page, 'register', 'guest', 'validation', viewport);
-      await page.goto('/login');
+      await page.goto('/login', { waitUntil: 'domcontentloaded' });
       await expect(page.getByText('Вход')).toBeVisible();
       await capture(page, 'login', 'guest', 'loaded', viewport);
     }
 
     for (const viewport of viewports) {
       await adminSession.page.setViewportSize(viewport);
-      await adminSession.page.goto('/');
+      await adminSession.page.goto('/', { waitUntil: 'domcontentloaded' });
       const accountTrigger = adminSession.page.getByRole('button', {
         name: /Открыть меню аккаунта/,
       });
@@ -537,7 +555,18 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         'open',
         viewport,
       );
-      await adminSession.page.goto('/admin');
+      await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
+      const adminAccountTrigger = adminSession.page.getByRole('button', {
+        name: /Открыть меню аккаунта/,
+      });
+      if (viewport.width >= 1025) {
+        await adminAccountTrigger.hover();
+      } else {
+        await adminAccountTrigger.click();
+      }
+      await expect(
+        adminSession.page.locator('#account-menu-dropdown'),
+      ).toBeVisible();
       const moderationLink = adminSession.page.getByRole('link', {
         name: 'Модерация',
       });
