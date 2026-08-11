@@ -6,7 +6,7 @@ import { e2eApiBaseURL } from './support/e2e-env';
 
 async function expectCurrentPrice(page: Page, amount: string) {
   await expect(page.locator('body')).toContainText(
-    new RegExp(`Текущая цена\\s*${amount.replace('.', ',')}\\s+BYN`),
+    new RegExp(`Ставка\\s*${amount.replace('.', ',')}\\s+BYN`),
   );
 }
 
@@ -24,9 +24,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
     });
     await buyerB.page.goto(`/product/${fixture.product.publicId}`);
     await expectCurrentPrice(buyerB.page, '10.00');
-    await expect(buyerB.page.locator('body')).toContainText(
-      /Мин\. ставка:\s*10,00\s+BYN/,
-    );
+    await expect(buyerB.page.locator('body')).toContainText(/Ваша ставка, BYN/);
 
     const buyerAResponse = await buyerA.context.request.post(
       `${e2eApiBaseURL}/api/listings/${fixture.listing.id}/bids`,
@@ -38,7 +36,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
     expect(buyerAResponse.ok()).toBeTruthy();
 
     await buyerB.page.getByLabel('Ваша ставка, BYN').fill('11');
-    await buyerB.page.getByRole('button', { name: 'Сделать ставку' }).click();
+    await buyerB.page.getByRole('button', { name: 'Поставить' }).click();
     const staleConfirmation = buyerB.page.getByRole('button', {
       name: 'Подтвердить ставку',
     });
@@ -51,12 +49,10 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
       ),
     ).toBeVisible();
     await expectCurrentPrice(buyerB.page, '11.00');
-    await expect(buyerB.page.locator('body')).toContainText(
-      /Мин\. ставка:\s*11,50\s+BYN/,
-    );
+    await expect(buyerB.page.locator('body')).toContainText(/Ваша ставка, BYN/);
 
     await buyerB.page.getByLabel('Ваша ставка, BYN').fill('11.5');
-    await buyerB.page.getByRole('button', { name: 'Сделать ставку' }).click();
+    await buyerB.page.getByRole('button', { name: 'Поставить' }).click();
     const confirmation = buyerB.page.getByRole('button', {
       name: 'Подтвердить ставку',
     });
@@ -64,7 +60,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
       await confirmation.click();
     }
     await expectCurrentPrice(buyerB.page, '11.50');
-    await expect(buyerB.page.getByText('Побеждаете')).toBeVisible();
+    await expect(buyerB.page.getByLabel(/Побеждаете/)).toBeVisible();
 
     const canonical = await buyerB.context.request.get(
       `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,

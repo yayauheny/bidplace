@@ -132,7 +132,9 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
         image.evaluate((element) => (element as HTMLImageElement).naturalWidth),
       )
       .toBeGreaterThan(0);
-    await expect(page.getByText('Торги запланированы').first()).toBeVisible();
+    await expect(
+      page.getByLabel(/Торги\. Торги запланированы\./).first(),
+    ).toBeVisible();
     await expect(
       page.getByRole('link', {
         name: `Открыть профиль автора ${publicPayload.sellerProfile.fullName}`,

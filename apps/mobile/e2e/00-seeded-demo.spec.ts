@@ -75,7 +75,7 @@ test('demo seed exposes three public products and real media', async ({
 
   for (const item of seededProducts) {
     await page.goto('/');
-    await expect(page.getByText(item.product.title)).toBeVisible();
+    await expect(page.getByText(item.product.title).first()).toBeVisible();
     const image = page
       .locator(`img[alt="Изображение предмета: ${item.product.title}"]`)
       .first();

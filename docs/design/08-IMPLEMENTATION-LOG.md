@@ -222,6 +222,9 @@ Commits: `84336e9`, `d9f0ed4`, `348ac36`.
   bid-confirmation acceptance passed. The broad route matrix produced the
   required captures but remains too slow for its current five-minute test
   budget; no visual assertion failure was reported before timeout.
+- The isolated functional Pen v2 acceptance subset passed 16/16: seeded demo,
+  two-buyer bidding, closing/privacy, auction creation, stale-bid integrity,
+  navigation and safe media fallback.
 
 Checks: mobile unit 115/115, typecheck, lint, Expo web/iOS/Android export,
 Product/Creator E2E 2/2, responsive matrix 3/3 and product/bid Wave C checks.

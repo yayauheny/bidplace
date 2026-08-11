@@ -14,9 +14,9 @@ test('closing an auction creates one winner result and preserves buyer privacy',
   const loser = await authenticatedPage(browser, fixture.buyerA);
   try {
     await winner.page.goto(`/product/${fixture.product.publicId}`);
-    await expect(winner.page.getByText('Побеждаете')).toBeVisible();
+    await expect(winner.page.getByLabel(/Побеждаете/)).toBeVisible();
     await loser.page.goto(`/product/${fixture.product.publicId}`);
-    await expect(loser.page.getByText('Ставка перебита')).toBeVisible();
+    await expect(loser.page.getByLabel(/Ставка перебита/)).toBeVisible();
 
     await closeListing(
       fixture.listing.id,
