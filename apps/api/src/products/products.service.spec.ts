@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { publicDiscoveryQuerySchema } from '@bidplace/contracts';
 
 import { ProductsService } from './products.service';
 import { publicCatalogProductWhere, selectPublicListing } from './public-visibility';
@@ -122,5 +123,92 @@ describe('ProductsService', () => {
         }),
       }),
     );
+  });
+
+  it('paginates public catalog rows before hydrating narrow image metadata', async () => {
+    const publicProduct = {
+      ...product,
+      status: 'APPROVED' as const,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      sellerProfile: {
+        slug: 'seller-slug',
+        sellerType: 'creator',
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        socialLink: 'https://example.com/seller',
+        shortDescription: 'Short',
+      },
+      images: [
+        {
+          id: 'b0d82a10-3170-49eb-904f-a8bc87d311a6',
+          position: 0,
+          mimeType: 'image/png',
+          byteLength: 10,
+          checksum: 'a'.repeat(64),
+        },
+      ],
+      listings: [
+        {
+          id: 'c0d82a10-3170-49eb-904f-a8bc87d311a7',
+          productId: product.id,
+          status: 'LIVE' as const,
+          startsAt: new Date('2026-07-19T00:00:00.000Z'),
+          originalEndsAt: new Date('2026-07-20T00:00:00.000Z'),
+          endsAt: new Date('2026-07-20T00:00:00.000Z'),
+          currentPrice: { toNumber: () => 10 },
+          bidCount: 1,
+          closedAt: null,
+          createdAt: new Date('2026-07-19T00:00:00.000Z'),
+          updatedAt: new Date('2026-07-19T00:00:00.000Z'),
+          auctionRules: { startPrice: { toNumber: () => 5 } },
+        },
+      ],
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { id: product.id, total: 2 },
+      ]),
+      product: {
+        findMany: vi.fn().mockResolvedValue([publicProduct]),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.listPublic(
+      publicDiscoveryQuerySchema.parse({ limit: 1, sort: 'endingSoon' }),
+    );
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
+    const pageQueryText = String(pageQuery.sql);
+    expect(pageQueryText).toContain('LIMIT');
+    expect(pageQueryText).toContain('p.status_rank ASC');
+    expect(pageQueryText).toContain('status_rank');
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: [product.id] } },
+        select: expect.objectContaining({
+          images: expect.objectContaining({
+            select: expect.not.objectContaining({ data: expect.anything() }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('orders newest public works by publishedAt in the database query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      product: { findMany: vi.fn() },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.listPublic(
+      publicDiscoveryQuerySchema.parse({ sort: 'newest' }),
+    );
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
+    expect(String(pageQuery.sql)).toContain('p.published_at DESC NULLS LAST');
+    expect(prisma.product.findMany).not.toHaveBeenCalled();
   });
 });

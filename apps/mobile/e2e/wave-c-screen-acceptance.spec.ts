@@ -104,7 +104,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
   try {
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
-      await page.goto('/');
+      await page.goto('/works');
       const cards = page.locator('a[href^="/product/"]');
       await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3);
       const seededCards = page.locator(
@@ -132,7 +132,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       const loadingPage = await context.newPage();
       await loadingPage.setViewportSize(viewport);
       await loadingPage.route(
-        '**/api/products*',
+        '**/api/discovery/home',
         async (route) => {
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 600));
           await route.continue();
@@ -144,7 +144,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       });
       await expect(loadingPage.getByRole('progressbar')).toHaveCount(1);
       await loadingNavigation;
-      await capture(loadingPage, 'catalog', 'buyer', 'loading', viewport);
+      await capture(loadingPage, 'home', 'buyer', 'loading', viewport);
       await loadingPage.close();
 
       const failedPage = await context.newPage();
@@ -156,7 +156,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
         }
         await route.continue();
       });
-      await failedPage.goto('/');
+      await failedPage.goto('/works');
       await expect(
         failedPage.getByLabel(/Изображение недоступно/).first(),
       ).toBeVisible();
@@ -194,17 +194,17 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
     try {
       for (const session of roleSessions) {
         await session.page.setViewportSize(viewports[2]);
-        await session.page.goto('/');
+        await session.page.goto('/works');
         await expect(
           session.page.locator('a[href="/product/seedLive002"]'),
         ).toBeVisible();
         if (session.role === 'approved-seller') {
           await expect(
-            session.page.getByRole('link', { name: 'Выставить работу' }),
+            session.page.getByRole('link', { name: 'Добавить работу' }),
           ).toBeVisible();
         } else {
           await expect(
-            session.page.getByRole('link', { name: 'Выставить работу' }),
+            session.page.getByRole('link', { name: 'Добавить работу' }),
           ).toHaveCount(0);
         }
         await capture(

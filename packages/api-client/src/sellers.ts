@@ -5,8 +5,8 @@ import {
   sellerProfileCreateRequestSchema,
   sellerProfileResponseSchema,
   sellerProfileUpdateRequestSchema,
-  publicDiscoveryQuerySchema,
-  type PublicDiscoveryQueryInput,
+  publicSellerQuerySchema,
+  type PublicSellerQueryInput,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
@@ -15,12 +15,12 @@ import { requestJson, type RequestContext } from './request';
 
 export function createSellersClient(context: RequestContext) {
   return {
-    listPublic(query?: PublicDiscoveryQueryInput) {
+    listPublic(query?: PublicSellerQueryInput) {
       return requestJson(
         context,
         '/api/sellers',
         publicSellerListResponseSchema,
-        { query: publicDiscoveryQuerySchema.parse(query ?? {}) },
+        { query: publicSellerQuerySchema.parse(query ?? {}) },
       );
     },
     getMyProfile() {

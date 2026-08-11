@@ -7,6 +7,9 @@ import {
   listingStatusSchema,
   productWriteRequestSchema,
   publicDiscoveryQuerySchema,
+  publicSellerQuerySchema,
+  sellerProfileCreateRequestSchema,
+  sellerProfileUpdateRequestSchema,
   realtimeEventPayloadSchema,
 } from '../src';
 
@@ -63,6 +66,39 @@ describe('shared contracts', () => {
     expect(
       publicDiscoveryQuerySchema.safeParse({ yearFrom: 2024, yearTo: 2020 })
         .success,
+    ).toBe(false);
+  });
+
+  it('accepts only supported public seller query parameters', () => {
+    expect(publicSellerQuerySchema.parse({ q: '  author  ', sort: 'name' })).toEqual({
+      page: 1,
+      limit: 20,
+      q: 'author',
+      sort: 'name',
+    });
+    expect(
+      publicSellerQuerySchema.safeParse({ status: 'LIVE' }).success,
+    ).toBe(false);
+  });
+
+  it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
+    const base = {
+      slug: 'creator',
+      sellerType: 'creator' as const,
+      discipline: 'Керамика',
+      fullName: 'Creator',
+      country: 'BY',
+      socialLink: 'https://example.com/creator',
+      shortDescription: 'About creator',
+      handoffContactType: 'TELEGRAM' as const,
+      handoffContactValue: '@creator_name',
+    };
+
+    expect(sellerProfileCreateRequestSchema.safeParse(base).success).toBe(true);
+    expect(
+      sellerProfileUpdateRequestSchema.safeParse({
+        discipline: 'a'.repeat(161),
+      }).success,
     ).toBe(false);
   });
 });

@@ -24,7 +24,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
     for (const width of [1440, 1024, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
 
-      await page.goto('/');
+      await page.goto('/works');
       await expect(
         page.getByTestId('app-shell-content').getByText('Работы', {
           exact: true,
@@ -97,7 +97,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         fullPage: true,
       });
 
-      await page.goto('/');
+      await page.goto('/works');
       const account = page.getByRole('button', {
         name: /Открыть меню аккаунта/,
       });
@@ -122,7 +122,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         },
         { times: 1 },
       );
-      await page.goto('/');
+      await page.goto('/works');
       await expect(page.getByRole('progressbar').first()).toBeVisible();
       await page.screenshot({
         path: resolve(screenshotDir, `catalog-loading-${width}.png`),
@@ -130,6 +130,23 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       });
       await expect(catalogCards).toHaveCount(seededProducts.length);
       await page.unroute('**/api/products*');
+
+      await page.route(
+        '**/api/discovery/home',
+        async (route) => {
+          const response = await route.fetch();
+          await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
+          await route.fulfill({ response });
+        },
+        { times: 1 },
+      );
+      await page.goto('/');
+      await expect(page.getByRole('progressbar').first()).toBeVisible();
+      await page.screenshot({
+        path: resolve(screenshotDir, `home-loading-${width}.png`),
+        fullPage: true,
+      });
+      await page.unroute('**/api/discovery/home');
 
       const failedPage = await context.newPage();
       await failedPage.setViewportSize({
@@ -143,7 +160,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         }
         await route.continue();
       });
-      await failedPage.goto('/');
+      await failedPage.goto('/works');
       await expect(
         failedPage.getByLabel(/Изображение недоступно|Нет изображения/).first(),
       ).toBeVisible();

@@ -34,6 +34,10 @@
   search/filter/sort/author directory, header/account popover and shared
   controls. Creation story and structured socials remain unimplemented; creator
   discipline is now available from the public profile contract.
+- `Implemented`: desktop account popover keyboard-open now moves focus into the
+  portaled menu, with Escape returning focus to the trigger; navigation E2E
+  coverage follows the current `Главная`/`Обзор`/`Добавить` IA. Full browser
+  execution still needs PostgreSQL-backed verification.
 
 ## Screen matrix
 

@@ -6,7 +6,7 @@ import {
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 
-test('desktop header keeps the active works link visible', async ({ page }) => {
+test('desktop header keeps the active home link and discovery menu visible', async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -15,25 +15,28 @@ test('desktop header keeps the active works link visible', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
 
-  const worksLink = page.getByRole('link', { name: 'Работы' });
-  await expect(worksLink).toBeVisible();
-  await expect(worksLink).toHaveAttribute('href', '/');
-  await expect(worksLink).toHaveAttribute('aria-current', 'page');
-  await expect(worksLink).not.toHaveAttribute('aria-selected');
-  await expect(worksLink).toHaveCSS('min-height', '44px');
+  const homeLink = page.getByRole('link', { name: 'Главная' });
+  await expect(homeLink).toBeVisible();
+  await expect(homeLink).toHaveAttribute('href', '/');
+  await expect(homeLink).toHaveAttribute('aria-current', 'page');
+  await expect(homeLink).not.toHaveAttribute('aria-selected');
+  await expect(homeLink).toHaveCSS('min-height', '44px');
+  await page.getByRole('button', { name: 'Обзор' }).click();
+  await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
   expect(
     consoleErrors.filter((message) => message.includes('accessible')),
   ).toEqual([]);
 });
 
-test('guest navigation exposes only public works', async ({ page }) => {
+test('guest navigation exposes public discovery without seller actions', async ({ page }) => {
   await page.setViewportSize({ width: 1025, height: 900 });
   await page.goto('/');
 
-  await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Главная' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
   await expect(
-    page.getByRole('link', { name: 'Выставить работу' }),
+    page.getByRole('link', { name: 'Добавить работу' }),
   ).toHaveCount(0);
 });
 
@@ -45,18 +48,18 @@ test('mobile guest account control stays in the header row', async ({
 
   const brand = page.getByRole('link', { name: 'bidplace — на главную' });
   const account = page.getByRole('link', { name: 'Войти' });
-  const works = page.getByRole('link', { name: 'Работы' });
-  const [brandBox, accountBox, worksBox] = await Promise.all([
+  const overview = page.getByRole('button', { name: 'Обзор' });
+  const [brandBox, accountBox, overviewBox] = await Promise.all([
     brand.boundingBox(),
     account.boundingBox(),
-    works.boundingBox(),
+    overview.boundingBox(),
   ]);
 
   expect(brandBox).not.toBeNull();
   expect(accountBox).not.toBeNull();
-  expect(worksBox).not.toBeNull();
+  expect(overviewBox).not.toBeNull();
   expect(Math.abs((brandBox?.y ?? 0) - (accountBox?.y ?? 0))).toBeLessThan(20);
-  expect(worksBox?.y ?? 0).toBeGreaterThan((accountBox?.y ?? 0) + 32);
+  expect(overviewBox?.y ?? 0).toBeGreaterThan((accountBox?.y ?? 0) + 32);
 });
 
 test('pending seller navigation does not expose approved seller actions', async ({
@@ -73,7 +76,7 @@ test('pending seller navigation does not expose approved seller actions', async 
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Кабинет' })).toHaveCount(0);
     await expect(
-      page.getByRole('link', { name: 'Выставить работу' }),
+      page.getByRole('link', { name: 'Добавить работу' }),
     ).toHaveCount(0);
   } finally {
     await context.close();
@@ -89,18 +92,11 @@ test('approved seller navigation exposes the cabinet and create action', async (
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto(`/product/${fixture.product.publicId}`);
-    await expect(page.getByRole('link', { name: 'Работы' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
-    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
+    await page.getByRole('button', { name: 'Обзор' }).click();
+    await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Выставить работу' }),
+      page.getByRole('link', { name: 'Добавить работу' }),
     ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Работы' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
 
     for (const label of ['Работы', 'Покупки']) {
       const link = page.getByRole('link', { name: label });
@@ -117,11 +113,15 @@ test('approved seller navigation exposes the cabinet and create action', async (
     const accountMenu = page.locator('#account-menu-dropdown');
     await expect(accountMenu).toBeVisible();
     await expect(accountMenu).toHaveCSS('z-index', '20');
+    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(account).toBeFocused();
     await expect(page.getByRole('button', { name: 'Выйти' })).toHaveCount(0);
-    await account.click();
-    await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
+    await account.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Выйти' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(account).toBeFocused();
     await account.click();
@@ -145,9 +145,8 @@ test('approved seller mobile navigation uses equal cells without horizontal over
 
     const navigation = page.getByLabel('Основная навигация');
     await expect(navigation).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Выставить работу' }),
+      page.getByRole('link', { name: 'Добавить работу' }),
     ).toBeVisible();
 
     const metrics = await page.evaluate(() => ({
@@ -163,7 +162,7 @@ test('approved seller mobile navigation uses equal cells without horizontal over
     const visibleNavBoxes = boxes.filter(
       (box): box is NonNullable<typeof box> => box !== null,
     );
-    expect(visibleNavBoxes.length).toBe(3);
+    expect(visibleNavBoxes.length).toBe(2);
     expect(
       visibleNavBoxes.every((box) => box.x >= 0 && box.x + box.width <= 390),
     ).toBe(true);
@@ -195,6 +194,7 @@ test('mobile account menu uses the shared overlay layer and viewport inset', asy
     expect(menuBox!.x).toBeGreaterThanOrEqual(8);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
 
+    await page.getByRole('button', { name: 'Обзор' }).click();
     await page.getByRole('link', { name: 'Работы' }).click();
     await expect(page.getByRole('link', { name: 'Работы' })).toBeFocused();
     await expect(menu).toHaveCount(0);

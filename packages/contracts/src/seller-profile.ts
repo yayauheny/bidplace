@@ -30,13 +30,15 @@ const sellerProfilePhotoUrlSchema = z
   .string()
   .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/);
 
+export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
+
 export const sellerProfileSchema = z
   .object({
     id: uuidSchema,
     userId: uuidSchema,
     slug: slugSchema,
     sellerType: sellerTypeSchema,
-    discipline: z.string().trim().min(1),
+    discipline: sellerDisciplineSchema,
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
@@ -66,7 +68,7 @@ const sellerProfileBaseWriteSchema = z
   .object({
     slug: slugSchema,
     sellerType: sellerTypeSchema,
-    discipline: z.string().trim().min(1).optional(),
+    discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     socialLink: z.string().url(),
@@ -121,7 +123,7 @@ export const sellerProfileUpdateRequestSchema = z
   .object({
     slug: slugSchema.optional(),
     sellerType: sellerTypeSchema.optional(),
-    discipline: z.string().trim().min(1).optional(),
+    discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1).optional(),
     country: z.string().trim().min(1).optional(),
     socialLink: z.string().url().optional(),

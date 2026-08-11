@@ -60,9 +60,23 @@ verification.
   and returned by public/profile contracts; visual acceptance remains open.
 - `Implemented`: local SMTP configuration accepts explicit `SMTP_AUTH_MODE`
   (`none` or `login`), treats empty local relay credentials as absent, omits
-  Nodemailer auth in `none` mode, and keeps production TLS/credential checks.
+  Nodemailer auth in `none` mode, requires an explicit production auth mode and
+  keeps production TLS/credential checks.
   Coverage is in `apps/api/src/core/config/env.spec.ts` and
   `apps/api/src/otp/otp.service.spec.ts`.
+- `Implemented`: public Product discovery now selects canonical listing rows and
+  applies filtering, ranking, count and `LIMIT/OFFSET` in PostgreSQL before
+  hydrating the requested page. Catalog hydration uses explicit projections and
+  does not select `ProductImage.data`; `endingSoon` ranks LIVE/SCHEDULED before
+  ENDED and `newest` uses `publishedAt`.
+- `Implemented`: `/api/sellers` now accepts only its supported `q`, pagination
+  and `activity`/`name` sort contract. Discipline writes and responses share a
+  `.max(160)` contract matching the database column.
+- `Implemented`: desktop account-menu keyboard open moves focus to Cabinet (or
+  Logout when Cabinet is unavailable); navigation and discovery Playwright
+  expectations now use the current IA and `/api/discovery/home` interception.
+- `Needs verification`: PostgreSQL integration and full Playwright execution
+  remain blocked by the unavailable local PostgreSQL service.
 
 ## Pen v2 completion and backend/security audit — 2026-08-10
 

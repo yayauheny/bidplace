@@ -45,7 +45,7 @@ const serverEnvSchema = z
     SMTP_HOST: optionalNonEmptyStringEnvSchema,
     SMTP_PORT: z.coerce.number().int().positive().optional(),
     SMTP_SECURE: booleanEnvSchema.optional(),
-    SMTP_AUTH_MODE: z.enum(['none', 'login']).default('none'),
+    SMTP_AUTH_MODE: z.enum(['none', 'login']).optional(),
     SMTP_USERNAME: optionalNonEmptyStringEnvSchema,
     SMTP_PASSWORD: optionalNonEmptyStringEnvSchema,
     SMTP_FROM: optionalNonEmptyStringEnvSchema,
@@ -85,11 +85,20 @@ const serverEnvSchema = z
       });
     }
 
+    if (env.SMTP_AUTH_MODE === undefined && (hasUsername || hasPassword)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_AUTH_MODE'],
+        message: 'SMTP_AUTH_MODE must be explicit when SMTP credentials are configured',
+      });
+    }
+
     if (env.NODE_ENV === 'production') {
       const requiredKeys: Array<keyof ServerEnv> = [
         'SMTP_HOST',
         'SMTP_PORT',
         'SMTP_SECURE',
+        'SMTP_AUTH_MODE',
         'SMTP_FROM',
         'SERVICE_RULES_OWNER',
         'SERVICE_RULES_CONTACT',

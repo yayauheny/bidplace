@@ -53,6 +53,10 @@ SellerProfile
   approved Product/SellerProfile Listing predicate, are rate-limited per IP,
   public rooms are capped per socket, and socket-local room tracking is cleared
   on disconnect.
+- Public discovery is split by contract: Product catalog queries use a
+  PostgreSQL canonical-listing CTE for server-side filters, status-aware sort,
+  total count and page selection before narrow Prisma hydration; Seller
+  directory queries expose only `q`, pagination and `activity`/`name` sort.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 

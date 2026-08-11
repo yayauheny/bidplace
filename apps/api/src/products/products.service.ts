@@ -2,12 +2,10 @@ import {
   publicProductDetailResponseSchema,
   productListResponseSchema,
   type PublicDiscoveryQuery,
-  type PublicDiscoverySort,
-  type ListingStatus,
   type ProductWriteRequest,
   type SellerStatus,
 } from '@bidplace/contracts';
-import { type Prisma } from '@bidplace/database';
+import { Prisma, type Prisma as PrismaTypes } from '@bidplace/database';
 import {
   ConflictException,
   ForbiddenException,
@@ -25,7 +23,6 @@ import {
 } from './products.mapper';
 import { isEditableProductStatus } from './product-state';
 import {
-  publicCatalogProductWhere,
   publicDirectProductWhere,
   publicListingStatuses,
   selectPublicListing,
@@ -38,71 +35,154 @@ import {
 
 const lockedStatuses = ['SCHEDULED', 'LIVE'] as const;
 
-type DiscoveryProduct = {
-  id: string;
-  createdAt: Date;
-  listings: Array<{
-    id: string;
-    status: ListingStatus;
-    createdAt: Date;
-    endsAt: Date;
-    currentPrice: { toNumber(): number };
-    bidCount: number;
-  }>;
-};
+const publicCatalogProductSelect = {
+  id: true,
+  publicId: true,
+  sellerProfileId: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  deliveryInfo: true,
+  publishedAt: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerProfile: { select: publicSellerProfileSelect },
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: {
+      id: true,
+      position: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+    },
+  },
+  listings: {
+    where: { status: { in: publicListingStatuses } },
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true,
+      productId: true,
+      status: true,
+      startsAt: true,
+      originalEndsAt: true,
+      endsAt: true,
+      currentPrice: true,
+      bidCount: true,
+      closedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      auctionRules: { select: { startPrice: true } },
+    },
+  },
+} satisfies PrismaTypes.ProductSelect;
 
-const discoveryStatusPriority: Partial<Record<ListingStatus, number>> = {
-  LIVE: 0,
-  SCHEDULED: 1,
-  ENDED: 2,
-} as const;
+type PublicCatalogPageRow = { id: string; total: number | bigint };
 
-function compareDiscoveryProducts(
-  left: DiscoveryProduct,
-  right: DiscoveryProduct,
-  sort: PublicDiscoverySort,
-) {
-  const leftListing = selectPublicListing(left.listings);
-  const rightListing = selectPublicListing(right.listings);
+function escapeLikePattern(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+}
 
-  if (!leftListing || !rightListing) return left.id.localeCompare(right.id);
+function publicCatalogOrderBy(sort: PublicDiscoveryQuery['sort']): string {
+  switch (sort) {
+    case 'activity':
+      return 'p.status_rank ASC, p.bid_count DESC, p.current_price DESC, p.ends_at ASC, p.id ASC';
+    case 'endingSoon':
+      return 'p.status_rank ASC, p.ends_at ASC, p.id ASC';
+    case 'priceAsc':
+      return 'p.current_price ASC, p.id ASC';
+    case 'priceDesc':
+      return 'p.current_price DESC, p.id ASC';
+    case 'newest':
+      return 'p.published_at DESC NULLS LAST, p.id ASC';
+  }
+}
 
-  if (sort === 'activity') {
-    return (
-      (discoveryStatusPriority[leftListing.status] ?? Number.MAX_SAFE_INTEGER) -
-        (discoveryStatusPriority[rightListing.status] ?? Number.MAX_SAFE_INTEGER) ||
-      rightListing.bidCount - leftListing.bidCount ||
-      rightListing.currentPrice.toNumber() - leftListing.currentPrice.toNumber() ||
-      leftListing.endsAt.getTime() - rightListing.endsAt.getTime() ||
-      left.id.localeCompare(right.id)
-    );
+function publicCatalogCte(query: PublicDiscoveryQuery) {
+  const filters: Prisma.Sql[] = [Prisma.sql`p."status" = 'APPROVED'`];
+
+  if (query.q) {
+    const pattern = `%${escapeLikePattern(query.q)}%`;
+    filters.push(Prisma.sql`(
+      p."title" ILIKE ${pattern} ESCAPE '\\'
+      OR p."story" ILIKE ${pattern} ESCAPE '\\'
+      OR p."materials" ILIKE ${pattern} ESCAPE '\\'
+      OR sp."full_name" ILIKE ${pattern} ESCAPE '\\'
+    )`);
   }
 
-  if (sort === 'endingSoon') {
-    return (
-      leftListing.endsAt.getTime() - rightListing.endsAt.getTime() ||
-      left.id.localeCompare(right.id)
-    );
+  if (query.category) {
+    filters.push(Prisma.sql`p."category_id" = CAST(${query.category} AS uuid)`);
   }
 
-  if (sort === 'priceAsc') {
-    return (
-      leftListing.currentPrice.toNumber() - rightListing.currentPrice.toNumber() ||
-      left.id.localeCompare(right.id)
-    );
+  if (query.yearFrom !== undefined) {
+    filters.push(Prisma.sql`p."year" >= ${query.yearFrom}`);
   }
 
-  if (sort === 'priceDesc') {
-    return (
-      rightListing.currentPrice.toNumber() - leftListing.currentPrice.toNumber() ||
-      left.id.localeCompare(right.id)
-    );
+  if (query.yearTo !== undefined) {
+    filters.push(Prisma.sql`p."year" <= ${query.yearTo}`);
   }
 
-  return (
-    right.createdAt.getTime() - left.createdAt.getTime() ||
-    left.id.localeCompare(right.id)
-  );
+  for (const material of query.materials ?? []) {
+    const pattern = `%${escapeLikePattern(material)}%`;
+    filters.push(Prisma.sql`p."materials" ILIKE ${pattern} ESCAPE '\\'`);
+  }
+
+  if (query.status) {
+    filters.push(Prisma.sql`c.status = CAST(${query.status} AS "ListingStatus")`);
+  }
+
+  if (query.priceMin !== undefined) {
+    filters.push(Prisma.sql`c.current_price >= ${query.priceMin}`);
+  }
+
+  if (query.priceMax !== undefined) {
+    filters.push(Prisma.sql`c.current_price <= ${query.priceMax}`);
+  }
+
+  return Prisma.sql`WITH canonical AS (
+    SELECT DISTINCT ON (l."product_id")
+      l."product_id",
+      l."status",
+      CASE l."status"
+        WHEN 'LIVE' THEN 0
+        WHEN 'SCHEDULED' THEN 1
+        ELSE 2
+      END AS status_rank,
+      l."ends_at",
+      l."current_price",
+      l."bid_count",
+      l."created_at"
+    FROM "listings" l
+    WHERE l."status" IN ('LIVE', 'SCHEDULED', 'ENDED')
+    ORDER BY
+      l."product_id",
+      CASE l."status"
+        WHEN 'LIVE' THEN 0
+        WHEN 'SCHEDULED' THEN 1
+        ELSE 2
+      END,
+      l."created_at" DESC,
+      l."id" DESC
+  ), filtered AS (
+    SELECT p."id", p."published_at", c."status", c.status_rank,
+      c."ends_at", c."current_price", c."bid_count"
+    FROM "products" p
+    INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
+    INNER JOIN canonical c ON c."product_id" = p."id"
+    WHERE sp."status" = 'APPROVED'
+      AND ${Prisma.join(filters, ' AND ')}
+  )`;
 }
 
 @Injectable()
@@ -335,91 +415,47 @@ export class ProductsService {
   }
 
   async listPublic(query: PublicDiscoveryQuery) {
-    const where: Prisma.ProductWhereInput = {
-      AND: [
-        publicCatalogProductWhere,
-        ...(query.q
-          ? [
-              {
-                OR: [
-                  { title: { contains: query.q, mode: 'insensitive' as const } },
-                  { story: { contains: query.q, mode: 'insensitive' as const } },
-                  { materials: { contains: query.q, mode: 'insensitive' as const } },
-                  {
-                    sellerProfile: {
-                      fullName: {
-                        contains: query.q,
-                        mode: 'insensitive' as const,
-                      },
-                    },
-                  },
-                ],
-              },
-            ]
-          : []),
-        ...(query.category ? [{ categoryId: query.category }] : []),
-        ...(query.yearFrom !== undefined || query.yearTo !== undefined
-          ? [
-              {
-                year: {
-                  ...(query.yearFrom !== undefined
-                    ? { gte: query.yearFrom }
-                    : {}),
-                  ...(query.yearTo !== undefined ? { lte: query.yearTo } : {}),
-                },
-              },
-            ]
-          : []),
-        ...(query.materials?.map((material) => ({
-          materials: { contains: material, mode: 'insensitive' as const },
-        })) ?? []),
-      ],
-    };
+    const cte = publicCatalogCte(query);
+    const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
+      Prisma.sql`${cte}
+        SELECT "id", COUNT(*) OVER()::int AS "total"
+        FROM filtered p
+        ORDER BY ${Prisma.raw(publicCatalogOrderBy(query.sort))}
+        LIMIT ${query.limit}
+        OFFSET ${(query.page - 1) * query.limit}`,
+    );
+
+    const total = pageRows.length
+      ? Number(pageRows[0]!.total)
+      : Number(
+          (
+            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
+              Prisma.sql`${cte}
+                SELECT COUNT(*)::int AS "total"
+                FROM filtered`,
+            )
+          )[0]?.total ?? 0,
+        );
+
+    if (!pageRows.length) {
+      return productListResponseSchema.parse({
+        products: [],
+        pagination: { page: query.page, limit: query.limit, total },
+      });
+    }
 
     const products = await this.prisma.product.findMany({
-      where,
-      include: {
-        sellerProfile: {
-          select: publicSellerProfileSelect,
-        },
-        images: { orderBy: { position: 'asc' } },
-        listings: {
-          where: { status: { in: publicListingStatuses } },
-          include: { auctionRules: true },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      where: { id: { in: pageRows.map((row) => row.id) } },
+      select: publicCatalogProductSelect,
     });
-
-    const matchingProducts = products.filter((product) => {
-      const listing = selectPublicListing(product.listings);
-
-      if (!listing) return false;
-      if (query.status && listing.status !== query.status) return false;
-
-      const currentPrice = listing.currentPrice.toNumber();
-      if (query.priceMin !== undefined && currentPrice < query.priceMin) {
-        return false;
-      }
-      if (query.priceMax !== undefined && currentPrice > query.priceMax) {
-        return false;
-      }
-
-      return true;
-    });
-
-    const sortedProducts = [...matchingProducts].sort((left, right) =>
-      compareDiscoveryProducts(left, right, query.sort),
-    );
-    const pagedProducts = sortedProducts.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
-    );
+    const productsById = new Map(products.map((product) => [product.id, product]));
+    const pagedProducts = pageRows
+      .map((row) => productsById.get(row.id))
+      .filter((product): product is (typeof products)[number] => product !== undefined);
 
     return productListResponseSchema.parse({
       products: pagedProducts.map((product) => this.toPublicProduct(product)),
-      pagination: { page: query.page, limit: query.limit, total: sortedProducts.length },
+      pagination: { page: query.page, limit: query.limit, total },
     });
   }
 

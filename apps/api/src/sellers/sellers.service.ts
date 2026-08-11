@@ -2,7 +2,7 @@ import {
   publicSellerListResponseSchema,
   publicSellerDetailResponseSchema,
   sellerProductListResponseSchema,
-  type PublicDiscoveryQuery,
+  type PublicSellerQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
@@ -184,7 +184,7 @@ export class SellersService {
     });
   }
 
-  async listPublic(query: PublicDiscoveryQuery) {
+  async listPublic(query: PublicSellerQuery) {
     const searchWhere = query.q
       ? {
           OR: [

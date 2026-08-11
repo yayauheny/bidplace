@@ -127,24 +127,27 @@ Pen diff: none
 - [x] card media zoom не меняет bounds/grid и имеет focus/reduced-motion state;
 - [x] buttons, menus, tabs, toast и sticky player используют shared motion tokens;
 - [x] blur/atmosphere сохраняет sharp artwork, contrast и bounded performance;
-- [x] responsive automated evidence приложено;
-- [x] accessibility automated evidence приложено;
+- [ ] responsive automated evidence приложено для текущего discovery среза;
+- [ ] accessibility automated evidence приложено для текущего discovery среза;
 - [x] relevant checks зелёные;
 - [x] design/project statuses обновлены;
 - [x] `git diff --name-only` не содержит `.pen`.
 
-## 7. Закрытие runtime handoff — 2026-08-10
+## 7. Текущий runtime handoff — 2026-08-11
 
 - Canonical SHA-256 до и после реализации:
   `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
-- Реализованы GlobalHeader, Browse Works, AuctionCard, Product About/Creation/
-  Bids, AuctionPlayer, URL-backed ProductTabs, related creator works, Creator
-  Profile, auth, seller editors, Activity, Order и moderation.
-- Home, Browse Authors, search/filter/sort, отдельная Creation model и multiple
-  social links остаются заблокированы подтверждёнными IA/data decisions; fake
-  routes и controls не создавались.
-- Финальная автоматическая матрица: monorepo typecheck 7/7 workspaces, lint 2/2,
-  contracts 7/7, API unit 145/145, mobile unit 113/113, API PostgreSQL
-  integration 39/39, Chromium Playwright 35/35 и production build 7/7.
-- Остался внешний release gate: founder visual review и smoke на физических
-  iOS/Android устройствах. Он не маскируется как автоматизированный результат.
+- Реализованы GlobalHeader с `Главная`/`Обзор`, Browse Works, Home, Browse
+  Authors, Search, AuctionCard, Product About/Creation/Bids, AuctionPlayer,
+  URL-backed ProductTabs, related creator works, Creator Profile, auth, seller
+  editors, Activity, Order и moderation.
+- `/api/discovery/home`, `/api/products` и `/api/sellers` используют отдельные
+  server-owned query contracts. Catalog pagination/sort/filter выполняются в
+  PostgreSQL до hydration, а catalog images выбираются без бинарного `data`;
+  account popover переводит клавиатурный focus на первый пункт.
+- Creation process data model и multiple structured social links остаются
+  незавершёнными; fake routes и controls не создавались.
+- Автоматические unit/typecheck/lint/build проверки зелёные. PostgreSQL
+  integration и полный Chromium Playwright требуют доступной локальной БД и
+  остаются `Needs verification`; founder visual review и physical iOS/Android
+  smoke остаются внешним release gate.

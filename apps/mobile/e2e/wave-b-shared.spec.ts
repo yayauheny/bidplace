@@ -28,6 +28,7 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.goto('/');
 
+      await page.getByRole('button', { name: 'Обзор' }).click();
       const worksLink = page.getByRole('link', { name: 'Работы' }).first();
       await worksLink.click();
       await expect
@@ -36,6 +37,7 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         )
         .toBe(false);
       await page.goto('/');
+      await page.getByRole('button', { name: 'Обзор' }).click();
       const keyboardWorksLink = page
         .getByRole('link', { name: 'Работы' })
         .first();

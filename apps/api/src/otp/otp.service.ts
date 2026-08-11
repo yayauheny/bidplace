@@ -81,7 +81,7 @@ export function buildSmtpTransportOptions(env: ServerEnv): SMTPTransport.Options
     throw new Error('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
   }
 
-  if (env.SMTP_AUTH_MODE === 'none' && (hasUsername || hasPassword)) {
+  if (env.SMTP_AUTH_MODE !== 'login' && (hasUsername || hasPassword)) {
     throw new Error('SMTP_USERNAME and SMTP_PASSWORD require SMTP_AUTH_MODE=login');
   }
 

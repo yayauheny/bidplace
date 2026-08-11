@@ -1,5 +1,11 @@
 import { Link, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -21,6 +27,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const focusOpened = useRef(false);
   const suppressNextFocusOpen = useRef(false);
+  const firstMenuItemRef = useRef<{ focus?: () => void } | null>(null);
   const triggerRef = useRef<{
     getBoundingClientRect: () => DOMRect;
     focus?: () => void;
@@ -75,6 +82,12 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
       document.removeEventListener('focusin', closeOnFocusIn);
     };
   }, [closeMenu, open]);
+
+  useEffect(() => {
+    if (!open || !focusOpened.current || Platform.OS !== 'web') return;
+
+    queueMicrotask(() => firstMenuItemRef.current?.focus?.());
+  }, [open]);
 
   const logout = async () => {
     if (loggingOut) return;
@@ -188,6 +201,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
               canOpenCabinet={capability.status === 'APPROVED'}
               loggingOut={loggingOut}
               onLogout={() => void logout()}
+              firstMenuItemRef={firstMenuItemRef}
               inline={false}
             />
           </OverlayPortal>
@@ -198,6 +212,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             canOpenCabinet={capability.status === 'APPROVED'}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
+            firstMenuItemRef={firstMenuItemRef}
             inline
           />
         )
@@ -212,6 +227,7 @@ function AccountDropdown({
   canOpenCabinet,
   loggingOut,
   onLogout,
+  firstMenuItemRef,
   inline,
 }: {
   displayName: string;
@@ -219,6 +235,7 @@ function AccountDropdown({
   canOpenCabinet: boolean;
   loggingOut: boolean;
   onLogout: () => void;
+  firstMenuItemRef: MutableRefObject<{ focus?: () => void } | null>;
   inline: boolean;
 }) {
   return (
@@ -250,6 +267,11 @@ function AccountDropdown({
       {canOpenCabinet ? (
         <Link href="/profile" asChild>
           <MotionPressable
+            ref={(node) => {
+              firstMenuItemRef.current = node as unknown as {
+                focus?: () => void;
+              } | null;
+            }}
             accessibilityRole="link"
             accessibilityLabel="Кабинет"
             preset="button"
@@ -282,6 +304,15 @@ function AccountDropdown({
         />
       ) : null}
       <MotionPressable
+        ref={
+          canOpenCabinet
+            ? undefined
+            : (node) => {
+                firstMenuItemRef.current = node as unknown as {
+                  focus?: () => void;
+                } | null;
+              }
+        }
         accessibilityRole="button"
         accessibilityLabel="Выйти"
         accessibilityState={{ busy: loggingOut }}

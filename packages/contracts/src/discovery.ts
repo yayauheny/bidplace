@@ -65,6 +65,15 @@ export const publicDiscoveryQuerySchema = paginationQuerySchema
     }
   });
 
+export const publicSellerSortSchema = z.enum(['activity', 'name']);
+
+export const publicSellerQuerySchema = paginationQuerySchema
+  .extend({
+    q: z.string().trim().min(1).max(120).optional(),
+    sort: publicSellerSortSchema.default('activity'),
+  })
+  .strict();
+
 export const publicHomeResponseSchema = z
   .object({
     topAuctions: z.array(publicProductListItemSchema),
@@ -78,4 +87,7 @@ export type PublicDiscoveryQueryInput = z.input<
 >;
 export type PublicDiscoveryQuery = z.output<typeof publicDiscoveryQuerySchema>;
 export type PublicDiscoverySort = z.infer<typeof publicDiscoverySortSchema>;
+export type PublicSellerQueryInput = z.input<typeof publicSellerQuerySchema>;
+export type PublicSellerQuery = z.output<typeof publicSellerQuerySchema>;
+export type PublicSellerSort = z.infer<typeof publicSellerSortSchema>;
 export type PublicHomeResponse = z.infer<typeof publicHomeResponseSchema>;
