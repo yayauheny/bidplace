@@ -7,7 +7,16 @@ export default function WorksRoute() {
   const params = useLocalSearchParams<{
     status?: 'LIVE' | 'SCHEDULED' | 'ENDED';
     sort?: PublicDiscoverySort;
+    category?: string;
+    material?: string;
   }>();
 
-  return <ProductListScreen status={params.status} sort={params.sort ?? 'newest'} />;
+  return (
+    <ProductListScreen
+      status={params.status}
+      sort={params.sort ?? 'newest'}
+      category={params.category}
+      material={params.material}
+    />
+  );
 }

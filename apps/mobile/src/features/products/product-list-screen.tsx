@@ -25,7 +25,6 @@ import type {
 } from '@bidplace/contracts';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
-import { listingStatusLabels } from '../../lib/presentation';
 
 type CatalogColumnCount = 1 | 2 | 3 | 4;
 type PublicListingStatus = 'LIVE' | 'SCHEDULED' | 'ENDED';
@@ -38,142 +37,290 @@ const sortOptions: Array<{ value: PublicDiscoverySort; label: string }> = [
   { value: 'priceDesc', label: 'Сначала дороже' },
 ];
 
+function FacetMenu({
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string;
+  value?: string;
+  options: Array<{ value: string; label: string }>;
+  onSelect: (value?: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedLabel = options.find((option) => option.value === value)?.label;
+
+  return (
+    <View style={{ position: 'relative' }}>
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((current) => !current)}
+        preset="button"
+        style={{
+          minHeight: 36,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: designTokens.space.x2,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: designTokens.color.border,
+          paddingHorizontal: 14,
+        }}
+      >
+        <AppText role="caption" numberOfLines={1}>
+          {selectedLabel ?? label}
+        </AppText>
+        <AppIcon name="chevronDown" size={14} color={designTokens.color.textSecondary} />
+      </MotionPressable>
+      {open ? (
+        <View
+          accessibilityRole="menu"
+          style={{
+            position: 'absolute',
+            top: 44,
+            left: 0,
+            zIndex: designTokens.layer.popover,
+            minWidth: 180,
+            gap: designTokens.space.x1,
+            borderWidth: 1,
+            borderColor: designTokens.color.border,
+            borderRadius: 16,
+            backgroundColor: designTokens.color.surface,
+            padding: 10,
+            ...designTokens.elevation.floating,
+          }}
+        >
+          <MotionPressable
+            accessibilityRole="menuitem"
+            accessibilityLabel={`${label}: все`}
+            onPress={() => {
+              onSelect(undefined);
+              setOpen(false);
+            }}
+            preset="button"
+            style={facetMenuItemStyle}
+            interactionStyle={facetMenuItemInteractionStyle}
+          >
+            <AppText role="label">Все</AppText>
+          </MotionPressable>
+          {options.map((option) => (
+            <MotionPressable
+              key={option.value}
+              accessibilityRole="menuitem"
+              accessibilityLabel={option.label}
+              onPress={() => {
+                onSelect(option.value);
+                setOpen(false);
+              }}
+              preset="button"
+              style={facetMenuItemStyle}
+              interactionStyle={facetMenuItemInteractionStyle}
+            >
+              <AppText role="label" numberOfLines={1}>
+                {option.label}
+              </AppText>
+            </MotionPressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const facetMenuItemStyle = {
+  minHeight: designTokens.size.touch,
+  justifyContent: 'center' as const,
+  borderRadius: designTokens.radius.small,
+  paddingHorizontal: designTokens.space.x2,
+};
+
+const facetMenuItemInteractionStyle = ({
+  hovered,
+  pressed,
+}: {
+  hovered: boolean;
+  pressed: boolean;
+}) => ({
+  backgroundColor:
+    hovered || pressed ? designTokens.color.surfaceStrong : 'transparent',
+});
+
 function DiscoveryControls({
   status,
   sort,
+  facets,
+  category,
+  material,
   onStatusChange,
   onSortChange,
+  onCategoryChange,
+  onMaterialChange,
 }: {
   status?: PublicListingStatus;
   sort: PublicDiscoverySort;
+  facets?: {
+    statusCounts: Record<PublicListingStatus, number>;
+    categories: Array<{ id: string; name: string; count: number }>;
+    materials: string[];
+  };
+  category?: string;
+  material?: string;
   onStatusChange: (value?: PublicListingStatus) => void;
   onSortChange: (value: PublicDiscoverySort) => void;
+  onCategoryChange: (value?: string) => void;
+  onMaterialChange: (value?: string) => void;
 }) {
   const [sortOpen, setSortOpen] = useState(false);
   const currentSort = sortOptions.find((option) => option.value === sort);
+  const statusOptions: Array<{ value: PublicListingStatus; label: string }> = [
+    { value: 'LIVE', label: 'Идут торги' },
+    { value: 'SCHEDULED', label: 'Запланированы' },
+    { value: 'ENDED', label: 'Завершены' },
+  ];
 
   return (
-    <View style={{ gap: designTokens.space.x3 }}>
+    <View style={{ gap: designTokens.space.x6 }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: designTokens.space.x2 }}
       >
-        {[
-          { value: undefined, label: 'Все' },
-          ...(['LIVE', 'SCHEDULED', 'ENDED'] as const).map((value) => ({
-            value,
-            label: listingStatusLabels[value],
-          })),
-        ].map((option) => {
-          const selected = option.value === status;
-          return (
-            <MotionPressable
-              key={option.label}
-              accessibilityRole="button"
-              accessibilityLabel={`Фильтр: ${option.label}`}
-              accessibilityState={{ selected }}
-              onPress={() => onStatusChange(option.value)}
-              preset="button"
-              style={{
-                minHeight: designTokens.size.control,
-                justifyContent: 'center',
-                borderRadius: designTokens.radius.compact,
-                borderWidth: 1,
-                borderColor: selected
-                  ? designTokens.color.action
-                  : designTokens.color.border,
-                backgroundColor: selected
-                  ? designTokens.color.action
-                  : designTokens.color.surface,
-                paddingHorizontal: designTokens.space.x3,
-              }}
-            >
-              <AppText
-                role="label"
-                style={{
-                  color: selected
-                    ? designTokens.color.surface
-                    : designTokens.color.ink,
-                }}
-              >
-                {option.label}
-              </AppText>
-            </MotionPressable>
-          );
-        })}
+        <FacetMenu
+          label="Категория"
+          value={category}
+          options={(facets?.categories ?? []).map((option) => ({
+            value: option.id,
+            label: `${option.name} · ${option.count}`,
+          }))}
+          onSelect={onCategoryChange}
+        />
+        <FacetMenu
+          label="Материал"
+          value={material}
+          options={(facets?.materials ?? []).map((option) => ({
+            value: option,
+            label: option,
+          }))}
+          onSelect={onMaterialChange}
+        />
       </ScrollView>
-      <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
-        <MotionPressable
-          accessibilityRole="button"
-          accessibilityLabel="Сортировка"
-          accessibilityState={{ expanded: sortOpen }}
-          onPress={() => setSortOpen((current) => !current)}
-          preset="button"
-          style={{
-            minHeight: designTokens.size.buttonCompact,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: designTokens.space.x2,
-            borderRadius: designTokens.radius.pill,
-            borderWidth: 1,
-            borderColor: designTokens.color.border,
-            paddingHorizontal: designTokens.space.x3,
-          }}
+      <View
+        style={{
+          minHeight: 40,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: designTokens.space.x4,
+        }}
+      >
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: designTokens.space.x6 }}
         >
-          <AppText role="label">{currentSort?.label}</AppText>
-          <AppIcon
-            name="chevronDown"
-            size={16}
-            color={designTokens.color.ink}
-          />
-        </MotionPressable>
-        {sortOpen ? (
-          <View
-            accessibilityRole="menu"
-            style={{
-              position: 'absolute',
-              top: designTokens.size.buttonCompact + designTokens.space.x2,
-              left: 0,
-              zIndex: designTokens.layer.popover,
-              minWidth: 200,
-              gap: designTokens.space.x1,
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              borderRadius: designTokens.radius.menu,
-              backgroundColor: designTokens.color.surface,
-              padding: designTokens.space.x2,
-              ...designTokens.elevation.floating,
-            }}
-          >
-            {sortOptions.map((option) => (
+          {statusOptions.map((option) => {
+            const selected = status === option.value;
+            return (
               <MotionPressable
                 key={option.value}
-                accessibilityRole="menuitem"
+                accessibilityRole="tab"
                 accessibilityLabel={option.label}
-                onPress={() => {
-                  onSortChange(option.value);
-                  setSortOpen(false);
-                }}
+                accessibilityState={{ selected }}
+                onPress={() => onStatusChange(option.value)}
                 preset="button"
                 style={{
-                  minHeight: designTokens.size.touch,
-                  justifyContent: 'center',
-                  borderRadius: designTokens.radius.small,
-                  paddingHorizontal: designTokens.space.x2,
+                  minHeight: 32,
+                  justifyContent: 'space-between',
+                  gap: designTokens.space.x2,
+                  borderBottomWidth: 1.5,
+                  borderBottomColor: selected
+                    ? designTokens.color.ink
+                    : 'transparent',
                 }}
-                interactionStyle={({ hovered, pressed }) => ({
-                  backgroundColor:
-                    hovered || pressed
-                      ? designTokens.color.surfaceStrong
-                      : 'transparent',
-                })}
               >
-                <AppText role="label">{option.label}</AppText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <AppText
+                    role="caption"
+                    style={{
+                      color: selected
+                        ? designTokens.color.ink
+                        : designTokens.color.textSecondary,
+                    }}
+                  >
+                    {option.label}
+                  </AppText>
+                  <AppText role="caption" tone="muted" style={{ fontSize: 10 }}>
+                    {facets?.statusCounts[option.value] ?? 0}
+                  </AppText>
+                </View>
               </MotionPressable>
-            ))}
-          </View>
-        ) : null}
+            );
+          })}
+        </ScrollView>
+        <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+          <MotionPressable
+            accessibilityRole="button"
+            accessibilityLabel="Сортировка"
+            accessibilityState={{ expanded: sortOpen }}
+            onPress={() => setSortOpen((current) => !current)}
+            preset="button"
+            style={{
+              height: 32,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              borderRadius: designTokens.radius.pill,
+              borderWidth: 1,
+              borderColor: designTokens.color.border,
+              paddingHorizontal: 12,
+            }}
+          >
+            <AppIcon name="arrowUpDown" size={13} color={designTokens.color.ink} />
+            <AppText role="caption" numberOfLines={1}>
+              {currentSort?.label}
+            </AppText>
+            <AppIcon name="chevronDown" size={12} color={designTokens.color.textSecondary} />
+          </MotionPressable>
+          {sortOpen ? (
+            <View
+              accessibilityRole="menu"
+              style={{
+                position: 'absolute',
+                top: 40,
+                right: 0,
+                zIndex: designTokens.layer.popover,
+                minWidth: 200,
+                gap: designTokens.space.x1,
+                borderWidth: 1,
+                borderColor: designTokens.color.border,
+                borderRadius: designTokens.radius.menu,
+                backgroundColor: designTokens.color.surface,
+                padding: designTokens.space.x2,
+                ...designTokens.elevation.floating,
+              }}
+            >
+              {sortOptions.map((option) => (
+                <MotionPressable
+                  key={option.value}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={option.label}
+                  onPress={() => {
+                    onSortChange(option.value);
+                    setSortOpen(false);
+                  }}
+                  preset="button"
+                  style={facetMenuItemStyle}
+                  interactionStyle={facetMenuItemInteractionStyle}
+                >
+                  <AppText role="label">{option.label}</AppText>
+                </MotionPressable>
+              ))}
+            </View>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -252,22 +399,31 @@ function CatalogLoadingAnnouncement() {
 export function ProductListScreen({
   query: searchQuery,
   title = 'Работы',
-  subtitle = 'Авторские предметы и живые аукционы bidplace.',
   status,
   sort = 'newest',
+  category,
+  material,
 }: {
   query?: string;
   title?: string;
-  subtitle?: string;
   status?: PublicListingStatus;
   sort?: PublicDiscoverySort;
+  category?: string;
+  material?: string;
 } = {}) {
   const api = useApiClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const query = useQuery({
-    queryKey: ['products', { q: searchQuery, status, sort }],
-    queryFn: () => api.products.list({ q: searchQuery, status, sort }),
+    queryKey: ['products', { q: searchQuery, status, sort, category, material }],
+    queryFn: () =>
+      api.products.list({
+        q: searchQuery,
+        status,
+        sort,
+        category,
+        materials: material ? [material] : undefined,
+      }),
   });
   const columns = getCatalogColumnCount(width);
 
@@ -334,26 +490,43 @@ export function ProductListScreen({
         >
           <View style={{ maxWidth: 720, gap: designTokens.space.x3 }}>
             <AppText
-              role={
+              role="screenTitle"
+              style={
                 width >= designTokens.breakpoint.compactHeader
-                  ? 'display'
-                  : 'screenTitle'
+                  ? { fontSize: 32, lineHeight: 34, letterSpacing: -0.96 }
+                  : undefined
               }
             >
               {title}
-            </AppText>
-            <AppText role="body" tone="secondary">
-              {subtitle}
             </AppText>
           </View>
           <DiscoveryControls
             status={status}
             sort={sort}
+            facets={query.data?.facets}
+            category={category}
+            material={material}
             onStatusChange={(nextStatus) =>
-              router.setParams({ status: nextStatus, sort })
+              router.setParams({
+                status: nextStatus,
+                sort,
+                category,
+                material,
+              })
             }
             onSortChange={(nextSort) =>
-              router.setParams({ status, sort: nextSort })
+              router.setParams({
+                status,
+                sort: nextSort,
+                category,
+                material,
+              })
+            }
+            onCategoryChange={(nextCategory) =>
+              router.setParams({ status, sort, category: nextCategory, material })
+            }
+            onMaterialChange={(nextMaterial) =>
+              router.setParams({ status, sort, category, material: nextMaterial })
             }
           />
           {query.isLoading ? <CatalogLoadingAnnouncement /> : null}

@@ -64,6 +64,10 @@ verification.
   and matched visual/runtime acceptance at 1440/1024/390. The canonical file
   `design/pen/bidplace-web-v2.pen` is locked at SHA-256
   `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+- `Implemented`: Browse Works and Browse Authors now use the shared Pen v2
+  header/card primitives and server-backed category/material/status/sort state;
+  URL state is preserved by the public route screens. Exact visual parity and
+  responsive/device acceptance remain `Needs verification`.
 
 ## Public discovery WIP — 2026-08-11
 

@@ -38,6 +38,11 @@
   portaled menu, with Escape returning focus to the trigger; the current header
   follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Full browser
   execution still needs matched Pen screenshots and device verification.
+- `Implemented`: Browse Works now consumes server facets for category/material
+  menus, status counts and state tabs, and server-side sort/query state is
+  URL-backed. Browse Authors now exposes the API-backed activity/name sort
+  control. The exact 1440 composition and 1024/390 derived states remain
+  pending screenshot and device acceptance.
 
 ## Screen matrix
 
