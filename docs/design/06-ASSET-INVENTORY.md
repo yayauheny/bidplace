@@ -1,8 +1,8 @@
 # bidplace — реестр дизайн-ресурсов
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-12
 
-Статус: **Canonical source and reference archives verified; runtime mapping pending**
+Статус: **Canonical source, runtime mapping и локальные demo fixtures verified**
 
 ## 1. Защищённый источник
 
@@ -50,6 +50,102 @@ implementation-задачи. Экспорты и публичная ссылка
 
 Production UI не должен зависеть от случайного локального файла, clipboard
 asset или изображения без подтверждённых прав.
+
+### 3.1. Точная runtime-карта текущего MVP
+
+| Роль | Точный путь в репозитории | Как используется |
+| --- | --- | --- |
+| Основной brand mark в текущем header | `apps/mobile/assets/branding/bidplace-logo.png` | Импортируется в `apps/mobile/src/components/layout/BrandLogo.tsx`; это знак с глазами, ссылка на `/` |
+| Полный wordmark `bidplace` | `apps/mobile/assets/branding/bidplace-wordmark-light.png` и `.svg` | Доступный founder asset; сейчас напрямую не импортируется `BrandLogo.tsx`, использовать только если это подтверждено целевым Pen state |
+| Favicon web | `apps/mobile/assets/branding/bidplace-favicon-light.png` и `.svg` | `apps/mobile/app.json`, web favicon |
+| Mark/adaptive icon | `apps/mobile/assets/branding/bidplace-mark-light.png` и `.svg`; производные `apps/mobile/assets/android-icon-*.png` | App icon, Android adaptive/monochrome icon |
+| Expo splash/icon derivatives | `apps/mobile/assets/icon.png`, `splash-icon.png`, `brand-mark.png` | Expo app configuration; не использовать как desktop wordmark |
+| Product demo media | `packages/database/prisma/fixtures/product-images/ceramic-brush-holder.png`, `handmade-mug.png`, `handmade-vase.png`, `painted-planter.png` | Только local/test seed; после seed хранится в ProductImage и отдается API |
+| Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/anna-morozova.png`, `irina-levchenko.png`, `lena-kravets.png`, `mark-volkov.png`, `nikita-orlov.png`, `olga-vlasova.png`, `pavel-sokolov.png`, `svetlana-gromova.png` | Только local/test seed; после seed хранится в SellerProfile и отдается API |
+| E2E-only profile fixture | `apps/mobile/e2e/fixtures/profile-photo.png` | Тест upload flow; не production content |
+
+В seed сейчас используются четыре исходных product PNG для восьми карточек:
+`painted-planter.png`, `ceramic-brush-holder.png`, `handmade-mug.png` и
+`handmade-vase.png`. Это намеренно локальные тематические изображения, чтобы
+сценарии не зависели от доступности стороннего сайта и не создавали внешний URL
+с неясным copyright-статусом.
+
+### 3.2. Точные Pen image refs
+
+В canonical `design/pen/bidplace-web-v2.pen` найдено 17 image refs; все файлы
+существуют в `design/pen/images/`. Это reference imagery для Pen/design review,
+а не автоматический production content:
+
+```text
+design/pen/images/generated-1786212763126.png
+design/pen/images/generated-1786212763906.png
+design/pen/images/generated-1786212765393.png
+design/pen/images/generated-1786212771118.png
+design/pen/images/generated-1786212771295.png
+design/pen/images/generated-1786219980325.png
+design/pen/images/generated-1786219980566.png
+design/pen/images/generated-1786219983585.png
+design/pen/images/generated-1786219984336.png
+design/pen/images/generated-1786234139378.png
+design/pen/images/generated-1786234139941.png
+design/pen/images/generated-1786234141569.png
+design/pen/images/generated-1786234142900.png
+design/pen/images/generated-1786237222387.png
+design/pen/images/generated-1786237223787.png
+design/pen/images/generated-1786237225745.png
+design/pen/images/logo-transparent-tight.png
+```
+
+Canonical Pen SHA-256 на дату обновления:
+`03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+
+### 3.3. Шрифты и надпись bidplace
+
+Шрифты не являются PNG-ассетами и не лежат отдельными файлами в репозитории:
+они импортируются из Expo font packages в
+`apps/mobile/src/app/_layout.tsx`:
+
+- `@expo-google-fonts/onest`: `Onest_400Regular`, `Onest_500Medium`,
+  `Onest_600SemiBold`, `Onest_700Bold` — основной контент, заголовки, цены,
+  карточки и кнопки;
+- `@expo-google-fonts/inter`: `Inter_400Regular`, `Inter_500Medium`,
+  `Inter_600SemiBold`, `Inter_700Bold` — navigation/header и auction numeric
+  treatment.
+
+Семантические назначения и размеры находятся в
+`packages/design-tokens/src/tokens.ts`. Важно не смешивать два разных ассета:
+текущий `BrandLogo.tsx` показывает только `bidplace-logo.png` (mark), а
+текстовая надпись `bidplace` доступна отдельным `bidplace-wordmark-light.*` и
+сейчас не является автоматически подключённым CSS-текстом. Выбор между mark и
+wordmark определяется конкретным целевым Pen state; не перерисовывать надпись
+вручную без отдельного решения дизайнера.
+
+### 3.4. Иконки и кнопки
+
+Кнопки не используют изображения. Общий primitive находится в
+`apps/mobile/src/components/ui/Button.tsx`, интерактивная оболочка — в
+`apps/mobile/src/components/ui/MotionPressable.tsx`, а размеры/радиусы — в
+`packages/design-tokens/src/tokens.ts`.
+
+Иконки не копируются из Pen и не являются bitmap-файлами: весь текущий набор
+сведён в `apps/mobile/src/components/ui/AppIcon.tsx` и импортирует
+`lucide-react-native`. Семантические имена набора: `catalog`, `moderation`,
+`purchases`, `seller`, `account`, `search`, `send`, `globe`, `instagram`,
+`plus`, `copy`, `chevronLeft`, `chevronDown`, `chevronRight`, `arrowUpDown`,
+`imageOff`, `logOut`, `trash`, `user`, `x`.
+
+Для дизайнера важные цвета кнопок — это токены, а не картинка:
+
+- primary/action: `designTokens.color.action` = `#090909`, hover/pressed
+  `#242424`;
+- bidplace accent/status: `designTokens.color.accent` = `#D94A24`, dark text
+  variant `#BC3C1B`;
+- surface/white label: `designTokens.color.surface` = `#FFFFFF`.
+
+Если на конкретном canonical Pen state кнопка выглядит оранжевой, это должен
+быть отдельный semantic variant/state, а не recolor случайной иконки или
+растрового файла. Текущий общий `PrimaryButton` остаётся чёрным по shared token
+contract; retry/error state нужно сверять с конкретным Pen node перед заменой.
 
 ### Approved logo input
 
