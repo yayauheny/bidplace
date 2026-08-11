@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { PrismaClient } from '../../../../packages/database/dist/index.js';
+import { e2eDatabaseURL } from './e2e-env';
 
-const databaseUrl =
-  'postgresql://auction:auction@127.0.0.1:5432/bidplace_e2e?schema=public';
+const databaseUrl = e2eDatabaseURL;
 const password = 'password123';
 const passwordHash =
   '$argon2id$v=19$m=65536,t=3,p=4$Hv01HhuWHyFmMIRCcxhH3w$9dvY3hECfoulYwe4VEPwWEJ4OHvYCCYbiw685vNdLZM';

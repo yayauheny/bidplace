@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { createAuctionFixture } from './support/e2e-fixtures';
+import { e2eApiBaseURL } from './support/e2e-env';
 
 async function expectCurrentPrice(page: Page, amount: string) {
   await expect(page.locator('body')).toContainText(
@@ -28,7 +29,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
     );
 
     const buyerAResponse = await buyerA.context.request.post(
-      `http://localhost:3001/api/listings/${fixture.listing.id}/bids`,
+      `${e2eApiBaseURL}/api/listings/${fixture.listing.id}/bids`,
       {
         headers: { 'Idempotency-Key': 'browser-buyer-a' },
         data: { amount: 11 },
@@ -66,7 +67,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
     await expect(buyerB.page.getByText('Побеждаете')).toBeVisible();
 
     const canonical = await buyerB.context.request.get(
-      `http://localhost:3001/api/products/${fixture.product.publicId}`,
+      `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,
     );
     expect(canonical.ok()).toBeTruthy();
     expect((await canonical.json()).listing).toMatchObject({
@@ -74,7 +75,7 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
       bidCount: 2,
     });
     const history = await buyerB.context.request.get(
-      `http://localhost:3001/api/listings/${fixture.listing.id}/bids`,
+      `${e2eApiBaseURL}/api/listings/${fixture.listing.id}/bids`,
     );
     expect(history.ok()).toBeTruthy();
     expect((await history.json()).bids).toHaveLength(2);

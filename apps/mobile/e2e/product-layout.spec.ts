@@ -15,19 +15,22 @@ test('product composition exposes tabs and remains responsive', async ({
   await page.goto(`/product/${fixture.product.publicId}`);
 
   await expect(page.getByText(fixture.product.title)).toBeVisible();
-  await expect(page.getByText('Текущая цена')).toBeVisible();
+  await expect(page.getByText('Ставка', { exact: true })).toBeVisible();
+  await expect(page.getByText('15,00 BYN', { exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /Ставки 2/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Торги 2/ })).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
 
   await page.getByRole('tab', { name: 'Создание' }).click();
   await expect(page).toHaveURL(
     new RegExp(`/product/${fixture.product.publicId}\\?tab=creation$`),
   );
-  await expect(page.getByText('История предмета')).toBeVisible();
+  await expect(
+    page.getByText('История создания', { exact: true }),
+  ).toBeVisible();
 
-  await page.getByRole('tab', { name: /Ставки 2/ }).click();
+  await page.getByRole('tab', { name: /Торги 2/ }).click();
   await expect(page).toHaveURL(
     new RegExp(`/product/${fixture.product.publicId}\\?tab=bids$`),
   );
@@ -39,10 +42,12 @@ test('product composition exposes tabs and remains responsive', async ({
     'aria-selected',
     'true',
   );
-  await expect(page.getByText('История предмета')).toBeVisible();
+  await expect(
+    page.getByText('История создания', { exact: true }),
+  ).toBeVisible();
 
   await page.goto(`/product/${fixture.product.publicId}?tab=bids`);
-  await expect(page.getByRole('tab', { name: /Ставки 2/ })).toHaveAttribute(
+  await expect(page.getByRole('tab', { name: /Торги 2/ })).toHaveAttribute(
     'aria-selected',
     'true',
   );

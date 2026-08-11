@@ -11,7 +11,7 @@
 | `design/pen/bidplace-web-v2.pen` | canonical visual design | restored byte-for-byte | never edit/delete in code work |
 
 Canonical SHA-256:
-`bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+`03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 Исходная локальная копия:
 `/Users/yayauheny/Downloads/bidplace-web-v2/bidplace-web-v2.pen`.
 Публичная read-only публикация:

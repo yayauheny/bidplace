@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { authenticatedPage } from './support/auth-session';
 import { createAuctionFixture } from './support/e2e-fixtures';
 import { closeListing } from './support/listing-state';
+import { e2eApiBaseURL } from './support/e2e-env';
 
 test('seller marks the existing Order contacted and the API keeps the transition', async ({
   browser,
@@ -18,7 +19,7 @@ test('seller marks the existing Order contacted and the API keeps the transition
       new Date(fixture.listing.endsAt.getTime() + 1),
     );
     const activity = await winner.context.request.get(
-      'http://localhost:3001/api/me/activity',
+      `${e2eApiBaseURL}/api/me/activity`,
     );
     expect(activity.ok()).toBeTruthy();
     const activityPayload = await activity.json();
@@ -35,7 +36,7 @@ test('seller marks the existing Order contacted and the API keeps the transition
     await expect(seller.page.getByText('Контакт установлен')).toBeVisible();
 
     const persisted = await seller.context.request.get(
-      `http://localhost:3001/api/orders/${orderPublicId}`,
+      `${e2eApiBaseURL}/api/orders/${orderPublicId}`,
     );
     expect(persisted.ok()).toBeTruthy();
     expect((await persisted.json()).order.status).toBe('CONTACTED');

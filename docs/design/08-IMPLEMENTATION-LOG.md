@@ -7,7 +7,7 @@
 ## Правила журнала
 
 - `design/pen/bidplace-web-v2.pen` неизменяем; контрольный SHA-256:
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 - Каждый завершённый этап имеет отдельный commit и пройденные проверки.
 - В журнал попадают только проверенные результаты, открытые риски и следующие
   действия. Временные догадки не становятся дизайн-решениями.
@@ -207,6 +207,24 @@ lint 2/2 и production build 7/7.
 Commits: `84336e9`, `d9f0ed4`, `348ac36`.
 
 ## Текущая работа
+
+### 2026-08-11 — Pen v2 responsive and runtime gate corrections
+
+- Creator status filters now use one wrapping responsive row, keeping all
+  three states available at 390px without horizontal document overflow.
+- Product mobile keeps the canonical sticky action and renders the existing
+  shared bid form in the reading flow, so the action can submit a validated
+  amount instead of targeting a hidden input.
+- E2E support accepts isolated API/Web/DB endpoints while retaining the
+  original defaults; this enabled disposable runtime checks without touching
+  user processes on ports 3001/8081.
+- Targeted Product/Creator smoke, responsive matrix, catalog acceptance and
+  bid-confirmation acceptance passed. The broad route matrix produced the
+  required captures but remains too slow for its current five-minute test
+  budget; no visual assertion failure was reported before timeout.
+
+Checks: mobile unit 115/115, typecheck, lint, Expo web/iOS/Android export,
+Product/Creator E2E 2/2, responsive matrix 3/3 and product/bid Wave C checks.
 
 ### Release acceptance
 

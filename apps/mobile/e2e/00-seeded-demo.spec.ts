@@ -1,8 +1,9 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-const apiBaseURL = 'http://localhost:3001';
+const apiBaseURL = e2eApiBaseURL;
 const seededBuyer = {
   id: '',
   email: 'buyer@bidplace.test',
@@ -125,12 +126,12 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     const endedAlias = await getPublicBidAlias(context.request, 'seedEnded03');
 
     await page.goto('/product/seedLive002');
-    await page.getByRole('tab', { name: /Ставки/ }).click();
+    await page.getByRole('tab', { name: /Торги/ }).click();
     await expect(page.getByText(liveAlias)).toBeVisible();
     await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
-    await page.getByRole('tab', { name: /Ставки/ }).click();
+    await page.getByRole('tab', { name: /Торги/ }).click();
     await expect(page.getByText('Ставок ещё нет.')).toBeVisible();
 
     await page.route('**/api/listings/*/bids*', async (route) => {
@@ -141,7 +142,7 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
       });
     });
     await page.goto('/product/seedLive002');
-    await page.getByRole('tab', { name: /Ставки/ }).click();
+    await page.getByRole('tab', { name: /Торги/ }).click();
     await expect(
       page.getByText('Не удалось загрузить историю ставок.'),
     ).toBeVisible();
@@ -150,7 +151,7 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     await expect(page.getByText(liveAlias)).toBeVisible();
 
     await page.goto('/product/seedEnded03');
-    await page.getByRole('tab', { name: /Ставки/ }).click();
+    await page.getByRole('tab', { name: /Торги/ }).click();
     await expect(page.getByText(endedAlias)).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Открыть результат заказа' }),

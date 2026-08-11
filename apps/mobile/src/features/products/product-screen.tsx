@@ -432,10 +432,14 @@ export function ProductScreen({
             : 'Торги завершены'
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
-      actionLabel={listing.status === 'LIVE' && !auth.isAdmin ? 'Поставить' : undefined}
+      actionLabel={
+        listing.status === 'LIVE' && !auth.isAdmin ? 'Поставить' : undefined
+      }
       actionDisabled={bid.isPending}
       actionLoading={bid.isPending}
-      onAction={listing.status === 'LIVE' && !auth.isAdmin ? submitBid : undefined}
+      onAction={
+        listing.status === 'LIVE' && !auth.isAdmin ? submitBid : undefined
+      }
     />
   ) : (
     <SurfacePanel>
@@ -752,13 +756,15 @@ export function ProductScreen({
                   </AppText>
                 ) : null}
               </View>
-              <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x4 }}>
+              <View
+                style={{ flex: 1, minWidth: 0, gap: designTokens.space.x4 }}
+              >
                 <ProductGallery
                   images={product.images}
                   label={product.title ?? 'Предмет'}
                 />
                 {auctionPlayer}
-                {isProductWide ? bidForm ?? adminBidNotice : null}
+                {isProductWide ? (bidForm ?? adminBidNotice) : bidForm}
               </View>
               <View
                 style={{
@@ -770,7 +776,10 @@ export function ProductScreen({
                 {detailItems.length > 0 ? (
                   <View style={{ gap: designTokens.space.x4 }}>
                     {detailItems.map((item) => (
-                      <View key={item.label} style={{ gap: designTokens.space.x1 }}>
+                      <View
+                        key={item.label}
+                        style={{ gap: designTokens.space.x1 }}
+                      >
                         <AppText role="caption" tone="secondary">
                           {item.label}
                         </AppText>

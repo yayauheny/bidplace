@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { createAuctionFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 import { closeListing } from './support/listing-state';
+import { e2eApiBaseURL } from './support/e2e-env';
 
 test('closing an auction creates one winner result and preserves buyer privacy', async ({
   browser,
@@ -24,13 +25,13 @@ test('closing an auction creates one winner result and preserves buyer privacy',
     await expect
       .poll(async () => {
         const response = await request.get(
-          `http://localhost:3001/api/products/${fixture.product.publicId}`,
+          `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,
         );
         return (await response.json()).listing?.status ?? null;
       })
       .toBe('ENDED');
     const activity = await winner.context.request.get(
-      'http://localhost:3001/api/me/activity',
+      `${e2eApiBaseURL}/api/me/activity`,
     );
     expect(activity.ok()).toBeTruthy();
     const activityPayload = await activity.json();

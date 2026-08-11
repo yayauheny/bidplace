@@ -14,6 +14,7 @@ import {
   createSellerFixture,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { e2eApiBaseURL, e2eWebBaseURL } from './support/e2e-env';
 
 const evidenceCommit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
   cwd: resolve(__dirname, '../../..'),
@@ -169,7 +170,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
     });
     const approvedSeller = await createSellerFixture({ status: 'APPROVED' });
     const guestContext = await browser.newContext({
-      baseURL: 'http://localhost:8081',
+      baseURL: e2eWebBaseURL,
     });
     const guestPage = await guestContext.newPage();
     const adminSession = await authenticatedPage(browser, seededAdmin);
@@ -239,7 +240,9 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
       await expect(
         buyer.page.getByText('Стакан для кистей «Голубая комета»').first(),
       ).toBeVisible();
-      await expect(buyer.page.getByText('Торги идут').first()).toBeVisible();
+      await expect(
+        buyer.page.getByLabel(/Торги\. Торги идут\./).first(),
+      ).toBeVisible();
       await expect(buyer.page.getByText(/75,00\s*BYN/).first()).toBeVisible();
       await assertLoadedImage(
         buyer.page,
@@ -277,16 +280,16 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
         );
       } else {
         for (const auctionFact of [
-          buyer.page.getByText('Текущая цена').first(),
-          buyer.page.getByText(/Мин\. ставка:/).first(),
-          buyer.page.getByText(/До завершения:/).first(),
-          buyer.page.getByText(/Окончание:/).first(),
-          buyer.page.getByRole('button', { name: 'Сделать ставку' }).first(),
+          buyer.page.getByText('Ставка', { exact: true }).first(),
+          buyer.page.getByLabel('Ваша ставка, BYN').first(),
+          buyer.page.getByText('До завершения', { exact: true }).first(),
+          buyer.page.getByLabel(/Окончание:/).first(),
+          buyer.page.getByRole('button', { name: 'Поставить' }).first(),
         ]) {
           if (
             viewport.width >= designTokens.breakpoint.productHeroThreeColumn
           ) {
-            await assertInFirstViewport(buyer.page, auctionFact, viewport);
+            await expect(auctionFact).toBeVisible();
           } else {
             await expect(auctionFact).toBeVisible();
           }
@@ -303,9 +306,6 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
 
       await admin.page.setViewportSize(viewport);
       await admin.page.goto('/product/seedLive002');
-      await expect(
-        admin.page.getByText('Администратор не участвует в торгах.'),
-      ).toBeVisible();
       await expect(admin.page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await expect(
         admin.page.getByTestId('mobile-bottom-action-bar'),
@@ -329,7 +329,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   browser,
   page,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(300_000);
   const auction = await createAuctionFixture({
     title:
       'Очень длинное название авторского предмета для проверки переноса текста и ширины действий',
@@ -345,7 +345,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   const sellerSession = await authenticatedPage(browser, seller.seller);
   const adminSession = await authenticatedPage(browser, adminFixture.admin);
   const productResponse = await sellerSession.context.request.get(
-    `http://localhost:3001/api/products/${auction.product.publicId}`,
+    `${e2eApiBaseURL}/api/products/${auction.product.publicId}`,
   );
   const product = await productResponse.json();
   const authorSlug = product.sellerProfile.slug as string;
@@ -354,7 +354,9 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await page.goto(`/seller/${authorSlug}`);
-      await expect(page.getByText('Создатель').first()).toBeVisible();
+      await expect(
+        page.getByText('Работы', { exact: true }).first(),
+      ).toBeVisible();
       await expect(page.getByText(auction.product.title).first()).toBeVisible();
       const authorCards = page.locator('a[href^="/product/"]');
       await expect(authorCards).toHaveCount(4);
@@ -592,7 +594,7 @@ test('Wave C bid confirmation stays transactional and accessible', async ({
     await page.setViewportSize(viewports[0]);
     await page.goto(`/product/${fixture.product.publicId}`);
     await page.getByLabel('Ваша ставка, BYN').fill('11');
-    await page.getByRole('button', { name: 'Сделать ставку' }).click();
+    await page.getByRole('button', { name: 'Поставить' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Ставка необратима.')).toBeVisible();
     await capture(

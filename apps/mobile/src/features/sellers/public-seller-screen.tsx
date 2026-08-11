@@ -70,7 +70,11 @@ function CreatorSort({
         }}
       >
         <AppText role="label">{current?.label}</AppText>
-        <AppIcon name="chevronDown" size={16} color={designTokens.color.textSecondary} />
+        <AppIcon
+          name="chevronDown"
+          size={16}
+          color={designTokens.color.textSecondary}
+        />
       </MotionPressable>
       {open ? (
         <View
@@ -147,7 +151,11 @@ function SocialLink({
           borderRadius: 14,
         }}
       >
-        <AppIcon name={icon} size={20} color={designTokens.color.textSecondary} />
+        <AppIcon
+          name={icon}
+          size={20}
+          color={designTokens.color.textSecondary}
+        />
       </MotionPressable>
     </Link>
   );
@@ -168,9 +176,15 @@ function CreatorHero({
   };
   slug: string;
 }) {
-  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>('idle');
+  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>(
+    'idle',
+  );
   const copyProfileLink = () => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined' || !navigator.clipboard) {
+    if (
+      Platform.OS !== 'web' ||
+      typeof window === 'undefined' ||
+      !navigator.clipboard
+    ) {
       setCopyState('error');
       return;
     }
@@ -203,7 +217,13 @@ function CreatorHero({
         <AppText
           accessibilityRole="header"
           role="display"
-          style={{ fontFamily: 'Inter_700Bold', fontSize: 48, lineHeight: 50, letterSpacing: -1, textAlign: 'center' }}
+          style={{
+            fontFamily: 'Inter_700Bold',
+            fontSize: 48,
+            lineHeight: 50,
+            letterSpacing: -1,
+            textAlign: 'center',
+          }}
         >
           {profile.fullName}
         </AppText>
@@ -231,19 +251,56 @@ function CreatorHero({
             <AppIcon name="copy" size={14} color={designTokens.color.ink} />
           </MotionPressable>
         ) : (
-          <AppText role="label" tone="secondary">@{slug}</AppText>
+          <AppText role="label" tone="secondary">
+            @{slug}
+          </AppText>
         )}
-        {copyState === 'success' ? <AppText role="caption" tone="success">Ссылка скопирована.</AppText> : null}
-        {copyState === 'error' ? <AppText role="caption" tone="danger">Не удалось скопировать ссылку.</AppText> : null}
-      </View>
-      <View style={{ height: 28, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        {profile.telegramUrl ? <SocialLink href={profile.telegramUrl} icon="send" label="Telegram автора" /> : null}
-        {profile.instagramUrl ? <SocialLink href={profile.instagramUrl} icon="instagram" label="Instagram автора" /> : null}
-        {(profile.websiteUrl ?? profile.socialLink) ? (
-          <SocialLink href={profile.websiteUrl ?? profile.socialLink} icon="globe" label="Сайт автора" />
+        {copyState === 'success' ? (
+          <AppText role="caption" tone="success">
+            Ссылка скопирована.
+          </AppText>
+        ) : null}
+        {copyState === 'error' ? (
+          <AppText role="caption" tone="danger">
+            Не удалось скопировать ссылку.
+          </AppText>
         ) : null}
       </View>
-      <AppText role="body" tone="secondary" style={{ maxWidth: 680, textAlign: 'center' }}>
+      <View
+        style={{
+          height: 28,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16,
+        }}
+      >
+        {profile.telegramUrl ? (
+          <SocialLink
+            href={profile.telegramUrl}
+            icon="send"
+            label="Telegram автора"
+          />
+        ) : null}
+        {profile.instagramUrl ? (
+          <SocialLink
+            href={profile.instagramUrl}
+            icon="instagram"
+            label="Instagram автора"
+          />
+        ) : null}
+        {(profile.websiteUrl ?? profile.socialLink) ? (
+          <SocialLink
+            href={profile.websiteUrl ?? profile.socialLink}
+            icon="globe"
+            label="Сайт автора"
+          />
+        ) : null}
+      </View>
+      <AppText
+        role="body"
+        tone="secondary"
+        style={{ maxWidth: 680, textAlign: 'center' }}
+      >
         {profile.shortDescription}
       </AppText>
     </View>
@@ -258,7 +315,13 @@ function CreatorStatusTabs({
   onChange: (status?: CreatorStatus) => void;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: designTokens.space.x2 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: designTokens.space.x2,
+      }}
+    >
       {statusTabs.map((tab) => {
         const selected = tab.value === status;
         return (
@@ -275,19 +338,28 @@ function CreatorStatusTabs({
               alignItems: 'center',
               gap: 8,
               borderRadius: 20,
-              backgroundColor: selected ? designTokens.color.action : designTokens.color.surface,
+              backgroundColor: selected
+                ? designTokens.color.action
+                : designTokens.color.surface,
               borderWidth: selected ? 0 : 1,
               borderColor: designTokens.color.border,
               paddingHorizontal: 17,
             }}
           >
-            <AppText role="label" style={{ color: selected ? designTokens.color.surface : designTokens.color.ink }}>
+            <AppText
+              role="label"
+              style={{
+                color: selected
+                  ? designTokens.color.surface
+                  : designTokens.color.ink,
+              }}
+            >
               {tab.label}
             </AppText>
           </MotionPressable>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -318,9 +390,16 @@ export function PublicSellerScreen({
     query.error instanceof ApiClientError &&
     query.error.kind === 'not_found'
   ) {
-    content = <PageState title="Автор не найден" message="Профиль больше недоступен." />;
+    content = (
+      <PageState title="Автор не найден" message="Профиль больше недоступен." />
+    );
   } else if (query.isError || !query.data) {
-    content = <PageState title="Не удалось загрузить работы автора" retry={() => void query.refetch()} />;
+    content = (
+      <PageState
+        title="Не удалось загрузить работы автора"
+        retry={() => void query.refetch()}
+      />
+    );
   } else if (query.data.products.length === 0) {
     content = <PageState title="У автора пока нет опубликованных работ" />;
   } else {
@@ -354,8 +433,22 @@ export function PublicSellerScreen({
               paddingBottom: designTokens.space.x12,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: designTokens.space.x4 }}>
-              <AppText role="sectionTitle" style={{ fontFamily: 'Inter_700Bold', fontSize: 30, lineHeight: 34 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: designTokens.space.x4,
+              }}
+            >
+              <AppText
+                role="sectionTitle"
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontSize: 30,
+                  lineHeight: 34,
+                }}
+              >
                 Работы
               </AppText>
               <CreatorSort
@@ -365,7 +458,9 @@ export function PublicSellerScreen({
             </View>
             <CreatorStatusTabs
               status={status}
-              onChange={(nextStatus) => router.setParams({ status: nextStatus, sort })}
+              onChange={(nextStatus) =>
+                router.setParams({ status: nextStatus, sort })
+              }
             />
             {content}
           </View>

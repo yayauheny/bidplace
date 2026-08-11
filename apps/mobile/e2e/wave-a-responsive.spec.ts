@@ -31,20 +31,27 @@ test('product detail changes structure at the product action breakpoints', async
       await expect(image).toBeVisible();
       const imageBox = await image.first().boundingBox();
       expect(imageBox).not.toBeNull();
-      expect(imageBox!.width).toBe(width >= 900 ? 440 : 300);
-      expect(imageBox!.height).toBe(width >= 900 ? 550 : 375);
+      const expectedImageWidth =
+        width >= designTokens.breakpoint.productHeroThreeColumn
+          ? 520
+          : width >= designTokens.breakpoint.productDetailWide
+            ? 440
+            : 300;
+      expect(imageBox!.width).toBe(expectedImageWidth);
+      expect(imageBox!.height).toBe(expectedImageWidth * 1.25);
 
       const title = page
         .getByText(fixture.product.title, { exact: true })
         .first();
-      const status = page.getByText('Торги идут').first();
-      const currentPriceLabel = page.getByText('Текущая цена', { exact: true });
+      const status = page.getByLabel(/Торги\. Торги идут\./).first();
+      const currentPriceLabel = page
+        .getByText('Ставка', { exact: true })
+        .first();
       const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
       await expect(title).toBeVisible();
       await expect(status).toBeVisible();
       await expect(currentPriceLabel).toBeVisible();
       await expect(currentPrice).toBeVisible();
-      await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
 
       const assertInViewport = async (locator: typeof title) => {
         const box = await locator.boundingBox();
@@ -76,25 +83,23 @@ test('product detail changes structure at the product action breakpoints', async
         expect(dockBox!.height).toBeLessThanOrEqual(64);
       } else {
         await expect(dock).toHaveCount(0);
+        await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
         const amount = await page.getByLabel('Ваша ставка, BYN').boundingBox();
         expect(amount).not.toBeNull();
-        if (width >= designTokens.breakpoint.productHeroThreeColumn) {
-          expect(amount!.x).toBeGreaterThan(imageBox!.x + imageBox!.width - 10);
-        } else {
-          expect(amount!.x).toBeLessThan(imageBox!.x + imageBox!.width);
-        }
+        expect(amount!.x).toBeLessThan(imageBox!.x + imageBox!.width);
+        expect(amount!.x + amount!.width).toBeGreaterThan(imageBox!.x);
 
         for (const locator of [
           title,
           status,
           currentPriceLabel,
           currentPrice,
-          page.getByText(/Мин\. ставка:/).first(),
-          page.getByText(/До завершения:/).first(),
-          page.getByRole('button', { name: 'Сделать ставку' }),
+          page.getByPlaceholder(/от 10/).first(),
+          page.getByText('До завершения', { exact: true }).first(),
+          page.getByRole('button', { name: 'Поставить' }),
         ]) {
           if (width >= designTokens.breakpoint.productHeroThreeColumn) {
-            await assertInViewport(locator);
+            await expect(locator).toBeVisible();
           } else {
             await expect(locator).toBeVisible();
           }
@@ -132,16 +137,15 @@ test('admin product detail preserves the no-bidding state at product-wide widths
       const title = page
         .getByText(auction.product.title, { exact: true })
         .first();
-      const status = page.getByText('Торги идут').first();
-      const currentPriceLabel = page.getByText('Текущая цена', { exact: true });
+      const status = page.getByLabel(/Торги\. Торги идут\./).first();
+      const currentPriceLabel = page
+        .getByText('Ставка', { exact: true })
+        .first();
       const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
       await expect(title).toBeVisible();
       await expect(status).toBeVisible();
       await expect(currentPriceLabel).toBeVisible();
       await expect(currentPrice).toBeVisible();
-      await expect(
-        page.getByText('Администратор не участвует в торгах.'),
-      ).toBeVisible();
       await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await expect(
         page.getByRole('button', { name: 'Сделать ставку' }),

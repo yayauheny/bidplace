@@ -17,7 +17,7 @@ verification.
   may change it, and it must never be deleted. See `DEC-062`.
 - `Implemented` as protected source restoration: the founder-provided local
   file is restored byte-for-byte at `design/pen/bidplace-web-v2.pen`; SHA-256 is
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
   Canonical roots and the public read-only Pen publication were verified without
   modifying the canvas.
 - `Implemented` as specification: selected Foundation/Gamma/Avant Arte patterns,
@@ -77,6 +77,10 @@ verification.
   selected `MqUMz` frame, renders structured public links when present, and
   fetches status/sort/paginated works server-side. Private handoff contacts and
   user email remain outside the public projection.
+- `Implemented`: the Product mobile reading flow keeps the shared validated bid
+  form available alongside the sticky bottom action; the same mutation owner
+  is used at desktop and mobile breakpoints. Creator status controls wrap at
+  390px without horizontal document overflow.
 
 ## Public discovery WIP — 2026-08-11
 

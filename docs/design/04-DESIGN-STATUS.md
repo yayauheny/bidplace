@@ -50,32 +50,37 @@
   Product Creation now renders ordered creation intro/steps and process media;
   product screenshot and responsive acceptance remain pending.
 - `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
-  Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
+Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   present structured social links, biography, server-owned work filters and
   shared AuctionCard grid. `HOXkZ` is not an implementation target.
+- `Implemented`: Creator status controls wrap at narrow widths instead of
+  extending document width; Product keeps the same shared bid form in the
+  mobile reading flow while the safe-area action remains sticky. Runtime smoke
+  passed for Product and Creator at 1440/1024/390; matched Pen overlay and
+  founder/device acceptance remain release gates.
 
 ## Screen matrix
 
-| Target           | Pen      | Visual spec       | Data/route             | Code        | Acceptance |
-| ---------------- | -------- | ----------------- | ---------------------- | ----------- | ---------- |
-| Global Header    | `L9UV9`  | measured baseline | role logic and overlays exist | partial | pending visual QA |
-| Home             | `BJd1P`  | exported/readable | `/api/discovery/home` | partial | pending responsive QA |
-| Browse Works     | `H5vf2`  | exported/readable | server query + controls | partial | pending responsive QA |
-| Browse Authors   | `N4ebBk` | exported/readable | approved author list API + discipline | partial | pending visual QA |
-| Product About    | `L7ytbv` | exported/readable | compatible contract    | implemented | verified   |
-| Product Creation | `cK8kD`  | exported/readable | existing fields only   | implemented | verified   |
-| Product Bids     | `XIzHe`  | exported/readable | compatible core fields | implemented | verified   |
-| Creator Profile  | `MqUMz`  | exported/readable | current public links   | partial | pending visual/data QA |
+| Target           | Pen      | Visual spec       | Data/route                            | Code        | Acceptance             |
+| ---------------- | -------- | ----------------- | ------------------------------------- | ----------- | ---------------------- |
+| Global Header    | `L9UV9`  | measured baseline | role logic and overlays exist         | partial     | pending visual QA      |
+| Home             | `BJd1P`  | exported/readable | `/api/discovery/home`                 | partial     | pending responsive QA  |
+| Browse Works     | `H5vf2`  | exported/readable | server query + controls               | partial     | pending responsive QA  |
+| Browse Authors   | `N4ebBk` | exported/readable | approved author list API + discipline | partial     | pending visual QA      |
+| Product About    | `L7ytbv` | exported/readable | compatible contract                   | implemented | verified               |
+| Product Creation | `cK8kD`  | exported/readable | existing fields only                  | implemented | verified               |
+| Product Bids     | `XIzHe`  | exported/readable | compatible core fields                | implemented | verified               |
+| Creator Profile  | `MqUMz`  | exported/readable | current public links                  | partial     | pending visual/data QA |
 
 ## Shared component matrix
 
-| Component     | Pen      | Runtime status                                               |
-| ------------- | -------- | ------------------------------------------------------------ |
-| GlobalHeader  | `L9UV9`  | implemented horizontal responsive header                     |
-| AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid |
+| Component     | Pen      | Runtime status                                                                  |
+| ------------- | -------- | ------------------------------------------------------------------------------- |
+| GlobalHeader  | `L9UV9`  | implemented horizontal responsive header                                        |
+| AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid                    |
 | CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
-| AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                 |
-| ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history        |
+| AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
+| ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
 
 ## Legacy production state
 

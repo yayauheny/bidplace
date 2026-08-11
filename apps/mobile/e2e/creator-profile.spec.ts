@@ -20,8 +20,8 @@ test('public creator profile shows only public data and remains responsive', asy
   ).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
   await expect(
-    page.getByRole('link', {
-      name: `Открыть публичную страницу автора ${fixture.sellerProfile.fullName}`,
+    page.getByRole('button', {
+      name: `Скопировать ссылку на профиль ${fixture.sellerProfile.fullName}`,
     }),
   ).toBeVisible();
 

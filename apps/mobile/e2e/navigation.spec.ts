@@ -5,8 +5,11 @@ import {
   createSellerFixture,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-test('desktop header keeps the active home link and discovery menu visible', async ({ page }) => {
+test('desktop header keeps the active home link and discovery menu visible', async ({
+  page,
+}) => {
   const consoleErrors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -28,16 +31,18 @@ test('desktop header keeps the active home link and discovery menu visible', asy
   ).toEqual([]);
 });
 
-test('guest navigation exposes public discovery without seller actions', async ({ page }) => {
+test('guest navigation exposes public discovery without seller actions', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1025, height: 900 });
   await page.goto('/');
 
   await expect(page.getByRole('link', { name: 'Главная' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Обзор' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
-  await expect(
-    page.getByRole('link', { name: 'Добавить работу' }),
-  ).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Добавить работу' })).toHaveCount(
+    0,
+  );
 });
 
 test('mobile guest account control stays in the header row', async ({
@@ -211,7 +216,7 @@ test('product author link opens the public seller profile', async ({
 
   try {
     const detailResponse = await context.request.get(
-      `http://localhost:3001/api/products/${fixture.product.publicId}`,
+      `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,
     );
     const detail = await detailResponse.json();
     const seller = detail.sellerProfile as { slug: string; fullName: string };

@@ -6,8 +6,9 @@ import {
   createBuyerFixture,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-const apiBaseURL = 'http://localhost:3001';
+const apiBaseURL = e2eApiBaseURL;
 
 test('authenticated buyer receives private responses and truthful empty activity', async ({
   browser,

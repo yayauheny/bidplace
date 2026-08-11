@@ -136,7 +136,7 @@ Pen diff: none
 ## 7. Текущий runtime handoff — 2026-08-11
 
 - Canonical SHA-256 до и после реализации:
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 - Реализованы GlobalHeader с `Главная`/`Обзор`, Browse Works, Home, Browse
   Authors, Search, AuctionCard, Product About/Creation/Bids, AuctionPlayer,
   URL-backed ProductTabs, related creator works, Creator Profile, auth, seller

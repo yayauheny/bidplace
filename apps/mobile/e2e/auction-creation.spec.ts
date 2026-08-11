@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { approveProduct, createSellerFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { e2eApiBaseURL } from './support/e2e-env';
 
-const apiBaseURL = 'http://localhost:3001';
+const apiBaseURL = e2eApiBaseURL;
 
 test('seller creates, submits, schedules, and publicly previews an auction', async ({
   browser,
@@ -63,14 +64,14 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       .getByRole('button', { name: new RegExp(`${title} · Одобрен`) })
       .click();
     const invalidDatesResponse = await context.request.post(
-      `http://localhost:3001/api/products/${product.id}/listings`,
+      `${apiBaseURL}/api/products/${product.id}/listings`,
       {
         data: { startsAt: endsAt, endsAt: startsAt, startPrice: 10 },
       },
     );
     expect(invalidDatesResponse.status()).toBe(400);
     const invalidPriceResponse = await context.request.post(
-      `http://localhost:3001/api/products/${product.id}/listings`,
+      `${apiBaseURL}/api/products/${product.id}/listings`,
       {
         data: { startsAt, endsAt, startPrice: -1 },
       },
@@ -101,7 +102,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       page.getByRole('button', { name: 'Открыть страницу аукциона' }),
     ).toBeVisible();
     const duplicateScheduleResponse = await context.request.patch(
-      `http://localhost:3001/api/listings/${listing.id}`,
+      `${apiBaseURL}/api/listings/${listing.id}`,
       {
         data: { action: 'SCHEDULE' },
       },
@@ -109,7 +110,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     expect(duplicateScheduleResponse.ok()).toBeFalsy();
 
     const publicResponse = await request.get(
-      `http://localhost:3001/api/products/${product.publicId}`,
+      `${apiBaseURL}/api/products/${product.publicId}`,
     );
     expect(publicResponse.ok()).toBeTruthy();
     const publicPayload = await publicResponse.json();

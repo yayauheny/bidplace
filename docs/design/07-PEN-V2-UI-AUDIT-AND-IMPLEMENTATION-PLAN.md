@@ -54,7 +54,7 @@ product contracts. Pen остаётся неизменяемым эталоно�
 - Founder-provided local source восстановлен byte-for-byte в
   `design/pen/bidplace-web-v2.pen`.
 - Canonical SHA-256:
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 - Canvas открыт и прочитан через Pen read-only; canonical screen/component roots
   существуют, HTML-export выполнен без mutation.
 - Public read-only публикация подтверждена:
@@ -685,7 +685,7 @@ Founder/designer acceptance:
 ### Фактическое закрытие approved runtime scope — 2026-08-10
 
 - **Canonical checksum before/after:**
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
 - **Completed:** WP0–WP3, WP5–WP7, migration of all existing WP8 routes and
   WP9 cleanup/regression. WP4 Authors and new Home remain decision-blocked.
 - **Shared system:** one `designTokens` layer and one `components/ui` layer;
