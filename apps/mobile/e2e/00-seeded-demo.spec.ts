@@ -32,7 +32,7 @@ async function getPublicBidAlias(
   return history.bids[0]!.bidderAlias;
 }
 
-test('demo seed exposes three public products and real media', async ({
+test('demo seed exposes four public products and real media', async ({
   page,
   request,
 }) => {
@@ -50,6 +50,31 @@ test('demo seed exposes three public products and real media', async ({
     100_000,
   );
 
+  const authorsResponse = await request.get(
+    `${apiBaseURL}/api/sellers?limit=20&sort=name`,
+  );
+  expect(authorsResponse.ok()).toBeTruthy();
+  const authorsPayload = await authorsResponse.json();
+  expect(authorsPayload.sellers).toHaveLength(8);
+  expect(
+    new Set(
+      authorsPayload.sellers.map(
+        (item: { sellerProfile: { slug: string } }) => item.sellerProfile.slug,
+      ),
+    ).size,
+  ).toBe(8);
+
+  for (const item of authorsPayload.sellers) {
+    const profilePhotoResponse = await request.get(
+      new URL(item.sellerProfile.profilePhotoUrl, apiBaseURL).toString(),
+    );
+    expect(profilePhotoResponse.status()).toBe(200);
+    expect(profilePhotoResponse.headers()['content-type']).toMatch(
+      /^image\/png/,
+    );
+    expect((await profilePhotoResponse.body()).byteLength).toBeGreaterThan(0);
+  }
+
   const response = await request.get(
     `${apiBaseURL}/api/products?page=1&limit=20`,
   );
@@ -57,11 +82,11 @@ test('demo seed exposes three public products and real media', async ({
   const payload = await response.json();
   const seededProducts = payload.products.filter(
     (item: { product: { publicId: string } }) =>
-      ['seedSched01', 'seedLive002', 'seedEnded03'].includes(
+      ['seedSched01', 'seedLive002', 'seedEnded03', 'seedVase004'].includes(
         item.product.publicId,
       ),
   );
-  expect(seededProducts).toHaveLength(3);
+  expect(seededProducts).toHaveLength(4);
 
   for (const item of seededProducts) {
     expect(item.product.images).toHaveLength(1);

@@ -109,9 +109,9 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       const cards = page.locator('a[href^="/product/"]');
       await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3);
       const seededCards = page.locator(
-        'a[href="/product/seedSched01"], a[href="/product/seedLive002"], a[href="/product/seedEnded03"]',
+        'a[href="/product/seedSched01"], a[href="/product/seedLive002"], a[href="/product/seedEnded03"], a[href="/product/seedVase004"]',
       );
-      await expect(seededCards).toHaveCount(3);
+      await expect(seededCards).toHaveCount(4);
       const expectedColumns = getCatalogColumnCount(viewport.width);
       const boxes = await cards.evaluateAll((elements) =>
         elements.map((element) => {

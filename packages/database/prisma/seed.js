@@ -26,6 +26,11 @@ const seedPhotoBuffer = Buffer.from(
 const annaMorozovaPhotoBuffer = readFileSync(
   join(__dirname, 'fixtures', 'seller-profile', 'anna-morozova.png'),
 );
+const sellerProfileFixturesDirectory = join(
+  __dirname,
+  'fixtures',
+  'seller-profile',
+);
 const productImageFixturesDirectory = join(
   __dirname,
   'fixtures',
@@ -52,6 +57,17 @@ function readSeedProductImage(fileName) {
     mimeType: 'image/png',
     width: data.readUInt32BE(16),
     height: data.readUInt32BE(20),
+  };
+}
+
+function readSeedSellerProfileImage(fileName) {
+  const data = readFileSync(join(sellerProfileFixturesDirectory, fileName));
+
+  return {
+    byteLength: data.byteLength,
+    checksum: createHash('sha256').update(data).digest('hex'),
+    data,
+    mimeType: 'image/png',
   };
 }
 
@@ -263,72 +279,205 @@ async function main() {
     },
   });
 
+  const additionalDemoCreators = [
+    {
+      email: 'irina-levchenko@bidplace.test',
+      slug: 'irina-levchenko',
+      fullName: 'Ирина Левченко',
+      discipline: 'Керамика',
+      description: 'Создаёт тихие предметы из глины для повседневных ритуалов.',
+      handle: '@irina_levchenko',
+      photoFileName: 'irina-levchenko.png',
+    },
+    {
+      email: 'pavel-sokolov@bidplace.test',
+      slug: 'pavel-sokolov',
+      fullName: 'Павел Соколов',
+      discipline: 'Предметный дизайн',
+      description: 'Исследует честные материалы и простые формы для дома.',
+      handle: '@pavel_sokolov',
+      photoFileName: 'pavel-sokolov.png',
+    },
+    {
+      email: 'olga-vlasova@bidplace.test',
+      slug: 'olga-vlasova',
+      fullName: 'Ольга Власова',
+      discipline: 'Текстиль',
+      description:
+        'Собирает фактуры и цвет в небольшие авторские текстильные серии.',
+      handle: '@olga_vlasova',
+      photoFileName: 'olga-vlasova.png',
+    },
+    {
+      email: 'mark-volkov@bidplace.test',
+      slug: 'mark-volkov',
+      fullName: 'Марк Волков',
+      discipline: 'Графика',
+      description: 'Работает с линией, бумагой и ручной печатью.',
+      handle: '@mark_volkov',
+      photoFileName: 'mark-volkov.png',
+    },
+    {
+      email: 'lena-kravets@bidplace.test',
+      slug: 'lena-kravets',
+      fullName: 'Лена Кравец',
+      discipline: 'Авторские объекты',
+      description: 'Создаёт небольшие объекты на стыке скульптуры и быта.',
+      handle: '@lena_kravets',
+      photoFileName: 'lena-kravets.png',
+    },
+    {
+      email: 'nikita-orlov@bidplace.test',
+      slug: 'nikita-orlov',
+      fullName: 'Никита Орлов',
+      discipline: 'Керамика',
+      description: 'Сочетает ручную лепку с графичными глазурными акцентами.',
+      handle: '@nikita_orlov',
+      photoFileName: 'nikita-orlov.png',
+    },
+    {
+      email: 'svetlana-gromova@bidplace.test',
+      slug: 'svetlana-gromova',
+      fullName: 'Светлана Громова',
+      discipline: 'Смешанная техника',
+      description: 'Соединяет найденные материалы, цвет и ручную сборку.',
+      handle: '@svetlana_gromova',
+      photoFileName: 'svetlana-gromova.png',
+    },
+  ];
+
+  const additionalDemoUsers = await Promise.all(
+    additionalDemoCreators.map((creator) =>
+      prisma.user.create({
+        data: {
+          email: creator.email,
+          passwordHash: adminPasswordHash,
+          phone: null,
+          displayName: creator.fullName,
+          emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      }),
+    ),
+  );
+
+  await Promise.all(
+    additionalDemoCreators.map((creator, index) => {
+      const photo = readSeedSellerProfileImage(creator.photoFileName);
+      const website = `https://${creator.slug}.example.com`;
+
+      return prisma.sellerProfile.create({
+        data: {
+          userId: additionalDemoUsers[index].id,
+          slug: creator.slug,
+          sellerType: 'creator',
+          discipline: creator.discipline,
+          fullName: creator.fullName,
+          country: 'BY',
+          socialLink: website,
+          telegramUrl: `https://t.me/${creator.handle.slice(1)}`,
+          websiteUrl: website,
+          shortDescription: creator.description,
+          profilePhotoMimeType: photo.mimeType,
+          profilePhotoByteLength: photo.byteLength,
+          profilePhotoChecksum: photo.checksum,
+          profilePhotoData: photo.data,
+          handoffContactType: 'TELEGRAM',
+          handoffContactValue: creator.handle,
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+          status: 'APPROVED',
+        },
+      });
+    }),
+  );
+
   const now = new Date();
-  const [scheduledProduct, liveProduct, endedProduct] = await Promise.all([
-    createProductWithImages({
-      publicId: 'seedSched01',
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title: 'Кашпо «Тёплый ритм»',
-      story:
-        'Небольшое кашпо, расписанное вручную по мотивам летнего света и движения листьев.',
-      technique: 'Ручная роспись акрилом по керамике',
-      materials: 'Керамика, акрил, защитный лак',
-      dimensions: '17 × 17 × 17 см',
-      year: 2025,
-      condition: 'Новое',
-      uniqueness: 'Единственный экземпляр',
-      provenance:
-        'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
-      city: 'Минск',
-      deliveryInfo:
-        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-      publishedAt: now,
-      imageFileName: 'painted-planter.png',
-    }),
-    createProductWithImages({
-      publicId: 'seedLive002',
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title: 'Стакан для кистей «Голубая комета»',
-      story:
-        'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
-      technique: 'Лепка вручную, глазурование',
-      materials: 'Керамика, цветная глазурь',
-      dimensions: '14 × 14 × 12 см',
-      year: 2026,
-      condition: 'Новое',
-      uniqueness: 'Единственный экземпляр',
-      provenance:
-        'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
-      city: 'Минск',
-      deliveryInfo:
-        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-      publishedAt: now,
-      imageFileName: 'ceramic-brush-holder.png',
-    }),
-    createProductWithImages({
-      publicId: 'seedEnded03',
-      sellerProfileId: sellerProfile.id,
-      categoryId: category.id,
-      title: 'Чашка «Ты мне»',
-      story:
-        'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
-      technique: 'Лепка вручную, цветная глазурь',
-      materials: 'Шамотная глина, глазурь',
-      dimensions: '12 × 9 × 10 см',
-      year: 2025,
-      condition: 'Новое',
-      uniqueness: 'Единственный экземпляр',
-      provenance:
-        'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
-      city: 'Минск',
-      deliveryInfo:
-        'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
-      publishedAt: now,
-      imageFileName: 'handmade-mug.png',
-    }),
-  ]);
+  const [scheduledProduct, liveProduct, endedProduct, vaseProduct] =
+    await Promise.all([
+      createProductWithImages({
+        publicId: 'seedSched01',
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: 'Кашпо «Тёплый ритм»',
+        story:
+          'Небольшое кашпо, расписанное вручную по мотивам летнего света и движения листьев.',
+        technique: 'Ручная роспись акрилом по керамике',
+        materials: 'Керамика, акрил, защитный лак',
+        dimensions: '17 × 17 × 17 см',
+        year: 2025,
+        condition: 'Новое',
+        uniqueness: 'Единственный экземпляр',
+        provenance:
+          'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
+        city: 'Минск',
+        deliveryInfo:
+          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+        publishedAt: now,
+        imageFileName: 'painted-planter.png',
+      }),
+      createProductWithImages({
+        publicId: 'seedLive002',
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: 'Стакан для кистей «Голубая комета»',
+        story:
+          'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
+        technique: 'Лепка вручную, глазурование',
+        materials: 'Керамика, цветная глазурь',
+        dimensions: '14 × 14 × 12 см',
+        year: 2026,
+        condition: 'Новое',
+        uniqueness: 'Единственный экземпляр',
+        provenance:
+          'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
+        city: 'Минск',
+        deliveryInfo:
+          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+        publishedAt: now,
+        imageFileName: 'ceramic-brush-holder.png',
+      }),
+      createProductWithImages({
+        publicId: 'seedEnded03',
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: 'Чашка «Ты мне»',
+        story:
+          'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
+        technique: 'Лепка вручную, цветная глазурь',
+        materials: 'Шамотная глина, глазурь',
+        dimensions: '12 × 9 × 10 см',
+        year: 2025,
+        condition: 'Новое',
+        uniqueness: 'Единственный экземпляр',
+        provenance:
+          'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
+        city: 'Минск',
+        deliveryInfo:
+          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+        publishedAt: now,
+        imageFileName: 'handmade-mug.png',
+      }),
+      createProductWithImages({
+        publicId: 'seedVase004',
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: 'Ваза «Северный сад»',
+        story:
+          'Небольшая ваза с мягкой неровностью формы и светлой поверхностью, которая хорошо ловит утренний свет.',
+        technique: 'Ручная лепка, матовая глазурь',
+        materials: 'Шамотная глина, матовая глазурь',
+        dimensions: '16 × 16 × 22 см',
+        year: 2026,
+        condition: 'Новое',
+        uniqueness: 'Единственный экземпляр',
+        provenance:
+          'Создана Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
+        city: 'Минск',
+        deliveryInfo:
+          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+        publishedAt: now,
+        imageFileName: 'handmade-vase.png',
+      }),
+    ]);
 
   await createProductWithImages({
     publicId: 'seedPend004',
@@ -395,6 +544,20 @@ async function main() {
     },
   });
 
+  const vase = await prisma.listing.create({
+    data: {
+      productId: vaseProduct.id,
+      status: 'SCHEDULED',
+      startsAt: new Date(now.getTime() + 10_800_000),
+      originalEndsAt: new Date(now.getTime() + 14_400_000),
+      endsAt: new Date(now.getTime() + 14_400_000),
+      currentPrice: money('90.00'),
+      auctionRules: {
+        create: { startPrice: money('90.00') },
+      },
+    },
+  });
+
   const liveBid = await prisma.bid.create({
     data: {
       listingId: live.id,
@@ -439,9 +602,10 @@ async function main() {
 
   void scheduled;
   void liveBid;
+  void vase;
 
   console.log(
-    'Seeded deterministic local/test admin, approved seller, email-only buyer, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, four public products, and scheduled/live/ended Product Listings in BYN.',
   );
 }
 

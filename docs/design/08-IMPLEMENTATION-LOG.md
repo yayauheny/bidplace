@@ -1,6 +1,6 @@
 # bidplace — журнал реализации Pen v2 UI
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-11
 
 Ветка: `feature/pen-v2-ui`
 
@@ -30,6 +30,24 @@
 | WP9 — backend/security audit        | Готово                 | Public boundaries, uploads and private bid aliases | `84336e9` |
 
 ## Выполнено
+
+### 2026-08-11 — deterministic visual-density fixtures
+
+- Guarded local/test seed теперь содержит четыре публичных предмета с
+  локальными PNG-изображениями: три исходных состояния (`SCHEDULED`, `LIVE`,
+  `ENDED`) и четвёртая ваза в `SCHEDULED` для заполнения четырёхколоночного
+  H5vf2 каталога.
+- Добавлены семь одобренных creator-профилей с локальными тематическими фото;
+  вместе с Анной Морозовой `/authors` получает восемь карточек для плотности
+  N4ebBk. Профили без лотов намеренно не создают искусственную историю торгов.
+- Источники изображений и граница использования зафиксированы в
+  `packages/database/prisma/fixtures/README.md`; runtime не зависит от
+  внешних URL.
+
+Проверки: database build/seed на изолированном `bidplace_e2e`, seeded E2E
+`2/2`, Wave C acceptance `4/4`. Старый Wave 2 screenshot spec отдельно
+остановился на существующем `route.fulfill: Route is already handled` race в
+loading-handler; это не связано с количеством seeded карточек.
 
 ### 2026-08-10 — WP0
 

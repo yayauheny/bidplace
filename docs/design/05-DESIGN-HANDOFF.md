@@ -168,12 +168,11 @@ Pen diff: none
   client-rendered screens and explicitly opens the admin account menu before
   focusing the moderation link. This changes test synchronization only; it
   does not change production behavior.
-- Deliberate data difference: H5vf2 shows four catalog cards in its reference
-  fixture, while the confirmed guarded local seed exposes three public
-  products (`SCHEDULED`, `LIVE`, `ENDED`). The runtime grid supports the
-  four-column geometry and author E2E fixture covers four works; adding a
-  fourth public seeded product would be a product/fixture decision, not a
-  route-local visual workaround, and is therefore not guessed here.
+- The guarded local seed now exposes four public products (`SCHEDULED`, `LIVE`,
+  `ENDED`, plus a second `SCHEDULED` vase) for the H5vf2 four-card catalog
+  density, and eight approved creator profiles for the N4ebBk author density.
+  The extra profiles intentionally have no public work yet, so the fixture
+  closes the visual-density gap without inventing additional auction history.
 - Remaining release gates are matched visual overlay review against the
   canonical Pen, founder approval and physical iOS/Android smoke. The
   canonical Pen file remains unchanged at SHA-256

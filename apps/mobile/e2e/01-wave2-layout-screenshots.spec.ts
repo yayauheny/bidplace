@@ -12,6 +12,7 @@ const seededProducts = [
   { publicId: 'seedSched01', title: 'Кашпо «Тёплый ритм»' },
   { publicId: 'seedLive002', title: 'Стакан для кистей «Голубая комета»' },
   { publicId: 'seedEnded03', title: 'Чашка «Ты мне»' },
+  { publicId: 'seedVase004', title: 'Ваза «Северный сад»' },
 ] as const;
 
 test('captures Wave 2 layouts at target widths', async ({ browser }) => {
