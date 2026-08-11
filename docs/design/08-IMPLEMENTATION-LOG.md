@@ -28,7 +28,7 @@
 | Stage 7 — Creation/Bids               | Готово | Creation steps/media, tabs, bids и transactional states   | `1a0a400`, `a05aa82`                                         |
 | Stage 8 — Creator Profile             | Готово | Только `MqUMz` — `MVP v1`, public data boundary           | `3778190`                                                    |
 | Stage 9 — responsive derivation       | Готово | 1440/1024/390 behavior, overflow и runtime matrices       | `770a406`, `9e82345`, `f0e6627`                              |
-| Stage 10 — cleanup and evidence       | Готово | Route acceptance, docs, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`                    |
+| Stage 10 — cleanup and evidence       | Готово | Route acceptance, docs, asset inventory, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`, `338a2d1`       |
 | Cross-cutting — backend/security      | Готово | Visibility, uploads, aliases и integrity boundaries       | `84336e9`                                                    |
 
 ## Выполнено

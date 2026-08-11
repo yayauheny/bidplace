@@ -137,7 +137,7 @@ Production route `/` и `/search` используют `/api/discovery/home`; Ho
 
 ### Browse Works
 
-Root `H5vf2`, reference size 1440×940, текущий route `/`.
+Root `H5vf2`, reference size 1440×940, текущий route `/works`.
 
 | Element            | Node     |
 | ------------------ | -------- |
