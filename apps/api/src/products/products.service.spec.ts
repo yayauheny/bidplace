@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { publicDiscoveryQuerySchema } from '@bidplace/contracts';
 
 import { ProductsService } from './products.service';
-import { publicCatalogProductWhere, selectPublicListing } from './public-visibility';
+import {
+  publicCatalogProductWhere,
+  selectPublicListing,
+} from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 const product = {
@@ -39,8 +42,16 @@ describe('ProductsService', () => {
   });
 
   it('selects a live listing over an older ended listing', () => {
-    const ended = { id: 'ended', status: 'ENDED' as const, createdAt: new Date('2026-07-01') };
-    const live = { id: 'live', status: 'LIVE' as const, createdAt: new Date('2026-07-02') };
+    const ended = {
+      id: 'ended',
+      status: 'ENDED' as const,
+      createdAt: new Date('2026-07-01'),
+    };
+    const live = {
+      id: 'live',
+      status: 'LIVE' as const,
+      createdAt: new Date('2026-07-02'),
+    };
 
     expect(selectPublicListing([ended, live])?.id).toBe('live');
   });
@@ -54,12 +65,18 @@ describe('ProductsService', () => {
         }),
       },
       product: {
-        create: vi.fn()
+        create: vi
+          .fn()
           .mockRejectedValueOnce({ code: 'P2002' })
           .mockResolvedValue(product),
       },
     };
-    const publicIds = { generate: vi.fn().mockReturnValueOnce('collision001').mockReturnValueOnce('publicId001') };
+    const publicIds = {
+      generate: vi
+        .fn()
+        .mockReturnValueOnce('collision001')
+        .mockReturnValueOnce('publicId001'),
+    };
     const service = new ProductsService(prisma as never, publicIds as never);
 
     const result = await service.create('owner-id', {});
@@ -82,8 +99,9 @@ describe('ProductsService', () => {
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await expect(service.update('owner-id', product.id, { title: 'Locked' }))
-      .rejects.toThrow('Product is locked by an active Listing');
+    await expect(
+      service.update('owner-id', product.id, { title: 'Locked' }),
+    ).rejects.toThrow('Product is locked by an active Listing');
     expect(prisma.product.update).not.toHaveBeenCalled();
   });
 
@@ -166,9 +184,13 @@ describe('ProductsService', () => {
       ],
     };
     const prisma = {
-      $queryRaw: vi.fn().mockResolvedValue([
-        { id: product.id, total: 2 },
-      ]),
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ id: product.id, total: 2 }])
+        .mockResolvedValueOnce([{ id: product.id, total: 2 }])
+        .mockResolvedValueOnce([{ status: 'LIVE', count: 1 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]),
       product: {
         findMany: vi.fn().mockResolvedValue([publicProduct]),
       },

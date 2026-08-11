@@ -69,6 +69,8 @@ describe('image policy', () => {
       {
         buffer: pngBuffer,
         mimeType: 'image/png',
+        width: 1,
+        height: 1,
       },
     ]);
   });

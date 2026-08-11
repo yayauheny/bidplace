@@ -56,6 +56,29 @@ export class ImagesController {
     );
   }
 
+  @Post('products/:productId/creation-steps/:stepId/image')
+  @UseGuards(BearerAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('image', 1, {
+      limits: {
+        fileSize: productImageUploadLimits.maxFileBytes,
+        files: 1,
+      },
+      fileFilter: (_request, file, done) =>
+        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+    }),
+  )
+  async addCreationStepImage(
+    @CurrentUser() auth: { sub: string },
+    @Param('productId') productId: string,
+    @Param('stepId') stepId: string,
+    @UploadedFiles() files: RawImageUpload[] = [],
+  ) {
+    if (!files.length) throw new BadRequestException('An image is required');
+    const file = (await validateProductImageUploads(files))[0]!;
+    return this.images.addCreationStepImage(auth.sub, productId, stepId, file);
+  }
+
   @Delete('products/:productId/images/:imageId')
   @UseGuards(BearerAuthGuard)
   remove(
@@ -96,5 +119,27 @@ export class ImagesController {
     response.setHeader('Cache-Control', getImageCacheControl(image.isPublic));
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));
+  }
+
+  @Get('creation-steps/:stepId/image')
+  @UseGuards(OptionalBearerAuthGuard)
+  async getCreationStepImage(
+    @Param('stepId') stepId: string,
+    @CurrentUser() auth: { sub: string; role: string } | undefined,
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const image = await this.images.getCreationStepImage(
+      stepId,
+      auth?.sub,
+      auth?.role,
+    );
+    response.setHeader('Cache-Control', getImageCacheControl(image.isPublic));
+    response.type(image.mimeType!);
+    response.send(Buffer.from(image.data!));
   }
 }

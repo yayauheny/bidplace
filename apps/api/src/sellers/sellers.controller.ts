@@ -16,6 +16,7 @@ import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   publicSellerQuerySchema,
+  publicSellerWorksQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
@@ -103,14 +104,15 @@ export class SellersController {
 
   @Get('sellers')
   listPublic(@Query() query: unknown) {
-    return this.sellers.listPublic(
-      parseBody(publicSellerQuerySchema, query),
-    );
+    return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));
   }
 
   @Get('sellers/:slug/detail')
-  getPublic(@Param('slug') slug: string) {
-    return this.sellers.getPublic(slug);
+  getPublic(@Param('slug') slug: string, @Query() query: unknown) {
+    return this.sellers.getPublic(
+      slug,
+      parseBody(publicSellerWorksQuerySchema, query),
+    );
   }
 
   @Get('sellers/:slug/photo')

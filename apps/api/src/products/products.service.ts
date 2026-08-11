@@ -1,4 +1,6 @@
 import {
+  creationStoryResponseSchema,
+  type CreationStoryWriteRequest,
   publicProductDetailResponseSchema,
   productListResponseSchema,
   type PublicDiscoveryQuery,
@@ -52,6 +54,7 @@ const publicCatalogProductSelect = {
   provenance: true,
   city: true,
   deliveryInfo: true,
+  creationIntro: true,
   publishedAt: true,
   status: true,
   createdAt: true,
@@ -65,6 +68,8 @@ const publicCatalogProductSelect = {
       mimeType: true,
       byteLength: true,
       checksum: true,
+      width: true,
+      height: true,
     },
   },
   listings: {
@@ -90,7 +95,40 @@ const publicCatalogProductSelect = {
 type PublicCatalogPageRow = { id: string; total: number | bigint };
 
 function escapeLikePattern(value: string): string {
-  return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_');
+}
+
+function toCreationStepContract(step: {
+  id: string;
+  position: number;
+  title: string;
+  body: string;
+  mimeType: string | null;
+  byteLength: number | null;
+  checksum: string | null;
+  width: number | null;
+  height: number | null;
+}) {
+  return {
+    id: step.id,
+    position: step.position,
+    title: step.title,
+    body: step.body,
+    image:
+      step.mimeType && step.byteLength && step.checksum
+        ? {
+            url: `/api/creation-steps/${step.id}/image`,
+            mimeType: step.mimeType,
+            byteLength: step.byteLength,
+            checksum: step.checksum,
+            width: step.width,
+            height: step.height,
+          }
+        : null,
+  };
 }
 
 function publicCatalogOrderBy(sort: PublicDiscoveryQuery['sort']): string {
@@ -139,7 +177,9 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
   }
 
   if (query.status) {
-    filters.push(Prisma.sql`c.status = CAST(${query.status} AS "ListingStatus")`);
+    filters.push(
+      Prisma.sql`c.status = CAST(${query.status} AS "ListingStatus")`,
+    );
   }
 
   if (query.priceMin !== undefined) {
@@ -175,7 +215,7 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
       l."created_at" DESC,
       l."id" DESC
   ), filtered AS (
-    SELECT p."id", p."published_at", c."status", c.status_rank,
+    SELECT p."id", p."category_id", p."materials", p."published_at", c."status", c.status_rank,
       c."ends_at", c."current_price", c."bid_count"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
@@ -228,6 +268,7 @@ export class ProductsService {
           provenance: input.provenance ?? null,
           city: input.city ?? null,
           deliveryInfo: input.deliveryInfo ?? null,
+          creationIntro: input.creationIntro ?? null,
           status: 'DRAFT',
         };
 
@@ -300,7 +341,10 @@ export class ProductsService {
     if (input.uniqueness !== undefined) data.uniqueness = input.uniqueness;
     if (input.provenance !== undefined) data.provenance = input.provenance;
     if (input.city !== undefined) data.city = input.city;
-    if (input.deliveryInfo !== undefined) data.deliveryInfo = input.deliveryInfo;
+    if (input.deliveryInfo !== undefined)
+      data.deliveryInfo = input.deliveryInfo;
+    if (input.creationIntro !== undefined)
+      data.creationIntro = input.creationIntro;
 
     const updated = await this.prisma.product.update({
       where: { id },
@@ -373,6 +417,131 @@ export class ProductsService {
     });
   }
 
+  async replaceCreationStory(
+    userId: string,
+    productId: string,
+    input: CreationStoryWriteRequest,
+  ) {
+    const product = await this.requireEditableOwner(userId, productId);
+    const incomingIds = input.steps.flatMap((step) =>
+      step.id ? [step.id] : [],
+    );
+    if (new Set(incomingIds).size !== incomingIds.length) {
+      throw new ConflictException('Creation steps must be unique');
+    }
+
+    return runSerializableTransaction(this.prisma, async (tx) => {
+      const existing = await tx.productCreationStep.findMany({
+        where: { productId },
+        select: { id: true },
+      });
+      const existingIds = new Set(existing.map((step) => step.id));
+      if (incomingIds.some((id) => !existingIds.has(id))) {
+        throw new NotFoundException('Creation step not found');
+      }
+
+      await tx.product.update({
+        where: { id: product.id },
+        data: { creationIntro: input.intro },
+      });
+      await tx.productCreationStep.deleteMany({
+        where: { productId, id: { notIn: incomingIds } },
+      });
+      await tx.productCreationStep.updateMany({
+        where: { productId },
+        data: { position: { increment: 1000 } },
+      });
+      for (const [position, step] of input.steps.entries()) {
+        if (step.id) {
+          await tx.productCreationStep.update({
+            where: { id: step.id },
+            data: { position, title: step.title, body: step.body },
+          });
+        } else {
+          await tx.productCreationStep.create({
+            data: { productId, position, title: step.title, body: step.body },
+          });
+        }
+      }
+
+      const steps = await tx.productCreationStep.findMany({
+        where: { productId },
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          position: true,
+          title: true,
+          body: true,
+          mimeType: true,
+          byteLength: true,
+          checksum: true,
+          width: true,
+          height: true,
+        },
+      });
+      return creationStoryResponseSchema.parse({
+        creation: {
+          intro: input.intro,
+          steps: steps.map(toCreationStepContract),
+        },
+      });
+    });
+  }
+
+  async reorderCreationSteps(
+    userId: string,
+    productId: string,
+    stepIds: string[],
+  ) {
+    await this.requireEditableOwner(userId, productId);
+    return runSerializableTransaction(this.prisma, async (tx) => {
+      const steps = await tx.productCreationStep.findMany({
+        where: { productId },
+        select: { id: true },
+      });
+      const knownIds = new Set(steps.map((step) => step.id));
+      if (
+        stepIds.length !== knownIds.size ||
+        new Set(stepIds).size !== stepIds.length ||
+        stepIds.some((id) => !knownIds.has(id))
+      ) {
+        throw new ConflictException(
+          'Creation step order must include every step exactly once',
+        );
+      }
+      await tx.productCreationStep.updateMany({
+        where: { productId },
+        data: { position: { increment: 1000 } },
+      });
+      await Promise.all(
+        stepIds.map((id, position) =>
+          tx.productCreationStep.update({ where: { id }, data: { position } }),
+        ),
+      );
+      return { ok: true as const };
+    });
+  }
+
+  private async requireEditableOwner(userId: string, productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        status: true,
+        sellerProfile: { select: { userId: true, status: true } },
+      },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    if (product.sellerProfile.userId !== userId) {
+      throw new ForbiddenException('Product is not owned by user');
+    }
+    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+    if (!isEditableProductStatus(product.status)) {
+      throw new ForbiddenException('Product creation story is locked');
+    }
+    return product;
+  }
+
   async getPublic(publicId: string) {
     const product = await this.prisma.product.findFirst({
       where: {
@@ -384,6 +553,20 @@ export class ProductsService {
           select: publicSellerProfileSelect,
         },
         images: { orderBy: { position: 'asc' } },
+        creationSteps: {
+          orderBy: { position: 'asc' },
+          select: {
+            id: true,
+            position: true,
+            title: true,
+            body: true,
+            mimeType: true,
+            byteLength: true,
+            checksum: true,
+            width: true,
+            height: true,
+          },
+        },
         listings: {
           where: { status: { in: publicListingStatuses } },
           include: { auctionRules: true },
@@ -401,6 +584,24 @@ export class ProductsService {
 
     return publicProductDetailResponseSchema.parse({
       ...projection,
+      creationIntro: product.creationIntro ?? null,
+      creationSteps: (product.creationSteps ?? []).map((step) => ({
+        id: step.id,
+        position: step.position,
+        title: step.title,
+        body: step.body,
+        image:
+          step.mimeType && step.byteLength && step.checksum
+            ? {
+                url: `/api/creation-steps/${step.id}/image`,
+                mimeType: step.mimeType,
+                byteLength: step.byteLength,
+                checksum: step.checksum,
+                width: step.width,
+                height: step.height,
+              }
+            : null,
+      })),
       minimumNextBid:
         projection.listing?.status === 'LIVE' &&
         currentListing &&
@@ -441,6 +642,7 @@ export class ProductsService {
       return productListResponseSchema.parse({
         products: [],
         pagination: { page: query.page, limit: query.limit, total },
+        facets: await this.discoveryFacets(query),
       });
     }
 
@@ -448,19 +650,68 @@ export class ProductsService {
       where: { id: { in: pageRows.map((row) => row.id) } },
       select: publicCatalogProductSelect,
     });
-    const productsById = new Map(products.map((product) => [product.id, product]));
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
+    );
     const pagedProducts = pageRows
       .map((row) => productsById.get(row.id))
-      .filter((product): product is (typeof products)[number] => product !== undefined);
+      .filter(
+        (product): product is (typeof products)[number] =>
+          product !== undefined,
+      );
 
     return productListResponseSchema.parse({
       products: pagedProducts.map((product) => this.toPublicProduct(product)),
       pagination: { page: query.page, limit: query.limit, total },
+      facets: await this.discoveryFacets(query),
     });
   }
 
+  private async discoveryFacets(query: PublicDiscoveryQuery) {
+    const facetQuery = { ...query, status: undefined };
+    const cte = publicCatalogCte(facetQuery);
+    const [statusRows, categoryRows, materialRows] = await Promise.all([
+      this.prisma.$queryRaw<
+        Array<{
+          status: 'SCHEDULED' | 'LIVE' | 'ENDED';
+          count: number | bigint;
+        }>
+      >(
+        Prisma.sql`${cte} SELECT "status", COUNT(*)::int AS "count" FROM filtered GROUP BY "status"`,
+      ),
+      this.prisma.$queryRaw<
+        Array<{ id: string; name: string; count: number | bigint }>
+      >(
+        Prisma.sql`${cte}
+          SELECT c."id", c."name", COUNT(*)::int AS "count"
+          FROM filtered f
+          INNER JOIN "categories" c ON c."id" = f."category_id"
+          GROUP BY c."id", c."name"
+          ORDER BY c."name" ASC`,
+      ),
+      this.prisma.$queryRaw<Array<{ materials: string }>>(
+        Prisma.sql`${cte}
+          SELECT DISTINCT f."materials"
+          FROM filtered f
+          WHERE f."materials" IS NOT NULL
+          ORDER BY f."materials" ASC`,
+      ),
+    ]);
+    const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
+    for (const row of statusRows) statusCounts[row.status] = Number(row.count);
+    return {
+      statusCounts,
+      categories: categoryRows.map((row) => ({
+        ...row,
+        count: Number(row.count),
+      })),
+      materials: materialRows.map((row) => row.materials),
+    };
+  }
+
   toPublicProduct(
-    product: Awaited<ReturnType<PrismaService['product']['findFirst']>> & object,
+    product: Awaited<ReturnType<PrismaService['product']['findFirst']>> &
+      object,
   ) {
     const record = product as typeof product & {
       sellerProfile: {
@@ -470,6 +721,9 @@ export class ProductsService {
         fullName: string;
         country: string;
         socialLink: string;
+        telegramUrl: string | null;
+        instagramUrl: string | null;
+        websiteUrl: string | null;
         shortDescription: string;
       };
       images: Array<{
@@ -478,6 +732,8 @@ export class ProductsService {
         mimeType: string;
         byteLength: number;
         checksum: string;
+        width: number | null;
+        height: number | null;
       }>;
       listings: Array<{
         id: string;
@@ -525,7 +781,7 @@ export class ProductsService {
       sellerProfile: toPublicSellerProfile(record.sellerProfile),
       listing:
         listing && listing.auctionRules
-              ? {
+          ? {
               id: listing.id,
               productId: listing.productId,
               type: 'AUCTION' as const,
@@ -546,7 +802,7 @@ export class ProductsService {
                 softCloseExtensionSeconds: 60 as const,
                 softCloseMaxTotalSeconds: 600 as const,
               },
-              }
+            }
           : null,
     };
   }

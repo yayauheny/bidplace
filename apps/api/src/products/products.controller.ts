@@ -5,11 +5,14 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   productWriteRequestSchema,
+  creationStepOrderRequestSchema,
+  creationStoryWriteRequestSchema,
   publicDiscoveryQuerySchema,
 } from '@bidplace/contracts';
 
@@ -36,7 +39,10 @@ export class ProductsController {
   @Post()
   @UseGuards(BearerAuthGuard)
   create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
-    return this.products.create(auth.sub, parseBody(productWriteRequestSchema, body));
+    return this.products.create(
+      auth.sub,
+      parseBody(productWriteRequestSchema, body),
+    );
   }
 
   @Post(':id/submit')
@@ -47,7 +53,43 @@ export class ProductsController {
 
   @Patch(':id')
   @UseGuards(BearerAuthGuard)
-  update(@CurrentUser() auth: { sub: string }, @Param('id') id: string, @Body() body: unknown) {
-    return this.products.update(auth.sub, id, parseBody(productWriteRequestSchema, body));
+  update(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    return this.products.update(
+      auth.sub,
+      id,
+      parseBody(productWriteRequestSchema, body),
+    );
+  }
+
+  @Put(':id/creation')
+  @UseGuards(BearerAuthGuard)
+  replaceCreation(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    return this.products.replaceCreationStory(
+      auth.sub,
+      id,
+      parseBody(creationStoryWriteRequestSchema, body),
+    );
+  }
+
+  @Patch(':id/creation/order')
+  @UseGuards(BearerAuthGuard)
+  reorderCreation(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    return this.products.reorderCreationSteps(
+      auth.sub,
+      id,
+      parseBody(creationStepOrderRequestSchema, body).stepIds,
+    );
   }
 }

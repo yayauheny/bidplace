@@ -49,6 +49,8 @@ export class ImagesService {
           byteLength: file.buffer.byteLength,
           data: Uint8Array.from(file.buffer),
           checksum: createHash('sha256').update(file.buffer).digest('hex'),
+          width: file.width ?? null,
+          height: file.height ?? null,
         })),
       });
     });
@@ -150,6 +152,77 @@ export class ImagesService {
     });
 
     return { ok: true as const };
+  }
+
+  async addCreationStepImage(
+    userId: string,
+    productId: string,
+    stepId: string,
+    file: ValidatedImageUpload,
+  ) {
+    const product = await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+      {
+        id: true,
+      },
+    );
+    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+    const step = await this.prisma.productCreationStep.findFirst({
+      where: { id: stepId, productId },
+      select: { id: true },
+    });
+    if (!step) throw new NotFoundException('Creation step not found');
+    await this.prisma.productCreationStep.update({
+      where: { id: step.id },
+      data: {
+        mimeType: file.mimeType,
+        byteLength: file.buffer.byteLength,
+        data: Uint8Array.from(file.buffer),
+        checksum: createHash('sha256').update(file.buffer).digest('hex'),
+        width: file.width ?? null,
+        height: file.height ?? null,
+      },
+    });
+    return { ok: true as const };
+  }
+
+  async getCreationStepImage(stepId: string, userId?: string, role?: string) {
+    const step = await this.prisma.productCreationStep.findUnique({
+      where: { id: stepId },
+      include: {
+        product: {
+          include: {
+            sellerProfile: { select: { userId: true, status: true } },
+            listings: {
+              where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    if (
+      !step ||
+      !step.data ||
+      !step.mimeType ||
+      !step.byteLength ||
+      !step.checksum
+    ) {
+      throw new NotFoundException('Creation step image not found');
+    }
+    const isOwner = step.product.sellerProfile.userId === userId;
+    const isAdmin = role === 'admin';
+    const isPublic =
+      step.product.status === 'APPROVED' &&
+      step.product.sellerProfile.status === 'APPROVED' &&
+      step.product.listings.length > 0;
+    if (!isOwner && !isAdmin && !isPublic) {
+      throw new NotFoundException('Creation step image not found');
+    }
+    return { ...step, isPublic };
   }
 
   async get(imageId: string, userId?: string, role?: string) {

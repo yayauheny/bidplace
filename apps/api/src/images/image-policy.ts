@@ -22,6 +22,8 @@ export type RawImageUpload = {
 export type ValidatedImageUpload = {
   buffer: Buffer;
   mimeType: SupportedImageMimeType;
+  width?: number | null;
+  height?: number | null;
 };
 
 export const productImageUploadLimits = {
@@ -176,10 +178,13 @@ export async function validateProductImageUploads(
       }
 
       await assertDecodableRasterImage(file.buffer, detectedMimeType);
+      const metadata = await sharp(file.buffer, { animated: true }).metadata();
 
       return {
         buffer: file.buffer,
         mimeType: detectedMimeType,
+        width: metadata.width ?? null,
+        height: metadata.height ?? null,
       };
     }),
   );

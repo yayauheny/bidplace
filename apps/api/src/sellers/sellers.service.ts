@@ -3,6 +3,7 @@ import {
   publicSellerDetailResponseSchema,
   sellerProductListResponseSchema,
   type PublicSellerQuery,
+  type PublicSellerWorksQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
@@ -75,6 +76,9 @@ export class SellersService {
           fullName: input.fullName,
           country: input.country,
           socialLink: input.socialLink,
+          telegramUrl: input.telegramUrl ?? null,
+          instagramUrl: input.instagramUrl ?? null,
+          websiteUrl: input.websiteUrl ?? null,
           shortDescription: input.shortDescription,
           handoffContactType: input.handoffContactType,
           handoffContactValue: input.handoffContactValue,
@@ -251,7 +255,10 @@ export class SellersService {
     });
   }
 
-  async getPublic(slug: string) {
+  async getPublic(
+    slug: string,
+    query: PublicSellerWorksQuery = { page: 1, limit: 20, sort: 'activity' },
+  ) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
       where: { slug, status: 'APPROVED' },
       include: {
@@ -277,11 +284,50 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
+    const products = sellerProfile.products
+      .map((product) => ({
+        product,
+        listing: product.listings[0] ?? null,
+      }))
+      .filter(
+        ({ listing }) => !query.status || listing?.status === query.status,
+      )
+      .sort((left, right) => {
+        if (query.sort === 'priceAsc') {
+          return (
+            Number(left.listing?.currentPrice ?? 0) -
+            Number(right.listing?.currentPrice ?? 0)
+          );
+        }
+        if (query.sort === 'priceDesc') {
+          return (
+            Number(right.listing?.currentPrice ?? 0) -
+            Number(left.listing?.currentPrice ?? 0)
+          );
+        }
+        if (query.sort === 'newest') {
+          return (
+            right.product.createdAt.getTime() - left.product.createdAt.getTime()
+          );
+        }
+        return (
+          (right.listing?.bidCount ?? 0) - (left.listing?.bidCount ?? 0) ||
+          right.product.createdAt.getTime() - left.product.createdAt.getTime()
+        );
+      })
+      .map(({ product }) => product);
+    const total = products.length;
+    const pageProducts = products.slice(
+      (query.page - 1) * query.limit,
+      query.page * query.limit,
+    );
+
     return publicSellerDetailResponseSchema.parse({
       sellerProfile: toPublicSellerProfile(sellerProfile),
-      products: sellerProfile.products.map((product) =>
+      products: pageProducts.map((product) =>
         this.products.toPublicProduct(product),
       ),
+      pagination: { page: query.page, limit: query.limit, total },
     });
   }
 

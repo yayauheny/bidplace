@@ -39,6 +39,32 @@ verification.
   related public works, E2E and production Expo export. Founder/device visual
   acceptance remains a release gate.
 
+## Pen v2 content and public-profile contracts — 2026-08-11
+
+- `Implemented`: Product image contracts now carry nullable `width`/`height`,
+  and `ProductCreationStep` stores validated process text plus optional image
+  metadata/data behind the migration
+  `packages/database/prisma/migrations/20260811010000_add_pen_v2_content_data`.
+  Public Product detail returns `creationIntro` and ordered `creationSteps`
+  with image URLs only; binary data remains outside JSON responses.
+- `Implemented`: seller profiles persist structured nullable
+  `telegramUrl`/`instagramUrl`/`websiteUrl` fields and public author detail
+  returns only those public links plus paginated server-side works. Existing
+  handoff contact and email fields remain private.
+- `Implemented`: public catalog responses expose server-computed discovery
+  facets for listing status, category and material. Product and creator work
+  queries are filtered, sorted and paginated in the API rather than derived
+  from a client page slice.
+- `Implemented`: owner-only creation-story replace/reorder and creation-step
+  image upload/read routes enforce approved-seller, editable-product and
+  public-visibility boundaries in `apps/api/src/products` and
+  `apps/api/src/images`; contract, API unit and PostgreSQL integration checks
+  remain required evidence for the final visual release.
+- `Partial`: Pen v2 screen composition still needs the shared-shell migration
+  and matched visual/runtime acceptance at 1440/1024/390. The canonical file
+  `design/pen/bidplace-web-v2.pen` is locked at SHA-256
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+
 ## Public discovery WIP — 2026-08-11
 
 - `Implemented`: `packages/contracts/src/discovery.ts` defines normalized

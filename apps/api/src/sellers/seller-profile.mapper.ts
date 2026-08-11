@@ -8,6 +8,9 @@ export const publicSellerProfileSelect = {
   fullName: true,
   country: true,
   socialLink: true,
+  telegramUrl: true,
+  instagramUrl: true,
+  websiteUrl: true,
   shortDescription: true,
 } satisfies Prisma.SellerProfileSelect;
 
@@ -24,6 +27,9 @@ export const sellerProfileResponseSelect = {
   discipline: true,
   country: true,
   socialLink: true,
+  telegramUrl: true,
+  instagramUrl: true,
+  websiteUrl: true,
   shortDescription: true,
   handoffContactType: true,
   handoffContactValue: true,
@@ -64,6 +70,9 @@ export function toPublicSellerProfile(
     profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
     country: sellerProfile.country,
     socialLink: sellerProfile.socialLink,
+    telegramUrl: sellerProfile.telegramUrl ?? null,
+    instagramUrl: sellerProfile.instagramUrl ?? null,
+    websiteUrl: sellerProfile.websiteUrl ?? null,
     shortDescription: sellerProfile.shortDescription,
   };
 }
@@ -91,6 +100,9 @@ export function toSellerProfileResponse(
   return sellerProfileResponseSchema.parse({
     sellerProfile: {
       ...sellerProfileResponse,
+      telegramUrl: sellerProfileResponse.telegramUrl ?? null,
+      instagramUrl: sellerProfileResponse.instagramUrl ?? null,
+      websiteUrl: sellerProfileResponse.websiteUrl ?? null,
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),

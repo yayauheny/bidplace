@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { toSellerProfileResponse } from './seller-profile.mapper';
+import {
+  toPublicSellerProfile,
+  toSellerProfileResponse,
+} from './seller-profile.mapper';
 
 describe('toSellerProfileResponse', () => {
   it('omits profile photo storage fields from the response contract', () => {
@@ -34,5 +37,30 @@ describe('toSellerProfileResponse', () => {
     expect(response.sellerProfile).not.toHaveProperty('profilePhotoByteLength');
     expect(response.sellerProfile).not.toHaveProperty('profilePhotoChecksum');
     expect(response.sellerProfile).not.toHaveProperty('profilePhotoData');
+  });
+});
+
+describe('toPublicSellerProfile', () => {
+  it('keeps structured public links while excluding private handoff fields', () => {
+    const profile = toPublicSellerProfile({
+      slug: 'maker',
+      sellerType: 'creator',
+      discipline: 'Керамика',
+      fullName: 'Maker',
+      country: 'BY',
+      socialLink: null,
+      telegramUrl: 'https://t.me/maker',
+      instagramUrl: 'https://instagram.com/maker',
+      websiteUrl: null,
+      shortDescription: 'Short bio',
+    });
+
+    expect(profile).toMatchObject({
+      telegramUrl: 'https://t.me/maker',
+      instagramUrl: 'https://instagram.com/maker',
+      websiteUrl: null,
+    });
+    expect(profile).not.toHaveProperty('handoffContactType');
+    expect(profile).not.toHaveProperty('handoffContactValue');
   });
 });

@@ -50,6 +50,8 @@ function readSeedProductImage(fileName) {
     checksum: createHash('sha256').update(data).digest('hex'),
     data,
     mimeType: 'image/png',
+    width: data.readUInt32BE(16),
+    height: data.readUInt32BE(20),
   };
 }
 
@@ -70,6 +72,28 @@ async function createProductWithImages({
   deliveryInfo,
   publishedAt,
   imageFileName,
+  creationSteps = [
+    [
+      'Замысел',
+      'Работа начинается с наблюдения за формой и светом.',
+      'painted-planter.png',
+    ],
+    [
+      'Материал',
+      'Автор выбирает материал и собирает первые пропорции вручную.',
+      'ceramic-brush-holder.png',
+    ],
+    [
+      'Ручная работа',
+      'Поверхность создаётся небольшими последовательными жестами.',
+      'handmade-mug.png',
+    ],
+    [
+      'Финальный предмет',
+      'После обработки предмет готовится к передаче новому владельцу.',
+      'painted-planter.png',
+    ],
+  ],
   status = 'APPROVED',
 }) {
   const image = readSeedProductImage(imageFileName);
@@ -90,6 +114,8 @@ async function createProductWithImages({
       provenance,
       city,
       deliveryInfo,
+      creationIntro:
+        'История предмета — от первого замысла до готовой работы в мастерской автора.',
       publishedAt,
       status,
       images: {
@@ -99,6 +125,22 @@ async function createProductWithImages({
             ...image,
           },
         ],
+      },
+      creationSteps: {
+        create: creationSteps.map(([title, body, fileName], position) => {
+          const stepImage = readSeedProductImage(fileName);
+          return {
+            position,
+            title,
+            body,
+            mimeType: stepImage.mimeType,
+            byteLength: stepImage.byteLength,
+            data: stepImage.data,
+            checksum: stepImage.checksum,
+            width: stepImage.width,
+            height: stepImage.height,
+          };
+        }),
       },
     },
   });
@@ -180,6 +222,9 @@ async function main() {
       fullName: 'Анна Морозова',
       country: 'BY',
       socialLink: 'https://example.com/anna-morozova',
+      telegramUrl: 'https://t.me/anna_morozova',
+      instagramUrl: 'https://instagram.com/anna_morozova',
+      websiteUrl: 'https://anna-morozova.example.com',
       shortDescription:
         'Керамистка из Минска. Создаёт небольшие предметы для дома вручную.',
       profilePhotoMimeType: 'image/png',

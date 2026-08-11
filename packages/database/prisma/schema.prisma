@@ -107,6 +107,9 @@ model SellerProfile {
   profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)
   profilePhotoData    Bytes               @map("profile_photo_data")
   socialLink          String              @map("social_link") @db.VarChar(255)
+  telegramUrl         String?             @map("telegram_url") @db.VarChar(255)
+  instagramUrl        String?             @map("instagram_url") @db.VarChar(255)
+  websiteUrl          String?             @map("website_url") @db.VarChar(255)
   shortDescription    String              @map("short_description") @db.Text
   handoffContactType  HandoffContactType? @map("handoff_contact_type")
   handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
@@ -147,6 +150,7 @@ model Product {
   provenance      String?       @db.Text
   city            String?       @db.VarChar(160)
   deliveryInfo    String?       @map("delivery_info") @db.Text
+  creationIntro   String?       @map("creation_intro") @db.Text
   publishedAt     DateTime?     @map("published_at")
   status          ProductStatus @default(DRAFT)
   createdAt       DateTime      @default(now()) @map("created_at")
@@ -154,6 +158,7 @@ model Product {
   sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Restrict)
   category        Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   images          ProductImage[]
+  creationSteps   ProductCreationStep[]
   listings        Listing[]
 
   @@index([sellerProfileId, status])
@@ -168,12 +173,35 @@ model ProductImage {
   byteLength Int      @map("byte_length")
   data       Bytes
   checksum   String   @db.Char(64)
+  width      Int?
+  height     Int?
   createdAt  DateTime @default(now()) @map("created_at")
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@unique([productId, position])
   @@map("product_images")
+}
+
+model ProductCreationStep {
+  id         String   @id @default(uuid()) @db.Uuid
+  productId  String   @map("product_id") @db.Uuid
+  position   Int
+  title      String   @db.VarChar(200)
+  body       String   @db.Text
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  byteLength Int?     @map("byte_length")
+  data       Bytes?
+  checksum   String?  @db.Char(64)
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, position])
+  @@index([productId])
+  @@map("product_creation_steps")
 }
 
 model Listing {

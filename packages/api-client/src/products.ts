@@ -1,7 +1,11 @@
+import { z } from 'zod';
 import {
   productListResponseSchema,
   productResponseSchema,
   productWriteRequestSchema,
+  creationStepOrderRequestSchema,
+  creationStoryResponseSchema,
+  creationStoryWriteRequestSchema,
   publicDiscoveryQuerySchema,
   publicProductDetailResponseSchema,
   type PublicDiscoveryQueryInput,
@@ -31,15 +35,47 @@ export function createProductsClient(context: RequestContext) {
       });
     },
     submit(id: string) {
-      return requestJson(context, `/api/products/${id}/submit`, productResponseSchema, {
-        method: 'POST',
-      });
+      return requestJson(
+        context,
+        `/api/products/${id}/submit`,
+        productResponseSchema,
+        {
+          method: 'POST',
+        },
+      );
     },
     update(id: string, input: ProductWriteRequest) {
-      return requestJson(context, `/api/products/${id}`, productResponseSchema, {
-        method: 'PATCH',
-        body: productWriteRequestSchema.parse(input),
-      });
+      return requestJson(
+        context,
+        `/api/products/${id}`,
+        productResponseSchema,
+        {
+          method: 'PATCH',
+          body: productWriteRequestSchema.parse(input),
+        },
+      );
+    },
+    replaceCreation(id: string, input: unknown) {
+      return requestJson(
+        context,
+        `/api/products/${id}/creation`,
+        creationStoryResponseSchema,
+        {
+          method: 'PUT',
+          body: creationStoryWriteRequestSchema.parse(input),
+        },
+      );
+    },
+    reorderCreation(id: string, stepIds: string[]) {
+      return requestJson(
+        context,
+        `/api/products/${id}/creation/order`,
+        z.object({ ok: z.literal(true) }).strict(),
+        {
+          method: 'PATCH',
+          body: creationStepOrderRequestSchema.parse({ stepIds }),
+        },
+      );
     },
   };
 }

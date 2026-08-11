@@ -13,6 +13,29 @@ export const productImageSchema = z
     mimeType: z.string(),
     byteLength: z.number().int().positive(),
     checksum: z.string().length(64),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+  })
+  .strict();
+
+export const creationStepImageSchema = z
+  .object({
+    url: z.string().regex(/^\/api\/creation-steps\/[0-9a-f-]+\/image$/),
+    mimeType: z.string(),
+    byteLength: z.number().int().positive(),
+    checksum: z.string().length(64),
+    width: z.number().int().positive().nullable(),
+    height: z.number().int().positive().nullable(),
+  })
+  .strict();
+
+export const creationStepSchema = z
+  .object({
+    id: uuidSchema,
+    position: z.number().int().nonnegative(),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(5000),
+    image: creationStepImageSchema.nullable(),
   })
   .strict();
 
@@ -61,7 +84,39 @@ export const productWriteRequestSchema = z
     provenance: z.string().trim().min(1).optional(),
     city: z.string().trim().min(1).optional(),
     deliveryInfo: z.string().trim().min(1).optional(),
+    creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })
+  .strict();
+
+export const creationStepWriteSchema = z
+  .object({
+    id: uuidSchema.optional(),
+    position: z.number().int().nonnegative().optional(),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1).max(5000),
+  })
+  .strict();
+
+export const creationStoryWriteRequestSchema = z
+  .object({
+    intro: z.string().trim().min(1).max(5000).nullable(),
+    steps: z.array(creationStepWriteSchema).max(20),
+  })
+  .strict();
+
+export const creationStorySchema = z
+  .object({
+    intro: z.string().trim().min(1).nullable(),
+    steps: z.array(creationStepSchema),
+  })
+  .strict();
+
+export const creationStoryResponseSchema = z
+  .object({ creation: creationStorySchema })
+  .strict();
+
+export const creationStepOrderRequestSchema = z
+  .object({ stepIds: z.array(uuidSchema).max(20) })
   .strict();
 
 export const productResponseSchema = z
@@ -70,3 +125,7 @@ export const productResponseSchema = z
 
 export type Product = z.infer<typeof productSchema>;
 export type ProductWriteRequest = z.infer<typeof productWriteRequestSchema>;
+export type CreationStep = z.infer<typeof creationStepSchema>;
+export type CreationStoryWriteRequest = z.infer<
+  typeof creationStoryWriteRequestSchema
+>;

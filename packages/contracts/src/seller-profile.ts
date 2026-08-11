@@ -43,6 +43,9 @@ export const sellerProfileSchema = z
     country: z.string().trim().min(1),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
     socialLink: z.string().url(),
+    telegramUrl: z.string().url().nullable(),
+    instagramUrl: z.string().url().nullable(),
+    websiteUrl: z.string().url().nullable(),
     shortDescription: z.string().trim().min(1),
     handoffContactType: handoffContactTypeSchema,
     handoffContactValue: z.string().trim().min(1),
@@ -55,12 +58,15 @@ export const sellerProfileSchema = z
 
 export const publicSellerProfileSchema = sellerProfileSchema.pick({
   slug: true,
-    sellerType: true,
+  sellerType: true,
   discipline: true,
   fullName: true,
   profilePhotoUrl: true,
   country: true,
   socialLink: true,
+  telegramUrl: true,
+  instagramUrl: true,
+  websiteUrl: true,
   shortDescription: true,
 });
 
@@ -72,6 +78,9 @@ const sellerProfileBaseWriteSchema = z
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     socialLink: z.string().url(),
+    telegramUrl: z.string().url().nullable().optional(),
+    instagramUrl: z.string().url().nullable().optional(),
+    websiteUrl: z.string().url().nullable().optional(),
     shortDescription: z.string().trim().min(1),
     handoffContactType: handoffContactTypeSchema,
     handoffContactValue: z.string().trim().min(1),
@@ -88,8 +97,7 @@ const sellerProfileBaseWriteSchema = z
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['handoffContactValue'],
-        message:
-          'Telegram contact must be @username or https://t.me/username',
+        message: 'Telegram contact must be @username or https://t.me/username',
       });
     }
 
@@ -127,6 +135,9 @@ export const sellerProfileUpdateRequestSchema = z
     fullName: z.string().trim().min(1).optional(),
     country: z.string().trim().min(1).optional(),
     socialLink: z.string().url().optional(),
+    telegramUrl: z.string().url().nullable().optional(),
+    instagramUrl: z.string().url().nullable().optional(),
+    websiteUrl: z.string().url().nullable().optional(),
     shortDescription: z.string().trim().min(1).optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),
@@ -199,6 +210,4 @@ export type SellerProfileCreateRequest = z.infer<
 export type SellerProfileUpdateRequest = z.infer<
   typeof sellerProfileUpdateRequestSchema
 >;
-export type SellerProfileResponse = z.infer<
-  typeof sellerProfileResponseSchema
->;
+export type SellerProfileResponse = z.infer<typeof sellerProfileResponseSchema>;
