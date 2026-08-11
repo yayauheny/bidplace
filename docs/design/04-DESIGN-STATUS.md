@@ -49,6 +49,10 @@
   the existing bid form and server mutation remain the single state owner.
   Product Creation now renders ordered creation intro/steps and process media;
   product screenshot and responsive acceptance remain pending.
+- `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
+  Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
+  present structured social links, biography, server-owned work filters and
+  shared AuctionCard grid. `HOXkZ` is not an implementation target.
 
 ## Screen matrix
 

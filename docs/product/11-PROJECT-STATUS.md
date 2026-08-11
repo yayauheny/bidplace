@@ -73,6 +73,10 @@ verification.
   Creation tab renders ordered API-backed intro/steps with safe process-image
   URLs. Bid validation, role restrictions and privacy behavior remain covered
   by the existing Product/Auction contracts and tests.
+- `Implemented`: Public creator profile `/seller/[slug]` uses only the founder
+  selected `MqUMz` frame, renders structured public links when present, and
+  fetches status/sort/paginated works server-side. Private handoff contacts and
+  user email remain outside the public projection.
 
 ## Public discovery WIP — 2026-08-11
 
