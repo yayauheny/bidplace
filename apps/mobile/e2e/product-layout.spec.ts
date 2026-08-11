@@ -55,7 +55,9 @@ test('product composition exposes tabs and remains responsive', async ({
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText(fixture.product.title)).toBeVisible();
-  expect(
-    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
-  ).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+    )
+    .toBe(true);
 });

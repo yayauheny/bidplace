@@ -28,23 +28,54 @@ export function AppDialog({
   const restoreFocus = useCallback(() => {
     if (Platform.OS !== 'web') return;
     const element = returnFocusRef.current;
-    returnFocusRef.current = null;
     if (element?.isConnected) {
-      queueMicrotask(() => element.focus());
+      const focusTrigger = (attempt: number) => {
+        if (!element.isConnected) return;
+        element.focus({ preventScroll: true });
+        if (document.activeElement === element || attempt >= 3) {
+          returnFocusRef.current = null;
+          return;
+        }
+        window.setTimeout(() => focusTrigger(attempt + 1), 16);
+      };
+      window.setTimeout(() => focusTrigger(0), 0);
     }
   }, []);
+
+  useEffect(() => {
+    if (
+      !open ||
+      Platform.OS !== 'web' ||
+      typeof document === 'undefined' ||
+      returnFocusRef.current
+    ) {
+      return;
+    }
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      !activeElement.closest('[role="dialog"]')
+    ) {
+      returnFocusRef.current = activeElement;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open || Platform.OS !== 'web' || typeof document === 'undefined') {
       return;
     }
-    const focusTimer = window.setTimeout(() => {
-      document
-        .querySelector<HTMLElement>(
-          '[role="dialog"] input:not([disabled]), [role="dialog"] textarea:not([disabled]), [role="dialog"] select:not([disabled]), [role="dialog"] button:not([disabled]), [role="dialog"] a[href]',
-        )
-        ?.focus();
-    }, 0);
+    const focusDialogControl = (attempt: number) => {
+      const control = document.querySelector<HTMLElement>(
+        '[role="dialog"] input:not([disabled]), [role="dialog"] textarea:not([disabled]), [role="dialog"] select:not([disabled]), [role="dialog"] button:not([disabled]), [role="dialog"] a[href]',
+      );
+      if (control) {
+        control.focus({ preventScroll: true });
+        if (document.activeElement === control || attempt >= 10) return;
+      }
+      if (attempt < 10)
+        window.setTimeout(() => focusDialogControl(attempt + 1), 50);
+    };
+    const focusTimer = window.setTimeout(() => focusDialogControl(0), 0);
 
     return () => {
       window.clearTimeout(focusTimer);

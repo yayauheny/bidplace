@@ -52,9 +52,10 @@ verification.
   returns only those public links plus paginated server-side works. Existing
   handoff contact and email fields remain private.
 - `Implemented`: public catalog responses expose server-computed discovery
-  facets for listing status, category and material. Product and creator work
-  queries are filtered, sorted and paginated in the API rather than derived
-  from a client page slice.
+  facets for listing status, category, author, material and uniqueness, with
+  confirmed price ranges carried through the URL-backed query contract.
+  Product and creator work queries are filtered, sorted and paginated in the
+  API rather than derived from a client page slice.
 - `Implemented`: owner-only creation-story replace/reorder and creation-step
   image upload/read routes enforce approved-seller, editable-product and
   public-visibility boundaries in `apps/api/src/products` and
@@ -118,9 +119,10 @@ verification.
 - `Implemented`: desktop account-menu keyboard open moves focus to Cabinet (or
   Logout when Cabinet is unavailable); navigation and discovery Playwright
   expectations now use the current IA and `/api/discovery/home` interception.
-- `Verified`: guarded local/test demo data now provides four public products
-  across scheduled/live/ended states and eight approved creators with local
-  thematic PNG media. Full Chromium E2E passes `35/35`; mobile unit,
+- `Verified`: guarded local/test demo data now provides eight public products
+  across scheduled/live/ended states, multiple author/price/uniqueness
+  values, and eight approved creators with local thematic PNG media. Full
+  Chromium E2E passes `35/35`; mobile unit,
   typecheck, lint and E2E fence also pass. Founder visual/device and
   screen-reader acceptance remain release gates.
 - `Verified`: PostgreSQL integration `39/39`, full Chromium E2E `35/35`, mobile

@@ -29,7 +29,17 @@ export const publicDiscoveryFacetsSchema = z
         })
         .strict(),
     ),
+    authors: z.array(
+      z
+        .object({
+          slug: z.string().trim().min(1),
+          name: z.string().trim().min(1),
+          count: z.number().int().nonnegative(),
+        })
+        .strict(),
+    ),
     materials: z.array(z.string().min(1)),
+    uniquenesses: z.array(z.string().trim().min(1)),
   })
   .strict();
 export const productListResponseSchema = z

@@ -35,7 +35,9 @@ test('public creator profile shows only public data and remains responsive', asy
   await expect(
     page.getByText(fixture.sellerProfile.fullName, { exact: true }).first(),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
-  ).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+    )
+    .toBe(true);
 });

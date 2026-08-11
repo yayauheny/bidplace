@@ -186,9 +186,11 @@ describe('ProductsService', () => {
     const prisma = {
       $queryRaw: vi
         .fn()
-        .mockResolvedValue([{ id: product.id, total: 2 }])
+        .mockResolvedValue([])
         .mockResolvedValueOnce([{ id: product.id, total: 2 }])
         .mockResolvedValueOnce([{ status: 'LIVE', count: 1 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]),
       product: {
@@ -232,5 +234,25 @@ describe('ProductsService', () => {
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     expect(String(pageQuery.sql)).toContain('p.published_at DESC NULLS LAST');
     expect(prisma.product.findMany).not.toHaveBeenCalled();
+  });
+
+  it('applies confirmed author and uniqueness discovery filters in SQL', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      product: { findMany: vi.fn() },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.listPublic(
+      publicDiscoveryQuerySchema.parse({
+        author: 'marina-k',
+        uniqueness: 'One',
+      }),
+    );
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
+    const pageQueryText = String(pageQuery.sql);
+    expect(pageQueryText).toContain('sp."slug"');
+    expect(pageQueryText).toContain('p."uniqueness"');
   });
 });

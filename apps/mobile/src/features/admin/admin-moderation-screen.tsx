@@ -512,6 +512,7 @@ export function AdminModerationScreen() {
           confirmation.kind === 'product-changes' ? (
             <TextField
               label="Причина"
+              autoFocus
               value={moderationReason}
               onChangeText={setModerationReason}
               required

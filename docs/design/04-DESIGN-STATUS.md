@@ -27,7 +27,7 @@
 - `Verified`: 1440/1024/390 runtime compositions, Onest/Inter loading,
   responsive overflow, Product URL/back tabs, related public works, focused E2E
   and production Expo exports.
-- `Verified`: complete Chromium runtime suite `35/35`, including four seeded
+- `Verified`: complete Chromium runtime suite `35/35`, including eight seeded
   catalog products, eight author cards, 1440/1024/390 layouts, loading/error/
   missing-media states, route boundaries and moderation flows.
 - `Verified`: post-implementation API/security audit aligned public Product,
@@ -41,9 +41,11 @@
   portaled menu, with Escape returning focus to the trigger; the current header
   follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Full browser
   execution still needs matched Pen screenshots and device verification.
-- `Implemented`: Browse Works now consumes server facets for category/material
-  menus, status counts and state tabs, and server-side sort/query state is
-  URL-backed. Browse Authors now exposes the API-backed activity/name sort
+- `Implemented`: Browse Works now consumes server facets for category, author,
+  material and uniqueness menus, confirmed price ranges, status counts and
+  state tabs; server-side sort/query state is URL-backed. The unsupported Pen
+  `Тип работы` control remains intentionally omitted because no domain field
+  is confirmed. Browse Authors exposes the API-backed activity/name sort
   control. The exact 1440 composition and 1024/390 derived states remain
   pending screenshot and device acceptance.
 - `Implemented`: Product hero now composes the Pen three-column identity,

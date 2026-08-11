@@ -360,7 +360,7 @@ async function main() {
     ),
   );
 
-  await Promise.all(
+  const additionalDemoProfiles = await Promise.all(
     additionalDemoCreators.map((creator, index) => {
       const photo = readSeedSellerProfileImage(creator.photoFileName);
       const website = `https://${creator.slug}.example.com`;
@@ -478,6 +478,110 @@ async function main() {
         imageFileName: 'handmade-vase.png',
       }),
     ]);
+
+  const additionalDemoProducts = await Promise.all(
+    [
+      {
+        publicId: 'seedIrina05',
+        profileIndex: 0,
+        title: 'Чаша «Тёплая линия»',
+        story: 'Небольшая чаша с мягким силуэтом для ежедневных ритуалов.',
+        technique: 'Ручная лепка, прозрачная глазурь',
+        materials: 'Глина, глазурь',
+        uniqueness: 'Единственный экземпляр',
+        price: '640.00',
+        listingStatus: 'SCHEDULED',
+        imageFileName: 'handmade-mug.png',
+      },
+      {
+        publicId: 'seedPavel06',
+        profileIndex: 1,
+        title: 'Лампа «Тихий круг»',
+        story:
+          'Предметный светильник из дерева и матового стекла для спокойного интерьера.',
+        technique: 'Ручная сборка, шлифовка',
+        materials: 'Дерево, стекло',
+        uniqueness: 'Малая серия',
+        price: '920.00',
+        listingStatus: 'LIVE',
+        imageFileName: 'handmade-vase.png',
+      },
+      {
+        publicId: 'seedOlga007',
+        profileIndex: 2,
+        title: 'Текстильная композиция «След света»',
+        story:
+          'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
+        technique: 'Аппликация, ручная вышивка',
+        materials: 'Лён, хлопок, нить',
+        uniqueness: 'Единственный экземпляр',
+        price: '1 480.00',
+        listingStatus: 'SCHEDULED',
+        imageFileName: 'painted-planter.png',
+      },
+      {
+        publicId: 'seedMark008',
+        profileIndex: 3,
+        title: 'Графический лист «Ночная карта»',
+        story: 'Ручная печать с точной линией и живой фактурой бумаги.',
+        technique: 'Линогравюра, ручная печать',
+        materials: 'Бумага, типографская краска',
+        uniqueness: 'Ограниченный тираж',
+        price: '510.00',
+        listingStatus: 'SCHEDULED',
+        imageFileName: 'ceramic-brush-holder.png',
+      },
+    ].map((fixture) =>
+      createProductWithImages({
+        publicId: fixture.publicId,
+        sellerProfileId: additionalDemoProfiles[fixture.profileIndex].id,
+        categoryId: category.id,
+        title: fixture.title,
+        story: fixture.story,
+        technique: fixture.technique,
+        materials: fixture.materials,
+        dimensions: '30 × 30 см',
+        year: 2026,
+        condition: 'Новое',
+        uniqueness: fixture.uniqueness,
+        provenance: 'Создано автором для локального демо bidplace.',
+        city: 'Минск',
+        deliveryInfo: 'Передача после завершения торгов по договорённости.',
+        publishedAt: now,
+        imageFileName: fixture.imageFileName,
+      }).then((product) => ({ product, fixture })),
+    ),
+  );
+
+  await Promise.all(
+    additionalDemoProducts.map(({ product, fixture }, index) => {
+      const startsAt =
+        fixture.listingStatus === 'LIVE'
+          ? new Date(now.getTime() - 3_600_000)
+          : fixture.listingStatus === 'ENDED'
+            ? new Date(now.getTime() - 7_200_000)
+            : new Date(now.getTime() + (index + 2) * 3_600_000);
+      const endsAt =
+        fixture.listingStatus === 'ENDED'
+          ? new Date(now.getTime() - 3_600_000)
+          : new Date(now.getTime() + (index + 3) * 3_600_000);
+
+      return prisma.listing.create({
+        data: {
+          productId: product.id,
+          status: fixture.listingStatus,
+          startsAt,
+          originalEndsAt: endsAt,
+          endsAt,
+          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
+          currentPrice: money(fixture.price.replace(' ', '')),
+          auctionRules: {
+            create: { startPrice: money(fixture.price.replace(' ', '')) },
+          },
+        },
+      });
+    }),
+  );
 
   await createProductWithImages({
     publicId: 'seedPend004',
@@ -605,7 +709,7 @@ async function main() {
   void vase;
 
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, four public products, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, eight public products, and scheduled/live/ended Product Listings in BYN.',
   );
 }
 

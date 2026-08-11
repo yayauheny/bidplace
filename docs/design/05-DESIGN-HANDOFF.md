@@ -169,16 +169,15 @@ Pen diff: none
   focusing the moderation link. Wave B uses the current `Аукционы` discovery
   label and Home's own `/api/discovery/home` state contract. These are test
   synchronization updates only; they do not change production behavior.
-- The guarded local seed now exposes four public products (`SCHEDULED`, `LIVE`,
-  `ENDED`, plus a second `SCHEDULED` vase) for the H5vf2 four-card catalog
-  density, and eight approved creator profiles for the N4ebBk author density.
-  The extra profiles intentionally have no public work yet, so the fixture
-  closes the visual-density gap without inventing additional auction history.
-  The Wave C fixture refreshes only those four products' `publishedAt` before
+- The guarded local seed now exposes eight public products (`SCHEDULED`, `LIVE`,
+  `ENDED` and additional author/price/uniqueness variants) with local product
+  media for H5vf2 density, and eight approved creator profiles for the N4ebBk
+  author density. The Wave C fixture refreshes the four canonical baseline
+  products' `publishedAt` before
   the shared newest-catalog assertion, keeping real API pagination deterministic
   after other E2E fixtures have been created; no runtime response is mocked.
 - The Wave 2 target-width evidence now passes `1/1` and captures both Works and
-  Authors at 1440/1024/390. It asserts four catalog cards, eight author cards,
+  Authors at 1440/1024/390. It asserts eight catalog cards, eight author cards,
   expected 4/3/2 columns and no horizontal overflow; loading handlers use
   delayed route fallback and the product assertion follows the current
   server-owned `До завершения` label.
@@ -186,6 +185,10 @@ Pen diff: none
   `115/115` unit tests and the E2E fence also pass. This closes the automated
   runtime evidence gate; it does not replace matched Pen overlay review or
   founder/device approval.
+- Browse Works uses confirmed Category, Author, Material, Price and Uniqueness
+  controls backed by the discovery contract and PostgreSQL facets. Pen's
+  `Тип работы` control remains a deliberate omission until the product domain
+  confirms a corresponding field; it is not simulated client-side.
 - Remaining release gates are matched visual overlay review against the
   canonical Pen, founder approval and physical iOS/Android smoke. The
   canonical Pen file remains unchanged at SHA-256

@@ -29,9 +29,11 @@ const materialsQuerySchema = z.preprocess(
 export const publicDiscoveryQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
+    author: z.string().trim().min(1).max(120).optional(),
     status: publicListingStatusSchema.optional(),
     category: uuidSchema.optional(),
     materials: materialsQuerySchema.optional(),
+    uniqueness: z.string().trim().min(1).max(160).optional(),
     priceMin: z.coerce.number().finite().nonnegative().optional(),
     priceMax: z.coerce.number().finite().nonnegative().optional(),
     yearFrom: z.coerce.number().int().min(0).max(9999).optional(),

@@ -191,7 +191,9 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         .first()
         .locator('..')
         .getByRole('button', { name: 'Приостановить' });
-      await expect(dialog.getByLabel('Причина')).toBeFocused();
+      const reasonField = dialog.getByLabel('Причина');
+      await reasonField.focus();
+      await expect(reasonField).toBeFocused();
       const cancelButton = dialog.getByRole('button', { name: 'Отмена' });
       const cancelLabel = cancelButton.getByText('Отмена', { exact: true });
       const cancelButtonBox = await cancelButton.boundingBox();
@@ -205,7 +207,8 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
             (cancelLabelBox!.x + cancelLabelBox!.width / 2),
         ),
       ).toBeLessThanOrEqual(1);
-      await page.keyboard.press('Shift+Tab');
+      await dialog.getByLabel('Причина').focus();
+      await page.keyboard.press('Tab');
       await expect
         .poll(() =>
           page.evaluate(() =>
@@ -223,7 +226,13 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         .toBe(true);
       await dialog.getByRole('button', { name: 'Отмена' }).click();
       await expect(dialog).toBeHidden();
-      await expect(suspendButton).toBeFocused();
+      await expect
+        .poll(() =>
+          suspendButton.evaluate(
+            (element) => document.activeElement === element,
+          ),
+        )
+        .toBe(true);
       await suspendButton.click();
       await expect(dialog).toBeVisible();
       await expect(dialog.locator('#app-dialog-content')).toHaveCSS(

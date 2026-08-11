@@ -20,14 +20,30 @@ import {
   Skeleton,
   MotionPressable,
 } from '../../components/ui';
-import type {
-  PublicDiscoverySort,
-} from '@bidplace/contracts';
+import type { PublicDiscoverySort } from '@bidplace/contracts';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
 
 type CatalogColumnCount = 1 | 2 | 3 | 4;
 type PublicListingStatus = 'LIVE' | 'SCHEDULED' | 'ENDED';
+type PriceRangeKey = 'under-500' | '500-1500' | '1500-plus';
+
+const priceRangeOptions: Array<{
+  value: PriceRangeKey;
+  label: string;
+  min?: number;
+  max?: number;
+}> = [
+  { value: 'under-500', label: 'До 500 BYN', max: 500 },
+  { value: '500-1500', label: '500–1 500 BYN', min: 500, max: 1500 },
+  { value: '1500-plus', label: 'От 1 500 BYN', min: 1500 },
+];
+
+function priceRangeKey(priceMin?: number, priceMax?: number) {
+  return priceRangeOptions.find(
+    (option) => option.min === priceMin && option.max === priceMax,
+  )?.value;
+}
 
 const sortOptions: Array<{ value: PublicDiscoverySort; label: string }> = [
   { value: 'newest', label: 'Сначала новые' },
@@ -73,7 +89,11 @@ function FacetMenu({
         <AppText role="caption" numberOfLines={1}>
           {selectedLabel ?? label}
         </AppText>
-        <AppIcon name="chevronDown" size={14} color={designTokens.color.textSecondary} />
+        <AppIcon
+          name="chevronDown"
+          size={14}
+          color={designTokens.color.textSecondary}
+        />
       </MotionPressable>
       {open ? (
         <View
@@ -154,24 +174,40 @@ function DiscoveryControls({
   facets,
   category,
   material,
+  author,
+  uniqueness,
+  priceMin,
+  priceMax,
   onStatusChange,
   onSortChange,
   onCategoryChange,
   onMaterialChange,
+  onAuthorChange,
+  onUniquenessChange,
+  onPriceChange,
 }: {
   status?: PublicListingStatus;
   sort: PublicDiscoverySort;
   facets?: {
     statusCounts: Record<PublicListingStatus, number>;
     categories: Array<{ id: string; name: string; count: number }>;
+    authors: Array<{ slug: string; name: string; count: number }>;
     materials: string[];
+    uniquenesses: string[];
   };
   category?: string;
   material?: string;
+  author?: string;
+  uniqueness?: string;
+  priceMin?: number;
+  priceMax?: number;
   onStatusChange: (value?: PublicListingStatus) => void;
   onSortChange: (value: PublicDiscoverySort) => void;
   onCategoryChange: (value?: string) => void;
   onMaterialChange: (value?: string) => void;
+  onAuthorChange: (value?: string) => void;
+  onUniquenessChange: (value?: string) => void;
+  onPriceChange: (range?: { min?: number; max?: number }) => void;
 }) {
   const [sortOpen, setSortOpen] = useState(false);
   const currentSort = sortOptions.find((option) => option.value === sort);
@@ -198,6 +234,15 @@ function DiscoveryControls({
           onSelect={onCategoryChange}
         />
         <FacetMenu
+          label="Автор"
+          value={author}
+          options={(facets?.authors ?? []).map((option) => ({
+            value: option.slug,
+            label: `${option.name} · ${option.count}`,
+          }))}
+          onSelect={onAuthorChange}
+        />
+        <FacetMenu
           label="Материал"
           value={material}
           options={(facets?.materials ?? []).map((option) => ({
@@ -205,6 +250,28 @@ function DiscoveryControls({
             label: option,
           }))}
           onSelect={onMaterialChange}
+        />
+        <FacetMenu
+          label="Цена"
+          value={priceRangeKey(priceMin, priceMax)}
+          options={priceRangeOptions}
+          onSelect={(value) => {
+            const range = priceRangeOptions.find(
+              (option) => option.value === value,
+            );
+            onPriceChange(
+              range ? { min: range.min, max: range.max } : undefined,
+            );
+          }}
+        />
+        <FacetMenu
+          label="Уникальность"
+          value={uniqueness}
+          options={(facets?.uniquenesses ?? []).map((option) => ({
+            value: option,
+            label: option,
+          }))}
+          onSelect={onUniquenessChange}
         />
       </ScrollView>
       <View
@@ -241,7 +308,9 @@ function DiscoveryControls({
                     : 'transparent',
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
                   <AppText
                     role="caption"
                     style={{
@@ -278,11 +347,19 @@ function DiscoveryControls({
               paddingHorizontal: 12,
             }}
           >
-            <AppIcon name="arrowUpDown" size={13} color={designTokens.color.ink} />
+            <AppIcon
+              name="arrowUpDown"
+              size={13}
+              color={designTokens.color.ink}
+            />
             <AppText role="caption" numberOfLines={1}>
               {currentSort?.label}
             </AppText>
-            <AppIcon name="chevronDown" size={12} color={designTokens.color.textSecondary} />
+            <AppIcon
+              name="chevronDown"
+              size={12}
+              color={designTokens.color.textSecondary}
+            />
           </MotionPressable>
           {sortOpen ? (
             <View
@@ -403,6 +480,10 @@ export function ProductListScreen({
   sort = 'newest',
   category,
   material,
+  author,
+  uniqueness,
+  priceMin,
+  priceMax,
 }: {
   query?: string;
   title?: string;
@@ -410,12 +491,29 @@ export function ProductListScreen({
   sort?: PublicDiscoverySort;
   category?: string;
   material?: string;
+  author?: string;
+  uniqueness?: string;
+  priceMin?: number;
+  priceMax?: number;
 } = {}) {
   const api = useApiClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const query = useQuery({
-    queryKey: ['products', { q: searchQuery, status, sort, category, material }],
+    queryKey: [
+      'products',
+      {
+        q: searchQuery,
+        status,
+        sort,
+        category,
+        material,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
+      },
+    ],
     queryFn: () =>
       api.products.list({
         q: searchQuery,
@@ -423,6 +521,10 @@ export function ProductListScreen({
         sort,
         category,
         materials: material ? [material] : undefined,
+        author,
+        uniqueness,
+        priceMin,
+        priceMax,
       }),
   });
   const columns = getCatalogColumnCount(width);
@@ -506,12 +608,20 @@ export function ProductListScreen({
             facets={query.data?.facets}
             category={category}
             material={material}
+            author={author}
+            uniqueness={uniqueness}
+            priceMin={priceMin}
+            priceMax={priceMax}
             onStatusChange={(nextStatus) =>
               router.setParams({
                 status: nextStatus,
                 sort,
                 category,
                 material,
+                author,
+                uniqueness,
+                priceMin,
+                priceMax,
               })
             }
             onSortChange={(nextSort) =>
@@ -520,13 +630,71 @@ export function ProductListScreen({
                 sort: nextSort,
                 category,
                 material,
+                author,
+                uniqueness,
+                priceMin,
+                priceMax,
               })
             }
             onCategoryChange={(nextCategory) =>
-              router.setParams({ status, sort, category: nextCategory, material })
+              router.setParams({
+                status,
+                sort,
+                category: nextCategory,
+                material,
+                author,
+                uniqueness,
+                priceMin,
+                priceMax,
+              })
             }
             onMaterialChange={(nextMaterial) =>
-              router.setParams({ status, sort, category, material: nextMaterial })
+              router.setParams({
+                status,
+                sort,
+                category,
+                material: nextMaterial,
+                author,
+                uniqueness,
+                priceMin,
+                priceMax,
+              })
+            }
+            onAuthorChange={(nextAuthor) =>
+              router.setParams({
+                status,
+                sort,
+                category,
+                material,
+                author: nextAuthor,
+                uniqueness,
+                priceMin,
+                priceMax,
+              })
+            }
+            onUniquenessChange={(nextUniqueness) =>
+              router.setParams({
+                status,
+                sort,
+                category,
+                material,
+                author,
+                uniqueness: nextUniqueness,
+                priceMin,
+                priceMax,
+              })
+            }
+            onPriceChange={(range) =>
+              router.setParams({
+                status,
+                sort,
+                category,
+                material,
+                author,
+                uniqueness,
+                priceMin: range?.min,
+                priceMax: range?.max,
+              })
             }
           />
           {query.isLoading ? <CatalogLoadingAnnouncement /> : null}

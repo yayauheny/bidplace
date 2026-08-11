@@ -163,6 +163,10 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
     filters.push(Prisma.sql`p."category_id" = CAST(${query.category} AS uuid)`);
   }
 
+  if (query.author) {
+    filters.push(Prisma.sql`sp."slug" = ${query.author}`);
+  }
+
   if (query.yearFrom !== undefined) {
     filters.push(Prisma.sql`p."year" >= ${query.yearFrom}`);
   }
@@ -190,6 +194,10 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
     filters.push(Prisma.sql`c.current_price <= ${query.priceMax}`);
   }
 
+  if (query.uniqueness) {
+    filters.push(Prisma.sql`p."uniqueness" = ${query.uniqueness}`);
+  }
+
   return Prisma.sql`WITH canonical AS (
     SELECT DISTINCT ON (l."product_id")
       l."product_id",
@@ -215,7 +223,7 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
       l."created_at" DESC,
       l."id" DESC
   ), filtered AS (
-    SELECT p."id", p."category_id", p."materials", p."published_at", c."status", c.status_rank,
+    SELECT p."id", p."category_id", p."seller_profile_id", p."materials", p."uniqueness", p."published_at", c."status", c.status_rank,
       c."ends_at", c."current_price", c."bid_count"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
@@ -670,33 +678,51 @@ export class ProductsService {
   private async discoveryFacets(query: PublicDiscoveryQuery) {
     const facetQuery = { ...query, status: undefined };
     const cte = publicCatalogCte(facetQuery);
-    const [statusRows, categoryRows, materialRows] = await Promise.all([
-      this.prisma.$queryRaw<
-        Array<{
-          status: 'SCHEDULED' | 'LIVE' | 'ENDED';
-          count: number | bigint;
-        }>
-      >(
-        Prisma.sql`${cte} SELECT "status", COUNT(*)::int AS "count" FROM filtered GROUP BY "status"`,
-      ),
-      this.prisma.$queryRaw<
-        Array<{ id: string; name: string; count: number | bigint }>
-      >(
-        Prisma.sql`${cte}
+    const [statusRows, categoryRows, authorRows, materialRows, uniquenessRows] =
+      await Promise.all([
+        this.prisma.$queryRaw<
+          Array<{
+            status: 'SCHEDULED' | 'LIVE' | 'ENDED';
+            count: number | bigint;
+          }>
+        >(
+          Prisma.sql`${cte} SELECT "status", COUNT(*)::int AS "count" FROM filtered GROUP BY "status"`,
+        ),
+        this.prisma.$queryRaw<
+          Array<{ id: string; name: string; count: number | bigint }>
+        >(
+          Prisma.sql`${cte}
           SELECT c."id", c."name", COUNT(*)::int AS "count"
           FROM filtered f
           INNER JOIN "categories" c ON c."id" = f."category_id"
           GROUP BY c."id", c."name"
           ORDER BY c."name" ASC`,
-      ),
-      this.prisma.$queryRaw<Array<{ materials: string }>>(
-        Prisma.sql`${cte}
+        ),
+        this.prisma.$queryRaw<
+          Array<{ slug: string; name: string; count: number | bigint }>
+        >(
+          Prisma.sql`${cte}
+          SELECT sp."slug", sp."full_name" AS "name", COUNT(*)::int AS "count"
+          FROM filtered f
+          INNER JOIN "seller_profiles" sp ON sp."id" = f."seller_profile_id"
+          GROUP BY sp."slug", sp."full_name"
+          ORDER BY sp."full_name" ASC`,
+        ),
+        this.prisma.$queryRaw<Array<{ materials: string }>>(
+          Prisma.sql`${cte}
           SELECT DISTINCT f."materials"
           FROM filtered f
           WHERE f."materials" IS NOT NULL
           ORDER BY f."materials" ASC`,
-      ),
-    ]);
+        ),
+        this.prisma.$queryRaw<Array<{ uniqueness: string }>>(
+          Prisma.sql`${cte}
+          SELECT DISTINCT f."uniqueness"
+          FROM filtered f
+          WHERE f."uniqueness" IS NOT NULL
+          ORDER BY f."uniqueness" ASC`,
+        ),
+      ]);
     const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
     for (const row of statusRows) statusCounts[row.status] = Number(row.count);
     return {
@@ -705,7 +731,12 @@ export class ProductsService {
         ...row,
         count: Number(row.count),
       })),
+      authors: authorRows.map((row) => ({
+        ...row,
+        count: Number(row.count),
+      })),
       materials: materialRows.map((row) => row.materials),
+      uniquenesses: uniquenessRows.map((row) => row.uniqueness),
     };
   }
 

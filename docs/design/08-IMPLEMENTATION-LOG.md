@@ -31,6 +31,22 @@
 
 ## Выполнено
 
+### 2026-08-12 — discovery data density and confirmed H5vf2 facets
+
+- Guarded local/test seed теперь содержит восемь публичных предметов с
+  локальными тематическими PNG: у четырёх дополнительных работ разные
+  авторы, цены, материалы и значения уникальности, а статусы сохраняют
+  scheduled/live/ended coverage. Внешние URL и непроверенные stock-assets не
+  добавлялись.
+- `GET /api/products` теперь принимает `author` и `uniqueness`, возвращает
+  server-computed author/uniqueness facets, а `/works` передаёт их вместе с
+  подтверждёнными диапазонами цены через URL state. `Тип работы` намеренно
+  исключён до появления подтверждённого поля в домене.
+
+Проверки: contracts `11/11`, API unit `152/152`, API PostgreSQL integration
+`39/39`, mobile typecheck/lint, full Chromium E2E `35/35` and E2E fence.
+Canonical Pen SHA remains unchanged.
+
 ### 2026-08-12 — runtime evidence completion
 
 - Обновлены Wave B и Wave One acceptance-сценарии под текущий IA header:

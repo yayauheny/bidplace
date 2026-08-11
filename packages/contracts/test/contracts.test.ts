@@ -15,47 +15,98 @@ import {
 
 describe('shared contracts', () => {
   it('accepts a draft Product without art-only fields', () => {
-    expect(productWriteRequestSchema.safeParse({ title: 'Personal item' }).success).toBe(true);
+    expect(
+      productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
+    ).toBe(true);
   });
   it('accepts an auction Listing only in BYN through server-owned currency', () => {
-    expect(listingCreateRequestSchema.safeParse({ startPrice: 10, startsAt: '2026-07-20T10:00:00.000Z', endsAt: '2026-07-20T11:00:00.000Z' }).success).toBe(true);
+    expect(
+      listingCreateRequestSchema.safeParse({
+        startPrice: 10,
+        startsAt: '2026-07-20T10:00:00.000Z',
+        endsAt: '2026-07-20T11:00:00.000Z',
+      }).success,
+    ).toBe(true);
   });
   it('rejects an invalid Listing timeframe', () => {
-    expect(listingCreateRequestSchema.safeParse({ startPrice: 10, startsAt: '2026-07-20T11:00:00.000Z', endsAt: '2026-07-20T10:00:00.000Z' }).success).toBe(false);
+    expect(
+      listingCreateRequestSchema.safeParse({
+        startPrice: 10,
+        startsAt: '2026-07-20T11:00:00.000Z',
+        endsAt: '2026-07-20T10:00:00.000Z',
+      }).success,
+    ).toBe(false);
   });
   it('accepts a bid amount but not client-owned Listing values', () => {
     expect(bidCreateRequestSchema.safeParse({ amount: 15 }).success).toBe(true);
-    expect(bidCreateRequestSchema.safeParse({ amount: 15, currency: 'USD' }).success).toBe(false);
+    expect(
+      bidCreateRequestSchema.safeParse({ amount: 15, currency: 'USD' }).success,
+    ).toBe(false);
   });
   it('exposes listing realtime names without reserve or PII fields', () => {
-    expect(realtimeEventPayloadSchema.safeParse({ event: 'listing.updated', payload: { listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1', currentPrice: 20, bidCount: 1, status: 'LIVE', endsAt: '2026-07-20T11:00:00.000Z' } }).success).toBe(true);
+    expect(
+      realtimeEventPayloadSchema.safeParse({
+        event: 'listing.updated',
+        payload: {
+          listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          currentPrice: 20,
+          bidCount: 1,
+          status: 'LIVE',
+          endsAt: '2026-07-20T11:00:00.000Z',
+        },
+      }).success,
+    ).toBe(true);
     expect(listingStatusSchema.safeParse('active').success).toBe(false);
   });
   it('requires a reason for limiting admin actions', () => {
-    expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'SUSPENDED' }).success).toBe(false);
-    expect(adminProductStatusUpdateRequestSchema.safeParse({ status: 'CHANGES_REQUESTED' }).success).toBe(false);
-    expect(adminSellerStatusUpdateRequestSchema.safeParse({ status: 'APPROVED' }).success).toBe(true);
+    expect(
+      adminSellerStatusUpdateRequestSchema.safeParse({ status: 'SUSPENDED' })
+        .success,
+    ).toBe(false);
+    expect(
+      adminProductStatusUpdateRequestSchema.safeParse({
+        status: 'CHANGES_REQUESTED',
+      }).success,
+    ).toBe(false);
+    expect(
+      adminSellerStatusUpdateRequestSchema.safeParse({ status: 'APPROVED' })
+        .success,
+    ).toBe(true);
   });
   it('normalizes optional discovery pagination and trims search text', () => {
     expect(
       publicDiscoveryQuerySchema.parse({
         q: '  ceramic  ',
+        author: '  marina  ',
         limit: '12',
         materials: ' clay, wood ',
+        uniqueness: '  One  ',
+        priceMin: '500',
       }),
     ).toEqual({
       page: 1,
       limit: 12,
       q: 'ceramic',
+      author: 'marina',
       materials: ['clay', 'wood'],
+      uniqueness: 'One',
+      priceMin: 500,
       sort: 'newest',
     });
   });
   it('rejects invalid discovery ranges and unknown keys', () => {
-    expect(publicDiscoveryQuerySchema.safeParse({ page: 0 }).success).toBe(false);
-    expect(publicDiscoveryQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
-    expect(publicDiscoveryQuerySchema.safeParse({ extra: 'value' }).success).toBe(false);
-    expect(publicDiscoveryQuerySchema.safeParse({ q: '   ' }).success).toBe(false);
+    expect(publicDiscoveryQuerySchema.safeParse({ page: 0 }).success).toBe(
+      false,
+    );
+    expect(publicDiscoveryQuerySchema.safeParse({ limit: 101 }).success).toBe(
+      false,
+    );
+    expect(
+      publicDiscoveryQuerySchema.safeParse({ extra: 'value' }).success,
+    ).toBe(false);
+    expect(publicDiscoveryQuerySchema.safeParse({ q: '   ' }).success).toBe(
+      false,
+    );
     expect(
       publicDiscoveryQuerySchema.safeParse({ q: 'a'.repeat(121) }).success,
     ).toBe(false);
@@ -70,15 +121,17 @@ describe('shared contracts', () => {
   });
 
   it('accepts only supported public seller query parameters', () => {
-    expect(publicSellerQuerySchema.parse({ q: '  author  ', sort: 'name' })).toEqual({
+    expect(
+      publicSellerQuerySchema.parse({ q: '  author  ', sort: 'name' }),
+    ).toEqual({
       page: 1,
       limit: 20,
       q: 'author',
       sort: 'name',
     });
-    expect(
-      publicSellerQuerySchema.safeParse({ status: 'LIVE' }).success,
-    ).toBe(false);
+    expect(publicSellerQuerySchema.safeParse({ status: 'LIVE' }).success).toBe(
+      false,
+    );
   });
 
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
