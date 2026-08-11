@@ -11,8 +11,8 @@
 - `Implemented`: старая design system в `docs/modern-ui/` выведена из проекта;
   её visual rules и cutover plan больше не действуют.
 - `Implemented`: точная локальная копия восстановлена по canonical path; SHA-256
-  `bdb29835e0fc9c431deaf632992362a291fd6b6922a8e858553aea3822bd9b76`.
-- `Implemented`: canonical baseline принят commit `ef5b7c2`; после него любой
+  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+- `Implemented`: canonical baseline принят commit `f7450e4`; после него любой
   `.pen` diff запрещён.
 - `Confirmed`: `design/pen/bidplace-web-v2.pen` — защищённый визуальный эталон,
   который нельзя менять или удалять во время code work.
@@ -32,12 +32,12 @@
   transactional and bidder aliases are Listing-scoped.
 - `Partial`: route/IA для Home, Browse Authors и Search, contracts для
   search/filter/sort/author directory, header/account popover and shared
-  controls. Creation story and structured socials remain unimplemented; creator
-  discipline is now available from the public profile contract.
+  controls. Creation story and structured socials are now implemented in the
+  API; screen composition and visual acceptance remain open.
 - `Implemented`: desktop account popover keyboard-open now moves focus into the
-  portaled menu, with Escape returning focus to the trigger; navigation E2E
-  coverage follows the current `Главная`/`Обзор`/`Добавить` IA. Full browser
-  execution still needs PostgreSQL-backed verification.
+  portaled menu, with Escape returning focus to the trigger; the current header
+  follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Full browser
+  execution still needs matched Pen screenshots and device verification.
 
 ## Screen matrix
 

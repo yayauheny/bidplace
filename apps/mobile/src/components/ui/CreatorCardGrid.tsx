@@ -19,13 +19,13 @@ export function CreatorCardGrid({
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        margin: -designTokens.space.x2,
+        margin: -designTokens.space.x3,
       }}
     >
       {items.map((item) => (
         <View
           key={item.sellerProfile.slug}
-          style={{ width, padding: designTokens.space.x2 }}
+          style={{ width, padding: designTokens.space.x3 }}
         >
           <CreatorCard item={item} />
         </View>

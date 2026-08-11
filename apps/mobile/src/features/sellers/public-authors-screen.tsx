@@ -64,6 +64,7 @@ export function PublicAuthorsScreen({ query }: { query?: string }) {
               ? designTokens.space.x16
               : designTokens.space.x10,
         }}
+        style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
       >
         <View

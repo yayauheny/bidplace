@@ -195,13 +195,13 @@ function CatalogGrid({
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        margin: -designTokens.space.x2,
+        margin: -designTokens.space.x3,
       }}
     >
       {Array.from({ length: count }, (_, index) => (
         <View
           key={index}
-          style={{ width: cardWidth, padding: designTokens.space.x2 }}
+          style={{ width: cardWidth, padding: designTokens.space.x3 }}
         >
           {renderCard(index)}
         </View>
@@ -321,6 +321,7 @@ export function ProductListScreen({
               ? designTokens.space.x16
               : designTokens.space.x10,
         }}
+        style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
       >
         <View

@@ -37,6 +37,7 @@ export function CreatorCard({ item }: { item: PublicSellerListItem }) {
             width: '100%',
             aspectRatio: 1,
             borderRadius: designTokens.radius.media,
+            backgroundColor: designTokens.color.surfaceMuted,
           }}
           contentFit="cover"
         />
@@ -45,10 +46,19 @@ export function CreatorCard({ item }: { item: PublicSellerListItem }) {
             gap: designTokens.space.x1,
           }}
         >
-          <AppText role="cardTitle" numberOfLines={1}>
+          <AppText
+            role="cardTitle"
+            numberOfLines={1}
+            style={{ fontSize: 20, lineHeight: 24 }}
+          >
             {sellerProfile.fullName}
           </AppText>
-          <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
+          <AppText
+            role="bodySmall"
+            tone="secondary"
+            numberOfLines={1}
+            style={{ fontSize: 15, lineHeight: 20 }}
+          >
             {sellerProfile.discipline}
           </AppText>
         </View>

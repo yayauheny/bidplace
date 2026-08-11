@@ -18,13 +18,13 @@ export function AuctionCardGrid({
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
-        margin: -designTokens.space.x2,
+        margin: -designTokens.space.x3,
       }}
     >
       {items.map((item) => (
         <View
           key={item.product.id}
-          style={{ width: cardWidth, padding: designTokens.space.x2 }}
+          style={{ width: cardWidth, padding: designTokens.space.x3 }}
         >
           <AuctionCard item={item} />
         </View>

@@ -44,19 +44,19 @@ values.
 | Role                         | Pen value / evidence                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------------------- |
 | Primary type                 | `Onest` для headings, cards и content; `Inter` для header/navigation и части overlays |
-| Canvas/surfaces              | `#FFFFFF`, `#FAFAF8`, `#F6F6F3`, `#F1F1ED`                                            |
-| Primary text/action          | `#111111`, `#1A1A1A`, header action `#090909`                                         |
+| Canvas/surfaces              | `#FFFFFF`, `#FBFBF8`, `#F7F7F5`, `#F1F1ED`                                            |
+| Primary text/action          | `#1A1A1A`, header action `#090909`                                                     |
 | Muted text                   | `#3E3E3A`, `#6B6B66`, `#6F6F69`, `#777771`/`#777772`                                  |
-| Dividers/borders             | `#E3E1DC`, `#E5E2DE`                                                                  |
+| Dividers/borders             | `#DADAD3`, `#E5E5E1`                                                                  |
 | Header search                | 480×48, radius 24, fill `#F1F1ED`                                                     |
 | Header primary action        | height 40, radius 20, dark fill, white text                                           |
-| Discovery menu               | 204 px, radius 18, bottom-start placement                                               |
-| Account popover              | 300 px target, radius 20, white surface and floating elevation                         |
+| Discovery menu               | 240 px, radius 26, bottom-start placement                                               |
+| Account popover              | 280 px target, radius 22, white surface and floating elevation                         |
 | Creator media                | square viewport, radius 12, no outer card surface                                      |
 | Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
-| Auction card example         | 400×576, media 400×430, radius 16, content padding 18/20/20                           |
-| Card title                   | `Onest` 18/700, line-height 23                                                        |
-| Card creator/metadata        | 14/500; metric label 12/500; metric value 18/700                                      |
+| Auction card example         | 322×456, media 322×322, radius 12, info surface `#F7F7F5`                             |
+| Card title                   | `Onest` 16/700, line-height 20                                                        |
+| Card creator/metadata        | 14/500; metric label 12/500; metric value 16/700                                      |
 | Creator profile card example | 340×526, media 340×380                                                                |
 
 Exact semantic token names and repeated-value clustering выполняются в WP1.

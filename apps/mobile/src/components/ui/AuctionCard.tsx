@@ -38,8 +38,7 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
         style={{
           width: '100%',
           overflow: 'hidden',
-          borderRadius: designTokens.radius.card,
-          backgroundColor: designTokens.color.surfaceMuted,
+          borderRadius: designTokens.radius.media,
         }}
       >
         <View
@@ -47,7 +46,7 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
             width: '100%',
             aspectRatio: designTokens.ratio.auctionCardMedia,
             overflow: 'hidden',
-            backgroundColor: designTokens.color.surfaceStrong,
+            backgroundColor: designTokens.color.surfaceMuted,
           }}
         >
           {firstImage ? (
@@ -69,21 +68,39 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
         </View>
         <View
           style={{
-            minHeight: 134,
-            justifyContent: 'space-between',
-            gap: designTokens.space.x4,
-            paddingHorizontal: designTokens.space.x4,
-            paddingBottom: designTokens.space.x4,
-            paddingTop: designTokens.space.x3,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderTopWidth: 0,
+            borderColor: designTokens.color.border,
+            borderBottomLeftRadius: designTokens.radius.media,
+            borderBottomRightRadius: designTokens.radius.media,
+            backgroundColor: designTokens.color.surfaceMuted,
           }}
         >
-          <View style={{ gap: designTokens.space.x1 }}>
-            <AppText role="cardTitle" numberOfLines={2}>
+          <View
+            style={{
+              gap: designTokens.space.x1,
+              paddingTop: 14,
+              paddingHorizontal: designTokens.space.x4,
+              paddingBottom: 13,
+            }}
+          >
+            <AppText role="label" numberOfLines={2} style={{ fontSize: 16, lineHeight: 20, fontWeight: '700' }}>
               {title}
             </AppText>
-            <AppText role="label" tone="secondary" numberOfLines={1}>
-              {sellerProfile.fullName}
-            </AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ResilientRemoteImage
+                uri={getApiAssetUrl(sellerProfile.profilePhotoUrl)}
+                component="AuctionCard"
+                accessibilityLabel={`Фото автора: ${sellerProfile.fullName}`}
+                fallbackLabel={`Фото автора недоступно: ${sellerProfile.fullName}`}
+                style={{ width: 18, height: 18, borderRadius: 9 }}
+                contentFit="cover"
+              />
+              <AppText role="bodySmall" tone="secondary" numberOfLines={1}>
+                @{sellerProfile.slug}
+              </AppText>
+            </View>
           </View>
           <View
             style={{
@@ -93,7 +110,9 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
               gap: designTokens.space.x3,
               borderTopWidth: 1,
               borderTopColor: designTokens.color.border,
-              paddingTop: designTokens.space.x3,
+              paddingTop: 13,
+              paddingHorizontal: designTokens.space.x4,
+              paddingBottom: 15,
             }}
           >
             <Metric label={live ? 'Текущая ставка' : 'Цена'} value={price} />
@@ -131,7 +150,11 @@ function Metric({
       <AppText role="metadata" tone={tone} numberOfLines={1}>
         {label}
       </AppText>
-      <AppText role="numeric" numberOfLines={1}>
+      <AppText
+        role="numeric"
+        numberOfLines={1}
+        style={{ fontSize: 16, lineHeight: 19 }}
+      >
         {value}
       </AppText>
     </View>
@@ -178,7 +201,7 @@ function AuctionCardImage({
         },
         webTransition,
       ]}
-      contentFit="contain"
+      contentFit="cover"
       transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
       recyclingKey={`${productId}-${imageId}`}
     />

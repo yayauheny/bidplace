@@ -19,6 +19,26 @@ import {
 } from '../ui';
 import { OverlayPortal } from './OverlayHost';
 
+const menuItemStyle = {
+  minHeight: 48,
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  gap: designTokens.space.x3,
+  borderRadius: 14,
+  paddingHorizontal: designTokens.space.x3,
+};
+
+const menuItemInteractionStyle = ({
+  hovered,
+  pressed,
+}: {
+  hovered: boolean;
+  pressed: boolean;
+}) => ({
+  backgroundColor:
+    hovered || pressed ? designTokens.color.surfaceStrong : 'transparent',
+});
+
 export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
   const capability = useSellerCapability();
@@ -33,8 +53,13 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     focus?: () => void;
   } | null>(null);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
-  const email = auth.user?.email ?? '';
-  const initial = label.slice(0, 1).toUpperCase();
+  const profileLabel = auth.isAdmin
+    ? null
+    : capability.status === 'APPROVED'
+      ? 'Кабинет'
+      : capability.profile
+        ? 'Заявка продавца'
+        : 'Стать продавцом';
   const closeMenu = useCallback((restoreFocus = false) => {
     focusOpened.current = false;
     setOpen(false);
@@ -164,29 +189,21 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           setOpen((current) => !current);
         }}
         style={({ hovered, pressed }) => ({
-          minHeight: designTokens.size.touch,
+          width: 40,
+          height: 40,
+          minWidth: 40,
+          minHeight: 40,
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: designTokens.space.x1,
           borderRadius: designTokens.radius.pill,
           backgroundColor:
             hovered || pressed ? designTokens.color.chip : 'transparent',
-          paddingHorizontal: designTokens.space.x1,
+          paddingHorizontal: 0,
         })}
       >
-        <View
-          style={{
-            width: 32,
-            height: 32,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: designTokens.radius.pill,
-            backgroundColor: designTokens.color.chip,
-          }}
-        >
-          <AppText role="label">{initial}</AppText>
-        </View>
-        <AppIcon name="chevronDown" size={16} />
+        <AppIcon name="account" size={20} />
       </MotionPressable>
       {open ? (
         Platform.OS === 'web' ? (
@@ -196,9 +213,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             width={designTokens.layout.accountPopoverWidth}
           >
             <AccountDropdown
-              displayName={label}
-              email={email}
-              canOpenCabinet={capability.status === 'APPROVED'}
+              profileLabel={profileLabel}
+              showPurchases={!auth.isAdmin}
+              showModeration={auth.isAdmin}
               loggingOut={loggingOut}
               onLogout={() => void logout()}
               firstMenuItemRef={firstMenuItemRef}
@@ -207,9 +224,9 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           </OverlayPortal>
         ) : (
           <AccountDropdown
-            displayName={label}
-            email={email}
-            canOpenCabinet={capability.status === 'APPROVED'}
+            profileLabel={profileLabel}
+            showPurchases={!auth.isAdmin}
+            showModeration={auth.isAdmin}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
             firstMenuItemRef={firstMenuItemRef}
@@ -222,17 +239,17 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
 }
 
 function AccountDropdown({
-  displayName,
-  email,
-  canOpenCabinet,
+  profileLabel,
+  showPurchases,
+  showModeration,
   loggingOut,
   onLogout,
   firstMenuItemRef,
   inline,
 }: {
-  displayName: string;
-  email: string;
-  canOpenCabinet: boolean;
+  profileLabel: string | null;
+  showPurchases: boolean;
+  showModeration: boolean;
   loggingOut: boolean;
   onLogout: () => void;
   firstMenuItemRef: MutableRefObject<{ focus?: () => void } | null>;
@@ -249,22 +266,16 @@ function AccountDropdown({
         gap: designTokens.space.x2,
         borderWidth: 1,
         borderColor: designTokens.color.border,
-        borderRadius: designTokens.radius.panel,
+        borderRadius: 22,
         backgroundColor: designTokens.color.surface,
-        padding: designTokens.space.x2,
+        padding: 10,
         shadowColor: '#000',
         shadowOpacity: 0.08,
         shadowRadius: 12,
         elevation: 4,
       }}
     >
-      <View style={{ gap: designTokens.space.x1, padding: designTokens.space.x2 }}>
-        <AppText role="label">{displayName}</AppText>
-        <AppText role="caption" tone="secondary">
-          {email}
-        </AppText>
-      </View>
-      {canOpenCabinet ? (
+      {profileLabel ? (
         <Link href="/profile" asChild>
           <MotionPressable
             ref={(node) => {
@@ -273,39 +284,79 @@ function AccountDropdown({
               } | null;
             }}
             accessibilityRole="link"
-            accessibilityLabel="Кабинет"
+            accessibilityLabel={profileLabel}
             preset="button"
-            style={{
-              minHeight: designTokens.size.touch,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: designTokens.space.x2,
-              borderRadius: designTokens.radius.small,
-              paddingHorizontal: designTokens.space.x2,
-            }}
-            interactionStyle={({ hovered, pressed }) => ({
-              backgroundColor:
-                hovered || pressed
-                  ? designTokens.color.surfaceStrong
-                  : 'transparent',
-            })}
+            style={menuItemStyle}
+            interactionStyle={menuItemInteractionStyle}
           >
             <AppIcon name="account" size={18} />
             <AppText role="label" style={{ flex: 1 }}>
-              Кабинет
+              {profileLabel}
             </AppText>
             <AppIcon name="chevronRight" size={18} />
           </MotionPressable>
         </Link>
       ) : null}
-      {canOpenCabinet ? (
+      {showPurchases ? (
+        <Link href="/me/activity" asChild>
+          <MotionPressable
+            ref={
+              profileLabel
+                ? undefined
+                : (node) => {
+                    firstMenuItemRef.current = node as unknown as {
+                      focus?: () => void;
+                    } | null;
+                  }
+            }
+            accessibilityRole="link"
+            accessibilityLabel="Покупки"
+            preset="button"
+            style={menuItemStyle}
+            interactionStyle={menuItemInteractionStyle}
+          >
+            <AppIcon name="purchases" size={19} />
+            <AppText role="label" style={{ flex: 1 }}>
+              Покупки
+            </AppText>
+            <AppIcon name="chevronRight" size={18} />
+          </MotionPressable>
+        </Link>
+      ) : null}
+      {showModeration ? (
+        <Link href="/admin" asChild>
+          <MotionPressable
+            ref={
+              profileLabel || showPurchases
+                ? undefined
+                : (node) => {
+                    firstMenuItemRef.current = node as unknown as {
+                      focus?: () => void;
+                    } | null;
+                  }
+            }
+            accessibilityRole="link"
+            accessibilityLabel="Модерация"
+            preset="button"
+            style={menuItemStyle}
+            interactionStyle={menuItemInteractionStyle}
+          >
+            <AppIcon name="moderation" size={19} />
+            <AppText role="label" style={{ flex: 1 }}>
+              Модерация
+            </AppText>
+            <AppIcon name="chevronRight" size={18} />
+          </MotionPressable>
+        </Link>
+      ) : null}
+      {profileLabel || showPurchases || showModeration ? (
         <View
           style={{ height: 1, backgroundColor: designTokens.color.border }}
         />
       ) : null}
       <MotionPressable
         ref={
-          canOpenCabinet
+          profileLabel
             ? undefined
             : (node) => {
                 firstMenuItemRef.current = node as unknown as {
@@ -320,12 +371,12 @@ function AccountDropdown({
         onPress={onLogout}
         preset="button"
         style={{
-          minHeight: designTokens.size.touch,
+          minHeight: 48,
           flexDirection: 'row',
           alignItems: 'center',
           gap: designTokens.space.x2,
-          borderRadius: designTokens.radius.small,
-          paddingHorizontal: designTokens.space.x2,
+          borderRadius: 14,
+          paddingHorizontal: designTokens.space.x3,
         }}
         interactionStyle={({ hovered, pressed }) => ({
           backgroundColor:

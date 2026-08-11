@@ -25,31 +25,6 @@ import { OverlayPortal } from './OverlayHost';
 
 type HeaderItem = { label: string; href: Href };
 
-function utilityNavigationItems(
-  auth: ReturnType<typeof useAuth>,
-  capability: ReturnType<typeof useSellerCapability>,
-): HeaderItem[] {
-  if (auth.isAdmin) {
-    return [{ label: 'Модерация', href: '/admin' }];
-  }
-
-  if (!auth.isAuthenticated) {
-    return [];
-  }
-
-  if (capability.status === 'APPROVED') {
-    return [{ label: 'Покупки', href: '/me/activity' }];
-  }
-
-  return [
-    { label: 'Покупки', href: '/me/activity' },
-    {
-      label: capability.profile ? 'Заявка продавца' : 'Стать продавцом',
-      href: '/profile',
-    },
-  ];
-}
-
 function isActiveRoute(pathname: string, href: Href) {
   if (href === '/') return pathname === '/';
   const value = String(href);
@@ -112,7 +87,7 @@ function DiscoveryDropdown({
   onNavigate: () => void;
 }) {
   const items: Array<HeaderItem & { icon: 'catalog' | 'user' }> = [
-    { label: 'Работы', href: '/works', icon: 'catalog' },
+    { label: 'Аукционы', href: '/works', icon: 'catalog' },
     { label: 'Авторы', href: '/authors', icon: 'user' },
   ];
 
@@ -223,7 +198,7 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
           } | null;
         }}
         accessibilityRole="button"
-        accessibilityLabel="Обзор"
+        accessibilityLabel="Аукционы"
         accessibilityState={{ expanded: open, selected: active }}
         onAccessibilityEscape={() => {
           setOpen(false);
@@ -234,12 +209,15 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
           minHeight: desktop
             ? designTokens.size.touch
             : designTokens.size.control,
+          width: desktop ? 142 : undefined,
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: designTokens.space.x1,
-          borderBottomWidth: desktop && active ? 2 : 0,
-          borderBottomColor: designTokens.color.ink,
-          borderRadius: desktop ? 0 : designTokens.radius.pill,
+          borderRadius: desktop ? 22 : designTokens.radius.pill,
+          backgroundColor: desktop
+            ? designTokens.color.surfaceStrong
+            : 'transparent',
           paddingHorizontal: desktop
             ? designTokens.space.x3
             : designTokens.space.x4,
@@ -253,7 +231,7 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
                 : 'transparent',
         })}
       >
-        <AppText role="nav">Обзор</AppText>
+        <AppText role="nav">Аукционы</AppText>
         <View
           style={{
             transform: [{ rotate: open ? '180deg' : '0deg' }],
@@ -306,8 +284,10 @@ function HeaderSearch({ inline }: { inline: boolean }) {
         gap: designTokens.space.x3,
         minHeight: designTokens.size.input,
         borderRadius: designTokens.radius.pill,
+        borderWidth: 1,
+        borderColor: designTokens.color.border,
         backgroundColor: designTokens.color.surfaceStrong,
-        paddingHorizontal: designTokens.space.x4,
+        paddingHorizontal: 18,
       }}
     >
       <AppIcon name="search" size={18} color={designTokens.color.textSecondary} />
@@ -323,8 +303,8 @@ function HeaderSearch({ inline }: { inline: boolean }) {
           flex: 1,
           minWidth: 0,
           color: designTokens.color.ink,
-          fontFamily: designTokens.typography.bodySmall.fontFamily,
-          fontSize: designTokens.typography.bodySmall.fontSize,
+          fontFamily: 'Inter_500Medium',
+          fontSize: 15,
         }}
       />
     </View>
@@ -357,7 +337,7 @@ function CreateListingAction() {
           numberOfLines={1}
           style={{ color: designTokens.color.surface }}
         >
-          Добавить
+          Создать
         </AppText>
       </MotionPressable>
     </Link>
@@ -372,27 +352,18 @@ export function AppHeader() {
   const desktop = width >= designTokens.breakpoint.compactHeader;
   const searchInline =
     width >= designTokens.breakpoint.headerSearchInline;
-  const items = utilityNavigationItems(auth, capability);
   const canCreate = !auth.isAdmin && capability.status === 'APPROVED';
 
   const primaryNavigation = (
     <>
-      <NavigationLink
-        active={pathname === '/'}
-        desktop={desktop}
-        item={{ label: 'Главная', href: '/' }}
-      />
       <DiscoveryMenu desktop={desktop} />
+      <NavigationLink
+        active={isActiveRoute(pathname, '/authors')}
+        desktop={desktop}
+        item={{ label: 'Авторы', href: '/authors' }}
+      />
     </>
   );
-  const utilityLinks = items.map((item) => (
-    <NavigationLink
-      key={String(item.href)}
-      active={isActiveRoute(pathname, item.href)}
-      desktop={desktop}
-      item={item}
-    />
-  ));
 
   return (
     <View
@@ -414,7 +385,7 @@ export function AppHeader() {
           alignItems: 'center',
           gap: desktop ? designTokens.space.x6 : designTokens.space.x3,
           paddingHorizontal: desktop
-            ? designTokens.space.x6
+            ? designTokens.space.x8
             : designTokens.layout.mobileGutter,
         }}
       >
@@ -429,15 +400,6 @@ export function AppHeader() {
           </View>
         ) : null}
         {searchInline ? <HeaderSearch inline /> : <View style={{ flex: 1 }} />}
-        {desktop ? (
-          <View
-            accessibilityLabel="Навигация аккаунта"
-            role="navigation"
-            style={{ flexDirection: 'row', alignItems: 'center' }}
-          >
-            {utilityLinks}
-          </View>
-        ) : null}
         {canCreate ? <CreateListingAction /> : null}
         <AccountMenu desktop={desktop} />
       </View>
@@ -445,7 +407,7 @@ export function AppHeader() {
         <View
           style={{
             paddingHorizontal: desktop
-              ? designTokens.space.x6
+              ? designTokens.space.x8
               : designTokens.layout.mobileGutter,
             paddingBottom: designTokens.space.x3,
           }}
@@ -465,7 +427,6 @@ export function AppHeader() {
             showsHorizontalScrollIndicator={false}
           >
             {primaryNavigation}
-            {utilityLinks}
           </ScrollView>
         </View>
       ) : null}
