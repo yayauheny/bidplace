@@ -98,7 +98,13 @@ test('admin reviews and approves pending seller and product', async ({
     );
     expect(bidResponse.status()).toBe(403);
 
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/admin');
+    const accountTrigger = page.getByRole('button', {
+      name: /Открыть меню аккаунта/,
+    });
+    await accountTrigger.hover();
+    await expect(page.locator('#account-menu-dropdown')).toBeVisible();
     const moderationLink = page.getByRole('link', { name: 'Модерация' });
     await moderationLink.focus();
     await expect(moderationLink).toBeFocused();

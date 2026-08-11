@@ -1,6 +1,6 @@
 # bidplace — handoff Pen v2 → production code
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-12
 
 Статус: **Approved runtime scope implemented; workflow remains mandatory**
 
@@ -133,7 +133,7 @@ Pen diff: none
 - [x] design/project statuses обновлены;
 - [x] `git diff --name-only` не содержит `.pen`.
 
-## 7. Текущий runtime handoff — 2026-08-11
+## 7. Текущий runtime handoff — 2026-08-12
 
 - Canonical SHA-256 до и после реализации:
   `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
@@ -147,11 +147,11 @@ Pen diff: none
   account popover переводит клавиатурный focus на первый пункт.
 - Creation process data model и multiple structured social links реализованы;
   fake routes и controls не создавались. API contract/unit/PostgreSQL coverage,
-  mobile unit/typecheck/lint и полный Wave C Chromium acceptance зелёные.
+  mobile unit/typecheck/lint и полный Chromium E2E acceptance `35/35` зелёные.
   Founder visual review и physical iOS/Android smoke остаются внешним release
   gate.
 
-## 8. Runtime handoff addendum — 2026-08-11
+## 8. Runtime handoff addendum — 2026-08-12
 
 - Production UI now targets the current Pen v2 FINAL registry. The creator
   route uses only `MqUMz` — `FINAL — Desktop Creator / Profile / MVP v1`;
@@ -166,13 +166,26 @@ Pen diff: none
   and are disposable runtime artifacts, not Pen sources.
 - The route-matrix harness uses `waitUntil: 'domcontentloaded'` for the
   client-rendered screens and explicitly opens the admin account menu before
-  focusing the moderation link. This changes test synchronization only; it
-  does not change production behavior.
+  focusing the moderation link. Wave B uses the current `Аукционы` discovery
+  label and Home's own `/api/discovery/home` state contract. These are test
+  synchronization updates only; they do not change production behavior.
 - The guarded local seed now exposes four public products (`SCHEDULED`, `LIVE`,
   `ENDED`, plus a second `SCHEDULED` vase) for the H5vf2 four-card catalog
   density, and eight approved creator profiles for the N4ebBk author density.
   The extra profiles intentionally have no public work yet, so the fixture
   closes the visual-density gap without inventing additional auction history.
+  The Wave C fixture refreshes only those four products' `publishedAt` before
+  the shared newest-catalog assertion, keeping real API pagination deterministic
+  after other E2E fixtures have been created; no runtime response is mocked.
+- The Wave 2 target-width evidence now passes `1/1` and captures both Works and
+  Authors at 1440/1024/390. It asserts four catalog cards, eight author cards,
+  expected 4/3/2 columns and no horizontal overflow; loading handlers use
+  delayed route fallback and the product assertion follows the current
+  server-owned `До завершения` label.
+- The complete Chromium suite now passes `35/35`; mobile typecheck, lint,
+  `115/115` unit tests and the E2E fence also pass. This closes the automated
+  runtime evidence gate; it does not replace matched Pen overlay review or
+  founder/device approval.
 - Remaining release gates are matched visual overlay review against the
   canonical Pen, founder approval and physical iOS/Android smoke. The
   canonical Pen file remains unchanged at SHA-256

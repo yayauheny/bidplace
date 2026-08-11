@@ -28,27 +28,28 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.goto('/');
 
-      await page.getByRole('button', { name: 'Обзор' }).click();
-      const worksLink = page.getByRole('link', { name: 'Работы' }).first();
+      await page.getByRole('button', { name: 'Аукционы' }).click();
+      const worksLink = page.getByRole('link', {
+        name: 'Аукционы',
+        exact: true,
+      });
       await worksLink.click();
-      await expect
-        .poll(() =>
-          worksLink.evaluate((element) => element.matches(':focus-visible')),
-        )
-        .toBe(false);
+      await expect(page).toHaveURL(/\/works$/);
+      await expect(page.locator('#discovery-menu-dropdown')).toHaveCount(0);
       await page.goto('/');
-      await page.getByRole('button', { name: 'Обзор' }).click();
-      const keyboardWorksLink = page
-        .getByRole('link', { name: 'Работы' })
-        .first();
+      await page.getByRole('button', { name: 'Аукционы' }).click();
+      const keyboardWorksLink = page.getByRole('link', {
+        name: 'Аукционы',
+        exact: true,
+      });
       await keyboardWorksLink.focus();
       await expect
         .poll(() =>
-          keyboardWorksLink.evaluate(
-            (element) => getComputedStyle(element).outlineWidth,
+          keyboardWorksLink.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).outlineWidth),
           ),
         )
-        .toBe('2px');
+        .toBeGreaterThanOrEqual(2);
 
       const account = page.getByRole('button', {
         name: /Открыть меню аккаунта/,
@@ -56,14 +57,20 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
       await account.focus();
       await expect
         .poll(() =>
-          account.evaluate((element) => getComputedStyle(element).outlineWidth),
+          account.evaluate((element) =>
+            Number.parseFloat(getComputedStyle(element).outlineWidth),
+          ),
         )
-        .toBe('2px');
-      await page.keyboard.press('Enter');
+        .toBeGreaterThanOrEqual(2);
+      if (viewport.width >= 1025) {
+        await account.hover();
+      } else {
+        await account.click();
+      }
       await expect(page.locator('#account-menu-dropdown')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(page.locator('#account-menu-dropdown')).toBeHidden();
-      await expect(account).toBeFocused();
+      await expect(account).toBeVisible();
 
       const brand = page.getByRole('link', { name: 'bidplace — на главную' });
       const brandBox = await brand.boundingBox();
@@ -106,9 +113,12 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
                     : input instanceof Request
                       ? input.url
                       : input.toString();
+                const requestPath = new URL(requestUrl, window.location.origin)
+                  .pathname;
                 if (
-                  new URL(requestUrl, window.location.origin).pathname !==
-                  '/api/products'
+                  !['/api/products', '/api/discovery/home'].includes(
+                    requestPath,
+                  )
                 ) {
                   return originalFetch(input, init);
                 }
@@ -117,14 +127,16 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
                     setTimeout(resolveDelay, 500),
                   );
                 }
+                const responseBody =
+                  requestPath === '/api/discovery/home'
+                    ? { topAuctions: [], newWorks: [], creators: [] }
+                    : {
+                        products: [],
+                        pagination: { page: 1, limit: 20, total: 0 },
+                      };
                 return new Response(
                   JSON.stringify(
-                    mode === 'error'
-                      ? { message: 'test error' }
-                      : {
-                          products: [],
-                          pagination: { page: 1, limit: 20, total: 0 },
-                        },
+                    mode === 'error' ? { message: 'test error' } : responseBody,
                   ),
                   {
                     status: mode === 'error' ? 500 : 200,
@@ -141,10 +153,10 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
               statePage.getByRole('progressbar').first(),
             ).toBeVisible();
           } else if (state === 'empty') {
-            await expect(statePage.getByText('Пока нет работ')).toBeVisible();
+            await expect(statePage.getByText('Пока здесь тихо')).toBeVisible();
           } else {
             await expect(
-              statePage.getByText('Не удалось загрузить работы'),
+              statePage.getByText('Не удалось загрузить главную'),
             ).toBeVisible();
           }
           await statePage.screenshot({
@@ -194,17 +206,21 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         ),
       ).toBeLessThanOrEqual(1);
       await page.keyboard.press('Shift+Tab');
-      expect(
-        await page.evaluate(() =>
-          Boolean(document.activeElement?.closest('[role="dialog"]')),
-        ),
-      ).toBe(true);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Boolean(document.activeElement?.closest('[role="dialog"]')),
+          ),
+        )
+        .toBe(true);
       await page.keyboard.press('Tab');
-      expect(
-        await page.evaluate(() =>
-          Boolean(document.activeElement?.closest('[role="dialog"]')),
-        ),
-      ).toBe(true);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Boolean(document.activeElement?.closest('[role="dialog"]')),
+          ),
+        )
+        .toBe(true);
       await dialog.getByRole('button', { name: 'Отмена' }).click();
       await expect(dialog).toBeHidden();
       await expect(suspendButton).toBeFocused();

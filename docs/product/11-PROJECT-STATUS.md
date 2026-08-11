@@ -1,6 +1,6 @@
 # bidplace — текущий статус проекта
 
-Последнее обновление: 2026-08-11
+Последнее обновление: 2026-08-12
 Статус: Public discovery completion is Partial; trust-critical backend
 boundaries remain Implemented; founder visual/device/screen-reader acceptance,
 full metadata migration and isolated 10-user rehearsal remain Needs
@@ -118,8 +118,13 @@ verification.
 - `Implemented`: desktop account-menu keyboard open moves focus to Cabinet (or
   Logout when Cabinet is unavailable); navigation and discovery Playwright
   expectations now use the current IA and `/api/discovery/home` interception.
-- `Needs verification`: PostgreSQL integration and full Playwright execution
-  remain blocked by the unavailable local PostgreSQL service.
+- `Verified`: guarded local/test demo data now provides four public products
+  across scheduled/live/ended states and eight approved creators with local
+  thematic PNG media. Full Chromium E2E passes `35/35`; mobile unit,
+  typecheck, lint and E2E fence also pass. Founder visual/device and
+  screen-reader acceptance remain release gates.
+- `Verified`: PostgreSQL integration `39/39`, full Chromium E2E `35/35`, mobile
+  unit/typecheck/lint and E2E fence pass on the disposable local test database.
 
 ## Pen v2 completion and backend/security audit — 2026-08-10
 

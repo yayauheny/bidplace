@@ -12,6 +12,7 @@ import {
   createAdminModerationFixture,
   createAuctionFixture,
   createSellerFixture,
+  prioritizeSeededDemoProducts,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
 import { e2eApiBaseURL, e2eWebBaseURL } from './support/e2e-env';
@@ -100,6 +101,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
   browser,
 }) => {
   test.setTimeout(120_000);
+  await prioritizeSeededDemoProducts();
   const { context, page } = await authenticatedPage(browser, seededBuyer);
 
   try {

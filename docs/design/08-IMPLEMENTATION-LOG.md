@@ -1,6 +1,6 @@
 # bidplace — журнал реализации Pen v2 UI
 
-Последнее обновление: 2026-08-11
+Последнее обновление: 2026-08-12
 
 Ветка: `feature/pen-v2-ui`
 
@@ -22,7 +22,7 @@
 | WP1 — foundation                    | Готово                 | Tokens, Onest/Inter, motion, primitives            | `cdfc784` |
 | WP2 — GlobalHeader/AppShell         | Готово                 | Горизонтальный адаптивный shell и role states      | `cdfc784` |
 | WP3 — AuctionCard/Browse Works      | Готово                 | Shared card и каталог по `H5vf2`                   | `861b7aa` |
-| WP4 — CreatorCard/Browse Authors    | Заблокировано частично | UI возможен; route/list API требуют решения        | —         |
+| WP4 — CreatorCard/Browse Authors    | Готово                 | CreatorCard, `/authors` API/list и responsive grid | `d1667b5` |
 | WP5 — Product                       | Готово                 | About/Creation/Bids, URL tabs, related works       | `a5af90f` |
 | WP6 — Creator Profile               | Готово                 | Creator-first профиль и shared work grid           | `0304ce7` |
 | WP7 — Auth/create/supporting routes | Готово                 | Auth, editors, purchases, order и moderation       | `2f6b042` |
@@ -30,6 +30,18 @@
 | WP9 — backend/security audit        | Готово                 | Public boundaries, uploads and private bid aliases | `84336e9` |
 
 ## Выполнено
+
+### 2026-08-12 — runtime evidence completion
+
+- Обновлены Wave B и Wave One acceptance-сценарии под текущий IA header:
+  `Аукционы`, портальный account menu и Home-specific loading/empty/error
+  states. Проверки используют реальные DOM/API contracts и не меняют runtime.
+- Устранён shared-E2E drift для density fixture: четыре guarded seed product
+  получают свежий `publishedAt` только перед Wave C catalog assertion, поэтому
+  все четыре остаются в реальном newest page после других disposable fixtures.
+
+Проверки: полный Chromium E2E `35/35`, mobile unit `115/115`, mobile
+typecheck/lint и E2E fence. Canonical Pen SHA не изменён.
 
 ### 2026-08-11 — deterministic visual-density fixtures
 
@@ -45,9 +57,11 @@
   внешних URL.
 
 Проверки: database build/seed на изолированном `bidplace_e2e`, seeded E2E
-`2/2`, Wave C acceptance `4/4`. Старый Wave 2 screenshot spec отдельно
-остановился на существующем `route.fulfill: Route is already handled` race в
-loading-handler; это не связано с количеством seeded карточек.
+`2/2`, Wave C acceptance `4/4`, Wave 2 target-width screenshot matrix `1/1`.
+Последняя матрица включает `/works` и `/authors` на 1440/1024/390, проверяет
+четыре лота, восемь авторов, 4/3/2 columns, loading/failed-media/product
+states и no-overflow. Loading interception использует delayed route fallback;
+production behavior не меняется.
 
 ### 2026-08-10 — WP0
 

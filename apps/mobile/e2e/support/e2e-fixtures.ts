@@ -33,6 +33,28 @@ export type AuctionFixture = {
   listing: { id: string; startsAt: Date; endsAt: Date };
 };
 
+const seededDemoProductIds = [
+  'seedSched01',
+  'seedLive002',
+  'seedEnded03',
+  'seedVase004',
+] as const;
+
+export async function prioritizeSeededDemoProducts(): Promise<void> {
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+
+  try {
+    await prisma.product.updateMany({
+      where: { publicId: { in: [...seededDemoProductIds] } },
+      data: { publishedAt: new Date() },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 function uniqueEmail(prefix: string, suffix: string): string {
   return `${prefix}.${suffix}@e2e.test`;
 }

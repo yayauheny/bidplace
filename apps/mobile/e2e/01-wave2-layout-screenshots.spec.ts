@@ -98,6 +98,39 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         fullPage: true,
       });
 
+      await page.goto('/authors');
+      await expect(
+        page.getByTestId('app-shell-content').getByText('Авторы', {
+          exact: true,
+        }),
+      ).toBeVisible();
+      const authorCards = page.locator('a[href^="/seller/"]');
+      await expect(authorCards).toHaveCount(8);
+      const authorBoxes = await authorCards.evaluateAll((elements) =>
+        elements.map((element) => {
+          const box = element.getBoundingClientRect();
+          return { x: box.x, y: box.y, width: box.width, height: box.height };
+        }),
+      );
+      const authorFirstRow = authorBoxes.filter(
+        (box) => Math.abs(box.y - authorBoxes[0].y) < 1,
+      );
+      expect(authorFirstRow).toHaveLength(
+        Math.min(expectedColumns, authorBoxes.length),
+      );
+      expect(
+        authorBoxes.some(
+          (box, index) => index >= expectedColumns && box.y > authorBoxes[0].y,
+        ),
+      ).toBe(true);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(width);
+      await page.screenshot({
+        path: resolve(screenshotDir, `authors-${width}.png`),
+        fullPage: true,
+      });
+
       await page.goto('/works');
       const account = page.getByRole('button', {
         name: /Открыть меню аккаунта/,
@@ -113,13 +146,14 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         fullPage: true,
       });
       await page.keyboard.press('Escape');
+      await page.mouse.move(8, 300);
+      await expect(page.locator('#account-menu-dropdown')).toHaveCount(0);
 
       await page.route(
         '**/api/products*',
         async (route) => {
-          const response = await route.fetch();
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
-          await route.fulfill({ response });
+          await route.fallback();
         },
         { times: 1 },
       );
@@ -135,9 +169,8 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await page.route(
         '**/api/discovery/home',
         async (route) => {
-          const response = await route.fetch();
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
-          await route.fulfill({ response });
+          await route.fallback();
         },
         { times: 1 },
       );
@@ -172,7 +205,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await failedPage.close();
 
       await page.goto('/product/seedLive002');
-      await expect(page.getByText('Торги идут').first()).toBeVisible();
+      await expect(page.getByText('До завершения').first()).toBeVisible();
       await page.screenshot({
         path: resolve(screenshotDir, `product-${width}.png`),
         fullPage: true,

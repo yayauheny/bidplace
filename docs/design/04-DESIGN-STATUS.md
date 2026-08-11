@@ -1,8 +1,8 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-11
+Последнее обновление: 2026-08-12
 
-Общий статус: **Pen v2 public discovery implementation is Partial; automated type/lint/unit checks pass, while founder/device acceptance and metadata completion remain pending**
+Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
 ## Текущий результат
 
@@ -23,10 +23,13 @@
 - `Partial`: production UI перенесён на Pen v2 foundation, header, Browse
   Works, Home, Authors, Search, Product/Auction, Creator Profile, auth, seller
   editors и supporting routes. Discovery data is server-authoritative, but
-  visual/device acceptance and remaining metadata are open.
+  exact fixed-scale comparison and visual/device acceptance are open.
 - `Verified`: 1440/1024/390 runtime compositions, Onest/Inter loading,
   responsive overflow, Product URL/back tabs, related public works, focused E2E
   and production Expo exports.
+- `Verified`: complete Chromium runtime suite `35/35`, including four seeded
+  catalog products, eight author cards, 1440/1024/390 layouts, loading/error/
+  missing-media states, route boundaries and moderation flows.
 - `Verified`: post-implementation API/security audit aligned public Product,
   Bid history, realtime and image visibility; aggregate image limits are
   transactional and bidder aliases are Listing-scoped.
@@ -92,8 +95,8 @@ remain protected by tests; runtime code does not replace Pen as visual authority
 ## Remaining release gates
 
 1. Keep zero `.pen` diff and verify the canonical checksum after every UI stage.
-2. Complete discipline, structured social and creation-story data contracts;
-   verify Home/Authors/Search/filter/sort states at 1440/1024/390.
+2. Verify Home/Authors/Search/filter/sort states at 1440/1024/390 and record
+   deliberate differences for unsupported H5vf2 controls.
 3. Complete founder visual review and physical iOS/Android smoke acceptance.
 
 ## Definition of complete
