@@ -35,16 +35,22 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
         response.url().endsWith('/api/products') &&
         response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
     const productResponse = await createResponsePromise;
     expect(productResponse.ok()).toBeTruthy();
     const { product } = await productResponse.json();
-    await page.waitForURL(new RegExp(`/products/${product.id}$`));
+    await page.waitForURL(
+      new RegExp(`/products/${product.id}\\?flow=creation&step=2$`),
+    );
 
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить изображения' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
     await expect(page.getByText('1/10 изображений')).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Продолжить к истории создания' })
+      .click();
+    await page.getByRole('button', { name: 'Сохранить и проверить' }).click();
 
     const submitResponsePromise = page.waitForResponse(
       (response) =>
@@ -53,10 +59,12 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     );
     await page.getByRole('button', { name: 'Отправить на модерацию' }).click();
     expect((await submitResponsePromise).ok()).toBeTruthy();
-    await expect(page.getByText('На модерации')).toBeVisible();
+    await expect(
+      page.getByText('Предмет отправлен на модерацию.'),
+    ).toBeVisible();
 
     await approveProduct(product.id);
-    await page.reload();
+    await page.goto(`/products/${product.id}`);
     await page.getByRole('button', { name: 'Создать аукцион' }).click();
     const startsAt = new Date(Date.now() + 15_000).toISOString();
     const endsAt = new Date(Date.now() + 315_000).toISOString();

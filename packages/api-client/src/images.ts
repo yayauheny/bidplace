@@ -19,6 +19,18 @@ export function createImagesClient(context: RequestContext) {
         },
       );
     },
+    addCreationStepImage(productId: string, stepId: string, image: Blob) {
+      return requestJson(
+        context,
+        `/api/products/${productId}/creation-steps/${stepId}/image`,
+        imageUploadResponseSchema,
+        {
+          method: 'POST',
+          body: { image },
+          asFormData: true,
+        },
+      );
+    },
     remove(productId: string, imageId: string) {
       return requestJson(
         context,
