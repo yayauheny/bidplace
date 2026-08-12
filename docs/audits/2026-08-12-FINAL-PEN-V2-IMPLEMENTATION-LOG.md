@@ -41,7 +41,7 @@
 
 ## Stage 1 — Close final Pen v2 review blockers
 
-- Status: Complete pending commit
+- Status: Complete
 - Pen references: `nTnuM`, `L7ytbv`, `MqUMz`, shared `jh6TI`
 - Success criteria: six findings are durably fixed or disproven with tests and evidence.
 - Candidate fixes:
@@ -59,14 +59,35 @@
 - Deliberate visual differences: none declared.
 - Security/privacy notes: bid eligibility remains tied to session email/rules state; admin remains excluded; public seller hydration does not select image blobs or private handoff fields.
 - Files changed: `apps/api/src/products/products.service.ts`, `apps/api/src/sellers/sellers.service.ts`, `apps/api/src/sellers/sellers.service.spec.ts`, `apps/api/test/integration/seller-pagination.integration.spec.ts`, `apps/mobile/package.json`, `pnpm-lock.yaml`, `apps/mobile/src/components/ui/AmbientImageBackground.tsx`, `apps/mobile/src/components/ui/ambient-image-background-style.ts`, `apps/mobile/src/components/ui/ambient-image-background-style.spec.ts`, `apps/mobile/src/features/auth/email-rules-gate.tsx`, `apps/mobile/src/features/auth/email-rules-eligibility.ts`, `apps/mobile/src/features/auth/email-rules-eligibility.spec.ts`, `apps/mobile/src/features/products/product-screen.tsx`, `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
-- Commit subject: pending.
-- Commit SHA: pending.
+- Commit subject: `fix issue: close final pen v2 review blockers`
+- Commit SHA: `584d2ac`
 - Remaining risks: full integration matrix, runtime screenshots, full Playwright, and final audit/status documentation remain.
 - Next stage: mobile header.
 
 ## Stage 2 — New mobile header
 
-- Status: Not started
+- Status: Partial — implementation committed; runtime matrix pending
+- Pen references: `SiCif`, `SCcmO`, `tEdoA`, `gRrv0`, `CGqDR`, `Lvnq4`, shared `h757v`
+- Success criteria: at `≤767px`, render one 72px row with the canonical logo and 44px Search/Create/Menu actions; support search open/close, menu open/close, outside/Escape dismissal, focus return, role-aware Create and Cabinet routes; leave tablet/desktop header behavior unchanged.
+- Candidate fixes:
+  - durable fix: a dedicated `MobileHeader` selected by the shared 768px breakpoint, with one route-aware state owner and the existing overlay/focus primitives;
+  - acceptable workaround: none selected;
+  - hack: duplicating desktop header controls or hiding overflow from the desktop layout.
+- Chosen solution and rationale: `AppHeader` delegates only widths below 768px to `MobileHeader`. The component owns the closed, search-open and menu-open states, uses a 320px bottom-end overlay on web, and keeps one source for navigation and Create permissions. Header geometry is tokenized in `@bidplace/design-tokens`.
+- Backend changes: none.
+- Frontend changes: added `MobileHeader`, mobile-only `AppHeader` routing, menu/search icon mappings, and mobile geometry tokens.
+- Contract changes: none.
+- Migration changes: none.
+- Tests added: mobile visual-token geometry assertions; full runtime/Playwright coverage remains pending.
+- Checks executed: design-token build, mobile typecheck, mobile lint, targeted mobile visual-token test `10/10`, and `git diff --check` pass.
+- Runtime screenshots: pending at 1440/1024/390; 1440/1024 should confirm unchanged desktop/tablet headers.
+- Deliberate visual differences: at widths below 768px, the final Pen mobile header replaces the prior compact desktop navigation row.
+- Security/privacy notes: admin cannot use Create; guest Create routes through login with the current destination; authenticated Cabinet routes remain role-aware; logout remains the existing auth mutation.
+- Files changed: `apps/mobile/src/components/layout/MobileHeader.tsx`, `apps/mobile/src/components/layout/AppHeader.tsx`, `apps/mobile/src/components/ui/AppIcon.tsx`, `packages/design-tokens/src/tokens.ts`, `apps/mobile/src/lib/visual-token.spec.ts`.
+- Commit subject: `implement feature: add final mobile header`
+- Commit SHA: `8f5c7e1`
+- Remaining risks: browser/native runtime behavior, exact 390px overlay screenshot, keyboard/screen-reader acceptance, and visual parity at 1440/1024/390 remain.
+- Next stage: auction participation and SlideToBid.
 
 ## Stage 3 — Auction participation and SlideToBid
 

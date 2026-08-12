@@ -136,7 +136,7 @@ Pen diff: none
 ## 7. Текущий runtime handoff — 2026-08-12
 
 - Canonical SHA-256 до и после реализации:
-  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
 - Реализованы GlobalHeader с `Аукционы`/`Авторы`/`Создать`, Browse Works, Home,
   Browse Authors, Search, AuctionCard, Product About/Creation/Bids,
   AuctionPlayer, URL-backed ProductTabs, related creator works, Creator
@@ -192,4 +192,4 @@ Pen diff: none
 - Remaining release gates are matched visual overlay review against the
   canonical Pen, founder approval and physical iOS/Android smoke. The
   canonical Pen file remains unchanged at SHA-256
-  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
