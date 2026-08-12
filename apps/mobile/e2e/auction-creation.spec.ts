@@ -50,7 +50,37 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page
       .getByRole('button', { name: 'Продолжить к истории создания' })
       .click();
+    await page.getByLabel('Введение').fill('The story survived a reload.');
+    await page.getByLabel('Название этапа').fill('First sketch');
+    await page
+      .getByLabel('Описание этапа')
+      .fill('The process image and text are server-backed.');
     await page.getByRole('button', { name: 'Сохранить и проверить' }).click();
+    await expect(page.getByText('Этапы истории: 1')).toBeVisible();
+
+    await page.goto(`/products/${product.id}?flow=creation&step=3`);
+    const processChooserPromise = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Добавить фотографию' }).click();
+    await (
+      await processChooserPromise
+    ).setFiles('e2e/fixtures/profile-photo.png');
+    await expect(
+      page.getByRole('button', { name: 'Заменить фотографию' }),
+    ).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByLabel('Введение')).toHaveValue(
+      'The story survived a reload.',
+    );
+    await expect(page.getByLabel('Название этапа')).toHaveValue('First sketch');
+    await expect(
+      page.getByRole('button', { name: 'Заменить фотографию' }),
+    ).toBeVisible();
+    await page
+      .getByLabel('Введение')
+      .fill('The story was edited after reload.');
+    await page.getByRole('button', { name: 'Сохранить и проверить' }).click();
+    await expect(page.getByText('Этапы истории: 1')).toBeVisible();
 
     const submitResponsePromise = page.waitForResponse(
       (response) =>

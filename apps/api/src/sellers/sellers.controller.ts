@@ -102,6 +102,12 @@ export class SellersController {
     return this.sellers.listProducts(auth.sub);
   }
 
+  @Get('seller/products/:id')
+  @UseGuards(BearerAuthGuard)
+  getProduct(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.sellers.getProduct(auth.sub, id);
+  }
+
   @Get('sellers')
   listPublic(@Query() query: unknown) {
     return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));

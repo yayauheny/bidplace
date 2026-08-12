@@ -2,6 +2,7 @@ import {
   publicSellerDetailResponseSchema,
   publicSellerListResponseSchema,
   sellerProductListResponseSchema,
+  sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileResponseSchema,
   sellerProfileUpdateRequestSchema,
@@ -37,6 +38,13 @@ export function createSellersClient(context: RequestContext) {
         context,
         '/api/seller/products',
         sellerProductListResponseSchema,
+      );
+    },
+    getProduct(id: string) {
+      return requestJson(
+        context,
+        `/api/seller/products/${id}`,
+        sellerProductDetailResponseSchema,
       );
     },
     getPublicDetail(slug: string, query?: Partial<PublicSellerWorksQuery>) {

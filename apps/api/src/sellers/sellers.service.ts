@@ -1,6 +1,7 @@
 import {
   publicSellerListResponseSchema,
   publicSellerDetailResponseSchema,
+  sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
   type PublicSellerQuery,
   type PublicSellerWorksQuery,
@@ -22,6 +23,7 @@ import { productSelect, toContractProduct } from '../products/products.mapper';
 import {
   ProductsService,
   publicCatalogProductSelect,
+  toCreationStepContract,
 } from '../products/products.service';
 import { publicCatalogProductWhere } from '../products/public-visibility';
 import {
@@ -266,6 +268,38 @@ export class SellersService {
 
     return sellerProductListResponseSchema.parse({
       products: products.map(toContractProduct),
+    });
+  }
+
+  async getProduct(userId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, sellerProfile: { userId } },
+      select: {
+        ...productSelect,
+        creationIntro: true,
+        creationSteps: {
+          orderBy: { position: 'asc' },
+          select: {
+            id: true,
+            position: true,
+            title: true,
+            body: true,
+            mimeType: true,
+            byteLength: true,
+            checksum: true,
+            width: true,
+            height: true,
+          },
+        },
+      },
+    });
+
+    if (!product) throw new NotFoundException('Product not found');
+
+    return sellerProductDetailResponseSchema.parse({
+      product: toContractProduct(product),
+      creationIntro: product.creationIntro ?? null,
+      creationSteps: product.creationSteps.map(toCreationStepContract),
     });
   }
 

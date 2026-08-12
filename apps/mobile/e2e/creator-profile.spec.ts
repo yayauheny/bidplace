@@ -29,12 +29,32 @@ test('creator profile creation stages public identity, links and private handoff
     await page.getByRole('button', { name: 'Продолжить' }).click();
 
     await expect(page.getByText('Шаг 2 из 3')).toBeVisible();
+    await page.getByLabel('Telegram').fill('not-a-url');
+    await page.getByLabel('Instagram').fill('not-a-url');
+    await page.getByLabel('Сайт').fill('not-a-url');
+    await page.getByLabel('Основная публичная ссылка').fill('not-a-url');
+    await expect(page.getByText('Введите корректный URL')).toHaveCount(4);
+    await expect(
+      page.getByRole('button', { name: 'Продолжить' }),
+    ).toBeDisabled();
     await page
       .getByLabel('Telegram')
       .fill(`https://t.me/${slug.replaceAll('-', '_')}`);
+    await page.getByLabel('Instagram').fill(`https://instagram.com/${slug}`);
+    await page.getByLabel('Сайт').fill(`https://example.com/${slug}`);
+    await page
+      .getByLabel('Основная публичная ссылка')
+      .fill(`https://example.com/${slug}`);
     await page.getByRole('button', { name: 'Продолжить' }).click();
 
     await expect(page.getByText('Шаг 3 из 3')).toBeVisible();
+    await page.getByLabel('Контакт для передачи').fill('creator');
+    await expect(
+      page.getByText('Введите Telegram @username или https://t.me/username'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Создать профиль' }),
+    ).toBeDisabled();
     await page.getByLabel('Контакт для передачи').fill('@handoff_creator');
     const responsePromise = page.waitForResponse(
       (response) =>

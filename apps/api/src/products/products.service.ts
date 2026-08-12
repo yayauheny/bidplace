@@ -101,7 +101,7 @@ function escapeLikePattern(value: string): string {
     .replaceAll('_', '\\_');
 }
 
-function toCreationStepContract(step: {
+export function toCreationStepContract(step: {
   id: string;
   position: number;
   title: string;

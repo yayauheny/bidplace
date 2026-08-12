@@ -8,19 +8,19 @@ import {
 } from './enums';
 import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
-const telegramHandleSchema = z
+export const sellerTelegramHandleSchema = z
   .string()
   .trim()
   .min(1)
   .regex(/^(?:@[A-Za-z0-9_]{5,32}|https:\/\/t\.me\/[A-Za-z0-9_]{5,32})$/);
-const instagramHandleSchema = z
+export const sellerInstagramHandleSchema = z
   .string()
   .trim()
   .min(1)
   .regex(
     /^(?:@[A-Za-z0-9._]{1,30}|https:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9._]{1,30})$/,
   );
-const phoneHandleSchema = z
+export const sellerPhoneHandleSchema = z
   .string()
   .trim()
   .min(1)
@@ -31,6 +31,7 @@ const sellerProfilePhotoUrlSchema = z
   .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/);
 
 export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
+export const sellerPublicUrlSchema = z.string().trim().url();
 
 export const sellerProfileSchema = z
   .object({
@@ -92,7 +93,7 @@ const sellerProfileBaseWriteSchema = z
 
     if (
       value.handoffContactType === 'TELEGRAM' &&
-      !telegramHandleSchema.safeParse(contactValue).success
+      !sellerTelegramHandleSchema.safeParse(contactValue).success
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -103,7 +104,7 @@ const sellerProfileBaseWriteSchema = z
 
     if (
       value.handoffContactType === 'PHONE' &&
-      !phoneHandleSchema.safeParse(contactValue).success
+      !sellerPhoneHandleSchema.safeParse(contactValue).success
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -114,7 +115,7 @@ const sellerProfileBaseWriteSchema = z
 
     if (
       value.handoffContactType === 'INSTAGRAM' &&
-      !instagramHandleSchema.safeParse(contactValue).success
+      !sellerInstagramHandleSchema.safeParse(contactValue).success
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -162,7 +163,7 @@ export const sellerProfileUpdateRequestSchema = z
 
       if (
         value.handoffContactType === 'TELEGRAM' &&
-        !telegramHandleSchema.safeParse(contactValue).success
+        !sellerTelegramHandleSchema.safeParse(contactValue).success
       ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -174,7 +175,7 @@ export const sellerProfileUpdateRequestSchema = z
 
       if (
         value.handoffContactType === 'PHONE' &&
-        !phoneHandleSchema.safeParse(contactValue).success
+        !sellerPhoneHandleSchema.safeParse(contactValue).success
       ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -185,7 +186,7 @@ export const sellerProfileUpdateRequestSchema = z
 
       if (
         value.handoffContactType === 'INSTAGRAM' &&
-        !instagramHandleSchema.safeParse(contactValue).success
+        !sellerInstagramHandleSchema.safeParse(contactValue).success
       ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,

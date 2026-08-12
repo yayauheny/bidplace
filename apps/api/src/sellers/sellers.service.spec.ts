@@ -143,4 +143,67 @@ describe('SellersService', () => {
     );
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
   });
+
+  it('hydrates the owner product detail with persisted creation history', async () => {
+    const prisma = {
+      product: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          publicId: 'publicId001',
+          sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          categoryId: null,
+          title: 'Work',
+          story: 'Story',
+          technique: null,
+          materials: null,
+          dimensions: null,
+          weight: null,
+          year: null,
+          condition: 'New',
+          uniqueness: 'One',
+          provenance: 'Studio',
+          city: 'Minsk',
+          deliveryInfo: 'Pickup',
+          publishedAt: null,
+          status: 'DRAFT',
+          createdAt: new Date('2026-07-18T00:00:00.000Z'),
+          updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+          images: [],
+          creationIntro: 'Persisted intro',
+          creationSteps: [
+            {
+              id: '2f8fc6d7-4c7a-4f9e-9f75-b8eafed0c2b1',
+              position: 0,
+              title: 'Sketch',
+              body: 'First sketch',
+              mimeType: 'image/png',
+              byteLength: 4,
+              checksum: '1'.repeat(64),
+              width: 2,
+              height: 2,
+            },
+          ],
+        }),
+      },
+    };
+    const service = new SellersService(prisma as never, {} as never);
+
+    const result = await service.getProduct(
+      'owner-id',
+      'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+    );
+
+    expect(result.creationIntro).toBe('Persisted intro');
+    expect(result.creationSteps[0]?.image?.url).toBe(
+      '/api/creation-steps/2f8fc6d7-4c7a-4f9e-9f75-b8eafed0c2b1/image',
+    );
+    expect(prisma.product.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          sellerProfile: { userId: 'owner-id' },
+        },
+      }),
+    );
+  });
 });

@@ -83,12 +83,17 @@ test('mobile guest header keeps canonical actions in one row', async ({
 test('mobile guest menu and search use canonical open states', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto('/');
 
   await page.getByRole('button', { name: 'Меню' }).click();
   const menu = page.locator('#mobile-menu-panel');
   await expect(menu).toBeVisible();
+  const menuBox = await menu.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.width).toBe(288);
+  expect(menuBox!.x).toBeGreaterThanOrEqual(16);
+  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(304);
   await expect(menu.getByRole('link', { name: 'Аукционы' })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Авторы' })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Войти' })).toBeVisible();

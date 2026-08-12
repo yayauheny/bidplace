@@ -6,7 +6,7 @@ import {
   type Href,
 } from 'expo-router';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import { Platform, TextInput, View, useWindowDimensions } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -15,6 +15,7 @@ import { useAuth } from '../../providers/auth-provider';
 import { AppIcon, AppText, MotionPressable } from '../ui';
 import { OverlayPortal } from './OverlayHost';
 import { BrandLogo } from './BrandLogo';
+import { getMobileMenuWidth } from './mobile-menu-layout';
 
 const mobileHeaderBackground = designTokens.color.glass;
 const mobileActionSize = designTokens.size.touch;
@@ -267,9 +268,11 @@ function MobileMenuItem({
 function MobileNavigationMenu({
   onClose,
   firstItemRef,
+  menuWidth,
 }: {
   onClose: () => void;
   firstItemRef: MutableRefObject<View>;
+  menuWidth: number;
 }) {
   const auth = useAuth();
   const router = useRouter();
@@ -294,7 +297,7 @@ function MobileNavigationMenu({
       nativeID="mobile-menu-panel"
       accessibilityRole="menu"
       style={{
-        width: designTokens.layout.mobileMenuWidth,
+        width: menuWidth,
         gap: 4,
         borderRadius: designTokens.radius.button,
         borderWidth: 1,
@@ -360,6 +363,7 @@ export function MobileHeader({ ambient = false }: { ambient?: boolean }) {
   const capability = useSellerCapability();
   const router = useRouter();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -367,6 +371,7 @@ export function MobileHeader({ ambient = false }: { ambient?: boolean }) {
   const menuTriggerRef = useRef<MobileHeaderAnchor>(null!);
   const menuFirstItemRef = useRef<View>(null!);
   const searchInputRef = useRef<TextInput>(null!);
+  const menuWidth = getMobileMenuWidth(width);
 
   useEffect(() => {
     setQuery(typeof q === 'string' ? q : '');
@@ -511,11 +516,12 @@ export function MobileHeader({ ambient = false }: { ambient?: boolean }) {
           <OverlayPortal
             anchorRef={menuTriggerRef}
             placement="bottom-end"
-            width={designTokens.layout.mobileMenuWidth}
+            width={menuWidth}
           >
             <MobileNavigationMenu
               onClose={() => setMenuOpen(false)}
               firstItemRef={menuFirstItemRef}
+              menuWidth={menuWidth}
             />
           </OverlayPortal>
         ) : (
@@ -529,6 +535,7 @@ export function MobileHeader({ ambient = false }: { ambient?: boolean }) {
             <MobileNavigationMenu
               onClose={() => setMenuOpen(false)}
               firstItemRef={menuFirstItemRef}
+              menuWidth={menuWidth}
             />
           </View>
         )

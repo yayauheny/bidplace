@@ -114,14 +114,12 @@ export function ProductDraftScreen({
     queryKey: ['products', 'categories'],
     queryFn: () => api.categories.list(),
   });
-  const products = useQuery({
-    queryKey: ['seller', 'products'],
-    queryFn: () => api.sellers.listProducts(),
+  const productDetail = useQuery({
+    queryKey: ['seller', 'product', productId],
+    queryFn: () => api.sellers.getProduct(productId!),
     enabled: Boolean(productId),
   });
-  const existingProduct = products.data?.products.find(
-    (product) => product.id === productId,
-  );
+  const existingProduct = productDetail.data?.product;
   const [initializedProductId, setInitializedProductId] = useState<
     string | null
   >(null);
@@ -167,7 +165,19 @@ export function ProductDraftScreen({
     setProvenance(existingProduct.provenance ?? '');
     setCity(existingProduct.city ?? '');
     setDeliveryInfo(existingProduct.deliveryInfo ?? '');
-  }, [existingProduct, initializedProductId]);
+    setCreationIntro(productDetail.data?.creationIntro ?? '');
+    const persistedSteps = productDetail.data?.creationSteps ?? [];
+    setCreationSteps(
+      persistedSteps.length > 0
+        ? persistedSteps.map((step) => ({
+            id: step.id,
+            title: step.title,
+            body: step.body,
+            imageUrl: step.image?.url ?? null,
+          }))
+        : [{ title: '', body: '' }],
+    );
+  }, [existingProduct, initializedProductId, productDetail.data]);
 
   const input = () => ({
     categoryId: categoryId || undefined,
@@ -190,7 +200,12 @@ export function ProductDraftScreen({
         ? api.products.update(existingProduct.id, input())
         : api.products.create(input()),
     onSuccess: async ({ product }) => {
-      await queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['seller', 'product', existingProduct?.id],
+        }),
+      ]);
       if (!existingProduct) {
         router.replace({
           pathname: '/(seller)/products/[id]',
@@ -202,7 +217,12 @@ export function ProductDraftScreen({
   const submit = useMutation({
     mutationFn: (id: string) => api.products.submit(id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+        queryClient.invalidateQueries({
+          queryKey: ['seller', 'product', existingProduct?.id],
+        }),
+      ]);
       setWizardSubmitted(true);
     },
   });
@@ -249,19 +269,25 @@ export function ProductDraftScreen({
   const upload = useMutation({
     mutationFn: (images: Blob[]) => api.images.add(existingProduct!.id, images),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', existingProduct?.id],
+      }),
   });
   const removeImage = useMutation({
     mutationFn: (imageId: string) =>
       api.images.remove(existingProduct!.id, imageId),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', existingProduct?.id],
+      }),
   });
   const reorderImages = useMutation({
     mutationFn: (imageIds: string[]) =>
       api.images.reorder(existingProduct!.id, imageIds),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', existingProduct?.id],
+      }),
   });
   const chooseImages = async () => {
     if (!existingProduct) return;
@@ -280,7 +306,7 @@ export function ProductDraftScreen({
     upload.mutate(images);
   };
 
-  if (categories.isLoading || (productId && products.isLoading))
+  if (categories.isLoading || (productId && productDetail.isLoading))
     return (
       <DraftShell>
         <PageState title="Загружаем предмет…" loading />
@@ -289,7 +315,7 @@ export function ProductDraftScreen({
   if (
     categories.isError ||
     !categories.data ||
-    (productId && (!products.data || !existingProduct))
+    (productId && (!productDetail.data || !existingProduct))
   )
     return (
       <DraftShell>
@@ -298,7 +324,7 @@ export function ProductDraftScreen({
           label="Повторить"
           onPress={() => {
             void categories.refetch();
-            void products.refetch();
+            void productDetail.refetch();
           }}
         />
       </DraftShell>
@@ -423,7 +449,7 @@ export function ProductDraftScreen({
           </AppText>
           <SecondaryButton
             label="Обновить"
-            onPress={() => void products.refetch()}
+            onPress={() => void productDetail.refetch()}
           />
           {productStatus === 'APPROVED' ? (
             <PrimaryButton

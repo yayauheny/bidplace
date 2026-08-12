@@ -30,6 +30,10 @@ import {
   presentEnum,
   sellerStatusLabels,
 } from '../../lib/presentation';
+import {
+  getHandoffContactError,
+  getProfileFieldErrors,
+} from './profile-validation';
 
 type ProfileFields = {
   slug: string;
@@ -129,14 +133,14 @@ export function SellerProfileScreen() {
         discipline: fields.discipline,
         country: fields.country,
         socialLink:
-          fields.socialLink ||
-          fields.websiteUrl ||
-          fields.telegramUrl ||
-          fields.instagramUrl,
-        telegramUrl: fields.telegramUrl || null,
-        instagramUrl: fields.instagramUrl || null,
-        websiteUrl: fields.websiteUrl || null,
-        shortDescription: fields.shortDescription,
+          fields.socialLink.trim() ||
+          fields.websiteUrl.trim() ||
+          fields.telegramUrl.trim() ||
+          fields.instagramUrl.trim(),
+        telegramUrl: fields.telegramUrl.trim() || null,
+        instagramUrl: fields.instagramUrl.trim() || null,
+        websiteUrl: fields.websiteUrl.trim() || null,
+        shortDescription: fields.shortDescription.trim(),
       };
 
       if (profile) {
@@ -148,7 +152,7 @@ export function SellerProfileScreen() {
           {
             ...payload,
             handoffContactType: fields.handoffContactType,
-            handoffContactValue: fields.handoffContactValue,
+            handoffContactValue: fields.handoffContactValue.trim(),
             handoffInitiator: fields.handoffInitiator,
           },
           photoBlob ?? undefined,
@@ -226,18 +230,33 @@ export function SellerProfileScreen() {
     fields.instagramUrl.trim() ||
     fields.websiteUrl.trim(),
   );
-  const canSave = editable && (profile ? true : Boolean(photoBlob));
+  const fieldErrors = getProfileFieldErrors(fields);
+  const handoffContactError = getHandoffContactError(
+    fields.handoffContactType,
+    fields.handoffContactValue,
+  );
+  const canSave =
+    editable &&
+    (profile ? Object.keys(fieldErrors).length === 0 : Boolean(photoBlob));
   const canContinueFromAbout = Boolean(
     fields.fullName.trim() &&
     fields.slug.trim() &&
     fields.discipline.trim() &&
     fields.country.trim() &&
     fields.shortDescription.trim() &&
-    photoBlob,
+    photoBlob &&
+    !fieldErrors.socialLink,
   );
-  const canContinueFromLinks = hasPublicLink;
+  const canContinueFromLinks =
+    hasPublicLink &&
+    !fieldErrors.socialLink &&
+    !fieldErrors.telegramUrl &&
+    !fieldErrors.instagramUrl &&
+    !fieldErrors.websiteUrl;
   const canSubmitProfile = Boolean(
-    fields.handoffContactValue.trim() && canContinueFromLinks,
+    fields.handoffContactValue.trim() &&
+    !handoffContactError &&
+    canContinueFromLinks,
   );
   const photoPreview = photoUri;
 
@@ -402,7 +421,7 @@ export function SellerProfileScreen() {
                 placeholder="https://t.me/..."
                 autoCapitalize="none"
                 editable={editable}
-                required
+                error={fieldErrors.socialLink}
               />
               <TextField
                 label="Короткое описание"
@@ -427,6 +446,7 @@ export function SellerProfileScreen() {
                 placeholder="https://t.me/username"
                 autoCapitalize="none"
                 editable={editable}
+                error={fieldErrors.telegramUrl}
               />
               <TextField
                 label="Instagram"
@@ -435,6 +455,7 @@ export function SellerProfileScreen() {
                 placeholder="https://instagram.com/username"
                 autoCapitalize="none"
                 editable={editable}
+                error={fieldErrors.instagramUrl}
               />
               <TextField
                 label="Сайт"
@@ -443,6 +464,7 @@ export function SellerProfileScreen() {
                 placeholder="https://example.com"
                 autoCapitalize="none"
                 editable={editable}
+                error={fieldErrors.websiteUrl}
               />
               <TextField
                 label="Основная публичная ссылка"
@@ -452,6 +474,7 @@ export function SellerProfileScreen() {
                 autoCapitalize="none"
                 editable={editable}
                 required
+                error={fieldErrors.socialLink}
               />
               {!hasPublicLink ? (
                 <AppText role="bodySmall" tone="danger">
@@ -490,6 +513,13 @@ export function SellerProfileScreen() {
                     placeholder="@username или +375..."
                     autoCapitalize="none"
                     editable={editable}
+                    error={
+                      isProfileCreation &&
+                      profileStep === 3 &&
+                      !fields.handoffContactValue.trim()
+                        ? 'Укажите контакт для передачи'
+                        : handoffContactError
+                    }
                   />
                   <SelectableRow
                     label="Кто начинает контакт"

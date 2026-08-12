@@ -205,4 +205,13 @@
 
 ## Final acceptance matrix
 
+## Stage 8 — Review findings and regression verification
+
+- Status: Partial — requested P1/P2 fixes are implemented; release acceptance remains Needs verification.
+- P1 hydration: `GET /api/seller/products/:id` is owner-guarded and returns the shared detail contract with `creationIntro`, ordered `creationSteps` and process-photo metadata. `ProductDraftScreen` initializes only after the detail query resolves and does not save the editor's known-empty row during loading.
+- P2 mobile menu: `getMobileMenuWidth` applies `min(320px, viewport - 32px)` with 32px total horizontal inset; unit coverage verifies 320/375/390 widths and browser coverage verifies the 320px viewport bounds.
+- P2 profile validation: Telegram, Instagram, website and handoff validation use exported contract schemas; field-local errors disable progression while API validation remains authoritative. Regression coverage includes invalid and valid handle/URL variants.
+- Regression checks: API unit `154/154`, mobile unit `143/143`, contracts `11/11`, affected typecheck/lint/build checks, and targeted seller/profile/navigation Playwright `12/12` pass. The full Playwright suite finishes with `33/38` passing; remaining failures are `01-wave2-layout-screenshots`, `product-layout`, `wave-b-shared`, and two pre-existing Wave C route/catalog expectations.
+- External gates still open: matched visual overlay at 1440/1024/390, native iOS/Android smoke, screen-reader/keyboard QA, and final code-review approval. Canonical Pen SHA remains `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`; no `.pen` file was changed.
+
 Staged implementation and targeted runtime evidence exist; release acceptance is still pending the visual/device gates listed above.
