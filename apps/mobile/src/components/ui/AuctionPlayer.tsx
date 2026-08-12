@@ -19,6 +19,7 @@ type AuctionPlayerProps = {
   actionDisabled?: boolean;
   actionLoading?: boolean;
   onAction?: () => void;
+  width?: number;
 };
 
 function splitTimingLabel(value: string): [string, string] {
@@ -39,6 +40,7 @@ export function AuctionPlayer({
   actionDisabled,
   actionLoading,
   onAction,
+  width,
 }: AuctionPlayerProps) {
   const backdropStyle =
     Platform.OS === 'web'
@@ -54,7 +56,8 @@ export function AuctionPlayer({
       accessibilityLabel={`Торги. ${statusLabel}. ${currentPriceLabel}. ${deadlineLabel}${participationLabel ? `. ${participationLabel}` : ''}`}
       style={[
         {
-          width: '100%',
+          width: width ?? '100%',
+          alignSelf: width ? 'center' : undefined,
           minHeight: 68,
           flexDirection: 'row',
           alignItems: 'center',
@@ -71,22 +74,41 @@ export function AuctionPlayer({
       ]}
     >
       <View style={{ width: 84, gap: 2 }}>
-        <AppText role="caption" tone="muted" style={{ fontFamily: 'Inter_500Medium', fontSize: 11 }}>
+        <AppText
+          role="caption"
+          tone="muted"
+          style={{ fontFamily: 'Inter_500Medium', fontSize: 11 }}
+        >
           Ставка
         </AppText>
-        <AppText role="numeric" style={{ fontFamily: 'Inter_600SemiBold', fontSize: 19, lineHeight: 20 }}>
+        <AppText
+          role="numeric"
+          style={{
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 19,
+            lineHeight: 20,
+          }}
+        >
           {currentPriceLabel}
         </AppText>
       </View>
       <View style={{ width: 112, gap: 2, minWidth: 0 }}>
-        <AppText role="caption" tone="muted" style={{ fontFamily: 'Inter_500Medium', fontSize: 11 }}>
+        <AppText
+          role="caption"
+          tone="muted"
+          style={{ fontFamily: 'Inter_500Medium', fontSize: 11 }}
+        >
           {timingTitle}
         </AppText>
         <AppText
           role="numeric"
           accessibilityLiveRegion="polite"
           numberOfLines={1}
-          style={{ fontFamily: 'Inter_600SemiBold', fontSize: 19, lineHeight: 20 }}
+          style={{
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 19,
+            lineHeight: 20,
+          }}
         >
           {timingValue}
         </AppText>
@@ -115,13 +137,22 @@ export function AuctionPlayer({
                 : designTokens.color.action,
           })}
         >
-          <AppText role="button" style={{ color: designTokens.color.surface, fontFamily: 'Inter_600SemiBold' }}>
+          <AppText
+            role="button"
+            style={{
+              color: designTokens.color.surface,
+              fontFamily: 'Inter_600SemiBold',
+            }}
+          >
             {actionLoading ? 'Отправка…' : actionLabel}
           </AppText>
         </MotionPressable>
       ) : null}
       <View style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
-        <AppText>{startPriceLabel}{minimumNextBidLabel ? ` ${minimumNextBidLabel}` : ''}</AppText>
+        <AppText>
+          {startPriceLabel}
+          {minimumNextBidLabel ? ` ${minimumNextBidLabel}` : ''}
+        </AppText>
       </View>
     </View>
   );

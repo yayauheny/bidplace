@@ -24,6 +24,7 @@ export type ResilientRemoteImageComponent =
   | 'CreatorCard'
   | 'CreationStep'
   | 'ProductGallery'
+  | 'ProductAuthor'
   | 'AuthorPhoto';
 
 type ResilientRemoteImageProps = {

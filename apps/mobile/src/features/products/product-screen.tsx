@@ -440,6 +440,7 @@ export function ProductScreen({
       onAction={
         listing.status === 'LIVE' && !auth.isAdmin ? submitBid : undefined
       }
+      width={isHeroThreeColumn ? 404 : undefined}
     />
   ) : (
     <SurfacePanel>
@@ -628,7 +629,7 @@ export function ProductScreen({
   const relatedItems =
     relatedWorks.data?.products
       .filter((item) => item.product.publicId !== product.publicId)
-      .slice(0, 3) ?? [];
+      .slice(0, 4) ?? [];
   const relatedWorksSection = relatedWorks.isLoading ? (
     <EditorialSection title="Другие работы автора">
       <AppText role="bodySmall" tone="secondary">
@@ -651,7 +652,7 @@ export function ProductScreen({
     <EditorialSection title={`Другие работы ${sellerProfile.fullName}`}>
       <AuctionCardGrid
         items={relatedItems}
-        columns={Math.min(getCatalogColumnCount(width), 3) as 1 | 2 | 3}
+        columns={getCatalogColumnCount(width)}
       />
     </EditorialSection>
   ) : null;
@@ -689,15 +690,13 @@ export function ProductScreen({
     >
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: isDesktop
-            ? designTokens.space.x8
-            : designTokens.space.x5,
           paddingVertical: designTokens.space.x6,
           paddingBottom:
             !isProductWide && bidForm
               ? designTokens.space.x16
               : designTokens.space.x8,
         }}
+        style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
       >
         <View
@@ -705,26 +704,36 @@ export function ProductScreen({
             width: '100%',
             maxWidth: designTokens.layout.productDetailMaxWidth,
             alignSelf: 'center',
-            gap: designTokens.space.x6,
           }}
         >
           <View
             style={{
               position: 'relative',
-              overflow: 'hidden',
-              borderRadius: designTokens.radius.sheet,
-              backgroundColor: designTokens.color.surfaceWarm,
-              padding: isDesktop
-                ? designTokens.space.x8
-                : designTokens.space.x4,
+              minHeight: isHeroThreeColumn ? 676 : undefined,
+              paddingHorizontal: isDesktop
+                ? 0
+                : designTokens.layout.mobileGutter,
+              paddingTop: isDesktop
+                ? designTokens.space.x3
+                : designTokens.space.x6,
+              paddingBottom: isDesktop
+                ? designTokens.space.x12
+                : designTokens.space.x8,
             }}
           >
             <ProductAtmosphere imageUrl={product.images[0]?.url} />
             <View
               style={{
                 position: 'relative',
+                width: isHeroThreeColumn
+                  ? designTokens.layout.productHeroContentWidth
+                  : '100%',
+                alignSelf: isHeroThreeColumn ? 'flex-start' : 'stretch',
                 flexDirection: isHeroThreeColumn ? 'row' : 'column',
                 alignItems: isHeroThreeColumn ? 'flex-start' : 'stretch',
+                justifyContent: isHeroThreeColumn
+                  ? 'space-between'
+                  : 'flex-start',
                 gap: isDesktop ? designTokens.space.x8 : designTokens.space.x6,
               }}
             >
@@ -732,17 +741,18 @@ export function ProductScreen({
                 style={{
                   width: isHeroThreeColumn ? 328 : '100%',
                   minWidth: 0,
+                  paddingTop: isHeroThreeColumn ? 165 : 0,
                   gap: designTokens.space.x5,
                 }}
               >
                 <AppText
                   role={isDesktop ? 'display' : 'screenTitle'}
                   style={
-                    isHeroThreeColumn
+                    isDesktop
                       ? {
-                          fontFamily: 'Inter_700Bold',
-                          fontSize: 52,
-                          lineHeight: 53,
+                          fontFamily: 'Onest_700Bold',
+                          fontSize: 48,
+                          lineHeight: 50,
                           letterSpacing: -1.2,
                         }
                       : undefined
@@ -757,7 +767,12 @@ export function ProductScreen({
                 ) : null}
               </View>
               <View
-                style={{ flex: 1, minWidth: 0, gap: designTokens.space.x4 }}
+                style={{
+                  width: isHeroThreeColumn ? 420 : '100%',
+                  minWidth: 0,
+                  alignItems: isHeroThreeColumn ? 'center' : 'stretch',
+                  gap: designTokens.space.x8,
+                }}
               >
                 <ProductGallery
                   images={product.images}
@@ -770,6 +785,7 @@ export function ProductScreen({
                 style={{
                   width: isHeroThreeColumn ? 312 : '100%',
                   maxWidth: '100%',
+                  paddingTop: isHeroThreeColumn ? 102 : 0,
                   gap: designTokens.space.x5,
                 }}
               >
@@ -812,15 +828,50 @@ export function ProductScreen({
                         gap: designTokens.space.x2,
                       }}
                     >
+                      <ResilientRemoteImage
+                        uri={getApiAssetUrl(sellerProfile.profilePhotoUrl)}
+                        component="ProductAuthor"
+                        accessibilityLabel={`Фото автора: ${sellerProfile.fullName}`}
+                        fallbackLabel={`Фото автора недоступно: ${sellerProfile.fullName}`}
+                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                        contentFit="cover"
+                      />
                       <AppText role="label">@{sellerProfile.slug}</AppText>
                       <AppIcon name="chevronRight" size={16} />
                     </MotionPressable>
                   </Link>
                 </View>
+                <MotionPressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Поделиться предметом"
+                  onPress={() => undefined}
+                  preset="button"
+                  style={{
+                    height: 36,
+                    alignSelf: 'flex-start',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: designTokens.space.x2,
+                    borderWidth: 1,
+                    borderColor: designTokens.color.border,
+                    borderRadius: designTokens.radius.button,
+                    paddingHorizontal: designTokens.space.x3,
+                  }}
+                >
+                  <AppIcon name="share" size={15} />
+                  <AppText role="button">Поделиться</AppText>
+                </MotionPressable>
               </View>
             </View>
           </View>
-          <View style={{ gap: designTokens.space.x6 }}>
+          <View
+            style={{
+              gap: designTokens.space.x6,
+              paddingHorizontal: isDesktop
+                ? 0
+                : designTokens.layout.mobileGutter,
+            }}
+          >
             <ProductTabs
               activeTab={activeTab}
               bidCount={bids.data?.bids.length}

@@ -33,6 +33,25 @@
 
 ## Выполнено
 
+### 2026-08-12 — Product About anatomy and shared transaction surface
+
+- `L7ytbv` runtime composition now uses the measured product canvas with a
+  left title/story zone, natural-ratio artwork zone, and right facts/author/
+  share zone. The extra route-local rounded hero shell was removed; the
+  artwork uses API-provided dimensions with an explicit fallback for legacy
+  records that have no metadata.
+- `AuctionPlayer` remains the only transaction surface and accepts the measured
+  404px desktop width. `ProductTabs` keeps the visible `О работе / Создание /
+Торги` anatomy from `Jh9jr`; bid count is exposed only in the accessible name.
+- No bid mutation, realtime refresh, role restriction, or public/private
+  contract was changed. The unsupported H5 `Тип работы` control remains
+  omitted.
+
+Проверки: Product layout `1/1`, responsive Product breakpoints `1/1`, Wave 2
+layout `1/1` across 1440/1024/390, mobile typecheck/lint and design-tokens
+build. Runtime evidence: `/private/tmp/bidplace-wave-c-screenshots/8b3d137/`;
+Pen source `L7ytbv`/`X6Ksg` was read/exported without modification.
+
 ### 2026-08-12 — direct Pen export reconciliation for discovery geometry
 
 - Read-only Pencil exports of `H5vf2` and `N4ebBk` were compared with the

@@ -31,14 +31,14 @@ test('product detail changes structure at the product action breakpoints', async
       await expect(image).toBeVisible();
       const imageBox = await image.first().boundingBox();
       expect(imageBox).not.toBeNull();
-      const expectedImageWidth =
+      const expectedImageSize =
         width >= designTokens.breakpoint.productHeroThreeColumn
-          ? 520
+          ? { width: 360, height: 514 }
           : width >= designTokens.breakpoint.productDetailWide
-            ? 440
-            : 300;
-      expect(imageBox!.width).toBe(expectedImageWidth);
-      expect(imageBox!.height).toBe(expectedImageWidth * 1.25);
+            ? { width: 440, height: 550 }
+            : { width: 300, height: 375 };
+      expect(imageBox!.width).toBe(expectedImageSize.width);
+      expect(imageBox!.height).toBe(expectedImageSize.height);
 
       const title = page
         .getByText(fixture.product.title, { exact: true })

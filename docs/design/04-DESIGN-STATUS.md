@@ -51,11 +51,12 @@
   while the 1024/390 derived states remain pending screenshot and device
   acceptance.
 - `Implemented`: Product hero now composes the Pen three-column identity,
-  artwork and object-facts regions where viewport pressure permits; the shared
-  AuctionPlayer is the measured compact inline/sticky transaction bar, while
-  the existing bid form and server mutation remain the single state owner.
-  Product Creation now renders ordered creation intro/steps and process media;
-  product screenshot and responsive acceptance remain pending.
+  natural-ratio artwork and object-facts regions where viewport pressure
+  permits; the shared AuctionPlayer is the measured 404×68 compact
+  inline/sticky transaction bar, while the existing bid form and server
+  mutation remain the single state owner. Product Creation now renders ordered
+  creation intro/steps and process media; fixed-scale overlay and device
+  acceptance remain pending.
 - `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
 Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   present structured social links, biography, server-owned work filters and

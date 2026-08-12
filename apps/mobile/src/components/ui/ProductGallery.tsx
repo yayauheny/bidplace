@@ -8,7 +8,28 @@ import { ImagePlaceholder } from './ImagePlaceholder';
 import { productMediaStyle } from './product-media-style';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
-type ProductGalleryImage = { id: string; url: string };
+type ProductGalleryImage = {
+  id: string;
+  url: string;
+  width?: number | null;
+  height?: number | null;
+};
+
+const desktopGalleryHeight = 514;
+const desktopGalleryMaxWidth = 420;
+
+function getDesktopImageSize(image: ProductGalleryImage) {
+  if (!image.width || !image.height) {
+    return { width: 360, height: desktopGalleryHeight };
+  }
+
+  const aspectRatio = image.width / image.height;
+  const width = Math.min(
+    desktopGalleryMaxWidth,
+    Math.round(desktopGalleryHeight * aspectRatio),
+  );
+  return { width, height: Math.round(width / aspectRatio) };
+}
 
 export function ProductGallery({
   images,
@@ -30,7 +51,17 @@ export function ProductGallery({
       <ImagePlaceholder
         ratio={designTokens.ratio.productPortrait}
         label={`Нет изображения: ${label}`}
-        style={{ width: imageWidth, alignSelf: 'center' }}
+        style={{
+          width:
+            width >= designTokens.breakpoint.productHeroThreeColumn
+              ? 360
+              : imageWidth,
+          height:
+            width >= designTokens.breakpoint.productHeroThreeColumn
+              ? desktopGalleryHeight
+              : undefined,
+          alignSelf: 'center',
+        }}
       />
     );
 
@@ -51,6 +82,7 @@ export function ProductGallery({
           image={image}
           label={label}
           width={imageWidth}
+          desktop={width >= designTokens.breakpoint.productHeroThreeColumn}
         />
       ))}
     </ScrollView>
@@ -61,13 +93,16 @@ function GalleryImage({
   image,
   label,
   width,
+  desktop,
 }: {
   image: ProductGalleryImage;
   label: string;
   width: number;
+  desktop: boolean;
 }) {
   const reducedMotion = useReducedMotion();
   const imageLabel = `Изображение предмета: ${label}`;
+  const desktopSize = desktop ? getDesktopImageSize(image) : undefined;
 
   return (
     <ResilientRemoteImage
@@ -75,7 +110,16 @@ function GalleryImage({
       component="ProductGallery"
       accessibilityLabel={imageLabel}
       fallbackLabel={`Изображение недоступно: ${label}`}
-      style={productMediaStyle(width)}
+      style={
+        desktop
+          ? {
+              width: desktopSize!.width,
+              height: desktopSize!.height,
+              borderRadius: designTokens.radius.media,
+              backgroundColor: designTokens.color.placeholder,
+            }
+          : productMediaStyle(width)
+      }
       contentFit="contain"
       transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
     />

@@ -74,9 +74,9 @@ export function ProductTabs({
     >
       {productTabs.map((tab, index) => {
         const selected = tab.id === activeTab;
-        const label =
+        const accessibilityLabel =
           tab.id === 'bids' && bidCount !== undefined
-            ? `${tab.label} ${bidCount}`
+            ? `${tab.label}, ${bidCount} ставок`
             : tab.label;
         return (
           <MotionPressable
@@ -86,7 +86,7 @@ export function ProductTabs({
             }}
             nativeID={`product-tab-${tab.id}`}
             accessibilityRole="tab"
-            accessibilityLabel={label}
+            accessibilityLabel={accessibilityLabel}
             accessibilityState={{ selected }}
             aria-selected={selected}
             aria-controls={`product-panel-${tab.id}`}
@@ -111,7 +111,7 @@ export function ProductTabs({
               role="label"
               style={{ fontSize: 17, lineHeight: 22, fontWeight: '600' }}
             >
-              {label}
+              {tab.label}
             </AppText>
           </MotionPressable>
         );

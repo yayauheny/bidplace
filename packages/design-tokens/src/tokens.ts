@@ -156,6 +156,7 @@ export const designTokens = {
     contentMaxWidth: 1288,
     discoveryMaxWidth: 1360,
     productDetailMaxWidth: 1328,
+    productHeroContentWidth: 1212,
     desktopGutter: 40,
     tabletGutter: 28,
     mobileGutter: 20,
