@@ -166,7 +166,28 @@
 
 ## Stage 6 — Admin moderation workspace
 
-- Status: Not started
+- Status: Partial — implementation committed; full visual/native matrix pending
+- Pen references: `NRlEW`, author/work moderation states around `47935`, `49189`, `50432`, `51152`
+- Success criteria: provide distinct Authors and Works moderation domains with search, status filtering, loading/empty/error states, public preview data, private-data separation, reasoned decisions, blocking/conflict/success handling and mobile/tablet/desktop responsive behavior; keep Orders out of the queue domain.
+- Candidate fixes:
+  - durable fix: extend the existing admin screen with explicit queue tab/filter/search state and preserve existing server mutation/dialog primitives;
+  - acceptable workaround: client-side filtering of already authorized admin queue data while the server remains the decision owner;
+  - hack: inline irreversible decisions without reason/confirmation or exposing transfer contacts in queue previews.
+- Chosen solution and rationale: `AdminModerationScreen` now exposes Authors/Works/All tabs, search and status filters, renders filtered empty states, and retains the existing reason-required confirmation dialogs, seller blocking-listing guard, product seller dependency, conflict/error messages and separate order handoff section. No private handoff values are added to queue cards.
+- Backend changes: none; existing guarded admin list/status/order contracts remain authoritative.
+- Frontend changes: moderation tab/filter/search state and queue projections; E2E updated for explicit all-status continuation after an approval changes queue status.
+- Contract changes: none.
+- Migration changes: none.
+- Tests added/updated: `wave-one.spec.ts`, `wave-c-screen-acceptance.spec.ts`.
+- Checks executed: mobile typecheck/lint and targeted admin moderation Playwright `1/1` pass with host PostgreSQL.
+- Runtime screenshots: pending at 1440/1024/390 for queue/detail/decision/loading/empty/error states.
+- Deliberate visual differences: queue defaults to pending review and requires explicit filter selection to inspect approved/changed items; the existing order replacement tool remains below the two moderation domains.
+- Security/privacy notes: admin API remains guarded; queue cards render public/administrative review fields only; irreversible decisions still require server validation and reason where required.
+- Files changed: `apps/mobile/src/features/admin/admin-moderation-screen.tsx`, `apps/mobile/e2e/wave-one.spec.ts`, `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts`.
+- Commit subject: `implement feature: add moderation workspaces`
+- Commit SHA: `18bb1c6`
+- Remaining risks: full responsive screenshot matrix, status conflict simulation, native accessibility and final founder/device acceptance remain.
+- Next stage: overall verification.
 
 ## Stage 7 — Overall verification
 
