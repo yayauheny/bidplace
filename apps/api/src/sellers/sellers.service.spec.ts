@@ -1,9 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { SellersService } from './sellers.service';
+import { countPublicSellerStatuses, SellersService } from './sellers.service';
 import { publicSellerProfileSelect } from './seller-profile.mapper';
 
 describe('SellersService', () => {
+  it('counts one public listing state per visible creator work', () => {
+    expect(
+      countPublicSellerStatuses([
+        { listings: [{ status: 'LIVE' }] },
+        { listings: [{ status: 'SCHEDULED' }] },
+        { listings: [{ status: 'ENDED' }] },
+        { listings: [] },
+      ]),
+    ).toEqual({ SCHEDULED: 1, LIVE: 1, ENDED: 1 });
+  });
+
   it('maps a concurrent duplicate SellerProfile or slug to a conflict', async () => {
     const prisma = {
       sellerProfile: {
@@ -36,7 +47,7 @@ describe('SellersService', () => {
   it.each(['PENDING_REVIEW', 'SUSPENDED'] as const)(
     'rejects edits while a SellerProfile is %s',
     async (status) => {
-        const prisma = {
+      const prisma = {
         sellerProfile: {
           findUnique: vi.fn().mockResolvedValue({
             id: 'seller-profile-id',
@@ -120,7 +131,9 @@ describe('SellersService', () => {
       } as never,
     );
 
-    await service.getPublic('seller-slug');
+    const result = await service.getPublic('seller-slug');
+
+    expect(result.statusCounts).toEqual({ SCHEDULED: 0, LIVE: 0, ENDED: 0 });
 
     expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({

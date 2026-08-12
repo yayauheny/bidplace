@@ -41,6 +41,14 @@ verification.
 
 ## Pen v2 content and public-profile contracts — 2026-08-11
 
+- `Implemented`: public Creator Profile detail now returns server-owned
+  `statusCounts` for the visible `LIVE`/`SCHEDULED`/`ENDED` listings through
+  `packages/contracts/src/public-seller.ts` and
+  `apps/api/src/sellers/sellers.service.ts`; the profile UI renders those
+  counts without exposing private seller or bidder data. API unit, contract,
+  and seeded browser checks pass. Founder visual/device/screen-reader
+  acceptance remains a separate release gate.
+
 - `Implemented`: Product image contracts now carry nullable `width`/`height`,
   and `ProductCreationStep` stores validated process text plus optional image
   metadata/data behind the migration

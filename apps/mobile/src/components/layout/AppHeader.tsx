@@ -63,8 +63,13 @@ function NavigationLink({
             : designTokens.space.x4,
         }}
         interactionStyle={({ hovered, pressed }) => ({
-          backgroundColor:
-            !desktop && active
+          backgroundColor: desktop
+            ? active
+              ? designTokens.color.surfaceStrong
+              : hovered || pressed
+                ? designTokens.color.surfaceMuted
+                : 'transparent'
+            : active
               ? designTokens.color.surfaceStrong
               : hovered || pressed
                 ? designTokens.color.surfaceMuted
@@ -185,7 +190,10 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
   }, [open]);
 
   const dropdown = (
-    <DiscoveryDropdown desktop={Platform.OS === 'web'} onNavigate={() => setOpen(false)} />
+    <DiscoveryDropdown
+      desktop={Platform.OS === 'web'}
+      onNavigate={() => setOpen(false)}
+    />
   );
 
   return (
@@ -224,7 +232,7 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
         }}
         interactionStyle={({ hovered, pressed }) => ({
           backgroundColor:
-            !desktop && active
+            active
               ? designTokens.color.surfaceStrong
               : hovered || pressed
                 ? designTokens.color.surfaceMuted
@@ -290,7 +298,11 @@ function HeaderSearch({ inline }: { inline: boolean }) {
         paddingHorizontal: 18,
       }}
     >
-      <AppIcon name="search" size={18} color={designTokens.color.textSecondary} />
+      <AppIcon
+        name="search"
+        size={18}
+        color={designTokens.color.textSecondary}
+      />
       <TextInput
         accessibilityLabel="Найти предмет или автора"
         value={query}
@@ -350,8 +362,7 @@ export function AppHeader() {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const desktop = width >= designTokens.breakpoint.compactHeader;
-  const searchInline =
-    width >= designTokens.breakpoint.headerSearchInline;
+  const searchInline = width >= designTokens.breakpoint.headerSearchInline;
   const canCreate = !auth.isAdmin && capability.status === 'APPROVED';
 
   const primaryNavigation = (
@@ -383,25 +394,74 @@ export function AppHeader() {
             : designTokens.size.mobileHeader,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: desktop ? designTokens.space.x6 : designTokens.space.x3,
+          gap:
+            desktop && searchInline
+              ? designTokens.space.x7
+              : desktop
+                ? designTokens.space.x6
+                : designTokens.space.x3,
           paddingHorizontal: desktop
             ? designTokens.space.x8
             : designTokens.layout.mobileGutter,
         }}
       >
-        <BrandLogo />
-        {desktop ? (
+        {desktop && searchInline ? (
           <View
-            accessibilityLabel="Основная навигация"
-            role="navigation"
-            style={{ flexDirection: 'row', alignItems: 'center' }}
+            style={{
+              width: 420,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
           >
-            {primaryNavigation}
+            <BrandLogo />
+            <View
+              accessibilityLabel="Основная навигация"
+              role="navigation"
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginLeft: designTokens.space.x8,
+              }}
+            >
+              {primaryNavigation}
+            </View>
           </View>
-        ) : null}
+        ) : (
+          <>
+            <BrandLogo />
+            {desktop ? (
+              <View
+                accessibilityLabel="Основная навигация"
+                role="navigation"
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                {primaryNavigation}
+              </View>
+            ) : null}
+          </>
+        )}
         {searchInline ? <HeaderSearch inline /> : <View style={{ flex: 1 }} />}
-        {canCreate ? <CreateListingAction /> : null}
-        <AccountMenu desktop={desktop} />
+        {desktop && searchInline ? (
+          <View
+            style={{
+              width: 420,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: designTokens.space.x3,
+            }}
+          >
+            {canCreate ? <CreateListingAction /> : null}
+            <AccountMenu desktop={desktop} />
+          </View>
+        ) : (
+          <>
+            {canCreate ? <CreateListingAction /> : null}
+            <AccountMenu desktop={desktop} />
+          </>
+        )}
       </View>
       {!searchInline ? (
         <View

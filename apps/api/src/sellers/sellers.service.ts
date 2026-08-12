@@ -31,6 +31,21 @@ import {
   toSellerProfileResponse,
 } from './seller-profile.mapper';
 
+export function countPublicSellerStatuses(
+  products: Array<{ listings: Array<{ status: string }> }>,
+) {
+  const counts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
+
+  for (const product of products) {
+    const status = product.listings[0]?.status;
+    if (status === 'SCHEDULED' || status === 'LIVE' || status === 'ENDED') {
+      counts[status] += 1;
+    }
+  }
+
+  return counts;
+}
+
 @Injectable()
 export class SellersService {
   constructor(
@@ -284,6 +299,8 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
+    const statusCounts = countPublicSellerStatuses(sellerProfile.products);
+
     const products = sellerProfile.products
       .map((product) => ({
         product,
@@ -327,6 +344,7 @@ export class SellersService {
       products: pageProducts.map((product) =>
         this.products.toPublicProduct(product),
       ),
+      statusCounts,
       pagination: { page: query.page, limit: query.limit, total },
     });
   }

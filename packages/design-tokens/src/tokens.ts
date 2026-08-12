@@ -158,6 +158,7 @@ export const designTokens = {
     productDetailMaxWidth: 1328,
     productHeroContentWidth: 1212,
     desktopGutter: 40,
+    creatorDesktopGutter: 64,
     tabletGutter: 28,
     mobileGutter: 20,
     cardWidth: 322,

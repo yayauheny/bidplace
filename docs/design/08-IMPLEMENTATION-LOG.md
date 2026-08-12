@@ -73,6 +73,29 @@ Wave C product acceptance still requires a running local PostgreSQL service;
 the attempted rerun on 2026-08-12 was blocked by `127.0.0.1:5432` being
 unavailable. Pen source `cK8kD`/`XIzHe` was read/exported without modification.
 
+### 2026-08-12 — Creator Profile `MqUMz` only
+
+- `MqUMz` is the sole Creator Profile target: `FINAL — Desktop Creator /
+  Profile / MVP v1`. The route keeps one shared public creator screen and one
+  shared `AuctionCard` master; `HOXkZ` / `Editorial Refinement v1` is excluded.
+- The profile hero preserves the canonical 500px centered anatomy: 120px photo,
+  48px Inter name, copyable handle, only-present structured Telegram/
+  Instagram/website links, and centered 680px biography. The works section
+  uses the measured 64px desktop gutters, 44px state-control row, server-owned
+  status counts, compact activity sort, and four-column two-row density.
+- `publicSellerDetailResponseSchema` now returns `statusCounts` computed from
+  public listings on the server. The client does not infer counts from a
+  filtered page or hard-code Pen sample values.
+- Shared `AppHeader` now matches `L9UV9` at wide desktop with 420px left and
+  right zones, a 480px centered search, 28px inter-zone gaps, and the active
+  `Аукционы` surface. Existing mobile/tablet navigation behavior remains.
+
+Проверки: API Sellers unit suite `153/153`, contracts `11/11`, Creator/route
+Playwright `1/1`, seeded demo `2/2`, Product/Creator targeted matrix `4/4`,
+mobile typecheck/lint and design-tokens/contracts/api-client builds. Runtime
+evidence: `/private/tmp/bidplace-wave-c-screenshots/db6f193/`; Pen source
+`MqUMz`/`L9UV9` was read/exported without modification.
+
 ### 2026-08-12 — direct Pen export reconciliation for discovery geometry
 
 - Read-only Pencil exports of `H5vf2` and `N4ebBk` were compared with the

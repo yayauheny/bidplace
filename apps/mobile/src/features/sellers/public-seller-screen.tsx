@@ -309,9 +309,11 @@ function CreatorHero({
 
 function CreatorStatusTabs({
   status,
+  statusCounts,
   onChange,
 }: {
   status?: CreatorStatus;
+  statusCounts: Record<CreatorStatus, number>;
   onChange: (status?: CreatorStatus) => void;
 }) {
   return (
@@ -356,6 +358,30 @@ function CreatorStatusTabs({
             >
               {tab.label}
             </AppText>
+            <View
+              style={{
+                minWidth: 24,
+                height: 24,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                backgroundColor: selected
+                  ? designTokens.color.surfaceStrong
+                  : designTokens.color.surfaceMuted,
+                paddingHorizontal: 6,
+              }}
+            >
+              <AppText
+                role="metadata"
+                style={{
+                  color: selected
+                    ? designTokens.color.ink
+                    : designTokens.color.textSecondary,
+                }}
+              >
+                {statusCounts[tab.value]}
+              </AppText>
+            </View>
           </MotionPressable>
         );
       })}
@@ -428,7 +454,7 @@ export function PublicSellerScreen({
               paddingTop: designTokens.space.x6,
               paddingHorizontal:
                 width >= designTokens.breakpoint.desktopShell
-                  ? designTokens.space.x8
+                  ? designTokens.layout.creatorDesktopGutter
                   : designTokens.layout.mobileGutter,
               paddingBottom: designTokens.space.x12,
             }}
@@ -456,12 +482,15 @@ export function PublicSellerScreen({
                 onChange={(nextSort) => router.setParams({ sort: nextSort })}
               />
             </View>
-            <CreatorStatusTabs
-              status={status}
-              onChange={(nextStatus) =>
-                router.setParams({ status: nextStatus, sort })
-              }
-            />
+            {query.data ? (
+              <CreatorStatusTabs
+                status={status}
+                statusCounts={query.data.statusCounts}
+                onChange={(nextStatus) =>
+                  router.setParams({ status: nextStatus, sort })
+                }
+              />
+            ) : null}
             {content}
           </View>
         </View>

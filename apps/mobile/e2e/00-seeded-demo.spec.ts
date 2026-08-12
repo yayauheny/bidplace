@@ -137,6 +137,13 @@ test('demo seed exposes four public products and real media', async ({
   await page.goto('/seller/anna-morozova');
   const authorPhoto = page.locator('img[alt="Фото автора Анна Морозова"]');
   await expect(authorPhoto).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Идут торги/ })).toContainText(
+    '1',
+  );
+  await expect(page.getByRole('tab', { name: /Запланированы/ })).toContainText(
+    '2',
+  );
+  await expect(page.getByRole('tab', { name: /Завершены/ })).toContainText('1');
   await expect
     .poll(() =>
       authorPhoto.evaluate((element) => ({

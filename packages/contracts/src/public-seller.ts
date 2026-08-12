@@ -30,6 +30,13 @@ export const publicSellerDetailResponseSchema = z
   .object({
     sellerProfile: publicSellerProfileSchema,
     products: z.array(publicProductListItemSchema),
+    statusCounts: z
+      .object({
+        SCHEDULED: z.number().int().nonnegative(),
+        LIVE: z.number().int().nonnegative(),
+        ENDED: z.number().int().nonnegative(),
+      })
+      .strict(),
     pagination: paginationMetaSchema,
   })
   .strict();

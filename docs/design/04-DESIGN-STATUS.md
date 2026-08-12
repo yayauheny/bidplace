@@ -60,9 +60,11 @@
   and URL-backed deep links/history. Fixed-scale overlay and device
   acceptance remain pending.
 - `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
-Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
-  present structured social links, biography, server-owned work filters and
-  shared AuctionCard grid. `HOXkZ` is not an implementation target.
+  Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
+  present structured social links, biography, server-owned status counts and
+  work filters, 64px desktop works gutters, and the shared AuctionCard grid.
+  `HOXkZ` is not an implementation target. The shared header now uses the
+  measured 420 / 480 / 420 desktop zones from `L9UV9`.
 - `Implemented`: Creator status controls wrap at narrow widths instead of
   extending document width; Product keeps the same shared bid form in the
   mobile reading flow while the safe-area action remains sticky. Runtime smoke
