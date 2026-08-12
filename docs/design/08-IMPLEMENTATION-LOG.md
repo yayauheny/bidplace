@@ -43,13 +43,18 @@
 - `AuctionPlayer` remains the only transaction surface and accepts the measured
   404px desktop width. `ProductTabs` keeps the visible `О работе / Создание /
 Торги` anatomy from `Jh9jr`; bid count is exposed only in the accessible name.
+- Product detail now moves that same controlled `AuctionPlayer` from its inline
+  slot into a fixed desktop viewport slot after the hero scroll threshold, and
+  restores the inline slot when the user returns to the top. No duplicate bid
+  mutation or transaction state is introduced.
 - No bid mutation, realtime refresh, role restriction, or public/private
   contract was changed. The unsupported H5 `Тип работы` control remains
   omitted.
 
-Проверки: Product layout `1/1`, responsive Product breakpoints `1/1`, Wave 2
-layout `1/1` across 1440/1024/390, mobile typecheck/lint and design-tokens
-build. Runtime evidence: `/private/tmp/bidplace-wave-c-screenshots/8b3d137/`;
+Проверки: Product layout `1/1` including inline→sticky→inline transition,
+responsive Product breakpoints `1/1`, Wave 2 layout `1/1` across 1440/1024/390,
+mobile typecheck/lint and design-tokens build. Runtime evidence:
+`/private/tmp/bidplace-wave-c-screenshots/8b3d137/`;
 Pen source `L7ytbv`/`X6Ksg` was read/exported without modification.
 
 ### 2026-08-12 — Product Creation and Bids direct tab compositions
@@ -66,7 +71,8 @@ Pen source `L7ytbv`/`X6Ksg` was read/exported without modification.
   first row exposes the derived `Лидер торгов` accessibility label without
   changing bid mutation or realtime ownership.
 
-Проверки: seeded demo Creation/Bids evidence `2/2`, Product composition `1/1`,
+Проверки: seeded demo Creation/Bids evidence `2/2`, including four unique
+process-image sources, Product composition `1/1`,
 mobile typecheck/lint and design-tokens build. Runtime screenshots are written
 outside the repository to `/private/tmp/bidplace-product-tab-screenshots/`.
 Wave C product acceptance passed in the current full Chromium run. Pen source

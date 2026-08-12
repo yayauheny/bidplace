@@ -62,9 +62,10 @@
 - `Implemented`: Product hero now composes the Pen three-column identity,
   natural-ratio artwork and object-facts regions where viewport pressure
   permits; the shared AuctionPlayer is the measured 404×68 compact
-  inline/sticky transaction bar, while the existing bid form and server
+  inline/sticky transaction bar, with a verified desktop inline→fixed
+  transition after the hero threshold, while the existing bid form and server
   mutation remain the single state owner. Product Creation and Bids now use
-  the direct `cK8kD`/`XIzHe` tab compositions: four seeded process images with
+  the direct `cK8kD`/`XIzHe` tab compositions: four distinct seeded process images with
   an accessible accordion, server-sorted bids with an explicit leader badge,
   and URL-backed deep links/history. Fixed-scale overlay and device
   acceptance remain pending.

@@ -158,7 +158,16 @@ test('demo seed exposes four public products and real media', async ({
   await expect(
     page.getByText('История создания', { exact: true }),
   ).toBeVisible();
-  await expect(page.locator('img[alt^="Изображение этапа:"]')).toHaveCount(4);
+  const creationImages = page.locator('img[alt^="Изображение этапа:"]');
+  await expect(creationImages).toHaveCount(4);
+  await expect
+    .poll(() =>
+      creationImages.evaluateAll(
+        (images) =>
+          new Set(images.map((image) => (image as HTMLImageElement).src)).size,
+      ),
+    )
+    .toBe(4);
   await page.screenshot({
     path: resolve(productTabScreenshotDir, 'seeded-creation-1440.png'),
     fullPage: true,

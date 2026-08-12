@@ -88,6 +88,10 @@ verification.
   Creation tab renders ordered API-backed intro/steps with safe process-image
   URLs. Bid validation, role restrictions and privacy behavior remain covered
   by the existing Product/Auction contracts and tests.
+- `Verified`: the guarded Creation seed supplies four distinct process-image
+  sources, and Product detail moves the same controlled AuctionPlayer between
+  inline and fixed desktop placement after the hero scroll threshold. Product
+  E2E covers the transition and restoration without changing bid ownership.
 - `Implemented`: Public creator profile `/seller/[slug]` uses only the founder
   selected `MqUMz` frame, renders structured public links when present, and
   fetches status/sort/paginated works server-side. Private handoff contacts and

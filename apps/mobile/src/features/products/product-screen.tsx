@@ -3,10 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ViewStyle,
 } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
@@ -256,6 +260,8 @@ export function ProductScreen({
   );
   const [openCreationStep, setOpenCreationStep] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const [heroHeight, setHeroHeight] = useState(0);
+  const [isPlayerSticky, setIsPlayerSticky] = useState(false);
 
   const query = useQuery({
     queryKey: ['products', publicId],
@@ -284,6 +290,10 @@ export function ProductScreen({
     const interval = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setIsPlayerSticky(false);
+  }, [activeTab]);
 
   const refreshListing = () => {
     void queryClient.invalidateQueries({ queryKey: ['products', publicId] });
@@ -458,6 +468,23 @@ export function ProductScreen({
       </AppText>
     </SurfacePanel>
   );
+  const stickyThreshold =
+    activeTab === 'about' ? Math.max(heroHeight - 96, 0) : 1;
+  const handleScroll = ({
+    nativeEvent,
+  }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (Platform.OS !== 'web' || !isDesktop || stickyThreshold <= 0) return;
+    setIsPlayerSticky(nativeEvent.contentOffset.y >= stickyThreshold);
+  };
+  const stickyPlayerStyle = {
+    position: 'fixed',
+    right: 0,
+    bottom: 24,
+    left: 0,
+    zIndex: designTokens.layer.popover,
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+  } as unknown as ViewStyle;
   const itemStory = (
     <EditorialSection title="О предмете">
       <View style={{ gap: designTokens.space.x3 }}>
@@ -811,6 +838,8 @@ export function ProductScreen({
       }
     >
       <ScrollView
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingVertical: designTokens.space.x6,
           paddingBottom:
@@ -841,6 +870,9 @@ export function ProductScreen({
                   ? designTokens.space.x12
                   : designTokens.space.x8,
               }}
+              onLayout={(event) =>
+                setHeroHeight(event.nativeEvent.layout.height)
+              }
             >
               <ProductAtmosphere imageUrl={product.images[0]?.url} />
               <View
@@ -901,7 +933,7 @@ export function ProductScreen({
                     images={product.images}
                     label={product.title ?? 'Предмет'}
                   />
-                  {auctionPlayer}
+                  {!isPlayerSticky ? auctionPlayer : null}
                   {isProductWide ? (bidForm ?? adminBidNotice) : bidForm}
                 </View>
                 <View
@@ -1028,11 +1060,16 @@ export function ProductScreen({
           </View>
           {activeTab !== 'about' ? (
             <View style={{ paddingTop: designTokens.space.x12 }}>
-              {auctionPlayer}
+              {!isPlayerSticky ? auctionPlayer : null}
             </View>
           ) : null}
         </View>
       </ScrollView>
+      {isPlayerSticky && Platform.OS === 'web' && isDesktop ? (
+        <View testID="product-sticky-auction-player" style={stickyPlayerStyle}>
+          {auctionPlayer}
+        </View>
+      ) : null}
       <AppDialog
         open={confirmationAttempt !== null}
         title="Подтвердите ставку"

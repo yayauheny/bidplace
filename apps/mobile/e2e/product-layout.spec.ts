@@ -30,6 +30,34 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Торги/ })).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
+  await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
+    0,
+  );
+  await page.evaluate(() => {
+    const scrollContainer = [
+      ...document.querySelectorAll<HTMLElement>('*'),
+    ].find((element) => element.scrollHeight > element.clientHeight + 20);
+    if (!scrollContainer) throw new Error('Product scroll container not found');
+    scrollContainer.scrollTop = 900;
+    scrollContainer.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect(page.getByTestId('product-sticky-auction-player')).toBeVisible();
+  const stickyPlayerBox = await page
+    .getByTestId('product-sticky-auction-player')
+    .boundingBox();
+  expect(stickyPlayerBox).not.toBeNull();
+  expect(stickyPlayerBox!.y + stickyPlayerBox!.height).toBeLessThanOrEqual(900);
+  await page.evaluate(() => {
+    const scrollContainer = [
+      ...document.querySelectorAll<HTMLElement>('*'),
+    ].find((element) => element.scrollHeight > element.clientHeight + 20);
+    if (!scrollContainer) throw new Error('Product scroll container not found');
+    scrollContainer.scrollTop = 0;
+    scrollContainer.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
+    0,
+  );
 
   await page.getByRole('tab', { name: 'Создание' }).click();
   await expect(page).toHaveURL(

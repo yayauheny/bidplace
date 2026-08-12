@@ -107,7 +107,7 @@ async function createProductWithImages({
     [
       'Финальный предмет',
       'После обработки предмет готовится к передаче новому владельцу.',
-      'painted-planter.png',
+      'handmade-vase.png',
     ],
   ],
   status = 'APPROVED',
