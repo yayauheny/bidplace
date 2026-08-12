@@ -47,6 +47,16 @@
   overflow remained bounded, and the canonical Pen checksum stayed unchanged.
   Exact Pen overlay plus founder/device acceptance remain open.
 
+### 2026-08-12 — Creator Profile density fixtures
+
+- Extended guarded local/test seed data with four additional public works for
+  `anna-morozova`, bringing the profile fixture to eight works across LIVE,
+  SCHEDULED and ENDED states. The added works reuse local thematic media and
+  preserve server-owned listing state; no external runtime image URLs were
+  introduced.
+- Seed build/reset and the seeded browser checks passed; catalog layout
+  expectations now include all twelve public demo products.
+
 ### 2026-08-12 — Product About anatomy and shared transaction surface
 
 - `L7ytbv` runtime composition now uses the measured product canvas with a

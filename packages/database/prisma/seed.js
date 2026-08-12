@@ -479,6 +479,88 @@ async function main() {
       }),
     ]);
 
+  const additionalAnnaProducts = await Promise.all(
+    [
+      {
+        publicId: 'seedAnna005',
+        title: 'Скульптура «Тихая форма»',
+        story:
+          'Небольшой авторский объект с мягким силуэтом для полки или рабочего стола.',
+        technique: 'Ручная лепка, матовая поверхность',
+        materials: 'Шамотная глина, минеральный пигмент',
+        dimensions: '18 × 12 × 24 см',
+        year: 2026,
+        uniqueness: 'Единственный экземпляр',
+        price: '1900.00',
+        listingStatus: 'LIVE',
+        imageFileName: 'wooden-sculpture.png',
+      },
+      {
+        publicId: 'seedAnna006',
+        title: 'Чаша «Медленный круг»',
+        story:
+          'Невысокая чаша с живой кромкой для спокойных домашних ритуалов.',
+        technique: 'Ручная лепка, прозрачная глазурь',
+        materials: 'Глина, прозрачная глазурь',
+        dimensions: '20 × 20 × 8 см',
+        year: 2026,
+        uniqueness: 'Единственный экземпляр',
+        price: '780.00',
+        listingStatus: 'SCHEDULED',
+        imageFileName: 'ceramic-bowl.png',
+      },
+      {
+        publicId: 'seedAnna007',
+        title: 'Текстильная панель «След дождя»',
+        story:
+          'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
+        technique: 'Ручная вышивка, аппликация',
+        materials: 'Лён, хлопок, нить',
+        dimensions: '42 × 32 см',
+        year: 2025,
+        uniqueness: 'Единственный экземпляр',
+        price: '1480.00',
+        listingStatus: 'ENDED',
+        imageFileName: 'textile-composition.png',
+      },
+      {
+        publicId: 'seedAnna008',
+        title: 'Графический лист «Линия света»',
+        story:
+          'Небольшой лист ручной печати с точной линией и живой фактурой бумаги.',
+        technique: 'Линогравюра, ручная печать',
+        materials: 'Бумага, типографская краска',
+        dimensions: '30 × 30 см',
+        year: 2026,
+        uniqueness: 'Ограниченный тираж',
+        price: '510.00',
+        listingStatus: 'SCHEDULED',
+        imageFileName: 'linocut-print.png',
+      },
+    ].map((fixture) =>
+      createProductWithImages({
+        publicId: fixture.publicId,
+        sellerProfileId: sellerProfile.id,
+        categoryId: category.id,
+        title: fixture.title,
+        story: fixture.story,
+        technique: fixture.technique,
+        materials: fixture.materials,
+        dimensions: fixture.dimensions,
+        year: fixture.year,
+        condition: 'Новое',
+        uniqueness: fixture.uniqueness,
+        provenance:
+          'Создано Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
+        city: 'Минск',
+        deliveryInfo:
+          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+        publishedAt: now,
+        imageFileName: fixture.imageFileName,
+      }).then((product) => ({ product, fixture })),
+    ),
+  );
+
   const additionalDemoProducts = await Promise.all(
     [
       {
@@ -553,8 +635,35 @@ async function main() {
     ),
   );
 
-  await Promise.all(
-    additionalDemoProducts.map(({ product, fixture }, index) => {
+  await Promise.all([
+    ...additionalAnnaProducts.map(({ product, fixture }, index) => {
+      const startsAt =
+        fixture.listingStatus === 'LIVE'
+          ? new Date(now.getTime() - 1_800_000)
+          : fixture.listingStatus === 'ENDED'
+            ? new Date(now.getTime() - 10_800_000)
+            : new Date(now.getTime() + (index + 5) * 3_600_000);
+      const endsAt =
+        fixture.listingStatus === 'ENDED'
+          ? new Date(now.getTime() - 3_600_000)
+          : new Date(now.getTime() + (index + 6) * 3_600_000);
+
+      return prisma.listing.create({
+        data: {
+          productId: product.id,
+          status: fixture.listingStatus,
+          startsAt,
+          originalEndsAt: endsAt,
+          endsAt,
+          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
+          currentPrice: money(fixture.price),
+          auctionRules: {
+            create: { startPrice: money(fixture.price) },
+          },
+        },
+      });
+    }),
+    ...additionalDemoProducts.map(({ product, fixture }, index) => {
       const startsAt =
         fixture.listingStatus === 'LIVE'
           ? new Date(now.getTime() - 3_600_000)
@@ -581,7 +690,7 @@ async function main() {
         },
       });
     }),
-  );
+  ]);
 
   await createProductWithImages({
     publicId: 'seedPend004',
@@ -709,7 +818,7 @@ async function main() {
   void vase;
 
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, eight public products, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, twelve public products, and scheduled/live/ended Product Listings in BYN.',
   );
 }
 

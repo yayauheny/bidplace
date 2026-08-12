@@ -101,6 +101,9 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   fade-in. Product-local blur was removed; runtime checks confirm the shared
   atmosphere is present on both routes. Fixed-scale Pen overlay and
   founder/device acceptance remain release gates.
+- `Verified`: local/test seed density now provides eight public works for the
+  primary creator profile, with server-owned `2 / 4 / 2` LIVE/SCHEDULED/ENDED
+  counts and local thematic media for the two-row Creator Profile composition.
 
 ## Screen matrix
 

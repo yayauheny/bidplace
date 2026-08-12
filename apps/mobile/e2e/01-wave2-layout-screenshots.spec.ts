@@ -17,6 +17,10 @@ const seededProducts = [
   { publicId: 'seedPavel06', title: 'Лампа «Тихий круг»' },
   { publicId: 'seedOlga007', title: 'Текстильная композиция «След света»' },
   { publicId: 'seedMark008', title: 'Графический лист «Ночная карта»' },
+  { publicId: 'seedAnna005', title: 'Скульптура «Тихая форма»' },
+  { publicId: 'seedAnna006', title: 'Чаша «Медленный круг»' },
+  { publicId: 'seedAnna007', title: 'Текстильная панель «След дождя»' },
+  { publicId: 'seedAnna008', title: 'Графический лист «Линия света»' },
 ] as const;
 
 test('captures Wave 2 layouts at target widths', async ({ browser }) => {

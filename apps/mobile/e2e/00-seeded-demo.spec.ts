@@ -47,6 +47,7 @@ test('demo seed exposes four public products and real media', async ({
   );
   expect(authorDetailResponse.ok()).toBeTruthy();
   const authorDetail = await authorDetailResponse.json();
+  expect(authorDetail.products).toHaveLength(8);
   const authorPhotoResponse = await request.get(
     new URL(authorDetail.sellerProfile.profilePhotoUrl, apiBaseURL).toString(),
   );
@@ -138,12 +139,12 @@ test('demo seed exposes four public products and real media', async ({
   const authorPhoto = page.locator('img[alt="Фото автора Анна Морозова"]');
   await expect(authorPhoto).toBeVisible();
   await expect(page.getByRole('tab', { name: /Идут торги/ })).toContainText(
-    '1',
-  );
-  await expect(page.getByRole('tab', { name: /Запланированы/ })).toContainText(
     '2',
   );
-  await expect(page.getByRole('tab', { name: /Завершены/ })).toContainText('1');
+  await expect(page.getByRole('tab', { name: /Запланированы/ })).toContainText(
+    '4',
+  );
+  await expect(page.getByRole('tab', { name: /Завершены/ })).toContainText('2');
   await expect
     .poll(() =>
       authorPhoto.evaluate((element) => ({

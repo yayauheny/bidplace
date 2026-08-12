@@ -118,6 +118,10 @@ verification.
   safe fallback and reduced-motion-aware appearance; no private fields or image
   binary data enter the UI. Fixed-scale visual and founder/device acceptance
   remain `Needs verification`.
+- `Verified`: guarded local/test seed data now provides twelve public products
+  and eight works for the primary public creator profile, with deterministic
+  local media and `LIVE/SCHEDULED/ENDED` listing coverage. This supports the
+  selected Creator Profile density without changing production contracts.
 
 ## Public discovery WIP — 2026-08-11
 
