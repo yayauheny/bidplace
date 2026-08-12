@@ -86,13 +86,19 @@ function NavigationLink({
 
 function DiscoveryDropdown({
   desktop,
+  label,
   onNavigate,
 }: {
   desktop: boolean;
+  label: 'Аукционы' | 'Авторы';
   onNavigate: () => void;
 }) {
   const items: Array<HeaderItem & { icon: 'catalog' | 'user' }> = [
-    { label: 'Аукционы', href: '/works', icon: 'catalog' },
+    {
+      label: label === 'Авторы' ? 'Работы' : 'Аукционы',
+      href: '/works',
+      icon: 'catalog',
+    },
     { label: 'Авторы', href: '/authors', icon: 'user' },
   ];
 
@@ -144,7 +150,13 @@ function DiscoveryDropdown({
   );
 }
 
-function DiscoveryMenu({ desktop }: { desktop: boolean }) {
+function DiscoveryMenu({
+  desktop,
+  label,
+}: {
+  desktop: boolean;
+  label: 'Аукционы' | 'Авторы';
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<{
@@ -192,6 +204,7 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
   const dropdown = (
     <DiscoveryDropdown
       desktop={Platform.OS === 'web'}
+      label={label}
       onNavigate={() => setOpen(false)}
     />
   );
@@ -206,7 +219,7 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
           } | null;
         }}
         accessibilityRole="button"
-        accessibilityLabel="Аукционы"
+        accessibilityLabel={label}
         accessibilityState={{ expanded: open, selected: active }}
         onAccessibilityEscape={() => {
           setOpen(false);
@@ -231,15 +244,14 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
             : designTokens.space.x4,
         }}
         interactionStyle={({ hovered, pressed }) => ({
-          backgroundColor:
-            active
-              ? designTokens.color.surfaceStrong
-              : hovered || pressed
-                ? designTokens.color.surfaceMuted
-                : 'transparent',
+          backgroundColor: active
+            ? designTokens.color.surfaceStrong
+            : hovered || pressed
+              ? designTokens.color.surfaceMuted
+              : 'transparent',
         })}
       >
-        <AppText role="nav">Аукционы</AppText>
+        <AppText role="nav">{label}</AppText>
         <View
           style={{
             transform: [{ rotate: open ? '180deg' : '0deg' }],
@@ -266,7 +278,13 @@ function DiscoveryMenu({ desktop }: { desktop: boolean }) {
   );
 }
 
-function HeaderSearch({ inline }: { inline: boolean }) {
+function HeaderSearch({
+  inline,
+  placeholder,
+}: {
+  inline: boolean;
+  placeholder: string;
+}) {
   const router = useRouter();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState('');
@@ -309,7 +327,7 @@ function HeaderSearch({ inline }: { inline: boolean }) {
         onChangeText={setQuery}
         onSubmitEditing={submit}
         returnKeyType="search"
-        placeholder="Найти предмет или автора"
+        placeholder={placeholder}
         placeholderTextColor={designTokens.color.textMuted}
         style={{
           flex: 1,
@@ -364,14 +382,25 @@ export function AppHeader() {
   const desktop = width >= designTokens.breakpoint.compactHeader;
   const searchInline = width >= designTokens.breakpoint.headerSearchInline;
   const canCreate = !auth.isAdmin && capability.status === 'APPROVED';
+  const authorsRoute =
+    pathname === '/authors' || pathname.startsWith('/authors/');
+  const discoveryLabel = authorsRoute ? 'Авторы' : 'Аукционы';
+  const searchPlaceholder =
+    pathname === '/works' || pathname.startsWith('/works/') || authorsRoute
+      ? 'Найти работу или автора'
+      : 'Найти предмет или автора';
 
   const primaryNavigation = (
     <>
-      <DiscoveryMenu desktop={desktop} />
+      <DiscoveryMenu desktop={desktop} label={discoveryLabel} />
       <NavigationLink
-        active={isActiveRoute(pathname, '/authors')}
+        active={isActiveRoute(pathname, authorsRoute ? '/works' : '/authors')}
         desktop={desktop}
-        item={{ label: 'Авторы', href: '/authors' }}
+        item={
+          authorsRoute
+            ? { label: 'Работы', href: '/works' }
+            : { label: 'Авторы', href: '/authors' }
+        }
       />
     </>
   );
@@ -442,7 +471,11 @@ export function AppHeader() {
             ) : null}
           </>
         )}
-        {searchInline ? <HeaderSearch inline /> : <View style={{ flex: 1 }} />}
+        {searchInline ? (
+          <HeaderSearch inline placeholder={searchPlaceholder} />
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
         {desktop && searchInline ? (
           <View
             style={{
@@ -472,7 +505,7 @@ export function AppHeader() {
             paddingBottom: designTokens.space.x3,
           }}
         >
-          <HeaderSearch inline={false} />
+          <HeaderSearch inline={false} placeholder={searchPlaceholder} />
         </View>
       ) : null}
       {!desktop ? (

@@ -42,14 +42,19 @@
   follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Full browser
   execution still needs matched Pen screenshots and device verification.
 - `Implemented`: Browse Works now consumes server facets for category, author,
-  material and uniqueness menus, confirmed price ranges, status counts and
-  state tabs; server-side sort/query state is URL-backed. The unsupported Pen
+  material and uniqueness menus, confirmed price ranges, a separate
+  server-backed `Статус` facet, status counts and state tabs; server-side
+  sort/query state is URL-backed. The unsupported Pen
   `Тип работы` control remains intentionally omitted because no domain field
   is confirmed. Browse Authors exposes the API-backed activity/name sort
   control. The runtime now matches the measured discovery container at 1440px
   (1360px content width, 40px outer gutter, four 322px cards with 24px gaps),
   while the 1024/390 derived states remain pending screenshot and device
   acceptance.
+- `Implemented`: the shared discovery header is contextual on `/authors`: the
+  selector is `Авторы`, the direct peer link is `Работы`, and the search
+  placeholder is `Найти работу или автора`. Other routes retain the confirmed
+  auction context and existing navigation behavior.
 - `Implemented`: Product hero now composes the Pen three-column identity,
   natural-ratio artwork and object-facts regions where viewport pressure
   permits; the shared AuctionPlayer is the measured 404×68 compact

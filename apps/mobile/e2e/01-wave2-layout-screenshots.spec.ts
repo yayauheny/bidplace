@@ -38,6 +38,13 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await expect(
         page.getByRole('button', { name: 'Сортировка' }),
       ).toContainText('По активности');
+      await expect(page.getByRole('button', { name: 'Статус' })).toBeVisible();
+      if (width === 1440) {
+        await page.getByRole('button', { name: 'Статус' }).click();
+        await page.getByRole('menuitem', { name: 'Идут торги' }).click();
+        await expect(page).toHaveURL(/status=LIVE/);
+        await page.goto('/works');
+      }
       if (width === 390) {
         const mobileNavigation = page.getByLabel('Основная навигация');
         const pageTitle = page
@@ -110,6 +117,15 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       });
 
       await page.goto('/authors');
+      await expect(
+        page.locator('#discovery-menu-trigger').getByRole('button', {
+          name: 'Авторы',
+        }),
+      ).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
+      await expect(
+        page.getByPlaceholder('Найти работу или автора'),
+      ).toBeVisible();
       await expect(
         page.getByTestId('app-shell-content').getByText('Авторы', {
           exact: true,

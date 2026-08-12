@@ -264,6 +264,14 @@ function DiscoveryControls({
         }}
       />
       <FacetMenu
+        label="Статус"
+        value={status}
+        options={statusOptions}
+        onSelect={(value) =>
+          onStatusChange(value as PublicListingStatus | undefined)
+        }
+      />
+      <FacetMenu
         label="Уникальность"
         value={uniqueness}
         options={(facets?.uniquenesses ?? []).map((option) => ({

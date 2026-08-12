@@ -143,6 +143,21 @@ Canonical Pen SHA remains unchanged.
 Проверки: полный Chromium E2E `35/35`, mobile unit `115/115`, mobile
 typecheck/lint и E2E fence. Canonical Pen SHA не изменён.
 
+### 2026-08-12 — contextual discovery header and status facet
+
+- The shared header now follows the selected discovery surface: `/authors`
+  presents `Авторы` as the selector, `Работы` as the peer link, and
+  `Найти работу или автора` as the search placeholder. `/works` keeps the
+  auction context and the same cross-discovery search contract.
+- Browse Works now exposes a separate `Статус` toolbar menu backed by the
+  existing URL `status` parameter and server-side product filter. The state
+  tabs and toolbar menu share one source of truth; `Тип работы` remains omitted
+  because its domain field is still unconfirmed.
+
+Проверки: full Chromium E2E `35/35`, including the toolbar status selection
+and URL assertion, Wave 2 layouts at 1440/1024/390, mobile typecheck/lint and
+`git diff --check`. Canonical Pen SHA remains unchanged.
+
 ### 2026-08-11 — deterministic visual-density fixtures
 
 - Guarded local/test seed теперь содержит четыре публичных предмета с
