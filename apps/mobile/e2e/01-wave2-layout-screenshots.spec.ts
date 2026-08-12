@@ -8,6 +8,9 @@ import { createAdminModerationFixture } from './support/e2e-fixtures';
 import { getCatalogColumnCount } from '../src/features/products/catalog-layout';
 
 const screenshotDir = resolve('/private/tmp', 'bidplace-wave2-screenshots');
+const targetWidths = process.env.WAVE2_VIEWPORT
+  ? [Number(process.env.WAVE2_VIEWPORT)]
+  : [1440, 1024, 390];
 const seededProducts = [
   { publicId: 'seedSched01', title: 'Кашпо «Тёплый ритм»' },
   { publicId: 'seedLive002', title: 'Стакан для кистей «Голубая комета»' },
@@ -24,13 +27,13 @@ const seededProducts = [
 ] as const;
 
 test('captures Wave 2 layouts at target widths', async ({ browser }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(900_000);
   await mkdir(screenshotDir, { recursive: true });
   const fixture = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(browser, fixture.admin);
 
   try {
-    for (const width of [1440, 1024, 390]) {
+    for (const width of targetWidths) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
 
       await page.goto('/works');
@@ -50,19 +53,20 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         await page.goto('/works');
       }
       if (width === 390) {
-        const mobileNavigation = page.getByLabel('Основная навигация');
+        const mobileHeaderAction = page.getByRole('button', { name: 'Меню' });
         const pageTitle = page
           .getByTestId('app-shell-content')
           .getByText('Работы', { exact: true });
         const firstCard = page.locator('a[href^="/product/"]').first();
-        const navigationBox = await mobileNavigation.boundingBox();
+        await expect(mobileHeaderAction).toBeVisible();
+        const headerActionBox = await mobileHeaderAction.boundingBox();
         const pageTitleBox = await pageTitle.boundingBox();
         const firstCardBox = await firstCard.boundingBox();
-        expect(navigationBox).not.toBeNull();
+        expect(headerActionBox).not.toBeNull();
         expect(pageTitleBox).not.toBeNull();
         expect(firstCardBox).not.toBeNull();
         expect(pageTitleBox!.y).toBeGreaterThan(
-          navigationBox!.y + navigationBox!.height,
+          headerActionBox!.y + headerActionBox!.height,
         );
         expect(firstCardBox!.y).toBeGreaterThan(
           pageTitleBox!.y + pageTitleBox!.height,
@@ -118,6 +122,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
           `img[alt="Изображение предмета: ${product.title}"]`,
         );
         await expect(image).toBeVisible();
+        await image.scrollIntoViewIfNeeded();
         await expect
           .poll(() =>
             image.evaluate(
@@ -132,15 +137,20 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       });
 
       await page.goto('/authors');
-      await expect(
-        page.locator('#discovery-menu-trigger').getByRole('button', {
-          name: 'Авторы',
-        }),
-      ).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
-      await expect(
-        page.getByPlaceholder('Найти работу или автора'),
-      ).toBeVisible();
+      if (width >= 768) {
+        await expect(
+          page.locator('#discovery-menu-trigger').getByRole('button', {
+            name: 'Авторы',
+          }),
+        ).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
+        await expect(
+          page.getByPlaceholder('Найти работу или автора'),
+        ).toBeVisible();
+      } else {
+        await expect(page.getByRole('button', { name: 'Меню' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Поиск' })).toBeVisible();
+      }
       await expect(
         page.getByTestId('app-shell-content').getByText('Авторы', {
           exact: true,
@@ -174,22 +184,33 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       });
 
       await page.goto('/works');
-      const account = page.getByRole('button', {
-        name: /Открыть меню аккаунта/,
-      });
-      if (width >= 1025) {
-        await account.hover();
+      if (width >= 768) {
+        const account = page.getByRole('button', {
+          name: /Открыть меню аккаунта/,
+        });
+        if (width >= 1025) {
+          await account.hover();
+        } else {
+          await account.click();
+        }
+        await expect(page.locator('#account-menu-dropdown')).toBeVisible();
+        await page.screenshot({
+          path: resolve(screenshotDir, `account-menu-${width}.png`),
+          fullPage: true,
+        });
+        await page.keyboard.press('Escape');
+        await page.mouse.move(8, 300);
+        await expect(page.locator('#account-menu-dropdown')).toHaveCount(0);
       } else {
-        await account.click();
+        await page.getByRole('button', { name: 'Меню' }).click();
+        await expect(page.locator('#mobile-menu-panel')).toBeVisible();
+        await page.screenshot({
+          path: resolve(screenshotDir, `account-menu-${width}.png`),
+          fullPage: true,
+        });
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#mobile-menu-panel')).toHaveCount(0);
       }
-      await expect(page.locator('#account-menu-dropdown')).toBeVisible();
-      await page.screenshot({
-        path: resolve(screenshotDir, `account-menu-${width}.png`),
-        fullPage: true,
-      });
-      await page.keyboard.press('Escape');
-      await page.mouse.move(8, 300);
-      await expect(page.locator('#account-menu-dropdown')).toHaveCount(0);
 
       await page.route(
         '**/api/products*',

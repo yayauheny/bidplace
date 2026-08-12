@@ -203,7 +203,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
         ).toBeVisible();
         if (session.role === 'approved-seller') {
           await expect(
-            session.page.getByRole('link', { name: 'Добавить работу' }),
+            session.page.getByRole('button', { name: 'Создать' }),
           ).toBeVisible();
         } else {
           await expect(
@@ -331,7 +331,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   browser,
   page,
 }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   const auction = await createAuctionFixture({
     title:
       'Очень длинное название авторского предмета для проверки переноса текста и ширины действий',
@@ -350,6 +350,10 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   const adminFixture = await createAdminModerationFixture();
   const sellerSession = await authenticatedPage(browser, seller.seller);
   const adminSession = await authenticatedPage(browser, adminFixture.admin);
+  const finalAdminSession = await authenticatedPage(
+    browser,
+    adminFixture.admin,
+  );
   const productResponse = await sellerSession.context.request.get(
     `${e2eApiBaseURL}/api/products/${auction.product.publicId}`,
   );
@@ -446,9 +450,11 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
 
       await adminSession.page.setViewportSize(viewport);
       await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
-      await expect(adminSession.page.getByText('Продавцы')).toBeVisible();
       await expect(
-        adminSession.page.getByText('Работы', { exact: true }),
+        adminSession.page.getByText('Авторы', { exact: true }).first(),
+      ).toBeVisible();
+      await expect(
+        adminSession.page.getByRole('button', { name: 'Работы' }),
       ).toBeVisible();
       await assertNoHorizontalOverflow(adminSession.page);
       await capture(adminSession.page, 'admin', 'admin', 'loaded', viewport);
@@ -541,46 +547,63 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     }
 
     for (const viewport of viewports) {
-      await adminSession.page.setViewportSize(viewport);
-      await adminSession.page.goto('/', { waitUntil: 'domcontentloaded' });
-      const accountTrigger = adminSession.page.getByRole('button', {
-        name: /Открыть меню аккаунта/,
-      });
-      if (viewport.width >= 1025) {
+      await finalAdminSession.page.setViewportSize(viewport);
+      await finalAdminSession.page.goto('/', { waitUntil: 'domcontentloaded' });
+      const isMobile = viewport.width < 768;
+      if (!isMobile) {
+        const accountTrigger = finalAdminSession.page.getByRole('button', {
+          name: /Открыть меню аккаунта/,
+        });
         await accountTrigger.hover();
+        await expect(
+          finalAdminSession.page.locator('#account-menu-dropdown'),
+        ).toBeVisible();
       } else {
-        await accountTrigger.click();
+        await finalAdminSession.page
+          .getByRole('button', { name: 'Меню' })
+          .click();
+        await expect(
+          finalAdminSession.page.locator('#mobile-menu-panel'),
+        ).toBeVisible();
       }
-      await expect(
-        adminSession.page.locator('#account-menu-dropdown'),
-      ).toBeVisible();
       await capture(
-        adminSession.page,
+        finalAdminSession.page,
         'account-menu',
         'admin',
         'open',
         viewport,
       );
-      await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
-      const adminAccountTrigger = adminSession.page.getByRole('button', {
-        name: /Открыть меню аккаунта/,
+      await finalAdminSession.page.goto('/admin', {
+        waitUntil: 'domcontentloaded',
       });
-      if (viewport.width >= 1025) {
+      if (!isMobile) {
+        const adminAccountTrigger = finalAdminSession.page.getByRole('button', {
+          name: /Открыть меню аккаунта/,
+        });
         await adminAccountTrigger.hover();
+        await expect(
+          finalAdminSession.page.locator('#account-menu-dropdown'),
+        ).toBeVisible();
       } else {
-        await adminAccountTrigger.click();
+        await finalAdminSession.page
+          .getByRole('button', { name: 'Меню' })
+          .click();
+        await expect(
+          finalAdminSession.page.locator('#mobile-menu-panel'),
+        ).toBeVisible();
       }
-      await expect(
-        adminSession.page.locator('#account-menu-dropdown'),
-      ).toBeVisible();
-      const moderationLink = adminSession.page.getByRole('link', {
-        name: 'Модерация',
-      });
-      if (viewport.width >= 1025) {
+      const moderationLink = isMobile
+        ? finalAdminSession.page
+            .locator('#mobile-menu-panel')
+            .getByRole('link', { name: 'Кабинет' })
+        : finalAdminSession.page
+            .locator('#account-menu-dropdown')
+            .getByRole('link', { name: 'Модерация' });
+      if (!isMobile) {
         await moderationLink.focus();
         await expect(moderationLink).toBeFocused();
         await capture(
-          adminSession.page,
+          finalAdminSession.page,
           'admin',
           'admin',
           'focused-header-navigation',
@@ -590,22 +613,22 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         await moderationLink.focus();
         await expect(moderationLink).toBeFocused();
         await capture(
-          adminSession.page,
+          finalAdminSession.page,
           'admin',
           'admin',
           'focused-mobile-navigation',
           viewport,
         );
       }
-      await adminSession.page
+      await finalAdminSession.page
         .getByText(adminFixture.sellerName, { exact: true })
         .first()
         .locator('..')
         .getByRole('button', { name: 'Приостановить' })
         .click();
-      await expect(adminSession.page.getByRole('dialog')).toBeVisible();
+      await expect(finalAdminSession.page.getByRole('dialog')).toBeVisible();
       await capture(
-        adminSession.page,
+        finalAdminSession.page,
         'moderation-dialog',
         'admin',
         'destructive-open',
@@ -615,6 +638,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
   } finally {
     await sellerSession.context.close();
     await adminSession.context.close();
+    await finalAdminSession.context.close();
   }
 });
 

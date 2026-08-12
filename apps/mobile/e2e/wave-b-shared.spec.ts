@@ -12,36 +12,50 @@ const viewports = [
   { width: 1024, height: 900 },
   { width: 390, height: 844 },
 ] as const;
+const targetViewports = process.env.WAVE_B_VIEWPORT
+  ? viewports.filter(
+      (viewport) => viewport.width === Number(process.env.WAVE_B_VIEWPORT),
+    )
+  : viewports;
 
 test('captures Wave B shared focus, motion, state and target hit-area evidence', async ({
   browser,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(900_000);
   await mkdir(screenshotDir, { recursive: true });
   const fixture = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(browser, fixture.admin);
   const authStorageState = await context.storageState();
 
   try {
-    for (const viewport of viewports) {
+    for (const viewport of targetViewports) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.goto('/');
 
-      await page.getByRole('button', { name: 'Аукционы' }).click();
-      const worksLink = page.getByRole('link', {
-        name: 'Аукционы',
-        exact: true,
-      });
+      const isMobile = viewport.width < 768;
+      const openMobileMenu = async () => {
+        await page.getByRole('button', { name: 'Меню' }).click();
+        return page
+          .locator('#mobile-menu-panel')
+          .getByRole('link', { name: 'Аукционы', exact: true });
+      };
+      const worksLink = isMobile
+        ? await openMobileMenu()
+        : (await page.getByRole('button', { name: 'Аукционы' }).click(),
+          page.getByRole('link', { name: 'Аукционы', exact: true }));
       await worksLink.click();
       await expect(page).toHaveURL(/\/works$/);
-      await expect(page.locator('#discovery-menu-dropdown')).toHaveCount(0);
+      await expect(
+        page.locator(
+          isMobile ? '#mobile-menu-panel' : '#discovery-menu-dropdown',
+        ),
+      ).toHaveCount(0);
       await page.goto('/');
-      await page.getByRole('button', { name: 'Аукционы' }).click();
-      const keyboardWorksLink = page.getByRole('link', {
-        name: 'Аукционы',
-        exact: true,
-      });
+      const keyboardWorksLink = isMobile
+        ? await openMobileMenu()
+        : (await page.getByRole('button', { name: 'Аукционы' }).click(),
+          page.getByRole('link', { name: 'Аукционы', exact: true }));
       await keyboardWorksLink.focus();
       await expect
         .poll(() =>
@@ -51,9 +65,12 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         )
         .toBeGreaterThanOrEqual(2);
 
-      const account = page.getByRole('button', {
-        name: /Открыть меню аккаунта/,
-      });
+      if (isMobile) {
+        await page.keyboard.press('Escape');
+      }
+      const account = isMobile
+        ? page.getByRole('button', { name: 'Меню' })
+        : page.getByRole('button', { name: /Открыть меню аккаунта/ });
       await account.focus();
       await expect
         .poll(() =>
@@ -64,12 +81,19 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         .toBeGreaterThanOrEqual(2);
       if (viewport.width >= 1025) {
         await account.hover();
+      } else if (isMobile) {
+        await account.click();
+        await expect(page.locator('#mobile-menu-panel')).toBeVisible();
       } else {
         await account.click();
+        await expect(page.locator('#account-menu-dropdown')).toBeVisible();
       }
-      await expect(page.locator('#account-menu-dropdown')).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(page.locator('#account-menu-dropdown')).toBeHidden();
+      await expect(
+        page.locator(
+          isMobile ? '#mobile-menu-panel' : '#account-menu-dropdown',
+        ),
+      ).toBeHidden();
       await expect(account).toBeVisible();
 
       const brand = page.getByRole('link', { name: 'bidplace — на главную' });

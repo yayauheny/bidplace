@@ -1122,6 +1122,7 @@ export function ProductScreen({
       }
     >
       <ScrollView
+        testID="product-scroll-view"
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{

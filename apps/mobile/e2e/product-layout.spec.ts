@@ -33,7 +33,9 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(
     page.locator('#product-panel-about').getByText('О работе', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: /01 Характеристики/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /01 Характеристики/ }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: /02 Упаковка/ })).toBeVisible();
   await expect(
     page.getByRole('button', { name: /03 Оплата и доставка/ }),
@@ -43,17 +45,16 @@ test('product composition exposes tabs and remains responsive', async ({
   ).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
   await page.getByRole('button', { name: 'Поделиться предметом' }).click();
-  await expect(page.getByText('Ссылка скопирована', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Ссылка скопирована', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
     0,
   );
-  await page.evaluate(() => {
-    const scrollContainer = [
-      ...document.querySelectorAll<HTMLElement>('*'),
-    ].find((element) => element.scrollHeight > element.clientHeight + 20);
-    if (!scrollContainer) throw new Error('Product scroll container not found');
-    scrollContainer.scrollTop = 900;
-    scrollContainer.dispatchEvent(new Event('scroll', { bubbles: true }));
+  const productScrollView = page.getByTestId('product-scroll-view');
+  await productScrollView.evaluate((element) => {
+    element.scrollTop = 900;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
   });
   await expect(page.getByTestId('product-sticky-auction-player')).toBeVisible();
   const stickyPlayerBox = await page
@@ -61,13 +62,9 @@ test('product composition exposes tabs and remains responsive', async ({
     .boundingBox();
   expect(stickyPlayerBox).not.toBeNull();
   expect(stickyPlayerBox!.y + stickyPlayerBox!.height).toBeLessThanOrEqual(900);
-  await page.evaluate(() => {
-    const scrollContainer = [
-      ...document.querySelectorAll<HTMLElement>('*'),
-    ].find((element) => element.scrollHeight > element.clientHeight + 20);
-    if (!scrollContainer) throw new Error('Product scroll container not found');
-    scrollContainer.scrollTop = 0;
-    scrollContainer.dispatchEvent(new Event('scroll', { bubbles: true }));
+  await productScrollView.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
   });
   await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
     0,
