@@ -158,6 +158,19 @@ typecheck/lint и E2E fence. Canonical Pen SHA не изменён.
 and URL assertion, Wave 2 layouts at 1440/1024/390, mobile typecheck/lint and
 `git diff --check`. Canonical Pen SHA remains unchanged.
 
+### 2026-08-12 — unique discovery fixture imagery
+
+- The guarded local seed now assigns separate thematic PNGs to all eight public
+  discovery works. The four additional listings use ceramic, lamp, textile and
+  printmaking imagery instead of repeating the first four catalog fixtures.
+- The fixture README records the source pages/assets and the runtime remains
+  local-only after seeding; no remote image URL is introduced into production
+  responses.
+
+Проверки: database build, mobile typecheck/lint, targeted Wave 2 E2E `1/1`
+with eight unique main image sources at 1440/1024/390, and `git diff --check`.
+Canonical Pen SHA remains unchanged.
+
 ### 2026-08-11 — deterministic visual-density fixtures
 
 - Guarded local/test seed теперь содержит четыре публичных предмета с

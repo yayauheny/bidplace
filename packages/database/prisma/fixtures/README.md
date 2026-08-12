@@ -15,5 +15,9 @@ Profile photos were downloaded from Unsplash and converted to PNG on 2026-08-11:
 The fourth public catalog image is a ceramic vase downloaded from Unsplash and converted to PNG:
 
 - `product-images/handmade-vase.png` — https://images.unsplash.com/photo-1666445759502-85124c28524e
+- `product-images/ceramic-bowl.png` — https://unsplash.com/photos/white-ceramic-bowl-xERRpHYVKjg
+- `product-images/studio-lamp.png` — https://images.unsplash.com/photo-1657906707347-bd8270e87ead
+- `product-images/textile-composition.png` — https://images.unsplash.com/photo-1718049942873-58bd663206dc
+- `product-images/linocut-print.png` — https://images.unsplash.com/photo-1436918898788-ebce04d38e46
 
-The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged.
+The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged. The additional product images are mapped one-to-one to the four extra seeded listings so the discovery grid does not repeat its first-row artwork.

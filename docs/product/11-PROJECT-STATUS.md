@@ -38,6 +38,10 @@ verification.
   compositions, focused accessibility behavior, Product deep-link/back tabs,
   related public works, E2E and production Expo export. Founder/device visual
   acceptance remains a release gate.
+- `Verified`: local/test discovery seed imagery covers eight distinct public
+  catalog cards, with source attribution in
+  `packages/database/prisma/fixtures/README.md`; the browser matrix confirms
+  distinct main image sources without runtime dependence on external URLs.
 
 ## Pen v2 content and public-profile contracts — 2026-08-11
 

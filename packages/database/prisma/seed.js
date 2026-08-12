@@ -491,7 +491,7 @@ async function main() {
         uniqueness: 'Единственный экземпляр',
         price: '640.00',
         listingStatus: 'SCHEDULED',
-        imageFileName: 'handmade-mug.png',
+        imageFileName: 'ceramic-bowl.png',
       },
       {
         publicId: 'seedPavel06',
@@ -504,7 +504,7 @@ async function main() {
         uniqueness: 'Малая серия',
         price: '920.00',
         listingStatus: 'LIVE',
-        imageFileName: 'handmade-vase.png',
+        imageFileName: 'studio-lamp.png',
       },
       {
         publicId: 'seedOlga007',
@@ -517,7 +517,7 @@ async function main() {
         uniqueness: 'Единственный экземпляр',
         price: '1 480.00',
         listingStatus: 'SCHEDULED',
-        imageFileName: 'painted-planter.png',
+        imageFileName: 'textile-composition.png',
       },
       {
         publicId: 'seedMark008',
@@ -529,7 +529,7 @@ async function main() {
         uniqueness: 'Ограниченный тираж',
         price: '510.00',
         listingStatus: 'SCHEDULED',
-        imageFileName: 'ceramic-brush-holder.png',
+        imageFileName: 'linocut-print.png',
       },
     ].map((fixture) =>
       createProductWithImages({

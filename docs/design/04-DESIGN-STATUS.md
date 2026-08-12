@@ -30,6 +30,10 @@
 - `Verified`: complete Chromium runtime suite `35/35`, including eight seeded
   catalog products, eight author cards, 1440/1024/390 layouts, loading/error/
   missing-media states, route boundaries and moderation flows.
+- `Verified`: the guarded discovery seed now gives all eight public catalog
+  cards distinct local main images; the Wave 2 matrix asserts unique image
+  sources at 1440/1024/390. Fixture source attribution is recorded outside
+  runtime API responses.
 - `Verified`: post-implementation API/security audit aligned public Product,
   Bid history, realtime and image visibility; aggregate image limits are
   transactional and bidder aliases are Listing-scoped.

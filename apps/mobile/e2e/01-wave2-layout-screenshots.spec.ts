@@ -66,6 +66,17 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       }
       const catalogCards = page.locator('a[href^="/product/"]');
       await expect(catalogCards).toHaveCount(seededProducts.length);
+      await expect
+        .poll(() =>
+          catalogCards
+            .locator('img[alt^="Изображение предмета:"]')
+            .evaluateAll(
+              (images) =>
+                new Set(images.map((image) => (image as HTMLImageElement).src))
+                  .size,
+            ),
+        )
+        .toBe(seededProducts.length);
       const expectedColumns = getCatalogColumnCount(width);
       const cardBoxes = await Promise.all(
         seededProducts.map((product) =>
