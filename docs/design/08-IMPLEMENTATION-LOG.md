@@ -166,6 +166,9 @@ and URL assertion, Wave 2 layouts at 1440/1024/390, mobile typecheck/lint and
 - The fixture README records the source pages/assets and the runtime remains
   local-only after seeding; no remote image URL is introduced into production
   responses.
+- The local copies are resized to a bounded 1000px edge for predictable seed
+  and browser-test cost while preserving their distinct composition and aspect
+  ratio.
 
 Проверки: database build, mobile typecheck/lint, targeted Wave 2 E2E `1/1`
 with eight unique main image sources at 1440/1024/390, and `git diff --check`.
