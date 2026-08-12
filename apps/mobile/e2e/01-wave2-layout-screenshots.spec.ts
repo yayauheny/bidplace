@@ -131,6 +131,10 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
           )
           .toBeGreaterThan(0);
       }
+      await page.getByTestId('catalog-scroll-view').evaluate((element) => {
+        element.scrollTop = 0;
+        element.dispatchEvent(new Event('scroll', { bubbles: true }));
+      });
       await page.screenshot({
         path: resolve(screenshotDir, `catalog-${width}.png`),
         fullPage: true,

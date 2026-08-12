@@ -704,6 +704,7 @@ export function ProductListScreen({
   return (
     <AppShell>
       <ScrollView
+        testID="catalog-scroll-view"
         contentContainerStyle={{
           paddingHorizontal:
             width >= designTokens.breakpoint.desktopShell
