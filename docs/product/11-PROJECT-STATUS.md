@@ -105,6 +105,10 @@ verification.
   state. Discovery menus close through Escape/outside interaction, and Creator
   status controls expose semantic tablist/tabpanel relationships; mobile
   typecheck/lint and Product E2E pass.
+- `Implemented`: Product About composes the canonical text, characteristics,
+  packaging, payment/delivery and author sections from existing public Product
+  and SellerProfile fields, with explicit honest states for unsupported details;
+  Product layout E2E asserts the required anatomy.
 
 ## Public discovery WIP — 2026-08-11
 

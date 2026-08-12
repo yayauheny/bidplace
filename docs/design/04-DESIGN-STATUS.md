@@ -86,6 +86,11 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   button label and covered by Product E2E. Discovery facet/sort menus close on
   Escape, outside pointer interaction and accessibility escape, while Creator
   status controls expose a semantic tablist/tabpanel relationship.
+- `Implemented`: Product About now has the distinct `О работе`,
+  `Характеристики`, `Упаковка` and `Оплата и доставка` accordion anatomy plus
+  the public author panel required by `L7ytbv`. Existing `deliveryInfo` is used
+  where available; unsupported payment/packaging fields remain honest
+  уточняющие states.
 
 ## Screen matrix
 

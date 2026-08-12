@@ -29,6 +29,15 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Торги/ })).toBeVisible();
+  await expect(page.getByText('О работе', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /01 Характеристики/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /02 Упаковка/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /03 Оплата и доставка/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: /Открыть страницу автора/ }),
+  ).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
   await page.getByRole('button', { name: 'Поделиться предметом' }).click();
   await expect(page.getByText('Ссылка скопирована', { exact: true })).toBeVisible();

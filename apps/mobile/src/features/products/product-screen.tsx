@@ -34,7 +34,6 @@ import {
   ResilientRemoteImage,
   type ProductTabId,
   SecondaryButton,
-  Separator,
   TextField,
   MotionPressable,
 } from '../../components/ui';
@@ -53,6 +52,7 @@ type BidItem = Awaited<
 type BidAttempt = { listingId: string; amount: number; idempotencyKey: string };
 type ListingStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | 'DRAFT';
 type DetailItem = { label: string; value: string };
+type AboutSectionId = 'characteristics' | 'packaging' | 'delivery';
 
 function newIdempotencyKey(): string {
   if (!globalThis.crypto?.randomUUID)
@@ -134,6 +134,130 @@ function SurfacePanel({
         </AppText>
       ) : null}
       {children}
+    </View>
+  );
+}
+
+function AboutAccordionRow({
+  body,
+  expanded,
+  index,
+  label,
+  onToggle,
+}: {
+  body: React.ReactNode;
+  expanded: boolean;
+  index: number;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <View
+      style={{
+        borderTopWidth: 1,
+        borderTopColor: designTokens.color.border,
+      }}
+    >
+      <MotionPressable
+        accessibilityRole="button"
+        accessibilityLabel={`${String(index).padStart(2, '0')} ${label}`}
+        accessibilityState={{ expanded }}
+        onPress={onToggle}
+        preset="button"
+        style={{
+          minHeight: 64,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: designTokens.space.x3,
+          paddingHorizontal: designTokens.space.x3,
+        }}
+      >
+        <AppText role="metadata" tone="secondary" style={{ width: 24 }}>
+          {String(index).padStart(2, '0')}
+        </AppText>
+        <AppText role="label" style={{ flex: 1 }}>
+          {label}
+        </AppText>
+        <AppIcon name={expanded ? 'minus' : 'plus'} size={16} />
+      </MotionPressable>
+      {expanded ? (
+        <View
+          nativeID={`product-about-section-${index}`}
+          accessibilityRole="summary"
+          style={{
+            gap: designTokens.space.x3,
+            paddingHorizontal: designTokens.space.x8,
+            paddingBottom: designTokens.space.x5,
+          }}
+        >
+          {body}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ProductAboutAuthorPanel({
+  profile,
+}: {
+  profile: {
+    fullName: string;
+    slug: string;
+    profilePhotoUrl: string;
+    shortDescription: string;
+  };
+}) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        gap: designTokens.space.x4,
+        padding: designTokens.space.x6,
+        backgroundColor: designTokens.color.surfaceMuted,
+      }}
+    >
+      <AppText role="sectionTitle">Автор</AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x3 }}>
+        <ResilientRemoteImage
+          uri={getApiAssetUrl(profile.profilePhotoUrl)}
+          component="ProductAuthor"
+          accessibilityLabel={`Фото автора: ${profile.fullName}`}
+          fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
+          style={{ width: 48, height: 48, borderRadius: 24 }}
+          contentFit="cover"
+        />
+        <View style={{ flex: 1, gap: designTokens.space.x1 }}>
+          <AppText role="label">{profile.fullName}</AppText>
+          <AppText role="bodySmall" tone="secondary">
+            @{profile.slug}
+          </AppText>
+        </View>
+      </View>
+      <AppText role="bodySmall" tone="secondary">
+        {profile.shortDescription}
+      </AppText>
+      <Link
+        href={{ pathname: '/seller/[slug]', params: { slug: profile.slug } } as Href}
+        asChild
+      >
+        <MotionPressable
+          accessibilityRole="link"
+          accessibilityLabel={`Открыть страницу автора ${profile.fullName}`}
+          preset="button"
+          style={{
+            minHeight: designTokens.size.touch,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTopWidth: 1,
+            borderTopColor: designTokens.color.border,
+            paddingTop: designTokens.space.x3,
+          }}
+        >
+          <AppText role="label">Страница автора</AppText>
+          <AppIcon name="chevronRight" size={16} />
+        </MotionPressable>
+      </Link>
     </View>
   );
 }
@@ -261,6 +385,9 @@ export function ProductScreen({
     null,
   );
   const [openCreationStep, setOpenCreationStep] = useState(0);
+  const [openAboutSection, setOpenAboutSection] = useState<AboutSectionId | null>(
+    'characteristics',
+  );
   const [now, setNow] = useState(Date.now());
   const [heroHeight, setHeroHeight] = useState(0);
   const [isPlayerSticky, setIsPlayerSticky] = useState(false);
@@ -536,47 +663,106 @@ export function ProductScreen({
     pointerEvents: 'box-none',
   } as unknown as ViewStyle;
   const itemStory = (
-    <EditorialSection title="О предмете">
-      <View style={{ gap: designTokens.space.x3 }}>
+    <View
+      style={{
+        flexDirection: isProductWide ? 'row' : 'column',
+        gap: designTokens.space.x6,
+      }}
+    >
+      <View
+        style={{
+          flex: 2,
+          gap: designTokens.space.x5,
+          padding: isProductWide ? designTokens.space.x6 : 0,
+          backgroundColor: isProductWide
+            ? designTokens.color.surfaceMuted
+            : 'transparent',
+        }}
+      >
+        <AppText role="sectionTitle">О работе</AppText>
         {product.story ? <AppText role="body">{product.story}</AppText> : null}
         {product.provenance ? (
-          <>
-            <Separator />
-            <View style={{ gap: designTokens.space.x1 }}>
-              <AppText role="label">Происхождение</AppText>
-              <AppText role="bodySmall" tone="secondary">
-                {product.provenance}
-              </AppText>
-            </View>
-          </>
+          <AppText role="bodySmall" tone="secondary">
+            {product.provenance}
+          </AppText>
         ) : null}
-        {detailItems.map((item) => (
-          <View
-            key={item.label}
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: designTokens.space.x4,
-            }}
-          >
-            <AppText role="bodySmall" tone="secondary">
-              {item.label}
-            </AppText>
-            <AppText
-              role="bodySmall"
-              style={{ flexShrink: 1, textAlign: 'right' }}
-            >
-              {item.value}
-            </AppText>
-          </View>
-        ))}
-        {!product.story && !product.provenance && detailItems.length === 0 ? (
+        {!product.story && !product.provenance ? (
           <AppText role="bodySmall" tone="secondary">
             Описание предмета появится здесь.
           </AppText>
         ) : null}
+        <View>
+          <AboutAccordionRow
+            index={1}
+            label="Характеристики"
+            expanded={openAboutSection === 'characteristics'}
+            onToggle={() =>
+              setOpenAboutSection((current) =>
+                current === 'characteristics' ? null : 'characteristics',
+              )
+            }
+            body={
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: designTokens.space.x5,
+                }}
+              >
+                {detailItems.length > 0 ? (
+                  detailItems.map((item) => (
+                    <View key={item.label} style={{ minWidth: 120, flex: 1, gap: designTokens.space.x1 }}>
+                      <AppText role="caption" tone="secondary">
+                        {item.label}
+                      </AppText>
+                      <AppText role="label">{item.value}</AppText>
+                    </View>
+                  ))
+                ) : (
+                  <AppText role="bodySmall" tone="secondary">
+                    Характеристики уточняются.
+                  </AppText>
+                )}
+              </View>
+            }
+          />
+          <AboutAccordionRow
+            index={2}
+            label="Упаковка"
+            expanded={openAboutSection === 'packaging'}
+            onToggle={() => setOpenAboutSection('packaging')}
+            body={
+              <AppText role="bodySmall" tone="secondary">
+                Информация об упаковке уточняется автором после завершения торгов.
+              </AppText>
+            }
+          />
+          <AboutAccordionRow
+            index={3}
+            label="Оплата и доставка"
+            expanded={openAboutSection === 'delivery'}
+            onToggle={() => setOpenAboutSection('delivery')}
+            body={
+              <AppText role="bodySmall" tone="secondary">
+                {product.deliveryInfo ??
+                  'Условия оплаты и передачи уточняются после завершения торгов.'}
+              </AppText>
+            }
+          />
+          <View style={{ borderTopWidth: 1, borderTopColor: designTokens.color.border }} />
+        </View>
       </View>
-    </EditorialSection>
+      {isProductWide ? (
+        <ProductAboutAuthorPanel
+          profile={{
+            fullName: sellerProfile.fullName,
+            slug: sellerProfile.slug,
+            profilePhotoUrl: sellerProfile.profilePhotoUrl,
+            shortDescription: sellerProfile.shortDescription,
+          }}
+        />
+      ) : null}
+    </View>
   );
   const bidHistory = (
     <View
