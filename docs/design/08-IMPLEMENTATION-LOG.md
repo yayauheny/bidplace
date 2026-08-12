@@ -24,9 +24,9 @@
 | Stage 3 — GlobalHeader/account IA | Готово | Responsive shell, account menu и role navigation                           | `23e154f`, `f0e6627`                                  |
 | Stage 4 — AuctionCard/CreatorCard | Готово | Shared card anatomy, media states и responsive grids                       | `23e154f`, `d1667b5`                                  |
 | Stage 5 — Browse Works/Authors    | Готово | H5vf2/N4ebBk routes, query state, facets и test density                    | `d1667b5`, `80de66c`                                  |
-| Stage 6 — Product About           | Готово | Product hero, facts, related works и AuctionPlayer                         | `a05aa82`                                             |
-| Stage 7 — Creation/Bids           | Готово | Creation steps/media, tabs, bids и transactional states                    | `1a0a400`, `a05aa82`                                  |
-| Stage 8 — Creator Profile         | Готово | Только `MqUMz` — `MVP v1`, public data boundary                            | `3778190`                                             |
+| Stage 6 — Product About           | Готово | Product hero, facts, related works и AuctionPlayer                         | `4936f1f`                                             |
+| Stage 7 — Creation/Bids           | Готово | Creation steps/media, tabs, bids и transactional states                    | `db6f193`                                             |
+| Stage 8 — Creator Profile         | Готово | Только `MqUMz` — `MVP v1`, public data boundary                            | `22ec4f8`                                             |
 | Stage 9 — responsive derivation   | Готово | 1440/1024/390 behavior, overflow и runtime matrices                        | `770a406`, `9e82345`, `f0e6627`                       |
 | Stage 10 — cleanup and evidence   | Готово | Route acceptance, docs, asset inventory, full E2E и canonical SHA evidence | `d730a8a`, `630cf0e`, `f0e6627`, `80de66c`, `338a2d1` |
 | Cross-cutting — backend/security  | Готово | Visibility, uploads, aliases и integrity boundaries                        | `84336e9`                                             |
@@ -69,14 +69,13 @@ Pen source `L7ytbv`/`X6Ksg` was read/exported without modification.
 Проверки: seeded demo Creation/Bids evidence `2/2`, Product composition `1/1`,
 mobile typecheck/lint and design-tokens build. Runtime screenshots are written
 outside the repository to `/private/tmp/bidplace-product-tab-screenshots/`.
-Wave C product acceptance still requires a running local PostgreSQL service;
-the attempted rerun on 2026-08-12 was blocked by `127.0.0.1:5432` being
-unavailable. Pen source `cK8kD`/`XIzHe` was read/exported without modification.
+Wave C product acceptance passed in the current full Chromium run. Pen source
+`cK8kD`/`XIzHe` was read/exported without modification.
 
 ### 2026-08-12 — Creator Profile `MqUMz` only
 
 - `MqUMz` is the sole Creator Profile target: `FINAL — Desktop Creator /
-  Profile / MVP v1`. The route keeps one shared public creator screen and one
+Profile / MVP v1`. The route keeps one shared public creator screen and one
   shared `AuctionCard` master; `HOXkZ` / `Editorial Refinement v1` is excluded.
 - The profile hero preserves the canonical 500px centered anatomy: 120px photo,
   48px Inter name, copyable handle, only-present structured Telegram/
@@ -92,9 +91,10 @@ unavailable. Pen source `cK8kD`/`XIzHe` was read/exported without modification.
 
 Проверки: API Sellers unit suite `153/153`, contracts `11/11`, Creator/route
 Playwright `1/1`, seeded demo `2/2`, Product/Creator targeted matrix `4/4`,
-mobile typecheck/lint and design-tokens/contracts/api-client builds. Runtime
-evidence: `/private/tmp/bidplace-wave-c-screenshots/db6f193/`; Pen source
-`MqUMz`/`L9UV9` was read/exported without modification.
+current full Chromium graph `35/35`, mobile typecheck/lint and
+design-tokens/contracts/api-client builds. Runtime evidence:
+`/private/tmp/bidplace-wave-c-screenshots/db6f193/`; Pen source `MqUMz`/`L9UV9`
+was read/exported without modification.
 
 ### 2026-08-12 — direct Pen export reconciliation for discovery geometry
 
