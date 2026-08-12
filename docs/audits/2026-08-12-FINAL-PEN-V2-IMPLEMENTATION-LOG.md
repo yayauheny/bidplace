@@ -141,7 +141,28 @@
 
 ## Stage 5 — Creator profile creation
 
-- Status: Not started
+- Status: Partial — implementation committed; full visual/native matrix pending
+- Pen references: `JOjIY`, `DtJDi`, `m9a3A`, `I8p0K`, `T6vFm`
+- Success criteria: stage creator creation into public identity, public links, and private handoff/review; keep public previews free of private transfer data; preserve structured Telegram/Instagram/website contracts, profile photo upload and seller status/edit locks.
+- Candidate fixes:
+  - durable fix: one `ProfileFields` model mapped to the existing seller profile contract, with explicit step gating and separate public/private sections;
+  - acceptable workaround: local step state while server submission remains the only profile write;
+  - hack: copying handoff data into public preview or inventing a second social-link schema.
+- Chosen solution and rationale: `SellerProfileScreen` now stages the existing create/update API. Step 1 requires identity, description and photo; Step 2 collects structured public links and derives the required legacy `socialLink` only when needed; Step 3 collects handoff data and shows a public-only review summary before submit. Existing profiles continue to use the editable/locked single-page maintenance view.
+- Backend changes: none; existing seller ownership, approved-seller, status and private projection boundaries remain authoritative.
+- Frontend changes: staged seller profile creation, structured link fields, public-only review summary and profile E2E coverage.
+- Contract changes: none; existing `telegramUrl`, `instagramUrl`, `websiteUrl` fields are now wired into the UI.
+- Migration changes: none.
+- Tests added/updated: `creator-profile.spec.ts` covers staged creation, public links, private handoff and post-submit status; the existing public privacy/responsive test remains in the same file.
+- Checks executed: mobile typecheck/lint and targeted creator profile Playwright `2/2` pass with host PostgreSQL.
+- Runtime screenshots: pending at 1440/1024/390 and native image-picker/accessibility acceptance.
+- Deliberate visual differences: public profile review intentionally omits handoff contact value and initiator; structured links are now first-class creation inputs while the server-required legacy link remains compatibility data.
+- Security/privacy notes: handoff fields are sent only to authenticated seller profile endpoints and are not rendered in the review preview or public profile route.
+- Files changed: `apps/mobile/src/features/sellers/seller-profile-screen.tsx`, `apps/mobile/e2e/creator-profile.spec.ts`.
+- Commit subject: `implement feature: add creator profile wizard`
+- Commit SHA: `7f69e45`
+- Remaining risks: full responsive screenshots, image picker failures, invalid-link error state and final device/screen-reader acceptance remain.
+- Next stage: admin moderation workspace.
 
 ## Stage 6 — Admin moderation workspace
 
