@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link, type Href, useRouter } from 'expo-router';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useEffect, useState } from 'react';
@@ -15,6 +15,7 @@ import {
   MotionPressable,
   PageState,
   ResilientRemoteImage,
+  SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
@@ -434,12 +435,27 @@ export function PublicSellerScreen({
   const api = useApiClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const query = useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['public-seller', slug, { status, sort }],
-    queryFn: () => api.sellers.getPublicDetail(slug, { status, sort }),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      api.sellers.getPublicDetail(slug, {
+        status,
+        sort,
+        page: pageParam,
+        limit: 20,
+      }),
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.pagination.page * lastPage.pagination.limit;
+      return loaded < lastPage.pagination.total
+        ? lastPage.pagination.page + 1
+        : undefined;
+    },
     enabled: Boolean(slug),
     retry: false,
   });
+  const firstPage = query.data?.pages[0];
+  const products = query.data?.pages.flatMap((page) => page.products) ?? [];
 
   let content: React.ReactNode;
   if (query.isLoading) {
@@ -452,29 +468,45 @@ export function PublicSellerScreen({
     content = (
       <PageState title="Автор не найден" message="Профиль больше недоступен." />
     );
-  } else if (query.isError || !query.data) {
+  } else if (query.isError || !firstPage) {
     content = (
       <PageState
         title="Не удалось загрузить работы автора"
         retry={() => void query.refetch()}
       />
     );
-  } else if (query.data.products.length === 0) {
+  } else if (products.length === 0) {
     content = <PageState title="У автора пока нет опубликованных работ" />;
   } else {
     content = (
-      <AuctionCardGrid
-        items={query.data.products}
-        columns={getAuthorWorkColumnCount(width)}
-      />
+      <View style={{ gap: designTokens.space.x5 }}>
+        <AuctionCardGrid
+          items={products}
+          columns={getAuthorWorkColumnCount(width)}
+        />
+        {query.hasNextPage ? (
+          <View style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
+            <SecondaryButton
+              label="Загрузить ещё"
+              loading={query.isFetchingNextPage}
+              onPress={() => void query.fetchNextPage()}
+            />
+            {query.isFetchNextPageError ? (
+              <AppText role="bodySmall" tone="danger">
+                Не удалось загрузить следующую страницу.
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
     );
   }
 
   return (
     <AppShell
       ambientImageUrl={
-        query.data
-          ? getApiAssetUrl(query.data.sellerProfile.profilePhotoUrl)
+        firstPage
+          ? getApiAssetUrl(firstPage.sellerProfile.profilePhotoUrl)
           : undefined
       }
     >
@@ -484,8 +516,8 @@ export function PublicSellerScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={{ width: '100%', alignSelf: 'center' }}>
-          {query.data ? (
-            <CreatorHero profile={query.data.sellerProfile} slug={slug} />
+          {firstPage ? (
+            <CreatorHero profile={firstPage.sellerProfile} slug={slug} />
           ) : null}
           <View
             style={{
@@ -521,10 +553,10 @@ export function PublicSellerScreen({
                 onChange={(nextSort) => router.setParams({ sort: nextSort })}
               />
             </View>
-            {query.data ? (
+            {firstPage ? (
               <CreatorStatusTabs
                 status={status}
-                statusCounts={query.data.statusCounts}
+                statusCounts={firstPage.statusCounts}
                 onChange={(nextStatus) =>
                   router.setParams({ status: nextStatus, sort })
                 }

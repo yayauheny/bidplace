@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-12 — Final Pen v2 review blockers
+
+- `Implemented`: public creator work pagination now preserves `status`/`sort`, loads additional server pages through `useInfiniteQuery`, and exposes loading/retry states in `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
+- `Implemented`: `SellersService.getPublic` applies canonical listing selection, filtering, ordering, counts and `LIMIT/OFFSET` in PostgreSQL before hydrating `publicCatalogProductSelect`; public lists do not select `ProductImage.data`. Coverage is in `apps/api/test/integration/seller-pagination.integration.spec.ts` and `apps/api/src/sellers/sellers.service.spec.ts`.
+- `Implemented`: bid CTA eligibility is derived from the authenticated session and current rules response in `apps/mobile/src/features/auth/email-rules-gate.tsx` and `email-rules-eligibility.ts`; guests receive the login return route, admins remain excluded, and unavailable email/rules states do not expose an active bid action.
+- `Implemented`: `AmbientImageBackground` uses the shared Expo `LinearGradient` primitive with explicit stops and a bounded 1.1× clipped media overscan; `apps/mobile/src/components/ui/ambient-image-background-style.spec.ts` covers the geometry contract.
+- `Implemented`: Product About accordion rows close on repeated activation through one shared toggle helper with semantic expanded state.
+- `Verified`: API unit `153/153`, mobile unit `124/124`, contracts `11/11`, API/mobile/database typechecks, API/mobile lint, and PostgreSQL integration `40/40` pass on 2026-08-12. The seed contract test now selects its dedicated `seedEnded03` fixture after the public fixture set expanded.
+- `Partial`: the remaining Final Pen v2 mobile header, auction participation/SlideToBid, product creation, creator profile creation, and admin moderation flows are not yet implemented or runtime-accepted. The canonical Pen baseline is now the attached SHA recorded in the implementation audit.
+
 Последнее обновление: 2026-08-12
 Статус: Public discovery completion is Partial; trust-critical backend
 boundaries remain Implemented; founder visual/device/screen-reader acceptance,

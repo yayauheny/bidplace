@@ -47,11 +47,16 @@ describe('demo seed executable contract', () => {
         include: { bids: true },
       }),
       prisma.listing.findFirst({
-        where: { status: 'ENDED' },
+        where: { status: 'ENDED', product: { publicId: 'seedEnded03' } },
         include: { bids: true },
       }),
       prisma.bid.findMany({
-        where: { listing: { status: 'ENDED' } },
+        where: {
+          listing: {
+            status: 'ENDED',
+            product: { publicId: 'seedEnded03' },
+          },
+        },
         include: { bidderUser: true },
       }),
       prisma.order.findMany({

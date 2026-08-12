@@ -120,9 +120,10 @@ describe('SellersService', () => {
           country: 'BY',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Short',
-          products: [],
         }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      product: { findMany: vi.fn() },
     };
     const service = new SellersService(
       prisma as never,
@@ -137,31 +138,9 @@ describe('SellersService', () => {
 
     expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: expect.objectContaining({
-          products: expect.objectContaining({
-            include: expect.objectContaining({
-              listings: expect.objectContaining({
-                where: {
-                  status: { in: ['LIVE', 'SCHEDULED', 'ENDED'] },
-                },
-              }),
-            }),
-          }),
-        }),
+        select: publicSellerProfileSelect,
       }),
     );
-    expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        include: expect.objectContaining({
-          products: expect.objectContaining({
-            include: expect.objectContaining({
-              sellerProfile: {
-                select: publicSellerProfileSelect,
-              },
-            }),
-          }),
-        }),
-      }),
-    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
   });
 });

@@ -12,22 +12,122 @@ import {
 import { designTokens } from '@bidplace/design-tokens';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
+import {
+  resolveEmailRulesEligibility,
+  type EmailRulesEligibility,
+} from './email-rules-eligibility';
 
 type EmailRulesGateProps = {
   children: ReactNode;
   redirectTo: string;
 };
 
+export function useEmailRulesEligibility(): {
+  eligibility: EmailRulesEligibility;
+  rules:
+    | Awaited<
+        ReturnType<ReturnType<typeof useApiClient>['auth']['getRules']>
+      >['rules']
+    | null;
+  rulesError: boolean;
+  refetchRules: () => Promise<unknown>;
+} {
+  const api = useApiClient();
+  const auth = useAuth();
+  const rulesQuery = useQuery({
+    queryKey: ['auth', 'rules'],
+    queryFn: () => api.auth.getRules(),
+    enabled: auth.isAuthenticated && auth.user !== null && !auth.isAdmin,
+  });
+
+  const eligibility = resolveEmailRulesEligibility({
+    ready: auth.ready,
+    authenticated: auth.isAuthenticated,
+    admin: auth.isAdmin,
+    user: auth.user
+      ? {
+          emailVerifiedAt: auth.user.emailVerifiedAt,
+          acceptedRulesVersion: auth.user.acceptedRulesVersion,
+        }
+      : null,
+    rulesVersion: rulesQuery.data?.rules.version ?? null,
+    rulesLoading: rulesQuery.isLoading,
+    rulesError: Boolean(rulesQuery.error),
+  });
+
+  if (eligibility === 'loading' && !auth.ready) {
+    return {
+      eligibility: 'loading',
+      rules: null,
+      rulesError: false,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (!auth.isAuthenticated) {
+    return {
+      eligibility: 'guest',
+      rules: null,
+      rulesError: false,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (auth.isAdmin) {
+    return {
+      eligibility: 'admin',
+      rules: null,
+      rulesError: false,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (!auth.user) {
+    return {
+      eligibility: 'error',
+      rules: null,
+      rulesError: true,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (!auth.user.emailVerifiedAt) {
+    return {
+      eligibility: 'email',
+      rules: rulesQuery.data?.rules ?? null,
+      rulesError: Boolean(rulesQuery.error),
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (rulesQuery.isError) {
+    return {
+      eligibility: 'error',
+      rules: null,
+      rulesError: true,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  if (rulesQuery.isLoading || !rulesQuery.data) {
+    return {
+      eligibility: 'loading',
+      rules: null,
+      rulesError: false,
+      refetchRules: rulesQuery.refetch,
+    };
+  }
+  return {
+    eligibility:
+      auth.user.acceptedRulesVersion === rulesQuery.data.rules.version
+        ? 'ready'
+        : 'rules',
+    rules: rulesQuery.data.rules,
+    rulesError: false,
+    refetchRules: rulesQuery.refetch,
+  };
+}
+
 export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
   const api = useApiClient();
   const auth = useAuth();
   const [code, setCode] = useState('');
-
-  const rulesQuery = useQuery({
-    queryKey: ['auth', 'rules'],
-    queryFn: () => api.auth.getRules(),
-    enabled: auth.isAuthenticated && auth.user !== null,
-  });
+  const { eligibility, rules, rulesError, refetchRules } =
+    useEmailRulesEligibility();
 
   const requestEmailVerification = useMutation({
     mutationFn: () => api.auth.requestEmailVerification(),
@@ -42,12 +142,12 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
 
   const acceptRules = useMutation({
     mutationFn: () => {
-      if (!rulesQuery.data) {
+      if (!rules) {
         throw new Error('Rules are not available');
       }
 
       return api.auth.acceptRules({
-        rulesVersion: rulesQuery.data.rules.version,
+        rulesVersion: rules.version,
       });
     },
     onSuccess: () => {
@@ -55,7 +155,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
     },
   });
 
-  if (!auth.ready) {
+  if (eligibility === 'loading' && !auth.ready) {
     return (
       <AppText role="bodySmall" tone="secondary">
         Проверяем доступ…
@@ -90,7 +190,15 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
     );
   }
 
-  if (rulesQuery.isError) {
+  if (eligibility === 'admin') {
+    return (
+      <AppText role="bodySmall" tone="secondary">
+        Администратор не участвует в торгах.
+      </AppText>
+    );
+  }
+
+  if (rulesError) {
     return (
       <View style={{ gap: designTokens.space.x3 }}>
         <AppText role="bodySmall" tone="danger">
@@ -98,7 +206,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
         </AppText>
         <SecondaryButton
           label="Повторить"
-          onPress={() => void rulesQuery.refetch()}
+          onPress={() => void refetchRules()}
         />
       </View>
     );
@@ -137,7 +245,7 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
     );
   }
 
-  if (!rulesQuery.data) {
+  if (!rules) {
     return (
       <AppText role="bodySmall" tone="secondary">
         Загружаем правила…
@@ -145,15 +253,17 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
     );
   }
 
-  if (auth.user.acceptedRulesVersion !== rulesQuery.data.rules.version) {
+  if (eligibility === 'rules') {
     return (
       <View style={{ gap: designTokens.space.x3 }}>
-        <AppText role="label">Перед первой ставкой нужно принять правила сервиса.</AppText>
+        <AppText role="label">
+          Перед первой ставкой нужно принять правила сервиса.
+        </AppText>
         <AppText role="bodySmall" tone="secondary">
-          {rulesQuery.data.rules.text}
+          {rules.text}
         </AppText>
         <AppText role="caption" tone="muted">
-          Версия: {rulesQuery.data.rules.version}
+          Версия: {rules.version}
         </AppText>
         <PrimaryButton
           label="Принять правила"

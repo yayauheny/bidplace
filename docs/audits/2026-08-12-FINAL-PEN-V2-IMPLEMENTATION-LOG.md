@@ -16,7 +16,7 @@
 
 ## Stage 0 — Adopt final Pen v2 baseline
 
-- Status: Complete pending commit
+- Status: Complete
 - Pen references: attached Pen v2, selected FINAL roots above
 - Success criteria: repository canonical is an exact byte-for-byte copy of the attached Pen; no later `.pen` edits; unrelated founder files remain untouched.
 - Candidate fixes:
@@ -34,31 +34,34 @@
 - Deliberate visual differences: none declared.
 - Security/privacy notes: no secrets or credentials read or staged.
 - Files changed: `design/pen/bidplace-web-v2.pen`, this audit log.
-- Commit subject: pending.
-- Commit SHA: pending.
-- Remaining risks: baseline commit and final staged-file verification pending.
+- Commit subject: `implement feature: adopt final pen v2 baseline`
+- Commit SHA: `ba3439b`
+- Remaining risks: later implementation stages must not modify the canonical Pen.
 - Next stage: close six prior review findings.
 
 ## Stage 1 — Close final Pen v2 review blockers
 
-- Status: Not started
+- Status: Complete pending commit
 - Pen references: `nTnuM`, `L7ytbv`, `MqUMz`, shared `jh6TI`
 - Success criteria: six findings are durably fixed or disproven with tests and evidence.
-- Candidate fixes: documented in the working task plan; durable fixes selected.
-- Chosen solution and rationale: pending implementation.
-- Backend changes: pending.
-- Frontend changes: pending.
-- Contract changes: pending.
-- Migration changes: pending.
-- Tests added: pending.
-- Checks executed: pending.
+- Candidate fixes:
+  - durable fix: shared server-derived eligibility state, database-side creator pagination, one native gradient primitive, bounded blur overscan, symmetric accordion toggle;
+  - acceptable workaround: none selected;
+  - hack: client-only eligibility, in-memory slicing, stacked fade overlays, edge-clipped blur, one-way accordion state.
+- Chosen solution and rationale: `useEmailRulesEligibility` derives bid access from the authenticated session and fetched rules version; guest CTA routes to login with `redirectTo`, while unavailable states do not expose an active bid CTA. Public creator pages use `useInfiniteQuery` over API pages. `SellersService.getPublic` uses PostgreSQL CTEs for canonical listing, filter, count, sort and pagination, then hydrates a metadata-only product select. `AmbientImageBackground` uses Expo LinearGradient with explicit stops and a 1.1x clipped blur layer. Product About uses a shared symmetric toggle helper.
+- Backend changes: seller public detail query now performs filtering, sorting, counts and pagination in PostgreSQL; image hydration uses `publicCatalogProductSelect` without `ProductImage.data`.
+- Frontend changes: server-page accumulation and loading/retry state on public creator works; eligibility-aware auction CTA; true gradient and bounded overscan; accordion close-on-repeat.
+- Contract changes: no contract shape changes; existing page/limit/status/sort contract is now honored end-to-end.
+- Migration changes: none; the existing page/limit/status/sort contract and schema are sufficient.
+- Tests added: `email-rules-eligibility.spec.ts`, `ambient-image-background-style.spec.ts`, `seller-pagination.integration.spec.ts`; updated seller service query test and narrowed the seed contract assertion to deterministic `seedEnded03` after fixture expansion.
+- Checks executed: contracts tests `11/11`; API unit `153/153`; mobile unit `124/124`; API/mobile/database typecheck pass; API/mobile lint pass; full PostgreSQL integration `40/40` pass with host access after Docker PostgreSQL was started. Initial sandboxed integration attempts were blocked by host networking before test execution.
 - Runtime screenshots: pending.
-- Deliberate visual differences: pending.
-- Security/privacy notes: bidding and public media remain server-owned.
-- Files changed: pending.
-- Commit subject: `fix: close final pen v2 review blockers`
+- Deliberate visual differences: none declared.
+- Security/privacy notes: bid eligibility remains tied to session email/rules state; admin remains excluded; public seller hydration does not select image blobs or private handoff fields.
+- Files changed: `apps/api/src/products/products.service.ts`, `apps/api/src/sellers/sellers.service.ts`, `apps/api/src/sellers/sellers.service.spec.ts`, `apps/api/test/integration/seller-pagination.integration.spec.ts`, `apps/mobile/package.json`, `pnpm-lock.yaml`, `apps/mobile/src/components/ui/AmbientImageBackground.tsx`, `apps/mobile/src/components/ui/ambient-image-background-style.ts`, `apps/mobile/src/components/ui/ambient-image-background-style.spec.ts`, `apps/mobile/src/features/auth/email-rules-gate.tsx`, `apps/mobile/src/features/auth/email-rules-eligibility.ts`, `apps/mobile/src/features/auth/email-rules-eligibility.spec.ts`, `apps/mobile/src/features/products/product-screen.tsx`, `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
+- Commit subject: pending.
 - Commit SHA: pending.
-- Remaining risks: pending.
+- Remaining risks: full integration matrix, runtime screenshots, full Playwright, and final audit/status documentation remain.
 - Next stage: mobile header.
 
 ## Stage 2 — New mobile header

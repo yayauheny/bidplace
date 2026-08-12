@@ -1,21 +1,16 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
-
-const fadeStops = [
-  { top: '42%', opacity: 0.04 },
-  { top: '50%', opacity: 0.12 },
-  { top: '58%', opacity: 0.24 },
-  { top: '66%', opacity: 0.4 },
-  { top: '74%', opacity: 0.58 },
-  { top: '82%', opacity: 0.74 },
-  { top: '90%', opacity: 0.88 },
-  { top: '96%', opacity: 0.96 },
-] as const;
+import {
+  ambientGradientColors,
+  ambientGradientLocations,
+  ambientImageOverscanScale,
+} from './ambient-image-background-style';
 
 export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
   const reducedMotion = useReducedMotion();
@@ -54,7 +49,13 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
       {imageUrl ? (
         <Animated.View
           testID="ambient-image-background-image"
-          style={[StyleSheet.absoluteFill, { opacity }]}
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              opacity,
+              transform: [{ scale: ambientImageOverscanScale }],
+            },
+          ]}
         >
           <Image
             source={{ uri: imageUrl }}
@@ -62,32 +63,17 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
             blurRadius={64}
             onLoad={() => setLoaded(true)}
             onError={() => setLoaded(false)}
-            style={[
-              StyleSheet.absoluteFill,
-              { width: '100%', height: '100%' },
-            ]}
+            style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
           />
         </Animated.View>
       ) : null}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: 'rgba(251, 251, 248, 0.72)' },
-        ]}
+      <LinearGradient
+        colors={ambientGradientColors}
+        locations={ambientGradientLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
       />
-      {fadeStops.map((stop) => (
-        <View
-          key={stop.top}
-          style={{
-            position: 'absolute',
-            top: stop.top,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            backgroundColor: `rgba(251, 251, 248, ${stop.opacity})`,
-          }}
-        />
-      ))}
     </View>
   );
 }

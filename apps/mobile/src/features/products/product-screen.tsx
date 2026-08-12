@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
-import { Link, type Href } from 'expo-router';
+import { Link, type Href, useRouter } from 'expo-router';
 import {
   Platform,
   ScrollView,
@@ -40,7 +40,10 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { EmailRulesGate } from '../auth/email-rules-gate';
+import {
+  EmailRulesGate,
+  useEmailRulesEligibility,
+} from '../auth/email-rules-gate';
 import { validateBidAmount } from './bid-validation';
 import { getCatalogColumnCount } from './catalog-layout';
 
@@ -215,7 +218,13 @@ function ProductAboutAuthorPanel({
       }}
     >
       <AppText role="sectionTitle">Автор</AppText>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: designTokens.space.x3 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: designTokens.space.x3,
+        }}
+      >
         <ResilientRemoteImage
           uri={getApiAssetUrl(profile.profilePhotoUrl)}
           component="ProductAuthor"
@@ -235,7 +244,9 @@ function ProductAboutAuthorPanel({
         {profile.shortDescription}
       </AppText>
       <Link
-        href={{ pathname: '/seller/[slug]', params: { slug: profile.slug } } as Href}
+        href={
+          { pathname: '/seller/[slug]', params: { slug: profile.slug } } as Href
+        }
         asChild
       >
         <MotionPressable
@@ -339,7 +350,9 @@ export function ProductScreen({
 }) {
   const api = useApiClient();
   const auth = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const { eligibility } = useEmailRulesEligibility();
   const { width } = useWindowDimensions();
   const isDesktop = width >= designTokens.breakpoint.desktopShell;
   const isProductWide = width >= designTokens.breakpoint.productDetailWide;
@@ -361,15 +374,18 @@ export function ProductScreen({
     null,
   );
   const [openCreationStep, setOpenCreationStep] = useState(0);
-  const [openAboutSection, setOpenAboutSection] = useState<AboutSectionId | null>(
-    'characteristics',
-  );
+  const [openAboutSection, setOpenAboutSection] =
+    useState<AboutSectionId | null>('characteristics');
   const [now, setNow] = useState(Date.now());
   const [heroHeight, setHeroHeight] = useState(0);
   const [isPlayerSticky, setIsPlayerSticky] = useState(false);
   const [shareState, setShareState] = useState<'idle' | 'success' | 'error'>(
     'idle',
   );
+
+  const toggleAboutSection = (section: AboutSectionId) => {
+    setOpenAboutSection((current) => (current === section ? null : section));
+  };
 
   const query = useQuery({
     queryKey: ['products', publicId],
@@ -608,12 +624,28 @@ export function ProductScreen({
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
       actionLabel={
-        listing.status === 'LIVE' && !auth.isAdmin ? 'Поставить' : undefined
+        listing.status === 'LIVE' && !auth.isAdmin
+          ? eligibility === 'ready'
+            ? 'Поставить'
+            : eligibility === 'guest'
+              ? 'Войти'
+              : undefined
+          : undefined
       }
       actionDisabled={bid.isPending}
       actionLoading={bid.isPending}
       onAction={
-        listing.status === 'LIVE' && !auth.isAdmin ? submitBid : undefined
+        listing.status === 'LIVE' && !auth.isAdmin
+          ? eligibility === 'ready'
+            ? submitBid
+            : eligibility === 'guest'
+              ? () =>
+                  router.push({
+                    pathname: '/login',
+                    params: { redirectTo: `/product/${publicId}` },
+                  })
+              : undefined
+          : undefined
       }
       width={isHeroThreeColumn ? 404 : undefined}
     />
@@ -675,11 +707,7 @@ export function ProductScreen({
             index={1}
             label="Характеристики"
             expanded={openAboutSection === 'characteristics'}
-            onToggle={() =>
-              setOpenAboutSection((current) =>
-                current === 'characteristics' ? null : 'characteristics',
-              )
-            }
+            onToggle={() => toggleAboutSection('characteristics')}
             body={
               <View
                 style={{
@@ -690,7 +718,14 @@ export function ProductScreen({
               >
                 {detailItems.length > 0 ? (
                   detailItems.map((item) => (
-                    <View key={item.label} style={{ minWidth: 120, flex: 1, gap: designTokens.space.x1 }}>
+                    <View
+                      key={item.label}
+                      style={{
+                        minWidth: 120,
+                        flex: 1,
+                        gap: designTokens.space.x1,
+                      }}
+                    >
                       <AppText role="caption" tone="secondary">
                         {item.label}
                       </AppText>
@@ -709,10 +744,11 @@ export function ProductScreen({
             index={2}
             label="Упаковка"
             expanded={openAboutSection === 'packaging'}
-            onToggle={() => setOpenAboutSection('packaging')}
+            onToggle={() => toggleAboutSection('packaging')}
             body={
               <AppText role="bodySmall" tone="secondary">
-                Информация об упаковке уточняется автором после завершения торгов.
+                Информация об упаковке уточняется автором после завершения
+                торгов.
               </AppText>
             }
           />
@@ -720,7 +756,7 @@ export function ProductScreen({
             index={3}
             label="Оплата и доставка"
             expanded={openAboutSection === 'delivery'}
-            onToggle={() => setOpenAboutSection('delivery')}
+            onToggle={() => toggleAboutSection('delivery')}
             body={
               <AppText role="bodySmall" tone="secondary">
                 {product.deliveryInfo ??
@@ -728,7 +764,12 @@ export function ProductScreen({
               </AppText>
             }
           />
-          <View style={{ borderTopWidth: 1, borderTopColor: designTokens.color.border }} />
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: designTokens.color.border,
+            }}
+          />
         </View>
       </View>
       {isProductWide ? (

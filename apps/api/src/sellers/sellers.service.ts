@@ -7,6 +7,7 @@ import {
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
 } from '@bidplace/contracts';
+import { Prisma } from '@bidplace/database';
 import {
   ConflictException,
   ForbiddenException,
@@ -19,10 +20,10 @@ import { isPrismaUniqueConstraintError, PrismaService } from '../core/database';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import { productSelect, toContractProduct } from '../products/products.mapper';
 import {
-  publicCatalogProductWhere,
-  publicListingStatuses,
-} from '../products/public-visibility';
-import { ProductsService } from '../products/products.service';
+  ProductsService,
+  publicCatalogProductSelect,
+} from '../products/products.service';
+import { publicCatalogProductWhere } from '../products/public-visibility';
 import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
@@ -44,6 +45,71 @@ export function countPublicSellerStatuses(
   }
 
   return counts;
+}
+
+type PublicSellerProductPageRow = { id: string };
+type PublicSellerCountRow = { total: number | bigint };
+type PublicSellerStatusRow = {
+  status: 'SCHEDULED' | 'LIVE' | 'ENDED';
+  count: number | bigint;
+};
+
+function publicSellerProductsCte(
+  slug: string,
+  status?: PublicSellerWorksQuery['status'],
+) {
+  const statusFilter = status
+    ? Prisma.sql`AND c."status" = CAST(${status} AS "ListingStatus")`
+    : Prisma.empty;
+
+  return Prisma.sql`WITH canonical AS (
+    SELECT DISTINCT ON (l."product_id")
+      l."product_id",
+      l."status",
+      l."current_price",
+      l."bid_count",
+      l."ends_at",
+      l."created_at" AS "listing_created_at"
+    FROM "listings" l
+    WHERE l."status" IN ('LIVE', 'SCHEDULED', 'ENDED')
+    ORDER BY
+      l."product_id",
+      CASE l."status"
+        WHEN 'LIVE' THEN 0
+        WHEN 'SCHEDULED' THEN 1
+        ELSE 2
+      END,
+      l."created_at" DESC,
+      l."id" DESC
+  ), filtered AS (
+    SELECT
+      p."id",
+      p."created_at",
+      c."status",
+      c."current_price",
+      c."bid_count",
+      c."ends_at"
+    FROM "products" p
+    INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
+    INNER JOIN canonical c ON c."product_id" = p."id"
+    WHERE p."status" = 'APPROVED'
+      AND sp."status" = 'APPROVED'
+      AND sp."slug" = ${slug}
+      ${statusFilter}
+  )`;
+}
+
+function publicSellerProductsOrderBy(sort: PublicSellerWorksQuery['sort']) {
+  switch (sort) {
+    case 'priceAsc':
+      return 'p."current_price" ASC, p."id" ASC';
+    case 'priceDesc':
+      return 'p."current_price" DESC, p."id" ASC';
+    case 'newest':
+      return 'p."created_at" DESC, p."id" ASC';
+    case 'activity':
+      return 'p."bid_count" DESC, p."created_at" DESC, p."id" ASC';
+  }
 }
 
 @Injectable()
@@ -276,72 +342,57 @@ export class SellersService {
   ) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
       where: { slug, status: 'APPROVED' },
-      include: {
-        products: {
-          where: publicCatalogProductWhere,
-          include: {
-            sellerProfile: {
-              select: publicSellerProfileSelect,
-            },
-            images: { orderBy: { position: 'asc' } },
-            listings: {
-              where: { status: { in: publicListingStatuses } },
-              include: { auctionRules: true },
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
+      select: publicSellerProfileSelect,
     });
 
     if (!sellerProfile) {
       throw new NotFoundException('Seller profile not found');
     }
 
-    const statusCounts = countPublicSellerStatuses(sellerProfile.products);
+    const pageCte = publicSellerProductsCte(slug, query.status);
+    const countCte = publicSellerProductsCte(slug);
+    const [pageRows, totalRows, statusRows] = await Promise.all([
+      this.prisma.$queryRaw<PublicSellerProductPageRow[]>(
+        Prisma.sql`${pageCte}
+          SELECT p."id"
+          FROM filtered p
+          ORDER BY ${Prisma.raw(publicSellerProductsOrderBy(query.sort))}
+          LIMIT ${query.limit}
+          OFFSET ${(query.page - 1) * query.limit}`,
+      ),
+      this.prisma.$queryRaw<PublicSellerCountRow[]>(
+        Prisma.sql`${countCte} SELECT COUNT(*)::int AS "total" FROM filtered`,
+      ),
+      this.prisma.$queryRaw<PublicSellerStatusRow[]>(
+        Prisma.sql`${countCte}
+          SELECT "status", COUNT(*)::int AS "count"
+          FROM filtered
+          GROUP BY "status"`,
+      ),
+    ]);
 
-    const products = sellerProfile.products
-      .map((product) => ({
-        product,
-        listing: product.listings[0] ?? null,
-      }))
-      .filter(
-        ({ listing }) => !query.status || listing?.status === query.status,
-      )
-      .sort((left, right) => {
-        if (query.sort === 'priceAsc') {
-          return (
-            Number(left.listing?.currentPrice ?? 0) -
-            Number(right.listing?.currentPrice ?? 0)
-          );
-        }
-        if (query.sort === 'priceDesc') {
-          return (
-            Number(right.listing?.currentPrice ?? 0) -
-            Number(left.listing?.currentPrice ?? 0)
-          );
-        }
-        if (query.sort === 'newest') {
-          return (
-            right.product.createdAt.getTime() - left.product.createdAt.getTime()
-          );
-        }
-        return (
-          (right.listing?.bidCount ?? 0) - (left.listing?.bidCount ?? 0) ||
-          right.product.createdAt.getTime() - left.product.createdAt.getTime()
-        );
-      })
-      .map(({ product }) => product);
-    const total = products.length;
-    const pageProducts = products.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
+    const products = pageRows.length
+      ? await this.prisma.product.findMany({
+          where: { id: { in: pageRows.map((row) => row.id) } },
+          select: publicCatalogProductSelect,
+        })
+      : [];
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
     );
+    const orderedProducts = pageRows
+      .map((row) => productsById.get(row.id))
+      .filter(
+        (product): product is (typeof products)[number] =>
+          product !== undefined,
+      );
+    const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
+    for (const row of statusRows) statusCounts[row.status] = Number(row.count);
+    const total = Number(totalRows[0]?.total ?? 0);
 
     return publicSellerDetailResponseSchema.parse({
       sellerProfile: toPublicSellerProfile(sellerProfile),
-      products: pageProducts.map((product) =>
+      products: orderedProducts.map((product) =>
         this.products.toPublicProduct(product),
       ),
       statusCounts,

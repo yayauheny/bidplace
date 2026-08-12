@@ -37,7 +37,7 @@ import {
 
 const lockedStatuses = ['SCHEDULED', 'LIVE'] as const;
 
-const publicCatalogProductSelect = {
+export const publicCatalogProductSelect = {
   id: true,
   publicId: true,
   sellerProfileId: true,
