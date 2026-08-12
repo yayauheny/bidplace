@@ -202,7 +202,6 @@ function CreatorHero({
     telegramUrl: string | null;
     instagramUrl: string | null;
     websiteUrl: string | null;
-    socialLink: string;
   };
   slug: string;
 }) {
@@ -318,9 +317,9 @@ function CreatorHero({
             label="Instagram автора"
           />
         ) : null}
-        {(profile.websiteUrl ?? profile.socialLink) ? (
+        {profile.websiteUrl ? (
           <SocialLink
-            href={profile.websiteUrl ?? profile.socialLink}
+            href={profile.websiteUrl}
             icon="globe"
             label="Сайт автора"
           />

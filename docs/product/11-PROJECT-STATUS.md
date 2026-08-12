@@ -109,6 +109,9 @@ verification.
   packaging, payment/delivery and author sections from existing public Product
   and SellerProfile fields, with explicit honest states for unsupported details;
   Product layout E2E asserts the required anatomy.
+- `Implemented`: public Creator Profile no longer maps the legacy `socialLink`
+  into a website control; only structured public social fields are rendered,
+  preserving the handoff-contact boundary.
 
 ## Public discovery WIP — 2026-08-11
 

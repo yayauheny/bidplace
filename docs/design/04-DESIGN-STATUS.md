@@ -91,6 +91,10 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   the public author panel required by `L7ytbv`. Existing `deliveryInfo` is used
   where available; unsupported payment/packaging fields remain honest
   уточняющие states.
+- `Implemented`: Creator Profile renders only structured public Telegram,
+  Instagram and website fields; the legacy public `socialLink` is no longer
+  promoted into a website icon, and E2E covers the absent-structured-social
+  state.
 
 ## Screen matrix
 

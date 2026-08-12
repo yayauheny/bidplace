@@ -19,6 +19,7 @@ test('public creator profile shows only public data and remains responsive', asy
     page.getByTestId('app-shell-content').getByText('Работы', { exact: true }),
   ).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
+  await expect(page.getByLabel('Сайт автора')).toHaveCount(0);
   await expect(
     page.getByRole('button', {
       name: `Скопировать ссылку на профиль ${fixture.sellerProfile.fullName}`,

@@ -389,6 +389,8 @@ Commits: `84336e9`, `d9f0ed4`, `348ac36`.
   1440/1024/390 loading, empty, error, menu, account and screenshot matrix.
 - Product About now renders the target's separate accordion rows and public
   author panel while retaining the existing public-field boundary.
+- Creator Profile now omits legacy `socialLink` from the social-icon row and
+  relies only on structured public social fields.
 
 Checks: mobile typecheck, lint, E2E fence, production Expo export, Product E2E
 1/1, interaction smoke 1/1 and full Chromium E2E 36/36. Canonical Pen remains
