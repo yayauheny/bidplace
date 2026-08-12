@@ -59,6 +59,14 @@ describe('Pen v2 semantic token contract', () => {
     expect(designTokens.opacity.disabled).toBe(0.48);
   });
 
+  it('keeps the canonical mobile header geometry tokenized', () => {
+    expect(designTokens.breakpoint.mobileHeader).toBe(768);
+    expect(designTokens.size.mobileHeader).toBe(72);
+    expect(designTokens.size.touch).toBe(44);
+    expect(designTokens.layout.mobileMenuWidth).toBe(320);
+    expect(designTokens.color.headerControl).toBe('#F4F4F1');
+  });
+
   it('uses Onest for content and Inter for navigation', () => {
     expect(designTokens.typography.body.fontFamily).toBe('Onest_400Regular');
     expect(designTokens.typography.cardTitle.fontFamily).toBe('Onest_700Bold');

@@ -24,6 +24,7 @@ export const designTokens = {
     focus: '#2457E6',
     overlay: 'rgba(17, 17, 17, 0.28)',
     glass: 'rgba(250, 250, 248, 0.82)',
+    headerControl: '#F4F4F1',
   },
   space: {
     x1: 4,
@@ -61,7 +62,7 @@ export const designTokens = {
     button: 52,
     buttonCompact: 40,
     header: 72,
-    mobileHeader: 64,
+    mobileHeader: 72,
     icon: 20,
   },
   opacity: { disabled: 0.48 },
@@ -164,8 +165,10 @@ export const designTokens = {
     cardWidth: 322,
     discoveryMenuWidth: 240,
     accountPopoverWidth: 280,
+    mobileMenuWidth: 320,
   },
   breakpoint: {
+    mobileHeader: 768,
     desktopShell: 1025,
     compactHeader: 760,
     headerSearchInline: 1180,

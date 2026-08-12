@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronDown,
   ChevronRight,
@@ -11,6 +12,7 @@ import {
   LayoutGrid,
   LogOut,
   Minus,
+  Menu,
   Plus,
   Search,
   Share2,
@@ -26,6 +28,7 @@ import {
 import { designTokens } from '@bidplace/design-tokens';
 
 const icons = {
+  arrowLeft: ArrowLeft,
   chevronLeft: ChevronLeft,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,
@@ -40,6 +43,7 @@ const icons = {
   instagram: Camera,
   logOut: LogOut,
   minus: Minus,
+  menu: Menu,
   plus: Plus,
   search: Search,
   share: Share2,

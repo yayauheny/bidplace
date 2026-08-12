@@ -21,6 +21,7 @@ import { useAuth } from '../../providers/auth-provider';
 import { AppIcon, AppText, MotionPressable } from '../ui';
 import { AccountMenu } from './AccountMenu';
 import { BrandLogo } from './BrandLogo';
+import { MobileHeader } from './MobileHeader';
 import { OverlayPortal } from './OverlayHost';
 
 type HeaderItem = { label: string; href: Href };
@@ -379,6 +380,9 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
   const capability = useSellerCapability();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
+  if (width < designTokens.breakpoint.mobileHeader) {
+    return <MobileHeader ambient={ambient} />;
+  }
   const desktop = width >= designTokens.breakpoint.compactHeader;
   const searchInline = width >= designTokens.breakpoint.headerSearchInline;
   const canCreate = !auth.isAdmin && capability.status === 'APPROVED';
