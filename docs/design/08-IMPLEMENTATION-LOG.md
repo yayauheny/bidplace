@@ -81,7 +81,9 @@ Profile / MVP v1`. The route keeps one shared public creator screen and one
   48px Inter name, copyable handle, only-present structured Telegram/
   Instagram/website links, and centered 680px biography. The works section
   uses the measured 64px desktop gutters, 44px state-control row, server-owned
-  status counts, compact activity sort, and four-column two-row density.
+  status counts, compact activity sort, and four-column two-row density. The
+  Creator route fixture now supplies eight works so that density is exercised
+  rather than represented by empty space.
 - `publicSellerDetailResponseSchema` now returns `statusCounts` computed from
   public listings on the server. The client does not infer counts from a
   filtered page or hard-code Pen sample values.

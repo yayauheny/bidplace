@@ -339,6 +339,10 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       'Авторский предмет 2',
       'Авторский предмет 3',
       'Авторский предмет 4',
+      'Авторский предмет 5',
+      'Авторский предмет 6',
+      'Авторский предмет 7',
+      'Авторский предмет 8',
     ],
   });
   const seller = await createSellerFixture();
@@ -363,7 +367,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       ).toBeVisible();
       await expect(page.getByText(auction.product.title).first()).toBeVisible();
       const authorCards = page.locator('a[href^="/product/"]');
-      await expect(authorCards).toHaveCount(4);
+      await expect(authorCards).toHaveCount(8);
       const authorCardBoxes = await authorCards.evaluateAll((elements) =>
         elements.map((element) => {
           const box = element.getBoundingClientRect();
