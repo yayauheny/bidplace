@@ -60,7 +60,7 @@
   and URL-backed deep links/history. Fixed-scale overlay and device
   acceptance remain pending.
 - `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
-  Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
+Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   present structured social links, biography, server-owned status counts and
   work filters, 64px desktop works gutters, and the shared AuctionCard grid.
   `HOXkZ` is not an implementation target. The shared header now uses the
