@@ -10,6 +10,7 @@
 - `Verified`: API unit `153/153`, mobile unit `124/124`, contracts `11/11`, API/mobile/database typechecks, API/mobile lint, and PostgreSQL integration `40/40` pass on 2026-08-12. The seed contract test now selects its dedicated `seedEnded03` fixture after the public fixture set expanded.
 - `Partial`: the remaining Final Pen v2 mobile header, auction participation/SlideToBid, product creation, creator profile creation, and admin moderation flows are not yet implemented or runtime-accepted. The canonical Pen baseline is now the attached SHA recorded in the implementation audit.
 - `Partial`: final Pen v2 mobile header implementation now exists in `apps/mobile/src/components/layout/MobileHeader.tsx` and is selected below the shared 768px breakpoint. It provides the canonical 72px logo/Search/Create/Menu row, route-aware search/menu states, focus return and role-aware Create/Cabinet navigation. Runtime screenshots and browser/native accessibility acceptance remain pending.
+- `Partial`: final Pen v2 auction participation now uses `SlideToBid` in `apps/mobile/src/components/ui/SlideToBid.tsx`. Product detail refetches the auction snapshot before confirmation, validates against the fresh minimum, and preserves the existing server/idempotency mutation. Unit `128/128` and targeted buyer/integrity Playwright `2/2` pass; full visual/device/accessibility acceptance remains pending.
 
 Последнее обновление: 2026-08-12
 Статус: Public discovery completion is Partial; trust-critical backend

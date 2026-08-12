@@ -91,7 +91,28 @@
 
 ## Stage 3 — Auction participation and SlideToBid
 
-- Status: Not started
+- Status: Partial — implementation committed; full responsive/runtime matrix pending
+- Pen references: `Mzgej`, `rRI1V`, `W0YAS`, `X6Ksg`, `nTnuM`
+- Success criteria: refresh the server-owned auction snapshot before confirmation; keep the existing idempotent bid mutation; require a deliberate horizontal drag to 90–95% completion; reset early release, block vertical-scroll takeover and duplicate submits, show loading/error reset states, and preserve email/rules/admin gates.
+- Candidate fixes:
+  - durable fix: shared `SlideToBid` primitive with bounded geometry, responder direction-lock, server snapshot refresh and the existing bid mutation as the only write owner;
+  - acceptable workaround: none selected;
+  - hack: treating a tap as confirmation or bypassing the API validation/idempotency path.
+- Chosen solution and rationale: `SlideToBid` uses the canonical 56px track, 4px inset, 360/488 control ratio and 92% completion threshold. `ProductScreen` refetches before opening the modal, validates against fresh `minimumNextBid`, and sends only after the slider completes. Early releases spring back; loading holds the control at the end; accessibility increment remains available for assistive technology.
+- Backend changes: none; existing authenticated `placeBid` endpoint remains authoritative.
+- Frontend changes: added `SlideToBid`, geometry tests, auction modal amount editing, pre-confirmation snapshot refresh and drag-based buyer E2E helpers.
+- Contract changes: none.
+- Migration changes: none.
+- Tests added/updated: `slide-to-bid-geometry.spec.ts`, `auction-bidding.spec.ts`, `auction-integrity.spec.ts`.
+- Checks executed: mobile typecheck, mobile lint, mobile unit `128/128`, targeted Playwright buyer/integrity `2/2` pass with host PostgreSQL. An accidental full-suite invocation was interrupted after a pre-existing Wave 2 screenshot timeout; it is not treated as a Stage 3 pass.
+- Runtime screenshots: targeted confirmation screenshot and full 1440/1024/390 visual matrix pending.
+- Deliberate visual differences: bid confirmation now requires SlideToBid drag instead of a tap on a `Подтвердить ставку` button; server stale minimum is surfaced before modal opening.
+- Security/privacy notes: email verification/rules eligibility and admin exclusion remain enforced; no bid payload or server authorization was moved to the client.
+- Files changed: `apps/mobile/src/components/ui/SlideToBid.tsx`, `slide-to-bid-geometry.ts`, `slide-to-bid-geometry.spec.ts`, `apps/mobile/src/features/products/product-screen.tsx`, `apps/mobile/e2e/auction-bidding.spec.ts`, `apps/mobile/e2e/auction-integrity.spec.ts`.
+- Commit subject: `implement feature: add slide to bid confirmation`
+- Commit SHA: `0af6f98`
+- Remaining risks: full Playwright suite, screenshot comparison, physical-device gesture behavior and final accessibility acceptance remain.
+- Next stage: product creation.
 
 ## Stage 4 — Product creation
 
