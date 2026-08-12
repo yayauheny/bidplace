@@ -81,6 +81,11 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   passed for Product and Creator at 1440/1024/390. Full Wave C visual/route
   acceptance passes 4/4 across 1440/1024/390; matched Pen overlay review and
   founder/device acceptance remain release gates.
+- `Implemented`: Product share is a working public-link action with Web Share,
+  clipboard and bounded browser-copy fallback; the result is announced in the
+  button label and covered by Product E2E. Discovery facet/sort menus close on
+  Escape, outside pointer interaction and accessibility escape, while Creator
+  status controls expose a semantic tablist/tabpanel relationship.
 
 ## Screen matrix
 

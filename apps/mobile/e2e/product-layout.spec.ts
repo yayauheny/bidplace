@@ -30,6 +30,8 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Торги/ })).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
+  await page.getByRole('button', { name: 'Поделиться предметом' }).click();
+  await expect(page.getByText('Ссылка скопирована', { exact: true })).toBeVisible();
   await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
     0,
   );

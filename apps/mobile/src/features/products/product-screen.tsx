@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import * as ExpoLinking from 'expo-linking';
 import { Link, type Href } from 'expo-router';
 import {
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -262,6 +264,9 @@ export function ProductScreen({
   const [now, setNow] = useState(Date.now());
   const [heroHeight, setHeroHeight] = useState(0);
   const [isPlayerSticky, setIsPlayerSticky] = useState(false);
+  const [shareState, setShareState] = useState<'idle' | 'success' | 'error'>(
+    'idle',
+  );
 
   const query = useQuery({
     queryKey: ['products', publicId],
@@ -303,6 +308,51 @@ export function ProductScreen({
       });
     if (auth.isAuthenticated && !auth.isAdmin)
       void queryClient.invalidateQueries({ queryKey: ['user', 'activity'] });
+  };
+
+  const shareProduct = async () => {
+    const productUrl =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? new URL(`/product/${publicId}`, window.location.origin).toString()
+        : ExpoLinking.createURL(`/product/${publicId}`);
+
+    try {
+      if (Platform.OS === 'web') {
+        const shareNavigator = navigator as Navigator & {
+          share?: (data: { url: string }) => Promise<void>;
+        };
+        if (shareNavigator.share) {
+          await shareNavigator.share({ url: productUrl });
+        } else {
+          let copied = false;
+          if (navigator.clipboard) {
+            try {
+              await navigator.clipboard.writeText(productUrl);
+              copied = true;
+            } catch {
+              copied = false;
+            }
+          }
+          if (!copied) {
+            const input = document.createElement('textarea');
+            input.value = productUrl;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            copied = document.execCommand('copy');
+            input.remove();
+          }
+          if (!copied) throw new Error('Sharing is unavailable');
+        }
+      } else {
+        await Share.share({ message: productUrl });
+      }
+      setShareState('success');
+    } catch {
+      setShareState('error');
+    }
   };
   useListingRealtime(listingId, refreshListing);
   const bid = useMutation({
@@ -999,7 +1049,7 @@ export function ProductScreen({
                   <MotionPressable
                     accessibilityRole="button"
                     accessibilityLabel="Поделиться предметом"
-                    onPress={() => undefined}
+                    onPress={() => void shareProduct()}
                     preset="button"
                     style={{
                       height: 36,
@@ -1014,7 +1064,13 @@ export function ProductScreen({
                     }}
                   >
                     <AppIcon name="share" size={15} />
-                    <AppText role="button">Поделиться</AppText>
+                    <AppText role="button">
+                      {shareState === 'success'
+                        ? 'Ссылка скопирована'
+                        : shareState === 'error'
+                          ? 'Не удалось поделиться'
+                          : 'Поделиться'}
+                    </AppText>
                   </MotionPressable>
                 </View>
               </View>

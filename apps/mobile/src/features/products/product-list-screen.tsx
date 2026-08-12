@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import {
+  Platform,
   ScrollView,
   useWindowDimensions,
   View,
@@ -66,13 +67,40 @@ function FacetMenu({
 }) {
   const [open, setOpen] = useState(false);
   const selectedLabel = options.find((option) => option.value === value)?.label;
+  const menuId = `facet-menu-${useId()}`;
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+
+    const closeIfOutside = (target: EventTarget | null) => {
+      const menu = document.getElementById(menuId);
+      if (menu && target instanceof Node && !menu.contains(target)) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+    };
+
+    const closeOnPointerDown = (event: PointerEvent) =>
+      closeIfOutside(event.target);
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnPointerDown);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnPointerDown);
+    };
+  }, [menuId, open]);
 
   return (
-    <View style={{ position: 'relative' }}>
+    <View nativeID={menuId} style={{ position: 'relative' }}>
       <MotionPressable
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ expanded: open }}
+        onAccessibilityEscape={() => setOpen(false)}
         onPress={() => setOpen((current) => !current)}
         preset="button"
         style={{

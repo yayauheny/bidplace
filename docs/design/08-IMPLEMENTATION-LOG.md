@@ -377,6 +377,21 @@ Commits: `84336e9`, `d9f0ed4`, `348ac36`.
 
 ## Текущая работа
 
+### 2026-08-12 — Final interaction and state hardening
+
+- Product sharing is now a real public-link action: Web Share API is preferred,
+  clipboard and DOM-copy fallback are bounded to the current product URL, and
+  success/error copy is exposed to the user. Product E2E covers the action.
+- Discovery facet menus and Creator sorting close on Escape, outside pointer
+  interaction and accessibility escape; Creator status controls now expose one
+  semantic tablist/tabpanel relationship.
+- The multi-viewport discovery acceptance timeout is aligned with its complete
+  1440/1024/390 loading, empty, error, menu, account and screenshot matrix.
+
+Checks: mobile typecheck, lint, E2E fence, production Expo export, Product E2E
+1/1, interaction smoke 1/1 and full Chromium E2E 36/36. Canonical Pen remains
+unchanged.
+
 ### 2026-08-11 — Pen v2 responsive and runtime gate corrections
 
 - Creator status filters now use one wrapping responsive row, keeping all

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, type Href, useRouter } from 'expo-router';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { PublicSellerWorksQuery } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
@@ -47,13 +47,43 @@ function CreatorSort({
 }) {
   const [open, setOpen] = useState(false);
   const current = sortOptions.find((option) => option.value === sort);
+  const menuId = 'creator-sort-menu';
+
+  useEffect(() => {
+    if (!open || Platform.OS !== 'web') return;
+
+    const closeIfOutside = (target: EventTarget | null) => {
+      const menu = document.getElementById(menuId);
+      if (menu && target instanceof Node && !menu.contains(target)) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+    };
+
+    const closeOnPointerDown = (event: PointerEvent) =>
+      closeIfOutside(event.target);
+    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('pointerdown', closeOnPointerDown);
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('pointerdown', closeOnPointerDown);
+    };
+  }, [open]);
 
   return (
-    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+    <View
+      nativeID={menuId}
+      style={{ position: 'relative', alignSelf: 'flex-start' }}
+    >
       <MotionPressable
         accessibilityRole="button"
         accessibilityLabel="Сортировка работ автора"
         accessibilityState={{ expanded: open }}
+        onAccessibilityEscape={() => setOpen(false)}
         onPress={() => setOpen((value) => !value)}
         preset="button"
         style={{
@@ -318,6 +348,8 @@ function CreatorStatusTabs({
 }) {
   return (
     <View
+      role="tablist"
+      accessibilityLabel="Статусы работ автора"
       style={{
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -332,6 +364,8 @@ function CreatorStatusTabs({
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
             accessibilityState={{ selected }}
+            aria-selected={selected}
+            aria-controls="creator-works-panel"
             onPress={() => onChange(selected ? undefined : tab.value)}
             preset="button"
             style={{
@@ -491,7 +525,9 @@ export function PublicSellerScreen({
                 }
               />
             ) : null}
-            {content}
+            <View nativeID="creator-works-panel" role="tabpanel">
+              {content}
+            </View>
           </View>
         </View>
       </ScrollView>

@@ -100,6 +100,11 @@ verification.
   form available alongside the sticky bottom action; the same mutation owner
   is used at desktop and mobile breakpoints. Creator status controls wrap at
   390px without horizontal document overflow.
+- `Implemented`: the public Product share control now copies or shares the
+  current Product URL with bounded Web/native fallbacks and visible result
+  state. Discovery menus close through Escape/outside interaction, and Creator
+  status controls expose semantic tablist/tabpanel relationships; mobile
+  typecheck/lint and Product E2E pass.
 
 ## Public discovery WIP — 2026-08-11
 
