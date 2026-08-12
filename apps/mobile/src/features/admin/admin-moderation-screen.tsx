@@ -46,6 +46,12 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
+type ModerationTab = 'all' | 'authors' | 'works';
+type ModerationFilter =
+  | 'ALL'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'CHANGES_REQUESTED';
 
 export function AdminModerationScreen() {
   const api = useApiClient();
@@ -71,6 +77,10 @@ export function AdminModerationScreen() {
   const [moderationReason, setModerationReason] = useState('');
   const [productAction, setProductAction] =
     useState<ProductModerationAction | null>(null);
+  const [moderationTab, setModerationTab] = useState<ModerationTab>('all');
+  const [moderationFilter, setModerationFilter] =
+    useState<ModerationFilter>('PENDING_REVIEW');
+  const [moderationSearch, setModerationSearch] = useState('');
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: ['admin', 'seller-profiles'],
@@ -192,6 +202,29 @@ export function AdminModerationScreen() {
     if (confirmation.kind === 'order-replace')
       replaceOrder.mutate(confirmation.bidId);
   };
+  const search = moderationSearch.trim().toLocaleLowerCase();
+  const visibleSellers = sellers.data.sellerProfiles.filter((seller) => {
+    const matchesTab = moderationTab === 'all' || moderationTab === 'authors';
+    const matchesFilter =
+      moderationFilter === 'ALL' || seller.status === moderationFilter;
+    const matchesSearch =
+      !search ||
+      `${seller.fullName} ${seller.slug} ${seller.discipline}`
+        .toLocaleLowerCase()
+        .includes(search);
+    return matchesTab && matchesFilter && matchesSearch;
+  });
+  const visibleProducts = products.data.products.filter((product) => {
+    const matchesTab = moderationTab === 'all' || moderationTab === 'works';
+    const matchesFilter =
+      moderationFilter === 'ALL' || product.status === moderationFilter;
+    const matchesSearch =
+      !search ||
+      `${product.title ?? ''} ${product.sellerProfile.fullName} ${product.sellerProfile.slug}`
+        .toLocaleLowerCase()
+        .includes(search);
+    return matchesTab && matchesFilter && matchesSearch;
+  });
   const confirmationText: Record<
     Confirmation['kind'],
     { title: string; description: string; label: string }
@@ -227,6 +260,65 @@ export function AdminModerationScreen() {
         title="Модерация"
         description="Проверка продавцов и предметов перед публикацией."
       />
+      <FormSection
+        title="Очередь модерации"
+        description="Авторы и работы — отдельные домены с server-owned статусами и причинами решений."
+      >
+        <View
+          accessibilityRole="tablist"
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: designTokens.space.x2,
+          }}
+        >
+          <SecondaryButton
+            label="Авторы"
+            onPress={() => setModerationTab('authors')}
+          />
+          <SecondaryButton
+            label="Работы"
+            onPress={() => setModerationTab('works')}
+          />
+          <SecondaryButton
+            label="Все"
+            onPress={() => setModerationTab('all')}
+          />
+        </View>
+        <TextField
+          label={moderationTab === 'works' ? 'Найти работу' : 'Найти автора'}
+          value={moderationSearch}
+          onChangeText={setModerationSearch}
+          placeholder={
+            moderationTab === 'works'
+              ? 'Название или автор'
+              : 'Имя или адрес профиля'
+          }
+        />
+        <View
+          accessibilityRole="tablist"
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: designTokens.space.x2,
+          }}
+        >
+          {(
+            [
+              ['PENDING_REVIEW', 'Ожидают проверки'],
+              ['APPROVED', 'Одобрены'],
+              ['CHANGES_REQUESTED', 'Нужны правки'],
+              ['ALL', 'Все статусы'],
+            ] as const
+          ).map(([value, label]) => (
+            <SecondaryButton
+              key={value}
+              label={moderationFilter === value ? `✓ ${label}` : label}
+              onPress={() => setModerationFilter(value)}
+            />
+          ))}
+        </View>
+      </FormSection>
       <View
         style={{
           flexDirection:
@@ -236,8 +328,8 @@ export function AdminModerationScreen() {
         }}
       >
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
-          <FormSection title="Продавцы">
-            {sellers.data.sellerProfiles.map((seller: SellerProfile) => (
+          <FormSection title="Авторы">
+            {visibleSellers.map((seller: SellerProfile) => (
               <ModerationCard
                 key={seller.id}
                 title={seller.fullName}
@@ -292,9 +384,9 @@ export function AdminModerationScreen() {
                 ) : null}
               </ModerationCard>
             ))}
-            {sellers.data.sellerProfiles.length === 0 ? (
+            {visibleSellers.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
-                Нет продавцов
+                Нет авторов по текущему фильтру
               </AppText>
             ) : null}
             {sellerStatus.isError ? (
@@ -306,8 +398,8 @@ export function AdminModerationScreen() {
           </FormSection>
         </View>
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
-          <FormSection title="Предметы">
-            {products.data.products.map((product: AdminProduct) => {
+          <FormSection title="Работы">
+            {visibleProducts.map((product: AdminProduct) => {
               const productSellerStatus = sellers.data.sellerProfiles.find(
                 (seller) => seller.slug === product.sellerProfile.slug,
               )?.status;
@@ -405,9 +497,9 @@ export function AdminModerationScreen() {
                 </ModerationCard>
               );
             })}
-            {products.data.products.length === 0 ? (
+            {visibleProducts.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
-                Нет предметов
+                Нет работ по текущему фильтру
               </AppText>
             ) : null}
             {productStatus.isError ? (

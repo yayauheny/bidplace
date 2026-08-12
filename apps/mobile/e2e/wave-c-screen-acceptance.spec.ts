@@ -448,7 +448,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
       await expect(adminSession.page.getByText('Продавцы')).toBeVisible();
       await expect(
-        adminSession.page.getByText('Предметы', { exact: true }),
+        adminSession.page.getByText('Работы', { exact: true }),
       ).toBeVisible();
       await assertNoHorizontalOverflow(adminSession.page);
       await capture(adminSession.page, 'admin', 'admin', 'loaded', viewport);

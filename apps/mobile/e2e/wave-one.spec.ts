@@ -141,6 +141,7 @@ test('admin reviews and approves pending seller and product', async ({
         )?.status;
       })
       .toBe('APPROVED');
+    await page.getByRole('button', { name: 'Все статусы' }).click();
 
     await expect(
       productCard.getByRole('button', { name: 'Одобрить' }),
