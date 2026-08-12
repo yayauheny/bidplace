@@ -116,7 +116,28 @@
 
 ## Stage 4 — Product creation
 
-- Status: Not started
+- Status: Partial — implementation committed; full visual/native matrix pending
+- Pen references: `cK8kD`, `EGywf`, `S7Y2D`, `JOjIY` shared workspace conventions
+- Success criteria: preserve server-owned Product draft/update/submit, add the final staged creation flow for description, images, creation history, review and moderation outcomes, support 1–10 product images and process photos, preserve edit locks and errors, and keep seller/admin role boundaries.
+- Candidate fixes:
+  - durable fix: stage the existing protected API contracts behind one `ProductDraftScreen` flow with explicit URL state after the first draft save;
+  - acceptable workaround: use a local wizard state for step navigation while the server remains owner of every save/upload/submit;
+  - hack: fake review state or keep all creation steps client-only without persistence.
+- Chosen solution and rationale: new product creation starts at Step 1, saves to a server draft, then routes to Step 2 with `flow=creation&step=2`. Product images use the existing multipart image API; Step 3 persists creation intro/steps and uploads process photos through a new API-client method; Step 4 exposes a review and submits through the existing moderation transaction. Legacy edit route behavior remains available without `flow=creation`.
+- Backend changes: no controller, schema or migration changes; the new client method targets the existing guarded `POST /api/products/:productId/creation-steps/:stepId/image` endpoint.
+- Frontend changes: staged ProductDraftScreen, route step params, creation-story editor, process-photo upload, review/submit state and seller E2E updates.
+- Contract changes: no contract shape changes; API client now exposes an already-existing endpoint.
+- Migration changes: none.
+- Tests added/updated: `auction-creation.spec.ts` now covers draft save, staged image upload, creation-story save, review submit, approval and auction handoff.
+- Checks executed: API client build/typecheck, mobile typecheck/lint, mobile unit `128/128`, and targeted seller Playwright `1/1` pass with host PostgreSQL.
+- Runtime screenshots: pending at 1440/1024/390 for every wizard state and native picker/device acceptance.
+- Deliberate visual differences: wizard state is URL-persisted only after the first save; existing non-wizard edit route remains the backwards-compatible maintenance surface.
+- Security/privacy notes: product/image/creation-step operations continue through authenticated seller ownership, approved-seller and editable-status checks; process images are not public until the product is publicly visible.
+- Files changed: `apps/mobile/src/features/sellers/product-draft-screen.tsx`, `apps/mobile/src/app/(seller)/products/[id].tsx`, `packages/api-client/src/images.ts`, `apps/mobile/e2e/auction-creation.spec.ts`.
+- Commit subject: `implement feature: add product creation wizard`
+- Commit SHA: `5ab461a`
+- Remaining risks: full responsive screenshot matrix, native file picker behavior, loading/error screenshot evidence and founder/device accessibility acceptance remain.
+- Next stage: creator profile creation.
 
 ## Stage 5 — Creator profile creation
 
