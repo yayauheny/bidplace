@@ -8,7 +8,7 @@
 - `Implemented`: `AmbientImageBackground` uses the shared Expo `LinearGradient` primitive with explicit stops and a bounded 1.1× clipped media overscan; `apps/mobile/src/components/ui/ambient-image-background-style.spec.ts` covers the geometry contract.
 - `Implemented`: Product About accordion rows close on repeated activation through one shared toggle helper with semantic expanded state.
 - `Verified`: API unit `153/153`, mobile unit `124/124`, contracts `11/11`, API/mobile/database typechecks, API/mobile lint, and PostgreSQL integration `40/40` pass on 2026-08-12. The seed contract test now selects its dedicated `seedEnded03` fixture after the public fixture set expanded.
-- `Partial`: the remaining Final Pen v2 mobile header, auction participation/SlideToBid, product creation, creator profile creation, and admin moderation flows are not yet implemented or runtime-accepted. The canonical Pen baseline is now the attached SHA recorded in the implementation audit.
+- `Partial`: all requested Final Pen v2 flows now have staged runtime implementations and targeted browser evidence; matched 1440/1024/390 screenshots, native/device accessibility, full Playwright matrix and founder acceptance remain open. The canonical Pen baseline is the attached SHA recorded in the implementation audit.
 - `Partial`: final Pen v2 mobile header implementation now exists in `apps/mobile/src/components/layout/MobileHeader.tsx` and is selected below the shared 768px breakpoint. It provides the canonical 72px logo/Search/Create/Menu row, route-aware search/menu states, focus return and role-aware Create/Cabinet navigation. Runtime screenshots and browser/native accessibility acceptance remain pending.
 - `Partial`: final Pen v2 auction participation now uses `SlideToBid` in `apps/mobile/src/components/ui/SlideToBid.tsx`. Product detail refetches the auction snapshot before confirmation, validates against the fresh minimum, and preserves the existing server/idempotency mutation. Unit `128/128` and targeted buyer/integrity Playwright `2/2` pass; full visual/device/accessibility acceptance remains pending.
 - `Partial`: final Pen v2 Product Creation now has a staged `ProductDraftScreen` flow: draft description, 1–10 images, persisted creation story/process photos, review and moderation submit. The existing guarded API contracts and seller edit locks remain authoritative; targeted seller Playwright `1/1` passes, while full 1440/1024/390 and native picker/accessibility acceptance remain pending.
@@ -32,7 +32,7 @@ verification.
   may change it, and it must never be deleted. See `DEC-062`.
 - `Implemented` as protected source restoration: the founder-provided local
   file is restored byte-for-byte at `design/pen/bidplace-web-v2.pen`; SHA-256 is
-  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
+  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
   Canonical roots and the public read-only Pen publication were verified without
   modifying the canvas.
 - `Implemented` as specification: selected Foundation/Gamma/Avant Arte patterns,

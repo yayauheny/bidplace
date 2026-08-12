@@ -191,8 +191,18 @@
 
 ## Stage 7 — Overall verification
 
-- Status: Not started
+- Status: Partial — automated checks pass; visual/device acceptance remains Needs verification
+- Pen references: all selected FINAL roots; canonical baseline SHA `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`
+- Success criteria: run affected unit/type/lint/build checks, targeted browser flows, PostgreSQL integration, canonical SHA and `.pen` diff checks; reconcile product/design status without overstating unrun screenshot/device acceptance.
+- Checks executed: contracts `11/11`; API unit `153/153`; mobile unit `128/128`; API client build; database typecheck; API/mobile typecheck; API/mobile lint; API build; mobile Expo export for web/Android/iOS bundles; targeted Playwright buyer/integrity `2/2`, seller product creation `1/1`, creator profile `2/2`, admin moderation `1/1`, mobile header/navigation `4/4`; prior full PostgreSQL integration `40/40` remains valid because no backend changes followed Stage 1.
+- Canonical verification: repository and attached Pen SHA both equal `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`; `git diff --name-only -- '*.pen'` returns no paths; `git diff --check` passes.
+- Runtime screenshots: targeted E2E screenshot artifacts exist from prior suites, but a new matched Pen overlay matrix at 1440/1024/390 for every required state was not completed.
+- Known non-passing/limited checks: an accidental full Playwright invocation was interrupted after a pre-existing Wave 2 screenshot test exceeded its 120s timeout; it is not counted as a full-suite pass. Native physical-device and screen-reader acceptance were not run. Pen CLI status reported the stored authenticated endpoint as unreachable, so no remote Pen export was used.
+- Product/design status: all staged flows are recorded as `Partial` until matched visual/device/accessibility evidence exists; no protected product principle or contract was changed.
+- Commit ledger: `ba3439b`, `584d2ac`, `8f5c7e1`, `b39709f`, `0af6f98`, `33bf14b`, `5ab461a`, `afd3ae4`, `7f69e45`, `0b36ed9`, `18bb1c6`, `820aec3`.
+- Remaining risks: full Playwright matrix, matched screenshots/overlay comparison, native iOS/Android gesture and picker behavior, screen-reader validation, isolated 10-user rehearsal and founder visual acceptance.
+- Final recommendation: keep release status Partial/Needs verification; do not claim visual or device-complete acceptance from the automated evidence above.
 
 ## Final acceptance matrix
 
-Pending until the staged implementation and runtime evidence exist.
+Staged implementation and targeted runtime evidence exist; release acceptance is still pending the visual/device gates listed above.

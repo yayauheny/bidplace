@@ -52,26 +52,59 @@ test('guest navigation exposes public discovery without seller actions', async (
   );
 });
 
-test('mobile guest account control stays in the header row', async ({
+test('mobile guest header keeps canonical actions in one row', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
   const brand = page.getByRole('link', { name: 'bidplace — на главную' });
-  const account = page.getByRole('link', { name: 'Войти' });
-  const overview = page.getByRole('button', { name: 'Аукционы' });
-  const [brandBox, accountBox, overviewBox] = await Promise.all([
+  const search = page.getByRole('button', { name: 'Поиск' });
+  const create = page.getByRole('button', { name: 'Создать' });
+  const menuTrigger = page.getByRole('button', { name: 'Меню' });
+  const [brandBox, searchBox, createBox, menuBox] = await Promise.all([
     brand.boundingBox(),
-    account.boundingBox(),
-    overview.boundingBox(),
+    search.boundingBox(),
+    create.boundingBox(),
+    menuTrigger.boundingBox(),
   ]);
 
   expect(brandBox).not.toBeNull();
-  expect(accountBox).not.toBeNull();
-  expect(overviewBox).not.toBeNull();
-  expect(Math.abs((brandBox?.y ?? 0) - (accountBox?.y ?? 0))).toBeLessThan(20);
-  expect(overviewBox?.y ?? 0).toBeGreaterThan((accountBox?.y ?? 0) + 32);
+  expect(searchBox).not.toBeNull();
+  expect(createBox).not.toBeNull();
+  expect(menuBox).not.toBeNull();
+  expect(Math.abs((brandBox?.y ?? 0) - (menuBox?.y ?? 0))).toBeLessThan(20);
+  expect(Math.abs((searchBox?.y ?? 0) - (createBox?.y ?? 0))).toBeLessThan(4);
+  expect(searchBox?.height).toBe(44);
+  expect(createBox?.height).toBe(44);
+  expect(menuBox?.height).toBe(44);
+});
+
+test('mobile guest menu and search use canonical open states', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  await page.getByRole('button', { name: 'Меню' }).click();
+  const menu = page.locator('#mobile-menu-panel');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Аукционы' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Авторы' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Войти' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Поиск' }).click();
+  const searchInput = page.getByRole('textbox', {
+    name: 'Найти предмет или автора',
+  });
+  await expect(searchInput).toBeFocused();
+  await searchInput.fill('стекло');
+  await searchInput.press('Enter');
+  await expect(page).toHaveURL(
+    /\/search\?q=%D1%81%D1%82%D0%B5%D0%BA%D0%BB%D0%BE$/,
+  );
 });
 
 test('pending seller navigation does not expose approved seller actions', async ({
@@ -149,9 +182,9 @@ test('approved seller mobile navigation uses equal cells without horizontal over
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
 
-    const navigation = page.getByLabel('Основная навигация');
-    await expect(navigation).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Аукционы' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Поиск' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Создать' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Меню' })).toBeVisible();
 
     const metrics = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
@@ -160,8 +193,9 @@ test('approved seller mobile navigation uses equal cells without horizontal over
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
 
     const navigationItems = [
-      navigation.getByRole('button', { name: 'Аукционы' }),
-      navigation.getByRole('link', { name: 'Авторы' }),
+      page.getByRole('button', { name: 'Поиск' }),
+      page.getByRole('button', { name: 'Создать' }),
+      page.getByRole('button', { name: 'Меню' }),
     ];
     const boxes = await Promise.all(
       navigationItems.map((item) => item.boundingBox()),
@@ -169,7 +203,7 @@ test('approved seller mobile navigation uses equal cells without horizontal over
     const visibleNavBoxes = boxes.filter(
       (box): box is NonNullable<typeof box> => box !== null,
     );
-    expect(visibleNavBoxes.length).toBe(2);
+    expect(visibleNavBoxes.length).toBe(3);
     expect(
       visibleNavBoxes.every((box) => box.x >= 0 && box.x + box.width <= 390),
     ).toBe(true);
@@ -178,7 +212,7 @@ test('approved seller mobile navigation uses equal cells without horizontal over
   }
 });
 
-test('mobile account menu uses the shared overlay layer and viewport inset', async ({
+test('mobile menu uses the shared overlay layer and viewport inset', async ({
   browser,
 }) => {
   const fixture = await createAuctionFixture();
@@ -188,21 +222,19 @@ test('mobile account menu uses the shared overlay layer and viewport inset', asy
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
 
-    const account = page.getByRole('button', { name: /Открыть меню аккаунта/ });
-    await account.click();
+    await page.getByRole('button', { name: 'Меню' }).click();
 
     const menu = page
       .locator('#app-overlay-host')
-      .locator('#account-menu-dropdown');
+      .locator('#mobile-menu-panel');
     await expect(menu).toBeVisible();
-    await expect(menu).toHaveCSS('z-index', '20');
+    await expect(page.locator('#app-overlay-host')).toHaveCSS('z-index', '20');
     const menuBox = await menu.boundingBox();
     expect(menuBox).not.toBeNull();
     expect(menuBox!.x).toBeGreaterThanOrEqual(8);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
 
-    await page.getByRole('button', { name: 'Аукционы' }).click();
-    await page.getByRole('link', { name: 'Аукционы' }).click();
+    await menu.getByRole('link', { name: 'Аукционы' }).click();
     await expect(page).toHaveURL(/\/works$/);
     await expect(menu).toHaveCount(0);
   } finally {
