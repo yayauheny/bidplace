@@ -1,6 +1,14 @@
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
 import { expect, test } from '@playwright/test';
 
 import { createAuctionFixture } from './support/e2e-fixtures';
+
+const screenshotDir = resolve(
+  '/private/tmp',
+  'bidplace-product-tab-screenshots',
+);
 
 test('product composition exposes tabs and remains responsive', async ({
   page,
@@ -10,6 +18,7 @@ test('product composition exposes tabs and remains responsive', async ({
     bids: true,
     additionalTitles: [relatedTitle],
   });
+  await mkdir(screenshotDir, { recursive: true });
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/product/${fixture.product.publicId}`);
@@ -29,6 +38,10 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(
     page.getByText('История создания', { exact: true }),
   ).toBeVisible();
+  await page.screenshot({
+    path: resolve(screenshotDir, 'creation-1440.png'),
+    fullPage: true,
+  });
 
   await page.getByRole('tab', { name: /Торги/ }).click();
   await expect(page).toHaveURL(
@@ -36,6 +49,10 @@ test('product composition exposes tabs and remains responsive', async ({
   );
   await expect(page.getByText('Участник')).toBeVisible();
   await expect(page.getByText('Время')).toBeVisible();
+  await page.screenshot({
+    path: resolve(screenshotDir, 'bids-1440.png'),
+    fullPage: true,
+  });
 
   await page.goBack();
   await expect(page.getByRole('tab', { name: 'Создание' })).toHaveAttribute(
@@ -54,7 +71,8 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByText('Участник')).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByText(fixture.product.title)).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
+  await expect(page.getByText('Участник')).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => document.body.scrollWidth <= window.innerWidth),

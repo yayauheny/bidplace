@@ -52,6 +52,27 @@ layout `1/1` across 1440/1024/390, mobile typecheck/lint and design-tokens
 build. Runtime evidence: `/private/tmp/bidplace-wave-c-screenshots/8b3d137/`;
 Pen source `L7ytbv`/`X6Ksg` was read/exported without modification.
 
+### 2026-08-12 — Product Creation and Bids direct tab compositions
+
+- Read-only exports of `cK8kD` and `XIzHe` were reconciled with the existing
+  Product route. Deep-linked `?tab=creation` and `?tab=bids` now render their
+  own Pen-shaped content state while preserving URL history, role boundaries,
+  and the shared `AuctionPlayer`.
+- Creation uses the confirmed Product creation fields only: four ordered
+  seeded process images, a 2×2 desktop media grid, and an accessible first-open
+  accordion with honest missing-media fallback. No unsupported `Тип работы`,
+  Utility Action, or new domain field was introduced.
+- Bids keep the alias-only server contract and server response ordering; the
+  first row exposes the derived `Лидер торгов` accessibility label without
+  changing bid mutation or realtime ownership.
+
+Проверки: seeded demo Creation/Bids evidence `2/2`, Product composition `1/1`,
+mobile typecheck/lint and design-tokens build. Runtime screenshots are written
+outside the repository to `/private/tmp/bidplace-product-tab-screenshots/`.
+Wave C product acceptance still requires a running local PostgreSQL service;
+the attempted rerun on 2026-08-12 was blocked by `127.0.0.1:5432` being
+unavailable. Pen source `cK8kD`/`XIzHe` was read/exported without modification.
+
 ### 2026-08-12 — direct Pen export reconciliation for discovery geometry
 
 - Read-only Pencil exports of `H5vf2` and `N4ebBk` were compared with the

@@ -54,8 +54,10 @@
   natural-ratio artwork and object-facts regions where viewport pressure
   permits; the shared AuctionPlayer is the measured 404×68 compact
   inline/sticky transaction bar, while the existing bid form and server
-  mutation remain the single state owner. Product Creation now renders ordered
-  creation intro/steps and process media; fixed-scale overlay and device
+  mutation remain the single state owner. Product Creation and Bids now use
+  the direct `cK8kD`/`XIzHe` tab compositions: four seeded process images with
+  an accessible accordion, server-sorted bids with an explicit leader badge,
+  and URL-backed deep links/history. Fixed-scale overlay and device
   acceptance remain pending.
 - `Implemented`: `/seller/[slug]` now targets only `MqUMz` (`FINAL — Desktop
 Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,

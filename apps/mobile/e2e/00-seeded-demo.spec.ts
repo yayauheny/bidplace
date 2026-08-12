@@ -1,9 +1,15 @@
+import { resolve } from 'node:path';
+
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { e2eApiBaseURL } from './support/e2e-env';
 
 const apiBaseURL = e2eApiBaseURL;
+const productTabScreenshotDir = resolve(
+  '/private/tmp',
+  'bidplace-product-tab-screenshots',
+);
 const seededBuyer = {
   id: '',
   email: 'buyer@bidplace.test',
@@ -139,6 +145,17 @@ test('demo seed exposes four public products and real media', async ({
       })),
     )
     .toEqual({ width: 740, height: 493 });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/product/seedLive002?tab=creation');
+  await expect(
+    page.getByText('История создания', { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('img[alt^="Изображение этапа:"]')).toHaveCount(4);
+  await page.screenshot({
+    path: resolve(productTabScreenshotDir, 'seeded-creation-1440.png'),
+    fullPage: true,
+  });
 });
 
 test('seeded buyer sees bid history, empty state, retry and ended result', async ({
@@ -150,9 +167,15 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
     const liveAlias = await getPublicBidAlias(context.request, 'seedLive002');
     const endedAlias = await getPublicBidAlias(context.request, 'seedEnded03');
 
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/product/seedLive002');
     await page.getByRole('tab', { name: /Торги/ }).click();
     await expect(page.getByText(liveAlias)).toBeVisible();
+    await expect(page.getByLabel('Лидер торгов')).toBeVisible();
+    await page.screenshot({
+      path: resolve(productTabScreenshotDir, 'seeded-bids-1440.png'),
+      fullPage: true,
+    });
     await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
