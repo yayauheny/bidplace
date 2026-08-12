@@ -2,6 +2,7 @@ export * from './AppIcon';
 export * from './AppDialog';
 export * from './AppText';
 export * from './AuctionPlayer';
+export * from './SlideToBid';
 export * from './AuctionCard';
 export * from './AuctionCardGrid';
 export * from './CreatorCard';

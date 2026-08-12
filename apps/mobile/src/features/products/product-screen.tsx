@@ -32,6 +32,7 @@ import {
   ResilientRemoteImage,
   type ProductTabId,
   SecondaryButton,
+  SlideToBid,
   TextField,
   MotionPressable,
 } from '../../components/ui';
@@ -379,6 +380,7 @@ export function ProductScreen({
   const [now, setNow] = useState(Date.now());
   const [heroHeight, setHeroHeight] = useState(0);
   const [isPlayerSticky, setIsPlayerSticky] = useState(false);
+  const [isRefreshingBid, setIsRefreshingBid] = useState(false);
   const [shareState, setShareState] = useState<'idle' | 'success' | 'error'>(
     'idle',
   );
@@ -543,9 +545,20 @@ export function ProductScreen({
     setConfirmationAttempt(null);
     bid.mutate(attempt);
   };
-  const submitBid = () => {
+  const submitBid = async () => {
     if (!listing) return;
-    const error = validateBidAmount(amount, minimumNextBid);
+    setIsRefreshingBid(true);
+    const refreshed = await query.refetch();
+    setIsRefreshingBid(false);
+    const freshListing = refreshed.data?.listing;
+    const freshMinimumNextBid = refreshed.data?.minimumNextBid ?? null;
+    if (refreshed.isError || !freshListing) {
+      setBidValidationError(
+        'Не удалось обновить данные торгов. Попробуйте ещё раз.',
+      );
+      return;
+    }
+    const error = validateBidAmount(amount, freshMinimumNextBid);
     if (error) {
       setBidValidationError(error);
       return;
@@ -558,15 +571,29 @@ export function ProductScreen({
       pendingAttempt.amount === nextAmount
         ? pendingAttempt
         : {
-            listingId: listing.id,
+            listingId: freshListing.id,
             amount: nextAmount,
             idempotencyKey: newIdempotencyKey(),
           };
-    if (!participation) {
-      setConfirmationAttempt(reusable);
+    setConfirmationAttempt(reusable);
+  };
+  const confirmBid = () => {
+    if (!confirmationAttempt) return;
+    const error = validateBidAmount(amount, minimumNextBid);
+    if (error) {
+      setBidValidationError(error);
       return;
     }
-    sendBid(reusable);
+    const nextAmount = Number(amount.replace(',', '.'));
+    const attempt =
+      confirmationAttempt.amount === nextAmount
+        ? confirmationAttempt
+        : {
+            listingId: confirmationAttempt.listingId,
+            amount: nextAmount,
+            idempotencyKey: newIdempotencyKey(),
+          };
+    sendBid(attempt);
   };
 
   const bidForm =
@@ -632,8 +659,8 @@ export function ProductScreen({
               : undefined
           : undefined
       }
-      actionDisabled={bid.isPending}
-      actionLoading={bid.isPending}
+      actionDisabled={bid.isPending || isRefreshingBid}
+      actionLoading={bid.isPending || isRefreshingBid}
       onAction={
         listing.status === 'LIVE' && !auth.isAdmin
           ? eligibility === 'ready'
@@ -1342,12 +1369,26 @@ export function ProductScreen({
         }
         onClose={() => setConfirmationAttempt(null)}
       >
-        <PrimaryButton
-          label="Подтвердить ставку"
+        <BidForm
+          amount={amount}
+          minimumNextBid={minimumNextBid}
+          validationError={bidValidationError}
+          isPending={bid.isPending || isRefreshingBid}
+          hasFailedAttempt={false}
+          onAmountChange={setAmount}
+          onSubmit={confirmBid}
+          onRetry={confirmBid}
+          showPrimaryAction={false}
+        />
+        <SlideToBid
+          label={`Поставить · ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}`}
+          disabled={
+            !confirmationAttempt ||
+            Boolean(validateBidAmount(amount, minimumNextBid))
+          }
           loading={bid.isPending}
-          onPress={() => {
-            if (confirmationAttempt) sendBid(confirmationAttempt);
-          }}
+          resetKey={confirmationAttempt?.amount}
+          onComplete={confirmBid}
         />
         <SecondaryButton
           label="Отмена"

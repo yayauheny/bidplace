@@ -14,8 +14,15 @@ async function expectCurrentPrice(page: Page, amount: string) {
 async function placeBid(page: Page, amount: string) {
   await page.getByLabel('Ваша ставка, BYN').fill(amount);
   await page.getByRole('button', { name: 'Поставить' }).click();
-  const confirmation = page.getByRole('button', { name: 'Подтвердить ставку' });
-  if (await confirmation.isVisible()) await confirmation.click();
+  const slider = page.getByTestId('slide-to-bid');
+  if (await slider.isVisible()) {
+    const box = await slider.boundingBox();
+    expect(box).not.toBeNull();
+    await page.mouse.move(box!.x + 12, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width - 8, box!.y + box!.height / 2);
+    await page.mouse.up();
+  }
 }
 
 test('two buyers place bids and observe canonical leading and outbid state', async ({

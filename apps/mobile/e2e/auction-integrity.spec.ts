@@ -37,28 +37,25 @@ test('rejects a stale bid, refetches the canonical minimum and accepts the retry
 
     await buyerB.page.getByLabel('Ваша ставка, BYN').fill('11');
     await buyerB.page.getByRole('button', { name: 'Поставить' }).click();
-    const staleConfirmation = buyerB.page.getByRole('button', {
-      name: 'Подтвердить ставку',
-    });
-    if (await staleConfirmation.isVisible()) {
-      await staleConfirmation.click();
-    }
     await expect(
-      buyerB.page.getByText(
-        'Ставка не принята. Сервер обновил цену и минимальную сумму — проверьте актуальные данные.',
-      ),
+      buyerB.page.getByText('Минимальная ставка — 11.5 BYN.'),
     ).toBeVisible();
     await expectCurrentPrice(buyerB.page, '11.00');
     await expect(buyerB.page.locator('body')).toContainText(/Ваша ставка, BYN/);
 
     await buyerB.page.getByLabel('Ваша ставка, BYN').fill('11.5');
     await buyerB.page.getByRole('button', { name: 'Поставить' }).click();
-    const confirmation = buyerB.page.getByRole('button', {
-      name: 'Подтвердить ставку',
-    });
-    if (await confirmation.isVisible()) {
-      await confirmation.click();
-    }
+    const slider = buyerB.page.getByTestId('slide-to-bid');
+    await expect(slider).toBeVisible();
+    const box = await slider.boundingBox();
+    expect(box).not.toBeNull();
+    await buyerB.page.mouse.move(box!.x + 12, box!.y + box!.height / 2);
+    await buyerB.page.mouse.down();
+    await buyerB.page.mouse.move(
+      box!.x + box!.width - 8,
+      box!.y + box!.height / 2,
+    );
+    await buyerB.page.mouse.up();
     await expectCurrentPrice(buyerB.page, '11.50');
     await expect(buyerB.page.getByLabel(/Побеждаете/)).toBeVisible();
 
