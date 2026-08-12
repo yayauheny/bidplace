@@ -23,13 +23,16 @@ test('product composition exposes tabs and remains responsive', async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/product/${fixture.product.publicId}`);
 
+  await expect(page.getByTestId('ambient-image-background')).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
   await expect(page.getByText('Ставка', { exact: true })).toBeVisible();
   await expect(page.getByText('15,00 BYN', { exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Торги/ })).toBeVisible();
-  await expect(page.getByText('О работе', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('#product-panel-about').getByText('О работе', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: /01 Характеристики/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /02 Упаковка/ })).toBeVisible();
   await expect(

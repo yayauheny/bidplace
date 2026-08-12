@@ -374,7 +374,7 @@ function CreateListingAction() {
   );
 }
 
-export function AppHeader() {
+export function AppHeader({ ambient = false }: { ambient?: boolean }) {
   const auth = useAuth();
   const capability = useSellerCapability();
   const pathname = usePathname();
@@ -412,7 +412,9 @@ export function AppHeader() {
         flexShrink: 0,
         borderBottomWidth: 1,
         borderBottomColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
+        backgroundColor: ambient
+          ? designTokens.color.glass
+          : designTokens.color.surface,
       }}
     >
       <View

@@ -11,6 +11,7 @@ export * from './FormSection';
 export * from './PageHeader';
 export * from './PageState';
 export * from './ImagePlaceholder';
+export * from './AmbientImageBackground';
 export * from './MotionPressable';
 export * from './BottomActionBar';
 export * from './ProductGallery';

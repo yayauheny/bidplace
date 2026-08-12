@@ -33,6 +33,20 @@
 
 ## Выполнено
 
+### 2026-08-12 — shared image-derived atmosphere
+
+- Added one `AmbientImageBackground` primitive at the shared `AppShell` level.
+  Product passes the main public artwork URL; Creator Profile passes the public
+  profile-photo URL. The primitive owns the blurred image, neutral veil, light
+  lower fade, safe no-image/error surface and reduced-motion-aware fade-in.
+- Removed the route-local Product blur and made the shared header matte only
+  for the two ambient public screens. The atmosphere is pointer-inert and
+  hidden from accessibility semantics; sharp artwork/avatar media remains in
+  the owning screens.
+- Runtime checks confirmed Product and Creator markers at desktop, responsive
+  overflow remained bounded, and the canonical Pen checksum stayed unchanged.
+  Exact Pen overlay plus founder/device acceptance remain open.
+
 ### 2026-08-12 — Product About anatomy and shared transaction surface
 
 - `L7ytbv` runtime composition now uses the measured product canvas with a

@@ -95,6 +95,12 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   Instagram and website fields; the legacy public `socialLink` is no longer
   promoted into a website icon, and E2E covers the absent-structured-social
   state.
+- `Implemented`: Product About and Creator Profile now use one shared
+  shell-level `AmbientImageBackground` with their public artwork/profile image
+  URL, neutral veil, lower fade, safe media fallback and reduced-motion-aware
+  fade-in. Product-local blur was removed; runtime checks confirm the shared
+  atmosphere is present on both routes. Fixed-scale Pen overlay and
+  founder/device acceptance remain release gates.
 
 ## Screen matrix
 
@@ -118,6 +124,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
 | ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
+| AmbientImageBackground | shared atmosphere | one shell-level image-derived background for Product and Creator; runtime verified |
 
 ## Legacy production state
 

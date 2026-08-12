@@ -231,7 +231,7 @@ function CreatorHero({
         gap: 18,
         paddingTop: 64,
         paddingBottom: 72,
-        backgroundColor: designTokens.color.surface,
+        backgroundColor: 'transparent',
       }}
     >
       <ResilientRemoteImage
@@ -471,9 +471,15 @@ export function PublicSellerScreen({
   }
 
   return (
-    <AppShell>
+    <AppShell
+      ambientImageUrl={
+        query.data
+          ? getApiAssetUrl(query.data.sellerProfile.profilePhotoUrl)
+          : undefined
+      }
+    >
       <ScrollView
-        style={{ backgroundColor: designTokens.color.surface }}
+        style={{ backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingBottom: designTokens.space.x20 }}
         showsVerticalScrollIndicator={false}
       >

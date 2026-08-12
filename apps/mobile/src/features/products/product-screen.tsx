@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import * as ExpoLinking from 'expo-linking';
 import { Link, type Href } from 'expo-router';
 import {
   Platform,
   ScrollView,
   Share,
-  StyleSheet,
   useWindowDimensions,
   View,
   type NativeScrollEvent,
@@ -317,38 +315,16 @@ function BidForm({
 function ProductShell({
   children,
   bottomAction,
+  ambientImageUrl,
 }: {
   children: React.ReactNode;
   bottomAction?: React.ReactNode;
+  ambientImageUrl?: string;
 }) {
-  return <AppShell bottomAction={bottomAction}>{children}</AppShell>;
-}
-
-function ProductAtmosphere({ imageUrl }: { imageUrl?: string }) {
-  if (!imageUrl) return null;
-
   return (
-    <View
-      aria-hidden
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}
-    >
-      <Image
-        source={{ uri: getApiAssetUrl(imageUrl) }}
-        contentFit="cover"
-        blurRadius={64}
-        style={[
-          StyleSheet.absoluteFill,
-          { opacity: 0.18, transform: [{ scale: 1.15 }] },
-        ]}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: 'rgba(250, 250, 248, 0.78)' },
-        ]}
-      />
-    </View>
+    <AppShell bottomAction={bottomAction} ambientImageUrl={ambientImageUrl}>
+      {children}
+    </AppShell>
   );
 }
 
@@ -523,6 +499,9 @@ export function ProductScreen({
     creationIntro,
     creationSteps,
   } = query.data;
+  const ambientImageUrl = product.images[0]?.url
+    ? getApiAssetUrl(product.images[0].url)
+    : undefined;
   const participation = listing
     ? activity.data?.activity.find((item) => item.listing.id === listing.id)
     : undefined;
@@ -1044,6 +1023,7 @@ export function ProductScreen({
 
   return (
     <ProductShell
+      ambientImageUrl={ambientImageUrl}
       bottomAction={
         !isProductWide && bidForm ? (
           <BottomActionBar
@@ -1083,7 +1063,7 @@ export function ProductScreen({
               ? designTokens.space.x16
               : designTokens.space.x8,
         }}
-        style={{ backgroundColor: designTokens.color.surfaceWarm }}
+        style={{ backgroundColor: 'transparent' }}
         showsVerticalScrollIndicator={false}
       >
         <View
@@ -1110,7 +1090,6 @@ export function ProductScreen({
                 setHeroHeight(event.nativeEvent.layout.height)
               }
             >
-              <ProductAtmosphere imageUrl={product.images[0]?.url} />
               <View
                 style={{
                   position: 'relative',

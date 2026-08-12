@@ -12,6 +12,7 @@ test('public creator profile shows only public data and remains responsive', asy
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/seller/${fixture.sellerProfile.slug}`);
 
+  await expect(page.getByTestId('ambient-image-background')).toBeVisible();
   await expect(
     page.getByText(fixture.sellerProfile.fullName, { exact: true }).first(),
   ).toBeVisible();

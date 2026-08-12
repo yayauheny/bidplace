@@ -119,6 +119,16 @@ About `CBb5S`, Creation `bzabH`, Bids `ryIwP`, active underline `KSVlN`.
 Реализация использует semantic tablist/tab/tabpanel, arrow-key navigation,
 focus visibility и согласованный URL/back contract.
 
+### Shared image-derived atmosphere
+
+`AmbientImageBackground` is the single shared shell-level atmosphere primitive
+for Product About and Creator Profile. It uses the route-provided public image
+URL only as a blurred visual layer, keeps the sharp image/content accessible,
+adds a neutral veil and a light lower fade, and falls back to the warm page
+surface when media is absent or fails. It is decorative, pointer-inert and
+reduced-motion aware; Product and Creator do not own separate blur
+implementations.
+
 ## 4. Screen compositions
 
 | Composition      | Root     | Reuses                                        |

@@ -112,6 +112,12 @@ verification.
 - `Implemented`: public Creator Profile no longer maps the legacy `socialLink`
   into a website control; only structured public social fields are rendered,
   preserving the handoff-contact boundary.
+- `Implemented`: Product About and public Creator Profile now receive one
+  shared shell-level image-derived atmosphere. The public artwork/profile-photo
+  URL is used only for a decorative blurred layer with neutral veil, lower fade,
+  safe fallback and reduced-motion-aware appearance; no private fields or image
+  binary data enter the UI. Fixed-scale visual and founder/device acceptance
+  remain `Needs verification`.
 
 ## Public discovery WIP — 2026-08-11
 
