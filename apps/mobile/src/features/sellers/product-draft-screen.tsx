@@ -143,9 +143,9 @@ export function ProductDraftScreen({
     Math.min(Math.max(initialStep, 1), 4),
   );
   const [creationIntro, setCreationIntro] = useState('');
-  const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([
-    { title: '', body: '' },
-  ]);
+  const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([]);
+  const [stepOneAttempted, setStepOneAttempted] = useState(false);
+  const [creationAttempted, setCreationAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
   const isCreationFlow = flow === 'creation' || !productId;
 
@@ -175,7 +175,7 @@ export function ProductDraftScreen({
             body: step.body,
             imageUrl: step.image?.url ?? null,
           }))
-        : [{ title: '', body: '' }],
+        : [],
     );
   }, [existingProduct, initializedProductId, productDetail.data]);
 
@@ -187,7 +187,7 @@ export function ProductDraftScreen({
     materials: materials || null,
     dimensions: dimensions || null,
     weight: weight || null,
-    year: year ? Number(year) : null,
+    year: parsedYear,
     condition: condition || undefined,
     uniqueness: uniqueness || undefined,
     provenance: provenance || undefined,
@@ -230,13 +230,11 @@ export function ProductDraftScreen({
     mutationFn: () =>
       api.products.replaceCreation(existingProduct!.id, {
         intro: creationIntro.trim() || null,
-        steps: creationSteps
-          .map((step) => ({
-            ...(step.id ? { id: step.id } : {}),
-            title: step.title.trim(),
-            body: step.body.trim(),
-          }))
-          .filter((step) => step.title.length > 0 && step.body.length > 0),
+        steps: creationSteps.map((step) => ({
+          ...(step.id ? { id: step.id } : {}),
+          title: step.title.trim(),
+          body: step.body.trim(),
+        })),
       }),
     onSuccess: ({ creation }) => {
       setCreationSteps(
@@ -247,6 +245,7 @@ export function ProductDraftScreen({
           imageUrl: step.image?.url ?? null,
         })),
       );
+      setCreationAttempted(false);
       setWizardStep(4);
     },
   });
@@ -355,6 +354,32 @@ export function ProductDraftScreen({
   };
   const canContinueToCreation = Boolean(
     existingProduct && existingProduct.images.length > 0,
+  );
+  const parsedYear = year.trim() ? Number(year) : null;
+  const stepOneErrors = {
+    categoryId: categoryId ? undefined : 'Выберите категорию',
+    title: title.trim() ? undefined : 'Введите название',
+    story: story.trim() ? undefined : 'Добавьте описание работы',
+    year:
+      parsedYear === null ||
+      (Number.isInteger(parsedYear) && parsedYear >= 0 && parsedYear <= 9999)
+        ? undefined
+        : 'Введите год числом от 0 до 9999',
+    condition: condition.trim() ? undefined : 'Опишите состояние',
+    uniqueness: uniqueness.trim()
+      ? undefined
+      : 'Укажите уникальность или тираж',
+    provenance: provenance.trim() ? undefined : 'Укажите происхождение',
+    city: city.trim() ? undefined : 'Укажите город',
+    deliveryInfo: deliveryInfo.trim()
+      ? undefined
+      : 'Опишите передачу или доставку',
+  };
+  const canSaveStepOne = Object.values(stepOneErrors).every(
+    (error) => error === undefined,
+  );
+  const canSaveCreation = creationSteps.every(
+    (step) => step.title.trim().length > 0 && step.body.trim().length > 0,
   );
   const chooseCreationStepImage = async (stepId: string) => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -531,6 +556,7 @@ export function ProductDraftScreen({
                   placeholder="Необязательно"
                   keyboardType="number-pad"
                   editable={editable}
+                  error={stepOneAttempted ? stepOneErrors.year : undefined}
                 />
               </FormSection>
               <FormSection title="Логистика">
@@ -541,6 +567,7 @@ export function ProductDraftScreen({
                   placeholder="Город"
                   editable={editable}
                   required
+                  error={stepOneAttempted ? stepOneErrors.city : undefined}
                 />
                 <TextField
                   label="Передача или доставка"
@@ -550,6 +577,9 @@ export function ProductDraftScreen({
                   multiline
                   editable={editable}
                   required
+                  error={
+                    stepOneAttempted ? stepOneErrors.deliveryInfo : undefined
+                  }
                 />
               </FormSection>
             </>
@@ -569,6 +599,11 @@ export function ProductDraftScreen({
                 onPress={() => setCategoryId(category.id)}
               />
             ))}
+            {stepOneAttempted && stepOneErrors.categoryId ? (
+              <AppText role="bodySmall" tone="danger">
+                {stepOneErrors.categoryId}
+              </AppText>
+            ) : null}
           </FormSection>
 
           <FormSection
@@ -582,6 +617,7 @@ export function ProductDraftScreen({
               placeholder="Название"
               editable={editable}
               required
+              error={stepOneAttempted ? stepOneErrors.title : undefined}
             />
             <TextField
               label="История предмета"
@@ -591,6 +627,7 @@ export function ProductDraftScreen({
               multiline
               editable={editable}
               required
+              error={stepOneAttempted ? stepOneErrors.story : undefined}
             />
             <TextField
               label="Уникальность или тираж"
@@ -599,6 +636,7 @@ export function ProductDraftScreen({
               placeholder="Уникальность или тираж"
               editable={editable}
               required
+              error={stepOneAttempted ? stepOneErrors.uniqueness : undefined}
             />
             <TextField
               label="Состояние"
@@ -607,6 +645,7 @@ export function ProductDraftScreen({
               placeholder="Опишите состояние предмета"
               editable={editable}
               required
+              error={stepOneAttempted ? stepOneErrors.condition : undefined}
             />
             <TextField
               label="Происхождение"
@@ -616,6 +655,7 @@ export function ProductDraftScreen({
               multiline
               editable={editable}
               required
+              error={stepOneAttempted ? stepOneErrors.provenance : undefined}
             />
           </FormSection>
         </FormPageColumns>
@@ -639,7 +679,13 @@ export function ProductDraftScreen({
           }
           loading={save.isPending}
           width="block"
-          onPress={() => save.mutate()}
+          onPress={() => {
+            if (isCreationFlow) {
+              setStepOneAttempted(true);
+              if (!canSaveStepOne) return;
+            }
+            save.mutate();
+          }}
         />
       ) : null}
       {save.isError && (!isCreationFlow || wizardStep === 1) ? (
@@ -736,6 +782,11 @@ export function ProductDraftScreen({
                 }
                 placeholder="Например: Первый эскиз"
                 editable={editable}
+                error={
+                  creationAttempted && !step.title.trim()
+                    ? 'Введите название этапа'
+                    : undefined
+                }
               />
               <TextField
                 label="Описание этапа"
@@ -746,6 +797,11 @@ export function ProductDraftScreen({
                 placeholder="Что происходило на этом этапе"
                 multiline
                 editable={editable}
+                error={
+                  creationAttempted && !step.body.trim()
+                    ? 'Добавьте описание этапа'
+                    : undefined
+                }
               />
               {step.id ? (
                 <>
@@ -790,7 +846,11 @@ export function ProductDraftScreen({
           ))}
           {creationSteps.length < 20 ? (
             <SecondaryButton
-              label="Добавить этап"
+              label={
+                creationSteps.length === 0
+                  ? 'Добавить первый этап'
+                  : 'Добавить этап'
+              }
               disabled={replaceCreation.isPending}
               onPress={() =>
                 setCreationSteps((current) => [
@@ -814,7 +874,11 @@ export function ProductDraftScreen({
             label="Сохранить и проверить"
             loading={replaceCreation.isPending}
             disabled={!editable}
-            onPress={() => replaceCreation.mutate()}
+            onPress={() => {
+              setCreationAttempted(true);
+              if (!canSaveCreation) return;
+              replaceCreation.mutate();
+            }}
           />
         </FormSection>
       ) : null}

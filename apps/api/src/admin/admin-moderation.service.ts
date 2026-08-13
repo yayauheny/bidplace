@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
+import { missingProductApprovalFields } from '../products/product-requirements';
 
 @Injectable()
 export class AdminModerationService {
@@ -127,7 +128,9 @@ export class AdminModerationService {
         this.assertProductApprovalRequirements(product);
 
         if (product.sellerProfile.status !== 'APPROVED') {
-          this.logger.warn('Blocked product approval because seller is not approved');
+          this.logger.warn(
+            'Blocked product approval because seller is not approved',
+          );
           throw new ConflictException('SellerProfile must be approved first');
         }
       }
@@ -207,8 +210,12 @@ export class AdminModerationService {
       !sellerProfile.profilePhotoData ||
       sellerProfile.profilePhotoData.byteLength < 1
     ) {
-      this.logger.warn('Blocked seller approval because required fields are missing');
-      throw new ConflictException('Seller profile does not meet approval requirements');
+      this.logger.warn(
+        'Blocked seller approval because required fields are missing',
+      );
+      throw new ConflictException(
+        'Seller profile does not meet approval requirements',
+      );
     }
   }
 
@@ -216,24 +223,20 @@ export class AdminModerationService {
     title: string | null;
     story: string | null;
     categoryId: string | null;
+    condition: string | null;
     uniqueness: string | null;
     provenance: string | null;
     city: string | null;
     deliveryInfo: string | null;
     images: Array<{ id: string }>;
   }) {
-    if (
-      !product.title ||
-      !product.story ||
-      !product.categoryId ||
-      !product.uniqueness ||
-      !product.provenance ||
-      !product.city ||
-      !product.deliveryInfo ||
-      product.images.length < 1
-    ) {
-      this.logger.warn('Blocked product approval because required fields are missing');
-      throw new ConflictException('Product does not meet approval requirements');
+    if (missingProductApprovalFields(product).length > 0) {
+      this.logger.warn(
+        'Blocked product approval because required fields are missing',
+      );
+      throw new ConflictException(
+        'Product does not meet approval requirements',
+      );
     }
   }
 }

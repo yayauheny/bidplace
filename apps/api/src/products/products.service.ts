@@ -24,6 +24,7 @@ import {
   toProductResponse,
 } from './products.mapper';
 import { isEditableProductStatus } from './product-state';
+import { missingProductApprovalFields } from './product-requirements';
 import {
   publicDirectProductWhere,
   publicListingStatuses,
@@ -386,8 +387,11 @@ export class ProductsService {
       throw new ConflictException('Product cannot be submitted for review');
     }
 
-    if (product.images.length < 1) {
-      throw new ConflictException('Product must have at least one image');
+    const missingFields = missingProductApprovalFields(product);
+    if (missingFields.length > 0) {
+      throw new ConflictException(
+        `Product is missing required fields: ${missingFields.join(', ')}`,
+      );
     }
 
     return runSerializableTransaction(this.prisma, async (tx) => {
