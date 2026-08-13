@@ -22,6 +22,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       .getByLabel('История предмета')
       .fill('Created through the seller UI.');
     await page.getByLabel('Уникальность или тираж').fill('One');
+    await page.getByLabel('Состояние').fill('New');
     await page.getByLabel('Происхождение').fill('E2E fixture');
     await page.getByLabel('Техника').fill('Mixed media');
     await page.getByLabel('Материал').fill('Paper, ink');
@@ -29,6 +30,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page.getByLabel('Год создания').fill('2026');
     await page.getByLabel('Город').fill('Minsk');
     await page.getByLabel('Передача или доставка').fill('Pickup');
+    await page.getByLabel('Упаковка').fill('Protective packaging');
 
     const createResponsePromise = page.waitForResponse(
       (response) =>
@@ -51,6 +53,7 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       .getByRole('button', { name: 'Продолжить к истории создания' })
       .click();
     await page.getByLabel('Введение').fill('The story survived a reload.');
+    await page.getByRole('button', { name: 'Добавить первый этап' }).click();
     await page.getByLabel('Название этапа').fill('First sketch');
     await page
       .getByLabel('Описание этапа')

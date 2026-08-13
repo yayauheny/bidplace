@@ -113,21 +113,12 @@ test('admin reviews and approves pending seller and product', async ({
     ).toBeVisible();
     await expect(
       page.getByText(fixture.productTitle, { exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
 
-    const sellerCard = page
+    let sellerCard = page
       .getByText(fixture.sellerName, { exact: true })
       .first()
       .locator('..');
-    const productCard = page
-      .getByText(fixture.productTitle, { exact: true })
-      .first()
-      .locator('..');
-
-    await expect(
-      productCard.getByRole('button', { name: 'Одобрить' }),
-    ).toBeDisabled();
-    await expect(productCard).toContainText('Сначала одобрите автора.');
 
     await sellerCard.getByRole('button', { name: 'Одобрить' }).click();
     await expect
@@ -142,6 +133,12 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
     await page.getByRole('button', { name: 'Все статусы' }).click();
+    await page.getByRole('button', { name: 'Работы' }).click();
+
+    let productCard = page
+      .getByText(fixture.productTitle, { exact: true })
+      .first()
+      .locator('..');
 
     await expect(
       productCard.getByRole('button', { name: 'Одобрить' }),
@@ -180,6 +177,11 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('APPROVED');
 
+    await page.getByRole('button', { name: 'Авторы' }).click();
+    sellerCard = page
+      .getByText(fixture.sellerName, { exact: true })
+      .first()
+      .locator('..');
     await sellerCard.getByRole('button', { name: 'Приостановить' }).click();
     await page
       .getByRole('textbox', { name: 'Причина' })
@@ -200,6 +202,11 @@ test('admin reviews and approves pending seller and product', async ({
       })
       .toBe('SUSPENDED');
 
+    await page.getByRole('button', { name: 'Работы' }).click();
+    productCard = page
+      .getByText(fixture.productTitle, { exact: true })
+      .first()
+      .locator('..');
     await productCard
       .getByRole('button', { name: 'Запросить изменения' })
       .click();
