@@ -1,5 +1,32 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-13 — Product Creation contract and E2E determinism
+
+- `Implemented`: Product submit, moderation and public visibility now share the
+  confirmed creator-made Product requirement boundary from `05-MVP-RFC.md`
+  section 11 and `DEC-044`. `condition` and `packaging` remain supported
+  nullable metadata but no longer block submission or public projection;
+  `deliveryInfo` and the other confirmed required fields remain enforced. The
+  shared public Product contract accepts the existing nullable representation.
+- `Implemented`: Product Creation writes the selected wizard step to the URL,
+  restores it after reload and keeps the author on the creation-story step after
+  saving so a newly persisted step can receive its process photo before an
+  explicit move to review. Image-picker read failures are visible and do not
+  silently discard the selected operation.
+- `Implemented`: the Playwright API web server builds the API workspace
+  dependency graph before startup, preventing stale compiled contracts from
+  being loaded with current application source. A 12-minute global watchdog
+  prevents a stalled full suite from running indefinitely. Core public-route
+  E2E now rejects legacy React Native Web `shadow*`, `pointerEvents` and
+  `useNativeDriver` warnings.
+- `Verified`: API unit `158/158`, mobile unit `156/156`, contracts `12/12`,
+  PostgreSQL integration `40/40`, API/mobile typecheck and lint, Product
+  Creation Playwright `1/1`, responsive Wave A `3/3`, core route/console Wave
+  One `5/5`, the full disposable Chromium suite `38/38`, and Expo production
+  export for web/iOS/Android pass. Fresh Product and Creator captures were
+  inspected at 1440/1024/390. Matched Pen overlay, native device, screen-reader
+  and founder acceptance remain `Needs verification`.
+
 ## 2026-08-12 — Final Pen v2 review blockers
 
 - `Implemented`: public creator work pagination now preserves `status`/`sort`, loads additional server pages through `useInfiniteQuery`, and exposes loading/retry states in `apps/mobile/src/features/sellers/public-seller-screen.tsx`.

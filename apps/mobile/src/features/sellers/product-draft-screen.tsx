@@ -145,10 +145,20 @@ export function ProductDraftScreen({
   );
   const [creationIntro, setCreationIntro] = useState('');
   const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([]);
+  const [creationStorySaved, setCreationStorySaved] = useState(true);
+  const [imageSelectionError, setImageSelectionError] = useState<string | null>(
+    null,
+  );
+  const [creationImageSelectionError, setCreationImageSelectionError] =
+    useState<string | null>(null);
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [creationAttempted, setCreationAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
   const isCreationFlow = flow === 'creation' || !productId;
+
+  useEffect(() => {
+    setWizardStep(Math.min(Math.max(initialStep, 1), 4));
+  }, [initialStep]);
 
   useEffect(() => {
     if (!existingProduct || initializedProductId === existingProduct.id) return;
@@ -179,6 +189,7 @@ export function ProductDraftScreen({
           }))
         : [],
     );
+    setCreationStorySaved(true);
   }, [existingProduct, initializedProductId, productDetail.data]);
 
   const input = () => ({
@@ -249,13 +260,14 @@ export function ProductDraftScreen({
         })),
       );
       setCreationAttempted(false);
-      setWizardStep(4);
+      setCreationStorySaved(true);
     },
   });
   const uploadCreationStepImage = useMutation({
     mutationFn: ({ stepId, image }: { stepId: string; image: Blob }) =>
       api.images.addCreationStepImage(existingProduct!.id, stepId, image),
     onSuccess: (_result, variables) => {
+      setCreationImageSelectionError(null);
       setCreationSteps((current) =>
         current.map((step) =>
           step.id === variables.stepId
@@ -293,19 +305,28 @@ export function ProductDraftScreen({
   });
   const chooseImages = async () => {
     if (!existingProduct) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      quality: 1,
-    });
-    if (result.canceled) return;
-    const images = await Promise.all(
-      result.assets.map((asset) =>
-        fetch(asset.uri).then((response) => response.blob()),
-      ),
-    );
-    upload.mutate(images);
+    setImageSelectionError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
+        quality: 1,
+      });
+      if (result.canceled) return;
+      const images = await Promise.all(
+        result.assets.map(async (asset) => {
+          const response = await fetch(asset.uri);
+          if (!response.ok) throw new Error('Selected image could not be read');
+          return response.blob();
+        }),
+      );
+      upload.mutate(images);
+    } catch {
+      setImageSelectionError(
+        'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
+      );
+    }
   };
 
   if (categories.isLoading || (productId && productDetail.isLoading))
@@ -349,6 +370,7 @@ export function ProductDraftScreen({
     field: keyof DraftCreationStep,
     value: string,
   ) => {
+    setCreationStorySaved(false);
     setCreationSteps((current) =>
       current.map((step, stepIndex) =>
         stepIndex === index ? { ...step, [field]: value } : step,
@@ -368,15 +390,11 @@ export function ProductDraftScreen({
       (Number.isInteger(parsedYear) && parsedYear >= 0 && parsedYear <= 9999)
         ? undefined
         : 'Введите год числом от 0 до 9999',
-    condition: condition.trim() ? undefined : 'Опишите состояние',
     uniqueness: uniqueness.trim()
       ? undefined
       : 'Укажите уникальность или тираж',
     provenance: provenance.trim() ? undefined : 'Укажите происхождение',
     city: city.trim() ? undefined : 'Укажите город',
-    packaging: packaging.trim()
-      ? undefined
-      : 'Опишите, как будет упакован предмет',
     deliveryInfo: deliveryInfo.trim()
       ? undefined
       : 'Опишите передачу или доставку',
@@ -387,16 +405,31 @@ export function ProductDraftScreen({
   const canSaveCreation = creationSteps.every(
     (step) => step.title.trim().length > 0 && step.body.trim().length > 0,
   );
+  const moveToWizardStep = (step: number) => {
+    setWizardStep(step);
+    if (existingProduct) {
+      router.setParams({ flow: 'creation', step: String(step) });
+    }
+  };
   const chooseCreationStepImage = async (stepId: string) => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 1,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const response = await fetch(result.assets[0].uri);
-    const image = await response.blob();
-    uploadCreationStepImage.mutate({ stepId, image });
+    setCreationImageSelectionError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        quality: 1,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      const response = await fetch(result.assets[0].uri);
+      if (!response.ok)
+        throw new Error('Selected process image could not be read');
+      const image = await response.blob();
+      uploadCreationStepImage.mutate({ stepId, image });
+    } catch {
+      setCreationImageSelectionError(
+        'Не удалось прочитать фотографию этапа. Выберите файл ещё раз.',
+      );
+    }
   };
 
   return (
@@ -431,7 +464,7 @@ export function ProductDraftScreen({
                       (step === 2 && !existingProduct) ||
                       (step >= 3 && !canContinueToCreation)
                     }
-                    onPress={() => setWizardStep(step)}
+                    onPress={() => moveToWizardStep(step)}
                   />
                 );
               },
@@ -579,11 +612,9 @@ export function ProductDraftScreen({
                   label="Упаковка"
                   value={packaging}
                   onChangeText={setPackaging}
-                  placeholder="Как предмет будет защищён при перевозке"
+                  placeholder="Необязательно"
                   multiline
                   editable={editable}
-                  required
-                  error={stepOneAttempted ? stepOneErrors.packaging : undefined}
                 />
                 <TextField
                   label="Передача или доставка"
@@ -654,15 +685,11 @@ export function ProductDraftScreen({
               required
               error={stepOneAttempted ? stepOneErrors.uniqueness : undefined}
             />
-            <TextField
-              label="Состояние"
-              value={condition}
-              onChangeText={setCondition}
-              placeholder="Опишите состояние предмета"
-              editable={editable}
-              required
-              error={stepOneAttempted ? stepOneErrors.condition : undefined}
-            />
+            {condition ? (
+              <AppText role="bodySmall" tone="secondary">
+                Состояние: {condition}
+              </AppText>
+            ) : null}
             <TextField
               label="Происхождение"
               value={provenance}
@@ -745,6 +772,11 @@ export function ProductDraftScreen({
               Не удалось загрузить изображения.
             </AppText>
           ) : null}
+          {imageSelectionError ? (
+            <AppText role="bodySmall" tone="danger">
+              {imageSelectionError}
+            </AppText>
+          ) : null}
           {removeImage.isError || reorderImages.isError ? (
             <AppText role="bodySmall" tone="danger">
               Не удалось изменить изображения.
@@ -761,12 +793,12 @@ export function ProductDraftScreen({
           </AppText>
           <SecondaryButton
             label="Назад к описанию"
-            onPress={() => setWizardStep(1)}
+            onPress={() => moveToWizardStep(1)}
           />
           <PrimaryButton
             label="Продолжить к истории создания"
             disabled={!canContinueToCreation}
-            onPress={() => setWizardStep(3)}
+            onPress={() => moveToWizardStep(3)}
           />
         </View>
       ) : null}
@@ -779,7 +811,10 @@ export function ProductDraftScreen({
           <TextField
             label="Введение"
             value={creationIntro}
-            onChangeText={setCreationIntro}
+            onChangeText={(value) => {
+              setCreationIntro(value);
+              setCreationStorySaved(false);
+            }}
             placeholder="Расскажите о замысле и процессе"
             multiline
             editable={editable}
@@ -851,11 +886,12 @@ export function ProductDraftScreen({
                 <TextButton
                   label="Удалить этап"
                   disabled={replaceCreation.isPending}
-                  onPress={() =>
+                  onPress={() => {
+                    setCreationStorySaved(false);
                     setCreationSteps((current) =>
                       current.filter((_item, stepIndex) => stepIndex !== index),
-                    )
-                  }
+                    );
+                  }}
                 />
               ) : null}
             </View>
@@ -868,12 +904,13 @@ export function ProductDraftScreen({
                   : 'Добавить этап'
               }
               disabled={replaceCreation.isPending}
-              onPress={() =>
+              onPress={() => {
+                setCreationStorySaved(false);
                 setCreationSteps((current) => [
                   ...current,
                   { title: '', body: '' },
-                ])
-              }
+                ]);
+              }}
             />
           ) : null}
           {replaceCreation.isError ? (
@@ -881,20 +918,45 @@ export function ProductDraftScreen({
               Не удалось сохранить историю создания.
             </AppText>
           ) : null}
+          {uploadCreationStepImage.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              Не удалось загрузить фотографию этапа.
+            </AppText>
+          ) : null}
+          {creationImageSelectionError ? (
+            <AppText role="bodySmall" tone="danger">
+              {creationImageSelectionError}
+            </AppText>
+          ) : null}
+          {creationStorySaved ? (
+            <AppText role="bodySmall" tone="success">
+              История сохранена. Теперь можно добавить фотографии к новым этапам
+              или перейти к проверке.
+            </AppText>
+          ) : null}
           <SecondaryButton
             label="Назад к изображениям"
             disabled={replaceCreation.isPending}
-            onPress={() => setWizardStep(2)}
+            onPress={() => moveToWizardStep(2)}
           />
           <PrimaryButton
-            label="Сохранить и проверить"
+            label="Сохранить историю"
             loading={replaceCreation.isPending}
-            disabled={!editable}
+            disabled={!editable || creationStorySaved}
             onPress={() => {
               setCreationAttempted(true);
               if (!canSaveCreation) return;
               replaceCreation.mutate();
             }}
+          />
+          <SecondaryButton
+            label="Продолжить к проверке"
+            disabled={
+              !creationStorySaved ||
+              replaceCreation.isPending ||
+              uploadCreationStepImage.isPending
+            }
+            onPress={() => moveToWizardStep(4)}
           />
         </FormSection>
       ) : null}
@@ -930,7 +992,7 @@ export function ProductDraftScreen({
           <SecondaryButton
             label="Назад к истории создания"
             disabled={submit.isPending || wizardSubmitted}
-            onPress={() => setWizardStep(3)}
+            onPress={() => moveToWizardStep(3)}
           />
         </FormSection>
       ) : null}

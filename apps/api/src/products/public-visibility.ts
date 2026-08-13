@@ -15,7 +15,6 @@ export const publicProductContentWhere = {
   categoryId: { not: null },
   title: { not: '' },
   story: { not: '' },
-  condition: { not: '' },
   uniqueness: { not: '' },
   provenance: { not: '' },
   city: { not: '' },
@@ -27,7 +26,6 @@ export const publicProductContentSql: Prisma.Sql = Prisma.sql`
   p."category_id" IS NOT NULL
   AND NULLIF(BTRIM(p."title"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."story"), '') IS NOT NULL
-  AND NULLIF(BTRIM(p."condition"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."uniqueness"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."provenance"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."city"), '') IS NOT NULL

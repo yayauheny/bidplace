@@ -18,6 +18,7 @@ async function reset() {
   await prisma.listing.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -59,6 +60,12 @@ describe('Public seller pagination PostgreSQL behavior', () => {
         status: 'APPROVED',
       },
     });
+    const category = await prisma.category.create({
+      data: {
+        slug: `pagination-${suffix}`,
+        name: 'Pagination category',
+      },
+    });
     const now = new Date('2026-08-12T10:00:00.000Z');
     const products = await Promise.all(
       ['First', 'Second'].map((title, index) =>
@@ -66,8 +73,13 @@ describe('Public seller pagination PostgreSQL behavior', () => {
           data: {
             publicId: `${suffix.replace(/-/g, '').slice(0, 10)}${index}`,
             sellerProfileId: profile.id,
+            categoryId: category.id,
             title,
             story: 'Story',
+            uniqueness: 'One',
+            provenance: 'Created by the seller',
+            city: 'Minsk',
+            deliveryInfo: 'Pickup',
             status: 'APPROVED',
             createdAt: new Date(now.getTime() + index * 1_000),
             images: {

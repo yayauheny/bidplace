@@ -165,6 +165,10 @@ export async function createPermissionFixture(
       categoryId: category.id,
       title: 'Approved owner draft',
       story: 'Draft with images for permission coverage',
+      uniqueness: 'One',
+      provenance: 'Wave 3 fixture',
+      city: 'Minsk',
+      deliveryInfo: 'Pickup',
       status: 'DRAFT',
       images: {
         create: [

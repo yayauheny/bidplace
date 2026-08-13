@@ -7,6 +7,7 @@ import {
   listingStatusSchema,
   productWriteRequestSchema,
   publicDiscoveryQuerySchema,
+  publicProductSchema,
   publicSellerQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
@@ -18,6 +19,14 @@ describe('shared contracts', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
     ).toBe(true);
+  });
+  it('keeps condition and packaging optional for public creator Products', () => {
+    expect(publicProductSchema.shape.condition.safeParse(null).success).toBe(
+      true,
+    );
+    expect(publicProductSchema.shape.packaging.safeParse(null).success).toBe(
+      true,
+    );
   });
   it('accepts an auction Listing only in BYN through server-owned currency', () => {
     expect(

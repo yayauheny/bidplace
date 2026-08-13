@@ -149,3 +149,16 @@ A screen can become code-level `Implemented` only after comparison at
 and affected typecheck/lint/tests/build. Release-level `Accepted` additionally
 requires founder/designer and physical-device approval. Documentation-only
 mapping or a desktop screenshot is insufficient.
+
+## Product Creation regression verification — 2026-08-13
+
+- `Functional implemented`: creation-story save remains on step 3 so persisted
+  steps can receive process photos before the explicit review transition; the
+  URL preserves the current step across reload.
+- `Automated regression passed`: Product Creation `1/1`, responsive Wave A
+  `3/3`, core public route/console Wave One `5/5`, full Chromium `38/38`, and
+  Expo production export for web/iOS/Android.
+- `Visual compared`: fresh Product and Creator runtime captures were inspected
+  at 1440/1024/390 for composition, overflow and responsive action ownership.
+- `Needs verification`: formal matched Pen overlay, native-device behavior,
+  physical screen-reader QA and founder approval remain open.

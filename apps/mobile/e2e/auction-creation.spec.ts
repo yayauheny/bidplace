@@ -22,7 +22,6 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
       .getByLabel('История предмета')
       .fill('Created through the seller UI.');
     await page.getByLabel('Уникальность или тираж').fill('One');
-    await page.getByLabel('Состояние').fill('New');
     await page.getByLabel('Происхождение').fill('E2E fixture');
     await page.getByLabel('Техника').fill('Mixed media');
     await page.getByLabel('Материал').fill('Paper, ink');
@@ -52,16 +51,15 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page
       .getByRole('button', { name: 'Продолжить к истории создания' })
       .click();
+    await expect(page).toHaveURL(/flow=creation&step=3$/);
     await page.getByLabel('Введение').fill('The story survived a reload.');
     await page.getByRole('button', { name: 'Добавить первый этап' }).click();
     await page.getByLabel('Название этапа').fill('First sketch');
     await page
       .getByLabel('Описание этапа')
       .fill('The process image and text are server-backed.');
-    await page.getByRole('button', { name: 'Сохранить и проверить' }).click();
-    await expect(page.getByText('Этапы истории: 1')).toBeVisible();
-
-    await page.goto(`/products/${product.id}?flow=creation&step=3`);
+    await page.getByRole('button', { name: 'Сохранить историю' }).click();
+    await expect(page.getByText('История сохранена.')).toBeVisible();
     const processChooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Добавить фотографию' }).click();
     await (
@@ -82,7 +80,8 @@ test('seller creates, submits, schedules, and publicly previews an auction', asy
     await page
       .getByLabel('Введение')
       .fill('The story was edited after reload.');
-    await page.getByRole('button', { name: 'Сохранить и проверить' }).click();
+    await page.getByRole('button', { name: 'Сохранить историю' }).click();
+    await page.getByRole('button', { name: 'Продолжить к проверке' }).click();
     await expect(page.getByText('Этапы истории: 1')).toBeVisible();
 
     const submitResponsePromise = page.waitForResponse(

@@ -13,7 +13,6 @@ export const publicProductSchema = productSchema
     uniqueness: z.string().trim().min(1),
     provenance: z.string().trim().min(1),
     city: z.string().trim().min(1),
-    condition: z.string().trim().min(1),
     deliveryInfo: z.string().trim().min(1),
     images: productSchema.shape.images.nonempty(),
   })

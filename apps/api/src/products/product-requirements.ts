@@ -15,11 +15,9 @@ const requiredTextFields = [
   'title',
   'story',
   'categoryId',
-  'condition',
   'uniqueness',
   'provenance',
   'city',
-  'packaging',
   'deliveryInfo',
 ] as const;
 

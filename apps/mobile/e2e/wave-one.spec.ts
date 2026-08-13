@@ -55,7 +55,7 @@ test('new authenticated user sees seller application form and cannot access admi
   }
 });
 
-test('route groups do not emit legacy Expo Router warnings', async ({
+test('core public routes do not emit legacy React Native Web warnings', async ({
   page,
 }) => {
   const warnings: string[] = [];
@@ -65,12 +65,24 @@ test('route groups do not emit legacy Expo Router warnings', async ({
     }
   });
 
-  await page.goto('/');
+  for (const route of [
+    '/',
+    '/works',
+    '/authors',
+    '/seller/anna-morozova',
+    '/product/seedLive002',
+  ]) {
+    await page.goto(route);
+    await expect(page.getByTestId('app-shell-content')).toBeVisible();
+  }
   expect(
     warnings.filter(
       (message) =>
         message.includes('No route named "(public)"') ||
-        message.includes('No route named "(auth)"'),
+        message.includes('No route named "(auth)"') ||
+        message.includes('"shadow*" style props are deprecated') ||
+        message.includes('props.pointerEvents is deprecated') ||
+        /useNativeDriver.*not supported/i.test(message),
     ),
   ).toEqual([]);
 });

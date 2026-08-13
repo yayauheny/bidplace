@@ -10,6 +10,7 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './e2e',
+  globalTimeout: 12 * 60_000,
   workers: 1,
   use: {
     baseURL: webBaseURL,
@@ -19,7 +20,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api build && node apps/api/dist/main.js',
+        'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api... build && node apps/api/dist/main.js',
       cwd: '../..',
       url: `${apiBaseURL}/api/health`,
       reuseExistingServer: false,
