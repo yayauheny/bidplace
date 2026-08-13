@@ -7,10 +7,11 @@ This directory is the isolated input/output boundary for the new design explorat
 1. Read `../../docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md`.
 2. Read `../../docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md`.
 3. Read `FOUNDER-DECISIONS.md` and `REFERENCE-MANIFEST.yaml`.
-4. Use the operational constraints in `../../docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md`.
-5. Run the prompt in `prompts/01-DESIGN-ARCHITECT-PROMPT.md`.
-6. After founder approval, run `prompts/02-PEN-BUILDER-PROMPT.md`.
-7. Review exports with `prompts/03-VISUAL-QA-PROMPT.md`.
+4. Read the screenshot-by-screenshot interpretation in `REFERENCE-ANALYSIS.md`.
+5. Use the operational constraints in `../../docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md`.
+6. Run the prompt in `prompts/01-DESIGN-ARCHITECT-PROMPT.md`.
+7. After founder approval, run `prompts/02-PEN-BUILDER-PROMPT.md`.
+8. Review exports with `prompts/03-VISUAL-QA-PROMPT.md`.
 
 ## Directory roles
 
@@ -23,13 +24,11 @@ exports/     future Pen screenshot evidence; not created yet
 
 ## Current reference completeness
 
-Enough material exists to finish the audits and begin structural reasoning. Before the strongest visual pass, the highest-value additions are:
+The packet now contains desktop and mobile WePresent evidence, a broad Get Hyped work/story set, concrete Avant Arte work/transaction/profile anatomy, Medallion mobile search/onboarding/validation evidence, a creator-publishing flow, persistent-Create and bid-dialog patterns from Foundation, a COLORS auth reference, and Mobbin author-card/blur-caption references. Before the strongest visual pass, the highest-value remaining additions are:
 
-1. WePresent mobile navigation/home/artist/story views.
-2. Get Hyped mobile work/card/gallery views.
-3. Medallion mobile creator/profile/release views.
-4. Avant Arte desktop work story plus mobile process/detail views.
-5. Pinterest mobile Explore/recommendation behavior.
+1. Get Hyped mobile work/card/gallery views.
+2. Avant Arte mobile process/detail/transaction views.
+3. Pinterest desktop and mobile Explore/recommendation behavior.
 
 Missing screenshots do not authorize the architect to browse broadly or invent interaction. The manifest defines when a targeted live check is allowed.
 

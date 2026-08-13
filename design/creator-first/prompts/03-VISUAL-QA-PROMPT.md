@@ -17,6 +17,7 @@ docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md
 docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
+design/creator-first/REFERENCE-ANALYSIS.md
 design/creator-first/references/**
 design/creator-first/spec/DESIGN-DIRECTION.md
 design/creator-first/spec/design-system.yaml
@@ -35,11 +36,12 @@ Do not read the repository code, editable Pen files, old design documentation, o
 3. First-time navigation clarity.
 4. Work desirability without marketplace drift.
 5. Live price/deadline/bid findability.
-6. Mobile reading flow and safe actions.
-7. Minimal/long content resilience.
-8. Typography, color, grid, spacing, media crop, overlap, and rotation fidelity.
-9. Accessibility, focus, touch targets, reduced-motion annotations.
-10. Originality versus direct reference cloning.
+6. Persistent capability-aware creator action and comprehensible creator onboarding/add-work sequence.
+7. Mobile reading flow and safe actions.
+8. Minimal/long content resilience.
+9. Typography, color, grid, spacing, media crop, overlap, rotation, and any bounded blur-caption fidelity.
+10. Accessibility, focus, touch targets, reduced-motion annotations.
+11. Originality versus direct reference cloning.
 
 ## Required output
 

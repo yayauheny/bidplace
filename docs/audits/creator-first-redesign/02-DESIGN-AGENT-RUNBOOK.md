@@ -44,6 +44,7 @@ docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
 docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
+design/creator-first/REFERENCE-ANALYSIS.md
 design/creator-first/references/**
 .agents/skills/ui-ux-pro-max/SKILL.md
 .agents/skills/ui-ux-pro-max/references/quick-reference.md   # only targeted sections
@@ -231,7 +232,7 @@ Each component must define:
   do_not_invent: []
 ```
 
-Minimum components: global navigation, search entry, creator scene/card, work scene/card, media stack/gallery, story chapter, creator links, auction action, bid entry/confirmation, status, bid-history row, facts group, loading/error/missing-media primitives.
+Minimum components: global navigation, role-aware creator action, search entry, creator scene/card, work scene/card, media stack/gallery, story chapter, creator links, auction action, bid entry/confirmation, status, bid-history row, facts group, creator step shell, media input/preview, form field, inline async validation, review/submit action, loading/error/missing-media primitives.
 
 ### `screen-blueprints.yaml`
 
@@ -250,6 +251,11 @@ Every initial frame must define:
 - all required states;
 - annotations for the Pen builder;
 - acceptance checks.
+
+The initial blueprint set must include both:
+
+1. the public creator/work vertical slice at 1440 and 390;
+2. creator activation states plus a minimum 390 px sequence for `создать кабинет` and `добавить работу`, using only fields and permissions present in the audit.
 
 Do not use absolute coordinates as the only layout description. Pair measurements with responsive constraints.
 

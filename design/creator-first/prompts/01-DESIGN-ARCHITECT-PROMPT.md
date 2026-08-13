@@ -20,6 +20,7 @@ Produce one recommended creator-first visual system that:
 4. scales to creators with minimal content and no manual art direction;
 5. works intentionally on web, iOS, and Android;
 6. gives a lower-cost Pen agent enough exact information to build without inventing design decisions.
+7. makes creator onboarding and adding a work permanently discoverable without turning the public experience into a dashboard.
 
 ## Read boundary
 
@@ -31,6 +32,7 @@ docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
 docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
+design/creator-first/REFERENCE-ANALYSIS.md
 design/creator-first/references/**
 .agents/skills/ui-ux-pro-max/SKILL.md
 .agents/skills/ui-ux-pro-max/references/quick-reference.md only when a targeted section is needed
@@ -61,8 +63,7 @@ The audit packet already distills the supported product behavior. If information
 ## Reference use
 
 - Inspect every available tier-1 image at useful detail.
-- Use WePresent as the main editorial/structural influence.
-- Use Get Hyped/Bullit for card/media composition, saturated confidence, and youthful energy.
+- Build an equal 50/50 synthesis: WePresent owns editorial structure and navigation; Get Hyped/Bullit owns card/media behavior, saturated confidence, motion, and youthful energy.
 - Use supporting references only for the role assigned in the manifest.
 - Do not average all references or clone any page, branding, text, or asset.
 - Use screenshots first. Browse a live site only for a specific unresolved mobile, motion, navigation, or carousel behavior, and state exactly what question you are resolving.
@@ -105,6 +106,7 @@ The YAML must contain exact, usable values for:
 - component anatomy, variants, states, data requirements, and content limits;
 - 1440, 1024, and 390 responsive behavior;
 - Creator Profile, Work Scheduled, Work Live, bid states, Home, and Explore;
+- the role-aware global creator action and the minimum creator onboarding/work-creation mobile sequence;
 - loading, empty, error, missing media, role, long/minimal content, focus, and disabled states.
 
 Avoid vague values such as “large,” “subtle,” “premium,” or “modern” when a number or rule can be specified.
@@ -114,6 +116,10 @@ Avoid vague values such as “large,” “subtle,” “premium,” or “moder
 - Discovery cards omit price and deadline by default.
 - Work detail keeps price, deadline, and bid action findable.
 - Creator pages use one scalable template; no arbitrary photo-derived blur or per-creator manual theme.
+- `Создать` is a persistent role-aware action: guest/non-creator → creator onboarding; approved creator → add work; pending/restricted creator → honest cabinet/status path. It must not exist only inside an overflow menu.
+- Desktop specifies a dark rounded plus+label action; mobile specifies a compact high-contrast plus action with an accessible label and exact placement chosen by you.
+- If using the founder-approved lower mirror/blur caption effect, keep it bounded inside a creator/work media component, define a solid fallback and contrast rule, and choose one primary owner rather than applying it everywhere.
+- Auth uses a light, welcoming one-decision composition; COLORS is a hierarchy/typography reference, not a mandate to copy its brand or generate arbitrary gradients.
 - The existing reversed-`b` symbol remains; do not redesign the logo.
 - Russian/Cyrillic is the primary content stress test.
 - Future wishlist/follow/fixed-price/video concepts may be structurally compatible but cannot appear as implemented MVP controls.
@@ -136,7 +142,7 @@ Before finishing:
 1. Validate all YAML syntax.
 2. Check every required output file exists.
 3. Run the brief evaluation rubric and report scores.
-4. Search your output for forbidden unsupported concepts: followers, ratings, reviews, auto-bid, reserve, Buy Now, payment, shipping workflow, comments, chat, NFT, wallet.
+4. Search your output for forbidden unsupported concepts: followers, ratings, reviews, auto-bid, reserve, Buy Now, payment, shipping workflow, comments, chat, NFT, wallet, mint, ETH, post rewards.
 5. Confirm the old Pen and application code were not read or changed.
 
 Final response: give the selected direction in no more than ten bullets, list created files, rubric scores, and unresolved inputs. Do not paste the full files into the response.

@@ -62,14 +62,18 @@ The reference manifest is `design/creator-first/REFERENCE-MANIFEST.yaml`. Apply 
 
 | Reference | Weight and role | Take | Do not take |
 | --- | --- | --- | --- |
-| WePresent | Primary, roughly 80% of structural/editorial influence | Navigation clarity, first-screen statement, magazine pacing, varied story grids, color-filled cards, author context | Publisher-only IA, proprietary branding, literal copied layouts/assets |
-| Get Hyped / Bullit | Primary media/card language | Stacked and lightly rotated media, bold frames, short copy, playful controls, saturated confidence | Agency IA, oversized-everything, gratuitous hype, too many simultaneous accents |
-| Medallion | Mobile and product philosophy | Creator as homebase, low-control-count mobile surfaces, direct creator–audience relationship | Artist/fan platform assumptions not backed by bidplace data |
+| WePresent | Equal primary, 50% of the synthesis; structural/editorial owner | Navigation clarity, first-screen statement, magazine pacing, varied story grids, color-filled cards, author context | Publisher-only IA, proprietary branding, literal copied layouts/assets |
+| Get Hyped / Bullit | Equal primary, 50% of the synthesis; media/energy owner | Stacked and lightly rotated media, bold frames, short copy, playful controls, saturated confidence | Agency IA, oversized-everything, gratuitous hype, too many simultaneous accents |
+| Medallion | Mobile controls and product philosophy | Creator as homebase, quiet search, large pill actions, clear iconography, one decision per step, loading/success validation, low-control-count mobile surfaces | Dark theme requirement, music integrations, subscription/comments/follow mechanics, rankings or verification badges |
 | Avant Arte | Work page | Process, material, detail, edition/provenance storytelling | Conservative luxury tone, inaccessible curator language |
 | Stationhead | Restraint and moment | Simple artist recognition, event immediacy, minimal actions | Dark entertainment default, celebrity verification/follower semantics |
 | Pinterest | Explore architecture | Fast scanning, visual recommendations, related paths, progressive discovery | Endless engagement feed, popularity bias, clone-like masonry everywhere |
 | Metalabel | Data model only | Release, edition, credits, collaboration thinking | Dense terminology, visual complexity, niche/cryptic interaction |
 | JOOPITER | Transaction clarity only | Readable auction state and trust information | Auction-house luxury styling and lot-catalog dominance |
+| COLORS | Auth welcome | Expressive `Hello` scale, light choice hierarchy, one calm auth decision area | Brand typography/assets, generic AI gradient as system decoration |
+| Creator publishing flow | Creator activation | Visible `+ Новая работа`, clear sequence, preview, category and validation states | Social-post/reward language, invented category behavior |
+| Foundation | Selected work/create patterns | Persistent `Create`, split work hero, media stack, compact bid dialog | NFT, wallet, ETH, minting, offers, packs, feed mechanics |
+| Mobbin Awards | Creator presentation | Portrait-first cards, readable preview modal, bounded lower blur/mirror caption | Awards/curator semantics, effect on every card or full-page blur |
 
 ## 5. Founder visual decisions
 
@@ -88,13 +92,28 @@ The reference manifest is `design/creator-first/REFERENCE-MANIFEST.yaml`. Apply 
 - Default card content is image, title, creator, and one short descriptor.
 - A lower-right arrow may indicate gallery progression, but navigation to detail must use a distinct rightward/link affordance.
 - Cards can be bright and youthful without turning the whole product into a social feed.
+- For work/media progression, expose one clear rightward control and preserve swipe/drag plus keyboard access; do not copy a decorative two-arrow pair.
 
 ### Scalable creator identity
 
 - Use one robust creator-profile template.
-- Do not derive blurred backgrounds or text colors from arbitrary user photos.
+- Do not derive full-page backgrounds, palettes, or text colors from arbitrary user photos.
 - Do not require manual page art direction for each creator.
 - Variation comes from real media, controlled preset accent roles, composition, and content—not from an entirely new UI theme per profile.
+- A bounded lower caption surface may mirror/blur a slice of the same public image inside a creator or work card. It needs an opaque fallback and verified contrast; the architect must assign it one primary use rather than spreading it across the whole system.
+
+### Creator activation and publishing
+
+- `Создать` is a primary global action, not a control hidden in a profile or overflow menu.
+- Desktop uses a dark rounded action with a white plus and explicit role-aware label. Mobile may use a compact black-plus action, but it remains persistently discoverable and has an accessible text label.
+- A guest/non-creator enters creator onboarding; an approved creator enters work creation; pending/restricted creators see their real status/cabinet destination. Do not visually grant unsupported capability.
+- Creator-profile creation and work creation use one main task per step, a stable progress/feedback region, keyboard/safe-area states, and clear loading/error/disabled/retry behavior.
+- Use bidplace vocabulary (`автор`, `работа`, `предмет`), not `post`, followers, rewards, or content-feed language.
+
+### Light welcome/auth
+
+- Auth should feel direct, friendly, and visually light: one expressive welcome heading, concise explanation, and a small number of obvious sign-in paths.
+- A media/color field may support the composition, but it should come from the approved palette or creator/work atmosphere—not a mandatory free-form gradient effect.
 
 ## 6. Visual character
 
@@ -120,6 +139,8 @@ Avoid:
 - long uninterrupted editorial essays;
 - ratings, follower counts, badges, and fake social proof;
 - manually customized creator microsites.
+- hidden or menu-only creator activation;
+- full-page user-photo blur that can destroy text contrast;
 
 ## 7. Typography direction
 
@@ -151,6 +172,16 @@ Do not give every creator a generated palette. Define a small tested set of sema
 - Avoid both dense marketplace walls and oversized landing-page sections that hide useful content below every fold.
 - On mobile, transform the composition into a direct vertical story rather than shrinking desktop geometry.
 
+### Mobile control grammar
+
+- Use the Medallion screenshots for interaction density and sequencing, not for dark-theme styling or music/social product semantics.
+- Prefer one main decision per onboarding/form step, one stable feedback region, and one clear primary action.
+- Search and text input use quiet rounded surfaces with explicit focus, loading, success, error, disabled, and character-limit states.
+- Inline async validation must not shift the primary layout or require a modal.
+- Keep icon count low, use familiar symbols, and add text labels wherever an icon alone is ambiguous.
+- Design keyboard-open, safe-area, short-content, long-error, slow-validation, media-permission-denied, and retry states as first-class 390 px frames.
+- Large pill buttons are a compositional pattern, not a license to make every secondary action visually primary.
+
 ## 10. Screen direction
 
 ### Creator profile — design first
@@ -168,6 +199,8 @@ Suggested hierarchy:
 7. Ended/archive works.
 
 The existing backend has only one `shortDescription`; do not invent a feed or multiple biography fields. The specification may show how the same field behaves at short and long lengths.
+
+The profile and work-card system may test one bounded lower mirror/blur caption treatment. The exact owner—creator card, featured work, or neither—must be recommended once, with a solid fallback and long-name/contrast evidence.
 
 ### Work/release — design second
 
@@ -189,6 +222,7 @@ Use image, title, and short copy to create desire before exposing the full metad
 
 - First screen presents one creator, one work, and one moment together.
 - Navigation and search remain obvious.
+- A role-aware creator action remains obvious from the global shell: creator onboarding for a visitor/non-creator, work creation for an approved creator, and honest cabinet/status routing for other creator states.
 - Follow with a small number of curated creator/work/story entries.
 - Use the current `topAuctions`, `creators`, and `newWorks` data projection honestly.
 
@@ -240,6 +274,8 @@ Produce the system in this order:
 5. Home — desktop and mobile.
 6. Explore — desktop and mobile.
 7. Tablet 1024 derivations after the direction is coherent.
+8. Creator activation and work-creation entry states: desktop global action, mobile global action, guest/non-creator, approved creator, and pending/restricted creator.
+9. Creator onboarding/work creation — the minimum 390 mobile state sequence needed to specify default, keyboard-open, validation, media permission failure, disabled, retry, and review/submit behavior.
 
 Supporting flows and future fixed-price concepts come only after founder approval of this vertical slice.
 
