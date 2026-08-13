@@ -1,7 +1,9 @@
 import {
+  adminProductsResponseSchema,
   adminOrderCancellationRequestSchema,
   adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
+  adminSellerProfilesResponseSchema,
   adminSellerStatusUpdateRequestSchema,
 } from '@bidplace/contracts';
 import {
@@ -33,7 +35,22 @@ import { AdminModerationService } from './admin-moderation.service';
 
 const adminProductSelect = {
   ...productSelect,
-  sellerProfile: { select: { slug: true, fullName: true } },
+  creationIntro: true,
+  creationSteps: {
+    orderBy: { position: 'asc' },
+    select: {
+      id: true,
+      position: true,
+      title: true,
+      body: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+      width: true,
+      height: true,
+    },
+  },
+  sellerProfile: { select: { slug: true, fullName: true, status: true } },
   listings: {
     where: { status: { in: ['SCHEDULED', 'LIVE'] } },
     select: { status: true },
@@ -88,13 +105,13 @@ export class AdminController {
       }
     }
 
-    return {
+    return adminSellerProfilesResponseSchema.parse({
       sellerProfiles: sellerProfiles.map((sellerProfile) => ({
         ...toSellerProfileResponse(sellerProfile).sellerProfile,
         lastModerationReason: reasons.get(sellerProfile.id) ?? null,
         hasBlockingListing: liveIds.has(sellerProfile.id),
       })),
-    };
+    });
   }
 
   @Get('products')
@@ -120,14 +137,36 @@ export class AdminController {
       }
     }
 
-    return {
-      products: products.map((product) => ({
-        ...toContractProduct(product),
-        sellerProfile: product.sellerProfile,
-        hasBlockingListing: product.listings.length > 0,
-        lastModerationReason: reasons.get(product.id) ?? null,
-      })),
-    };
+    return adminProductsResponseSchema.parse({
+      products: products.map((product) => {
+        const contractProduct = toContractProduct(product);
+
+        return {
+          ...contractProduct,
+          sellerProfile: product.sellerProfile,
+          creationIntro: product.creationIntro ?? null,
+          creationSteps: product.creationSteps.map((step) => ({
+            id: step.id,
+            position: step.position,
+            title: step.title,
+            body: step.body,
+            image:
+              step.mimeType && step.byteLength && step.checksum
+                ? {
+                    url: `/api/creation-steps/${step.id}/image`,
+                    mimeType: step.mimeType,
+                    byteLength: step.byteLength,
+                    checksum: step.checksum,
+                    width: step.width,
+                    height: step.height,
+                  }
+                : null,
+          })),
+          hasBlockingListing: product.listings.length > 0,
+          lastModerationReason: reasons.get(product.id) ?? null,
+        };
+      }),
+    });
   }
 
   @Patch('seller-profiles/:id/status')

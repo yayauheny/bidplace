@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import { Link, type Href } from 'expo-router';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -46,7 +46,7 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
-type ModerationTab = 'all' | 'authors' | 'works';
+type ModerationTab = 'authors' | 'works' | 'orders';
 type ModerationFilter =
   | 'ALL'
   | 'PENDING_REVIEW'
@@ -55,15 +55,20 @@ type ModerationFilter =
 
 export function AdminModerationScreen() {
   const api = useApiClient();
-  const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
+  const [moderationTab, setModerationTab] = useState<ModerationTab>('authors');
+  const [moderationFilter, setModerationFilter] =
+    useState<ModerationFilter>('PENDING_REVIEW');
+  const [moderationSearch, setModerationSearch] = useState('');
   const sellers = useQuery({
     queryKey: ['admin', 'seller-profiles'],
     queryFn: () => api.admin.listSellerProfiles(),
+    enabled: moderationTab === 'authors',
   });
   const products = useQuery({
     queryKey: ['admin', 'products'],
     queryFn: () => api.admin.listProducts(),
+    enabled: moderationTab === 'works',
   });
   const [orderPublicId, setOrderPublicId] = useState('');
   const [cancelReason, setCancelReason] = useState<
@@ -77,10 +82,6 @@ export function AdminModerationScreen() {
   const [moderationReason, setModerationReason] = useState('');
   const [productAction, setProductAction] =
     useState<ProductModerationAction | null>(null);
-  const [moderationTab, setModerationTab] = useState<ModerationTab>('all');
-  const [moderationFilter, setModerationFilter] =
-    useState<ModerationFilter>('PENDING_REVIEW');
-  const [moderationSearch, setModerationSearch] = useState('');
   const refresh = () => {
     void queryClient.invalidateQueries({
       queryKey: ['admin', 'seller-profiles'],
@@ -165,20 +166,30 @@ export function AdminModerationScreen() {
     cancelOrder.isPending ||
     replaceOrder.isPending;
 
-  if (sellers.isLoading || products.isLoading)
+  const activeModerationQuery =
+    moderationTab === 'authors'
+      ? sellers
+      : moderationTab === 'works'
+        ? products
+        : null;
+
+  if (activeModerationQuery?.isLoading)
     return (
       <AdminShell>
         <PageState title="Загружаем модерацию…" loading />
       </AdminShell>
     );
-  if (sellers.isError || products.isError || !sellers.data || !products.data)
+  if (
+    activeModerationQuery?.isError ||
+    (moderationTab === 'authors' && !sellers.data) ||
+    (moderationTab === 'works' && !products.data)
+  )
     return (
       <AdminShell>
         <PageState
           title="Не удалось загрузить модерацию"
           retry={() => {
-            void sellers.refetch();
-            void products.refetch();
+            void activeModerationQuery?.refetch();
           }}
         />
       </AdminShell>
@@ -203,8 +214,7 @@ export function AdminModerationScreen() {
       replaceOrder.mutate(confirmation.bidId);
   };
   const search = moderationSearch.trim().toLocaleLowerCase();
-  const visibleSellers = sellers.data.sellerProfiles.filter((seller) => {
-    const matchesTab = moderationTab === 'all' || moderationTab === 'authors';
+  const visibleSellers = sellers.data?.sellerProfiles.filter((seller) => {
     const matchesFilter =
       moderationFilter === 'ALL' || seller.status === moderationFilter;
     const matchesSearch =
@@ -212,10 +222,9 @@ export function AdminModerationScreen() {
       `${seller.fullName} ${seller.slug} ${seller.discipline}`
         .toLocaleLowerCase()
         .includes(search);
-    return matchesTab && matchesFilter && matchesSearch;
+    return matchesFilter && matchesSearch;
   });
-  const visibleProducts = products.data.products.filter((product) => {
-    const matchesTab = moderationTab === 'all' || moderationTab === 'works';
+  const visibleProducts = products.data?.products.filter((product) => {
     const matchesFilter =
       moderationFilter === 'ALL' || product.status === moderationFilter;
     const matchesSearch =
@@ -223,7 +232,7 @@ export function AdminModerationScreen() {
       `${product.title ?? ''} ${product.sellerProfile.fullName} ${product.sellerProfile.slug}`
         .toLocaleLowerCase()
         .includes(search);
-    return matchesTab && matchesFilter && matchesSearch;
+    return matchesFilter && matchesSearch;
   });
   const confirmationText: Record<
     Confirmation['kind'],
@@ -274,62 +283,70 @@ export function AdminModerationScreen() {
         >
           <SecondaryButton
             label="Авторы"
-            onPress={() => setModerationTab('authors')}
+            onPress={() => {
+              setModerationTab('authors');
+              setModerationSearch('');
+            }}
           />
           <SecondaryButton
             label="Работы"
-            onPress={() => setModerationTab('works')}
+            onPress={() => {
+              setModerationTab('works');
+              setModerationSearch('');
+            }}
           />
           <SecondaryButton
-            label="Все"
-            onPress={() => setModerationTab('all')}
+            label="Заказы"
+            onPress={() => {
+              setModerationTab('orders');
+              setModerationSearch('');
+            }}
           />
         </View>
-        <TextField
-          label={moderationTab === 'works' ? 'Найти работу' : 'Найти автора'}
-          value={moderationSearch}
-          onChangeText={setModerationSearch}
-          placeholder={
-            moderationTab === 'works'
-              ? 'Название или автор'
-              : 'Имя или адрес профиля'
-          }
-        />
-        <View
-          accessibilityRole="tablist"
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: designTokens.space.x2,
-          }}
-        >
-          {(
-            [
-              ['PENDING_REVIEW', 'Ожидают проверки'],
-              ['APPROVED', 'Одобрены'],
-              ['CHANGES_REQUESTED', 'Нужны правки'],
-              ['ALL', 'Все статусы'],
-            ] as const
-          ).map(([value, label]) => (
-            <SecondaryButton
-              key={value}
-              label={moderationFilter === value ? `✓ ${label}` : label}
-              onPress={() => setModerationFilter(value)}
+        {moderationTab !== 'orders' ? (
+          <>
+            <TextField
+              label={
+                moderationTab === 'works' ? 'Найти работу' : 'Найти автора'
+              }
+              value={moderationSearch}
+              onChangeText={setModerationSearch}
+              placeholder={
+                moderationTab === 'works'
+                  ? 'Название или автор'
+                  : 'Имя или адрес профиля'
+              }
             />
-          ))}
-        </View>
+            <View
+              accessibilityRole="tablist"
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: designTokens.space.x2,
+              }}
+            >
+              {(
+                [
+                  ['PENDING_REVIEW', 'Ожидают проверки'],
+                  ['APPROVED', 'Одобрены'],
+                  ['CHANGES_REQUESTED', 'Нужны правки'],
+                  ['ALL', 'Все статусы'],
+                ] as const
+              ).map(([value, label]) => (
+                <SecondaryButton
+                  key={value}
+                  label={moderationFilter === value ? `✓ ${label}` : label}
+                  onPress={() => setModerationFilter(value)}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
       </FormSection>
-      <View
-        style={{
-          flexDirection:
-            width >= designTokens.breakpoint.desktopShell ? 'row' : 'column',
-          gap: designTokens.space.x5,
-          alignItems: 'flex-start',
-        }}
-      >
+      {moderationTab === 'authors' ? (
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
           <FormSection title="Авторы">
-            {visibleSellers.map((seller: SellerProfile) => (
+            {visibleSellers?.map((seller: SellerProfile) => (
               <ModerationCard
                 key={seller.id}
                 title={seller.fullName}
@@ -384,7 +401,7 @@ export function AdminModerationScreen() {
                 ) : null}
               </ModerationCard>
             ))}
-            {visibleSellers.length === 0 ? (
+            {visibleSellers?.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
                 Нет авторов по текущему фильтру
               </AppText>
@@ -397,13 +414,13 @@ export function AdminModerationScreen() {
             ) : null}
           </FormSection>
         </View>
+      ) : null}
+      {moderationTab === 'works' ? (
         <View style={{ flex: 1, minWidth: 0, width: '100%' }}>
           <FormSection title="Работы">
-            {visibleProducts.map((product: AdminProduct) => {
-              const productSellerStatus = sellers.data.sellerProfiles.find(
-                (seller) => seller.slug === product.sellerProfile.slug,
-              )?.status;
-              const productSellerApproved = productSellerStatus === 'APPROVED';
+            {visibleProducts?.map((product: AdminProduct) => {
+              const productSellerApproved =
+                product.sellerProfile.status === 'APPROVED';
 
               return (
                 <ModerationCard
@@ -428,7 +445,11 @@ export function AdminModerationScreen() {
                       }}
                       contentFit="contain"
                     />
-                  ) : null}
+                  ) : (
+                    <AppText role="bodySmall" tone="danger">
+                      Основное изображение отсутствует
+                    </AppText>
+                  )}
                   <Link
                     href={
                       {
@@ -447,6 +468,43 @@ export function AdminModerationScreen() {
                     {product.city ?? 'Город не указан'} ·{' '}
                     {product.story ?? 'Описание не указано'}
                   </AppText>
+                  <AppText role="bodySmall" tone="secondary">
+                    Изображений: {product.images.length} · Этапов создания:{' '}
+                    {product.creationSteps.length}
+                  </AppText>
+                  {product.creationIntro ? (
+                    <AppText role="bodySmall" tone="secondary">
+                      История создания: {product.creationIntro}
+                    </AppText>
+                  ) : (
+                    <AppText role="bodySmall" tone="secondary">
+                      История создания не добавлена — это необязательный раздел.
+                    </AppText>
+                  )}
+                  {product.creationSteps.map((step) => (
+                    <View key={step.id} style={{ gap: designTokens.space.x1 }}>
+                      <AppText role="label">
+                        {step.position + 1}. {step.title}
+                      </AppText>
+                      <AppText role="bodySmall" tone="secondary">
+                        {step.body}
+                      </AppText>
+                      {step.image ? (
+                        <ResilientRemoteImage
+                          uri={getApiAssetUrl(step.image.url)}
+                          component="CreationStep"
+                          accessibilityLabel={`Процесс: ${step.title}`}
+                          fallbackLabel={`Фотография этапа недоступна: ${step.title}`}
+                          style={{
+                            width: 120,
+                            height: 90,
+                            borderRadius: designTokens.radius.image,
+                          }}
+                          contentFit="cover"
+                        />
+                      ) : null}
+                    </View>
+                  ))}
                   {product.lastModerationReason ? (
                     <AppText role="bodySmall" tone="secondary">
                       Последняя причина: {product.lastModerationReason}
@@ -497,7 +555,7 @@ export function AdminModerationScreen() {
                 </ModerationCard>
               );
             })}
-            {visibleProducts.length === 0 ? (
+            {visibleProducts?.length === 0 ? (
               <AppText role="bodySmall" tone="secondary">
                 Нет работ по текущему фильтру
               </AppText>
@@ -511,88 +569,91 @@ export function AdminModerationScreen() {
             ) : null}
           </FormSection>
         </View>
-      </View>
-      <FormSection title="Отмена и переназначение заказа">
-        <AppText role="bodySmall" tone="secondary">
-          После внешнего согласования отмените активный заказ и выберите
-          следующую принятую ставку. Контакты участников здесь не раскрываются.
-        </AppText>
-        <TextField
-          label="Номер заказа"
-          value={orderPublicId}
-          onChangeText={(value) => {
-            setOrderPublicId(value);
-            setConfirmation(null);
-          }}
-          placeholder="ORD-..."
-          autoCapitalize="none"
-        />
-        <AppText role="bodySmall" tone="secondary">
-          Причина отмены:{' '}
-          {presentEnum(
-            cancelReason,
-            cancellationReasonLabels,
-            'Неизвестная причина отмены',
-          )}
-        </AppText>
-        {(
-          ['BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED'] as const
-        ).map((reason) => (
-          <SecondaryButton
-            key={reason}
-            label={`${cancelReason === reason ? '✓ ' : ''}${presentEnum(
-              reason,
+      ) : null}
+      {moderationTab === 'orders' ? (
+        <FormSection title="Отмена и переназначение заказа">
+          <AppText role="bodySmall" tone="secondary">
+            После внешнего согласования отмените активный заказ и выберите
+            следующую принятую ставку. Контакты участников здесь не
+            раскрываются.
+          </AppText>
+          <TextField
+            label="Номер заказа"
+            value={orderPublicId}
+            onChangeText={(value) => {
+              setOrderPublicId(value);
+              setConfirmation(null);
+            }}
+            placeholder="ORD-..."
+            autoCapitalize="none"
+          />
+          <AppText role="bodySmall" tone="secondary">
+            Причина отмены:{' '}
+            {presentEnum(
+              cancelReason,
               cancellationReasonLabels,
               'Неизвестная причина отмены',
-            )}`}
-            onPress={() => setCancelReason(reason)}
-          />
-        ))}
-        <DestructiveButton
-          label="Отменить заказ"
-          disabled={!orderPublicId}
-          onPress={() => setConfirmation({ kind: 'order-cancel' })}
-        />
-        {cancelOrder.isError ? (
-          <AppText role="bodySmall" tone="danger">
-            Не удалось отменить Order. Проверьте номер, статус и полномочия.
+            )}
           </AppText>
-        ) : null}
-        {cancelledOrder ? (
-          <View style={{ gap: designTokens.space.x2 }}>
-            <AppText role="bodySmall" tone="secondary">
-              Выберите replacement Bid для Listing {cancelledOrder.listingId}.
+          {(
+            ['BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED'] as const
+          ).map((reason) => (
+            <SecondaryButton
+              key={reason}
+              label={`${cancelReason === reason ? '✓ ' : ''}${presentEnum(
+                reason,
+                cancellationReasonLabels,
+                'Неизвестная причина отмены',
+              )}`}
+              onPress={() => setCancelReason(reason)}
+            />
+          ))}
+          <DestructiveButton
+            label="Отменить заказ"
+            disabled={!orderPublicId}
+            onPress={() => setConfirmation({ kind: 'order-cancel' })}
+          />
+          {cancelOrder.isError ? (
+            <AppText role="bodySmall" tone="danger">
+              Не удалось отменить Order. Проверьте номер, статус и полномочия.
             </AppText>
-            {rankedBids.isLoading ? (
+          ) : null}
+          {cancelledOrder ? (
+            <View style={{ gap: designTokens.space.x2 }}>
               <AppText role="bodySmall" tone="secondary">
-                Загружаем принятые ставки…
+                Выберите replacement Bid для Listing {cancelledOrder.listingId}.
               </AppText>
-            ) : null}
-            {rankedBids.isError ? (
-              <SecondaryButton
-                label="Повторить загрузку ставок"
-                onPress={() => void rankedBids.refetch()}
-              />
-            ) : null}
-            {rankedBids.data?.bids.map((bid: RankedBid) => (
-              <SecondaryButton
-                key={bid.id}
-                label={`Назначить ${bid.bidderAlias}: ${bid.amount} BYN`}
-                loading={replaceOrder.isPending}
-                onPress={() =>
-                  setConfirmation({ kind: 'order-replace', bidId: bid.id })
-                }
-              />
-            ))}
-            {replaceOrder.isError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось создать replacement Order. Проверьте статус и
-                повторите попытку.
-              </AppText>
-            ) : null}
-          </View>
-        ) : null}
-      </FormSection>
+              {rankedBids.isLoading ? (
+                <AppText role="bodySmall" tone="secondary">
+                  Загружаем принятые ставки…
+                </AppText>
+              ) : null}
+              {rankedBids.isError ? (
+                <SecondaryButton
+                  label="Повторить загрузку ставок"
+                  onPress={() => void rankedBids.refetch()}
+                />
+              ) : null}
+              {rankedBids.data?.bids.map((bid: RankedBid) => (
+                <SecondaryButton
+                  key={bid.id}
+                  label={`Назначить ${bid.bidderAlias}: ${bid.amount} BYN`}
+                  loading={replaceOrder.isPending}
+                  onPress={() =>
+                    setConfirmation({ kind: 'order-replace', bidId: bid.id })
+                  }
+                />
+              ))}
+              {replaceOrder.isError ? (
+                <AppText role="bodySmall" tone="danger">
+                  Не удалось создать replacement Order. Проверьте статус и
+                  повторите попытку.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+        </FormSection>
+      ) : null}
       {confirmation ? (
         <AppDialog
           open

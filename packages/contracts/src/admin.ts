@@ -7,8 +7,11 @@ import {
   sellerStatusSchema,
 } from './enums';
 import { uuidSchema } from './primitives';
-import { sellerProfileResponseSchema, sellerProfileSchema } from './seller-profile';
-import { productSchema } from './product';
+import {
+  sellerProfileResponseSchema,
+  sellerProfileSchema,
+} from './seller-profile';
+import { creationStepSchema, productSchema } from './product';
 
 const sellerModerationStatusSchema = sellerStatusSchema.extract([
   'APPROVED',
@@ -86,10 +89,15 @@ export const adminSellerProfilesResponseSchema = z
   .strict();
 export const adminProductSchema = productSchema
   .extend({
-    sellerProfile: z.object({
-      slug: z.string().min(1),
-      fullName: z.string().min(1),
-    }).strict(),
+    sellerProfile: z
+      .object({
+        slug: z.string().min(1),
+        fullName: z.string().min(1),
+        status: sellerStatusSchema,
+      })
+      .strict(),
+    creationIntro: z.string().trim().min(1).nullable(),
+    creationSteps: z.array(creationStepSchema),
     hasBlockingListing: z.boolean(),
     lastModerationReason: z.string().nullable(),
   })
