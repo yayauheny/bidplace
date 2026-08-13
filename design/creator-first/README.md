@@ -22,15 +22,17 @@ spec/        strongest-model output and later QA deltas
 exports/     future Pen screenshot evidence; not created yet
 ```
 
-## Current reference completeness
+## Reference set status
 
-The packet now contains desktop and mobile WePresent evidence, a broad Get Hyped work/story set, concrete Avant Arte work/transaction/profile anatomy, Medallion mobile search/onboarding/validation evidence, a creator-publishing flow, persistent-Create and bid-dialog patterns from Foundation, a COLORS auth reference, and Mobbin author-card/blur-caption references. Before the strongest visual pass, the highest-value remaining additions are:
+Founder collection is complete. The packet contains desktop and mobile WePresent evidence, a broad Get Hyped work/story set, concrete Avant Arte work/transaction/profile anatomy, Medallion mobile search/onboarding/validation evidence, a creator-publishing flow, persistent-Create and bid-dialog patterns from Foundation, a COLORS auth reference, and Mobbin author-card/blur-caption references.
+
+The strongest visual pass may proceed now. These optional gaps must be reported as unresolved only when a design decision genuinely depends on them; they do not authorize broad research:
 
 1. Get Hyped mobile work/card/gallery views.
 2. Avant Arte mobile process/detail/transaction views.
 3. Pinterest desktop and mobile Explore/recommendation behavior.
 
-Missing screenshots do not authorize the architect to browse broadly or invent interaction. The manifest defines when a targeted live check is allowed.
+Missing optional screenshots do not authorize the architect to browse broadly or invent interaction. The manifest defines when a targeted live check is allowed.
 
 ## Protected history
 

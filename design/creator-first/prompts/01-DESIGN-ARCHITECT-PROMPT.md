@@ -63,6 +63,7 @@ The audit packet already distills the supported product behavior. If information
 ## Reference use
 
 - Inspect every available tier-1 image at useful detail.
+- Read `REFERENCE-ANALYSIS.md` before opening images. Use it as the visual index, avoid reopening near-duplicate states without a decision need, and open supporting images only for the exact role assigned by the manifest. Do not spend tokens redescribing screenshots already analyzed.
 - Build an equal 50/50 synthesis: WePresent owns editorial structure and navigation; Get Hyped/Bullit owns card/media behavior, saturated confidence, motion, and youthful energy.
 - Use supporting references only for the role assigned in the manifest.
 - Do not average all references or clone any page, branding, text, or asset.
@@ -80,6 +81,7 @@ Read its SKILL.md because this is a design-system task, but follow the precedenc
 4. Select **one** recommended direction. Mention rejected alternatives in at most 500 words total.
 5. Define exact foundations, components, screens, content fixtures, and Pen construction order.
 6. Validate that every visible fact exists in the product audit or is explicitly labelled fixture/future.
+7. Work autonomously through the complete contract. Ask the founder only when a missing decision would materially change the selected system; otherwise record the uncertainty and choose the safest contract-compatible default.
 
 ## Required output
 
