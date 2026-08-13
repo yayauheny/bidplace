@@ -18,6 +18,7 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { getAuthorWorkColumnCount } from './author-layout';
 
@@ -452,7 +453,7 @@ export function PublicSellerScreen({
         : undefined;
     },
     enabled: Boolean(slug),
-    retry: false,
+    retry: retryTransientPublicQuery,
   });
   const firstPage = query.data?.pages[0];
   const products = query.data?.pages.flatMap((page) => page.products) ?? [];
@@ -528,6 +529,7 @@ export function PublicSellerScreen({
                   ? designTokens.layout.creatorDesktopGutter
                   : designTokens.layout.mobileGutter,
               paddingBottom: designTokens.space.x12,
+              backgroundColor: designTokens.color.surfaceWarm,
             }}
           >
             <View

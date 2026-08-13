@@ -38,6 +38,7 @@ import {
 } from '../../components/ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
+import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
@@ -402,7 +403,7 @@ export function ProductScreen({
     queryKey: ['public-seller', sellerSlug],
     queryFn: () => api.sellers.getPublicDetail(sellerSlug!),
     enabled: activeTab === 'about' && Boolean(sellerSlug),
-    retry: false,
+    retry: retryTransientPublicQuery,
   });
   const listingId = query.data?.listing?.id;
   const bids = useQuery({
