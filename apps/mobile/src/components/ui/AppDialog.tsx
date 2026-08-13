@@ -6,6 +6,8 @@ import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
+import { AppIcon } from './AppIcon';
+import { MotionPressable } from './MotionPressable';
 
 type AppDialogProps = {
   open: boolean;
@@ -22,7 +24,7 @@ export function AppDialog({
   onClose,
   children,
 }: AppDialogProps) {
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const viewportGutter = designTokens.space.x5;
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const restoreFocus = useCallback(() => {
@@ -128,13 +130,15 @@ export function AppDialog({
             nativeID="app-dialog-content"
             style={{
               width: '100%',
-              maxWidth: 520,
+              maxWidth: designTokens.layout.dialogMaxWidth,
               maxHeight: Math.max(height - viewportGutter * 2, 0),
-              gap: designTokens.space.x4,
               zIndex: designTokens.layer.modal,
-              borderRadius: designTokens.radius.panel,
-              backgroundColor: designTokens.color.surface,
-              padding: designTokens.space.x5,
+              borderWidth: 1,
+              borderColor: 'rgba(20, 20, 20, 0.08)',
+              borderRadius: designTokens.radius.dialog,
+              backgroundColor: designTokens.color.dialogSurface,
+              padding: width >= 600 ? designTokens.space.x8 : designTokens.space.x5,
+              ...designTokens.elevation.floating,
             }}
           >
             <ScrollView
@@ -147,9 +151,53 @@ export function AppDialog({
                 paddingBottom: designTokens.space.x1,
               }}
             >
-              <Dialog.Title asChild>
-                <AppText role="sectionTitle">{title}</AppText>
-              </Dialog.Title>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: designTokens.space.x4,
+                }}
+              >
+                <Dialog.Title asChild>
+                  <AppText
+                    role="sectionTitle"
+                    style={
+                      width >= 600
+                        ? {
+                            fontSize: 38,
+                            lineHeight: 40,
+                            letterSpacing: -1.1,
+                          }
+                        : undefined
+                    }
+                  >
+                    {title}
+                  </AppText>
+                </Dialog.Title>
+                <MotionPressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Закрыть окно"
+                  onPress={onClose}
+                  preset="icon"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    flexShrink: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: designTokens.radius.pill,
+                  }}
+                  interactionStyle={({ hovered, pressed }) => ({
+                    backgroundColor:
+                      hovered || pressed
+                        ? designTokens.color.surfaceStrong
+                        : 'transparent',
+                  })}
+                >
+                  <AppIcon name="x" size={22} />
+                </MotionPressable>
+              </View>
               {description ? (
                 <Dialog.Description asChild>
                   <AppText role="bodySmall" tone="secondary">

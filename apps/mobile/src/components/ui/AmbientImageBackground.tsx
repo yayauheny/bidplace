@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -29,7 +29,7 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
     Animated.timing(opacity, {
       toValue: 1,
       duration: getMotionDuration(reducedMotion, 360),
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [loaded, opacity, reducedMotion]);
 
@@ -37,12 +37,12 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
     <View
       testID="ambient-image-background"
       aria-hidden
-      pointerEvents="none"
       style={[
         StyleSheet.absoluteFill,
         {
           overflow: 'hidden',
           backgroundColor: designTokens.color.surfaceWarm,
+          pointerEvents: 'none',
         },
       ]}
     >
@@ -60,7 +60,7 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
           <Image
             source={{ uri: imageUrl }}
             contentFit="cover"
-            blurRadius={64}
+            blurRadius={72}
             onLoad={() => setLoaded(true)}
             onError={() => setLoaded(false)}
             style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}

@@ -5,6 +5,9 @@ export const designTokens = {
     surfaceWarm: '#FBFBF8',
     surfaceMuted: '#F7F7F5',
     surfaceStrong: '#F1F1ED',
+    surfacePanel: '#F5F5F5',
+    searchSurface: '#F1F1ED',
+    dialogSurface: '#FFFEFB',
     ink: '#1A1A1A',
     inkSoft: '#1A1A1A',
     textSecondary: '#6B6B66',
@@ -23,7 +26,7 @@ export const designTokens = {
     danger: '#B63B3B',
     focus: '#2457E6',
     overlay: 'rgba(17, 17, 17, 0.28)',
-    glass: 'rgba(250, 250, 248, 0.82)',
+    glass: 'rgba(247, 247, 242, 0.66)',
     headerControl: '#F4F4F1',
   },
   space: {
@@ -51,6 +54,8 @@ export const designTokens = {
     card: 16,
     button: 22,
     panel: 20,
+    aboutPanel: 12,
+    dialog: 24,
     menu: 18,
     sheet: 28,
     pill: 999,
@@ -155,6 +160,7 @@ export const designTokens = {
   },
   layout: {
     contentMaxWidth: 1288,
+    headerMaxWidth: 1440,
     discoveryMaxWidth: 1360,
     productDetailMaxWidth: 1328,
     productHeroContentWidth: 1212,
@@ -166,6 +172,7 @@ export const designTokens = {
     discoveryMenuWidth: 240,
     accountPopoverWidth: 280,
     mobileMenuWidth: 320,
+    dialogMaxWidth: 552,
   },
   breakpoint: {
     mobileHeader: 768,
@@ -185,11 +192,7 @@ export const designTokens = {
   productHeroWide: 440,
   elevation: {
     floating: {
-      shadowColor: '#111111',
-      shadowOpacity: 0.12,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 8,
+      boxShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
     },
   },
   layer: { content: 0, chrome: 10, popover: 20, modal: 30 },

@@ -269,10 +269,7 @@ function AccountDropdown({
         borderRadius: 22,
         backgroundColor: designTokens.color.surface,
         padding: 10,
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 4,
+        ...designTokens.elevation.floating,
       }}
     >
       {profileLabel ? (

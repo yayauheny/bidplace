@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   TextInput,
+  type ViewStyle,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -313,7 +314,7 @@ function HeaderSearch({
         borderRadius: designTokens.radius.pill,
         borderWidth: 1,
         borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surfaceStrong,
+        backgroundColor: designTokens.color.searchSurface,
         paddingHorizontal: 18,
       }}
     >
@@ -393,6 +394,14 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
     pathname === '/works' || pathname.startsWith('/works/') || authorsRoute
       ? 'Найти работу или автора'
       : 'Найти предмет или автора';
+  const matteHeaderStyle =
+    ambient && Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: '0 1px 8px rgba(0, 0, 0, 0.03)',
+        } as unknown as ViewStyle)
+      : undefined;
 
   const primaryNavigation = (
     <>
@@ -411,19 +420,26 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
 
   return (
     <View
-      style={{
-        zIndex: designTokens.layer.chrome,
-        flexShrink: 0,
-        borderBottomWidth: 1,
-        borderBottomColor: designTokens.color.border,
-        backgroundColor: ambient
-          ? designTokens.color.glass
-          : designTokens.color.surface,
-      }}
+      style={[
+        {
+          zIndex: designTokens.layer.chrome,
+          flexShrink: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: ambient
+            ? 'rgba(255, 255, 255, 0.56)'
+            : designTokens.color.border,
+          backgroundColor: ambient
+            ? designTokens.color.glass
+            : designTokens.color.surface,
+        },
+        matteHeaderStyle,
+      ]}
     >
       <View
         style={{
           width: '100%',
+          maxWidth: designTokens.layout.headerMaxWidth,
+          alignSelf: 'center',
           minHeight: desktop
             ? designTokens.size.header
             : designTokens.size.mobileHeader,
