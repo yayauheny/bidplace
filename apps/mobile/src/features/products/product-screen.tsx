@@ -39,7 +39,7 @@ import {
 } from '../../components/ui';
 import { formatDateTime, formatDisplayPrice } from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { getErrorStatus, getUserFacingErrorMessage } from '../../lib/errors';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
@@ -495,13 +495,27 @@ export function ProductScreen({
       setBidValidationError(null);
       refreshListing();
     },
-    onError: (error) => {
-      setBidValidationError(
-        getUserFacingErrorMessage(
-          error,
-          'Не удалось отправить ставку. Проверьте соединение и попробуйте ещё раз.',
-        ),
-      );
+    onError: async (error, attempt) => {
+      const refreshed = await query.refetch();
+      const refreshedMinimum = refreshed.data?.minimumNextBid ?? null;
+
+      if (
+        getErrorStatus(error) === 400 &&
+        refreshedMinimum !== null &&
+        refreshedMinimum > attempt.amount
+      ) {
+        setBidValidationError(
+          `Ставка уже изменилась. Новая минимальная ставка — ${formatDisplayPrice(refreshedMinimum)}.`,
+        );
+        setAmount(String(refreshedMinimum));
+      } else {
+        setBidValidationError(
+          getUserFacingErrorMessage(
+            error,
+            'Не удалось отправить ставку. Проверьте соединение и попробуйте ещё раз.',
+          ),
+        );
+      }
       refreshListing();
     },
   });
@@ -638,6 +652,11 @@ export function ProductScreen({
     }
     sendBid(attempt);
   };
+  const parsedBidAmount = Number(amount.replace(',', '.'));
+  const confirmationAmount =
+    Number.isFinite(parsedBidAmount) && parsedBidAmount > 0
+      ? parsedBidAmount
+      : confirmationAttempt?.amount;
 
   const canParticipate = listing?.status === 'LIVE' && !auth.isAdmin;
   const adminBidNotice =
@@ -659,20 +678,18 @@ export function ProductScreen({
       currentPriceLabel={formatDisplayPrice(listing.currentPrice)}
       startPriceLabel={formatDisplayPrice(listing.auctionRules.startPrice)}
       minimumNextBidLabel={
-        minimumNextBid === null
-          ? undefined
-          : formatDisplayPrice(minimumNextBid)
+        minimumNextBid === null ? undefined : formatDisplayPrice(minimumNextBid)
       }
       timingLabel={
         listing.status === 'LIVE'
           ? `До завершения: ${formatRemainingTime(listing.endsAt, now)}`
           : listing.status === 'SCHEDULED'
             ? `Начало: ${formatDateTime(listing.startsAt)}`
-            : 'Статус: Завершено'
+            : 'Статус: Торги завершены'
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
       actionLabel={
-        canParticipate
+        canParticipate && isProductWide
           ? eligibility === 'guest'
             ? 'Войти'
             : 'Поставить'
@@ -680,9 +697,7 @@ export function ProductScreen({
       }
       actionDisabled={bid.isPending || isRefreshingBid}
       actionLoading={bid.isPending || isRefreshingBid}
-      onAction={
-        canParticipate ? beginParticipation : undefined
-      }
+      onAction={canParticipate ? beginParticipation : undefined}
       width={isHeroThreeColumn ? 404 : undefined}
     />
   ) : (
@@ -751,20 +766,20 @@ export function ProductScreen({
                 }}
               >
                 {detailItems.map((item) => (
-                    <View
-                      key={item.label}
-                      style={{
-                        minWidth: 120,
-                        flex: 1,
-                        gap: designTokens.space.x1,
-                      }}
-                    >
-                      <AppText role="caption" tone="secondary">
-                        {item.label}
-                      </AppText>
-                      <AppText role="label">{item.value}</AppText>
-                    </View>
-                  ))}
+                  <View
+                    key={item.label}
+                    style={{
+                      minWidth: 120,
+                      flex: 1,
+                      gap: designTokens.space.x1,
+                    }}
+                  >
+                    <AppText role="caption" tone="secondary">
+                      {item.label}
+                    </AppText>
+                    <AppText role="label">{item.value}</AppText>
+                  </View>
+                ))}
               </View>
             }
           />
@@ -1217,17 +1232,17 @@ export function ProductScreen({
                   }}
                 >
                   <View style={{ gap: designTokens.space.x4 }}>
-                      {detailItems.map((item) => (
-                        <View
-                          key={item.label}
-                          style={{ gap: designTokens.space.x1 }}
-                        >
-                          <AppText role="caption" tone="secondary">
-                            {item.label}
-                          </AppText>
-                          <AppText role="label">{item.value}</AppText>
-                        </View>
-                      ))}
+                    {detailItems.map((item) => (
+                      <View
+                        key={item.label}
+                        style={{ gap: designTokens.space.x1 }}
+                      >
+                        <AppText role="caption" tone="secondary">
+                          {item.label}
+                        </AppText>
+                        <AppText role="label">{item.value}</AppText>
+                      </View>
+                    ))}
                   </View>
                   <View style={{ gap: designTokens.space.x2 }}>
                     <AppText role="caption" tone="secondary">
@@ -1312,10 +1327,7 @@ export function ProductScreen({
                 paddingBottom: designTokens.space.x8,
               }}
             >
-              <ProductTabs
-                activeTab={activeTab}
-                onChange={onTabChange}
-              />
+              <ProductTabs activeTab={activeTab} onChange={onTabChange} />
               <View
                 nativeID={`product-panel-${activeTab}`}
                 role="tabpanel"
@@ -1368,7 +1380,7 @@ export function ProductScreen({
         title="Сделать ставку"
         description={
           listing && confirmationAttempt
-            ? `Вы делаете ставку на «${product.title}» на сумму ${formatDisplayPrice(confirmationAttempt.amount)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatDisplayPrice(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
+            ? `Вы делаете ставку на «${product.title}» на сумму ${formatDisplayPrice(confirmationAmount ?? confirmationAttempt.amount)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatDisplayPrice(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
             : undefined
         }
         onClose={() => setConfirmationAttempt(null)}
@@ -1378,19 +1390,24 @@ export function ProductScreen({
             <BidForm
               amount={amount}
               minimumNextBid={minimumNextBid}
-              validationError={bidValidationError}
+              validationError={
+                bidValidationError ?? validateBidAmount(amount, minimumNextBid)
+              }
               isPending={bid.isPending || isRefreshingBid}
               hasFailedAttempt={bid.isError}
-              onAmountChange={setAmount}
+              onAmountChange={(value) => {
+                setAmount(value);
+                setBidValidationError(null);
+              }}
               onSubmit={confirmBid}
               onRetry={confirmBid}
               showPrimaryAction={false}
             />
             <SlideToBid
-              label={`Поставить · ${formatDisplayPrice(confirmationAttempt.amount)}`}
+              label={`Поставить · ${formatDisplayPrice(confirmationAmount ?? confirmationAttempt.amount)}`}
               disabled={Boolean(validateBidAmount(amount, minimumNextBid))}
               loading={bid.isPending}
-              resetKey={confirmationAttempt.amount}
+              resetKey={amount}
               onComplete={confirmBid}
             />
             <SecondaryButton

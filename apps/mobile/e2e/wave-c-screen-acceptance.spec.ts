@@ -15,6 +15,7 @@ import {
   prioritizeSeededDemoProducts,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { openBidDialog } from './support/auction-actions';
 import { e2eApiBaseURL, e2eWebBaseURL } from './support/e2e-env';
 
 const evidenceCommit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
@@ -271,6 +272,7 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
           'loaded-mobile',
           viewport,
         );
+        await openBidDialog(buyer.page);
         await buyer.page.getByLabel('Ваша ставка, BYN').focus();
         await expect(buyer.page.getByLabel('Ваша ставка, BYN')).toBeFocused();
         await capture(
@@ -283,7 +285,6 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
       } else {
         for (const auctionFact of [
           buyer.page.getByText('Ставка', { exact: true }).first(),
-          buyer.page.getByLabel('Ваша ставка, BYN').first(),
           buyer.page.getByText('До завершения', { exact: true }).first(),
           buyer.page.getByLabel(/Окончание:/).first(),
           buyer.page.getByRole('button', { name: 'Поставить' }).first(),
@@ -652,8 +653,8 @@ test('Wave C bid confirmation stays transactional and accessible', async ({
   try {
     await page.setViewportSize(viewports[0]);
     await page.goto(`/product/${fixture.product.publicId}`);
+    await openBidDialog(page);
     await page.getByLabel('Ваша ставка, BYN').fill('11');
-    await page.getByRole('button', { name: 'Поставить' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Ставка необратима.')).toBeVisible();
     await capture(

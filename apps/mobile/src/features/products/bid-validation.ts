@@ -1,3 +1,5 @@
+import { formatDisplayPrice } from '../../lib/formatters';
+
 const moneyScale = 100;
 
 function toCents(value: number): number | null {
@@ -14,19 +16,25 @@ export function bidIncrementForAmount(amount: number): number {
   return 25;
 }
 
-export function validateBidAmount(amountInput: string, minimumNextBid: number | null): string | null {
+export function validateBidAmount(
+  amountInput: string,
+  minimumNextBid: number | null,
+): string | null {
   const amount = Number(amountInput.replace(',', '.'));
   const amountCents = toCents(amount);
   if (amountCents === null) return 'Введите сумму ставки в BYN.';
-  if (minimumNextBid === null) return 'Минимальная ставка сейчас недоступна. Обновите предмет.';
+  if (minimumNextBid === null)
+    return 'Минимальная ставка сейчас недоступна. Обновите предмет.';
 
   const minimumCents = toCents(minimumNextBid);
-  if (minimumCents === null) return 'Минимальная ставка сейчас недоступна. Обновите предмет.';
-  if (amountCents < minimumCents) return `Минимальная ставка — ${minimumNextBid} BYN.`;
+  if (minimumCents === null)
+    return 'Минимальная ставка сейчас недоступна. Обновите предмет.';
+  if (amountCents < minimumCents)
+    return `Минимальная ставка — ${formatDisplayPrice(minimumNextBid)}.`;
 
   const incrementCents = bidIncrementForAmount(minimumNextBid) * moneyScale;
   if ((amountCents - minimumCents) % incrementCents !== 0) {
-    return `Ставка должна увеличиваться на ${bidIncrementForAmount(minimumNextBid)} BYN.`;
+    return `Ставка должна увеличиваться на ${formatDisplayPrice(bidIncrementForAmount(minimumNextBid))}.`;
   }
 
   return null;

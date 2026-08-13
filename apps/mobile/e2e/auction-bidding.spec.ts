@@ -1,29 +1,14 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   createAuctionFixture,
   removeRulesAcceptance,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
-
-async function expectCurrentPrice(page: Page, amount: string) {
-  await expect(page.locator('body')).toContainText(
-    new RegExp(`Ставка\\s*${amount.replace('.', ',')}\\s+BYN`),
-  );
-}
-
-async function placeBid(page: Page, amount: string) {
-  await page.getByLabel('Ваша ставка, BYN').fill(amount);
-  await page.getByRole('button', { name: 'Поставить' }).click();
-  const slider = page.getByTestId('slide-to-bid');
-  if (await slider.isVisible()) {
-    const box = await slider.boundingBox();
-    expect(box).not.toBeNull();
-    await page.mouse.move(box!.x + 12, box!.y + box!.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(box!.x + box!.width - 8, box!.y + box!.height / 2);
-    await page.mouse.up();
-  }
-}
+import {
+  expectCurrentPrice,
+  openBidDialog,
+  placeBid,
+} from './support/auction-actions';
 
 test('two buyers place bids and observe canonical leading and outbid state', async ({
   browser,
@@ -36,6 +21,7 @@ test('two buyers place bids and observe canonical leading and outbid state', asy
   try {
     await buyerA.page.goto(`/product/${fixture.product.publicId}`);
     await expectCurrentPrice(buyerA.page, '10.00');
+    await buyerA.page.getByRole('button', { name: 'Поставить' }).click();
     await expect(
       buyerA.page.getByRole('button', { name: 'Принять правила' }),
     ).toBeVisible();
@@ -45,6 +31,7 @@ test('two buyers place bids and observe canonical leading and outbid state', asy
       ),
     ).toBeVisible();
     await buyerA.page.getByRole('button', { name: 'Принять правила' }).click();
+    await expect(buyerA.page.getByLabel('Ваша ставка, BYN')).toBeVisible();
     await placeBid(buyerA.page, '11');
     await expectCurrentPrice(buyerA.page, '11.00');
     await expect(buyerA.page.getByLabel(/Побеждаете/)).toBeVisible();
@@ -57,10 +44,10 @@ test('two buyers place bids and observe canonical leading and outbid state', asy
     await buyerA.page.reload();
     await expectCurrentPrice(buyerA.page, '15.00');
     await expect(buyerA.page.getByLabel(/Ставка перебита/)).toBeVisible();
-    await buyerA.page.getByLabel('Ваша ставка, BYN').fill('15');
-    await buyerA.page.getByRole('button', { name: 'Поставить' }).click();
+    const staleAmountField = await openBidDialog(buyerA.page);
+    await staleAmountField.fill('15');
     await expect(
-      buyerA.page.getByText('Минимальная ставка — 15.5 BYN.'),
+      buyerA.page.getByText('Минимальная ставка — 15,5 BYN.'),
     ).toBeVisible();
     await placeBid(buyerA.page, '15.5');
     await expectCurrentPrice(buyerA.page, '15.50');

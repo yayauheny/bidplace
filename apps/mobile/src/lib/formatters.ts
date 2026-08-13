@@ -11,9 +11,10 @@ const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
 function getCurrencyFormatter(
   locale: string,
   currency: string,
+  minimumFractionDigits: number,
   maximumFractionDigits: number,
 ) {
-  const cacheKey = `${locale}:${currency}:${maximumFractionDigits}`;
+  const cacheKey = `${locale}:${currency}:${minimumFractionDigits}:${maximumFractionDigits}`;
   const cachedFormatter = currencyFormatterCache.get(cacheKey);
 
   if (cachedFormatter) {
@@ -23,6 +24,7 @@ function getCurrencyFormatter(
   const formatter = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
+    minimumFractionDigits,
     maximumFractionDigits,
   });
 
@@ -32,7 +34,7 @@ function getCurrencyFormatter(
 }
 
 export function formatCurrencyAmount(value: number, currency = 'BYN') {
-  return getCurrencyFormatter('ru-RU', currency, 2).format(value);
+  return getCurrencyFormatter('ru-RU', currency, 2, 2).format(value);
 }
 
 export function formatDisplayPrice(
@@ -40,7 +42,7 @@ export function formatDisplayPrice(
   currency = 'BYN',
   locale = 'ru-RU',
 ) {
-  return getCurrencyFormatter(locale, currency, 0).format(value);
+  return getCurrencyFormatter(locale, currency, 0, 2).format(value);
 }
 
 export function formatNumber(value: number) {
@@ -53,7 +55,8 @@ export function formatDateTime(value: string | Date) {
 }
 
 export function formatRelativeTime(value: string | Date) {
-  const target = typeof value === 'string' ? new Date(value).getTime() : value.getTime();
+  const target =
+    typeof value === 'string' ? new Date(value).getTime() : value.getTime();
   const diff = target - Date.now();
   const totalSeconds = Math.max(0, Math.floor(diff / 1000));
 
@@ -77,6 +80,9 @@ export function formatRelativeTime(value: string | Date) {
   return `${seconds} с`;
 }
 
-export function formatDurationRange(startAt: string | Date, endAt: string | Date) {
+export function formatDurationRange(
+  startAt: string | Date,
+  endAt: string | Date,
+) {
   return `${formatDateTime(startAt)} - ${formatDateTime(endAt)}`;
 }
