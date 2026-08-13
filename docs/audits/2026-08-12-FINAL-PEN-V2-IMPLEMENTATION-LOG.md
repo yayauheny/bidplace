@@ -215,3 +215,16 @@
 - External gates still open: formal Pen pixel-diff overlay, native iOS/Android device smoke, physical screen-reader QA, and final founder approval. Browser keyboard/focus, semantic DOM/accessibility tree and reduced-motion evidence is included in Wave B and the full suite. `pen status` reports the authenticated Pen API unreachable; `simctl` and `adb` are unavailable on this host. Canonical Pen SHA remains `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`; no `.pen` file was changed.
 
 Staged implementation and targeted runtime evidence exist; release acceptance is still pending the visual/device gates listed above.
+
+## Stage 9 — Final product and auction regression closure
+
+- Status: Automated acceptance complete; physical native and screen-reader acceptance remain external gates.
+- Reported regressions: oversized product artwork and bid control, duplicate mobile auction actions, imprecise fractional prices, inline/stale bid behavior, outdated creation/moderation browser flows, and hidden failures caused by tests that no longer followed the modal interaction model.
+- Chosen durable fixes: restore the approved desktop product media geometry (`360 × 514` for the three-column hero), keep the compact `AuctionPlayer` action only at product-wide breakpoints, use the bottom action bar as the single mobile CTA, preserve meaningful 0–2 digit currency precision, validate the currently typed amount inside the bid dialog, reset the slide control when the amount changes, and refetch canonical listing data after a rejected bid.
+- Security and failure handling: an HTTP 400 is described as a stale bid only when the refreshed server minimum is greater than the attempted amount. Other failures keep their explicit user-facing error instead of being swallowed or mislabeled. The server remains authoritative for the minimum, lifecycle and accepted bid.
+- Flow coverage updates: shared Playwright auction actions now open the modal and complete `SlideToBid`; product creation covers all required metadata plus the optional first creation-history step; moderation tests switch explicitly between the separate Authors and Works queues.
+- Visual verification: fresh screenshots at 1440/1024/390 were inspected. Desktop uses the approved compact artwork/player composition. Mobile has one bottom CTA and no duplicate hero button or horizontal overflow.
+- Checks executed: mobile unit suite passes; mobile typecheck and lint pass; complete Chromium Playwright suite `38/38` passes; Expo production export passes for web, Android and iOS; `git diff --check` passes. The previous React Native Web warnings for deprecated `shadow*`, `props.pointerEvents` and unsupported `useNativeDriver` did not appear in the full E2E console output.
+- Commits: `30b9ba4` (public visibility SQL typing), `bed4715` (bid dialog and precise price behavior), `84d9ec6` (final product hero geometry and mobile CTA boundary), `3a70231` (creation and moderation flow acceptance).
+- Canonical verification: Pen SHA remains `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`; the `.pen` file was not modified.
+- Remaining external gates: native iOS/Android device smoke, physical screen-reader QA and founder visual acceptance against the canonical Pen on target devices.
