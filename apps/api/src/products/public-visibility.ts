@@ -23,7 +23,7 @@ export const publicProductContentWhere = {
   images: { some: {} },
 } satisfies Prisma.ProductWhereInput;
 
-export const publicProductContentSql = Prisma.sql`
+export const publicProductContentSql: Prisma.Sql = Prisma.sql`
   p."category_id" IS NOT NULL
   AND NULLIF(BTRIM(p."title"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."story"), '') IS NOT NULL
