@@ -15,12 +15,12 @@ type ProductGalleryImage = {
   height?: number | null;
 };
 
-const desktopGalleryHeight = 514;
-const desktopGalleryMaxWidth = 420;
+const desktopGalleryHeight = 580;
+const desktopGalleryMaxWidth = 520;
 
 function getDesktopImageSize(image: ProductGalleryImage) {
   if (!image.width || !image.height) {
-    return { width: 360, height: desktopGalleryHeight };
+    return { width: 520, height: desktopGalleryHeight };
   }
 
   const aspectRatio = image.width / image.height;
@@ -54,7 +54,7 @@ export function ProductGallery({
         style={{
           width:
             width >= designTokens.breakpoint.productHeroThreeColumn
-              ? 360
+              ? 520
               : imageWidth,
           height:
             width >= designTokens.breakpoint.productHeroThreeColumn
@@ -116,7 +116,7 @@ function GalleryImage({
               width: desktopSize!.width,
               height: desktopSize!.height,
               borderRadius: designTokens.radius.media,
-              backgroundColor: designTokens.color.placeholder,
+              backgroundColor: 'transparent',
             }
           : productMediaStyle(width)
       }

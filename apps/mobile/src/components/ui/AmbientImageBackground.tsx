@@ -27,7 +27,7 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
     if (!loaded) return;
 
     Animated.timing(opacity, {
-      toValue: 1,
+      toValue: 0.52,
       duration: getMotionDuration(reducedMotion, 360),
       useNativeDriver: Platform.OS !== 'web',
     }).start();
@@ -60,7 +60,7 @@ export function AmbientImageBackground({ imageUrl }: { imageUrl?: string }) {
           <Image
             source={{ uri: imageUrl }}
             contentFit="cover"
-            blurRadius={72}
+            blurRadius={96}
             onLoad={() => setLoaded(true)}
             onError={() => setLoaded(false)}
             style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}

@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { View } from 'react-native';
 
 import {
   AppText,
+  AppDialog,
   PrimaryButton,
   SecondaryButton,
   TextField,
@@ -20,6 +21,13 @@ import {
 type EmailRulesGateProps = {
   children: ReactNode;
   redirectTo: string;
+};
+
+type EmailRulesDialogProps = {
+  open: boolean;
+  redirectTo: string;
+  onClose: () => void;
+  onReady: () => void;
 };
 
 export function useEmailRulesEligibility(): {
@@ -224,18 +232,27 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
           loading={requestEmailVerification.isPending}
           onPress={() => requestEmailVerification.mutate()}
         />
-        <TextField
-          label="Код из письма"
-          value={code}
-          onChangeText={setCode}
-          keyboardType="number-pad"
-          placeholder="000000"
-        />
-        <PrimaryButton
-          label="Подтвердить email"
-          loading={verifyEmail.isPending}
-          onPress={() => verifyEmail.mutate()}
-        />
+        {requestEmailVerification.isSuccess ? (
+          <>
+            <TextField
+              label="Код из письма"
+              value={code}
+              onChangeText={(value) =>
+                setCode(value.replace(/\D/g, '').slice(0, 6))
+              }
+              keyboardType="number-pad"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+            />
+            <PrimaryButton
+              label="Подтвердить email"
+              disabled={code.length !== 6}
+              loading={verifyEmail.isPending}
+              onPress={() => verifyEmail.mutate()}
+            />
+          </>
+        ) : null}
         {requestEmailVerification.isError || verifyEmail.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось подтвердить email. Попробуйте ещё раз.
@@ -280,4 +297,43 @@ export function EmailRulesGate({ children, redirectTo }: EmailRulesGateProps) {
   }
 
   return <>{children}</>;
+}
+
+export function EmailRulesDialog({
+  open,
+  redirectTo,
+  onClose,
+  onReady,
+}: EmailRulesDialogProps) {
+  const { eligibility } = useEmailRulesEligibility();
+
+  useEffect(() => {
+    if (open && eligibility === 'ready') onReady();
+  }, [eligibility, onReady, open]);
+
+  const title =
+    eligibility === 'rules'
+      ? 'Правила участия'
+      : eligibility === 'email'
+        ? 'Подтвердите email'
+        : 'Проверяем доступ';
+  const description =
+    eligibility === 'email'
+      ? 'Подтверждение требуется один раз — перед первой ставкой.'
+      : eligibility === 'rules'
+        ? 'Примите актуальные правила, чтобы перейти к ставке.'
+        : undefined;
+
+  return (
+    <AppDialog
+      open={open}
+      title={title}
+      description={description}
+      onClose={onClose}
+    >
+      <EmailRulesGate redirectTo={redirectTo}>
+        <View />
+      </EmailRulesGate>
+    </AppDialog>
+  );
 }

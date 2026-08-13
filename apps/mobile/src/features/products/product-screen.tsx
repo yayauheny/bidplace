@@ -42,7 +42,7 @@ import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import {
-  EmailRulesGate,
+  EmailRulesDialog,
   useEmailRulesEligibility,
 } from '../auth/email-rules-gate';
 import { validateBidAmount } from './bid-validation';
@@ -212,10 +212,13 @@ function ProductAboutAuthorPanel({
   return (
     <View
       style={{
-        flex: 1,
+        width: 376,
+        minHeight: 310,
         gap: designTokens.space.x4,
-        padding: designTokens.space.x6,
-        backgroundColor: designTokens.color.surfaceMuted,
+        paddingHorizontal: 28,
+        paddingVertical: 24,
+        borderRadius: designTokens.radius.aboutPanel,
+        backgroundColor: designTokens.color.surfacePanel,
       }}
     >
       <AppText role="sectionTitle">Автор</AppText>
@@ -371,6 +374,7 @@ export function ProductScreen({
   const [pendingAttempt, setPendingAttempt] = useState<BidAttempt | null>(null);
   const [confirmationAttempt, setConfirmationAttempt] =
     useState<BidAttempt | null>(null);
+  const [participationDialogOpen, setParticipationDialogOpen] = useState(false);
   const [bidValidationError, setBidValidationError] = useState<string | null>(
     null,
   );
@@ -545,7 +549,7 @@ export function ProductScreen({
     setConfirmationAttempt(null);
     bid.mutate(attempt);
   };
-  const submitBid = async () => {
+  const openBidDialog = async () => {
     if (!listing) return;
     setIsRefreshingBid(true);
     const refreshed = await query.refetch();
@@ -558,13 +562,15 @@ export function ProductScreen({
       );
       return;
     }
-    const error = validateBidAmount(amount, freshMinimumNextBid);
+    const nextInput = amount.trim() || String(freshMinimumNextBid ?? '');
+    const error = validateBidAmount(nextInput, freshMinimumNextBid);
     if (error) {
       setBidValidationError(error);
       return;
     }
     setBidValidationError(null);
-    const nextAmount = Number(amount.replace(',', '.'));
+    setAmount(nextInput);
+    const nextAmount = Number(nextInput.replace(',', '.'));
     const reusable =
       pendingAttempt &&
       pendingAttempt.listingId === listing.id &&
@@ -576,6 +582,20 @@ export function ProductScreen({
             idempotencyKey: newIdempotencyKey(),
           };
     setConfirmationAttempt(reusable);
+  };
+  const beginParticipation = () => {
+    if (eligibility === 'guest') {
+      router.push({
+        pathname: '/login',
+        params: { redirectTo: `/product/${publicId}` },
+      });
+      return;
+    }
+    if (eligibility === 'ready') {
+      void openBidDialog();
+      return;
+    }
+    setParticipationDialogOpen(true);
   };
   const confirmBid = () => {
     if (!confirmationAttempt) return;
@@ -596,29 +616,7 @@ export function ProductScreen({
     sendBid(attempt);
   };
 
-  const bidForm =
-    listing?.status === 'LIVE' && !auth.isAdmin ? (
-      <EmailRulesGate redirectTo={`/product/${publicId}`}>
-        <BidForm
-          amount={amount}
-          minimumNextBid={minimumNextBid}
-          validationError={
-            bidValidationError ??
-            (bid.isError
-              ? 'Ставка не принята. Сервер обновил цену и минимальную сумму — проверьте актуальные данные.'
-              : null)
-          }
-          isPending={bid.isPending}
-          hasFailedAttempt={bid.isError && pendingAttempt !== null}
-          onAmountChange={setAmount}
-          onSubmit={submitBid}
-          onRetry={() => {
-            if (pendingAttempt) sendBid(pendingAttempt);
-          }}
-          showPrimaryAction={false}
-        />
-      </EmailRulesGate>
-    ) : null;
+  const canParticipate = listing?.status === 'LIVE' && !auth.isAdmin;
   const adminBidNotice =
     listing?.status === 'LIVE' && auth.isAdmin ? (
       <AppText role="bodySmall" tone="secondary">
@@ -647,32 +645,20 @@ export function ProductScreen({
           ? `До завершения: ${formatRemainingTime(listing.endsAt, now)}`
           : listing.status === 'SCHEDULED'
             ? `Начало: ${formatDateTime(listing.startsAt)}`
-            : 'Торги завершены'
+            : 'Статус: Завершено'
       }
       deadlineLabel={`Окончание: ${formatDateTime(listing.endsAt)}`}
       actionLabel={
-        listing.status === 'LIVE' && !auth.isAdmin
-          ? eligibility === 'ready'
-            ? 'Поставить'
-            : eligibility === 'guest'
-              ? 'Войти'
-              : undefined
+        canParticipate
+          ? eligibility === 'guest'
+            ? 'Войти'
+            : 'Поставить'
           : undefined
       }
       actionDisabled={bid.isPending || isRefreshingBid}
       actionLoading={bid.isPending || isRefreshingBid}
       onAction={
-        listing.status === 'LIVE' && !auth.isAdmin
-          ? eligibility === 'ready'
-            ? submitBid
-            : eligibility === 'guest'
-              ? () =>
-                  router.push({
-                    pathname: '/login',
-                    params: { redirectTo: `/product/${publicId}` },
-                  })
-              : undefined
-          : undefined
+        canParticipate ? beginParticipation : undefined
       }
       width={isHeroThreeColumn ? 404 : undefined}
     />
@@ -709,11 +695,16 @@ export function ProductScreen({
     >
       <View
         style={{
-          flex: 2,
+          width: isProductWide ? 832 : '100%',
+          minHeight: isProductWide ? 620 : undefined,
           gap: designTokens.space.x5,
-          padding: isProductWide ? designTokens.space.x6 : 0,
+          paddingHorizontal: isProductWide ? 32 : 0,
+          paddingVertical: isProductWide ? 28 : 0,
+          borderRadius: isProductWide
+            ? designTokens.radius.aboutPanel
+            : undefined,
           backgroundColor: isProductWide
-            ? designTokens.color.surfaceMuted
+            ? designTokens.color.surfacePanel
             : 'transparent',
         }}
       >
@@ -1093,7 +1084,7 @@ export function ProductScreen({
     <ProductShell
       ambientImageUrl={ambientImageUrl}
       bottomAction={
-        !isProductWide && bidForm ? (
+        !isProductWide && canParticipate ? (
           <BottomActionBar
             summary={
               <View style={{ gap: designTokens.space.x1 }}>
@@ -1108,15 +1099,13 @@ export function ProductScreen({
               </View>
             }
           >
-            <EmailRulesGate redirectTo={`/product/${publicId}`}>
-              <PrimaryButton
-                compact
-                label="Сделать ставку"
-                loading={bid.isPending}
-                onPress={submitBid}
-                accessibilityHint="Сервер проверит актуальную цену и условия торгов"
-              />
-            </EmailRulesGate>
+            <PrimaryButton
+              compact
+              label={eligibility === 'guest' ? 'Войти' : 'Сделать ставку'}
+              loading={bid.isPending || isRefreshingBid}
+              onPress={beginParticipation}
+              accessibilityHint="Открывает последовательный сценарий участия в торгах"
+            />
           </BottomActionBar>
         ) : undefined
       }
@@ -1128,7 +1117,7 @@ export function ProductScreen({
         contentContainerStyle={{
           paddingVertical: designTokens.space.x6,
           paddingBottom:
-            !isProductWide && bidForm
+            !isProductWide && canParticipate
               ? designTokens.space.x16
               : designTokens.space.x8,
         }}
@@ -1138,15 +1127,16 @@ export function ProductScreen({
         <View
           style={{
             width: '100%',
-            maxWidth: designTokens.layout.productDetailMaxWidth,
-            alignSelf: 'center',
           }}
         >
           {activeTab === 'about' ? (
             <View
               style={{
                 position: 'relative',
-                minHeight: isHeroThreeColumn ? 676 : undefined,
+                width: '100%',
+                maxWidth: designTokens.layout.productDetailMaxWidth,
+                alignSelf: 'center',
+                minHeight: isHeroThreeColumn ? 780 : undefined,
                 paddingHorizontal: productCanvasPadding,
                 paddingTop: isDesktop
                   ? designTokens.space.x3
@@ -1165,7 +1155,7 @@ export function ProductScreen({
                   width: isHeroThreeColumn
                     ? designTokens.layout.productHeroContentWidth
                     : '100%',
-                  alignSelf: isHeroThreeColumn ? 'flex-start' : 'stretch',
+                  alignSelf: 'center',
                   flexDirection: isHeroThreeColumn ? 'row' : 'column',
                   alignItems: isHeroThreeColumn ? 'flex-start' : 'stretch',
                   justifyContent: isHeroThreeColumn
@@ -1207,7 +1197,7 @@ export function ProductScreen({
                 </View>
                 <View
                   style={{
-                    width: isHeroThreeColumn ? 420 : '100%',
+                    width: isHeroThreeColumn ? 520 : '100%',
                     minWidth: 0,
                     alignItems: isHeroThreeColumn ? 'center' : 'stretch',
                     gap: designTokens.space.x8,
@@ -1218,7 +1208,7 @@ export function ProductScreen({
                     label={product.title ?? 'Предмет'}
                   />
                   {!isPlayerSticky ? auctionPlayer : null}
-                  {isProductWide ? (bidForm ?? adminBidNotice) : bidForm}
+                  {adminBidNotice}
                 </View>
                 <View
                   style={{
@@ -1312,44 +1302,62 @@ export function ProductScreen({
           ) : null}
           <View
             style={{
-              gap: designTokens.space.x6,
-              paddingHorizontal: productCanvasPadding,
+              width: '100%',
+              backgroundColor: designTokens.color.surfaceWarm,
             }}
           >
-            <ProductTabs
-              activeTab={activeTab}
-              bidCount={bids.data?.bids.length}
-              onChange={onTabChange}
-            />
             <View
-              nativeID={`product-panel-${activeTab}`}
-              role="tabpanel"
-              accessibilityLabelledBy={`product-tab-${activeTab}`}
+              style={{
+                width: '100%',
+                maxWidth: designTokens.layout.productDetailMaxWidth,
+                alignSelf: 'center',
+                gap: designTokens.space.x6,
+                paddingHorizontal: productCanvasPadding,
+                paddingBottom: designTokens.space.x8,
+              }}
             >
-              {activeTab === 'about'
-                ? itemStory
-                : activeTab === 'creation'
-                  ? creationStory
-                  : bidHistory}
-            </View>
-            {activeTab === 'about' ? relatedWorksSection : null}
-            {participation?.orderPublicId ? (
-              <Link
-                href={{
-                  pathname: '/order/[publicId]',
-                  params: { publicId: participation.orderPublicId },
-                }}
-                asChild
+              <ProductTabs
+                activeTab={activeTab}
+                bidCount={bids.data?.bids.length}
+                onChange={onTabChange}
+              />
+              <View
+                nativeID={`product-panel-${activeTab}`}
+                role="tabpanel"
+                accessibilityLabelledBy={`product-tab-${activeTab}`}
               >
-                <SecondaryButton
-                  label="Открыть результат заказа"
-                  onPress={() => undefined}
-                />
-              </Link>
-            ) : null}
+                {activeTab === 'about'
+                  ? itemStory
+                  : activeTab === 'creation'
+                    ? creationStory
+                    : bidHistory}
+              </View>
+              {activeTab === 'about' ? relatedWorksSection : null}
+              {participation?.orderPublicId ? (
+                <Link
+                  href={{
+                    pathname: '/order/[publicId]',
+                    params: { publicId: participation.orderPublicId },
+                  }}
+                  asChild
+                >
+                  <SecondaryButton
+                    label="Открыть результат заказа"
+                    onPress={() => undefined}
+                  />
+                </Link>
+              ) : null}
+            </View>
           </View>
           {activeTab !== 'about' ? (
-            <View style={{ paddingTop: designTokens.space.x12 }}>
+            <View
+              style={{
+                width: '100%',
+                maxWidth: designTokens.layout.productDetailMaxWidth,
+                alignSelf: 'center',
+                paddingTop: designTokens.space.x12,
+              }}
+            >
               {!isPlayerSticky ? auctionPlayer : null}
             </View>
           ) : null}
@@ -1362,7 +1370,7 @@ export function ProductScreen({
       ) : null}
       <AppDialog
         open={confirmationAttempt !== null}
-        title="Подтвердите ставку"
+        title="Сделать ставку"
         description={
           listing
             ? `Вы делаете ставку на «${product.title ?? 'предмет'}» на сумму ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatCurrencyAmount(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
@@ -1397,6 +1405,15 @@ export function ProductScreen({
           onPress={() => setConfirmationAttempt(null)}
         />
       </AppDialog>
+      <EmailRulesDialog
+        open={participationDialogOpen}
+        redirectTo={`/product/${publicId}`}
+        onClose={() => setParticipationDialogOpen(false)}
+        onReady={() => {
+          setParticipationDialogOpen(false);
+          void openBidDialog();
+        }}
+      />
     </ProductShell>
   );
 }

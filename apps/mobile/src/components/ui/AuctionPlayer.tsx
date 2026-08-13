@@ -83,6 +83,7 @@ export function AuctionPlayer({
         </AppText>
         <AppText
           role="numeric"
+          numberOfLines={1}
           style={{
             fontFamily: 'Inter_600SemiBold',
             fontSize: 19,
