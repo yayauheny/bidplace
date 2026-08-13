@@ -77,24 +77,22 @@ test('product detail changes structure at the product action breakpoints', async
         await expect(
           dock.getByRole('button', { name: 'Сделать ставку' }),
         ).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: 'Поставить' }),
+        ).toHaveCount(0);
         const dockBox = await dock.boundingBox();
         expect(dockBox).not.toBeNull();
         expect(dockBox!.height).toBeGreaterThanOrEqual(44);
         expect(dockBox!.height).toBeLessThanOrEqual(64);
       } else {
         await expect(dock).toHaveCount(0);
-        await expect(page.getByLabel('Ваша ставка, BYN')).toBeVisible();
-        const amount = await page.getByLabel('Ваша ставка, BYN').boundingBox();
-        expect(amount).not.toBeNull();
-        expect(amount!.x).toBeLessThan(imageBox!.x + imageBox!.width);
-        expect(amount!.x + amount!.width).toBeGreaterThan(imageBox!.x);
+        await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
 
         for (const locator of [
           title,
           status,
           currentPriceLabel,
           currentPrice,
-          page.getByPlaceholder(/от 10/).first(),
           page.getByText('До завершения', { exact: true }).first(),
           page.getByRole('button', { name: 'Поставить' }),
         ]) {

@@ -14,12 +14,12 @@ type ProductGalleryImage = {
   height?: number | null;
 };
 
-const desktopGalleryHeight = 580;
-const desktopGalleryMaxWidth = 520;
+const desktopGalleryHeight = 514;
+const desktopGalleryMaxWidth = 420;
 
 function getDesktopImageSize(image: ProductGalleryImage) {
   if (!image.width || !image.height) {
-    return { width: 520, height: desktopGalleryHeight };
+    return { width: 360, height: desktopGalleryHeight };
   }
 
   const aspectRatio = image.width / image.height;
