@@ -31,6 +31,28 @@ const product = {
   images: [],
 };
 
+const approvedProduct = {
+  ...product,
+  categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
+  title: 'Предмет',
+  story: 'Описание предмета',
+  uniqueness: 'Единственный экземпляр',
+  provenance: 'Создан автором',
+  city: 'Минск',
+  deliveryInfo: 'Условия передачи согласовываются после покупки',
+  images: [
+    {
+      id: 'b0d82a10-3170-49eb-904f-a8bc87d311a6',
+      position: 0,
+      mimeType: 'image/png',
+      byteLength: 10,
+      checksum: 'a'.repeat(64),
+      width: 1200,
+      height: 1600,
+    },
+  ],
+};
+
 describe('ProductsService', () => {
   it('keeps ended listings in the public catalog predicate', () => {
     expect(publicCatalogProductWhere.sellerProfile).toEqual({
@@ -107,7 +129,7 @@ describe('ProductsService', () => {
 
   it('uses a narrow seller select for public Product queries', async () => {
     const publicProduct = {
-      ...product,
+      ...approvedProduct,
       status: 'APPROVED' as const,
       publishedAt: null,
     };
@@ -145,7 +167,7 @@ describe('ProductsService', () => {
 
   it('paginates public catalog rows before hydrating narrow image metadata', async () => {
     const publicProduct = {
-      ...product,
+      ...approvedProduct,
       status: 'APPROVED' as const,
       publishedAt: new Date('2026-07-19T00:00:00.000Z'),
       sellerProfile: {
@@ -157,15 +179,6 @@ describe('ProductsService', () => {
         socialLink: 'https://example.com/seller',
         shortDescription: 'Short',
       },
-      images: [
-        {
-          id: 'b0d82a10-3170-49eb-904f-a8bc87d311a6',
-          position: 0,
-          mimeType: 'image/png',
-          byteLength: 10,
-          checksum: 'a'.repeat(64),
-        },
-      ],
       listings: [
         {
           id: 'c0d82a10-3170-49eb-904f-a8bc87d311a7',

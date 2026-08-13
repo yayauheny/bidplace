@@ -1,5 +1,5 @@
 type AuctionCardItem = {
-  product: { title: string | null; story?: string | null };
+  product: { title: string; story: string };
   listing: {
     currentPrice: number;
     status: 'LIVE' | 'SCHEDULED' | 'ENDED' | 'CANCELLED' | 'DRAFT';
@@ -9,12 +9,10 @@ type AuctionCardItem = {
 
 export function getAuctionCardContent(item: AuctionCardItem) {
   const { product, listing } = item;
-  const description =
-    product.story?.replace(/\s+/g, ' ').trim() ||
-    'Авторский предмет с историей и происхождением.';
+  const description = product.story.replace(/\s+/g, ' ').trim();
 
   return {
-    title: product.title ?? 'Предмет',
+    title: product.title,
     description,
     price: listing ? `${listing.currentPrice} BYN` : 'Цена появится позже',
     status: listingLabel(item),

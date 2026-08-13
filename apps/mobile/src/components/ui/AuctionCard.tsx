@@ -10,7 +10,6 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { getAuctionCardContent } from './auction-card-layout';
 import { AppText } from './AppText';
-import { ImagePlaceholder } from './ImagePlaceholder';
 import { MotionPressable } from './MotionPressable';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
@@ -18,7 +17,7 @@ type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;
-  const firstImage = product.images[0];
+  const firstImage = product.images[0]!;
   const { title, price, status, deadline } = getAuctionCardContent(item);
   const [mediaEmphasized, setMediaEmphasized] = useState(false);
   const reducedMotion = useReducedMotion();
@@ -49,22 +48,14 @@ export function AuctionCard({ item }: { item: AuctionCardItem }) {
             backgroundColor: designTokens.color.surfaceMuted,
           }}
         >
-          {firstImage ? (
-            <AuctionCardImage
-              emphasized={mediaEmphasized}
-              imageId={firstImage.id}
-              imageUrl={firstImage.url}
-              label={title}
-              productId={product.id}
-              reducedMotion={reducedMotion}
-            />
-          ) : (
-            <ImagePlaceholder
-              label={`Нет изображения: ${title}`}
-              ratio={1}
-              style={{ width: '100%', borderRadius: 0 }}
-            />
-          )}
+          <AuctionCardImage
+            emphasized={mediaEmphasized}
+            imageId={firstImage.id}
+            imageUrl={firstImage.url}
+            label={title}
+            productId={product.id}
+            reducedMotion={reducedMotion}
+          />
         </View>
         <View
           style={{

@@ -34,12 +34,9 @@ describe('API asset URLs', () => {
     );
   });
 
-  it('keeps the existing safe development origin for invalid configuration', () => {
+  it('rejects an invalid configured API origin', () => {
     process.env.EXPO_PUBLIC_API_URL = 'not a URL';
 
-    expect(getApiUrl()).toBe('http://localhost:3001');
-    expect(getApiAssetUrl('/api/images/image-1')).toBe(
-      'http://localhost:3001/api/images/image-1',
-    );
+    expect(() => getApiUrl()).toThrow('Invalid URL');
   });
 });

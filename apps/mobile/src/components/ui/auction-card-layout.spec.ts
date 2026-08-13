@@ -11,7 +11,7 @@ function itemWith(overrides: {
   return {
     product: {
       title: overrides.title ?? 'Предмет',
-      story: overrides.story,
+      story: overrides.story ?? 'Описание предмета',
     },
     listing: overrides.status
       ? {

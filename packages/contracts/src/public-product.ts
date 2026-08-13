@@ -4,9 +4,23 @@ import { listingSchema } from './listing';
 import { publicSellerProfileSchema } from './seller-profile';
 import { paginationMetaSchema } from './pagination';
 import { moneyAmountSchema } from './primitives';
+
+export const publicProductSchema = productSchema
+  .extend({
+    categoryId: z.string().uuid(),
+    title: z.string().trim().min(1),
+    story: z.string().trim().min(1),
+    uniqueness: z.string().trim().min(1),
+    provenance: z.string().trim().min(1),
+    city: z.string().trim().min(1),
+    deliveryInfo: z.string().trim().min(1),
+    images: productSchema.shape.images.nonempty(),
+  })
+  .strict();
+
 export const publicProductListItemSchema = z
   .object({
-    product: productSchema,
+    product: publicProductSchema,
     sellerProfile: publicSellerProfileSchema,
     listing: listingSchema.nullable(),
   })
@@ -51,7 +65,7 @@ export const productListResponseSchema = z
   .strict();
 export const publicProductDetailResponseSchema = z
   .object({
-    product: productSchema,
+    product: publicProductSchema,
     sellerProfile: publicSellerProfileSchema,
     listing: listingSchema.nullable(),
     minimumNextBid: moneyAmountSchema.nullable(),

@@ -1188,7 +1188,7 @@ export function ProductScreen({
                         : undefined
                     }
                   >
-                    {product.title ?? 'Предмет'}
+                    {product.title}
                   </AppText>
                   {product.story ? (
                     <AppText role="body" tone="secondary" numberOfLines={5}>
@@ -1206,7 +1206,7 @@ export function ProductScreen({
                 >
                   <ProductGallery
                     images={product.images}
-                    label={product.title ?? 'Предмет'}
+                    label={product.title}
                   />
                   {!isPlayerSticky ? auctionPlayer : null}
                   {adminBidNotice}
@@ -1374,7 +1374,7 @@ export function ProductScreen({
         title="Сделать ставку"
         description={
           listing
-            ? `Вы делаете ставку на «${product.title ?? 'предмет'}» на сумму ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatCurrencyAmount(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
+            ? `Вы делаете ставку на «${product.title}» на сумму ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatCurrencyAmount(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
             : undefined
         }
         onClose={() => setConfirmationAttempt(null)}
