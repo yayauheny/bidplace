@@ -504,13 +504,7 @@ export function PublicSellerScreen({
   }
 
   return (
-    <AppShell
-      ambientImageUrl={
-        firstPage
-          ? getApiAssetUrl(firstPage.sellerProfile.profilePhotoUrl)
-          : undefined
-      }
-    >
+    <AppShell ambientVariant="creator">
       <ScrollView
         style={{ backgroundColor: 'transparent' }}
         contentContainerStyle={{ paddingBottom: designTokens.space.x20 }}

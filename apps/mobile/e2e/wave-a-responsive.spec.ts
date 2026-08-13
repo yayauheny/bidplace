@@ -47,7 +47,7 @@ test('product detail changes structure at the product action breakpoints', async
       const currentPriceLabel = page
         .getByText('Ставка', { exact: true })
         .first();
-      const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
+      const currentPrice = page.getByText('10 BYN', { exact: true }).first();
       await expect(title).toBeVisible();
       await expect(status).toBeVisible();
       await expect(currentPriceLabel).toBeVisible();
@@ -141,7 +141,7 @@ test('admin product detail preserves the no-bidding state at product-wide widths
       const currentPriceLabel = page
         .getByText('Ставка', { exact: true })
         .first();
-      const currentPrice = page.getByText('10,00 BYN', { exact: true }).first();
+      const currentPrice = page.getByText('10 BYN', { exact: true }).first();
       await expect(title).toBeVisible();
       await expect(status).toBeVisible();
       await expect(currentPriceLabel).toBeVisible();

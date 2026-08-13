@@ -193,7 +193,7 @@ test('seeded buyer sees bid history, empty state, retry and ended result', async
       path: resolve(productTabScreenshotDir, 'seeded-bids-1440.png'),
       fullPage: true,
     });
-    await expect(page.getByText(/75,00\s*BYN/).last()).toBeVisible();
+    await expect(page.getByText(/75\s*BYN/).last()).toBeVisible();
 
     await page.goto('/product/seedSched01');
     await page.getByRole('tab', { name: /Торги/ }).click();

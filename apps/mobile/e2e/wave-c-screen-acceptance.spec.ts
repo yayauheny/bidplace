@@ -245,7 +245,7 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
       await expect(
         buyer.page.getByLabel(/Торги\. Торги идут\./).first(),
       ).toBeVisible();
-      await expect(buyer.page.getByText(/75,00\s*BYN/).first()).toBeVisible();
+      await expect(buyer.page.getByText(/75\s*BYN/).first()).toBeVisible();
       await assertLoadedImage(
         buyer.page,
         'Изображение предмета: Стакан для кистей «Голубая комета»',

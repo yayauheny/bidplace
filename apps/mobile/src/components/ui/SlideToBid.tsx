@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   PanResponder,
-  Platform,
   View,
   type LayoutChangeEvent,
 } from 'react-native';
@@ -51,7 +50,7 @@ export function SlideToBid({
       offset.stopAnimation();
       Animated.spring(offset, {
         toValue,
-        useNativeDriver: Platform.OS !== 'web',
+        useNativeDriver: false,
         speed: 28,
         bounciness: 0,
       }).start();

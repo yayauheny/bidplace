@@ -158,6 +158,7 @@ export async function createAuctionFixture(options?: {
         uniqueness: 'One',
         provenance: 'E2E fixture',
         city: 'Minsk',
+        packaging: 'Protective archival packaging',
         deliveryInfo: 'Pickup',
         status: 'APPROVED',
         publishedAt: now,
@@ -356,6 +357,7 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
       uniqueness: 'One',
       provenance: 'E2E fixture',
       city: 'Minsk',
+      packaging: 'Protective archival packaging',
       deliveryInfo: 'Pickup',
       status: 'PENDING_REVIEW',
       images: {

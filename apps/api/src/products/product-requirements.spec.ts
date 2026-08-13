@@ -10,6 +10,7 @@ const completeProduct = {
   uniqueness: 'Единственный экземпляр',
   provenance: 'Создан автором',
   city: 'Минск',
+  packaging: 'Защитная коробка',
   deliveryInfo: 'Самовывоз',
   images: [{ id: 'image-id' }],
 };
@@ -24,9 +25,10 @@ describe('product approval requirements', () => {
       missingProductApprovalFields({
         ...completeProduct,
         condition: null,
+        packaging: null,
         deliveryInfo: null,
         images: [],
       }),
-    ).toEqual(['condition', 'deliveryInfo', 'images']);
+    ).toEqual(['condition', 'packaging', 'deliveryInfo', 'images']);
   });
 });

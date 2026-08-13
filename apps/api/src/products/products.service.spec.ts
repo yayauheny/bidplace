@@ -4,6 +4,7 @@ import { publicDiscoveryQuerySchema } from '@bidplace/contracts';
 import { ProductsService } from './products.service';
 import {
   publicCatalogProductWhere,
+  publicProductContentWhere,
   selectPublicListing,
 } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
@@ -24,6 +25,7 @@ const product = {
   uniqueness: null,
   provenance: null,
   city: null,
+  packaging: null,
   deliveryInfo: null,
   status: 'DRAFT' as const,
   createdAt: new Date('2026-07-18T00:00:00.000Z'),
@@ -36,9 +38,11 @@ const approvedProduct = {
   categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
   title: 'Предмет',
   story: 'Описание предмета',
+  condition: 'Новое',
   uniqueness: 'Единственный экземпляр',
   provenance: 'Создан автором',
   city: 'Минск',
+  packaging: 'Защитная коробка',
   deliveryInfo: 'Условия передачи согласовываются после покупки',
   images: [
     {
@@ -61,6 +65,9 @@ describe('ProductsService', () => {
     expect(publicCatalogProductWhere.listings?.some?.status).toEqual({
       in: ['LIVE', 'SCHEDULED', 'ENDED'],
     });
+    expect(publicCatalogProductWhere).toEqual(
+      expect.objectContaining(publicProductContentWhere),
+    );
   });
 
   it('selects a live listing over an older ended listing', () => {
@@ -146,6 +153,7 @@ describe('ProductsService', () => {
             socialLink: 'https://example.com/seller',
             shortDescription: 'Short',
           },
+          creationSteps: [],
           listings: [],
         }),
       },
@@ -221,6 +229,8 @@ describe('ProductsService', () => {
     expect(pageQueryText).toContain('LIMIT');
     expect(pageQueryText).toContain('p.status_rank ASC');
     expect(pageQueryText).toContain('status_rank');
+    expect(pageQueryText).toContain('NULLIF(BTRIM(p."title"), \'\')');
+    expect(pageQueryText).toContain('FROM "product_images"');
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: [product.id] } },

@@ -149,6 +149,7 @@ model Product {
   uniqueness      String?       @db.VarChar(240)
   provenance      String?       @db.Text
   city            String?       @db.VarChar(160)
+  packaging       String?       @db.Text
   deliveryInfo    String?       @map("delivery_info") @db.Text
   creationIntro   String?       @map("creation_intro") @db.Text
   publishedAt     DateTime?     @map("published_at")

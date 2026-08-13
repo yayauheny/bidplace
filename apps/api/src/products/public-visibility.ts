@@ -1,5 +1,5 @@
 import { type ListingStatus } from '@bidplace/contracts';
-import { type Prisma } from '@bidplace/database';
+import { Prisma } from '@bidplace/database';
 
 export type PublicListingStatus = Extract<
   ListingStatus,
@@ -11,6 +11,32 @@ export const publicListingStatuses: PublicListingStatus[] = [
   'ENDED',
 ];
 
+export const publicProductContentWhere = {
+  categoryId: { not: null },
+  title: { not: '' },
+  story: { not: '' },
+  condition: { not: '' },
+  uniqueness: { not: '' },
+  provenance: { not: '' },
+  city: { not: '' },
+  deliveryInfo: { not: '' },
+  images: { some: {} },
+} satisfies Prisma.ProductWhereInput;
+
+export const publicProductContentSql = Prisma.sql`
+  p."category_id" IS NOT NULL
+  AND NULLIF(BTRIM(p."title"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."story"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."condition"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."uniqueness"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."provenance"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."city"), '') IS NOT NULL
+  AND NULLIF(BTRIM(p."delivery_info"), '') IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM "product_images" pi WHERE pi."product_id" = p."id"
+  )
+`;
+
 export function publicListingWhere(
   statuses: PublicListingStatus[] = publicListingStatuses,
 ): Prisma.ListingWhereInput {
@@ -19,6 +45,7 @@ export function publicListingWhere(
     product: {
       status: 'APPROVED',
       sellerProfile: { status: 'APPROVED' },
+      ...publicProductContentWhere,
     },
   };
 }
@@ -46,6 +73,7 @@ export function selectPublicListing<
 export const publicCatalogProductWhere = {
   status: 'APPROVED',
   sellerProfile: { status: 'APPROVED' },
+  ...publicProductContentWhere,
   listings: {
     some: {
       status: {
@@ -58,6 +86,7 @@ export const publicCatalogProductWhere = {
 export const publicDirectProductWhere = {
   status: 'APPROVED',
   sellerProfile: { status: 'APPROVED' },
+  ...publicProductContentWhere,
   listings: {
     some: {
       status: {

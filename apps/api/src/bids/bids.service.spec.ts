@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { BidsService } from './bids.service';
+import { publicProductContentWhere } from '../products/public-visibility';
 
 describe('BidsService', () => {
   it('lists bids only for a publicly visible Listing', async () => {
@@ -21,6 +22,7 @@ describe('BidsService', () => {
         product: {
           status: 'APPROVED',
           sellerProfile: { status: 'APPROVED' },
+          ...publicProductContentWhere,
         },
       },
       select: { id: true },

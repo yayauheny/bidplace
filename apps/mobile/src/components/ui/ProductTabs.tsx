@@ -15,11 +15,9 @@ type FocusableTab = { focus?: () => void };
 
 export function ProductTabs({
   activeTab,
-  bidCount,
   onChange,
 }: {
   activeTab: ProductTabId;
-  bidCount?: number;
   onChange: (tab: ProductTabId) => void;
 }) {
   const refs = useRef<Array<FocusableTab | null>>([]);
@@ -74,10 +72,6 @@ export function ProductTabs({
     >
       {productTabs.map((tab, index) => {
         const selected = tab.id === activeTab;
-        const accessibilityLabel =
-          tab.id === 'bids' && bidCount !== undefined
-            ? `${tab.label}, ${bidCount} ставок`
-            : tab.label;
         return (
           <MotionPressable
             key={tab.id}
@@ -86,7 +80,7 @@ export function ProductTabs({
             }}
             nativeID={`product-tab-${tab.id}`}
             accessibilityRole="tab"
-            accessibilityLabel={accessibilityLabel}
+            accessibilityLabel={tab.label}
             accessibilityState={{ selected }}
             aria-selected={selected}
             aria-controls={`product-panel-${tab.id}`}

@@ -163,6 +163,7 @@ describe('SellersService', () => {
           uniqueness: 'One',
           provenance: 'Studio',
           city: 'Minsk',
+          packaging: 'Protective box',
           deliveryInfo: 'Pickup',
           publishedAt: null,
           status: 'DRAFT',

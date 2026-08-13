@@ -25,7 +25,10 @@ import {
   publicCatalogProductSelect,
   toCreationStepContract,
 } from '../products/products.service';
-import { publicCatalogProductWhere } from '../products/public-visibility';
+import {
+  publicCatalogProductWhere,
+  publicProductContentSql,
+} from '../products/public-visibility';
 import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
@@ -97,6 +100,7 @@ function publicSellerProductsCte(
     WHERE p."status" = 'APPROVED'
       AND sp."status" = 'APPROVED'
       AND sp."slug" = ${slug}
+      AND ${publicProductContentSql}
       ${statusFilter}
   )`;
 }

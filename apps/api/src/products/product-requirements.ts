@@ -6,6 +6,7 @@ type ProductApprovalInput = {
   uniqueness: string | null;
   provenance: string | null;
   city: string | null;
+  packaging: string | null;
   deliveryInfo: string | null;
   images: Array<{ id: string }>;
 };
@@ -18,6 +19,7 @@ const requiredTextFields = [
   'uniqueness',
   'provenance',
   'city',
+  'packaging',
   'deliveryInfo',
 ] as const;
 

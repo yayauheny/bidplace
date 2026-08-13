@@ -21,15 +21,19 @@ import {
   clearAuthScopedQueries,
   invalidateAuthScopedQueries,
 } from '../lib/query-cache';
-import { shouldClearSessionForError } from '../lib/errors';
+import {
+  getUserFacingErrorMessage,
+  shouldClearSessionForError,
+} from '../lib/errors';
 
-type AuthStatus = 'anonymous' | 'authenticated';
+type AuthStatus = 'anonymous' | 'authenticated' | 'error';
 
 type AuthContextValue = {
   readonly status: AuthStatus;
   readonly ready: boolean;
   readonly session: { user: User } | null;
   readonly user: User | null;
+  readonly sessionError: string | null;
   readonly isAuthenticated: boolean;
   readonly isAdmin: boolean;
   readonly canModerate: boolean;
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<AuthStatus>('anonymous');
   const [user, setUser] = useState<User | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -61,12 +66,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setUser(nextUser);
         setStatus('authenticated');
+        setSessionError(null);
       })
       .catch((error) => {
-        if (active && shouldClearSessionForError(error)) {
-          setUser(null);
+        if (!active) return;
+        setUser(null);
+        if (shouldClearSessionForError(error)) {
           setStatus('anonymous');
+          setSessionError(null);
+          return;
         }
+        setStatus('error');
+        setSessionError(
+          getUserFacingErrorMessage(
+            error,
+            'Не удалось проверить текущую сессию.',
+          ),
+        );
       })
       .finally(() => {
         if (active) {
@@ -82,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(() => {
     setUser(null);
     setStatus('anonymous');
+    setSessionError(null);
   }, []);
 
   const syncSession = useCallback(
@@ -91,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await clearAuthScopedQueries(queryClient);
         setUser(verifiedUser);
         setStatus('authenticated');
+        setSessionError(null);
         await invalidateAuthScopedQueries(queryClient);
       } catch (error) {
         await clearAuthScopedQueries(queryClient);
@@ -107,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ready,
       session: user ? { user } : null,
       user,
+      sessionError,
       isAuthenticated: user !== null,
       isAdmin: user?.role === 'admin',
       canModerate: user?.role === 'admin',
@@ -133,19 +152,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const response = await api.auth.me();
           setUser(response.user);
           setStatus('authenticated');
+          setSessionError(null);
         } catch (error) {
           if (shouldClearSessionForError(error)) {
             await clearAuthScopedQueries(queryClient);
             clearSession();
             return;
           }
-
-          throw error;
+          setUser(null);
+          setStatus('error');
+          setSessionError(
+            getUserFacingErrorMessage(
+              error,
+              'Не удалось проверить текущую сессию.',
+            ),
+          );
         }
       },
       clearSession,
     }),
-    [api, clearSession, queryClient, ready, status, syncSession, user],
+    [
+      api,
+      clearSession,
+      queryClient,
+      ready,
+      sessionError,
+      status,
+      syncSession,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

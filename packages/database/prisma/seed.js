@@ -85,6 +85,7 @@ async function createProductWithImages({
   uniqueness,
   provenance,
   city,
+  packaging,
   deliveryInfo,
   publishedAt,
   imageFileName,
@@ -129,6 +130,7 @@ async function createProductWithImages({
       uniqueness,
       provenance,
       city,
+      packaging,
       deliveryInfo,
       creationIntro:
         'История предмета — от первого замысла до готовой работы в мастерской автора.',
@@ -409,6 +411,8 @@ async function main() {
         provenance:
           'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
         city: 'Минск',
+        packaging:
+          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
         deliveryInfo:
           'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
         publishedAt: now,
@@ -430,6 +434,8 @@ async function main() {
         provenance:
           'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
         city: 'Минск',
+        packaging:
+          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
         deliveryInfo:
           'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
         publishedAt: now,
@@ -451,6 +457,8 @@ async function main() {
         provenance:
           'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
         city: 'Минск',
+        packaging:
+          'Чашка упаковывается в бумагу и амортизирующий материал, затем фиксируется в жёсткой коробке.',
         deliveryInfo:
           'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
         publishedAt: now,
@@ -472,6 +480,8 @@ async function main() {
         provenance:
           'Создана Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
         city: 'Минск',
+        packaging:
+          'Ваза оборачивается мягким защитным материалом и фиксируется внутри усиленной коробки.',
         deliveryInfo:
           'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
         publishedAt: now,
@@ -553,6 +563,8 @@ async function main() {
         provenance:
           'Создано Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
         city: 'Минск',
+        packaging:
+          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
         deliveryInfo:
           'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
         publishedAt: now,
@@ -628,6 +640,8 @@ async function main() {
         uniqueness: fixture.uniqueness,
         provenance: 'Создано автором для локального демо bidplace.',
         city: 'Минск',
+        packaging:
+          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
         deliveryInfo: 'Передача после завершения торгов по договорённости.',
         publishedAt: now,
         imageFileName: fixture.imageFileName,
@@ -706,6 +720,7 @@ async function main() {
     uniqueness: 'Единственный экземпляр',
     provenance: 'Создано автором для локальной проверки модерации.',
     city: 'Минск',
+    packaging: 'Работа будет защищена и зафиксирована в транспортной коробке.',
     deliveryInfo: 'Передача после одобрения.',
     publishedAt: null,
     imageFileName: 'painted-planter.png',

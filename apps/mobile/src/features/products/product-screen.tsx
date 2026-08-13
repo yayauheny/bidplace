@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
+import type { ActivityStatus } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout/AppShell';
@@ -36,8 +37,9 @@ import {
   TextField,
   MotionPressable,
 } from '../../components/ui';
-import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
+import { formatDateTime, formatDisplayPrice } from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
+import { getUserFacingErrorMessage } from '../../lib/errors';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
@@ -93,20 +95,21 @@ function listingStatusTone(
   return 'secondary';
 }
 
-function participationLabel(status: string): string {
-  return (
-    {
-      LEADING: 'Побеждаете',
-      WON: 'Выиграли',
-      OUTBID: 'Ставка перебита',
-      LOST: 'Торги завершены',
-      PENDING: 'Участвуете',
-    }[status] ?? 'Участвуете'
-  );
+function participationLabel(status: ActivityStatus): string {
+  const labels: Record<ActivityStatus, string> = {
+    LEADING: 'Побеждаете',
+    OUTBID: 'Ставка перебита',
+    WON: 'Выиграли',
+    LOST: 'Торги завершены',
+    AWAITING_SELLER_CONTACT: 'Ожидается связь с автором',
+    WIN_CANCELLED: 'Покупка отменена',
+    COMPLETED: 'Покупка завершена',
+  };
+  return labels[status];
 }
 
 function participationTone(
-  status: string,
+  status: ActivityStatus,
 ): 'accent' | 'success' | 'secondary' | 'danger' {
   if (status === 'LEADING' || status === 'WON') return 'success';
   if (status === 'OUTBID') return 'accent';
@@ -331,14 +334,12 @@ function BidForm({
 function ProductShell({
   children,
   bottomAction,
-  ambientImageUrl,
 }: {
   children: React.ReactNode;
   bottomAction?: React.ReactNode;
-  ambientImageUrl?: string;
 }) {
   return (
-    <AppShell bottomAction={bottomAction} ambientImageUrl={ambientImageUrl}>
+    <AppShell bottomAction={bottomAction} ambientVariant="product">
       {children}
     </AppShell>
   );
@@ -490,10 +491,17 @@ export function ProductScreen({
       ),
     onSuccess: () => {
       setPendingAttempt(null);
+      setConfirmationAttempt(null);
       setBidValidationError(null);
       refreshListing();
     },
-    onError: () => {
+    onError: (error) => {
+      setBidValidationError(
+        getUserFacingErrorMessage(
+          error,
+          'Не удалось отправить ставку. Проверьте соединение и попробуйте ещё раз.',
+        ),
+      );
       refreshListing();
     },
   });
@@ -522,9 +530,6 @@ export function ProductScreen({
     creationIntro,
     creationSteps,
   } = query.data;
-  const ambientImageUrl = product.images[0]?.url
-    ? getApiAssetUrl(product.images[0].url)
-    : undefined;
   const participation = listing
     ? activity.data?.activity.find((item) => item.listing.id === listing.id)
     : undefined;
@@ -535,19 +540,14 @@ export function ProductScreen({
     product.year
       ? { label: 'Год создания', value: String(product.year) }
       : null,
-    product.condition ? { label: 'Состояние', value: product.condition } : null,
-    product.uniqueness
-      ? { label: 'Уникальность', value: product.uniqueness }
-      : null,
-    product.city ? { label: 'Город', value: product.city } : null,
-    product.deliveryInfo
-      ? { label: 'Передача', value: product.deliveryInfo }
-      : null,
+    { label: 'Состояние', value: product.condition },
+    { label: 'Уникальность', value: product.uniqueness },
+    { label: 'Город', value: product.city },
+    { label: 'Передача', value: product.deliveryInfo },
   ].filter((item): item is DetailItem => item !== null);
 
   const sendBid = (attempt: BidAttempt) => {
     setPendingAttempt(attempt);
-    setConfirmationAttempt(null);
     bid.mutate(attempt);
   };
   const openBidDialog = async () => {
@@ -572,16 +572,28 @@ export function ProductScreen({
     setBidValidationError(null);
     setAmount(nextInput);
     const nextAmount = Number(nextInput.replace(',', '.'));
-    const reusable =
-      pendingAttempt &&
-      pendingAttempt.listingId === listing.id &&
-      pendingAttempt.amount === nextAmount
-        ? pendingAttempt
-        : {
-            listingId: freshListing.id,
-            amount: nextAmount,
-            idempotencyKey: newIdempotencyKey(),
-          };
+    let reusable = pendingAttempt;
+    if (
+      !reusable ||
+      reusable.listingId !== listing.id ||
+      reusable.amount !== nextAmount
+    ) {
+      try {
+        reusable = {
+          listingId: freshListing.id,
+          amount: nextAmount,
+          idempotencyKey: newIdempotencyKey(),
+        };
+      } catch (error) {
+        setBidValidationError(
+          getUserFacingErrorMessage(
+            error,
+            'Это устройство не может безопасно подготовить ставку.',
+          ),
+        );
+        return;
+      }
+    }
     setConfirmationAttempt(reusable);
   };
   const beginParticipation = () => {
@@ -606,14 +618,24 @@ export function ProductScreen({
       return;
     }
     const nextAmount = Number(amount.replace(',', '.'));
-    const attempt =
-      confirmationAttempt.amount === nextAmount
-        ? confirmationAttempt
-        : {
-            listingId: confirmationAttempt.listingId,
-            amount: nextAmount,
-            idempotencyKey: newIdempotencyKey(),
-          };
+    let attempt = confirmationAttempt;
+    if (confirmationAttempt.amount !== nextAmount) {
+      try {
+        attempt = {
+          listingId: confirmationAttempt.listingId,
+          amount: nextAmount,
+          idempotencyKey: newIdempotencyKey(),
+        };
+      } catch (error) {
+        setBidValidationError(
+          getUserFacingErrorMessage(
+            error,
+            'Это устройство не может безопасно подготовить ставку.',
+          ),
+        );
+        return;
+      }
+    }
     sendBid(attempt);
   };
 
@@ -634,12 +656,12 @@ export function ProductScreen({
       participationTone={
         participation ? participationTone(participation.status) : undefined
       }
-      currentPriceLabel={formatCurrencyAmount(listing.currentPrice)}
-      startPriceLabel={formatCurrencyAmount(listing.auctionRules.startPrice)}
+      currentPriceLabel={formatDisplayPrice(listing.currentPrice)}
+      startPriceLabel={formatDisplayPrice(listing.auctionRules.startPrice)}
       minimumNextBidLabel={
         minimumNextBid === null
           ? undefined
-          : formatCurrencyAmount(minimumNextBid)
+          : formatDisplayPrice(minimumNextBid)
       }
       timingLabel={
         listing.status === 'LIVE'
@@ -710,17 +732,10 @@ export function ProductScreen({
         }}
       >
         <AppText role="sectionTitle">О работе</AppText>
-        {product.story ? <AppText role="body">{product.story}</AppText> : null}
-        {product.provenance ? (
-          <AppText role="bodySmall" tone="secondary">
-            {product.provenance}
-          </AppText>
-        ) : null}
-        {!product.story && !product.provenance ? (
-          <AppText role="bodySmall" tone="secondary">
-            Описание предмета появится здесь.
-          </AppText>
-        ) : null}
+        <AppText role="body">{product.story}</AppText>
+        <AppText role="bodySmall" tone="secondary">
+          {product.provenance}
+        </AppText>
         <View>
           <AboutAccordionRow
             index={1}
@@ -735,8 +750,7 @@ export function ProductScreen({
                   gap: designTokens.space.x5,
                 }}
               >
-                {detailItems.length > 0 ? (
-                  detailItems.map((item) => (
+                {detailItems.map((item) => (
                     <View
                       key={item.label}
                       style={{
@@ -750,36 +764,31 @@ export function ProductScreen({
                       </AppText>
                       <AppText role="label">{item.value}</AppText>
                     </View>
-                  ))
-                ) : (
-                  <AppText role="bodySmall" tone="secondary">
-                    Характеристики уточняются.
-                  </AppText>
-                )}
+                  ))}
               </View>
             }
           />
+          {product.packaging ? (
+            <AboutAccordionRow
+              index={2}
+              label="Упаковка"
+              expanded={openAboutSection === 'packaging'}
+              onToggle={() => toggleAboutSection('packaging')}
+              body={
+                <AppText role="bodySmall" tone="secondary">
+                  {product.packaging}
+                </AppText>
+              }
+            />
+          ) : null}
           <AboutAccordionRow
-            index={2}
-            label="Упаковка"
-            expanded={openAboutSection === 'packaging'}
-            onToggle={() => toggleAboutSection('packaging')}
-            body={
-              <AppText role="bodySmall" tone="secondary">
-                Информация об упаковке уточняется автором после завершения
-                торгов.
-              </AppText>
-            }
-          />
-          <AboutAccordionRow
-            index={3}
+            index={product.packaging ? 3 : 2}
             label="Оплата и доставка"
             expanded={openAboutSection === 'delivery'}
             onToggle={() => toggleAboutSection('delivery')}
             body={
               <AppText role="bodySmall" tone="secondary">
-                {product.deliveryInfo ??
-                  'Условия оплаты и передачи уточняются после завершения торгов.'}
+                {product.deliveryInfo}
               </AppText>
             }
           />
@@ -897,7 +906,7 @@ export function ProductScreen({
                 role="numeric"
                 style={{ width: 120, textAlign: 'right' }}
               >
-                {formatCurrencyAmount(item.amount)}
+                {formatDisplayPrice(item.amount)}
               </AppText>
               {isProductWide ? (
                 <AppText
@@ -964,17 +973,7 @@ export function ProductScreen({
                     }}
                     contentFit="cover"
                   />
-                ) : (
-                  <View
-                    accessibilityLabel={`Изображение этапа недоступно: ${step.title}`}
-                    style={{
-                      width: '100%',
-                      height: isCreationTwoColumn ? 457 : 240,
-                      borderRadius: designTokens.radius.media,
-                      backgroundColor: designTokens.color.surfaceMuted,
-                    }}
-                  />
-                )}
+                ) : null}
               </View>
             ))}
           </View>
@@ -1045,15 +1044,16 @@ export function ProductScreen({
         </View>
       ) : creationIntro ? null : (
         <AppText role="bodySmall" tone="secondary">
-          История создания появится здесь.
+          Автор не добавил историю создания.
         </AppText>
       )}
     </View>
   );
-  const relatedItems =
-    relatedWorks.data?.products
-      .filter((item) => item.product.publicId !== product.publicId)
-      .slice(0, 4) ?? [];
+  const relatedItems = relatedWorks.data
+    ? relatedWorks.data.products
+        .filter((item) => item.product.publicId !== product.publicId)
+        .slice(0, 4)
+    : [];
   const relatedWorksSection = relatedWorks.isLoading ? (
     <EditorialSection title="Другие работы автора">
       <AppText role="bodySmall" tone="secondary">
@@ -1083,7 +1083,6 @@ export function ProductScreen({
 
   return (
     <ProductShell
-      ambientImageUrl={ambientImageUrl}
       bottomAction={
         !isProductWide && canParticipate ? (
           <BottomActionBar
@@ -1095,7 +1094,7 @@ export function ProductScreen({
                 <AppText role="numeric">
                   {minimumNextBid === null
                     ? 'Недоступна'
-                    : formatCurrencyAmount(minimumNextBid)}
+                    : formatDisplayPrice(minimumNextBid)}
                 </AppText>
               </View>
             }
@@ -1190,11 +1189,9 @@ export function ProductScreen({
                   >
                     {product.title}
                   </AppText>
-                  {product.story ? (
-                    <AppText role="body" tone="secondary" numberOfLines={5}>
-                      {product.story}
-                    </AppText>
-                  ) : null}
+                  <AppText role="body" tone="secondary" numberOfLines={5}>
+                    {product.story}
+                  </AppText>
                 </View>
                 <View
                   style={{
@@ -1219,8 +1216,7 @@ export function ProductScreen({
                     gap: designTokens.space.x5,
                   }}
                 >
-                  {detailItems.length > 0 ? (
-                    <View style={{ gap: designTokens.space.x4 }}>
+                  <View style={{ gap: designTokens.space.x4 }}>
                       {detailItems.map((item) => (
                         <View
                           key={item.label}
@@ -1232,8 +1228,7 @@ export function ProductScreen({
                           <AppText role="label">{item.value}</AppText>
                         </View>
                       ))}
-                    </View>
-                  ) : null}
+                  </View>
                   <View style={{ gap: designTokens.space.x2 }}>
                     <AppText role="caption" tone="secondary">
                       Автор
@@ -1319,7 +1314,6 @@ export function ProductScreen({
             >
               <ProductTabs
                 activeTab={activeTab}
-                bidCount={bids.data?.bids.length}
                 onChange={onTabChange}
               />
               <View
@@ -1373,38 +1367,39 @@ export function ProductScreen({
         open={confirmationAttempt !== null}
         title="Сделать ставку"
         description={
-          listing
-            ? `Вы делаете ставку на «${product.title}» на сумму ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatCurrencyAmount(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
+          listing && confirmationAttempt
+            ? `Вы делаете ставку на «${product.title}» на сумму ${formatDisplayPrice(confirmationAttempt.amount)}. Минимальная сумма по данным сервера: ${minimumNextBid === null ? 'недоступна' : formatDisplayPrice(minimumNextBid)}. Торги завершаются ${formatDateTime(listing.endsAt)}. Ставка необратима.`
             : undefined
         }
         onClose={() => setConfirmationAttempt(null)}
       >
-        <BidForm
-          amount={amount}
-          minimumNextBid={minimumNextBid}
-          validationError={bidValidationError}
-          isPending={bid.isPending || isRefreshingBid}
-          hasFailedAttempt={false}
-          onAmountChange={setAmount}
-          onSubmit={confirmBid}
-          onRetry={confirmBid}
-          showPrimaryAction={false}
-        />
-        <SlideToBid
-          label={`Поставить · ${formatCurrencyAmount(confirmationAttempt?.amount ?? 0)}`}
-          disabled={
-            !confirmationAttempt ||
-            Boolean(validateBidAmount(amount, minimumNextBid))
-          }
-          loading={bid.isPending}
-          resetKey={confirmationAttempt?.amount}
-          onComplete={confirmBid}
-        />
-        <SecondaryButton
-          label="Отмена"
-          disabled={bid.isPending}
-          onPress={() => setConfirmationAttempt(null)}
-        />
+        {confirmationAttempt ? (
+          <>
+            <BidForm
+              amount={amount}
+              minimumNextBid={minimumNextBid}
+              validationError={bidValidationError}
+              isPending={bid.isPending || isRefreshingBid}
+              hasFailedAttempt={bid.isError}
+              onAmountChange={setAmount}
+              onSubmit={confirmBid}
+              onRetry={confirmBid}
+              showPrimaryAction={false}
+            />
+            <SlideToBid
+              label={`Поставить · ${formatDisplayPrice(confirmationAttempt.amount)}`}
+              disabled={Boolean(validateBidAmount(amount, minimumNextBid))}
+              loading={bid.isPending}
+              resetKey={confirmationAttempt.amount}
+              onComplete={confirmBid}
+            />
+            <SecondaryButton
+              label="Отмена"
+              disabled={bid.isPending}
+              onPress={() => setConfirmationAttempt(null)}
+            />
+          </>
+        ) : null}
       </AppDialog>
       <EmailRulesDialog
         open={participationDialogOpen}

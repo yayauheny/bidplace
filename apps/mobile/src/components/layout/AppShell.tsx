@@ -6,18 +6,25 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppHeader } from './AppHeader';
 import { OverlayHost } from './OverlayHost';
-import { AmbientImageBackground } from '../ui/AmbientImageBackground';
+import {
+  AmbientImageBackground,
+  AppText,
+  SecondaryButton,
+  type AmbientBackgroundVariant,
+} from '../ui';
+import { useAuth } from '../../providers/auth-provider';
 
 export function AppShell({
   children,
   bottomAction,
-  ambientImageUrl,
+  ambientVariant,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
-  ambientImageUrl?: string;
+  ambientVariant?: AmbientBackgroundVariant;
 }) {
-  const hasAmbient = Boolean(ambientImageUrl);
+  const hasAmbient = ambientVariant !== undefined;
+  const auth = useAuth();
 
   return (
     <OverlayHost>
@@ -30,8 +37,8 @@ export function AppShell({
             : designTokens.color.canvas,
         }}
       >
-        {hasAmbient ? (
-          <AmbientImageBackground imageUrl={ambientImageUrl} />
+        {ambientVariant ? (
+          <AmbientImageBackground variant={ambientVariant} />
         ) : null}
         <View
           style={{
@@ -41,6 +48,32 @@ export function AppShell({
           }}
         >
           <AppHeader ambient={hasAmbient} />
+          {auth.status === 'error' ? (
+            <View
+              accessibilityRole="alert"
+              style={{
+                minHeight: designTokens.size.touch,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+                gap: designTokens.space.x3,
+                paddingHorizontal: designTokens.layout.mobileGutter,
+                paddingVertical: designTokens.space.x2,
+                backgroundColor: designTokens.color.surface,
+                borderBottomWidth: 1,
+                borderBottomColor: designTokens.color.border,
+              }}
+            >
+              <AppText role="bodySmall" tone="danger">
+                {auth.sessionError}
+              </AppText>
+              <SecondaryButton
+                label="Повторить"
+                onPress={() => void auth.refreshSession()}
+              />
+            </View>
+          ) : null}
           <View
             testID="app-shell-content"
             style={{

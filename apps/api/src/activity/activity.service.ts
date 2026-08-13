@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../core/database';
 @Injectable()
 export class ActivityService {
@@ -56,7 +56,11 @@ export class ActivityService {
                         : 'LOST'
                       : 'OUTBID';
           if (!listing.auctionRules)
-            throw new Error('Listing rules are missing');
+            throw new InternalServerErrorException('Listing rules are missing');
+          if (!listing.product.title)
+            throw new InternalServerErrorException(
+              'Public listing product is missing a title',
+            );
           return {
             status,
             listing: {
@@ -83,7 +87,7 @@ export class ActivityService {
             },
             product: {
               publicId: listing.product.publicId,
-              title: listing.product.title ?? 'Product',
+              title: listing.product.title,
             },
             orderPublicId: order?.publicId ?? null,
           };

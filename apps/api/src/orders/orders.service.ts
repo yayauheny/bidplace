@@ -10,6 +10,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -408,6 +409,12 @@ export class OrdersService {
   }
 
   private toResponse(order: NonNullable<OrderRecord>, audience: OrderAudience) {
+    if (!order.listing.product.title) {
+      throw new InternalServerErrorException(
+        'Approved Order product is missing a title',
+      );
+    }
+
     const base = {
       order: {
         id: order.id,
@@ -422,7 +429,7 @@ export class OrdersService {
       },
       productSummary: {
         publicId: order.listing.product.publicId,
-        title: order.listing.product.title ?? 'Product',
+        title: order.listing.product.title,
       },
     };
 

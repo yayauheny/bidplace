@@ -4,7 +4,6 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
-import { ImagePlaceholder } from './ImagePlaceholder';
 import { productMediaStyle } from './product-media-style';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
@@ -35,7 +34,7 @@ export function ProductGallery({
   images,
   label,
 }: {
-  images: ProductGalleryImage[];
+  images: [ProductGalleryImage, ...ProductGalleryImage[]];
   label: string;
 }) {
   const { width } = useWindowDimensions();
@@ -45,25 +44,6 @@ export function ProductGallery({
       : width >= designTokens.breakpoint.productDetailWide
         ? designTokens.productHeroWide
         : 300;
-
-  if (images.length === 0)
-    return (
-      <ImagePlaceholder
-        ratio={designTokens.ratio.productPortrait}
-        label={`Нет изображения: ${label}`}
-        style={{
-          width:
-            width >= designTokens.breakpoint.productHeroThreeColumn
-              ? 520
-              : imageWidth,
-          height:
-            width >= designTokens.breakpoint.productHeroThreeColumn
-              ? desktopGalleryHeight
-              : undefined,
-          alignSelf: 'center',
-        }}
-      />
-    );
 
   return (
     <ScrollView

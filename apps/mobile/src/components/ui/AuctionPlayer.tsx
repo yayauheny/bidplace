@@ -58,22 +58,22 @@ export function AuctionPlayer({
         {
           width: width ?? '100%',
           alignSelf: width ? 'center' : undefined,
-          minHeight: 68,
+          minHeight: 60,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 18,
-          borderRadius: 20,
+          gap: 8,
+          borderRadius: 18,
           borderWidth: 1,
           borderColor: designTokens.color.border,
           backgroundColor: '#FFFEFB',
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: 7,
+          paddingHorizontal: 8,
           ...designTokens.elevation.floating,
         },
         backdropStyle,
       ]}
     >
-      <View style={{ width: 84, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 96, gap: 2 }}>
         <AppText
           role="caption"
           tone="muted"
@@ -86,14 +86,14 @@ export function AuctionPlayer({
           numberOfLines={1}
           style={{
             fontFamily: 'Inter_600SemiBold',
-            fontSize: 19,
-            lineHeight: 20,
+            fontSize: 17,
+            lineHeight: 19,
           }}
         >
           {currentPriceLabel}
         </AppText>
       </View>
-      <View style={{ width: 112, gap: 2, minWidth: 0 }}>
+      <View style={{ flex: 1, minWidth: 106, gap: 2 }}>
         <AppText
           role="caption"
           tone="muted"
@@ -107,8 +107,8 @@ export function AuctionPlayer({
           numberOfLines={1}
           style={{
             fontFamily: 'Inter_600SemiBold',
-            fontSize: 19,
-            lineHeight: 20,
+            fontSize: 17,
+            lineHeight: 19,
           }}
         >
           {timingValue}
@@ -123,12 +123,12 @@ export function AuctionPlayer({
           onPress={onAction}
           preset="primaryAction"
           style={{
-            width: 124,
-            height: 44,
-            minHeight: 44,
+            width: 116,
+            height: 40,
+            minHeight: 40,
             justifyContent: 'center',
             alignItems: 'center',
-            borderRadius: 14,
+            borderRadius: 12,
             backgroundColor: designTokens.color.action,
           }}
           interactionStyle={({ hovered, pressed }) => ({

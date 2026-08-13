@@ -20,6 +20,7 @@ describe('Product public ID contract', () => {
       uniqueness: null,
       provenance: null,
       city: null,
+      packaging: null,
       deliveryInfo: null,
       publishedAt: null,
       status: 'DRAFT',

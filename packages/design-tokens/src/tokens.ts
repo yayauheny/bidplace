@@ -6,7 +6,7 @@ export const designTokens = {
     surfaceMuted: '#F7F7F5',
     surfaceStrong: '#F1F1ED',
     surfacePanel: '#F5F5F5',
-    searchSurface: '#F1F1ED',
+    searchSurface: '#F2F2F2',
     dialogSurface: '#FFFEFB',
     ink: '#1A1A1A',
     inkSoft: '#1A1A1A',

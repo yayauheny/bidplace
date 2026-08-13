@@ -60,6 +60,7 @@ export const productSchema = z
     uniqueness: optionalText,
     provenance: optionalText,
     city: optionalText,
+    packaging: optionalText,
     deliveryInfo: optionalText,
     publishedAt: isoDateTimeSchema.nullable(),
     status: productStatusSchema,
@@ -83,6 +84,7 @@ export const productWriteRequestSchema = z
     uniqueness: z.string().trim().min(1).optional(),
     provenance: z.string().trim().min(1).optional(),
     city: z.string().trim().min(1).optional(),
+    packaging: z.string().trim().min(1).optional(),
     deliveryInfo: z.string().trim().min(1).optional(),
     creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })

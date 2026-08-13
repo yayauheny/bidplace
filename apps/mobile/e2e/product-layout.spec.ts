@@ -26,7 +26,7 @@ test('product composition exposes tabs and remains responsive', async ({
   await expect(page.getByTestId('ambient-image-background')).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
   await expect(page.getByText('Ставка', { exact: true })).toBeVisible();
-  await expect(page.getByText('15,00 BYN', { exact: true })).toBeVisible();
+  await expect(page.getByText('15 BYN', { exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'О работе' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Создание' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Торги/ })).toBeVisible();

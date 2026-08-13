@@ -227,6 +227,7 @@ export class AdminModerationService {
     uniqueness: string | null;
     provenance: string | null;
     city: string | null;
+    packaging: string | null;
     deliveryInfo: string | null;
     images: Array<{ id: string }>;
   }) {

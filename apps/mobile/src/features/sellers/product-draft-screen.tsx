@@ -135,6 +135,7 @@ export function ProductDraftScreen({
   const [uniqueness, setUniqueness] = useState('');
   const [provenance, setProvenance] = useState('');
   const [city, setCity] = useState('');
+  const [packaging, setPackaging] = useState('');
   const [deliveryInfo, setDeliveryInfo] = useState('');
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
@@ -164,6 +165,7 @@ export function ProductDraftScreen({
     setUniqueness(existingProduct.uniqueness ?? '');
     setProvenance(existingProduct.provenance ?? '');
     setCity(existingProduct.city ?? '');
+    setPackaging(existingProduct.packaging ?? '');
     setDeliveryInfo(existingProduct.deliveryInfo ?? '');
     setCreationIntro(productDetail.data?.creationIntro ?? '');
     const persistedSteps = productDetail.data?.creationSteps ?? [];
@@ -192,6 +194,7 @@ export function ProductDraftScreen({
     uniqueness: uniqueness || undefined,
     provenance: provenance || undefined,
     city: city || undefined,
+    packaging: packaging || undefined,
     deliveryInfo: deliveryInfo || undefined,
   });
   const save = useMutation({
@@ -371,6 +374,9 @@ export function ProductDraftScreen({
       : 'Укажите уникальность или тираж',
     provenance: provenance.trim() ? undefined : 'Укажите происхождение',
     city: city.trim() ? undefined : 'Укажите город',
+    packaging: packaging.trim()
+      ? undefined
+      : 'Опишите, как будет упакован предмет',
     deliveryInfo: deliveryInfo.trim()
       ? undefined
       : 'Опишите передачу или доставку',
@@ -568,6 +574,16 @@ export function ProductDraftScreen({
                   editable={editable}
                   required
                   error={stepOneAttempted ? stepOneErrors.city : undefined}
+                />
+                <TextField
+                  label="Упаковка"
+                  value={packaging}
+                  onChangeText={setPackaging}
+                  placeholder="Как предмет будет защищён при перевозке"
+                  multiline
+                  editable={editable}
+                  required
+                  error={stepOneAttempted ? stepOneErrors.packaging : undefined}
                 />
                 <TextField
                   label="Передача или доставка"

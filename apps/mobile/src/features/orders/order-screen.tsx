@@ -166,9 +166,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
           <AppText role="metadata" tone="secondary">
             Заказ {order.publicId}
           </AppText>
-          <AppText role="screenTitle">
-            {productSummary.title ?? 'Предмет'}
-          </AppText>
+          <AppText role="screenTitle">{productSummary.title}</AppText>
         </View>
         <Panel>
           <Details

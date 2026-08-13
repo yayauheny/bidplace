@@ -28,6 +28,7 @@ import { missingProductApprovalFields } from './product-requirements';
 import {
   publicDirectProductWhere,
   publicListingStatuses,
+  publicProductContentSql,
   selectPublicListing,
 } from './public-visibility';
 import { assertApprovedSeller } from '../sellers/seller-capability';
@@ -54,6 +55,7 @@ export const publicCatalogProductSelect = {
   uniqueness: true,
   provenance: true,
   city: true,
+  packaging: true,
   deliveryInfo: true,
   creationIntro: true,
   publishedAt: true,
@@ -230,6 +232,7 @@ function publicCatalogCte(query: PublicDiscoveryQuery) {
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
     INNER JOIN canonical c ON c."product_id" = p."id"
     WHERE sp."status" = 'APPROVED'
+      AND ${publicProductContentSql}
       AND ${Prisma.join(filters, ' AND ')}
   )`;
 }
@@ -276,6 +279,7 @@ export class ProductsService {
           uniqueness: input.uniqueness ?? null,
           provenance: input.provenance ?? null,
           city: input.city ?? null,
+          packaging: input.packaging ?? null,
           deliveryInfo: input.deliveryInfo ?? null,
           creationIntro: input.creationIntro ?? null,
           status: 'DRAFT',
@@ -350,6 +354,7 @@ export class ProductsService {
     if (input.uniqueness !== undefined) data.uniqueness = input.uniqueness;
     if (input.provenance !== undefined) data.provenance = input.provenance;
     if (input.city !== undefined) data.city = input.city;
+    if (input.packaging !== undefined) data.packaging = input.packaging;
     if (input.deliveryInfo !== undefined)
       data.deliveryInfo = input.deliveryInfo;
     if (input.creationIntro !== undefined)
@@ -597,7 +602,7 @@ export class ProductsService {
     return publicProductDetailResponseSchema.parse({
       ...projection,
       creationIntro: product.creationIntro ?? null,
-      creationSteps: (product.creationSteps ?? []).map((step) => ({
+      creationSteps: product.creationSteps.map((step) => ({
         id: step.id,
         position: step.position,
         title: step.title,
@@ -803,6 +808,7 @@ export class ProductsService {
       uniqueness: record.uniqueness,
       provenance: record.provenance,
       city: record.city,
+      packaging: record.packaging,
       deliveryInfo: record.deliveryInfo,
       publishedAt: record.publishedAt,
       status: record.status,

@@ -38,7 +38,7 @@ export function formatCurrencyAmount(value: number, currency = 'BYN') {
 export function formatDisplayPrice(
   value: number,
   currency = 'BYN',
-  locale = 'ru-BY',
+  locale = 'ru-RU',
 ) {
   return getCurrencyFormatter(locale, currency, 0).format(value);
 }

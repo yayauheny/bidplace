@@ -63,14 +63,12 @@ function ActivityRow({ item }: { item: ActivityItem }) {
         <Link href={`/product/${item.product.publicId}`} asChild>
           <MotionPressable
             accessibilityRole="link"
-            accessibilityLabel={`Открыть предмет ${item.product.title ?? 'Предмет'}`}
+            accessibilityLabel={`Открыть предмет ${item.product.title}`}
             onPress={() => undefined}
             preset="card"
             style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}
           >
-            <AppText role="cardTitle">
-              {item.product.title ?? 'Предмет'}
-            </AppText>
+            <AppText role="cardTitle">{item.product.title}</AppText>
             <AppText role="metadata" tone="secondary">
               {formatCurrencyAmount(item.listing.currentPrice)} · до{' '}
               {formatDateTime(item.listing.endsAt)}

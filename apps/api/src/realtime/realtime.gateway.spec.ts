@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RealtimeGateway } from './realtime.gateway';
+import { publicProductContentWhere } from '../products/public-visibility';
 
 function createSocket(id = 'socket-1') {
   return {
@@ -51,6 +52,7 @@ describe('RealtimeGateway', () => {
         product: {
           status: 'APPROVED',
           sellerProfile: { status: 'APPROVED' },
+          ...publicProductContentWhere,
         },
       },
       select: { id: true },
