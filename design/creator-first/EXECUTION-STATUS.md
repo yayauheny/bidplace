@@ -9,7 +9,7 @@ Next stage: S2B Editorial/discovery components
 Next frame: F008 components/work_card/board
 Gate M: ready — fonts 7/7, icons 32/32, logo 1/1, media 24/24; all 24 asset_id resolve to existing files; frame manifest F001–F118 continuous, no gaps/dupes
 Pen verification: F001–F007 exist with exact names; 18 new masters (status_chip×5, tab_pill×2, filter_chip×2, form_field×5, inline_validation, search_entry×3); all component-spec states rendered; PNG spot-check of all 5 boards; existing canonical .pen files untouched
-Uncommitted work: design/creator-first/implementation/ (architect-pass output, awaiting founder commit decision — not staged by the Pen builder)
+Uncommitted work: design/creator-first/implementation/ (architect-pass output, awaiting founder commit decision — not staged by the Pen builder); design/creator-first/pen-prompts/ being completed separately
 Blockers: none
 
 ## Stage checklist
@@ -34,7 +34,7 @@ Blockers: none
 | Stage | Frames | Commit | Checks | Notes |
 |---|---|---|---|---|
 | S0+S1 | F001–F002 | 8b80331 | frames named exactly; styles/text masters/icons verified vs YAML; PNG spot-check | pen CLI codex agent gpt-5.6-sol; claude agent unauthenticated on this machine |
-| S2A | F003–F007 | (hash in next row update) | 5 boards named exactly; 18 masters; all spec states present; fixture counts/values verbatim; 2 intentional "Missing spec" notes (sheet apply label, email label); PNG spot-check all boards | — |
+| S2A | F003–F007 | df97035 | 5 boards named exactly; 18 masters; all spec states present; fixture counts/values verbatim; 2 intentional "Missing spec" notes (sheet apply label, email label); PNG spot-check all boards | — |
 
 ## Missing or blocked
 
