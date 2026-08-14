@@ -375,7 +375,8 @@
       "content": "body/desktop",
       "lineHeight": 1.625,
       "fontFamily": "Golos Text",
-      "fontSize": 16
+      "fontSize": 16,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -397,7 +398,8 @@
       "content": "body/tablet",
       "lineHeight": 1.625,
       "fontFamily": "Golos Text",
-      "fontSize": 16
+      "fontSize": 16,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -419,7 +421,8 @@
       "content": "body/mobile",
       "lineHeight": 1.5,
       "fontFamily": "Golos Text",
-      "fontSize": 16
+      "fontSize": 16,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -510,7 +513,8 @@
       "content": "caption/desktop",
       "lineHeight": 1.4285714285714286,
       "fontFamily": "Golos Text",
-      "fontSize": 14
+      "fontSize": 14,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -532,7 +536,8 @@
       "content": "caption/tablet",
       "lineHeight": 1.4285714285714286,
       "fontFamily": "Golos Text",
-      "fontSize": 14
+      "fontSize": 14,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -554,7 +559,8 @@
       "content": "caption/mobile",
       "lineHeight": 1.4285714285714286,
       "fontFamily": "Golos Text",
-      "fontSize": 14
+      "fontSize": 14,
+      "fontWeight": "normal"
     },
     {
       "type": "text",
@@ -7757,6 +7763,2905 @@
       "content": "- No emoji as icons.\n- Decorative icons hidden from accessibility tree.\n- Icon-only controls always carry accessible labels; visible text labels added where ambiguous.\n- One weight (regular) everywhere; Fill counterparts only where a state explicitly declares it.",
       "textGrowth": "fixed-width",
       "width": 420,
+      "fill": "$ink_soft"
+    },
+    {
+      "type": "frame",
+      "id": "i4Lkn",
+      "x": 0,
+      "y": 8650,
+      "name": "components/status_chip/board",
+      "clip": true,
+      "width": 1600,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 80,
+      "children": [
+        {
+          "type": "frame",
+          "id": "rcIg6",
+          "x": 0,
+          "y": 0,
+          "name": "Master Registry",
+          "enabled": false,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "VqxZi",
+              "name": "status_chip/live",
+              "reusable": true,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": "$radius_pill",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "dDUaS",
+                  "name": "Live Dot",
+                  "metadata": {
+                    "type": "a11y",
+                    "decorative": true
+                  },
+                  "fill": "$live_dot",
+                  "width": 8,
+                  "height": 8
+                },
+                {
+                  "id": "s5tRg",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "name": "Status Label",
+                  "content": "Идут торги",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "I2xLOu",
+              "name": "status_chip/scheduled",
+              "reusable": true,
+              "height": 28,
+              "fill": "$surface",
+              "cornerRadius": "$radius_pill",
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "dtGm0",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "name": "Status Label",
+                  "content": "Релиз 24 августа, 19:00",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GtvxV",
+              "name": "status_chip/soft_close",
+              "reusable": true,
+              "height": 28,
+              "fill": "$accent_yellow_soft",
+              "cornerRadius": "$radius_pill",
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "WNmaS",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "name": "Status Label",
+                  "content": "Продлено · 04:12",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Srlc8",
+              "name": "status_chip/ended",
+              "reusable": true,
+              "height": 28,
+              "fill": "$disabled_surface",
+              "cornerRadius": "$radius_pill",
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "r2FUo",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "name": "Status Label",
+                  "content": "Завершено",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CA6UL",
+              "name": "status_chip/ended_won",
+              "reusable": true,
+              "height": 28,
+              "fill": "$disabled_surface",
+              "cornerRadius": "$radius_pill",
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "m9Weaz",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "name": "Status Label",
+                  "content": "Продано",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "M2gjx",
+          "type": "ref",
+          "ref": "yOmsk",
+          "name": "Board Title",
+          "content": "status_chip"
+        },
+        {
+          "id": "rWENi",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Default State",
+          "content": "default",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "OZkcL",
+          "name": "Status Variants",
+          "width": "fill_container",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "nQED3",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "LIVE"
+            },
+            {
+              "id": "BKgBQ",
+              "type": "ref",
+              "ref": "I2xLOu",
+              "name": "SCHEDULED"
+            },
+            {
+              "id": "ecpKu",
+              "type": "ref",
+              "ref": "GtvxV",
+              "name": "SOFT_CLOSE"
+            },
+            {
+              "id": "vRkKo",
+              "type": "ref",
+              "ref": "Srlc8",
+              "name": "ENDED"
+            },
+            {
+              "id": "ZcjwY",
+              "type": "ref",
+              "ref": "CA6UL",
+              "name": "ENDED_WON"
+            }
+          ]
+        },
+        {
+          "id": "ZSolL",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Reduced Motion State",
+          "content": "reduced_motion",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "sWllR",
+          "name": "Reduced Motion Row",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "BJGJK",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "LIVE Reduced Motion"
+            },
+            {
+              "id": "XZAIX",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "name": "Reduced Motion Caption",
+              "content": "reduced_motion: dot static",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ul9qQ",
+      "type": "ref",
+      "ref": "Rf9zi",
+      "name": "Аннотация · components/status_chip/board",
+      "x": 1664,
+      "y": 8650,
+      "width": 420,
+      "textGrowth": "fixed-width",
+      "content": "Server-owned values: listing status and relevant time. Role variations: non-interactive plain text; never a button; dot decorative and hidden from a11y tree. Motion: live_dot_pulse; reduced_motion makes the dot static. label_max_chars 28.",
+      "fill": "$ink_soft"
+    },
+    {
+      "type": "frame",
+      "id": "zgUKX",
+      "x": 0,
+      "y": 9258,
+      "name": "components/tab_pill/board",
+      "clip": true,
+      "width": 1600,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 80,
+      "children": [
+        {
+          "type": "frame",
+          "id": "D7OE2",
+          "x": 0,
+          "y": 0,
+          "name": "Master Registry",
+          "enabled": false,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "S2qu3",
+              "name": "tab_pill/tabs",
+              "reusable": true,
+              "height": 48,
+              "fill": "$surface",
+              "cornerRadius": "$radius_pill",
+              "padding": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gXf71",
+                  "name": "Works Item",
+                  "height": 40,
+                  "fill": "$ink",
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "TSaut",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "Works Label",
+                      "content": "Работы",
+                      "fill": "$surface"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YobUM",
+                  "name": "Creators Item",
+                  "height": 40,
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Cg16k",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "Creators Label",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "D6ocZ1",
+              "name": "tab_pill/status_filter",
+              "reusable": true,
+              "height": 48,
+              "fill": "$surface",
+              "cornerRadius": "$radius_pill",
+              "padding": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "t3fWEJ",
+                  "name": "All Item",
+                  "height": 40,
+                  "fill": "$ink",
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "FbL71",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "All Label",
+                      "content": "Все",
+                      "fill": "$surface"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "PvDWe",
+                  "name": "Live Item",
+                  "height": 40,
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "lhMMA",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "Live Label",
+                      "content": "Сейчас · 1",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GFr7a",
+                  "name": "Soon Item",
+                  "height": 40,
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "yLjm0",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "Soon Label",
+                      "content": "Скоро · 1",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TjC3T",
+                  "name": "Ended Item",
+                  "height": 40,
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "E2ZpCR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "name": "Ended Label",
+                      "content": "Завершены · 3",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fvzss",
+          "type": "ref",
+          "ref": "yOmsk",
+          "name": "Board Title",
+          "content": "tab_pill"
+        },
+        {
+          "id": "bdLMz",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Tabs Variant Title",
+          "content": "tabs"
+        },
+        {
+          "type": "frame",
+          "id": "bW8CK",
+          "name": "Tabs State Columns",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "so0Nl",
+              "name": "Default Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "wRnjU",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Default Kicker",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "vr86j",
+                  "type": "ref",
+                  "ref": "S2qu3",
+                  "name": "Default Tabs"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MHXpx",
+              "name": "Hover Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "StPLb",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Hover Kicker",
+                  "content": "hover",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "W8C9I",
+                  "type": "ref",
+                  "ref": "S2qu3",
+                  "name": "Hover Tabs",
+                  "descendants": {
+                    "YobUM": {
+                      "fill": "$canvas_deep"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "G9rSv",
+              "name": "Focus Visible Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "agjRR",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Focus Visible Kicker",
+                  "content": "focus-visible",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "Nfaua",
+                  "type": "ref",
+                  "ref": "S2qu3",
+                  "name": "Focus Visible Tabs",
+                  "descendants": {
+                    "YobUM": {
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "$surface",
+                        "spread": 2
+                      },
+                      "stroke": "$focus_ring",
+                      "strokeWidth": 2,
+                      "strokeAlignment": "outer"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "La1ce",
+              "name": "Active Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "NLvfN",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Active Kicker",
+                  "content": "active",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "zbxWu",
+                  "type": "ref",
+                  "ref": "S2qu3",
+                  "name": "Active Tabs",
+                  "descendants": {
+                    "gXf71": {
+                      "fill": "$surface"
+                    },
+                    "TSaut": {
+                      "fill": "$ink"
+                    },
+                    "YobUM": {
+                      "fill": "$ink"
+                    },
+                    "Cg16k": {
+                      "fill": "$surface"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UO6rM",
+              "name": "Disabled Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "a9xb1C",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Disabled Kicker",
+                  "content": "disabled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "zLnpK",
+                  "type": "ref",
+                  "ref": "S2qu3",
+                  "name": "Disabled Tabs",
+                  "descendants": {
+                    "YobUM": {
+                      "opacity": 0.4
+                    },
+                    "Cg16k": {
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "JijhV",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Status Filter Variant Title",
+          "content": "status_filter"
+        },
+        {
+          "id": "DcCvr",
+          "type": "ref",
+          "ref": "D6ocZ1",
+          "name": "Status Filter"
+        },
+        {
+          "id": "vRB4Z",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Mobile State",
+          "content": "mobile",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "l5Y6M",
+          "name": "Mobile Row",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "mAl6z",
+              "type": "ref",
+              "ref": "S2qu3",
+              "name": "Mobile Tabs",
+              "height": 44,
+              "descendants": {
+                "gXf71": {
+                  "height": 36
+                },
+                "YobUM": {
+                  "height": 36
+                }
+              }
+            },
+            {
+              "id": "W8dbtj",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "name": "Mobile Caption",
+              "content": "mobile: h44, scrollable",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2Zb0",
+      "type": "ref",
+      "ref": "Rf9zi",
+      "name": "Аннотация · components/tab_pill/board",
+      "x": 1664,
+      "y": 9258,
+      "width": 420,
+      "textGrowth": "fixed-width",
+      "content": "Server-owned values: statusCounts LIVE 1, SCHEDULED 1, ENDED 3. Role variations: role=tablist; keyboard arrows move tabs; selected state announced. Counts only use real statusCounts. Motion: pressed_state; reduced_motion uses instant state swaps.",
+      "fill": "$ink_soft"
+    },
+    {
+      "type": "frame",
+      "id": "m8zSs",
+      "x": 0,
+      "y": 10070,
+      "name": "components/filter_chip/board",
+      "clip": true,
+      "width": 1600,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 80,
+      "children": [
+        {
+          "type": "frame",
+          "id": "cquaD",
+          "x": 0,
+          "y": 0,
+          "name": "Master Registry",
+          "enabled": false,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "xKH2P",
+              "name": "filter_chip/dropdown",
+              "reusable": true,
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": "$radius_pill",
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "XO43m",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Filter Label",
+                  "content": "Категория",
+                  "fontWeight": "500",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "XS3ct",
+                  "type": "ref",
+                  "ref": "pLJzc",
+                  "name": "Chevron",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "gMvVF",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Applied Count Badge",
+                  "enabled": false,
+                  "height": 20,
+                  "fill": "$ink",
+                  "cornerRadius": "$radius_pill",
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "yC30R",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "name": "Applied Count",
+                      "content": "1",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pF9jK",
+              "name": "filter_chip/sheet",
+              "reusable": true,
+              "width": 390,
+              "height": 392,
+              "layout": "none",
+              "children": [
+                {
+                  "id": "knfEY",
+                  "type": "ref",
+                  "ref": "iHloz",
+                  "name": "e3 Background",
+                  "x": 0,
+                  "y": 0,
+                  "width": 390,
+                  "height": 392,
+                  "cornerRadius": [
+                    24,
+                    24,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hDdCQ",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Sheet Content",
+                  "width": 390,
+                  "height": 392,
+                  "fill": "$surface",
+                  "cornerRadius": [
+                    24,
+                    24,
+                    0,
+                    0
+                  ],
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": [
+                    12,
+                    20,
+                    20,
+                    20
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": "$radius_pill",
+                      "id": "cbgF0",
+                      "name": "Drag Handle",
+                      "fill": "$border_control",
+                      "width": 40,
+                      "height": 4
+                    },
+                    {
+                      "id": "Sw2XV",
+                      "type": "ref",
+                      "ref": "CUIYU",
+                      "name": "Sheet Title",
+                      "content": "Фильтры",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nUAwh",
+                      "name": "Sheet Options",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "IQuBq",
+                          "name": "Option Живопись",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "tSVQg",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Option Label Живопись",
+                              "content": "Живопись",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jX9R5",
+                          "name": "Option Графика",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "asH0S",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Option Label Графика",
+                              "content": "Графика",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "o27qK",
+                          "name": "Option Керамика",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "N2OfyQ",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Option Label Керамика",
+                              "content": "Керамика",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "D4w61",
+                          "name": "Option Текстиль",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "c4oHNs",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Option Label Текстиль",
+                              "content": "Текстиль",
+                              "fill": "$ink"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FkIvp",
+                      "name": "Sheet Actions",
+                      "width": "fill_container",
+                      "height": 44,
+                      "gap": 16,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "XO4ip",
+                          "name": "Primary Apply Pill",
+                          "width": "fill_container",
+                          "height": 44,
+                          "fill": "$ink",
+                          "cornerRadius": "$radius_pill"
+                        },
+                        {
+                          "id": "UQQuZ",
+                          "type": "ref",
+                          "ref": "QounJ",
+                          "name": "Reset Button",
+                          "content": "Сбросить",
+                          "fill": "$ink"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "K29vw",
+          "type": "ref",
+          "ref": "yOmsk",
+          "name": "Board Title",
+          "content": "filter_chip"
+        },
+        {
+          "id": "lpDmb",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Dropdown Variant Title",
+          "content": "dropdown"
+        },
+        {
+          "type": "frame",
+          "id": "BAi7M",
+          "name": "Dropdown State Columns",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "QcM9g",
+              "name": "Default Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "b5Zig",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Default Kicker",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "U2Omv",
+                  "type": "ref",
+                  "ref": "xKH2P",
+                  "name": "Default Filter"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nxaSG",
+              "name": "Open Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "lH5ua",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Open Kicker",
+                  "content": "open",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "jCgzn",
+                  "type": "ref",
+                  "ref": "xKH2P",
+                  "name": "Open Filter"
+                },
+                {
+                  "type": "frame",
+                  "id": "tX67q",
+                  "name": "Category Popover",
+                  "width": 280,
+                  "height": 244,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "id": "l78G1",
+                      "type": "ref",
+                      "ref": "H793ly",
+                      "name": "e2 Background",
+                      "x": 0,
+                      "y": 0,
+                      "width": 280,
+                      "height": 244,
+                      "cornerRadius": 16
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aQ2nG",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Popover Content",
+                      "width": 280,
+                      "height": 244,
+                      "fill": "$surface",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "gap": 8,
+                      "padding": 16,
+                      "children": [
+                        {
+                          "id": "kfQWc",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "name": "Popover Header",
+                          "content": "Категория",
+                          "fill": "$ink_soft"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "FDlPn",
+                          "name": "Popover Option Живопись",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "nrkqS",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Popover Label Живопись",
+                              "content": "Живопись",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ZSvFE",
+                          "name": "Popover Option Графика",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "aiI58",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Popover Label Графика",
+                              "content": "Графика",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ZzJNN",
+                          "name": "Popover Option Керамика",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "CwzkG",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Popover Label Керамика",
+                              "content": "Керамика",
+                              "fill": "$ink"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "aYpNr",
+                          "name": "Popover Option Текстиль",
+                          "width": "fill_container",
+                          "height": 40,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "bTRqd",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "name": "Popover Label Текстиль",
+                              "content": "Текстиль",
+                              "fill": "$ink"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cMxeC",
+              "name": "Applied Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "HG0KZ",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Applied Kicker",
+                  "content": "applied",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "v9weJ",
+                  "type": "ref",
+                  "ref": "xKH2P",
+                  "name": "Applied Filter",
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "descendants": {
+                    "XO43m": {
+                      "content": "Цена: до 500 BYN"
+                    },
+                    "gMvVF": {
+                      "enabled": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "J4Mbu",
+              "name": "Focus Visible Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "VdwyE",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Focus Visible Kicker",
+                  "content": "focus-visible",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "KdEXk",
+                  "type": "ref",
+                  "ref": "xKH2P",
+                  "name": "Focus Visible Filter",
+                  "stroke": "$focus_ring",
+                  "strokeWidth": 2,
+                  "strokeAlignment": "outer",
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "$surface",
+                    "spread": 2
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "yoD8w",
+              "name": "Disabled Column",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "B5BEex",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Disabled Kicker",
+                  "content": "disabled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "l44GvW",
+                  "type": "ref",
+                  "ref": "xKH2P",
+                  "name": "Disabled Filter",
+                  "fill": "$disabled_surface",
+                  "descendants": {
+                    "XO43m": {
+                      "fill": "$ink_soft"
+                    },
+                    "XS3ct": {
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Ugyok",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Works Tab Title",
+          "content": "full works-tab"
+        },
+        {
+          "type": "frame",
+          "id": "yiiK6",
+          "name": "Works Tab Filter Row",
+          "width": "fill_container",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "yBIqq",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Категория",
+              "descendants": {
+                "XO43m": {
+                  "content": "Категория"
+                }
+              }
+            },
+            {
+              "id": "YSEHV",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Статус",
+              "descendants": {
+                "XO43m": {
+                  "content": "Статус"
+                }
+              }
+            },
+            {
+              "id": "TLVTF",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Материалы",
+              "descendants": {
+                "XO43m": {
+                  "content": "Материалы"
+                }
+              }
+            },
+            {
+              "id": "tuhIT",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Уникальность",
+              "descendants": {
+                "XO43m": {
+                  "content": "Уникальность"
+                }
+              }
+            },
+            {
+              "id": "j6C6F",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Цена Applied",
+              "stroke": "$ink",
+              "strokeWidth": 1.5,
+              "descendants": {
+                "XO43m": {
+                  "content": "Цена: до 500 BYN"
+                },
+                "gMvVF": {
+                  "enabled": true
+                }
+              }
+            },
+            {
+              "id": "mZ02c",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Год",
+              "descendants": {
+                "XO43m": {
+                  "content": "Год"
+                }
+              }
+            },
+            {
+              "id": "Ji8XC",
+              "type": "ref",
+              "ref": "xKH2P",
+              "name": "Сортировка",
+              "descendants": {
+                "XO43m": {
+                  "content": "Сортировка"
+                }
+              }
+            },
+            {
+              "id": "SVLFM",
+              "type": "ref",
+              "ref": "QounJ",
+              "name": "Reset Button",
+              "content": "Сбросить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "Y4HMbB",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Sheet Variant Title",
+          "content": "sheet"
+        },
+        {
+          "id": "JBn2z",
+          "type": "ref",
+          "ref": "pF9jK",
+          "name": "Mobile Filter Sheet"
+        },
+        {
+          "id": "bV8Nw",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "name": "Missing Apply Label",
+          "content": "Missing spec: apply button label",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "id": "C2fMRy",
+      "type": "ref",
+      "ref": "Rf9zi",
+      "name": "Аннотация · components/filter_chip/board",
+      "x": 1664,
+      "y": 10070,
+      "width": 420,
+      "textGrowth": "fixed-width",
+      "content": "Server-owned values: filter capabilities, options, applied values, and announced result count. Role variations: expanded state announced; sheet traps focus; price/year ranges use two numeric fields plus apply. Motion: sheet_enter for the mobile sheet; pressed_state for controls; reduced_motion uses instant state swaps.",
+      "fill": "$ink_soft"
+    },
+    {
+      "type": "frame",
+      "id": "AOli6",
+      "x": 0,
+      "y": 11524,
+      "name": "components/form_field/board",
+      "clip": true,
+      "width": 1600,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 80,
+      "children": [
+        {
+          "type": "frame",
+          "id": "CRRQL",
+          "x": 0,
+          "y": 0,
+          "name": "Master Registry",
+          "enabled": false,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "RKY2i",
+              "name": "form_field/text",
+              "reusable": true,
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "Y1Ugg",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Field Label",
+                  "content": "Как вас представить?",
+                  "fontWeight": "600",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "y3THz",
+                  "name": "Input Surface",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "mq7o1",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "name": "Prefix",
+                      "content": "bidplace.by/",
+                      "fill": "$ink_soft",
+                      "enabled": false
+                    },
+                    {
+                      "id": "v0ftU",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Input Value",
+                      "content": "",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "c7ittv",
+                      "type": "ref",
+                      "ref": "R0Au8f",
+                      "name": "Async Spinner",
+                      "width": 16,
+                      "height": 16,
+                      "fill": "$ink_soft",
+                      "enabled": false
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Tc6sa",
+                  "name": "Helper Error Zone",
+                  "width": "fill_container",
+                  "height": 20,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "dKeid",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "name": "Helper Text",
+                      "content": "Имя, псевдоним или название студии",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "jJVF4",
+              "name": "form_field/textarea",
+              "reusable": true,
+              "width": 480,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "btSJ2",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Field Label",
+                  "content": "Чем вы занимаетесь?",
+                  "fontWeight": "600",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "EOAPT",
+                  "name": "Textarea Surface",
+                  "width": "fill_container",
+                  "height": 128,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "justifyContent": "space_between",
+                  "alignItems": "end",
+                  "children": [
+                    {
+                      "id": "Q6zmtX",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Textarea Value",
+                      "content": "Живопись, масло и левкас",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "RqYQQ",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "name": "Character Counter",
+                      "content": "34 / 160",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y8Ou4x",
+                  "name": "Helper Error Zone",
+                  "width": "fill_container",
+                  "height": 20
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bJ9xk",
+              "name": "form_field/numeric",
+              "reusable": true,
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ZGbZp",
+                  "name": "Numeric Surface",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "l2T5uC",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Numeric Value",
+                      "content": "1 300",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "kTBaB",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "name": "Currency Suffix",
+                      "content": "BYN",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "E2zhM",
+                  "name": "Helper Error Zone",
+                  "width": "fill_container",
+                  "height": 20
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "CNOFM",
+              "name": "form_field/email",
+              "reusable": true,
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oc1E3",
+                  "name": "Email Surface",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "tJTSB",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Email Value",
+                      "content": "",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "R66jNG",
+                  "name": "Helper Error Zone",
+                  "width": "fill_container",
+                  "height": 20
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZXtbG",
+              "name": "form_field/code",
+              "reusable": true,
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QEA21",
+                  "name": "Code Cell 1",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$focus_ring",
+                  "strokeWidth": 2,
+                  "strokeAlignment": "outer",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "NmLJ8",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 1",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zMBn6",
+                  "name": "Code Cell 2",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "ts8RH",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 2",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dxVA0",
+                  "name": "Code Cell 3",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "AojKh",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 3",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yb9Da",
+                  "name": "Code Cell 4",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "T0cE0A",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 4",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hvsWx",
+                  "name": "Code Cell 5",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "f5XdWP",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 5",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Hw0Tm",
+                  "name": "Code Cell 6",
+                  "width": 48,
+                  "height": 56,
+                  "fill": "$surface",
+                  "cornerRadius": "$radius_input",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "SOCcl",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "name": "Code Value 6",
+                      "content": "",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qVppE",
+              "name": "inline_validation/field_level",
+              "reusable": true,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "w3v7Jw",
+                  "type": "ref",
+                  "ref": "R0Au8f",
+                  "name": "Loading Icon",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$ink_soft",
+                  "enabled": false
+                },
+                {
+                  "id": "N8IwXR",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "name": "Success Icon",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$success",
+                  "enabled": false
+                },
+                {
+                  "id": "s3OGWD",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "name": "Error Icon",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$error",
+                  "enabled": false
+                },
+                {
+                  "id": "OnJ6D",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Validation Message",
+                  "content": "",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tUSt8",
+          "type": "ref",
+          "ref": "yOmsk",
+          "name": "Board Title",
+          "content": "form_field"
+        },
+        {
+          "id": "ctfCh",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Text Variant Title",
+          "content": "text"
+        },
+        {
+          "type": "frame",
+          "id": "c8z2cw",
+          "name": "Text State Columns",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "PQZeY",
+              "name": "Default Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "DDMnx",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Default Kicker",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "dZIbS",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Default Text Field",
+                  "width": "fill_container"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "eUmM4",
+              "name": "Focus Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "PUshi",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Focus Kicker",
+                  "content": "focus",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "F7g6BN",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Focus Text Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "y3THz": {
+                      "stroke": "$focus_ring",
+                      "strokeWidth": 2,
+                      "strokeAlignment": "outer"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mWi8D",
+              "name": "Filled Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "CUZJM",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Filled Kicker",
+                  "content": "filled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "p5vmgC",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Filled Text Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "v0ftU": {
+                      "content": "Полина Мирош"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "AvHWu",
+              "name": "Disabled Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "gyFur",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Disabled Kicker",
+                  "content": "disabled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "RNkR6",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Disabled Text Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "y3THz": {
+                      "fill": "$disabled_surface"
+                    },
+                    "dKeid": {
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tm2g2",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Prefix Variant Title",
+          "content": "text with prefix"
+        },
+        {
+          "type": "frame",
+          "id": "lGprl",
+          "name": "Prefix Async State Columns",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "uqw1P",
+              "name": "Loading Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "CQjH2",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Loading Kicker",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "ao3qr",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Loading Prefix Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Y1Ugg": {
+                      "enabled": false
+                    },
+                    "mq7o1": {
+                      "enabled": true
+                    },
+                    "v0ftU": {
+                      "content": "polina-mirosh"
+                    },
+                    "c7ittv": {
+                      "enabled": true
+                    },
+                    "dKeid": {
+                      "content": "Проверяем адрес…",
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OUNQ1",
+              "name": "Success Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "xCYwU",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Success Kicker",
+                  "content": "success",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "tfITn",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Success Prefix Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Y1Ugg": {
+                      "enabled": false
+                    },
+                    "mq7o1": {
+                      "enabled": true
+                    },
+                    "v0ftU": {
+                      "content": "polina-mirosh"
+                    },
+                    "dKeid": {
+                      "content": "Адрес свободен",
+                      "fill": "$success"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "F4Vsx",
+              "name": "Error Column",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "svpAn",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Error Kicker",
+                  "content": "error",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "ILBOT",
+                  "type": "ref",
+                  "ref": "RKY2i",
+                  "name": "Error Prefix Field",
+                  "width": "fill_container",
+                  "descendants": {
+                    "Y1Ugg": {
+                      "enabled": false
+                    },
+                    "y3THz": {
+                      "stroke": "$error",
+                      "strokeWidth": 2,
+                      "strokeAlignment": "inner"
+                    },
+                    "mq7o1": {
+                      "enabled": true
+                    },
+                    "v0ftU": {
+                      "content": "polina-mirosh"
+                    },
+                    "dKeid": {
+                      "content": "Адрес занят",
+                      "fill": "$error"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "btkzc",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Textarea State",
+          "content": "textarea",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "l1i9va",
+          "type": "ref",
+          "ref": "jJVF4",
+          "name": "Textarea Field"
+        },
+        {
+          "id": "ze386",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Numeric State",
+          "content": "numeric (bid amount)",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "kJ2oA",
+          "type": "ref",
+          "ref": "bJ9xk",
+          "name": "Numeric Field"
+        },
+        {
+          "id": "LmkEL",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Email State",
+          "content": "email",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "czKho",
+          "name": "Email Row",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "ZCOhB",
+              "type": "ref",
+              "ref": "CNOFM",
+              "name": "Email Field"
+            },
+            {
+              "id": "Q5O1F",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "name": "Missing Email Label",
+              "content": "Missing spec: email field label string",
+              "fill": "$ink_soft"
+            }
+          ]
+        },
+        {
+          "id": "ToEWg",
+          "type": "ref",
+          "ref": "F0vV2",
+          "name": "Code State",
+          "content": "code (6 cells, auto-advance)",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "yDKKG",
+          "type": "ref",
+          "ref": "ZXtbG",
+          "name": "Code Field"
+        },
+        {
+          "id": "L2QIo",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "Inline Validation Title",
+          "content": "inline_validation"
+        },
+        {
+          "type": "frame",
+          "id": "pWpB4",
+          "name": "Validation State Columns",
+          "width": "fill_container",
+          "gap": 40,
+          "children": [
+            {
+              "type": "frame",
+              "id": "TEtCL",
+              "name": "Idle Column",
+              "width": 180,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "bWbGa",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Idle Kicker",
+                  "content": "idle",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "HTFul",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "Idle Validation"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UdavG",
+              "name": "Loading Column",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "X3SSGd",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Loading Kicker",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "jP82X",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "Loading Validation",
+                  "descendants": {
+                    "w3v7Jw": {
+                      "enabled": true
+                    },
+                    "OnJ6D": {
+                      "content": "Проверяем адрес…",
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WdDG5",
+              "name": "Success Column",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "o0KSDs",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Success Kicker",
+                  "content": "success",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "d5E4he",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "Success Validation",
+                  "descendants": {
+                    "N8IwXR": {
+                      "enabled": true
+                    },
+                    "OnJ6D": {
+                      "content": "Адрес свободен",
+                      "fill": "$success"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "H4gNum",
+              "name": "Error Column",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "JUIiT",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Error Kicker",
+                  "content": "error",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "yZwAb",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "Error Validation",
+                  "descendants": {
+                    "s3OGWD": {
+                      "enabled": true
+                    },
+                    "OnJ6D": {
+                      "content": "Адрес занят",
+                      "fill": "$error"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "V23850",
+              "name": "Info Column",
+              "width": 280,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "bpF3p",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Info Kicker",
+                  "content": "info",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "Q98PQw",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "Info Validation",
+                  "descendants": {
+                    "OnJ6D": {
+                      "content": "Минимальная ставка: 260 BYN",
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "QHpnH",
+      "type": "ref",
+      "ref": "Rf9zi",
+      "name": "Аннотация · components/form_field/board",
+      "x": 1664,
+      "y": 11524,
+      "width": 420,
+      "textGrowth": "fixed-width",
+      "content": "Server-owned values: next_minimum 1 300 BYN; slug availability messages; discipline limit 160. Role variations: async validation never shifts layout; fixed helper/error zones; error uses role=alert and described-by; label always visible when specified. Counter turns error at limit. No counters without confirmed limits. Motion: inline_feedback_swap; reduced_motion uses instant state swaps.",
+      "fill": "$ink_soft"
+    },
+    {
+      "type": "frame",
+      "id": "EOS34",
+      "x": 0,
+      "y": 13194,
+      "name": "components/search_entry/board",
+      "clip": true,
+      "width": 1600,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 80,
+      "children": [
+        {
+          "type": "frame",
+          "id": "Uoecd",
+          "x": 0,
+          "y": 0,
+          "name": "Master Registry",
+          "enabled": false,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "r58cQ",
+              "name": "search_entry/desktop_compact",
+              "reusable": true,
+              "height": 44,
+              "fill": "$canvas_deep",
+              "cornerRadius": "$radius_pill",
+              "gap": 8,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ydF2i",
+                  "type": "ref",
+                  "ref": "kmFw4",
+                  "name": "Search Icon",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "a84IO",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Search Label",
+                  "content": "Поиск работ и авторов",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YU99m",
+              "name": "search_entry/explore_full",
+              "reusable": true,
+              "width": 640,
+              "height": 48,
+              "fill": "$canvas_deep",
+              "cornerRadius": "$radius_pill",
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "JikDL",
+                  "type": "ref",
+                  "ref": "kmFw4",
+                  "name": "Search Icon",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "KzqVw",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Search Value",
+                  "content": "Поиск работ и авторов",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "C7dxoL",
+                  "x": 0,
+                  "y": 0,
+                  "name": "Clear Button",
+                  "enabled": false,
+                  "width": 44,
+                  "height": 44,
+                  "cornerRadius": "$radius_pill",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "X2zob8",
+                      "type": "ref",
+                      "ref": "NS8Qc",
+                      "name": "Clear Icon",
+                      "width": 16,
+                      "height": 16,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "ix4os",
+                  "type": "ref",
+                  "ref": "R0Au8f",
+                  "name": "Loading Spinner",
+                  "width": 16,
+                  "height": 16,
+                  "fill": "$ink_soft",
+                  "enabled": false
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "t6Mv2N",
+              "name": "search_entry/mobile_explore",
+              "reusable": true,
+              "width": 350,
+              "height": 48,
+              "fill": "$canvas_deep",
+              "cornerRadius": "$radius_pill",
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "CT5rF",
+                  "type": "ref",
+                  "ref": "kmFw4",
+                  "name": "Search Icon",
+                  "width": 20,
+                  "height": 20,
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "jE0Ti",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "name": "Search Value",
+                  "content": "Поиск работ и авторов",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SGyUE",
+          "type": "ref",
+          "ref": "yOmsk",
+          "name": "Board Title",
+          "content": "search_entry"
+        },
+        {
+          "type": "frame",
+          "id": "qK9uB",
+          "name": "Variant Rows",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "aiz3c",
+              "name": "Desktop Compact Row",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "naKa0",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Desktop Compact Kicker",
+                  "content": "desktop_compact",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "g2SOY",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "Desktop Compact Search"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iK0mo",
+              "name": "Explore Full Row",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "w1Vz2",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Explore Full Kicker",
+                  "content": "explore_full",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "x9tQf",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Explore Full Search"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Sr7o2",
+              "name": "Mobile Explore Row",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ivBP6",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Mobile Explore Kicker",
+                  "content": "mobile_explore",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "QmTOn",
+                  "type": "ref",
+                  "ref": "t6Mv2N",
+                  "name": "Mobile Explore Search"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Y5ayG",
+          "type": "ref",
+          "ref": "CUIYU",
+          "name": "States Title",
+          "content": "explore_full states"
+        },
+        {
+          "type": "frame",
+          "id": "GlcfV",
+          "name": "Explore Full States Row A",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "hJgZy",
+              "name": "Default Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "n9COL",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Default Kicker",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "TmlK3",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Default Search"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Zdhr4",
+              "name": "Hover Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "Tcu2q",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Hover Kicker",
+                  "content": "hover",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "F0Ywu",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Hover Search",
+                  "fill": "$canvas_deep_hover"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "QFGOQ",
+          "name": "Explore Full States Row B",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "zNKFm",
+              "name": "Focus Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "leZtL",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Focus Kicker",
+                  "content": "focus",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "ypKPY",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Focus Search",
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "strokeAlignment": "inner",
+                  "effect": [
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "$canvas",
+                      "spread": 2
+                    },
+                    {
+                      "type": "shadow",
+                      "shadowType": "outer",
+                      "color": "$focus_ring",
+                      "spread": 4
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "kWPQ1",
+              "name": "Filled Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "awfEn",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Filled Kicker",
+                  "content": "filled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "Wvt8L",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Filled Search",
+                  "descendants": {
+                    "KzqVw": {
+                      "content": "Керамика",
+                      "fill": "$ink"
+                    },
+                    "C7dxoL": {
+                      "enabled": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "XGYoM",
+          "name": "Explore Full States Row C",
+          "width": "fill_container",
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "IVstS",
+              "name": "Loading Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "Av1F1",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Loading Kicker",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "W12fJ",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Loading Search",
+                  "descendants": {
+                    "ix4os": {
+                      "enabled": true
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hWA1e",
+              "name": "Disabled Column",
+              "width": 640,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "n4OjS",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "name": "Disabled Kicker",
+                  "content": "disabled",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "id": "VwwcD",
+                  "type": "ref",
+                  "ref": "YU99m",
+                  "name": "Disabled Search",
+                  "fill": "$disabled_surface",
+                  "descendants": {
+                    "JikDL": {
+                      "opacity": 0.4
+                    },
+                    "KzqVw": {
+                      "opacity": 0.4,
+                      "fill": "$ink_soft"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CMqcO",
+      "type": "ref",
+      "ref": "Rf9zi",
+      "name": "Аннотация · components/search_entry/board",
+      "x": 1664,
+      "y": 13194,
+      "width": 420,
+      "textGrowth": "fixed-width",
+      "content": "Server-owned values: query and announced results count. Role variations: desktop compact click opens Explore works and focuses the field; accessible label «Поиск»; results count announced politely. query_max_chars 120. Motion: pressed_state for compact/clear controls; reduced_motion keeps loading spinner static.",
       "fill": "$ink_soft"
     }
   ],
