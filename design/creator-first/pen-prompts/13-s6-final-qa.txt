@@ -1,0 +1,39 @@
+STAGE 6 — final visual QA of design/pen/bidplace-creator-first-v1.pen. Do not add frames. Do not rename frames. Do not open, edit, or resave any other .pen file.
+
+READ FIRST:
+1. design/creator-first/spec/pen-build-plan.md — §6 frame manifest (F001–F118) and §7 builder verification checklist.
+2. design/creator-first/spec/design-system.yaml — contrast intents, motion.reduced_motion, accent_selection.fixed_assignments, iconography.required.
+3. design/creator-first/spec/content-fixtures.yaml — ui_copy, fixtures, accent_assignments, media_asset_manifest, future_concepts_labels.
+4. design/creator-first/spec/component-specs.yaml — do_not_invent lists; designed_post_mvp components (follow_creator, wishlist_saved_work, video_process_story).
+5. design/creator-first/spec/screen-blueprints.yaml — global_rules.required_states_every_screen and per-screen acceptance_checks.
+
+SCOPE: inspect every existing frame F001–F118. Fix only defects that violate the checklist below. If a needed value or string is absent, leave the "Missing spec:" / "Missing asset:" caption in place — do not invent a replacement.
+
+CHECKLIST (pen-build-plan.md §7, executed in order):
+1. The file being edited is only design/pen/bidplace-creator-first-v1.pen. Canonical files design/pen/bidplace-web-v2.pen and design/pen/bidplace-web.pen must remain byte-untouched. No extra unnamed frames. Frame names must equal the §6 `frame_name` column exactly (118 frames, F001–F118, no gaps, no dupes).
+2. Confirm all 118 manifest frames exist with those exact names. If a frame is missing, CREATE that one frame from the matching stage prompt (files 01–12) and nothing else. If a duplicate extra frame exists and is unnamed/off-manifest, delete only that extra; never delete a named manifest frame.
+3. Forbidden MVP concepts on F001–F106: followers/подписчики, ratings, reviews, wishlist/сохранить as a control, follow/следить as a control, fixed price, payments, chat, crypto/NFT, Buy Now, auto-bid, reserve price, video controls. Zero occurrences as controls on MVP frames. Future concepts only on F107–F118, each with chip «Будущее — не MVP».
+4. Discovery cards (home / explore / profile rails / work_card / creator_card): no price, no deadline, no countdown, no bid count.
+5. Work detail LIVE frames (F030, F032, F033, F037, F038, F040): current price + bid action visible without scroll at 1440 and 390 (sticky bar counts on 390 F038). Deadline is caption-level, never larger than price, never red.
+6. All visible Russian text traces to content-fixtures.yaml (fixtures + ui_copy) or explicit «guillemet» / label strings in component-specs.yaml and screen-blueprints.yaml. No invented facts, prices, or names. Keep existing "Missing spec:" captions.
+7. All imagery traces to media_asset_manifest asset_id → asset_path files under design/creator-first/assets/media/. Accents match accent_assignments (w-1024 yellow, w-2048 pink, w-3072 orange, w-4096 yellow; polina-mirosh orange, ksenia-lapko yellow, alexandra-viktoria periwinkle, artyom-hanchar pink). Fixed surfaces: auth_accent_field and become_creator_band = accent_periwinkle_soft; onboarding_intro_band = accent_teal_soft; future_board_chips = accent_brown_soft.
+8. Icons are only instances of existing icon/<role> components. designed_post_mvp icons (follow_heart, follow_heart_fill, wishlist_bookmark, wishlist_bookmark_fill, play, pause, speaker_on, speaker_off) appear only on F107–F118.
+9. Contrast spot-check: ink-on-canvas, white-on-ink, ink-on-accent-soft per design-system.yaml contrast intents. Fix clipped text, overflowing Russian strings, detached text styles, and missing auto-layout on masters that break at long fixtures (work_long_title_live, creator_long_names).
+10. Loading / empty / error / reduced_motion coverage matches each screen's states block and global_rules.required_states_every_screen. Do not invent extra state frames; if a required manifest frame is empty/broken, repair it.
+11. Annotation layers present outside every frame (right, width 420, caption): server-owned values, role variations, motion references to design-system.yaml motion.* pattern names verbatim.
+12. Visual hygiene: 200px vertical gaps, x aligned to 0, no overlapping frames, board furniture uses title_1/desktop / kicker/desktop / caption/desktop, canvas fill #FAF4EA unless spec says otherwise. Fonts only Piazzolla (500/600/700) and Golos Text (400/500/600/700). Logo only design/creator-first/assets/logo/logo-transparent-256.png at 28×28.
+
+EXPLICIT SCENARIO SPOT-CHECK (must remain mapped):
+- author of another discipline → F020 (+ F033 via work_ceramics_live)
+- work with minimal content → F022, F027, F031, F039
+- missing/broken media → F034 (+ image_missing on F008, photo_missing on F012/F022)
+- ended auction with winner → F035, F055, F056
+- rejected_server_example → F052
+
+FIX RULES:
+- Prefer repairing the reusable master over patching one screen instance.
+- Do not restyle to taste. Do not translate, shorten, or "improve" copy.
+- Do not add shadows, gradients, or chrome that are not in the spec.
+- After fixes, re-inspect the five scenario frames and F060/F066/F030 at a glance for clipping.
+
+VERIFY before finishing: still exactly 118 named frames F001–F118 with manifest names; no extra unnamed frames; canonical .pen files untouched; post-MVP icons only on F107–F118; discovery cards bid-free; LIVE price+CTA visible without scroll; report remaining "Missing spec" / "Missing asset" captions without filling them in.

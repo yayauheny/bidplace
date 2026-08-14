@@ -1,0 +1,61 @@
+STAGE 4D — build exactly 10 frames (F093–F102): work creation 390 sequence + 1440 derivative. No other frames.
+
+READ FIRST:
+1. design/creator-first/spec/screen-blueprints.yaml — screen work_creation_mobile (steps 1–7, required_state_frames_390, acceptance_checks).
+2. design/creator-first/spec/pen-build-plan.md — §6 manifest rows F093–F102.
+3. design/creator-first/spec/component-specs.yaml — creator_step_shell, media_input (work_gallery_grid anatomy/states/measurements), form_field (content_limits: work_title has no confirmed server limit → no counter), inline_validation, review_submit (variant work_review), global_navigation.
+4. design/creator-first/spec/design-system.yaml — layout.mobile_390 (top bar 56, content 350, action 12 above safe-area), layout.desktop_1440 (centered card max 480).
+5. design/creator-first/spec/content-fixtures.yaml — ui_copy.work_creation / errors / auth.continue, fixture work_rich_live (title, category, story, uniqueness, provenance, facts, city, delivery, images, creation_intro, creation_steps), media_asset_manifest.
+
+SHARED RULES: instances of existing masters only (creator_step_shell, media_input/work_gallery_grid, form_field, inline_validation, review_submit/work_review, global_navigation, error_block). Shell frames are 390 wide unless stated. Progress caption pattern «Шаг N из 7» (real counts: steps 1–7). Intermediate step action label «Продолжить» (string from ui_copy.auth.continue — annotate the reuse). Review submit action «Отправить на модерацию» (ui_copy.work_creation.submit) — never «Отправить на проверку» on this stage (that string is onboarding). Question titles display_3 mobile 24/30; helpers body ink_soft; feedback zone fixed h24; action pill h52 full-width 12 above safe-area. System keyboard placeholder: canvas_deep rect h300 + centered latin caption "system keyboard". Top bar: back 44 (icon/arrow_left_back) + «Сохранить и выйти» text right. Viewer is an approved creator — never guest chrome. NO price, listing date, start price, Buy Now, or auction-scheduling fields on any of these frames (acceptance: listing scheduling is a separate post-approval flow; if a stub is needed, omit it here and caption "Missing spec: post-approval listing stub — labeled «после одобрения»" rather than drawing one). Every frame: latin state kicker outside + annotation (right, 420, caption) with server-owned values, role variations, motion refs (sheet_enter, inline_feedback_swap 120ms, reduced_motion). Media files only from design/creator-first/assets/media/ per media_asset_manifest.
+
+GALLERY TILES (media_input/work_gallery_grid, mobile measurements): 3:4 tiles 108×144 radius 16 gap 12; tile 1 carries chip «Обложка»; overlay: reorder handle 44 (icon/reorder_handle) + remove 44 (icon/remove_photo); add tile: dashed border_control 2, icon/plus 24, label «Добавить фото». Tile a11y labels «Фото N из M». Cover is first image by default.
+
+WORK_RICH_LIVE IMAGES (in order, cover first):
+design/creator-first/assets/media/asset_w1024_01_cover.jpg
+design/creator-first/assets/media/asset_w1024_02_macro.jpg
+design/creator-first/assets/media/asset_w1024_03_studio.jpg
+design/creator-first/assets/media/asset_w1024_04_detail.jpg
+design/creator-first/assets/media/asset_w1024_05_interior.jpg
+design/creator-first/assets/media/asset_w1024_06_back.jpg
+
+F093 — name exactly "work-creation/390/step2-media-default" — width 390: creator_step_shell media_step, progress «Шаг 2 из 7», question zone caption "Missing spec: step 2 question" (blueprint names the component, not a quoted question string — do NOT invent). Content: media_input/work_gallery_grid uploaded state with the 6 work_rich_live images above (6 of max 10); tile 1 «Обложка»; add tile enabled. Feedback idle. Action «Продолжить» enabled (min_images_for_submit is 1; 6 ≥ 1). Annotation: reorder via drag handle + accessible move-up/move-down; first image is cover; no filters/editing/AI/video upload.
+
+F094 — name exactly "work-creation/390/step2-uploading" — same shell, progress «Шаг 2 из 7». Grid: tiles 1–2 uploaded (asset_w1024_01_cover.jpg with «Обложка», asset_w1024_02_macro.jpg); tile 3 uploading (progress ring + percent label slot → caption "Missing spec: percent sample value"); remaining slots empty except the add tile. Feedback: inline_validation loading with icon/spinner 16 + caption "Missing spec: uploading progress announcement string" (do not invent a percent). Action disabled. Annotation: upload progress announced politely; reduced_motion → static ring.
+
+F095 — name exactly "work-creation/390/step2-permission-denied" — same shell. Content: media_input permission_denied inline block: icon/camera_off 24, body «Нет доступа к камере или галерее», buttons «Открыть настройки» + «Выбрать другой способ». No gallery tiles. Feedback idle. Action disabled. Annotation: permission copy is the spec string verbatim; no invented camera-permission variants.
+
+F096 — name exactly "work-creation/390/step3-keyboard-open" — width 390, keyboard_open: progress «Шаг 3 из 7»; question «Расскажите историю работы» collapsed to title_1; form_field/textarea filled with the full work_rich_live story text («Тихий берег» начался с апрельской поездки…); NO counter (story has no confirmed server limit). Field focused (border 2 focus_ring + outer ring). Action «Продолжить» visible above the system keyboard placeholder (canvas_deep rect h300 + latin caption "system keyboard"). Helper slot → caption "Missing spec: step 3 helper". Annotation: one principal task; back preserves data; content scrolls under the collapsed title.
+
+F097 — name exactly "work-creation/390/step1-validation-error" — progress «Шаг 1 из 7»; question «Что за работа?»; two fields stacked:
+(a) form_field/text empty, error state: border 2 error; label slot → caption "Missing spec: title field label" (the question is the step title, not confirmed as the input label — do not duplicate-invent); helper/error zone message slot → caption "Missing spec: empty title error message" (role=alert note).
+(b) category select: chip/select row using label «Категория» (facts_group / blueprint term) + value empty; option list if shown uses only fixture categories «Живопись», «Графика», «Керамика», «Текстиль»; loading + error states of the select are annotated, not extra frames. Caption "Missing spec: category field helper".
+Feedback: inline_validation error, same missing-spec empty-title message. Action disabled. No title counter. Annotation: category is a server select; do not invent extra categories or a price field.
+
+F098 — name exactly "work-creation/390/step7-disabled-submit" — progress «Шаг 7 из 7»; review_submit/work_review incomplete. Summary rows h56 (icon check or warning, section label, first-line preview, «Изменить» 44):
+- title row: caption "Missing spec: checklist label (title)" → «Тихий берег» + icon/check
+- story row: caption "Missing spec: checklist label (story)" → first line of the work_rich_live story + icon/check
+- «Уникальность» → empty, icon/warning
+- «Провенанс» → empty, icon/warning
+- «Передача и доставка» → «Минск» first line + icon/check
+- «Категория» → «Живопись» + icon/check
+- photo row: caption "Missing spec: checklist label (≥1 фото)" → thumb asset_w1024_01_cover.jpg + icon/check
+Primary «Отправить на модерацию» disabled + caption "Missing spec: incomplete count caption". Caption below the button: «Работа станет публичной после проверки модератором» (review_submit anatomy string). Annotation: incomplete reasons are a focusable error summary; publication checklist is title, story, uniqueness, provenance, city, delivery, category, ≥1 photo; process step is skippable and is not a publication requirement.
+
+F099 — name exactly "work-creation/390/retry" — step 2 shell (progress «Шаг 2 из 7», gallery as F093). Feedback zone: server_error / retry — icon/warning + «Не удалось загрузить» (ui_copy.errors.load_failed) + inline button «Повторить» (ui_copy.errors.retry). Action disabled. Annotation: retry re-requests only the failed upload/save scope; no toast; no invented reason string.
+
+F100 — name exactly "work-creation/390/step7-review-complete" — progress «Шаг 7 из 7»; review_submit/work_review complete with work_rich_live fields:
+- title → «Тихий берег» check
+- story → first line of story check
+- «Уникальность» → «Единственный большой формат серии «Полесье»; авторская техника лессировок по левкасу.» check
+- «Провенанс» → «Написана в 2026 году в мастерской автора в Минске; ранее не выставлялась и не публиковалась.» check
+- «Передача и доставка» → «Минск» / «Личная передача в Минске или доставка по Беларуси перевозчиком после договорённости.» check
+- «Категория» → «Живопись» check
+- photo → thumb asset_w1024_01_cover.jpg + caption «6» (six images) check — if a count caption string is unspecified, show the thumb only and add "Missing spec: photo count caption"
+Optional facts (technique «Масло, левкас», materials, dimensions «120 × 90 см», weight «4,2 кг», year «2026», condition «Отличное», packaging) may appear as extra complete rows if the review list includes them; if the spec does not name those section labels, omit them (optional, collapsed under «Добавить детали» on step 5) and note the omission. Process: 6 steps present as a complete optional block with first step title «Этюды на разливе» — skippable, not required. Primary «Отправить на модерацию» enabled; caption «Работа станет публичной после проверки модератором». Annotation: draft is private until moderation approves; no listing scheduling on this screen; «Изменить» returns to that step preserving data.
+
+F101 — name exactly "work-creation/390/submitted-status" — review_submit submitted status screen for work_review (not the onboarding copy): icon/clock 24, title «Работа на проверке» (ui_copy.work_creation.after_submit_title), body «После проверки модератором работа станет публичной, и вы сможете назначить аукцион.» (after_submit_body), secondary «На главную». Annotation: honest expectations, no moderation ETA, no instant publish, no scheduled auto-publish; auction scheduling follows approval and is not drawn here.
+
+F102 — name exactly "work-creation/1440/step2-derivative" — width 1440: global_navigation desktop authenticated («Профиль»; creator_action pill «Добавить работу»); centered shell card max_width 480 (surface radius 28 e1 padding 32): progress «Шаг 2 из 7», media_input/work_gallery_grid with the 6 work_rich_live images (desktop tile 132×176), add tile «Добавить фото», «Продолжить». Annotation: desktop/tablet shells are centered cards; mobile is the primary flow; approved-creator capability only.
+
+VERIFY before finishing: exactly 10 new frames named "work-creation/390/step2-media-default", "work-creation/390/step2-uploading", "work-creation/390/step2-permission-denied", "work-creation/390/step3-keyboard-open", "work-creation/390/step1-validation-error", "work-creation/390/step7-disabled-submit", "work-creation/390/retry", "work-creation/390/step7-review-complete", "work-creation/390/submitted-status", "work-creation/1440/step2-derivative"; no price/listing/start-price fields; submit string is «Отправить на модерацию»; submitted copy is work_creation after_submit_*, not onboarding pending; all gallery images from the listed asset_path files; no invented questions, labels, or error copy ("Missing spec:" captions instead); progress zone and feedback zone stable; existing frames untouched.
