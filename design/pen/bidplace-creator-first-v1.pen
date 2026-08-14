@@ -47913,6 +47913,3217 @@
           "fill": "$ink_soft"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "Gh4Ye",
+      "x": 0,
+      "y": 227824,
+      "name": "work-creation/390/step2-media-default",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "tAroP",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step2-media-default",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "o34rSR",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "mDfJw",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "W2fXRw",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "y4GEwQ",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ffrmQ",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "l1aN7",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 2 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "b4OyA",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "r2X0c",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 2 question",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "s0qSX",
+              "type": "ref",
+              "ref": "H2ylF",
+              "name": "gallery"
+            },
+            {
+              "type": "frame",
+              "id": "m8cpA1",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ZmMOc",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ecoAv",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "WqmTg",
+                      "height": 22,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        8
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "Wg2YT",
+                          "type": "ref",
+                          "ref": "HrX0J",
+                          "content": "Обложка",
+                          "fill": "$ink"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OWpo1",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "szYni",
+                      "name": "media/asset_w1024_02_macro",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KjOD6",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qPYOc",
+                      "name": "media/asset_w1024_03_studio",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Uufv5",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "VlWnW",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "TlPc0",
+                      "name": "media/asset_w1024_04_detail",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "t3DGS6",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "dUifD",
+                      "name": "media/asset_w1024_05_interior",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "j3Rmkp",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Sz11R",
+                      "name": "media/asset_w1024_06_back",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "VmFCL",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "I55Ei",
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "stroke": "$border_control",
+                  "strokeWidth": 2,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "VkV7L",
+                      "type": "ref",
+                      "ref": "blCDG",
+                      "width": 24,
+                      "height": 24
+                    },
+                    {
+                      "id": "h6wOh",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Добавить фото",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "eozpu",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "Tc7k5",
+              "width": 350,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "bF6K4",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "plenD",
+      "x": 430,
+      "y": 227824,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "l6PXGJ",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F093 gallery uploaded 6 of max 10. Cover first. Reorder via drag handle + accessible move-up/move-down. No filters/editing/AI/video. Action «Продолжить» reused from ui_copy.auth.continue.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "yHkhb",
+      "x": 0,
+      "y": 229158,
+      "name": "work-creation/390/step2-uploading",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "XBhRy",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step2-uploading",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "F2h2Qv",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "yiE3s",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ym3tA",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "LMLWY",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i2KdX",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "EaoYL",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 2 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "MfZlV",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "Or3X3",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 2 question",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "w2Deh",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pRQLI",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gr9NW",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NKo8o",
+                      "height": 22,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        8
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "bAUwh",
+                          "type": "ref",
+                          "ref": "HrX0J",
+                          "content": "Обложка",
+                          "fill": "$ink"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "APSoV",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qeWBa",
+                      "name": "media/asset_w1024_02_macro",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tSfVk",
+                  "width": 108,
+                  "height": 144,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "J03eEw",
+                      "type": "ref",
+                      "ref": "R0Au8f",
+                      "width": 24,
+                      "height": 24
+                    },
+                    {
+                      "id": "lMKxG",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: percent sample value",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "YEtPZ",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "TrNB3",
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "stroke": "$border_control",
+                  "strokeWidth": 2,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "cxNyZ",
+                      "type": "ref",
+                      "ref": "blCDG",
+                      "width": 24,
+                      "height": 24
+                    },
+                    {
+                      "id": "VlHzI",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Добавить фото",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "d4i0c",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "iWl9S",
+                  "type": "ref",
+                  "ref": "R0Au8f",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "euOuP",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Missing spec: uploading progress announcement string",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XlAjY",
+              "width": 350,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "hP7YZ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "moJoN",
+      "x": 430,
+      "y": 229158,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "G0Cqs",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F094 uploading. Progress announced politely; reduced_motion → static ring. Action disabled.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "a33y0",
+      "x": 0,
+      "y": 230016,
+      "name": "work-creation/390/step2-permission-denied",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "ql6F6",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step2-permission-denied",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "qGU21",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "JJyn3",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oTaiU",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "x3SDM",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gXpmS",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "uZlb9",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 2 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "tC26e",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "gAQ2P",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 2 question",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "R9Oi1J",
+              "type": "ref",
+              "ref": "LXU1T",
+              "width": 24,
+              "height": 24
+            },
+            {
+              "id": "Zr0rb",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "Нет доступа к камере или галерее",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "AmmXF",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "w1JzOV",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "CpZgR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Открыть настройки",
+                      "fill": "$surface"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "d2W6XZ",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "P47D8x",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Выбрать другой способ",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UCsXr",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "qvoWf",
+              "width": 350,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "d82jD",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "RioRk",
+      "x": 430,
+      "y": 230016,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "U2zHdc",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F095 permission copy is the spec string verbatim; no invented camera-permission variants.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "InC5X",
+      "x": 0,
+      "y": 230696,
+      "name": "work-creation/390/step3-keyboard-open",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "aFLPq",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step3-keyboard-open",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "QUdLq",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "s7LSfZ",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "K9A6Qd",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "jlQAw",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "taZRE",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "j6KPXB",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 3 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "v9FUTv",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "EYvGw",
+              "type": "ref",
+              "ref": "I6mRo",
+              "content": "Расскажите историю работы",
+              "fill": "$ink"
+            },
+            {
+              "id": "v7up8",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 3 helper",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "QhqRc",
+              "type": "ref",
+              "ref": "jJVF4",
+              "name": "story"
+            },
+            {
+              "id": "tJ1FH",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "«Тихий берег» начался с апрельской поездки на Припять, когда вода стояла выше обычного и деревья выходили из разлива, как тёмные свечи.",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "IcLrI",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "m7hzPy",
+              "width": 350,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ceWVj",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "HU4rw",
+              "width": 350,
+              "height": 300,
+              "fill": "$canvas_deep",
+              "cornerRadius": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "TS8rD",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "system keyboard",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Y77ZRl",
+      "x": 430,
+      "y": 230696,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "RfwUX",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F096 keyboard_open. No counter. One principal task; back preserves data. sheet_enter / reduced_motion.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "T2gat",
+      "x": 0,
+      "y": 231834,
+      "name": "work-creation/390/step1-validation-error",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "xwZPM",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step1-validation-error",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "F4f20e",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "fwTZd",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "k40fW",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "iDTTP",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GhQZm",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "NVgt0",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 1 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "aPdCP",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "vfYKW",
+              "type": "ref",
+              "ref": "ajrqb",
+              "content": "Что за работа?",
+              "fill": "$ink"
+            },
+            {
+              "id": "aBVRK",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: title field label",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "kz8M8",
+              "type": "ref",
+              "ref": "RKY2i",
+              "name": "title"
+            },
+            {
+              "id": "ZWdra",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: empty title error message",
+              "fill": "$error"
+            },
+            {
+              "id": "A3a4q",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Категория",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "m8wXIs",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "b3KIh",
+                  "height": 32,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Fb5Me",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Живопись",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "M0679",
+                  "height": 32,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "y91v7y",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Графика",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QIsyH",
+                  "height": 32,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "O1lcvp",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Керамика",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "wclJO",
+                  "height": 32,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "PmEjX",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текстиль",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "iTGLC",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: category field helper",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "u8VvjE",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "NZbct",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "c4Mn2",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Missing spec: empty title error message",
+                  "fill": "$error"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "X1SzFV",
+              "width": 350,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ZnXAB",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Ty9Wh",
+      "x": 430,
+      "y": 231834,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "oMq5M",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F097 category is a server select; do not invent extra categories or a price field. role=alert on empty title.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "BXnrE",
+      "x": 0,
+      "y": 232698,
+      "name": "work-creation/390/step7-disabled-submit",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "snqaU",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step7-disabled-submit",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "o3x0xm",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "GN4eQ",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f2M8yT",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "v35yKM",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ha5qf",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Z85zc",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 7 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "gFjn2",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "yFG9f",
+              "type": "ref",
+              "ref": "EepFP",
+              "name": "work_review incomplete"
+            },
+            {
+              "type": "frame",
+              "id": "GWoQp",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "PRfEy",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "SEwxY",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "U8EY9",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: checklist label (title)",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "BHi7r",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Тихий берег",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "kdQoW",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "I7jLQB",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "g1pPu",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "YwMx2",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "Lrkhe",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: checklist label (story)",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "j1N5w",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "«Тихий берег» начался с апрельской поездки на Припять, когда вода стояла",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "DA8M4",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UAkjV",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "wAvmb",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "rucC1",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "F5j97",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Уникальность",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "A122w",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XRlkF",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "d9qt5",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "jw9Lh",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "FBq3y",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Провенанс",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "thwSb",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OEvK5",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "x5LRjY",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "XULL8",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "p61Ed",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Передача и доставка",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "pFaPO",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Минск",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "u6s6Rs",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zpCUw",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Z0t0ZF",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "KPNoy",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "q6zWz7",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Категория",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "s6quGn",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Живопись",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "D2tkmM",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rdACe",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "fOgJ4",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "Q2uP3",
+                  "name": "media/asset_w1024_01_cover",
+                  "clip": true,
+                  "width": 32,
+                  "height": 43,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 16
+                },
+                {
+                  "type": "frame",
+                  "id": "bJ4iT",
+                  "width": 180,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "BkHSC",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: checklist label (≥1 фото)",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "WtjdN",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QT0a9",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "wgHIg",
+              "width": 350,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "S0HOiJ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Отправить на модерацию",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "m7BFT4",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Missing spec: incomplete count caption",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "FhrJq",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Работа станет публичной после проверки модератором",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "v6b9O",
+      "x": 430,
+      "y": 232698,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "GVhpu",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F098 incomplete reasons are a focusable error summary. Process step skippable, not a publication requirement. Submit «Отправить на модерацию».",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pgNXp",
+      "x": 0,
+      "y": 234124,
+      "name": "work-creation/390/retry",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "nDMRY",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "retry",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "v6oUE",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "nnVpg",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "C74F3",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "r5Vbvi",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "g9F1nl",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "oNLC0",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 2 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "M0IL0",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "mocDM",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 2 question",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "bs5cy",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FbfwZ",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "s7KS4",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Fi8WQ",
+                      "height": 22,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        8
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "iPuf6",
+                          "type": "ref",
+                          "ref": "HrX0J",
+                          "content": "Обложка",
+                          "fill": "$ink"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "o7838U",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "X889za",
+                      "name": "media/asset_w1024_02_macro",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kaH4A",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "O1d4O",
+                      "name": "media/asset_w1024_03_studio",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "RQtBP",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "eBYOK",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Eea3r",
+                      "name": "media/asset_w1024_04_detail",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LbTYe",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Yl160",
+                      "name": "media/asset_w1024_05_interior",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "q5YCsn",
+                  "clip": true,
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YW4FO",
+                      "name": "media/asset_w1024_06_back",
+                      "clip": true,
+                      "width": 108,
+                      "height": 144,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wir1Y",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Dd5or",
+                  "width": 108,
+                  "height": 144,
+                  "cornerRadius": 16,
+                  "stroke": "$border_control",
+                  "strokeWidth": 2,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "gVHBE",
+                      "type": "ref",
+                      "ref": "blCDG",
+                      "width": 24,
+                      "height": 24
+                    },
+                    {
+                      "id": "AIS0j",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Добавить фото",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mq0ag",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "C5fBOZ",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "dRiVp",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Не удалось загрузить",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "bS3rG",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Повторить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "lHyKe",
+              "width": 350,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "h0Nfq",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PpuDt",
+      "x": 430,
+      "y": 234124,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "cqxKT",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F099 retry re-requests only the failed upload/save scope; no toast; no invented reason string.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "x8LAs",
+      "x": 0,
+      "y": 235142,
+      "name": "work-creation/390/step7-review-complete",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "IPlhl",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step7-review-complete",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "H9bW2X",
+          "width": 350,
+          "fill": "$canvas",
+          "layout": "vertical",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "An9J5",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ElslP",
+                  "width": 44,
+                  "height": 44,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "tEC4N",
+                      "type": "ref",
+                      "ref": "n8LL6",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "HOyif",
+                  "width": "fill_container",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "DDfta",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Шаг 7 из 7",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "gxEER",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранить и выйти",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "NNFg6",
+              "type": "ref",
+              "ref": "EepFP",
+              "name": "work_review complete"
+            },
+            {
+              "type": "frame",
+              "id": "aSdIW",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "WzkVj",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "uXFpL",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "EBtXL",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: checklist label (title)",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "tooUd",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Тихий берег",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "sOH94",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ivbwy",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "wvgJr",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "vsj5H",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "Wtvux",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: checklist label (story)",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "yZthn",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "«Тихий берег» начался с апрельской поездки на Припять, когда вода стояла",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "VzNby",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xPThV",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "auT5W",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "O7e7DX",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "W7xgAJ",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Уникальность",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "Gw3l5",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Единственный большой формат серии «Полесье»; авторская техника лессировок по левкасу.",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "FTDnK",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "dbM9c",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "oHsN1",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "okheU",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "bmzAD",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Провенанс",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "RRWUv",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Написана в 2026 году в мастерской автора в Минске; ранее не выставлялась и не публиковалась.",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "Y9eYP",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UpN4G",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "EZAtI",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "zEs9O",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "b8iRqJ",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Передача и доставка",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "oR8Ze",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Минск / Личная передача в Минске или доставка по Беларуси перевозчиком после договорённости.",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "w0hhDx",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iBxZ4",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "o2ml4E",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "YkcPn",
+                  "width": 230,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "fCecX",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Категория",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "KjI22",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Живопись",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "E8ARwV",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "V5JO1Z",
+              "width": 350,
+              "height": 56,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "l4dvE",
+                  "type": "ref",
+                  "ref": "uHFnE",
+                  "width": 20,
+                  "height": 20
+                },
+                {
+                  "type": "frame",
+                  "id": "k13Bz",
+                  "name": "media/asset_w1024_01_cover",
+                  "clip": true,
+                  "width": 32,
+                  "height": 43,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 16
+                },
+                {
+                  "type": "frame",
+                  "id": "WmMJn",
+                  "width": 180,
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "id": "t9pc8",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: photo count caption",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "hFEPT",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Изменить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "G4PAQI",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Этюды на разливе",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "nQyEQ",
+              "width": 350,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "YUMhV",
+              "width": 350,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "nqJOR",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Отправить на модерацию",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ZrdOU",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Работа станет публичной после проверки модератором",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "sOKtq",
+      "x": 430,
+      "y": 235142,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "JkG5m",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F100 draft private until moderation. No listing scheduling. «Изменить» returns to that step. Optional facts omitted — collapsed under «Добавить детали» on step 5.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "HyoPD",
+      "x": 0,
+      "y": 236560,
+      "name": "work-creation/390/submitted-status",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "O2vpb",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "submitted-status",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "IyTeL",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "ndEOT",
+              "type": "ref",
+              "ref": "L2TjJG",
+              "width": 24,
+              "height": 24
+            },
+            {
+              "id": "sGBX4",
+              "type": "ref",
+              "ref": "CUIYU",
+              "content": "Работа на проверке",
+              "fill": "$ink"
+            },
+            {
+              "id": "TMzJj",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "После проверки модератором работа станет публичной, и вы сможете назначить аукцион.",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "yGXrb",
+              "height": 44,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$ink",
+              "strokeWidth": 1.5,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "cSQYe",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "На главную",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "GtrX1",
+      "x": 430,
+      "y": 236560,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "M58Uo",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F101 honest expectations, no moderation ETA, no instant publish, no scheduled auto-publish; auction scheduling follows approval and is not drawn here.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "bspo8",
+      "x": 0,
+      "y": 237128,
+      "name": "work-creation/1440/step2-derivative",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "BBc4k",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "step2-derivative",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Ur0zQ",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "h7J0dC",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "Ulwxq",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Sdxys",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "m2Yvn",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qM6uD",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UNwEq",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "w1fqlS",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yylfg",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "zpzZD",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xutAe",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Ttu78",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "type": "frame",
+                  "id": "lJ4Sc",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "tCcJw",
+                      "type": "ref",
+                      "ref": "blCDG",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "Mn0z0",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Добавить работу",
+                      "fill": "$surface"
+                    }
+                  ]
+                },
+                {
+                  "id": "Hm2VU",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Профиль",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WtI9A",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "pI2CC",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Шаг 2 из 7",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "p04F8",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: step 2 question",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "AAso5",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "J442u",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "yfjVK",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "tC3Qg",
+                      "height": 22,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "padding": [
+                        0,
+                        8
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "ETmrW",
+                          "type": "ref",
+                          "ref": "HrX0J",
+                          "content": "Обложка",
+                          "fill": "$ink"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nvBSU",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qaC3t",
+                      "name": "media/asset_w1024_02_macro",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LdwJY",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vHjoz",
+                      "name": "media/asset_w1024_03_studio",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Q7uRa",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zAajO",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "c5OoB1",
+                      "name": "media/asset_w1024_04_detail",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tXv7j",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "imhw5",
+                      "name": "media/asset_w1024_05_interior",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "h9bpP",
+                  "clip": true,
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "jTdxM",
+                      "name": "media/asset_w1024_06_back",
+                      "clip": true,
+                      "width": 132,
+                      "height": 176,
+                      "fill": "$accent_yellow_soft"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "i5iht",
+              "width": 350,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "e3J4AD",
+                  "width": 132,
+                  "height": 176,
+                  "cornerRadius": 16,
+                  "stroke": "$border_control",
+                  "strokeWidth": 2,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "BNnKR",
+                      "type": "ref",
+                      "ref": "blCDG",
+                      "width": 24,
+                      "height": 24
+                    },
+                    {
+                      "id": "Jwv7a",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Добавить фото",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gbwI4",
+              "width": 416,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "au7sT",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продолжить",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "U4ERfF",
+      "x": 1480,
+      "y": 237128,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "KdnIi",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F102 desktop/tablet shells are centered cards; mobile is the primary flow; approved-creator capability only.",
+          "fill": "$ink_soft"
+        }
+      ]
     }
   ],
   "variables": {
