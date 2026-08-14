@@ -39024,6 +39024,1587 @@
           "fill": "$ink_soft"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "JX27n",
+      "x": 0,
+      "y": 172066,
+      "name": "home/1440/default",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "MIiyx",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "gLpAg",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "HI23x",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "EjBgq",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "bjSDw",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hGGto",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f75hml",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "xncNX",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jyrUJ",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "gimO1",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "X25iJ",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "uKKSh",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "fq3H5",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "J6Lvr",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "F5J6l",
+          "width": 1280,
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "MU2vB",
+              "type": "ref",
+              "ref": "Qnpqi",
+              "content": "Работы с историей — напрямую от авторов",
+              "fill": "$ink"
+            },
+            {
+              "id": "MC3Qw",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "Живые авторы, настоящие предметы и честный аукцион",
+              "fill": "$ink_soft"
+            }
+          ]
+        },
+        {
+          "id": "Q9Pps",
+          "type": "ref",
+          "ref": "WdZ0B",
+          "name": "work_scene/home_featured"
+        },
+        {
+          "id": "BCJWx",
+          "type": "ref",
+          "ref": "RzD49",
+          "name": "live_rail"
+        },
+        {
+          "id": "Bdb81",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Авторы"
+        },
+        {
+          "type": "frame",
+          "id": "W9bz3m",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "W6hdA",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "polina"
+            },
+            {
+              "id": "AHT9W",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "artyom"
+            },
+            {
+              "id": "kbdRa",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "ksenia"
+            },
+            {
+              "id": "DyahW",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "alex"
+            }
+          ]
+        },
+        {
+          "id": "yErdp",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Новые работы"
+        },
+        {
+          "type": "frame",
+          "id": "MyjpY",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "E3LRNR",
+              "type": "ref",
+              "ref": "LxZyW",
+              "name": "w1024"
+            },
+            {
+              "id": "sn3gp",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "w2048"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "VnkbI",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "vjNrC",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "w3072"
+            },
+            {
+              "id": "wd2Zu",
+              "type": "ref",
+              "ref": "Lf5Zy",
+              "name": "w4096"
+            }
+          ]
+        },
+        {
+          "id": "ojcaR",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Missing spec: only 4 work fixtures (blueprint asks 6–8 cards)",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Ehq1d",
+          "width": 1280,
+          "fill": "$accent_periwinkle_soft",
+          "cornerRadius": 28,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 48,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Ku7kd",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Покажите свою работу миру",
+              "fill": "$ink"
+            },
+            {
+              "id": "Lpb3g",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: band body line",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "FRdJI",
+              "type": "ref",
+              "ref": "Z4V8Vu",
+              "name": "Стать автором"
+            }
+          ]
+        },
+        {
+          "id": "iyHwi",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "m7sWVe",
+      "x": 1480,
+      "y": 172066,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "C1rUri",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F060 home default. topAuctions LIVE three; newWorks four; creators four. LIVE chips only in live_rail. No price/deadline on cards. become band accent_periwinkle_soft. One display_1. Motion: stack_settle, hover_media_zoom, card_lift, live_dot_pulse. Guest. For approved creators label switches to «Добавьте новую работу».",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "sdRwi",
+      "x": 0,
+      "y": 176691,
+      "name": "home/1440/minimal-catalog",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "d6FRh",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "k3gDp",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "Q6XMn",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f7tp7x",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "lfefI",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "O0u5f",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zCts3",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "h39b9",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Flow5",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "V2Ffa",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "B1dtN",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "oiwwJ",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "iYwv9",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "d4VWmz",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "yOpBo",
+          "width": 1280,
+          "layout": "vertical",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "DmL0S",
+              "type": "ref",
+              "ref": "Qnpqi",
+              "content": "Работы с историей — напрямую от авторов",
+              "fill": "$ink"
+            },
+            {
+              "id": "VzPp2",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "Живые авторы, настоящие предметы и честный аукцион",
+              "fill": "$ink_soft"
+            }
+          ]
+        },
+        {
+          "id": "oBd4z",
+          "type": "ref",
+          "ref": "WdZ0B",
+          "name": "featured fallback w-2048"
+        },
+        {
+          "id": "DZUaC",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Авторы"
+        },
+        {
+          "id": "LY0sB",
+          "type": "ref",
+          "ref": "qcIFi",
+          "name": "ksenia"
+        },
+        {
+          "id": "zOYuU",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Новые работы"
+        },
+        {
+          "id": "T9ImWU",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "w2048"
+        },
+        {
+          "type": "frame",
+          "id": "tp9F4",
+          "width": 1280,
+          "fill": "$accent_periwinkle_soft",
+          "cornerRadius": 28,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 48,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Xk7RG",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Покажите свою работу миру",
+              "fill": "$ink"
+            },
+            {
+              "id": "bfsNc",
+              "type": "ref",
+              "ref": "Z4V8Vu",
+              "name": "Стать автором"
+            }
+          ]
+        },
+        {
+          "id": "LUNWO",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "XGTl5",
+      "x": 1480,
+      "y": 176691,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "b62fb",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F061 minimal. live_rail omitted (<2 LIVE). No placeholder cards. Featured falls back to newWorks[0] w-2048 SCHEDULED.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "p39Ov8",
+      "x": 0,
+      "y": 179761,
+      "name": "home/1440/loading",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "IQKNz",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "y68s4",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "p3p78F",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ziR8T",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "NKOWV",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Biml1",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pbOME",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "dukqy",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tnSRc",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "UG8U1",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MDULX",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "yTWLx",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "vJ4xX",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "yim6m",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B0kvG",
+          "type": "ref",
+          "ref": "Qnpqi",
+          "content": "Работы с историей — напрямую от авторов",
+          "fill": "$ink"
+        },
+        {
+          "type": "frame",
+          "id": "C9UXJW",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Vl2kg",
+              "type": "ref",
+              "ref": "lbrY0",
+              "name": "sk"
+            },
+            {
+              "id": "eRQpj",
+              "type": "ref",
+              "ref": "wVGbX",
+              "name": "sk"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Im6Fe",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "B92SJs",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "a"
+            },
+            {
+              "id": "loqGZ",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "b"
+            },
+            {
+              "id": "XQaKM",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "c"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "hnbqY",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "BY3Dl",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "1"
+            },
+            {
+              "id": "d48sk",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "2"
+            },
+            {
+              "id": "l2Kbhn",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "3"
+            },
+            {
+              "id": "ypGh8",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "4"
+            }
+          ]
+        },
+        {
+          "id": "N1HZi",
+          "type": "ref",
+          "ref": "ezvHW",
+          "name": "band"
+        },
+        {
+          "id": "AxSmZ",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LszEd",
+      "x": 1480,
+      "y": 179761,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "qgCRH",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F062 loading. Manifesto instant. Shimmer 1200ms, static under reduced motion.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "azFSe",
+      "x": 0,
+      "y": 181815,
+      "name": "home/1440/error",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "J7bja5",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "escCo",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "cjfJ2",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "tr9T8",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "hpuyR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Sef6F",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YNqpn",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "A2QQzJ",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AcbA2",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "ns865",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GcLol",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "oTswr",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "EqaQc",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "QKgkF",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "y7gkd",
+          "type": "ref",
+          "ref": "Qnpqi",
+          "content": "Работы с историей — напрямую от авторов",
+          "fill": "$ink"
+        },
+        {
+          "id": "EutgH",
+          "type": "ref",
+          "ref": "ZyOYO",
+          "name": "featured"
+        },
+        {
+          "id": "THbff",
+          "type": "ref",
+          "ref": "ZyOYO",
+          "name": "live_rail"
+        },
+        {
+          "id": "B2BY9",
+          "type": "ref",
+          "ref": "ZyOYO",
+          "name": "creators"
+        },
+        {
+          "id": "wBrah",
+          "type": "ref",
+          "ref": "ZyOYO",
+          "name": "new_works"
+        },
+        {
+          "type": "frame",
+          "id": "KlyOu",
+          "width": 1280,
+          "fill": "$accent_periwinkle_soft",
+          "cornerRadius": 28,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 48,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "POEJQ",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Покажите свою работу миру",
+              "fill": "$ink"
+            },
+            {
+              "id": "HEmWz",
+              "type": "ref",
+              "ref": "Z4V8Vu",
+              "name": "Стать автором"
+            }
+          ]
+        },
+        {
+          "id": "o3hNS",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "l6dcgC",
+      "x": 1480,
+      "y": 181815,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "cTqnL",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F063 per-section error. Retry re-requests only its scope. Nav/footer always alive.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "u3exk",
+      "x": 0,
+      "y": 183569,
+      "name": "home/390/default",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "ocPoY",
+          "width": 350,
+          "height": 56,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "S70DOC",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            }
+          ]
+        },
+        {
+          "id": "YycaW",
+          "type": "ref",
+          "ref": "hpRuI",
+          "content": "Работы с историей — напрямую от авторов",
+          "fill": "$ink"
+        },
+        {
+          "id": "C6O66",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Живые авторы, настоящие предметы и честный аукцион",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "Hxsq5",
+          "type": "ref",
+          "ref": "WdZ0B",
+          "name": "featured"
+        },
+        {
+          "id": "qAN81",
+          "type": "ref",
+          "ref": "RzD49",
+          "name": "live"
+        },
+        {
+          "id": "XxSaC",
+          "type": "ref",
+          "ref": "JQiQn",
+          "name": "creators"
+        },
+        {
+          "id": "z6JDKL",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "n1"
+        },
+        {
+          "id": "d4pW3",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "n2"
+        },
+        {
+          "id": "W7Bc0",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "n3"
+        },
+        {
+          "id": "p7cde",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "n4"
+        },
+        {
+          "type": "frame",
+          "id": "ftRnb",
+          "width": 350,
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "hZF2j",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Смотреть все работы",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "T4H3o",
+          "width": 350,
+          "fill": "$accent_periwinkle_soft",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "dlQt6",
+              "type": "ref",
+              "ref": "ajrqb",
+              "content": "Покажите свою работу миру",
+              "fill": "$ink"
+            },
+            {
+              "id": "n6cQk",
+              "type": "ref",
+              "ref": "Z4V8Vu",
+              "name": "Стать автором"
+            }
+          ]
+        },
+        {
+          "id": "BKdlJ",
+          "type": "ref",
+          "ref": "KhAZ9",
+          "name": "footer"
+        },
+        {
+          "type": "frame",
+          "id": "vu93Z",
+          "width": 350,
+          "height": 64,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "padding": [
+            8,
+            12
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "WBQEM",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "T550l",
+                  "type": "ref",
+                  "ref": "KnoYm",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "OgwOT",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Главная",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sdz5C",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "TqdTd",
+                  "type": "ref",
+                  "ref": "NxH8q",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "GWaDl",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Обзор",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "sohg3",
+              "type": "ref",
+              "ref": "nkmYt",
+              "name": "creator_action"
+            },
+            {
+              "type": "frame",
+              "id": "GS4ZI",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Zm2JF",
+                  "type": "ref",
+                  "ref": "CvQ68",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "o9R1ko",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ItFY8",
+      "x": 430,
+      "y": 183569,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "J5N6FM",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F064 mobile. 1 accent surface per viewport. Swipe advances featured. Routes within one swipe. Guest bottom_nav.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nawNs",
+      "x": 0,
+      "y": 189555,
+      "name": "home/1024/default",
+      "width": 1024,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        48,
+        48,
+        48
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "sxAbJ",
+          "width": 928,
+          "height": 64,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "GL1b7",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "rwiOr",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "UlG7g",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "K8IGn",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aYOvx",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CZ2Wn",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "EkPjT",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "HSXYp",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "b5kTT",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "AlPBo",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "l5eIA",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "Ka7FG",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "P7EXUB",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Y675uv",
+          "type": "ref",
+          "ref": "Qnpqi",
+          "content": "Работы с историей — напрямую от авторов",
+          "fill": "$ink"
+        },
+        {
+          "id": "yoW73",
+          "type": "ref",
+          "ref": "BVunk",
+          "content": "Живые авторы, настоящие предметы и честный аукцион",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "LSk1X",
+          "type": "ref",
+          "ref": "WdZ0B",
+          "name": "featured"
+        },
+        {
+          "id": "sf9kK",
+          "type": "ref",
+          "ref": "RzD49",
+          "name": "live"
+        },
+        {
+          "id": "UPuNF",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Авторы"
+        },
+        {
+          "type": "frame",
+          "id": "YC9vj",
+          "gap": 20,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "urZnc",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "p"
+            },
+            {
+              "id": "a1qSZH",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "a"
+            },
+            {
+              "id": "f3eLxi",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "k"
+            }
+          ]
+        },
+        {
+          "id": "nAMJa",
+          "type": "ref",
+          "ref": "gNwaD",
+          "name": "Новые работы"
+        },
+        {
+          "id": "HdCvi",
+          "type": "ref",
+          "ref": "LxZyW",
+          "name": "wide"
+        },
+        {
+          "type": "frame",
+          "id": "L4a4DG",
+          "gap": 20,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "pGF9i",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "a"
+            },
+            {
+              "id": "iyMvP",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "b"
+            }
+          ]
+        },
+        {
+          "id": "V7da44",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "c"
+        },
+        {
+          "id": "qpKI7",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Missing spec: only 4 work fixtures (blueprint asks 6–8 cards)",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "vH60w",
+          "width": 928,
+          "fill": "$accent_periwinkle_soft",
+          "cornerRadius": 28,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "Iy71J",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Покажите свою работу миру",
+              "fill": "$ink"
+            },
+            {
+              "id": "Vy8XY",
+              "type": "ref",
+              "ref": "Z4V8Vu",
+              "name": "Стать автором"
+            }
+          ]
+        },
+        {
+          "id": "c471D",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iNI4Z",
+      "x": 1064,
+      "y": 189555,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "RZOuu",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F065 tablet. Creators 3-up (4th drops). Guest.",
+          "fill": "$ink_soft"
+        }
+      ]
     }
   ],
   "variables": {
