@@ -40605,6 +40605,2390 @@
           "fill": "$ink_soft"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "JEYFl",
+      "x": 0,
+      "y": 194789,
+      "name": "explore/1440/works-default",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "H3byX",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "H4HT0",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "t7Od0",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z4kE3r",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "zKWsR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Nknv3",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Odwip",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rkSfA",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Y7B6O",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "filsN",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "gzdXv",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "nu0eX",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "IClLR",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "t1BgeR",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B4TxG",
+          "type": "ref",
+          "ref": "biaOn",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "p8WVwG",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs"
+        },
+        {
+          "id": "wqag1",
+          "type": "ref",
+          "ref": "YU99m",
+          "name": "search"
+        },
+        {
+          "type": "frame",
+          "id": "fA96G",
+          "width": 1280,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EaOIY",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "jESZQ",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Категория",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mD1qI",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "L5O6Bu",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Статус",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "DKCU4",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "goBoK",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Материалы",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KmVen",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ESKfB",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Уникальность",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "HcTVk",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "IqMyO",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Цена",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Ai2ol",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "V6say7",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Год",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ozApy",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "KjuWI",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Сортировка",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B4hTMN",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "4 работы",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "ZzWuN",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Zy2MN",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "w1024"
+            },
+            {
+              "id": "P8Xb2",
+              "type": "ref",
+              "ref": "Lf5Zy",
+              "name": "w2048"
+            },
+            {
+              "id": "R5vhD",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "w3072"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KgXle",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "oSnsd",
+              "type": "ref",
+              "ref": "LxZyW",
+              "name": "w4096"
+            }
+          ]
+        },
+        {
+          "id": "jao7Z",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Missing spec: only 4 work fixtures — row 2 incomplete",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "BaTEd",
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Y9LChA",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Показать ещё",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "nOTfD",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "aJ0hT",
+      "x": 1480,
+      "y": 194789,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "WbRk3",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F066 works default. Deterministic [4+4+4]/[8+4]. No price/deadline. Result count 4 работы (blueprint 124 is server-owned example — annotate). Pagination server. Guest.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "aviRJ",
+      "x": 0,
+      "y": 197243,
+      "name": "explore/1440/creators",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "qQf8a",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ouvV9",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "imzic",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "g3ji5B",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "NySZ1",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "O2Y9X",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "R5awyo",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z69CP",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "k9b0gX",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "c2MPV",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "z4FN5P",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "c2vJv",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "JhvYi",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "OguNf",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "G1qQ5",
+          "type": "ref",
+          "ref": "biaOn",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "VJhpL",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs authors active"
+        },
+        {
+          "id": "f7djk",
+          "type": "ref",
+          "ref": "YU99m",
+          "name": "search"
+        },
+        {
+          "type": "frame",
+          "id": "AqR3p",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "l0Tda9",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Dapr3",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Сортировка",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "TVNj2",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "soisQ",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "1"
+            },
+            {
+              "id": "hBsEa",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "2"
+            },
+            {
+              "id": "nimPf",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "3"
+            },
+            {
+              "id": "oiyUr",
+              "type": "ref",
+              "ref": "qcIFi",
+              "name": "4"
+            }
+          ]
+        },
+        {
+          "id": "wGFCQ",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "wp4HS",
+      "x": 1480,
+      "y": 197243,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "gue4s",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F067 creators tab. Sort активность | имя. workCount visible. Guest.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "XcUsi",
+      "x": 0,
+      "y": 198572,
+      "name": "explore/1440/filtered-empty",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "R6JEdm",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Ljga3",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "vapNC",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rb9GS",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "I3bfW",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aH9nK",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "yrs0h",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "POtdH",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "TsIzu",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "tPUJh",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "U5tGVZ",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Y0Hb07",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "ES4oH",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "RdQy2",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f0NDpt",
+          "type": "ref",
+          "ref": "biaOn",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "suhsH",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs"
+        },
+        {
+          "id": "ynI03",
+          "type": "ref",
+          "ref": "YU99m",
+          "name": "search"
+        },
+        {
+          "type": "frame",
+          "id": "e7U5yP",
+          "width": 1280,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "u6oFE",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "UXIGc",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Категория",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "FFKNJ",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "zlhRV",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Статус",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "K5rjH",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "laJX3",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Материалы",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c2EkCX",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "NJNgP",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Уникальность",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ahK4l",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$ink",
+              "strokeWidth": 1.5,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Dykez",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Цена: до 500 BYN",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "o18ru5",
+                  "height": 20,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    6
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "dH8HN",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "1",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pYls4",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "rlzbb",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Год",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "I9I7MG",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "OiSU3",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Сортировка",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "t1hzpR",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Сбросить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "EsF7Q",
+          "width": 400,
+          "layout": "vertical",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "S5A7ar",
+              "type": "ref",
+              "ref": "CUIYU",
+              "content": "Ничего не нашлось",
+              "fill": "$ink"
+            },
+            {
+              "id": "FFW52",
+              "type": "ref",
+              "ref": "BVunk",
+              "content": "Попробуйте изменить запрос или сбросить фильтры",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "dIhcc",
+              "height": 44,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "byFXS",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сбросить фильтры",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "y97dH5",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "yXqkY",
+      "x": 1480,
+      "y": 198572,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "Wdybs",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F068 filtered empty. Applied Цена: до 500 BYN. Server empty response demo.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "gcy0O",
+      "x": 0,
+      "y": 199608,
+      "name": "explore/1440/query-loading",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "v1NIv",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EzCjB",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "kQ7PP",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "aangQ",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "v96D9",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p4ASR",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "hXl1I",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "D1D8rA",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "k45fNs",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "U4Yug",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rI9RO",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Bn3CL",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "gvgsk",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "H23kY",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c810DE",
+          "type": "ref",
+          "ref": "biaOn",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "GRv7r",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs"
+        },
+        {
+          "id": "DyGGt",
+          "type": "ref",
+          "ref": "YU99m",
+          "name": "search Керамика"
+        },
+        {
+          "type": "frame",
+          "id": "d2vBdl",
+          "width": 1280,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "A7sV2",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "m4UpRq",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Категория",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OXeMm",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "n5xpK1",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Статус",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xH392",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "A8KBS",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Материалы",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Ocz71",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "l6bBA",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Уникальность",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "M7l9V",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "FgpPd",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Цена",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "kFoAA",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "KDyhb",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Год",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bnrrg",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "DY71P",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Сортировка",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Dy5JI",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "yJdYq",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "a"
+            },
+            {
+              "id": "hWiDl",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "b"
+            },
+            {
+              "id": "tlGcx",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "c"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "TmQBJ",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Mzwj8",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "d"
+            },
+            {
+              "id": "qnToO",
+              "type": "ref",
+              "ref": "LM6tv",
+              "name": "e"
+            }
+          ]
+        },
+        {
+          "id": "E0OIBS",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "x6sj0",
+      "x": 1480,
+      "y": 199608,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "lHkh2",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F069 query_loading. Layout never jumps. Shimmer static under reduced motion.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Nht4f",
+      "x": 0,
+      "y": 201278,
+      "name": "explore/390/works-default",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "xLajs",
+          "width": 350,
+          "height": 56,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "GwvB1",
+              "type": "ref",
+              "ref": "CUIYU",
+              "content": "Обзор",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "kqT1K",
+          "type": "ref",
+          "ref": "t6Mv2N",
+          "name": "search"
+        },
+        {
+          "id": "IB3rr",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs"
+        },
+        {
+          "type": "frame",
+          "id": "FKhbm",
+          "width": 350,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JSlqd",
+              "height": 40,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "q3z01",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Фильтры",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Xtfn5",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "1"
+        },
+        {
+          "id": "sChlx",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "2"
+        },
+        {
+          "type": "frame",
+          "id": "StdX5",
+          "gap": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "DzFGX",
+              "type": "ref",
+              "ref": "NlZQf",
+              "name": "3"
+            },
+            {
+              "id": "ZoWwB",
+              "type": "ref",
+              "ref": "NlZQf",
+              "name": "4"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KB192",
+          "width": 350,
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "zD0II",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Показать ещё",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "iqx28",
+          "type": "ref",
+          "ref": "KhAZ9",
+          "name": "footer"
+        },
+        {
+          "type": "frame",
+          "id": "zg8TX",
+          "width": 350,
+          "height": 64,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "padding": [
+            8,
+            12
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "BuSad",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "x147M",
+                  "type": "ref",
+                  "ref": "KnoYm",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "IHeGC",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Главная",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "A6nEbo",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "tbmVc",
+                  "type": "ref",
+                  "ref": "NxH8q",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "hlsQw",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Обзор",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "tyz4K",
+              "type": "ref",
+              "ref": "nkmYt",
+              "name": "creator_action"
+            },
+            {
+              "type": "frame",
+              "id": "MQcRe",
+              "width": 64,
+              "layout": "vertical",
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "fu6J8",
+                  "type": "ref",
+                  "ref": "CvQ68",
+                  "width": 24,
+                  "height": 24
+                },
+                {
+                  "id": "trTD3",
+                  "type": "ref",
+                  "ref": "HrX0J",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OG5nV",
+      "x": 430,
+      "y": 201278,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "gq70j",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F070 mobile. 2-up squares span_2=167 every 4th pair. Guest bottom_nav.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "N6RtaR",
+      "x": 0,
+      "y": 204380,
+      "name": "explore/390/filters-sheet",
+      "width": 390,
+      "height": 844,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "t0BAG",
+          "type": "ref",
+          "ref": "CUIYU",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "UlG1x",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "scrim rgba(31,35,55,0.50)",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "AiI3j",
+          "width": 390,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "I4CEJ",
+              "width": 48,
+              "height": 4,
+              "fill": "$hairline",
+              "cornerRadius": 2
+            },
+            {
+              "id": "K8n0D",
+              "type": "ref",
+              "ref": "CUIYU",
+              "content": "Фильтры",
+              "fill": "$ink"
+            },
+            {
+              "id": "i6vTAp",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Категория",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "F7hShk",
+              "height": 44,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Y3H2fQ",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Живопись",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vdLaV",
+              "height": 44,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "n5l9FQ",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Графика",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cCG5g",
+              "height": 44,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Zak5J",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Керамика",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "r4ZCtt",
+              "height": 44,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "svf6Z",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Текстиль",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Q3IwR0",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "R1nrs",
+                  "width": 200,
+                  "height": 52,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "C36AN",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Missing spec: apply button label",
+                      "fill": "$surface"
+                    }
+                  ]
+                },
+                {
+                  "id": "bSFkA",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сбросить",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "oN9a9",
+      "x": 430,
+      "y": 204380,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "gx3Ss",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F071 filters sheet. Traps focus. sheet_enter 280ms. Do not invent apply label.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "IvS8j",
+      "x": 0,
+      "y": 205424,
+      "name": "explore/1024/works-default",
+      "width": 1024,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        48,
+        48,
+        48
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "TlZ6W",
+          "width": 928,
+          "height": 64,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ogNLI",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "HWTsT",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qrzei",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "m9naAr",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uy5BV",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "xF0du",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "En0ks",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "h7OH2",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xKaho",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KNHNq",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "FGUco",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "Q4GYPU",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "JS1fE",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "i4ZYkS",
+          "type": "ref",
+          "ref": "biaOn",
+          "content": "Обзор",
+          "fill": "$ink"
+        },
+        {
+          "id": "nmgX4",
+          "type": "ref",
+          "ref": "S2qu3",
+          "name": "tabs"
+        },
+        {
+          "id": "lfVji",
+          "type": "ref",
+          "ref": "YU99m",
+          "name": "search"
+        },
+        {
+          "type": "frame",
+          "id": "XfHQ8",
+          "width": 1280,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "gdh5r",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "nb8dO",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Категория",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XFwdJ",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "H2AMUR",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Статус",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k1fzw",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "xwFQX",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Материалы",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PvJxS",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "nNeOS",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Уникальность",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "V02OSf",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "MhJgn",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Цена",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "U5O8MT",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "JcKul",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Год",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "mWBAQ",
+              "height": 40,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "stroke": "$hairline",
+              "strokeWidth": 1,
+              "gap": 6,
+              "padding": [
+                0,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Z7DtD",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Сортировка",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "k4aRlb",
+          "gap": 20,
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "jJSsi",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "a"
+            },
+            {
+              "id": "GGIuT",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "b"
+            }
+          ]
+        },
+        {
+          "id": "i5DtQP",
+          "type": "ref",
+          "ref": "LxZyW",
+          "name": "c"
+        },
+        {
+          "id": "HCWyh",
+          "type": "ref",
+          "ref": "fnHxB",
+          "name": "d"
+        },
+        {
+          "id": "p82l0k",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "Missing spec: only 4 work fixtures",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "vv77b",
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "s4frG",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Показать ещё",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "D1DL8t",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ljNKC",
+      "x": 1064,
+      "y": 205424,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "OpXlN",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F072 tablet 2-up [6+6]/[12]. Guest.",
+          "fill": "$ink_soft"
+        }
+      ]
     }
   ],
   "variables": {
