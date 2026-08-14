@@ -1,14 +1,14 @@
 # Creator-first Pen execution status
 
-Last updated: 2026-08-14 12:16 (UTC+3)
+Last updated: 2026-08-14 12:18 (UTC+3)
 Current branch: feature/creator-first-design
 Output Pen: design/pen/bidplace-creator-first-v1.pen
-Last completed stage: S5 Future boards
+Last completed stage: S6 Final visual QA
 Last completed frame: F118 future/video-process/placement-390
-Next stage: S6 Final visual QA
-Next frame: — (QA only; do not add frames)
+Next stage: — complete (118/118 manifest frames)
+Next frame: —
 Gate M: ready — fonts 7/7, icons 32/32, logo 1/1, media 24/24; all 24 asset_id resolve to existing files; frame manifest F001–F118 continuous, no gaps/dupes
-Pen verification: F001–F018 exist with exact names; S2C added boards F014–F018 plus reusable masters (bid_history_row, sticky_bid_bar, global_navigation×3, creator_action×2, creator_step_shell×4, media_input×2, review_submit×2, skeleton×5, error_block×3, empty_state, section_header×2, rail×3, footer×2, auth_panel, auction_panel/default, bid_dialog/first_bid). Canonical .pen files untouched.
+Pen verification: F001–F118 exist with exact §6 `frame_name`s (118/118, no gaps/dupes). Boardless extras: auction_panel/default, bid_dialog/first_bid. Unnamed leftover row deleted in S6. Canonical .pen files untouched.
 Uncommitted work: design/creator-first/implementation/ (architect-pass output, awaiting founder commit decision — not staged)
 Blockers: Pen CLI 0.3.1/0.3.2 cannot Insert or --in-load `{type:"image"}` fills (`Base URI must be absolute`). Keep `media/<asset_id>` placeholders; bind `file://` in Pencil desktop before a JSON post-pass from media_asset_manifest.
 
@@ -27,7 +27,7 @@ Blockers: Pen CLI 0.3.1/0.3.2 cannot Insert or --in-load `{type:"image"}` fills 
 - [x] S4C Auth and creator onboarding
 - [x] S4D Work creation
 - [x] S5 Future boards
-- [ ] S6 Final visual QA
+- [x] S6 Final visual QA
 
 ## Completed commits
 
@@ -44,13 +44,14 @@ Blockers: Pen CLI 0.3.1/0.3.2 cannot Insert or --in-load `{type:"image"}` fills 
 | S4B | F066–F072 | 334ca0d | 7 explore frames named exactly | pen interactive Insert |
 | S4C | F073–F092, F103–F106 | 708b7c2 | 24 frames named exactly; intro teal, auth periwinkle; submit «Отправить на проверку» | pen interactive Insert |
 | S4D | F093–F102 | acbc695 | 10 frames named exactly; submit «Отправить на модерацию»; no price/listing fields | pen interactive Insert |
-| S5 | F107–F118 | (this commit) | 12 future boards named exactly; chip «Будущее — не MVP»; post-MVP icons only on F002 catalog + F107–F118 | pen interactive Insert |
+| S5 | F107–F118 | 91a7a8b | 12 future boards named exactly; chip «Будущее — не MVP»; post-MVP icons only on F002 catalog + F107–F118 | pen interactive Insert |
+| S6 | QA | (this commit) | 118/118 manifest names; 0 unnamed extras; deleted leftover S2C unnamed row mP1Nr; canonical .pen untouched; 44 unique «Missing spec:» captions left unfilled | deleted unnamed boardless creator_action instance row; no copy invented |
 
 ## Missing or blocked
 
 | Element | Reason | Source consulted | Safe continuation |
 |---|---|---|---|
-| Photograph fills on F008–F018 | Pen CLI `--in` has no absolute document URI; image fills throw `Base URI must be absolute` on insert and on reload | pen 0.3.1/0.3.2 execute path `URI.withBase`; empty-canvas `--out` insert works; `--in` reload of that file fails | Keep `media/<asset_id>` placeholders; continue S3A+ in CLI; bind `file://` in Pencil desktop before a JSON post-pass from media_asset_manifest |
+| Photograph fills | Pen CLI `--in` has no absolute document URI; image fills throw `Base URI must be absolute` | pen 0.3.1/0.3.2 execute path `URI.withBase` | Keep `media/<asset_id>` placeholders; bind `file://` in Pencil desktop before a JSON post-pass from media_asset_manifest |
 
 ## Deliberate deviations
 

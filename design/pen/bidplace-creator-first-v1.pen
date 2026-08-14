@@ -27474,28 +27474,6 @@
     },
     {
       "type": "frame",
-      "id": "mP1Nr",
-      "x": 960,
-      "y": 91948,
-      "gap": 24,
-      "alignItems": "center",
-      "children": [
-        {
-          "id": "rEBSp",
-          "type": "ref",
-          "ref": "Z4V8Vu",
-          "name": "creator_action/desktop"
-        },
-        {
-          "id": "g4kOCZ",
-          "type": "ref",
-          "ref": "nkmYt",
-          "name": "creator_action/mobile_circle"
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "ZIrpU",
       "x": 0,
       "y": 92718,
