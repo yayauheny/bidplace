@@ -36,4 +36,6 @@ Missing optional screenshots do not authorize the architect to browse broadly or
 
 ## Protected history
 
-`design/pen/bidplace-web-v2.pen` remains unchanged and must never be opened by the design architect or Pen builder for this direction. A later approved Pen build creates `design/pen/bidplace-creator-first-v1.pen`.
+`design/pen/bidplace-web-v2.pen` remains unchanged and must never be opened by the design architect or Pen builder for this direction.
+
+The in-progress canvas is `design/pen/bidplace-creator-first-v1.pen` (F001–F013 as of 2026-08-14). It is not the canonical visual source until founder approval. Service docs point to it from `docs/design/00-DESIGN-INDEX.md` and `docs/design/04-DESIGN-STATUS.md`.

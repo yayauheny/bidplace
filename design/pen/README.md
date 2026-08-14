@@ -40,6 +40,11 @@ code task запрещено.
   `3b5032d840da6713e1e7b167bd10787d236e06e069506d413f86494a58470b6b`.
 - Public read-only review:
   <https://app.pen.dev/s/r32fdudQVyiuEZ5htTMYdcv40WDQ4v3vwLT82lS27uk>.
+- `bidplace-creator-first-v1.pen` — отдельная линия creator-first редизайна
+  («Культурный выпуск»). Не canonical. Founder approval ещё не дан; в
+  production не переносить. Сейчас в файле F001–F013 (foundations, primitives,
+  editorial masters). Дальше с F014. Пакет: `design/creator-first/`. Статус:
+  `docs/design/04-DESIGN-STATUS.md`.
 - `bidplace-web.pen` — исторический canvas, не visual source.
 - `target-solution/bidplace-youthful.pen` — историческое/неполное направление,
   не visual source.

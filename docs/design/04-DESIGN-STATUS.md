@@ -1,6 +1,6 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-08-14
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
@@ -141,6 +141,22 @@ remain protected by tests; runtime code does not replace Pen as visual authority
 2. Verify Home/Authors/Search/filter/sort states at 1440/1024/390 and record
    deliberate differences for unsupported H5vf2 controls.
 3. Complete founder visual review and physical iOS/Android smoke acceptance.
+
+## Creator-first Pen (отдельная линия, не canonical)
+
+- `Partial`: `design/pen/bidplace-creator-first-v1.pen` собран на ветке
+  `feature/creator-first-design`. Это не замена `bidplace-web-v2.pen` и не
+  вход в code handoff.
+- `Implemented` в Pen: F001–F013 (foundations/tokens, foundations/icons,
+  status_chip, tab_pill, filter_chip, form_field, search_entry, work_card,
+  creator_card, media_stack, work_scene, creator_scene, story_group).
+- `Not implemented` в Pen: F014–F118 (interaction masters, P0/P1 screens,
+  future boards, final QA). Следующий кадр: F014
+  `components/bid_history_row/board`.
+- Спеки и промпты: `design/creator-first/spec/`,
+  `design/creator-first/pen-prompts/`. Журнал:
+  `design/creator-first/EXECUTION-STATUS.md`.
+- Canonical v2 остаётся защищённым visual source для текущего production UI.
 
 ## Definition of complete
 

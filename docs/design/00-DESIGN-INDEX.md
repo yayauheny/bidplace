@@ -1,6 +1,6 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-14
 
 Статус: **Confirmed documentation baseline**
 
@@ -20,11 +20,16 @@ cutover-план больше не являются источниками ре�
 
 1. Product behavior, privacy, auction rules и permissions — owner-документы в
    `../product/` и серверные контракты.
-2. Визуальный эталон — `../../design/pen/bidplace-web-v2.pen`.
+2. Визуальный эталон текущего production UI — `../../design/pen/bidplace-web-v2.pen`.
 3. Этот design-модуль — перевод Pen в правила, карту экранов и план кода.
 4. Утверждённые founder references из `06` — interaction/motion evidence там,
    где static Pen не показывает состояние.
 5. Production-код — фактическое текущее поведение, которое надо сохранить.
+
+Отдельная линия creator-first (не canonical, не для code handoff, пока нет
+founder approval): `../../design/pen/bidplace-creator-first-v1.pen` и пакет
+`../../design/creator-first/`. Статус — в `04-DESIGN-STATUS.md`. Она не
+заменяет пункт 2 и не используется как visual source текущей реализации.
 
 Pen определяет композицию, визуальную иерархию, стили и component anatomy. Он
 не создаёт новые routes, API, поля, фильтры, permissions или auction rules.
