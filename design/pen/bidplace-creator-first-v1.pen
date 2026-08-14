@@ -51124,6 +51124,3712 @@
           "fill": "$ink_soft"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "PJNij",
+      "x": 0,
+      "y": 238236,
+      "name": "future/follow-creator/states",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "SaU5O",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "states",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "P1DIVX",
+          "name": "follow_creator/desktop",
+          "reusable": true,
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "W1THU7",
+              "type": "ref",
+              "ref": "v7Kcy",
+              "width": 20,
+              "height": 20
+            },
+            {
+              "id": "TIZkA",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Следить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "m0H4F",
+          "name": "follow_creator/mobile",
+          "reusable": true,
+          "width": 350,
+          "height": 48,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "idcKn",
+              "type": "ref",
+              "ref": "v7Kcy",
+              "width": 20,
+              "height": 20
+            },
+            {
+              "id": "g3gVKd",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Следить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "PVGny",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "P6OGW",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "ZalEF",
+          "type": "ref",
+          "ref": "yOmsk",
+          "content": "follow_creator states",
+          "fill": "$ink"
+        },
+        {
+          "id": "g3KBT",
+          "type": "ref",
+          "ref": "MOk7F",
+          "name": "creator_scene"
+        },
+        {
+          "type": "frame",
+          "id": "j8EBQ",
+          "width": 1280,
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "OwVA0",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "YWY99",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "anonymous",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "Gl7UX",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "PO3Nm",
+                      "type": "ref",
+                      "ref": "v7Kcy",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "oc8PQ",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Следить",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "a34wr",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "a3bz9",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "nxM9J",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "c92OQ",
+                      "type": "ref",
+                      "ref": "v7Kcy",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "jX68p",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Следить",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "X9ZUZR",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "fh7pX",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "followed",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "FsipR",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "XribR",
+                      "type": "ref",
+                      "ref": "VhVE5",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "zGHTz",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Вы следите",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qPhzV",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "rOgqa",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "adzEL",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "ad1GI",
+                      "type": "ref",
+                      "ref": "R0Au8f",
+                      "width": 16,
+                      "height": 16
+                    },
+                    {
+                      "id": "OjC8O",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Вы следите",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "DciQq",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "PS1MA",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "error",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "JsiMC",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "SceQP",
+                      "type": "ref",
+                      "ref": "v7Kcy",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "eYV2j",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Следить",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "ZvJmW",
+                  "type": "ref",
+                  "ref": "qVppE",
+                  "name": "inline_validation"
+                },
+                {
+                  "id": "T4Pte",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Не получилось. Попробуйте ещё раз",
+                  "fill": "$error"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pVWAl",
+      "x": 1480,
+      "y": 238236,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "W0YVa",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F107 follow states. a11y «Следить за автором» / «Вы следите за автором». 401 → auth; 403 self/admin hidden never disabled-dead; 409 reconcile silently; 5xx rollback. No follower counts. Bidding = confirmed_mvp; follow = designed_post_mvp / backend_required.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ILGmv",
+      "x": 0,
+      "y": 239444,
+      "name": "future/follow-creator/profile-placement-1440",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "EK9hy",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "profile-placement-1440",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "DVTyo",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "yqX4s",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "uuYi3",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "j5yUoH",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "aFdI9",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BmX41",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "L22TMb",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "c6Bppy",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "sdy1b",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UaO96",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QuufN",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "pmIuH",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GkMQT",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "QaeM9",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "IWWsP",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "tVaNX",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "RFDMH",
+          "type": "ref",
+          "ref": "MOk7F",
+          "name": "creator_scene"
+        },
+        {
+          "id": "r38Xbi",
+          "type": "ref",
+          "ref": "Wtj9I",
+          "name": "links"
+        },
+        {
+          "type": "frame",
+          "id": "om3uK",
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "HlNhS",
+              "type": "ref",
+              "ref": "v7Kcy",
+              "width": 20,
+              "height": 20
+            },
+            {
+              "id": "rypS6",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Следить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "gQ6mZ",
+          "type": "ref",
+          "ref": "hkRZF",
+          "name": "release"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rq9JE",
+      "x": 1480,
+      "y": 239444,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "M3k0i",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F108 NEW frame, existing creator-profile/1440/default untouched. Bidding = confirmed_mvp; follow = designed_post_mvp / backend_required. Future «Мои авторы» list is a concept card.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iEMdd",
+      "x": 0,
+      "y": 241392,
+      "name": "future/follow-creator/profile-placement-390",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "Le2ap",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "profile-placement-390",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "YaWSr",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "gyj6w",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "H1Nk74",
+          "type": "ref",
+          "ref": "AAKxp",
+          "name": "creator_scene"
+        },
+        {
+          "id": "CZeGR",
+          "type": "ref",
+          "ref": "d4x8Jq",
+          "name": "links"
+        },
+        {
+          "type": "frame",
+          "id": "WFwuf",
+          "width": 350,
+          "height": 48,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "A90YUN",
+              "type": "ref",
+              "ref": "v7Kcy",
+              "width": 20,
+              "height": 20
+            },
+            {
+              "id": "fw2IU",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Следить",
+              "fill": "$ink"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "mRWMb",
+      "x": 430,
+      "y": 241392,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "B2CupJ",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F109 same phase split; full-width below links only.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iDrYU",
+      "x": 0,
+      "y": 242825,
+      "name": "future/concepts",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "FWeIQ",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "concepts",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "PsRik",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "V95EO5",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "LBDW0",
+          "type": "ref",
+          "ref": "yOmsk",
+          "content": "future concepts",
+          "fill": "$ink"
+        },
+        {
+          "type": "frame",
+          "id": "jLZif",
+          "width": 1280,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "EwZ1a",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zJgMI",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Htf82",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "yeQ19",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Следить за автором — напоминания о релизах",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "Vboyu",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "designed_post_mvp / backend_required",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hd6rX",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fsHjA",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "VP5e0",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "QFyyT",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сохранённые работы",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "X2tW5m",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "designed_post_mvp / backend_required",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "NskGl",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "mL6q6",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "R0j9Hx",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "AWdPO",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Продажа по фиксированной цене",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "G9nbg",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "unresolved / product_decision_required",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UcNbD",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iPMSt",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "sKsxl",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "QlU9J",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Редакционные подборки",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "u2bwy",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "unresolved / product_decision_required",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "u4wg5N",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BTIsb",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "ym8yH",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "qOctV",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Видео о процессе",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "uJcX0",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "designed_post_mvp / backend_required",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k2Dai",
+              "width": 200,
+              "fill": "$accent_brown_soft",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "L3CvL",
+                  "height": 28,
+                  "fill": "$accent_brown_soft",
+                  "cornerRadius": 999,
+                  "padding": [
+                    0,
+                    12
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "pokev",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Будущее — не MVP",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "SSqoV",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Missing spec: «Мои авторы» list label",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "ROyTc",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "unresolved / follow_creator.future_surfaces",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "i1hfa",
+      "x": 1480,
+      "y": 242825,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "C9fqC",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F110 concept cards verbatim from future_concepts_labels. These are not MVP controls; never mixed into F001–F106.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "JFEM1",
+      "x": 0,
+      "y": 243273,
+      "name": "future/wishlist/states",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "HYD4P",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "states",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "g2rbB",
+          "name": "wishlist_saved_work/card_icon",
+          "reusable": true,
+          "width": 44,
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "S2X4z",
+              "type": "ref",
+              "ref": "ILt2t",
+              "width": 20,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KkFJp",
+          "name": "wishlist_saved_work/detail_pill",
+          "reusable": true,
+          "height": 44,
+          "fill": "$surface",
+          "cornerRadius": 999,
+          "stroke": "$ink",
+          "strokeWidth": 1.5,
+          "gap": 8,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "Y8bGl",
+              "type": "ref",
+              "ref": "ILt2t",
+              "width": 20,
+              "height": 20
+            },
+            {
+              "id": "F4eAH",
+              "type": "ref",
+              "ref": "QounJ",
+              "content": "Сохранить",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Gb7zF",
+          "name": "wishlist_saved_work/detail_icon_mobile",
+          "reusable": true,
+          "width": 44,
+          "height": 44,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "TUqy8",
+              "type": "ref",
+              "ref": "ILt2t",
+              "width": 20,
+              "height": 20
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "xGqPX",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "D9zgv",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "Atv10",
+          "type": "ref",
+          "ref": "yOmsk",
+          "content": "wishlist_saved_work states",
+          "fill": "$ink"
+        },
+        {
+          "type": "frame",
+          "id": "SEVjo",
+          "width": 1280,
+          "gap": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "emKyo",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "WvP3r",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "anonymous",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "Ox1CD",
+                  "width": 200,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "QEKbv",
+                      "clip": true,
+                      "width": 200,
+                      "height": 267,
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "vjTH3",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 200,
+                          "height": 267,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 16
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Umg4e",
+                          "width": 44,
+                          "height": 44,
+                          "fill": "$surface",
+                          "cornerRadius": 999,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#1F233714",
+                            "offset": {
+                              "x": 0,
+                              "y": 2
+                            },
+                            "blur": 8
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "D597CO",
+                              "type": "ref",
+                              "ref": "ILt2t",
+                              "width": 20,
+                              "height": 20
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VxFck",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "FU1Hh",
+                      "type": "ref",
+                      "ref": "ILt2t",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "V1jPc",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранить",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SYErL",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "FFSFS",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "default",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "xV0sc",
+                  "width": 200,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "A9bHnr",
+                      "clip": true,
+                      "width": 200,
+                      "height": 267,
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "V6j3T",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 200,
+                          "height": 267,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 16
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xi8HI",
+                          "width": 44,
+                          "height": 44,
+                          "fill": "$surface",
+                          "cornerRadius": 999,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#1F233714",
+                            "offset": {
+                              "x": 0,
+                              "y": 2
+                            },
+                            "blur": 8
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "O3s9eJ",
+                              "type": "ref",
+                              "ref": "ILt2t",
+                              "width": 20,
+                              "height": 20
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mSxXW",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "HEugs",
+                      "type": "ref",
+                      "ref": "ILt2t",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "NegFL",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранить",
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pzzvD",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "wclK9",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "saved",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "f6IV7",
+                  "width": 200,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "LL0qL",
+                      "clip": true,
+                      "width": 200,
+                      "height": 267,
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "FoDfL",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 200,
+                          "height": 267,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 16
+                        },
+                        {
+                          "type": "frame",
+                          "id": "GvPhR",
+                          "width": 44,
+                          "height": 44,
+                          "fill": "$surface",
+                          "cornerRadius": 999,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#1F233714",
+                            "offset": {
+                              "x": 0,
+                              "y": 2
+                            },
+                            "blur": 8
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "L1Ory",
+                              "type": "ref",
+                              "ref": "VZYVd",
+                              "width": 20,
+                              "height": 20
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DmBBx",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "KKtiX",
+                      "type": "ref",
+                      "ref": "VZYVd",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "jRvPl",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранено",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KLxfV",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "MZPOQ",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "tHfye",
+                  "width": 200,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "J2vxt",
+                      "clip": true,
+                      "width": 200,
+                      "height": 267,
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "mlRyq",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 200,
+                          "height": 267,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 16
+                        },
+                        {
+                          "type": "frame",
+                          "id": "kGPL0",
+                          "width": 44,
+                          "height": 44,
+                          "fill": "$surface",
+                          "cornerRadius": 999,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#1F233714",
+                            "offset": {
+                              "x": 0,
+                              "y": 2
+                            },
+                            "blur": 8
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "Gc2N1",
+                              "type": "ref",
+                              "ref": "VZYVd",
+                              "width": 20,
+                              "height": 20
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EvWUC",
+                  "height": 44,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Fbz9w",
+                      "type": "ref",
+                      "ref": "R0Au8f",
+                      "width": 16,
+                      "height": 16
+                    },
+                    {
+                      "id": "KvtEQ",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранено",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bGELz",
+              "width": 220,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "Dy42C",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "error",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "TV2WE",
+                  "width": 200,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MAvgK",
+                      "clip": true,
+                      "width": 200,
+                      "height": 267,
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Vwcle",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 200,
+                          "height": 267,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 16
+                        },
+                        {
+                          "type": "frame",
+                          "id": "A875JQ",
+                          "width": 44,
+                          "height": 44,
+                          "fill": "$surface",
+                          "cornerRadius": 999,
+                          "effect": {
+                            "type": "shadow",
+                            "shadowType": "outer",
+                            "color": "#1F233714",
+                            "offset": {
+                              "x": 0,
+                              "y": 2
+                            },
+                            "blur": 8
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "R15gJ",
+                              "type": "ref",
+                              "ref": "ILt2t",
+                              "width": 20,
+                              "height": 20
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V8evI2",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "aiD73",
+                      "type": "ref",
+                      "ref": "ILt2t",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "P6p4Rf",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранить",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "icg1g",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Не получилось. Попробуйте ещё раз",
+                  "fill": "$error"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "btbCv",
+      "x": 1480,
+      "y": 243273,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "wM1lW",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F111 a11y «Сохранить работу»; announce «Работа сохранена» / «Работа удалена из сохранённых». Heart is follow_creator only; no «избранное». Creator cannot save own work (hidden).",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "igFBz",
+      "x": 0,
+      "y": 244188,
+      "name": "future/wishlist/card-placement-1440",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "O2ctT3",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "card-placement-1440",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "V84U9M",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "I0bzDR",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zWnQ5",
+          "width": 240,
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "yvRuO",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "Тихий берег"
+            },
+            {
+              "type": "frame",
+              "id": "UmUni",
+              "width": 44,
+              "height": 44,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F233714",
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "blur": 8
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "o3gxe",
+                  "type": "ref",
+                  "ref": "ILt2t",
+                  "width": 20,
+                  "height": 20
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "oGHax",
+      "x": 1480,
+      "y": 244188,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "E8EhK",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F112 work_card/standard of work_rich_live, NO price/deadline, wishlist card_icon default inset 12.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "k4tSv",
+      "x": 0,
+      "y": 245216,
+      "name": "future/wishlist/card-placement-390",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "Z388c",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "card-placement-390",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "L25vpE",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "RHxo8",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "z6BvQU",
+          "width": 350,
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "Q3Mfp",
+              "type": "ref",
+              "ref": "fnHxB",
+              "name": "Тихий берег"
+            },
+            {
+              "type": "frame",
+              "id": "fGAtg",
+              "width": 44,
+              "height": 44,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F233714",
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "blur": 8
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "VTZhd",
+                  "type": "ref",
+                  "ref": "ILt2t",
+                  "width": 20,
+                  "height": 20
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Za3rH",
+      "x": 430,
+      "y": 245216,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "eb7Nd",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F113 same card at mobile width 350, icon inset 8.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f1PQz",
+      "x": 0,
+      "y": 246276,
+      "name": "future/wishlist/detail-placement-1440",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "N48gsV",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "detail-placement-1440",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "FdqNc",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "xCQUX",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "sDtlu",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ZmERu",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "Vm3m8",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bEyTl",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "L6n8i",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yX0Te",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "G4aWg",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UE2Ho",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "rgfuR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sGVkC",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TQSCY",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "QRBJ0",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "Injjc",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "BkcV8",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nqW0q",
+          "width": 1280,
+          "gap": 40,
+          "children": [
+            {
+              "id": "Y3uDc",
+              "type": "ref",
+              "ref": "H9LP3Z",
+              "name": "media_stack"
+            },
+            {
+              "type": "frame",
+              "id": "VoFli",
+              "width": 400,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "bh8Wh",
+                  "type": "ref",
+                  "ref": "VqxZi",
+                  "name": "LIVE"
+                },
+                {
+                  "id": "tj6lN",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Полина Мирош",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "v6BsCp",
+                  "height": 44,
+                  "fill": "$surface",
+                  "cornerRadius": 999,
+                  "stroke": "$ink",
+                  "strokeWidth": 1.5,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "JtBPm",
+                      "type": "ref",
+                      "ref": "ILt2t",
+                      "width": 20,
+                      "height": 20
+                    },
+                    {
+                      "id": "RoYLN",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Сохранить",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "id": "zF5bY",
+                  "type": "ref",
+                  "ref": "biaOn",
+                  "content": "Тихий берег",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "QlRI4",
+                  "type": "ref",
+                  "ref": "suv3i",
+                  "name": "auction_panel"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "IDyAG",
+          "type": "ref",
+          "ref": "V75m2",
+          "name": "story"
+        },
+        {
+          "id": "jdfrM",
+          "type": "ref",
+          "ref": "bhNlP",
+          "name": "process"
+        },
+        {
+          "id": "IA3vg",
+          "type": "ref",
+          "ref": "skbJn",
+          "name": "facts"
+        },
+        {
+          "id": "M8wYCt",
+          "type": "ref",
+          "ref": "OBxs0",
+          "name": "bid_history"
+        },
+        {
+          "id": "dJAOn",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "rail omitted",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "TJY2L",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OvLkC",
+      "x": 1480,
+      "y": 246276,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "EmTQD",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F114 wishlist detail_pill below creator chip, above title, gap 12. Never inside auction_panel. Accent yellow for w-1024. Bidding confirmed_mvp; wishlist designed_post_mvp.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TdZ35",
+      "x": 0,
+      "y": 250552,
+      "name": "future/wishlist/detail-placement-390",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "XkRKL",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "detail-placement-390",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "R4bAC",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "y3ecwC",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Rf5t5",
+          "width": 350,
+          "height": 56,
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "i2JNBQ",
+              "width": 44,
+              "height": 44,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "i4dNd7",
+                  "type": "ref",
+                  "ref": "n8LL6",
+                  "width": 24,
+                  "height": 24
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "S3oAX",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "id": "SNR7C",
+              "type": "ref",
+              "ref": "Gb7zF",
+              "name": "wish"
+            },
+            {
+              "id": "u0FCb",
+              "type": "ref",
+              "ref": "mOjr8",
+              "width": 24,
+              "height": 24
+            }
+          ]
+        },
+        {
+          "id": "iaKVE",
+          "type": "ref",
+          "ref": "H9LP3Z",
+          "name": "media_stack"
+        },
+        {
+          "id": "jPYpO",
+          "type": "ref",
+          "ref": "suv3i",
+          "name": "auction_panel"
+        },
+        {
+          "id": "vbF4h",
+          "type": "ref",
+          "ref": "FReBL",
+          "name": "sticky_bid_bar"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fWhPM",
+      "x": 430,
+      "y": 250552,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "cR08w",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F115 44 icon-only in the top bar, left of share. accessibilityLabel required note. Chip «Будущее — не MVP».",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "UgXW0",
+      "x": 0,
+      "y": 252048,
+      "name": "future/video-process/states",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "O5Tkcy",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "states",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "g3M1X",
+          "name": "video_process_story/desktop",
+          "reusable": true,
+          "width": 560,
+          "height": 350,
+          "fill": "$accent_yellow_soft",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "E4x5QS",
+              "name": "media/asset_w1024_s4_working",
+              "clip": true,
+              "width": 560,
+              "height": 350,
+              "fill": "$accent_yellow_soft"
+            },
+            {
+              "type": "frame",
+              "id": "uwPQ9",
+              "width": 48,
+              "height": 48,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F23371F",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "rqUeY",
+                  "type": "ref",
+                  "ref": "U3HS7b",
+                  "width": 24,
+                  "height": 24
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "l54sY",
+          "name": "video_process_story/mobile",
+          "reusable": true,
+          "width": 350,
+          "height": 219,
+          "fill": "$accent_yellow_soft",
+          "cornerRadius": 24,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233714",
+            "offset": {
+              "x": 0,
+              "y": 2
+            },
+            "blur": 8
+          },
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "c1MfFN",
+              "name": "media/asset_w1024_s4_working",
+              "clip": true,
+              "width": 350,
+              "height": 219,
+              "fill": "$accent_yellow_soft"
+            },
+            {
+              "type": "frame",
+              "id": "pM0EZ",
+              "width": 48,
+              "height": 48,
+              "fill": "$surface",
+              "cornerRadius": 999,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F23371F",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 24
+              },
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "cyqug",
+                  "type": "ref",
+                  "ref": "U3HS7b",
+                  "width": 24,
+                  "height": 24
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "QHWfh",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "uasjL",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "U3vtN",
+          "type": "ref",
+          "ref": "yOmsk",
+          "content": "video_process_story states",
+          "fill": "$ink"
+        },
+        {
+          "type": "frame",
+          "id": "V4tKv",
+          "width": 1280,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "yzWw0",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "AxlRr",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "poster",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "chHJh",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "hcWF3",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "bS4LA",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Wnind",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1F23371F",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "QKyNF",
+                          "type": "ref",
+                          "ref": "U3HS7b",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZzjTZ",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "O0ZTBz",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "ready",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "a7BCtq",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "AJy6C",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "Q5HTwI",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ua3oO",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1F23371F",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "eGf6L",
+                          "type": "ref",
+                          "ref": "U3HS7b",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rYaLC",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "e2U3i",
+                          "type": "ref",
+                          "ref": "VmH6h",
+                          "width": 20,
+                          "height": 20
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "smSG9",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "y7ui0",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "playing",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "WQvJ8",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "T0FbO8",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "NjN1Q",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YTElW",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1F23371F",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "YXUNg",
+                          "type": "ref",
+                          "ref": "dDL8J",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "W5KjU",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "h1YyVA",
+                          "type": "ref",
+                          "ref": "VmH6h",
+                          "width": 20,
+                          "height": 20
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qnQH1",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "Yaoyx",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "paused",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "wkuzQ",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "h4MLI",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "dilOk",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xqZpG",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1F23371F",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "j4e3we",
+                          "type": "ref",
+                          "ref": "U3HS7b",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "IR4fo",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "wOctv",
+                          "type": "ref",
+                          "ref": "VmH6h",
+                          "width": 20,
+                          "height": 20
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FKi04",
+          "width": 1280,
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Tdze8",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "hElpL",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "muted",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "aZC0f",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "asRSZ",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "APcLt",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NHPDS",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1F23371F",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 24
+                      },
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "WbYq5",
+                          "type": "ref",
+                          "ref": "dDL8J",
+                          "width": 24,
+                          "height": 24
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "PskCs",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$surface",
+                      "cornerRadius": 999,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "KSWdV",
+                          "type": "ref",
+                          "ref": "HlWB7",
+                          "width": 20,
+                          "height": 20
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "qj5Nq",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "l3g5vP",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "loading",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "X5hSA",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "XNaag",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "rRQjR",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "O1TF0",
+                      "type": "ref",
+                      "ref": "lbrY0",
+                      "name": "skeleton"
+                    },
+                    {
+                      "id": "WUaCv",
+                      "type": "ref",
+                      "ref": "R0Au8f",
+                      "width": 24,
+                      "height": 24
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "F1ckZm",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "id": "dQiiL",
+                  "type": "ref",
+                  "ref": "F0vV2",
+                  "content": "error",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "E0kK2M",
+                  "clip": true,
+                  "width": 280,
+                  "height": 175,
+                  "fill": "$accent_yellow_soft",
+                  "cornerRadius": 24,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1F233714",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 8
+                  },
+                  "layout": "vertical",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "G0LXq",
+                      "name": "media/asset_w1024_s4_working",
+                      "clip": true,
+                      "width": 280,
+                      "height": 175,
+                      "fill": "$accent_yellow_soft"
+                    },
+                    {
+                      "id": "JpoyR",
+                      "type": "ref",
+                      "ref": "HrX0J",
+                      "content": "Видео о процессе",
+                      "fill": "$ink_soft"
+                    },
+                    {
+                      "id": "PVUTL",
+                      "type": "ref",
+                      "ref": "ZyOYO",
+                      "name": "error"
+                    },
+                    {
+                      "id": "kyIf8",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Не удалось загрузить видео",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rbWvk",
+                      "height": 44,
+                      "fill": "$ink",
+                      "cornerRadius": 999,
+                      "gap": 8,
+                      "padding": [
+                        0,
+                        20
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "id": "Avvdm",
+                          "type": "ref",
+                          "ref": "QounJ",
+                          "content": "Повторить",
+                          "fill": "$surface"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "IsXc0",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "id": "Ct85s",
+              "type": "ref",
+              "ref": "F0vV2",
+              "content": "unavailable: omitted",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "Jtrz3",
+              "type": "ref",
+              "ref": "bhNlP",
+              "name": "process_steps"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "DNXaa",
+      "x": 1480,
+      "y": 252048,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "i0kz6",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F116 autoplay forbidden on every platform including reduced-motion; looping forbidden. Captions UI = Missing input (omit). Play a11y «Смотреть»; Pause «Пауза»; Mute «Выключить звук» / «Включить звук».",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "MiAvc",
+      "x": 0,
+      "y": 256059,
+      "name": "future/video-process/placement-1440",
+      "width": 1440,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        80,
+        64,
+        80
+      ],
+      "children": [
+        {
+          "id": "vn80b",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "placement-1440",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "HcozX",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "cjDfZ",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "XJ8hB",
+          "width": 1280,
+          "height": 72,
+          "fill": "$canvas",
+          "gap": 24,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "H3GXbw",
+              "name": "logo/symbol",
+              "width": 28,
+              "height": 28,
+              "fill": "$ink",
+              "cornerRadius": 6
+            },
+            {
+              "type": "frame",
+              "id": "WKTEd",
+              "width": "fill_container",
+              "gap": 32,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gKhPD",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "wH2kZ",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Главная",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Jnam0",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "VVqsl",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Авторы",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "jvBAQ",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "W57uUV",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Работы",
+                      "fill": "$ink"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "tDmhK",
+                      "width": 24,
+                      "height": 2,
+                      "fill": "$ink"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UYVEJ",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "M6czWG",
+                  "type": "ref",
+                  "ref": "r58cQ",
+                  "name": "search"
+                },
+                {
+                  "id": "Y9vRk",
+                  "type": "ref",
+                  "ref": "Z4V8Vu",
+                  "name": "creator_action"
+                },
+                {
+                  "id": "z2odwJ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти",
+                  "fill": "$ink"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "W5j9m",
+          "type": "ref",
+          "ref": "H9LP3Z",
+          "name": "media_stack"
+        },
+        {
+          "id": "cS06y",
+          "type": "ref",
+          "ref": "suv3i",
+          "name": "auction_panel"
+        },
+        {
+          "id": "ati5g",
+          "type": "ref",
+          "ref": "VqxZi",
+          "name": "LIVE"
+        },
+        {
+          "id": "X9txDJ",
+          "type": "ref",
+          "ref": "V75m2",
+          "name": "story"
+        },
+        {
+          "id": "A3hza",
+          "type": "ref",
+          "ref": "g3M1X",
+          "name": "video"
+        },
+        {
+          "id": "GWaus",
+          "type": "ref",
+          "ref": "bhNlP",
+          "name": "process"
+        },
+        {
+          "id": "K5eet",
+          "type": "ref",
+          "ref": "skbJn",
+          "name": "facts"
+        },
+        {
+          "id": "OoyXl",
+          "type": "ref",
+          "ref": "OBxs0",
+          "name": "bid"
+        },
+        {
+          "id": "RugsD",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "rail omitted",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "ZXQY9",
+          "type": "ref",
+          "ref": "a4Lzn",
+          "name": "footer"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "tchcN",
+      "x": 1480,
+      "y": 256059,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "Ih7Bw",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F117 video_process_story/desktop poster above process_steps/list, gap 40, max width 560. Poster asset_w1024_s4_working.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ol59r",
+      "x": 0,
+      "y": 261017,
+      "name": "future/video-process/placement-390",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 24,
+      "padding": [
+        0,
+        20,
+        96,
+        20
+      ],
+      "children": [
+        {
+          "id": "iurlE",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "placement-390",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Y4Uj8I",
+          "height": 28,
+          "fill": "$accent_brown_soft",
+          "cornerRadius": 999,
+          "padding": [
+            0,
+            12
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "hpX9z",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Будущее — не MVP",
+              "fill": "$ink"
+            }
+          ]
+        },
+        {
+          "id": "oujRR",
+          "type": "ref",
+          "ref": "H9LP3Z",
+          "name": "media_stack"
+        },
+        {
+          "id": "JcWVn",
+          "type": "ref",
+          "ref": "suv3i",
+          "name": "auction_panel"
+        },
+        {
+          "id": "T2ZIxl",
+          "type": "ref",
+          "ref": "l54sY",
+          "name": "video"
+        },
+        {
+          "id": "b18Vos",
+          "type": "ref",
+          "ref": "bhNlP",
+          "name": "process"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "NdC5b",
+      "x": 430,
+      "y": 261017,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "Guuoq",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "F118 video_process_story/mobile width 350 height 219, gap 24, poster above process_steps.",
+          "fill": "$ink_soft"
+        }
+      ]
     }
   ],
   "variables": {
