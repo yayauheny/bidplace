@@ -35323,6 +35323,3707 @@
           "fill": "$ink_soft"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "dmUIu",
+      "x": 0,
+      "y": 158150,
+      "name": "bid-states/01-scheduled_preview",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "L3waB",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "01-scheduled_preview",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "P1S2I",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "Wo703",
+              "type": "ref",
+              "ref": "I2xLOu",
+              "name": "chip"
+            },
+            {
+              "id": "IUqWp",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Стартовая цена",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "XBgNb",
+              "type": "ref",
+              "ref": "PLNnF",
+              "content": "180 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "r3LSu",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "wWjiE",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "pO69r",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Старт: 24 августа, 19:00",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "R9s1X",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "pglGm",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Ставки откроются в момент старта",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "t4acyg",
+      "x": 520,
+      "y": 158150,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "m5U1e",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "01 scheduled_preview. No Напомнить — no contract. start 180 BYN. Motion: none.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "EF2CN",
+      "x": 0,
+      "y": 158672,
+      "name": "bid-states/02-live_guest",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "fQgTs",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "02-live_guest",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "f7iVy",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "UfNZM",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "id": "zoqxT",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "ASCg7",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "IqTUk",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "SYcFx",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "OscV6",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Gp0Yp",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "bDkXz",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Войти, чтобы сделать ставку",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "YGRuK",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "gnYPL",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "udTlA",
+      "x": 520,
+      "y": 158672,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "BpPsA",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "02 live_guest → auth with return path. Server-owned 1 250 BYN, 2 дн 4 ч, 7 ставок.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jsb8j",
+      "x": 0,
+      "y": 159268,
+      "name": "bid-states/03-live_not_eligible_email",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "cBXSs",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "03-live_not_eligible_email",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "hzR2D",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "n33lq",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "id": "GMtPs",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "sSNBT",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "y2ayJ",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "n5AbRC",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "D3S1K",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "k8ZJh",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Qzpeu",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить почту",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "rLtln",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "E37Js",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: eligibility helper text (email)",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "kQFL0",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "T1XwY",
+      "x": 520,
+      "y": 159268,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "GQVTY",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "03 live_not_eligible_email. Helper explains the one missing step.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ovhd7",
+      "x": 0,
+      "y": 159896,
+      "name": "bid-states/04-live_not_eligible_rules",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "Qeogl",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "04-live_not_eligible_rules",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "ZO7Pp",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "ZWmsI",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "id": "lnhXA",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "Vpnm5",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "zElNS",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "R0NrR",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "E8q0G2",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fCDpr",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "RiLNA",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Принять правила",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "f23Bpo",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "ilFdr",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: eligibility helper text (rules)",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "cMNoH",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "v5Mfi",
+      "x": 520,
+      "y": 159896,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "M7oWdQ",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "04 live_not_eligible_rules.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "qfFC6",
+      "x": 0,
+      "y": 160524,
+      "name": "bid-states/05-live_eligible",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "dFiGG",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "05-live_eligible",
+          "fill": "$ink_soft"
+        },
+        {
+          "id": "D53t8",
+          "type": "ref",
+          "ref": "suv3i",
+          "name": "auction_panel/default"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zvaYf",
+      "x": 520,
+      "y": 160524,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "fcIOS",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "05 live_eligible. Price slot reserves width of 12 000 BYN; price change announced politely. Motion: live_dot_pulse.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "ktVVZ",
+      "x": 0,
+      "y": 161156,
+      "name": "bid-states/06-bid_dialog_default",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "HC8tc",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "06-bid_dialog_default",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "NVohY",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "huo9a",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Ваша ставка",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "r8H7P",
+              "width": 416,
+              "fill": "$ink",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yd9tW",
+                  "width": 384,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "bQHFO",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$accent_yellow_soft",
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fBTdZ",
+                      "width": 240,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "id": "bh8Le",
+                          "type": "ref",
+                          "ref": "CUIYU",
+                          "content": "Тихий берег",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "id": "Fbqa9",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Полина Мирош",
+                          "fill": "#FFFFFFB8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qIZHu",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "bX6Z7",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "До завершения",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "cMFMk",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "2 дн 4 ч",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "L5jMS",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "yva47",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текущая ставка",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "cP612",
+                      "type": "ref",
+                      "ref": "PLNnF",
+                      "content": "1 250 BYN",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OAIjl",
+              "width": 416,
+              "height": 52,
+              "fill": "$surface",
+              "cornerRadius": 14,
+              "stroke": "$border_control",
+              "strokeWidth": 1.5,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "SerRt",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "vewyx",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "BYN",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "K5xBX6",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Минимальная ставка: 1 300 BYN",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "vkLLo",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "C27mI",
+                  "width": 24,
+                  "height": 24,
+                  "fill": "$surface",
+                  "cornerRadius": 6,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5
+                },
+                {
+                  "id": "v8u7Pa",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Принимаю правила сервиса",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "y9B9J",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "версия правил",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ku7Rx",
+              "width": 416,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "Mgmsq",
+              "width": 416,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "DzqZZ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "a7z6oe",
+      "x": 520,
+      "y": 161156,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "MyZJ3",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "06 first_bid default. Amount empty, rules unchecked, primary disabled until amount ≥ server minimum AND rules accepted. repeat_bid variant = rules row hidden; no other change. Motion: dialog_enter 200ms decelerate.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "yA1GM",
+      "x": 0,
+      "y": 161980,
+      "name": "bid-states/07-bid_dialog_editing_390",
+      "width": 390,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "AGFd6",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "07-bid_dialog_editing_390",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "xgX6k",
+          "width": 390,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Bh64L",
+              "width": 350,
+              "fill": "$surface",
+              "cornerRadius": 28,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F233729",
+                "offset": {
+                  "x": 0,
+                  "y": 16
+                },
+                "blur": 48
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 32,
+              "children": [
+                {
+                  "id": "reX5I",
+                  "type": "ref",
+                  "ref": "pw1Su",
+                  "content": "Ваша ставка",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "HgenS",
+                  "width": 286,
+                  "fill": "$ink",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ObK5j",
+                      "width": 254,
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "rsVaG",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 64,
+                          "height": 64,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 8
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Y1EnJy",
+                          "width": 240,
+                          "layout": "vertical",
+                          "gap": 4,
+                          "children": [
+                            {
+                              "id": "NnojF",
+                              "type": "ref",
+                              "ref": "CUIYU",
+                              "content": "Тихий берег",
+                              "fill": "#FFFFFF"
+                            },
+                            {
+                              "id": "hbu0R",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "content": "Полина Мирош",
+                              "fill": "#FFFFFFB8"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zVSnj",
+                      "width": 254,
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "id": "Utr1l",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "До завершения",
+                          "fill": "#FFFFFFB8"
+                        },
+                        {
+                          "id": "W9GxAi",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "2 дн 4 ч",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HGW9p",
+                      "width": 254,
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "id": "mgM86",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Текущая ставка",
+                          "fill": "#FFFFFFB8"
+                        },
+                        {
+                          "id": "vtpXM",
+                          "type": "ref",
+                          "ref": "PLNnF",
+                          "content": "1 250 BYN",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "U4pdi",
+                  "width": 286,
+                  "height": 52,
+                  "fill": "$surface",
+                  "cornerRadius": 14,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "raChW",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "1 300",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "JMP9E",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "BYN",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "OhZav",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Минимальная ставка: 1 300 BYN",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "XsmYo",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "d6vMuX",
+                      "width": 24,
+                      "height": 24,
+                      "fill": "$ink",
+                      "cornerRadius": 6,
+                      "stroke": "$border_control",
+                      "strokeWidth": 1.5
+                    },
+                    {
+                      "id": "YCoY3",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Принимаю правила сервиса",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "H8XsTR",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "версия правил",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y0sPn",
+                  "width": 286,
+                  "height": 24,
+                  "gap": 8,
+                  "alignItems": "center"
+                },
+                {
+                  "type": "frame",
+                  "id": "x1dDr",
+                  "width": 286,
+                  "height": 52,
+                  "fill": "$ink",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "f50m9A",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Подтвердить ставку",
+                      "fill": "$surface"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "k2TI5",
+          "width": 350,
+          "height": 300,
+          "fill": "$canvas_deep",
+          "cornerRadius": 8,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "wng1W",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "system keyboard",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "lpcK9",
+      "x": 430,
+      "y": 161980,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "l00WH",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "07 editing 390. Keyboard-safe geometry; numeric keypad on native; sheet_enter 280ms. Primary visible above keyboard.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "S7oZ8",
+      "x": 0,
+      "y": 163160,
+      "name": "bid-states/08-bid_dialog_submitting",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "IU2jk",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "08-bid_dialog_submitting",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "w3tn1w",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "t9tAe",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Ваша ставка",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "z5Vlj",
+              "width": 416,
+              "fill": "$ink",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ViMzM",
+                  "width": 384,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "erl9J",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$accent_yellow_soft",
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nEWIc",
+                      "width": 240,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "id": "F0pzp",
+                          "type": "ref",
+                          "ref": "CUIYU",
+                          "content": "Тихий берег",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "id": "blAkY",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Полина Мирош",
+                          "fill": "#FFFFFFB8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bOjjF",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "Wmsdp",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "До завершения",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "a3Wma",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "2 дн 4 ч",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bTCWW",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "rYEBe",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текущая ставка",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "Rw2Z2",
+                      "type": "ref",
+                      "ref": "PLNnF",
+                      "content": "1 250 BYN",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "g8i99M",
+              "width": 416,
+              "height": 52,
+              "fill": "$surface",
+              "cornerRadius": 14,
+              "stroke": "$border_control",
+              "strokeWidth": 1.5,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "B2jeD",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "1 300",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "hDT8r",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "BYN",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "oS9Qv",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Минимальная ставка: 1 300 BYN",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "cMgGo",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XihmV",
+                  "width": 24,
+                  "height": 24,
+                  "fill": "$ink",
+                  "cornerRadius": 6,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5
+                },
+                {
+                  "id": "seB15",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Принимаю правила сервиса",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "nKD4M",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "версия правил",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fX70o",
+              "width": 416,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "nbyqb",
+                  "type": "ref",
+                  "ref": "R0Au8f",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "J8av4",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Проверяем ставку…",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iKRBR",
+              "width": 416,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "u5O5d",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "XioAP",
+      "x": 520,
+      "y": 163160,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "XDkwf",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "08 submitting. Polite announcement. Inputs locked. Motion: inline_feedback_swap 120ms.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "QKGIC",
+      "x": 0,
+      "y": 163984,
+      "name": "bid-states/09-bid_dialog_accepted_panel_leading",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "c8b6Gd",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "09-bid_dialog_accepted_panel_leading",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "vvi6c",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "GLenT",
+              "width": 400,
+              "fill": "$surface",
+              "cornerRadius": 28,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1F233729",
+                "offset": {
+                  "x": 0,
+                  "y": 16
+                },
+                "blur": 48
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 32,
+              "children": [
+                {
+                  "id": "B8ZBmQ",
+                  "type": "ref",
+                  "ref": "pw1Su",
+                  "content": "Ваша ставка",
+                  "fill": "$ink"
+                },
+                {
+                  "type": "frame",
+                  "id": "lNPNd",
+                  "width": 336,
+                  "fill": "$ink",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Yz53t",
+                      "width": 304,
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "r4vbDG",
+                          "name": "media/asset_w1024_01_cover",
+                          "clip": true,
+                          "width": 64,
+                          "height": 64,
+                          "fill": "$accent_yellow_soft",
+                          "cornerRadius": 8
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DK999",
+                          "width": 240,
+                          "layout": "vertical",
+                          "gap": 4,
+                          "children": [
+                            {
+                              "id": "CzV6M",
+                              "type": "ref",
+                              "ref": "CUIYU",
+                              "content": "Тихий берег",
+                              "fill": "#FFFFFF"
+                            },
+                            {
+                              "id": "e4rPFE",
+                              "type": "ref",
+                              "ref": "Rf9zi",
+                              "content": "Полина Мирош",
+                              "fill": "#FFFFFFB8"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ispmH",
+                      "width": 304,
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "id": "hGThN",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "До завершения",
+                          "fill": "#FFFFFFB8"
+                        },
+                        {
+                          "id": "Iq4D9",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "2 дн 4 ч",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "upUje",
+                      "width": 304,
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "id": "rMId5",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Текущая ставка",
+                          "fill": "#FFFFFFB8"
+                        },
+                        {
+                          "id": "kZW4F",
+                          "type": "ref",
+                          "ref": "PLNnF",
+                          "content": "1 250 BYN",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zZWKS",
+                  "width": 336,
+                  "height": 52,
+                  "fill": "$surface",
+                  "cornerRadius": 14,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5,
+                  "padding": [
+                    0,
+                    16
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "oZUqZ",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "1 300",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "vy5lg",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "BYN",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                },
+                {
+                  "id": "LG6eV",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Минимальная ставка: 1 300 BYN",
+                  "fill": "$ink_soft"
+                },
+                {
+                  "type": "frame",
+                  "id": "h36oYB",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "clKJn",
+                      "width": 24,
+                      "height": 24,
+                      "fill": "$ink",
+                      "cornerRadius": 6,
+                      "stroke": "$border_control",
+                      "strokeWidth": 1.5
+                    },
+                    {
+                      "id": "gdJFl",
+                      "type": "ref",
+                      "ref": "BVunk",
+                      "content": "Принимаю правила сервиса",
+                      "fill": "$ink"
+                    },
+                    {
+                      "id": "m8wBvn",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "версия правил",
+                      "fill": "$ink"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "J1JFW",
+                  "width": 336,
+                  "height": 24,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "oO99Q",
+                      "type": "ref",
+                      "ref": "uHFnE",
+                      "width": 16,
+                      "height": 16
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "guJEy",
+                  "width": 336,
+                  "height": 52,
+                  "fill": "$canvas_deep",
+                  "cornerRadius": 999,
+                  "gap": 8,
+                  "padding": [
+                    0,
+                    20
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "q8Ghu",
+                      "type": "ref",
+                      "ref": "QounJ",
+                      "content": "Подтвердить ставку",
+                      "fill": "$ink_soft"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "adWiC",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "accepted → leading",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "V1Gwo",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "ADynw",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "type": "frame",
+              "id": "EnwPt",
+              "width": 352,
+              "fill": "$success_soft",
+              "cornerRadius": 12,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "rnYYT",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Вы лидируете · 1 300 BYN",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "VdiY2",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "tMMOx",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 300 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "OLn7T",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "UevaV",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "FscxH",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZYJlv",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "b9Li2i",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Повысить ставку",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "jWnka",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "mBT2p",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "8 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "wUgtz",
+      "x": 520,
+      "y": 163984,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "i0eKfd",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "09 accepted → leading. Success flash 120ms → dialog closes. Bid count 8 server-owned +1. No invented success copy.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "s87ivn",
+      "x": 0,
+      "y": 165230,
+      "name": "bid-states/10-bid_dialog_stale_minimum",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "idKUf",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "10-bid_dialog_stale_minimum",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Mkj1W",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "apnff",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Ваша ставка",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "Rvlfs",
+              "width": 416,
+              "fill": "$ink",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "JzUTN",
+                  "width": 384,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "dgLxU",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$accent_yellow_soft",
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "iogB7",
+                      "width": 240,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "id": "BS4jf",
+                          "type": "ref",
+                          "ref": "CUIYU",
+                          "content": "Тихий берег",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "id": "W3VwF",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Полина Мирош",
+                          "fill": "#FFFFFFB8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oitx9",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "CzjV4",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "До завершения",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "NJ2Wz",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "2 дн 4 ч",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JodTJ",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "gNbU1",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текущая ставка",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "FJNAH",
+                      "type": "ref",
+                      "ref": "PLNnF",
+                      "content": "1 250 BYN",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "b939OT",
+              "width": 416,
+              "height": 52,
+              "fill": "$surface",
+              "cornerRadius": 14,
+              "stroke": "$border_control",
+              "strokeWidth": 1.5,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "FRSW7",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "1 300",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "CLwoO",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "BYN",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "Svfuh",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Минимальная ставка: 1 300 BYN",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "zEEJl",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Wjz8T",
+                  "width": 24,
+                  "height": 24,
+                  "fill": "$ink",
+                  "cornerRadius": 6,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5
+                },
+                {
+                  "id": "w3jh0",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Принимаю правила сервиса",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "Vq6SJ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "версия правил",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TF583",
+              "width": 416,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Rg3c2",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Минимальная ставка изменилась — 1 350 BYN",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "ourvq",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Обновить",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "p4UPjC",
+              "width": 416,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "fBDR9",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Pa1Up",
+      "x": 520,
+      "y": 165230,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "Jzgyy",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "10 stale_minimum. Обновить refetches snapshot; amount preserved. Message verbatim from fixture.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "CNPfr",
+      "x": 0,
+      "y": 166054,
+      "name": "bid-states/11-bid_dialog_rejected_validation",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "pKKuy",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "11-bid_dialog_rejected_validation",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "FbDGL",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "rkejH",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Ваша ставка",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "ATTDg",
+              "width": 416,
+              "fill": "$ink",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gWcc7",
+                  "width": 384,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "rVyzt",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$accent_yellow_soft",
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R2FpRC",
+                      "width": 240,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "id": "iZObe",
+                          "type": "ref",
+                          "ref": "CUIYU",
+                          "content": "Тихий берег",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "id": "ryKUb",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Полина Мирош",
+                          "fill": "#FFFFFFB8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "M1Pvu",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "k0E6W",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "До завершения",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "M603s",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "2 дн 4 ч",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tllG9",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "BEUdr",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текущая ставка",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "k1xFJ",
+                      "type": "ref",
+                      "ref": "PLNnF",
+                      "content": "1 250 BYN",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "rVcbi",
+              "width": 416,
+              "height": 52,
+              "fill": "$surface",
+              "cornerRadius": 14,
+              "stroke": "$error",
+              "strokeWidth": 2,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "NUcOV",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "1 250",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "dSzNs",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "BYN",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "fFIU9",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Минимальная ставка: 1 300 BYN",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "mVWav",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z9R72",
+                  "width": 24,
+                  "height": 24,
+                  "fill": "$surface",
+                  "cornerRadius": 6,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5
+                },
+                {
+                  "id": "kFWai",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Принимаю правила сервиса",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "emor4",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "версия правил",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nfgC6",
+              "width": 416,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "kmI0S",
+                  "type": "ref",
+                  "ref": "pj2Z8",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "Osry9",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Missing spec: validation error copy",
+                  "fill": "$error"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Yuawu",
+              "width": 416,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "kfteQ",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "a2t9E",
+      "x": 520,
+      "y": 166054,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "BrQw7",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "11 rejected_validation. Amount below server minimum. role=alert. Missing spec: validation error copy.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "iA1CD",
+      "x": 0,
+      "y": 166878,
+      "name": "bid-states/12-bid_dialog_rejected_server",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "DvZ52",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "12-bid_dialog_rejected_server",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "WDjlW",
+          "width": 480,
+          "fill": "$surface",
+          "cornerRadius": 28,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#1F233729",
+            "offset": {
+              "x": 0,
+              "y": 16
+            },
+            "blur": 48
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "id": "v6p3AU",
+              "type": "ref",
+              "ref": "pw1Su",
+              "content": "Ваша ставка",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "NLkUl",
+              "width": 416,
+              "fill": "$ink",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "a2GWOb",
+                  "width": 384,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Ovvtn",
+                      "name": "media/asset_w1024_01_cover",
+                      "clip": true,
+                      "width": 64,
+                      "height": 64,
+                      "fill": "$accent_yellow_soft",
+                      "cornerRadius": 8
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZDfFp",
+                      "width": 240,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "id": "o1BtU",
+                          "type": "ref",
+                          "ref": "CUIYU",
+                          "content": "Тихий берег",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "id": "G4EtYk",
+                          "type": "ref",
+                          "ref": "Rf9zi",
+                          "content": "Полина Мирош",
+                          "fill": "#FFFFFFB8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zFsS3",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "Gk1Wb",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "До завершения",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "o8spD",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "2 дн 4 ч",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JO7m3",
+                  "width": 384,
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "id": "xxHtO",
+                      "type": "ref",
+                      "ref": "Rf9zi",
+                      "content": "Текущая ставка",
+                      "fill": "#FFFFFFB8"
+                    },
+                    {
+                      "id": "pUdyk",
+                      "type": "ref",
+                      "ref": "PLNnF",
+                      "content": "1 250 BYN",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "VIvFV",
+              "width": 416,
+              "height": 52,
+              "fill": "$surface",
+              "cornerRadius": 14,
+              "stroke": "$border_control",
+              "strokeWidth": 1.5,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "YPdXP",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "1 300",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "RiYcX",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "BYN",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "fYaWB",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Минимальная ставка: 1 300 BYN",
+              "fill": "$ink_soft"
+            },
+            {
+              "type": "frame",
+              "id": "z3zu85",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "C4oWNL",
+                  "width": 24,
+                  "height": 24,
+                  "fill": "$ink",
+                  "cornerRadius": 6,
+                  "stroke": "$border_control",
+                  "strokeWidth": 1.5
+                },
+                {
+                  "id": "rQK7m",
+                  "type": "ref",
+                  "ref": "BVunk",
+                  "content": "Принимаю правила сервиса",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "rQPD0",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "версия правил",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "uYujI",
+              "width": 416,
+              "height": 24,
+              "gap": 8,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "ZwUaw",
+              "width": 416,
+              "fill": "$error_soft",
+              "cornerRadius": 12,
+              "gap": 8,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "pidMb",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Ставка не принята: аукцион уже завершён. Обновите страницу.",
+                  "fill": "$ink"
+                },
+                {
+                  "id": "ioa3Q",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Попробовать снова",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "JhLrt",
+              "width": 416,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "GDcHD",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "U6nfON",
+      "x": 520,
+      "y": 166878,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "PpnlG",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "12 rejected_server. Fixture message verbatim. Попробовать снова.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LmPQ1",
+      "x": 0,
+      "y": 167762,
+      "name": "bid-states/13-panel_outbid",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "I92S7",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "13-panel_outbid",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Oh5Bm",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "Fsa2F",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "type": "frame",
+              "id": "W7DfB",
+              "width": 352,
+              "fill": "$error_soft",
+              "cornerRadius": 12,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "YxQwc",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Вашу ставку перебили",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "B3fboA",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "zH2WX",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "HVRYd",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "e1UIX",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "lIhDt",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "INiPD",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "wgZ4W",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сделать ставку",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "y7mas",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "rfa2i",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "APoPs",
+      "x": 520,
+      "y": 167762,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "hu07J",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "13 outbid. Viewer collector_by (1 200 BYN outbid by 1 250 BYN).",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "YrijQ",
+      "x": 0,
+      "y": 168414,
+      "name": "bid-states/14-panel_soft_close",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "P6czq",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "14-panel_soft_close",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "rhQbL",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "LJJ7N",
+              "type": "ref",
+              "ref": "GtvxV",
+              "name": "chip"
+            },
+            {
+              "type": "frame",
+              "id": "mt9PP",
+              "width": 352,
+              "fill": "$accent_yellow_soft",
+              "cornerRadius": 12,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "i2Xtuy",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Аукцион продлён · осталось 04:12",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "WySVv",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "Rfv6A",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "640 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "d9e0l",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "tYnDA",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "G6Sxb",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "04:12",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "kZX1h",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "NHUji",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сделать ставку",
+                  "fill": "$surface"
+                }
+              ]
+            },
+            {
+              "id": "PdDZJ",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "adcIN",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "5 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        },
+        {
+          "id": "cDrv3",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "dialog soft_close_notice",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "A2hzcl",
+          "width": 400,
+          "cornerRadius": 16,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "BVXD5",
+              "fill": "$accent_yellow_soft",
+              "cornerRadius": 12,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "vGvDD",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Аукцион продлён на 60 секунд",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xVO8E",
+              "width": 352,
+              "height": 52,
+              "fill": "$ink",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "ek1Aq",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Подтвердить ставку",
+                  "fill": "$surface"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "z1dH1",
+      "x": 520,
+      "y": 168414,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "P6ByIM",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "14 soft_close. Rule: Ставка в последние 60 секунд продлевает торги на 60 секунд (не более 10 минут суммарно). Countdown seconds-granularity only in soft-close. Base work_long_title_live 640 BYN, 5 ставок.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kFJEb",
+      "x": 0,
+      "y": 169252,
+      "name": "bid-states/15-panel_ended_won_viewer",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "G9RQV",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "15-panel_ended_won_viewer",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "Q3WLm",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "tHqSs",
+              "type": "ref",
+              "ref": "CA6UL",
+              "name": "chip"
+            },
+            {
+              "type": "frame",
+              "id": "KsMtM",
+              "width": 352,
+              "fill": "$success_soft",
+              "cornerRadius": 12,
+              "padding": 12,
+              "children": [
+                {
+                  "id": "UYlRp",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Вы выиграли",
+                  "fill": "$ink"
+                }
+              ]
+            },
+            {
+              "id": "WkJid",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Финальная ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "o1g0YR",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 450 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "XLHD2",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "z5je7x",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "DiTai",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Завершён 16 августа, 20:04",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "bqmLI",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Missing spec: order/handoff link label",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Ucv52",
+      "x": 520,
+      "y": 169252,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "a0GSM",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "15 ended_won_viewer. Chip Продано.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "mUzDk",
+      "x": 0,
+      "y": 169812,
+      "name": "bid-states/16-panel_ended_lost",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "LiXVq",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "16-panel_ended_lost",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "UiNGZ",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "Bw3GF",
+              "type": "ref",
+              "ref": "CA6UL",
+              "name": "chip"
+            },
+            {
+              "id": "OKxeW",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Финальная ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "uGNKA",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 450 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "OJDNx",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "IEtRb",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "s0z7Nu",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Завершён 16 августа, 20:04",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "svP01",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "победитель: tikhon_v",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jwgeM",
+      "x": 520,
+      "y": 169812,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "N6gus",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "16 ended_lost. победитель tikhon_v.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "vM5yT",
+      "x": 0,
+      "y": 170316,
+      "name": "bid-states/17-panel_ended_no_bids",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "WLmbF",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "17-panel_ended_no_bids",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "YQDUX",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "x74K14",
+              "type": "ref",
+              "ref": "Srlc8",
+              "name": "chip"
+            },
+            {
+              "id": "OgTVj",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Стартовая цена",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "k7R7Dy",
+              "type": "ref",
+              "ref": "PLNnF",
+              "content": "180 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "scVNT",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "xtpu2",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "v6E7A",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "Завершён",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "MkFzd",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Аукцион завершён без ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "hfXCY",
+      "x": 520,
+      "y": 170316,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "a2vDVu",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "17 ended_no_bids. No fake demand. Chip Завершено.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "GBm9u",
+      "x": 0,
+      "y": 170810,
+      "name": "bid-states/18-panel_role_disabled_admin",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "umj2P",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "18-panel_role_disabled_admin",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "iy9gX",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "ZtBEq",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "id": "aFwOX",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "Ih97Z",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "oYN9C",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "Z1vLTI",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "WnRrN",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vaxWU",
+              "width": 352,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "g3it7U",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сделать ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "swkg7",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "B0cV7i",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Администратор не участвует в торгах",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "t2GDl",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "IPmj0",
+      "x": 520,
+      "y": 170810,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "GkN2f",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "18 role_disabled_admin.",
+          "fill": "$ink_soft"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "BwTvC",
+      "x": 0,
+      "y": 171438,
+      "name": "bid-states/19-panel_role_disabled_self",
+      "width": 480,
+      "fill": "$canvas",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 24,
+      "children": [
+        {
+          "id": "S2ZKs",
+          "type": "ref",
+          "ref": "F0vV2",
+          "content": "19-panel_role_disabled_self",
+          "fill": "$ink_soft"
+        },
+        {
+          "type": "frame",
+          "id": "GfY4m",
+          "width": 400,
+          "fill": "$surface",
+          "cornerRadius": 24,
+          "stroke": "$hairline",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "id": "SpI09",
+              "type": "ref",
+              "ref": "VqxZi",
+              "name": "chip"
+            },
+            {
+              "id": "bcqg1",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Текущая ставка",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "WhDrj",
+              "type": "ref",
+              "ref": "Ur49k",
+              "content": "1 250 BYN",
+              "fill": "$ink"
+            },
+            {
+              "type": "frame",
+              "id": "MT8MQ",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "kgAOE",
+                  "type": "ref",
+                  "ref": "L2TjJG",
+                  "width": 16,
+                  "height": 16
+                },
+                {
+                  "id": "d8EVj",
+                  "type": "ref",
+                  "ref": "Rf9zi",
+                  "content": "До завершения: 2 дн 4 ч",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "w6fXDq",
+              "width": 352,
+              "height": 52,
+              "fill": "$canvas_deep",
+              "cornerRadius": 999,
+              "gap": 8,
+              "padding": [
+                0,
+                20
+              ],
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "hU6Vn",
+                  "type": "ref",
+                  "ref": "QounJ",
+                  "content": "Сделать ставку",
+                  "fill": "$ink_soft"
+                }
+              ]
+            },
+            {
+              "id": "iSu8q",
+              "type": "ref",
+              "ref": "HrX0J",
+              "content": "Как работает аукцион",
+              "fill": "$ink"
+            },
+            {
+              "id": "QLcGl",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "Это ваша работа — ставки недоступны",
+              "fill": "$ink_soft"
+            },
+            {
+              "id": "syHap",
+              "type": "ref",
+              "ref": "Rf9zi",
+              "content": "7 ставок",
+              "fill": "$ink_soft"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "g6sqrB",
+      "x": 520,
+      "y": 171438,
+      "name": "annotation",
+      "width": 420,
+      "fill": "$canvas_deep",
+      "cornerRadius": 14,
+      "layout": "vertical",
+      "padding": 16,
+      "children": [
+        {
+          "id": "ghf35",
+          "type": "ref",
+          "ref": "Rf9zi",
+          "content": "19 role_disabled_self.",
+          "fill": "$ink_soft"
+        }
+      ]
     }
   ],
   "variables": {
