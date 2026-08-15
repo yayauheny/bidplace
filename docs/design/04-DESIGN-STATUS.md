@@ -1,18 +1,40 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-08-14
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
+## Creator-first exploration (not production canon)
+
+- `Partial`: пакет направления лежит в репозитории: `design/creator-first/spec/`
+  плюс `design/pen/bidplace-creator-first-v1.pen`. Это рабочий контракт и
+  canvas, не замена `bidplace-web-v2.pen`.
+- `Partial`: V2 art-direction correction лежит в `design/creator-first-v2/`
+  (копия пакета с переписанным визуальным направлением). Pen V2 не начат;
+  три golden-экрана ждут визуального утверждения. Канон production не менялся.
+- `Confirmed`: production UI по-прежнему читает канон из
+  `design/pen/bidplace-web-v2.pen`.
+- Вход: `design/creator-first/README.md` (V1) и
+  `design/creator-first-v2/README.md` (V2). Аудит/runbook:
+  `docs/audits/creator-first-redesign/`.
+
 ## Текущий результат
+
+- `Implemented`: final Pen v2 review blockers for the shared atmosphere,
+  bounded blur overscan, Product About accordion, public creator pagination and
+  eligibility-aware auction CTA are now backed by shared runtime code and
+  focused tests. Mobile header and SlideToBid runtime primitives are now
+  implemented, and Product Creation now has a staged runtime wizard with
+  server-backed media/history/review states. Creator Profile Creation and
+  moderation workspace are now staged/partial pending full visual acceptance.
 
 - `Implemented`: структура `docs/design/00`–`07` пересобрана с чистого листа
   вокруг нового Pen v2 направления.
 - `Implemented`: старая design system в `docs/modern-ui/` выведена из проекта;
   её visual rules и cutover plan больше не действуют.
 - `Implemented`: точная локальная копия восстановлена по canonical path; SHA-256
-  `03798831d76992080d4edebf53c4c264f8f9754e01bbe81965083f271148d2a9`.
-- `Implemented`: canonical baseline принят commit `f7450e4`; после него любой
+  `685bc2dee4ca643869e678378bf849ab3189c4072b417670df6c64fa6c3181cf`.
+- `Implemented`: canonical baseline принят commit `ba3439b`; после него любой
   `.pen` diff запрещён.
 - `Confirmed`: `design/pen/bidplace-web-v2.pen` — защищённый визуальный эталон,
   который нельзя менять или удалять во время code work.
@@ -43,8 +65,10 @@
   API; screen composition and visual acceptance remain open.
 - `Implemented`: desktop account popover keyboard-open now moves focus into the
   portaled menu, with Escape returning focus to the trigger; the current header
-  follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Full browser
-  execution still needs matched Pen screenshots and device verification.
+  follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Desktop hover
+  dismiss now closes the portaled menu after a short grace period when the
+  pointer leaves both trigger and dropdown. Full browser execution still needs
+  matched Pen screenshots and device verification.
 - `Implemented`: Browse Works now consumes server facets for category, author,
   material and uniqueness menus, confirmed price ranges, a separate
   server-backed `Статус` facet, status counts and state tabs; server-side
@@ -104,12 +128,67 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 - `Verified`: local/test seed density now provides eight public works for the
   primary creator profile, with server-owned `2 / 4 / 2` LIVE/SCHEDULED/ENDED
   counts and local thematic media for the two-row Creator Profile composition.
+- `Implemented`: the canonical mobile header masters in shared section `h757v`
+  now render through `MobileHeader` at widths below 768px. Search open/close,
+  menu open/close, outside/Escape dismissal, focus return and role-aware
+  Create/Cabinet navigation are implemented; 1440/1024/390 screenshot and
+  device/accessibility acceptance remain pending.
+- `Partial`: Product Creation board `cK8kD` now maps to the staged
+  `ProductDraftScreen` flow for description, images, history, review and
+  submit. Owner-detail hydration now preserves creation intro, ordered story
+  steps and process-photo metadata across reload/save; exact Pen visual
+  comparison, full state screenshots and native picker acceptance remain
+  pending.
+- `Partial`: the shared mobile menu now uses `min(320px, viewport - 32px)`
+  with right-gutter bounds, and Creator Profile fields reuse contract-derived
+  Telegram, Instagram, website and handoff validation with field-local errors.
+  Targeted regression coverage passes; the full Playwright, visual overlay,
+  native-device and screen-reader/keyboard gates remain pending.
+- `Partial`: Creator Profile Creation board `JOjIY` now maps to staged public
+  identity, structured links, profile photo and private handoff/review states.
+  The review intentionally omits private transfer fields; exact Pen comparison
+  and device/accessibility acceptance remain pending.
+- `Partial`: canonical Pen now includes design-only board `JOjIY` (`FINAL —
+  Creator Profile Creation Flow`) with 20 desktop, 9 mobile and 3 tablet states,
+  canonical Creator Profile previews, slug and avatar interaction matrices,
+  public/private transfer separation and moderation outcomes. Persistent wizard
+  previews no longer embed CreatorCard. At ≤767px one reusable compact
+  `MobileHeader` shows only the canonical logo plus matching 44px Search, black
+  Create (+) and Menu triggers. Search opens a back-trigger + canonical SearchBar
+  state; Menu opens a 320px canonical-style dropdown for Auctions, Authors,
+  Cabinet and Sign Out, with no duplicated Create or Search. Mobile header/menu
+  masters and interaction states live in the dedicated bottom section of
+  `FINAL — Shared UI Components`. Tablet/desktop headers are unchanged. No
+  frontend/backend implementation or runtime verification has started.
+- `Verified`: canonical Pen platform-grid audit aligned Browse Works, Browse
+  Authors, Product/Auction, both Creator Profile finals, Product Creation/Bids,
+  Product Creation flow and Creator Profile Creation flow to the header's
+  Auctions anchor (`x=104`, `width=1232`) using shared Pen layout variables.
+  Tablet wizard frames use 48 px and mobile frames use 16 px gutters. Overlay
+  and comparison canvases without a platform header remain intentionally scoped
+  to their own modal/board coordinate systems.
+- `Verified`: all 16 Product Creation and 19 two-column Creator Profile Creation
+  desktop states now share centered `WorkspaceLayout` geometry (`1088 = 600 +
+  48 + 440`, x=176, top=56). Forms, review, loading, errors, success and
+  moderation outcomes keep identical column positions. Three tablet states use
+  the centered `928 = 500 + 32 + 396` workspace; nine mobile states remain
+  single-column with the approved compact header and collapsible preview.
+- `Partial`: canonical Pen now includes design-only board `NRlEW` (`FINAL —
+  Admin Moderation Workspace`) with exactly two moderation domains: Authors and
+  Works. It contains 23 required desktop, 14 mobile and 4 tablet states, wide
+  queue rows without inline decisions, canonical public previews, separated
+  private transfer data, centered `800 + 40 + 360` review workspaces, decision
+  dialogs/sheets, blocking/conflict/success states and loading/empty/error
+  references. Orders are explicitly excluded for future `/admin/orders`.
+  Runtime now provides Authors/Works/All queue tabs, search/status filters,
+  reasoned decisions and existing order controls; exact visual state coverage
+  and device/accessibility acceptance remain pending.
 
 ## Screen matrix
 
 | Target           | Pen      | Visual spec       | Data/route                            | Code        | Acceptance             |
 | ---------------- | -------- | ----------------- | ------------------------------------- | ----------- | ---------------------- |
-| Global Header    | `L9UV9`  | measured baseline | role logic and overlays exist         | partial     | pending visual QA      |
+| Global Header    | `L9UV9` + `h757v` | measured desktop/tablet and mobile masters | role logic, mobile states and overlays exist | partial | pending visual QA/device QA |
 | Home             | `BJd1P`  | exported/readable | `/api/discovery/home`                 | partial     | pending responsive QA  |
 | Browse Works     | `H5vf2`  | exported/readable | server query + controls               | partial     | pending responsive QA  |
 | Browse Authors   | `N4ebBk` | exported/readable | approved author list API + discipline | partial     | pending visual QA      |
@@ -117,6 +196,8 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | Product Creation | `cK8kD`  | exported/readable | existing fields only                  | implemented | verified               |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields                | implemented | verified               |
 | Creator Profile  | `MqUMz`  | exported/readable | current public links                  | partial     | pending visual/data QA |
+| Profile Creation | `JOjIY`  | responsive staged flow | public identity/links + private handoff | partial | pending visual/device QA |
+| Admin Moderation | `NRlEW`  | responsive queue/review states | Authors/Works admin contracts | partial | pending visual/device QA |
 
 ## Shared component matrix
 

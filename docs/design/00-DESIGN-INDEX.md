@@ -1,6 +1,6 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-08-14
 
 Статус: **Confirmed documentation baseline**
 
@@ -62,6 +62,19 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 | `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | полный аудит, node registry и этапы реализации    |
 | `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 
+Отдельный пакет **creator-first** (не канон production UI, пока нет отдельного решения основателя):
+
+| Путь | Владеет |
+|---|---|
+| `../../design/creator-first/spec/` | V1 контракт направления |
+| `../../design/creator-first-v2/spec/` | V2 art-direction correction (рабочая копия; Pen ещё не строится) |
+| `../../design/creator-first/README.md` | как читать V1 пакет |
+| `../../design/creator-first-v2/README.md` | как читать V2 пакет |
+| `../../design/pen/bidplace-creator-first-v1.pen` | рабочий Pen V1 |
+| `../audits/creator-first-redesign/` | brief, audit и runbook агентов |
+
+`bidplace-web-v2.pen` остаётся единственным каноном для текущего production UI.
+
 ## Обязательное чтение
 
 Перед любой UI-задачей:
@@ -71,6 +84,7 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 3. для реализации открыть `05`, `06` и релевантный этап в `07`;
 4. прочитать Pen README и нужные canonical nodes;
 5. проверить фактические routes, contracts, components и tests в коде.
+6. для задач направления creator-first — `design/creator-first/README.md` (V1) или `design/creator-first-v2/README.md` (V2 art-direction) и соответствующий `spec/`.
 
 ## Что не является источником дизайна
 

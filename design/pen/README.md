@@ -41,6 +41,10 @@ code task запрещено.
 - Public read-only review:
   <https://app.pen.dev/s/r32fdudQVyiuEZ5htTMYdcv40WDQ4v3vwLT82lS27uk>.
 - `bidplace-web.pen` — исторический canvas, не visual source.
+- `bidplace-creator-first-v1.pen` — рабочий canvas направления creator-first V1.
+  Спека: `design/creator-first/spec/`. Не канон production.
+- V2 art-direction packet: `design/creator-first-v2/`. Pen V2 ещё не создан
+  (`bidplace-creator-first-v2.pen` запрещён до утверждения трёх golden-экранов).
 - `target-solution/bidplace-youthful.pen` — историческое/неполное направление,
   не visual source.
 - `exports/` — review evidence, не source of truth.

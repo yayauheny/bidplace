@@ -55,7 +55,11 @@ values.
 | Creator media                | square viewport, radius 12, no outer card surface                                     |
 | Catalog controls             | height 36, radius 18, horizontal padding 13, `Onest` 14/500                           |
 | Auction card example         | 322×456, media 322×322, radius 12, info surface `#F7F7F5`                             |
-| Discovery grid container     | 1360 px at 1440 desktop, 40 px outer gutter, four 322 px cards with 24 px gaps        |
+| Platform content container   | starts at x=104 at 1440 desktop, width 1232; aligned to the left edge of `Аукционы`   |
+| Responsive gutters           | tablet 48 px; mobile 16 px                                                         |
+| Platform column gap          | 40 px for public content-page compositions                                         |
+| Wizard workspace             | centered 1088 px: 600 px primary + 48 px gap + 440 px preview; top offset 56 px    |
+| Tablet wizard workspace      | centered 928 px: 500 px primary + 32 px gap + 396 px preview                       |
 | Card title                   | `Onest` 16/700, line-height 20                                                        |
 | Card creator/metadata        | 14/500; metric label 12/500; metric value 16/700                                      |
 | Creator profile card example | 340×526, media 340×380                                                                |
@@ -64,8 +68,17 @@ Exact semantic token names and repeated-value clustering выполняются 
 Card dimensions in the table are canonical screen variants; the reusable
 `k5vYGf` reference below remains 322×456. Implementation selects the measured
 variant by canonical consumer, not by stretching one card with arbitrary CSS.
-Browse Works and Browse Authors use the shared `discoveryMaxWidth` token for
-this four-column geometry. The H5vf2 toolbar order is facets → title → state
+Browse Works, Browse Authors, Product and Creator content pages use the Pen
+platform contract: `page-content-start-desktop=104`,
+`page-content-width-desktop=1232`, `page-column-gap=40`,
+`page-gutter-tablet=48`, and `page-gutter-mobile=16`. Wizard, application,
+review and status screens use the centered `WorkspaceLayout` (`KyWoR`) contract:
+`workspace-width-desktop=1088`, `workspace-primary-desktop=600`,
+`workspace-preview-desktop=440`, `workspace-gap-desktop=48`, and
+`workspace-top-desktop=56`; tablet uses `500 / 32 / 396`. Mobile remains a
+single column with the 16 px platform gutter and collapsible preview. Four-column
+consumers keep their 24 px internal grid gap and size `fill_container` cards
+from the shared platform container. The H5vf2 toolbar order is facets → title → state
 tabs/sort; the unsupported `Тип работы` facet remains intentionally omitted
 until its domain field is approved.
 Onest/Inter weights and Cyrillic coverage подтверждены runtime-сборкой.
@@ -143,6 +156,15 @@ implementations.
 
 ## 5. Controls and interaction rules
 
+### Shared atmosphere and accordion invariants
+
+`AmbientImageBackground` is the single shell-level atmosphere primitive for
+Product and Creator Profile. Its media layer is clipped by the outer bounds,
+overscanned by a bounded 1.1 scale, and fades through one explicit linear
+gradient into the warm surface. Product About accordion rows use one symmetric
+toggle behavior: the active row closes when activated again, and the control
+exposes its expanded state.
+
 - Buttons and links remain visually and semantically distinct.
 - Dropdown/menu is not a generic select; sort/filter controls use appropriate
   listbox/select semantics.
@@ -192,6 +214,10 @@ requires an explicitly documented per-component exception.
   160–200 ms without delaying data or focus.
 - Toast enters in 180–240 ms, remains long enough to read, exposes an
   accessible live-region message and never covers the auction action.
+- `SlideToBid` uses a 56px track with a 4px inset, a bounded 360/488 control
+  ratio on the canonical desktop width, 92% completion threshold, horizontal
+  direction lock and spring-back on early release. Loading holds the control
+  at the completion edge; a tap is not a bid confirmation.
 - AuctionPlayer inline→sticky transition keeps one state owner and the same
   focused control; no remount, duplicate countdown or duplicated mutation.
 
