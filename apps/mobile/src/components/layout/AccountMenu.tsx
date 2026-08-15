@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { Link, usePathname, useRouter } from 'expo-router';
 import {
   useCallback,
   useEffect,
@@ -6,7 +6,7 @@ import {
   useState,
   type MutableRefObject,
 } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -18,6 +18,10 @@ import {
   MotionPressable,
 } from '../ui';
 import { OverlayPortal } from './OverlayHost';
+import {
+  ACCOUNT_MENU_HOVER_CLOSE_DELAY_MS,
+  shouldDismissAccountMenuOnHoverLeave,
+} from './account-menu-hover';
 
 const menuItemStyle = {
   minHeight: 48,
@@ -43,10 +47,14 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const auth = useAuth();
   const capability = useSellerCapability();
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const focusOpened = useRef(false);
   const suppressNextFocusOpen = useRef(false);
+  const triggerHoveredRef = useRef(false);
+  const dropdownHoveredRef = useRef(false);
+  const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstMenuItemRef = useRef<{ focus?: () => void } | null>(null);
   const triggerRef = useRef<{
     getBoundingClientRect: () => DOMRect;
@@ -60,17 +68,73 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
       : capability.profile
         ? 'Заявка продавца'
         : 'Стать продавцом';
-  const closeMenu = useCallback((restoreFocus = false) => {
-    focusOpened.current = false;
-    setOpen(false);
-    if (restoreFocus) {
-      suppressNextFocusOpen.current = true;
-      triggerRef.current?.focus?.();
-      queueMicrotask(() => {
-        suppressNextFocusOpen.current = false;
-      });
-    }
+  const clearHoverCloseTimer = useCallback(() => {
+    if (hoverCloseTimerRef.current === null) return;
+    clearTimeout(hoverCloseTimerRef.current);
+    hoverCloseTimerRef.current = null;
   }, []);
+
+  const closeMenu = useCallback(
+    (restoreFocus = false) => {
+      clearHoverCloseTimer();
+      triggerHoveredRef.current = false;
+      dropdownHoveredRef.current = false;
+      focusOpened.current = false;
+      setOpen(false);
+      if (restoreFocus) {
+        suppressNextFocusOpen.current = true;
+        triggerRef.current?.focus?.();
+        queueMicrotask(() => {
+          suppressNextFocusOpen.current = false;
+        });
+      }
+    },
+    [clearHoverCloseTimer],
+  );
+
+  const scheduleHoverClose = useCallback(() => {
+    if (!desktop || Platform.OS !== 'web') return;
+
+    clearHoverCloseTimer();
+    hoverCloseTimerRef.current = setTimeout(() => {
+      hoverCloseTimerRef.current = null;
+      if (
+        shouldDismissAccountMenuOnHoverLeave(
+          triggerHoveredRef.current,
+          dropdownHoveredRef.current,
+        )
+      ) {
+        closeMenu();
+      }
+    }, ACCOUNT_MENU_HOVER_CLOSE_DELAY_MS);
+  }, [clearHoverCloseTimer, closeMenu, desktop]);
+
+  const handleTriggerHoverIn = useCallback(() => {
+    triggerHoveredRef.current = true;
+    clearHoverCloseTimer();
+    setOpen(true);
+  }, [clearHoverCloseTimer]);
+
+  const handleTriggerHoverOut = useCallback(() => {
+    triggerHoveredRef.current = false;
+    scheduleHoverClose();
+  }, [scheduleHoverClose]);
+
+  const handleDropdownHoverIn = useCallback(() => {
+    dropdownHoveredRef.current = true;
+    clearHoverCloseTimer();
+  }, [clearHoverCloseTimer]);
+
+  const handleDropdownHoverOut = useCallback(() => {
+    dropdownHoveredRef.current = false;
+    scheduleHoverClose();
+  }, [scheduleHoverClose]);
+
+  useEffect(() => () => clearHoverCloseTimer(), [clearHoverCloseTimer]);
+
+  useEffect(() => {
+    closeMenu();
+  }, [closeMenu, pathname]);
 
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return;
@@ -180,7 +244,8 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
               }
             : undefined
         }
-        onHoverIn={desktop ? () => setOpen(true) : undefined}
+        onHoverIn={desktop ? handleTriggerHoverIn : undefined}
+        onHoverOut={desktop ? handleTriggerHoverOut : undefined}
         onPress={() => {
           if (focusOpened.current) {
             focusOpened.current = false;
@@ -212,15 +277,21 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             testId="account-menu-dropdown"
             width={designTokens.layout.accountPopoverWidth}
           >
-            <AccountDropdown
-              profileLabel={profileLabel}
-              showPurchases={!auth.isAdmin}
-              showModeration={auth.isAdmin}
-              loggingOut={loggingOut}
-              onLogout={() => void logout()}
-              firstMenuItemRef={firstMenuItemRef}
-              inline={false}
-            />
+            <Pressable
+              onHoverIn={handleDropdownHoverIn}
+              onHoverOut={handleDropdownHoverOut}
+              style={{ width: '100%' }}
+            >
+              <AccountDropdown
+                profileLabel={profileLabel}
+                showPurchases={!auth.isAdmin}
+                showModeration={auth.isAdmin}
+                loggingOut={loggingOut}
+                onLogout={() => void logout()}
+                firstMenuItemRef={firstMenuItemRef}
+                inline={false}
+              />
+            </Pressable>
           </OverlayPortal>
         ) : (
           <AccountDropdown
