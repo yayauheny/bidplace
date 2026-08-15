@@ -25,6 +25,15 @@ import {
 import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
+import {
+  canOpenProductWizardStep,
+  createProductWizardDraft,
+  parseProductWizardStepParam,
+  productWizardStep,
+  resolveProductWizardStep,
+  shouldRewriteProductWizardStepParam,
+  type ProductWizardStepParam,
+} from './product-draft-wizard';
 
 function DraftImageRow({
   url,
@@ -101,11 +110,11 @@ type DraftCreationStep = {
 export function ProductDraftScreen({
   productId,
   flow,
-  initialStep = 1,
+  stepParam,
 }: {
   productId?: string;
   flow?: string;
-  initialStep?: number;
+  stepParam?: ProductWizardStepParam;
 }) {
   const api = useApiClient();
   const router = useRouter();
@@ -140,9 +149,6 @@ export function ProductDraftScreen({
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
   );
-  const [wizardStep, setWizardStep] = useState(
-    Math.min(Math.max(initialStep, 1), 4),
-  );
   const [creationIntro, setCreationIntro] = useState('');
   const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([]);
   const [creationStorySaved, setCreationStorySaved] = useState(true);
@@ -155,10 +161,27 @@ export function ProductDraftScreen({
   const [creationAttempted, setCreationAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
   const isCreationFlow = flow === 'creation' || !productId;
+  const wizardDraft = createProductWizardDraft(existingProduct ?? null);
+  const requestedStep = parseProductWizardStepParam(stepParam);
+  const wizardStep = resolveProductWizardStep(requestedStep, wizardDraft);
 
   useEffect(() => {
-    setWizardStep(Math.min(Math.max(initialStep, 1), 4));
-  }, [initialStep]);
+    if (!productId || !isCreationFlow || productDetail.isLoading) return;
+    if (!existingProduct) return;
+    const resolvedStep = resolveProductWizardStep(requestedStep, wizardDraft);
+    if (!shouldRewriteProductWizardStepParam(stepParam, resolvedStep)) return;
+    router.setParams({ flow: 'creation', step: String(resolvedStep) });
+  }, [
+    productId,
+    isCreationFlow,
+    productDetail.isLoading,
+    existingProduct,
+    requestedStep,
+    stepParam,
+    wizardDraft.hasProduct,
+    wizardDraft.imageCount,
+    router,
+  ]);
 
   useEffect(() => {
     if (!existingProduct || initializedProductId === existingProduct.id) return;
@@ -224,6 +247,13 @@ export function ProductDraftScreen({
         router.replace({
           pathname: '/(seller)/products/[id]',
           params: { id: product.id, flow: 'creation', step: '2' },
+        });
+        return;
+      }
+      if (isCreationFlow) {
+        router.setParams({
+          flow: 'creation',
+          step: String(productWizardStep.images),
         });
       }
     },
@@ -377,9 +407,6 @@ export function ProductDraftScreen({
       ),
     );
   };
-  const canContinueToCreation = Boolean(
-    existingProduct && existingProduct.images.length > 0,
-  );
   const parsedYear = year.trim() ? Number(year) : null;
   const stepOneErrors = {
     categoryId: categoryId ? undefined : 'Выберите категорию',
@@ -406,10 +433,8 @@ export function ProductDraftScreen({
     (step) => step.title.trim().length > 0 && step.body.trim().length > 0,
   );
   const moveToWizardStep = (step: number) => {
-    setWizardStep(step);
-    if (existingProduct) {
-      router.setParams({ flow: 'creation', step: String(step) });
-    }
+    if (!existingProduct) return;
+    router.setParams({ flow: 'creation', step: String(step) });
   };
   const chooseCreationStepImage = async (stepId: string) => {
     setCreationImageSelectionError(null);
@@ -460,9 +485,7 @@ export function ProductDraftScreen({
                     label={`${step}. ${label}`}
                     disabled={
                       wizardSubmitted ||
-                      step > wizardStep ||
-                      (step === 2 && !existingProduct) ||
-                      (step >= 3 && !canContinueToCreation)
+                      !canOpenProductWizardStep(step, wizardDraft)
                     }
                     onPress={() => moveToWizardStep(step)}
                   />
@@ -472,7 +495,7 @@ export function ProductDraftScreen({
           </View>
           {existingProduct ? (
             <AppText role="metadata" tone="secondary">
-              Шаг {Math.min(wizardStep, 4)} из 4 ·{' '}
+              Шаг {wizardStep} из 4 ·{' '}
               {existingProduct.title ?? 'Без названия'}
             </AppText>
           ) : null}
@@ -552,7 +575,7 @@ export function ProductDraftScreen({
         </AppText>
       ) : null}
 
-      {!isCreationFlow || wizardStep === 1 ? (
+      {!isCreationFlow || wizardStep === productWizardStep.about ? (
         <FormPageColumns
           sidebar={
             <>
@@ -704,21 +727,17 @@ export function ProductDraftScreen({
         </FormPageColumns>
       ) : null}
 
-      {!isCreationFlow || wizardStep === 1 ? (
+      {!isCreationFlow || wizardStep === productWizardStep.about ? (
         <AppText role="bodySmall" tone="secondary">
           Дата размещения установится автоматически при первой публичной
           публикации.
         </AppText>
       ) : null}
 
-      {editable && (!isCreationFlow || wizardStep === 1) ? (
+      {editable && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <PrimaryButton
           label={
-            isCreationFlow && !existingProduct
-              ? 'Сохранить и продолжить'
-              : existingProduct
-                ? 'Сохранить изменения'
-                : 'Сохранить черновик'
+            isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения'
           }
           loading={save.isPending}
           width="block"
@@ -731,13 +750,13 @@ export function ProductDraftScreen({
           }}
         />
       ) : null}
-      {save.isError && (!isCreationFlow || wizardStep === 1) ? (
+      {save.isError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <AppText role="bodySmall" tone="danger">
           Не удалось сохранить предмет.
         </AppText>
       ) : null}
 
-      {existingProduct && (!isCreationFlow || wizardStep === 2) ? (
+      {existingProduct && (!isCreationFlow || wizardStep === productWizardStep.images) ? (
         <FormSection title="Изображения">
           <AppText role="bodySmall" tone="secondary">
             {existingProduct.images.length}/10 изображений
@@ -785,7 +804,9 @@ export function ProductDraftScreen({
         </FormSection>
       ) : null}
 
-      {isCreationFlow && wizardStep === 2 && existingProduct ? (
+      {isCreationFlow &&
+      wizardStep === productWizardStep.images &&
+      existingProduct ? (
         <View style={{ gap: designTokens.space.x3 }}>
           <AppText role="bodySmall" tone="secondary">
             Первое изображение обязательно. До 10 изображений можно заменить,
@@ -793,17 +814,21 @@ export function ProductDraftScreen({
           </AppText>
           <SecondaryButton
             label="Назад к описанию"
-            onPress={() => moveToWizardStep(1)}
+            onPress={() => moveToWizardStep(productWizardStep.about)}
           />
           <PrimaryButton
             label="Продолжить к истории создания"
-            disabled={!canContinueToCreation}
-            onPress={() => moveToWizardStep(3)}
+            disabled={
+              !canOpenProductWizardStep(productWizardStep.creation, wizardDraft)
+            }
+            onPress={() => moveToWizardStep(productWizardStep.creation)}
           />
         </View>
       ) : null}
 
-      {isCreationFlow && wizardStep === 3 && existingProduct ? (
+      {isCreationFlow &&
+      wizardStep === productWizardStep.creation &&
+      existingProduct ? (
         <FormSection
           title="История создания"
           description="Добавьте контекст, который поможет зрителю понять путь работы. Этот шаг можно оставить пустым."
@@ -937,7 +962,7 @@ export function ProductDraftScreen({
           <SecondaryButton
             label="Назад к изображениям"
             disabled={replaceCreation.isPending}
-            onPress={() => moveToWizardStep(2)}
+            onPress={() => moveToWizardStep(productWizardStep.images)}
           />
           <PrimaryButton
             label="Сохранить историю"
@@ -956,12 +981,14 @@ export function ProductDraftScreen({
               replaceCreation.isPending ||
               uploadCreationStepImage.isPending
             }
-            onPress={() => moveToWizardStep(4)}
+            onPress={() => moveToWizardStep(productWizardStep.review)}
           />
         </FormSection>
       ) : null}
 
-      {isCreationFlow && wizardStep === 4 && existingProduct ? (
+      {isCreationFlow &&
+      wizardStep === productWizardStep.review &&
+      existingProduct ? (
         <FormSection
           title="Проверка перед модерацией"
           description="Проверьте обязательные поля, изображения и историю создания. После отправки редактирование будет ограничено статусом модерации."
@@ -992,7 +1019,7 @@ export function ProductDraftScreen({
           <SecondaryButton
             label="Назад к истории создания"
             disabled={submit.isPending || wizardSubmitted}
-            onPress={() => moveToWizardStep(3)}
+            onPress={() => moveToWizardStep(productWizardStep.creation)}
           />
         </FormSection>
       ) : null}

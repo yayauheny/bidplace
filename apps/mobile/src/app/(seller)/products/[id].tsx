@@ -6,14 +6,7 @@ export default function ProductDraftRoute() {
   const { id, flow, step } = useLocalSearchParams<{
     id: string;
     flow?: string;
-    step?: string;
+    step?: string | string[];
   }>();
-  const initialStep = Number.parseInt(step ?? '1', 10);
-  return (
-    <ProductDraftScreen
-      productId={id}
-      flow={flow}
-      initialStep={Number.isFinite(initialStep) ? initialStep : 1}
-    />
-  );
+  return <ProductDraftScreen productId={id} flow={flow} stepParam={step} />;
 }
