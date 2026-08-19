@@ -1,3 +1,5 @@
+import type { ActivityStatus, ListingStatus } from '@bidplace/contracts';
+
 export const sellerStatusLabels = {
   APPROVED: 'Одобрен',
   PENDING_REVIEW: 'На модерации',
@@ -23,6 +25,16 @@ export const listingStatusLabels = {
   CANCELLED: 'Отменён',
 } as const;
 
+// Auction surfaces (product detail) intentionally use different wording than
+// the generic listingStatusLabels above.
+export const auctionListingStatusLabels = {
+  SCHEDULED: 'Торги запланированы',
+  LIVE: 'Торги идут',
+  ENDED: 'Торги завершены',
+  CANCELLED: 'Размещение отменено',
+  DRAFT: 'Черновик размещения',
+} as const satisfies Record<ListingStatus, string>;
+
 export const orderStatusLabels = {
   PENDING_CONTACT: 'Ожидает контакта',
   CONTACTED: 'Контакт установлен',
@@ -30,6 +42,33 @@ export const orderStatusLabels = {
   HANDOFF_FAILED: 'Передача не состоялась',
   CANCELLED: 'Отменён',
 } as const;
+
+export const auctionParticipationLabels = {
+  LEADING: 'Побеждаете',
+  OUTBID: 'Ставка перебита',
+  WON: 'Выиграли',
+  LOST: 'Торги завершены',
+  AWAITING_SELLER_CONTACT: 'Ожидается связь с автором',
+  WIN_CANCELLED: 'Покупка отменена',
+  COMPLETED: 'Покупка завершена',
+} as const satisfies Record<ActivityStatus, string>;
+
+export function auctionListingStatusTone(
+  status: ListingStatus,
+): 'accent' | 'success' | 'secondary' | 'danger' {
+  if (status === 'LIVE') return 'success';
+  if (status === 'SCHEDULED') return 'accent';
+  if (status === 'CANCELLED') return 'danger';
+  return 'secondary';
+}
+
+export function auctionParticipationTone(
+  status: ActivityStatus,
+): 'accent' | 'success' | 'secondary' | 'danger' {
+  if (status === 'LEADING' || status === 'WON') return 'success';
+  if (status === 'OUTBID') return 'accent';
+  return 'secondary';
+}
 
 export const sellerTypeLabels = {
   creator: 'Создатель',

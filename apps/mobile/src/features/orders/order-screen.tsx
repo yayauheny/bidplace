@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout/FormPageShell';
+import { FormPageShell } from '../../components/layout';
 import {
   AppDialog,
   AppText,

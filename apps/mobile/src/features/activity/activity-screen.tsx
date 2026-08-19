@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import type { ApiClient } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout/FormPageShell';
+import { FormPageShell } from '../../components/layout';
 import {
   AppText,
   MotionPressable,

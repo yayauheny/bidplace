@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -6,10 +6,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import {
-  FormPageColumns,
-  FormPageShell,
-} from '../../components/layout/FormPageShell';
+import { FormPageShell } from '../../components/layout';
 import {
   AppDialog,
   AppText,
@@ -17,88 +14,24 @@ import {
   FormSection,
   PageState,
   PrimaryButton,
-  ResilientRemoteImage,
   SecondaryButton,
-  TextButton,
-  TextField,
 } from '../../components/ui';
-import { getApiAssetUrl } from '../../lib/environment';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import {
   canOpenProductWizardStep,
   createProductWizardDraft,
+  createProductWizardHref,
   parseProductWizardStepParam,
   productWizardStep,
   resolveProductWizardStep,
   shouldRewriteProductWizardStepParam,
   type ProductWizardStepParam,
 } from './product-draft-wizard';
-
-function DraftImageRow({
-  url,
-  position,
-  editable,
-  isLast,
-  isReordering,
-  isRemoving,
-  onMove,
-  onDelete,
-}: {
-  url: string;
-  position: number;
-  editable: boolean;
-  isLast: boolean;
-  isReordering: boolean;
-  isRemoving: boolean;
-  onMove: (direction: -1 | 1) => void;
-  onDelete: () => void;
-}) {
-  const mediaStyle = {
-    width: 160,
-    height: 200,
-    borderRadius: designTokens.radius.image,
-    backgroundColor: designTokens.color.placeholder,
-  };
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: designTokens.space.x3,
-      }}
-    >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(url)}
-        component="ProductGallery"
-        accessibilityLabel={`Изображение предмета ${position + 1}`}
-        fallbackLabel={`Изображение ${position + 1} недоступно`}
-        style={mediaStyle}
-        contentFit="contain"
-      />
-      {editable ? (
-        <View style={{ flex: 1, minWidth: 0, gap: designTokens.space.x1 }}>
-          <TextButton
-            label="Переместить выше"
-            disabled={position === 0 || isReordering}
-            onPress={() => onMove(-1)}
-          />
-          <TextButton
-            label="Переместить ниже"
-            disabled={isLast || isReordering}
-            onPress={() => onMove(1)}
-          />
-          <TextButton
-            label="Удалить изображение"
-            disabled={isRemoving}
-            onPress={onDelete}
-          />
-        </View>
-      ) : null}
-    </View>
-  );
-}
+import { ProductDraftAboutStep } from './product-draft-about';
+import { ProductDraftCreationStep } from './product-draft-creation';
+import { ProductDraftImagesStep } from './product-draft-images';
+import { ProductDraftReviewStep } from './product-draft-review';
 
 type DraftCreationStep = {
   id?: string;
@@ -236,18 +169,16 @@ export function ProductDraftScreen({
       existingProduct
         ? api.products.update(existingProduct.id, input())
         : api.products.create(input()),
-    onSuccess: async ({ product }) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['seller', 'product', existingProduct?.id],
-        }),
-      ]);
+    onSuccess: ({ product }) => {
+      const productQueryId = existingProduct?.id ?? product.id;
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', productQueryId],
+      });
       if (!existingProduct) {
-        router.replace({
-          pathname: '/(seller)/products/[id]',
-          params: { id: product.id, flow: 'creation', step: '2' },
-        });
+        router.replace(
+          createProductWizardHref(product.id, productWizardStep.images),
+        );
         return;
       }
       if (isCreationFlow) {
@@ -361,9 +292,9 @@ export function ProductDraftScreen({
 
   if (categories.isLoading || (productId && productDetail.isLoading))
     return (
-      <DraftShell>
+      <FormPageShell>
         <PageState title="Загружаем предмет…" loading />
-      </DraftShell>
+      </FormPageShell>
     );
   if (
     categories.isError ||
@@ -371,7 +302,7 @@ export function ProductDraftScreen({
     (productId && (!productDetail.data || !existingProduct))
   )
     return (
-      <DraftShell>
+      <FormPageShell>
         <AppText role="sectionTitle">Не удалось загрузить предмет</AppText>
         <SecondaryButton
           label="Повторить"
@@ -380,7 +311,7 @@ export function ProductDraftScreen({
             void productDetail.refetch();
           }}
         />
-      </DraftShell>
+      </FormPageShell>
     );
 
   const editable =
@@ -434,6 +365,8 @@ export function ProductDraftScreen({
   );
   const moveToWizardStep = (step: number) => {
     if (!existingProduct) return;
+    if (!canOpenProductWizardStep(step, wizardDraft)) return;
+    if (step === wizardStep) return;
     router.setParams({ flow: 'creation', step: String(step) });
   };
   const chooseCreationStepImage = async (stepId: string) => {
@@ -458,7 +391,7 @@ export function ProductDraftScreen({
   };
 
   return (
-    <DraftShell>
+    <FormPageShell>
       {isCreationFlow ? (
         <FormSection
           title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}
@@ -576,452 +509,146 @@ export function ProductDraftScreen({
       ) : null}
 
       {!isCreationFlow || wizardStep === productWizardStep.about ? (
-        <FormPageColumns
-          sidebar={
-            <>
-              <FormSection
-                title="Характеристики"
-                description="Параметры помогают точно описать работу."
-              >
-                <TextField
-                  label="Техника"
-                  value={technique}
-                  onChangeText={setTechnique}
-                  placeholder="Необязательно"
-                  editable={editable}
-                />
-                <TextField
-                  label="Материал"
-                  value={materials}
-                  onChangeText={setMaterials}
-                  placeholder="Необязательно"
-                  editable={editable}
-                />
-                <TextField
-                  label="Размеры"
-                  value={dimensions}
-                  onChangeText={setDimensions}
-                  placeholder="Необязательно"
-                  editable={editable}
-                />
-                <TextField
-                  label="Вес"
-                  value={weight}
-                  onChangeText={setWeight}
-                  placeholder="Необязательно"
-                  editable={editable}
-                />
-                <TextField
-                  label="Год создания"
-                  value={year}
-                  onChangeText={setYear}
-                  placeholder="Необязательно"
-                  keyboardType="number-pad"
-                  editable={editable}
-                  error={stepOneAttempted ? stepOneErrors.year : undefined}
-                />
-              </FormSection>
-              <FormSection title="Логистика">
-                <TextField
-                  label="Город"
-                  value={city}
-                  onChangeText={setCity}
-                  placeholder="Город"
-                  editable={editable}
-                  required
-                  error={stepOneAttempted ? stepOneErrors.city : undefined}
-                />
-                <TextField
-                  label="Упаковка"
-                  value={packaging}
-                  onChangeText={setPackaging}
-                  placeholder="Необязательно"
-                  multiline
-                  editable={editable}
-                />
-                <TextField
-                  label="Передача или доставка"
-                  value={deliveryInfo}
-                  onChangeText={setDeliveryInfo}
-                  placeholder="Передача или доставка"
-                  multiline
-                  editable={editable}
-                  required
-                  error={
-                    stepOneAttempted ? stepOneErrors.deliveryInfo : undefined
-                  }
-                />
-              </FormSection>
-            </>
-          }
-        >
-          <FormSection title="Категория">
-            {categories.data.categories.map((category) => (
-              <SecondaryButton
-                key={category.id}
-                label={
-                  categoryId === category.id
-                    ? `✓ ${category.name}`
-                    : category.name
-                }
-                disabled={!editable}
-                width="block"
-                onPress={() => setCategoryId(category.id)}
-              />
-            ))}
-            {stepOneAttempted && stepOneErrors.categoryId ? (
-              <AppText role="bodySmall" tone="danger">
-                {stepOneErrors.categoryId}
-              </AppText>
-            ) : null}
-          </FormSection>
-
-          <FormSection
-            title="О работе"
-            description="Основная информация для каталога и страницы предмета."
-          >
-            <TextField
-              label="Название"
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Название"
-              editable={editable}
-              required
-              error={stepOneAttempted ? stepOneErrors.title : undefined}
-            />
-            <TextField
-              label="История предмета"
-              value={story}
-              onChangeText={setStory}
-              placeholder="История предмета"
-              multiline
-              editable={editable}
-              required
-              error={stepOneAttempted ? stepOneErrors.story : undefined}
-            />
-            <TextField
-              label="Уникальность или тираж"
-              value={uniqueness}
-              onChangeText={setUniqueness}
-              placeholder="Уникальность или тираж"
-              editable={editable}
-              required
-              error={stepOneAttempted ? stepOneErrors.uniqueness : undefined}
-            />
-            {condition ? (
-              <AppText role="bodySmall" tone="secondary">
-                Состояние: {condition}
-              </AppText>
-            ) : null}
-            <TextField
-              label="Происхождение"
-              value={provenance}
-              onChangeText={setProvenance}
-              placeholder="Происхождение"
-              multiline
-              editable={editable}
-              required
-              error={stepOneAttempted ? stepOneErrors.provenance : undefined}
-            />
-          </FormSection>
-        </FormPageColumns>
-      ) : null}
-
-      {!isCreationFlow || wizardStep === productWizardStep.about ? (
-        <AppText role="bodySmall" tone="secondary">
-          Дата размещения установится автоматически при первой публичной
-          публикации.
-        </AppText>
-      ) : null}
-
-      {editable && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
-        <PrimaryButton
-          label={
-            isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения'
-          }
-          loading={save.isPending}
-          width="block"
-          onPress={() => {
+        <ProductDraftAboutStep
+          isCreationFlow={isCreationFlow}
+          wizardStep={wizardStep}
+          editable={editable}
+          categories={categories.data.categories}
+          categoryId={categoryId}
+          onChangeCategoryId={setCategoryId}
+          technique={technique}
+          onChangeTechnique={setTechnique}
+          materials={materials}
+          onChangeMaterials={setMaterials}
+          dimensions={dimensions}
+          onChangeDimensions={setDimensions}
+          weight={weight}
+          onChangeWeight={setWeight}
+          year={year}
+          onChangeYear={setYear}
+          city={city}
+          onChangeCity={setCity}
+          packaging={packaging}
+          onChangePackaging={setPackaging}
+          deliveryInfo={deliveryInfo}
+          onChangeDeliveryInfo={setDeliveryInfo}
+          title={title}
+          onChangeTitle={setTitle}
+          story={story}
+          onChangeStory={setStory}
+          uniqueness={uniqueness}
+          onChangeUniqueness={setUniqueness}
+          condition={condition}
+          provenance={provenance}
+          onChangeProvenance={setProvenance}
+          stepOneAttempted={stepOneAttempted}
+          stepOneErrors={stepOneErrors}
+          canSaveStepOne={canSaveStepOne}
+          saveIsPending={save.isPending}
+          saveIsError={save.isError}
+          onSavePress={() => {
             if (isCreationFlow) {
               setStepOneAttempted(true);
               if (!canSaveStepOne) return;
             }
             save.mutate();
           }}
+          wizardCanOpenImages={canOpenProductWizardStep(
+            productWizardStep.images,
+            wizardDraft,
+          )}
+          onContinueToImages={() =>
+            moveToWizardStep(productWizardStep.images)
+          }
         />
-      ) : null}
-      {save.isError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
-        <AppText role="bodySmall" tone="danger">
-          Не удалось сохранить предмет.
-        </AppText>
       ) : null}
 
       {existingProduct && (!isCreationFlow || wizardStep === productWizardStep.images) ? (
-        <FormSection title="Изображения">
-          <AppText role="bodySmall" tone="secondary">
-            {existingProduct.images.length}/10 изображений
-          </AppText>
-          {productStatus === 'PENDING_REVIEW' ? (
-            <AppText role="bodySmall" tone="secondary">
-              Изображения нельзя изменить во время модерации.
-            </AppText>
-          ) : null}
-          {existingProduct.images.map((image) => (
-            <DraftImageRow
-              key={image.id}
-              url={image.url}
-              position={image.position}
-              editable={editable}
-              isLast={image.position === existingProduct.images.length - 1}
-              isReordering={reorderImages.isPending}
-              isRemoving={removeImage.isPending}
-              onMove={(direction) => reorder(image.id, direction)}
-              onDelete={() => setImagePendingDelete(image.id)}
-            />
-          ))}
-          {editable ? (
-            <SecondaryButton
-              label="Добавить изображения"
-              loading={upload.isPending}
-              onPress={() => void chooseImages()}
-            />
-          ) : null}
-          {upload.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось загрузить изображения.
-            </AppText>
-          ) : null}
-          {imageSelectionError ? (
-            <AppText role="bodySmall" tone="danger">
-              {imageSelectionError}
-            </AppText>
-          ) : null}
-          {removeImage.isError || reorderImages.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось изменить изображения.
-            </AppText>
-          ) : null}
-        </FormSection>
-      ) : null}
-
-      {isCreationFlow &&
-      wizardStep === productWizardStep.images &&
-      existingProduct ? (
-        <View style={{ gap: designTokens.space.x3 }}>
-          <AppText role="bodySmall" tone="secondary">
-            Первое изображение обязательно. До 10 изображений можно заменить,
-            удалить и переставить местами до отправки на модерацию.
-          </AppText>
-          <SecondaryButton
-            label="Назад к описанию"
-            onPress={() => moveToWizardStep(productWizardStep.about)}
-          />
-          <PrimaryButton
-            label="Продолжить к истории создания"
-            disabled={
-              !canOpenProductWizardStep(productWizardStep.creation, wizardDraft)
-            }
-            onPress={() => moveToWizardStep(productWizardStep.creation)}
-          />
-        </View>
+        <ProductDraftImagesStep
+          images={existingProduct.images}
+          productStatus={productStatus}
+          editable={editable}
+          isCreationFlow={isCreationFlow}
+          wizardStep={wizardStep}
+          wizardCanOpenCreation={canOpenProductWizardStep(
+            productWizardStep.creation,
+            wizardDraft,
+          )}
+          reorderPending={reorderImages.isPending}
+          removePending={removeImage.isPending}
+          uploadPending={upload.isPending}
+          uploadError={upload.isError}
+          imageSelectionError={imageSelectionError}
+          removeOrReorderError={removeImage.isError || reorderImages.isError}
+          onChooseImages={() => void chooseImages()}
+          onMoveImage={reorder}
+          onDeleteImage={(imageId) => setImagePendingDelete(imageId)}
+          onBackToAbout={() => moveToWizardStep(productWizardStep.about)}
+          onContinueToCreation={() =>
+            moveToWizardStep(productWizardStep.creation)
+          }
+        />
       ) : null}
 
       {isCreationFlow &&
       wizardStep === productWizardStep.creation &&
       existingProduct ? (
-        <FormSection
-          title="История создания"
-          description="Добавьте контекст, который поможет зрителю понять путь работы. Этот шаг можно оставить пустым."
-        >
-          <TextField
-            label="Введение"
-            value={creationIntro}
-            onChangeText={(value) => {
-              setCreationIntro(value);
-              setCreationStorySaved(false);
-            }}
-            placeholder="Расскажите о замысле и процессе"
-            multiline
-            editable={editable}
-          />
-          {creationSteps.map((step, index) => (
-            <View
-              key={step.id ?? `draft-step-${index}`}
-              style={{ gap: designTokens.space.x2 }}
-            >
-              <AppText role="label">Этап {index + 1}</AppText>
-              <TextField
-                label="Название этапа"
-                value={step.title}
-                onChangeText={(value) =>
-                  updateCreationStep(index, 'title', value)
-                }
-                placeholder="Например: Первый эскиз"
-                editable={editable}
-                error={
-                  creationAttempted && !step.title.trim()
-                    ? 'Введите название этапа'
-                    : undefined
-                }
-              />
-              <TextField
-                label="Описание этапа"
-                value={step.body}
-                onChangeText={(value) =>
-                  updateCreationStep(index, 'body', value)
-                }
-                placeholder="Что происходило на этом этапе"
-                multiline
-                editable={editable}
-                error={
-                  creationAttempted && !step.body.trim()
-                    ? 'Добавьте описание этапа'
-                    : undefined
-                }
-              />
-              {step.id ? (
-                <>
-                  {step.imageUrl ? (
-                    <ResilientRemoteImage
-                      uri={getApiAssetUrl(step.imageUrl)}
-                      component="CreationStep"
-                      accessibilityLabel={`Фотография этапа ${index + 1}`}
-                      fallbackLabel={`Фотография этапа ${index + 1} недоступна`}
-                      style={{
-                        width: '100%',
-                        height: 220,
-                        borderRadius: designTokens.radius.image,
-                      }}
-                      contentFit="cover"
-                    />
-                  ) : null}
-                  <SecondaryButton
-                    label={
-                      step.imageUrl
-                        ? 'Заменить фотографию'
-                        : 'Добавить фотографию'
-                    }
-                    loading={uploadCreationStepImage.isPending}
-                    disabled={uploadCreationStepImage.isPending || !editable}
-                    onPress={() => void chooseCreationStepImage(step.id!)}
-                  />
-                </>
-              ) : null}
-              {creationSteps.length > 1 ? (
-                <TextButton
-                  label="Удалить этап"
-                  disabled={replaceCreation.isPending}
-                  onPress={() => {
-                    setCreationStorySaved(false);
-                    setCreationSteps((current) =>
-                      current.filter((_item, stepIndex) => stepIndex !== index),
-                    );
-                  }}
-                />
-              ) : null}
-            </View>
-          ))}
-          {creationSteps.length < 20 ? (
-            <SecondaryButton
-              label={
-                creationSteps.length === 0
-                  ? 'Добавить первый этап'
-                  : 'Добавить этап'
-              }
-              disabled={replaceCreation.isPending}
-              onPress={() => {
-                setCreationStorySaved(false);
-                setCreationSteps((current) => [
-                  ...current,
-                  { title: '', body: '' },
-                ]);
-              }}
-            />
-          ) : null}
-          {replaceCreation.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось сохранить историю создания.
-            </AppText>
-          ) : null}
-          {uploadCreationStepImage.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось загрузить фотографию этапа.
-            </AppText>
-          ) : null}
-          {creationImageSelectionError ? (
-            <AppText role="bodySmall" tone="danger">
-              {creationImageSelectionError}
-            </AppText>
-          ) : null}
-          {creationStorySaved ? (
-            <AppText role="bodySmall" tone="success">
-              История сохранена. Теперь можно добавить фотографии к новым этапам
-              или перейти к проверке.
-            </AppText>
-          ) : null}
-          <SecondaryButton
-            label="Назад к изображениям"
-            disabled={replaceCreation.isPending}
-            onPress={() => moveToWizardStep(productWizardStep.images)}
-          />
-          <PrimaryButton
-            label="Сохранить историю"
-            loading={replaceCreation.isPending}
-            disabled={!editable || creationStorySaved}
-            onPress={() => {
-              setCreationAttempted(true);
-              if (!canSaveCreation) return;
-              replaceCreation.mutate();
-            }}
-          />
-          <SecondaryButton
-            label="Продолжить к проверке"
-            disabled={
-              !creationStorySaved ||
-              replaceCreation.isPending ||
-              uploadCreationStepImage.isPending
-            }
-            onPress={() => moveToWizardStep(productWizardStep.review)}
-          />
-        </FormSection>
+        <ProductDraftCreationStep
+          editable={editable}
+          creationIntro={creationIntro}
+          onChangeCreationIntro={(value) => {
+            setCreationIntro(value);
+            setCreationStorySaved(false);
+          }}
+          creationSteps={creationSteps}
+          creationAttempted={creationAttempted}
+          updateCreationStep={updateCreationStep}
+          onDeleteCreationStep={(index) => {
+            setCreationStorySaved(false);
+            setCreationSteps((current) =>
+              current.filter((_item, stepIndex) => stepIndex !== index),
+            );
+          }}
+          onAddCreationStep={() => {
+            setCreationStorySaved(false);
+            setCreationSteps((current) => [...current, { title: '', body: '' }]);
+          }}
+          replaceCreationPending={replaceCreation.isPending}
+          replaceCreationError={replaceCreation.isError}
+          creationStorySaved={creationStorySaved}
+          onSaveCreationPress={() => {
+            setCreationAttempted(true);
+            if (!canSaveCreation) return;
+            replaceCreation.mutate();
+          }}
+          uploadCreationStepImagePending={uploadCreationStepImage.isPending}
+          uploadCreationStepImageError={uploadCreationStepImage.isError}
+          creationImageSelectionError={creationImageSelectionError}
+          onChooseCreationStepImage={(stepId) => {
+            void chooseCreationStepImage(stepId);
+          }}
+          onBackToImages={() => moveToWizardStep(productWizardStep.images)}
+          onContinueToReview={() =>
+            moveToWizardStep(productWizardStep.review)
+          }
+        />
       ) : null}
 
       {isCreationFlow &&
       wizardStep === productWizardStep.review &&
       existingProduct ? (
-        <FormSection
-          title="Проверка перед модерацией"
-          description="Проверьте обязательные поля, изображения и историю создания. После отправки редактирование будет ограничено статусом модерации."
-        >
-          <AppText role="label">
-            Название: {existingProduct.title ?? 'Не заполнено'}
-          </AppText>
-          <AppText role="bodySmall" tone="secondary">
-            Изображения: {existingProduct.images.length}/10 · Этапы истории:{' '}
-            {
-              creationSteps.filter(
-                (step) => step.title.trim() && step.body.trim(),
-              ).length
-            }
-          </AppText>
-          {wizardSubmitted ? (
-            <AppText role="bodySmall" tone="success">
-              Предмет отправлен на модерацию.
-            </AppText>
-          ) : (
-            <PrimaryButton
-              label="Отправить на модерацию"
-              loading={submit.isPending}
-              disabled={!editable || existingProduct.images.length < 1}
-              onPress={() => submit.mutate(existingProduct.id)}
-            />
-          )}
-          <SecondaryButton
-            label="Назад к истории создания"
-            disabled={submit.isPending || wizardSubmitted}
-            onPress={() => moveToWizardStep(productWizardStep.creation)}
-          />
-        </FormSection>
+        <ProductDraftReviewStep
+          editable={editable}
+          existingProductTitle={existingProduct.title}
+          existingProductImagesLength={existingProduct.images.length}
+          creationSteps={creationSteps}
+          wizardSubmitted={wizardSubmitted}
+          submitPending={submit.isPending}
+          onSubmitPress={() => submit.mutate(existingProduct.id)}
+          onBackToCreation={() =>
+            moveToWizardStep(productWizardStep.creation)
+          }
+        />
       ) : null}
 
       <AppDialog
@@ -1046,10 +673,8 @@ export function ProductDraftScreen({
           onPress={() => setImagePendingDelete(null)}
         />
       </AppDialog>
-    </DraftShell>
+    </FormPageShell>
   );
 }
 
-function DraftShell({ children }: { children: ReactNode }) {
-  return <FormPageShell>{children}</FormPageShell>;
-}
+ 

@@ -2,11 +2,12 @@ import { Link, usePathname, useRouter } from 'expo-router';
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
 } from 'react';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -21,16 +22,22 @@ import { OverlayPortal } from './OverlayHost';
 import {
   ACCOUNT_MENU_HOVER_CLOSE_DELAY_MS,
   shouldDismissAccountMenuOnHoverLeave,
+  subscribeAccountMenuSurfaceHover,
 } from './account-menu-hover';
+import {
+  assignFocusableAnchorRef,
+  type FocusableAnchor,
+} from './focusable-anchor';
+import { logoutAndGoHome } from './header-chrome';
+import { overlayMenuItemStyle, overlayPanelStyle } from './overlay-layout';
+import { useDismissibleOverlay } from './use-dismissible-overlay';
 
-const menuItemStyle = {
+const menuItemStyle = overlayMenuItemStyle({
   minHeight: 48,
-  flexDirection: 'row' as const,
-  alignItems: 'center' as const,
-  gap: designTokens.space.x3,
   borderRadius: 14,
   paddingHorizontal: designTokens.space.x3,
-};
+  gap: designTokens.space.x3,
+});
 
 const menuItemInteractionStyle = ({
   hovered,
@@ -55,11 +62,8 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   const triggerHoveredRef = useRef(false);
   const dropdownHoveredRef = useRef(false);
   const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const firstMenuItemRef = useRef<{ focus?: () => void } | null>(null);
-  const triggerRef = useRef<{
-    getBoundingClientRect: () => DOMRect;
-    focus?: () => void;
-  } | null>(null);
+  const firstMenuItemRef = useRef<FocusableAnchor | null>(null);
+  const triggerRef = useRef<FocusableAnchor | null>(null);
   const label = auth.user?.displayName?.trim() || auth.user?.email || 'Аккаунт';
   const profileLabel = auth.isAdmin
     ? null
@@ -130,47 +134,52 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     scheduleHoverClose();
   }, [scheduleHoverClose]);
 
+  useLayoutEffect(() => {
+    if (!open || !desktop || Platform.OS !== 'web') return;
+
+    let unsubscribe: (() => void) | null = null;
+    let frame: number | null = null;
+
+    const bind = () => {
+      const dropdown = document.getElementById('account-menu-dropdown');
+      if (!dropdown) return null;
+      return subscribeAccountMenuSurfaceHover(dropdown, {
+        onEnter: handleDropdownHoverIn,
+        onLeave: handleDropdownHoverOut,
+      });
+    };
+
+    unsubscribe = bind();
+    if (!unsubscribe) {
+      frame = requestAnimationFrame(() => {
+        unsubscribe = bind();
+      });
+    }
+
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      unsubscribe?.();
+    };
+  }, [desktop, handleDropdownHoverIn, handleDropdownHoverOut, open]);
+
   useEffect(() => () => clearHoverCloseTimer(), [clearHoverCloseTimer]);
 
   useEffect(() => {
     closeMenu();
   }, [closeMenu, pathname]);
 
-  useEffect(() => {
-    if (!open || Platform.OS !== 'web') return;
-    const closeIfOutside = (target: EventTarget | null) => {
-      const menu = document.getElementById('account-menu');
-      const dropdown = document.getElementById('account-menu-dropdown');
-      if (
-        menu &&
-        dropdown &&
-        target instanceof Node &&
-        !menu.contains(target) &&
-        !dropdown.contains(target)
-      ) {
-        closeMenu();
-      }
-    };
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeMenu(true);
-      }
-    };
-    const closeOnPointerDown = (event: PointerEvent) =>
-      closeIfOutside(event.target);
-    const closeOnFocusIn = (event: FocusEvent) => closeIfOutside(event.target);
-
-    document.addEventListener('keydown', closeOnEscape);
-    document.addEventListener('pointerdown', closeOnPointerDown);
-    document.addEventListener('focusin', closeOnFocusIn);
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.removeEventListener('pointerdown', closeOnPointerDown);
-      document.removeEventListener('focusin', closeOnFocusIn);
-    };
-  }, [closeMenu, open]);
+  useDismissibleOverlay({
+    open,
+    onClose: (reason) => {
+      if (reason === 'escape') closeMenu(true);
+      else closeMenu();
+    },
+    getSurfaces: () => [
+      document.getElementById('account-menu'),
+      document.getElementById('account-menu-dropdown'),
+    ],
+    closeOnFocusIn: true,
+  });
 
   useEffect(() => {
     if (!open || !focusOpened.current || Platform.OS !== 'web') return;
@@ -182,8 +191,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
-      await auth.logout();
-      router.replace('/');
+      await logoutAndGoHome(auth, router);
     } finally {
       setLoggingOut(false);
       closeMenu();
@@ -222,12 +230,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
   return (
     <View nativeID="account-menu" style={{ position: 'relative' }}>
       <MotionPressable
-        ref={(node) => {
-          triggerRef.current = node as unknown as {
-            getBoundingClientRect: () => DOMRect;
-            focus?: () => void;
-          } | null;
-        }}
+        ref={(node) => assignFocusableAnchorRef(triggerRef, node)}
         accessibilityRole="button"
         accessibilityLabel={`Открыть меню аккаунта: ${label}`}
         accessibilityState={{ expanded: open }}
@@ -277,21 +280,15 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             testId="account-menu-dropdown"
             width={designTokens.layout.accountPopoverWidth}
           >
-            <Pressable
-              onHoverIn={handleDropdownHoverIn}
-              onHoverOut={handleDropdownHoverOut}
-              style={{ width: '100%' }}
-            >
-              <AccountDropdown
-                profileLabel={profileLabel}
-                showPurchases={!auth.isAdmin}
-                showModeration={auth.isAdmin}
-                loggingOut={loggingOut}
-                onLogout={() => void logout()}
-                firstMenuItemRef={firstMenuItemRef}
-                inline={false}
-              />
-            </Pressable>
+            <AccountDropdown
+              profileLabel={profileLabel}
+              showPurchases={!auth.isAdmin}
+              showModeration={auth.isAdmin}
+              loggingOut={loggingOut}
+              onLogout={() => void logout()}
+              firstMenuItemRef={firstMenuItemRef}
+              inline={false}
+            />
           </OverlayPortal>
         ) : (
           <AccountDropdown
@@ -323,34 +320,31 @@ function AccountDropdown({
   showModeration: boolean;
   loggingOut: boolean;
   onLogout: () => void;
-  firstMenuItemRef: MutableRefObject<{ focus?: () => void } | null>;
+  firstMenuItemRef: MutableRefObject<FocusableAnchor | null>;
   inline: boolean;
 }) {
   return (
     <View
-      style={{
+      style={overlayPanelStyle({
         position: inline ? 'absolute' : undefined,
         top: inline ? designTokens.size.touch : undefined,
         right: inline ? 0 : undefined,
-        width: inline ? undefined : designTokens.layout.accountPopoverWidth,
-        minWidth: inline ? designTokens.layout.accountPopoverWidth : undefined,
+        width: inline
+          ? undefined
+          : designTokens.layout.accountPopoverWidth,
+        minWidth: inline
+          ? designTokens.layout.accountPopoverWidth
+          : undefined,
         gap: designTokens.space.x2,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
         borderRadius: 22,
-        backgroundColor: designTokens.color.surface,
+        borderColor: designTokens.color.border,
         padding: 10,
-        ...designTokens.elevation.floating,
-      }}
+      })}
     >
       {profileLabel ? (
         <Link href="/profile" asChild>
           <MotionPressable
-            ref={(node) => {
-              firstMenuItemRef.current = node as unknown as {
-                focus?: () => void;
-              } | null;
-            }}
+            ref={(node) => assignFocusableAnchorRef(firstMenuItemRef, node)}
             accessibilityRole="link"
             accessibilityLabel={profileLabel}
             preset="button"
@@ -371,11 +365,7 @@ function AccountDropdown({
             ref={
               profileLabel
                 ? undefined
-                : (node) => {
-                    firstMenuItemRef.current = node as unknown as {
-                      focus?: () => void;
-                    } | null;
-                  }
+                : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
             }
             accessibilityRole="link"
             accessibilityLabel="Покупки"
@@ -397,11 +387,7 @@ function AccountDropdown({
             ref={
               profileLabel || showPurchases
                 ? undefined
-                : (node) => {
-                    firstMenuItemRef.current = node as unknown as {
-                      focus?: () => void;
-                    } | null;
-                  }
+                : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
             }
             accessibilityRole="link"
             accessibilityLabel="Модерация"
@@ -424,13 +410,9 @@ function AccountDropdown({
       ) : null}
       <MotionPressable
         ref={
-          profileLabel
+          profileLabel || showPurchases || showModeration
             ? undefined
-            : (node) => {
-                firstMenuItemRef.current = node as unknown as {
-                  focus?: () => void;
-                } | null;
-              }
+            : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
         }
         accessibilityRole="button"
         accessibilityLabel="Выйти"

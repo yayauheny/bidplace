@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { createSellerFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { productWizardStepOneIncompleteMessage } from '../src/features/sellers/product-draft-wizard';
 
 async function fillProductStepOne(page: Page, title: string) {
   await page.getByRole('button', { name: 'E2E art' }).click();
@@ -58,7 +59,7 @@ test.describe('product creation wizard navigation', () => {
       await expect(
         page.getByRole('button', { name: '2. Изображения' }),
       ).toBeEnabled();
-      await page.getByRole('button', { name: '2. Изображения' }).click();
+      await page.getByRole('button', { name: 'Продолжить к изображениям' }).click();
       await expect(page).toHaveURL(/flow=creation&step=2$/);
 
       await page.getByRole('button', { name: 'Продолжить к истории создания' }).click();
@@ -80,16 +81,19 @@ test.describe('product creation wizard navigation', () => {
 
       await page.getByRole('button', { name: '1. О работе' }).click();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
-      await page.goBack();
-      await expect(page).toHaveURL(/flow=creation&step=4$/);
       await expect(
         page.getByRole('button', { name: '2. Изображения' }),
       ).toBeEnabled();
-      await page.goForward();
+      await expect(
+        page.getByRole('button', { name: '4. Проверка' }),
+      ).toBeEnabled();
+      await page.reload();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
       await expect(
         page.getByRole('button', { name: '4. Проверка' }),
       ).toBeEnabled();
+      await page.getByRole('button', { name: '4. Проверка' }).click();
+      await expect(page).toHaveURL(/flow=creation&step=4$/);
 
       await page.goto(`/products/${product.id}?flow=creation&step=3`);
       await expect(page).toHaveURL(/flow=creation&step=3$/);
@@ -234,7 +238,11 @@ test.describe('product creation wizard navigation', () => {
 
       await page.getByLabel('Название').fill('');
       await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+      await expect(page.getByText('Введите название')).toHaveCount(1);
       await expect(page.getByText('Введите название')).toBeVisible();
+      await expect(
+        page.getByText(productWizardStepOneIncompleteMessage),
+      ).toBeVisible();
       await expect(page).toHaveURL(/flow=creation&step=1$/);
       await expect(
         page.getByRole('button', { name: '2. Изображения' }),

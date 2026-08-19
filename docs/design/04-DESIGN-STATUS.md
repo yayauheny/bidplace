@@ -1,6 +1,6 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-14
+Последнее обновление: 2026-08-16
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
@@ -66,8 +66,9 @@
 - `Implemented`: desktop account popover keyboard-open now moves focus into the
   portaled menu, with Escape returning focus to the trigger; the current header
   follows `Аукционы` / `Авторы` / `Создать` / profile-menu IA. Desktop hover
-  dismiss now closes the portaled menu after a short grace period when the
-  pointer leaves both trigger and dropdown. Full browser execution still needs
+  dismiss closes after a short grace period only when the pointer leaves both
+  trigger and dropdown; hovering nested items (Кабинет, Модерация, Выйти) does
+  not count as leaving the menu surface. Full browser execution still needs
   matched Pen screenshots and device verification.
 - `Implemented`: Browse Works now consumes server facets for category, author,
   material and uniqueness menus, confirmed price ranges, a separate
@@ -207,6 +208,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid                    |
 | CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
+| FilterMenu    | shared discovery controls | implemented shared sort/facet control in `components/layout` |
 | ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
 | AmbientImageBackground | shared atmosphere | one shell-level image-derived background for Product and Creator; runtime verified |
 

@@ -4,7 +4,7 @@ import { ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { AppShell } from '../../components/layout';
 import {
   AppText,
   AuctionCardGrid,

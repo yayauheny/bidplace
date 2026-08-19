@@ -7,7 +7,7 @@ import {
   type ProductWriteRequest,
   type SellerStatus,
 } from '@bidplace/contracts';
-import { Prisma, type Prisma as PrismaTypes } from '@bidplace/database';
+import { Prisma } from '@bidplace/database';
 import {
   ConflictException,
   ForbiddenException,
@@ -20,15 +20,21 @@ import { resolveMinimumBidAmount } from '../core/auction';
 import { PublicIdService } from '../core/public-id';
 import {
   productSelect,
+  publicCatalogProductSelect,
   toContractProduct,
+  toCreationStepContract,
   toProductResponse,
 } from './products.mapper';
+import {
+  publicCatalogCte,
+  publicCatalogOrderBy,
+  type PublicCatalogPageRow,
+} from './products-catalog.query';
 import { isEditableProductStatus } from './product-state';
 import { missingProductApprovalFields } from './product-requirements';
 import {
   publicDirectProductWhere,
   publicListingStatuses,
-  publicProductContentSql,
   selectPublicListing,
 } from './public-visibility';
 import { assertApprovedSeller } from '../sellers/seller-capability';
@@ -38,204 +44,6 @@ import {
 } from '../sellers/seller-profile.mapper';
 
 const lockedStatuses = ['SCHEDULED', 'LIVE'] as const;
-
-export const publicCatalogProductSelect = {
-  id: true,
-  publicId: true,
-  sellerProfileId: true,
-  categoryId: true,
-  title: true,
-  story: true,
-  technique: true,
-  materials: true,
-  dimensions: true,
-  weight: true,
-  year: true,
-  condition: true,
-  uniqueness: true,
-  provenance: true,
-  city: true,
-  packaging: true,
-  deliveryInfo: true,
-  creationIntro: true,
-  publishedAt: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-  sellerProfile: { select: publicSellerProfileSelect },
-  images: {
-    orderBy: { position: 'asc' as const },
-    select: {
-      id: true,
-      position: true,
-      mimeType: true,
-      byteLength: true,
-      checksum: true,
-      width: true,
-      height: true,
-    },
-  },
-  listings: {
-    where: { status: { in: publicListingStatuses } },
-    orderBy: { createdAt: 'desc' as const },
-    select: {
-      id: true,
-      productId: true,
-      status: true,
-      startsAt: true,
-      originalEndsAt: true,
-      endsAt: true,
-      currentPrice: true,
-      bidCount: true,
-      closedAt: true,
-      createdAt: true,
-      updatedAt: true,
-      auctionRules: { select: { startPrice: true } },
-    },
-  },
-} satisfies PrismaTypes.ProductSelect;
-
-type PublicCatalogPageRow = { id: string; total: number | bigint };
-
-function escapeLikePattern(value: string): string {
-  return value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('%', '\\%')
-    .replaceAll('_', '\\_');
-}
-
-export function toCreationStepContract(step: {
-  id: string;
-  position: number;
-  title: string;
-  body: string;
-  mimeType: string | null;
-  byteLength: number | null;
-  checksum: string | null;
-  width: number | null;
-  height: number | null;
-}) {
-  return {
-    id: step.id,
-    position: step.position,
-    title: step.title,
-    body: step.body,
-    image:
-      step.mimeType && step.byteLength && step.checksum
-        ? {
-            url: `/api/creation-steps/${step.id}/image`,
-            mimeType: step.mimeType,
-            byteLength: step.byteLength,
-            checksum: step.checksum,
-            width: step.width,
-            height: step.height,
-          }
-        : null,
-  };
-}
-
-function publicCatalogOrderBy(sort: PublicDiscoveryQuery['sort']): string {
-  switch (sort) {
-    case 'activity':
-      return 'p.status_rank ASC, p.bid_count DESC, p.current_price DESC, p.ends_at ASC, p.id ASC';
-    case 'endingSoon':
-      return 'p.status_rank ASC, p.ends_at ASC, p.id ASC';
-    case 'priceAsc':
-      return 'p.current_price ASC, p.id ASC';
-    case 'priceDesc':
-      return 'p.current_price DESC, p.id ASC';
-    case 'newest':
-      return 'p.published_at DESC NULLS LAST, p.id ASC';
-  }
-}
-
-function publicCatalogCte(query: PublicDiscoveryQuery) {
-  const filters: Prisma.Sql[] = [Prisma.sql`p."status" = 'APPROVED'`];
-
-  if (query.q) {
-    const pattern = `%${escapeLikePattern(query.q)}%`;
-    filters.push(Prisma.sql`(
-      p."title" ILIKE ${pattern} ESCAPE '\\'
-      OR p."story" ILIKE ${pattern} ESCAPE '\\'
-      OR p."materials" ILIKE ${pattern} ESCAPE '\\'
-      OR sp."full_name" ILIKE ${pattern} ESCAPE '\\'
-    )`);
-  }
-
-  if (query.category) {
-    filters.push(Prisma.sql`p."category_id" = CAST(${query.category} AS uuid)`);
-  }
-
-  if (query.author) {
-    filters.push(Prisma.sql`sp."slug" = ${query.author}`);
-  }
-
-  if (query.yearFrom !== undefined) {
-    filters.push(Prisma.sql`p."year" >= ${query.yearFrom}`);
-  }
-
-  if (query.yearTo !== undefined) {
-    filters.push(Prisma.sql`p."year" <= ${query.yearTo}`);
-  }
-
-  for (const material of query.materials ?? []) {
-    const pattern = `%${escapeLikePattern(material)}%`;
-    filters.push(Prisma.sql`p."materials" ILIKE ${pattern} ESCAPE '\\'`);
-  }
-
-  if (query.status) {
-    filters.push(
-      Prisma.sql`c.status = CAST(${query.status} AS "ListingStatus")`,
-    );
-  }
-
-  if (query.priceMin !== undefined) {
-    filters.push(Prisma.sql`c.current_price >= ${query.priceMin}`);
-  }
-
-  if (query.priceMax !== undefined) {
-    filters.push(Prisma.sql`c.current_price <= ${query.priceMax}`);
-  }
-
-  if (query.uniqueness) {
-    filters.push(Prisma.sql`p."uniqueness" = ${query.uniqueness}`);
-  }
-
-  return Prisma.sql`WITH canonical AS (
-    SELECT DISTINCT ON (l."product_id")
-      l."product_id",
-      l."status",
-      CASE l."status"
-        WHEN 'LIVE' THEN 0
-        WHEN 'SCHEDULED' THEN 1
-        ELSE 2
-      END AS status_rank,
-      l."ends_at",
-      l."current_price",
-      l."bid_count",
-      l."created_at"
-    FROM "listings" l
-    WHERE l."status" IN ('LIVE', 'SCHEDULED', 'ENDED')
-    ORDER BY
-      l."product_id",
-      CASE l."status"
-        WHEN 'LIVE' THEN 0
-        WHEN 'SCHEDULED' THEN 1
-        ELSE 2
-      END,
-      l."created_at" DESC,
-      l."id" DESC
-  ), filtered AS (
-    SELECT p."id", p."category_id", p."seller_profile_id", p."materials", p."uniqueness", p."published_at", c."status", c.status_rank,
-      c."ends_at", c."current_price", c."bid_count"
-    FROM "products" p
-    INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
-    INNER JOIN canonical c ON c."product_id" = p."id"
-    WHERE sp."status" = 'APPROVED'
-      AND ${publicProductContentSql}
-      AND ${Prisma.join(filters, ' AND ')}
-  )`;
-}
 
 @Injectable()
 export class ProductsService {

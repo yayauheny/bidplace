@@ -1,58 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { useEffect, useId, useState } from 'react';
+import { useState } from 'react';
 import {
-  Platform,
   ScrollView,
   useWindowDimensions,
   View,
-  type DimensionValue,
 } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { AppShell, FilterMenu } from '../../components/layout';
 import {
   AppText,
   AppIcon,
   AuctionCard,
   PageState,
-  Skeleton,
   MotionPressable,
 } from '../../components/ui';
-import type { PublicDiscoverySort } from '@bidplace/contracts';
+import type { PublicDiscoverySort, PublicListingStatus } from '@bidplace/contracts';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from './catalog-layout';
-
-type CatalogColumnCount = 1 | 2 | 3 | 4;
-type PublicListingStatus = 'LIVE' | 'SCHEDULED' | 'ENDED';
-type PriceRangeKey = 'under-500' | '500-1500' | '1500-plus';
-
-const priceRangeOptions: Array<{
-  value: PriceRangeKey;
-  label: string;
-  min?: number;
-  max?: number;
-}> = [
-  { value: 'under-500', label: 'До 500 BYN', max: 500 },
-  { value: '500-1500', label: '500–1 500 BYN', min: 500, max: 1500 },
-  { value: '1500-plus', label: 'От 1 500 BYN', min: 1500 },
-];
+import {
+  priceRangeOptions,
+  sortOptions,
+} from './catalog-facet-options';
+import { CatalogGrid } from './CatalogGrid';
+import { CatalogCardSkeleton } from './CatalogCardSkeleton';
 
 function priceRangeKey(priceMin?: number, priceMax?: number) {
   return priceRangeOptions.find(
     (option) => option.min === priceMin && option.max === priceMax,
   )?.value;
 }
-
-const sortOptions: Array<{ value: PublicDiscoverySort; label: string }> = [
-  { value: 'newest', label: 'Сначала новые' },
-  { value: 'activity', label: 'По активности' },
-  { value: 'endingSoon', label: 'Скоро завершатся' },
-  { value: 'priceAsc', label: 'Сначала дешевле' },
-  { value: 'priceDesc', label: 'Сначала дороже' },
-];
 
 function FacetMenu({
   label,
@@ -65,116 +45,15 @@ function FacetMenu({
   options: Array<{ value: string; label: string }>;
   onSelect: (value?: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selectedLabel = options.find((option) => option.value === value)?.label;
-  const menuId = `facet-menu-${useId()}`;
-
-  useEffect(() => {
-    if (!open || Platform.OS !== 'web') return;
-
-    const closeIfOutside = (target: EventTarget | null) => {
-      const menu = document.getElementById(menuId);
-      if (menu && target instanceof Node && !menu.contains(target)) {
-        setOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      setOpen(false);
-    };
-
-    const closeOnPointerDown = (event: PointerEvent) =>
-      closeIfOutside(event.target);
-    document.addEventListener('keydown', closeOnEscape);
-    document.addEventListener('pointerdown', closeOnPointerDown);
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.removeEventListener('pointerdown', closeOnPointerDown);
-    };
-  }, [menuId, open]);
-
   return (
-    <View nativeID={menuId} style={{ position: 'relative' }}>
-      <MotionPressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ expanded: open }}
-        onAccessibilityEscape={() => setOpen(false)}
-        onPress={() => setOpen((current) => !current)}
-        preset="button"
-        style={{
-          minHeight: 36,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: designTokens.space.x2,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          paddingHorizontal: 14,
-        }}
-      >
-        <AppText role="caption" numberOfLines={1}>
-          {selectedLabel ?? label}
-        </AppText>
-        <AppIcon
-          name="chevronDown"
-          size={14}
-          color={designTokens.color.textSecondary}
-        />
-      </MotionPressable>
-      {open ? (
-        <View
-          accessibilityRole="menu"
-          style={{
-            position: 'absolute',
-            top: 44,
-            left: 0,
-            zIndex: designTokens.layer.popover,
-            minWidth: 180,
-            gap: designTokens.space.x1,
-            borderWidth: 1,
-            borderColor: designTokens.color.border,
-            borderRadius: 16,
-            backgroundColor: designTokens.color.surface,
-            padding: 10,
-            ...designTokens.elevation.floating,
-          }}
-        >
-          <MotionPressable
-            accessibilityRole="menuitem"
-            accessibilityLabel={`${label}: все`}
-            onPress={() => {
-              onSelect(undefined);
-              setOpen(false);
-            }}
-            preset="button"
-            style={facetMenuItemStyle}
-            interactionStyle={facetMenuItemInteractionStyle}
-          >
-            <AppText role="label">Все</AppText>
-          </MotionPressable>
-          {options.map((option) => (
-            <MotionPressable
-              key={option.value}
-              accessibilityRole="menuitem"
-              accessibilityLabel={option.label}
-              onPress={() => {
-                onSelect(option.value);
-                setOpen(false);
-              }}
-              preset="button"
-              style={facetMenuItemStyle}
-              interactionStyle={facetMenuItemInteractionStyle}
-            >
-              <AppText role="label" numberOfLines={1}>
-                {option.label}
-              </AppText>
-            </MotionPressable>
-          ))}
-        </View>
-      ) : null}
-    </View>
+    <FilterMenu
+      variant="facet"
+      label={label}
+      value={value}
+      options={options}
+      onSelect={onSelect}
+      allLabel="Все"
+    />
   );
 }
 
@@ -446,63 +325,6 @@ function DiscoveryControls({
     <View style={{ gap: designTokens.space.x6 }}>
       {facetsContent}
       {statesContent}
-    </View>
-  );
-}
-
-function CatalogGrid({
-  columns,
-  count,
-  renderCard,
-}: {
-  columns: CatalogColumnCount;
-  count: number;
-  renderCard: (index: number) => ReactNode;
-}) {
-  const cardWidth = `${(100 / columns).toFixed(4)}%` as DimensionValue;
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        margin: -designTokens.space.x3,
-      }}
-    >
-      {Array.from({ length: count }, (_, index) => (
-        <View
-          key={index}
-          style={{ width: cardWidth, padding: designTokens.space.x3 }}
-        >
-          {renderCard(index)}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function CatalogCardSkeleton() {
-  return (
-    <View
-      style={{
-        overflow: 'hidden',
-        borderRadius: designTokens.radius.card,
-        backgroundColor: designTokens.color.surfaceMuted,
-      }}
-    >
-      <Skeleton style={{ width: '100%', aspectRatio: 1, borderRadius: 0 }} />
-      <View
-        style={{
-          minHeight: 134,
-          gap: designTokens.space.x2,
-          padding: designTokens.space.x4,
-        }}
-      >
-        <Skeleton style={{ width: '78%', height: 23 }} />
-        <Skeleton style={{ width: '48%', height: 20 }} />
-        <View style={{ flex: 1 }} />
-        <Skeleton style={{ width: '100%', height: 40 }} />
-      </View>
     </View>
   );
 }

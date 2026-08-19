@@ -1,5 +1,49 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-19 — Post-refactor hardening
+
+- `Implemented`: Product Creation step-1 validation keeps a unique field error
+  (`Введите название`) and a distinct form-level summary
+  (`Проверьте обязательные поля`) so screen readers and Playwright are not
+  given two copies of the same live text. Coverage is in
+  `product-draft-wizard.spec.ts` and `product-creation-wizard.spec.ts`.
+- `Implemented`: desktop account-menu Escape stays closed until the pointer
+  leaves the trigger; the Playwright hover suite now leaves the trigger before
+  reopening. Overlay dismiss listeners no longer resubscribe every render.
+- `Implemented`: `components/layout/index.ts` no longer re-exports the pure
+  hover delay constant. Node/Playwright imports
+  `account-menu-hover.ts` directly.
+- `Verified`: mobile typecheck/lint, mobile unit `195/195`, API typecheck,
+  API unit `158/158`, PostgreSQL integration `40/40`, focused Playwright
+  `11/11` (account menu + wizard) with the three former failures repeating
+  `30/30`, and the full disposable Chromium suite `49/49`.
+
+## 2026-08-16 — Desktop account menu hover items
+
+- `Implemented`: desktop account dropdown hover tracking uses `pointerenter` /
+  `pointerleave` on the portal surface instead of a nested `Pressable` hover
+  wrapper. Hovering Кабинет, Модерация or Выйти no longer schedules a dismiss.
+  Coverage is in `account-menu-hover.spec.ts` (unit + Playwright).
+
+## 2026-08-19 — Phase 7 screen splitting cleanup
+
+- `Implemented`: Phase 7 component extraction keeps the same screen behavior while
+  making screens orchestration-only (public seller, admin moderation, seller
+  profile steps, and seller product-draft wizard steps). Verified with
+  `pnpm --filter @bidplace/mobile typecheck`, `lint`, and `vitest` passing.
+
+## 2026-08-19 — Phase 8 API products mapper/catalog query split
+
+- `Implemented`: moved `publicCatalogProductSelect` and `toCreationStepContract`
+  into `apps/api/src/products/products.mapper.ts` and updated sellers imports
+  accordingly.
+- `Implemented`: moved the canonical-listing CTE, status-aware catalog sort,
+  and LIKE escaping (`publicCatalogCte`, `publicCatalogOrderBy`,
+  `escapeLikePattern`) into `apps/api/src/products/products-catalog.query.ts`,
+  keeping SQL behavior unchanged.
+- `Verified`: `pnpm --filter @bidplace/api typecheck`, `lint`, unit `test`
+  and integration `test:integration` passing.
+
 ## 2026-08-13 — Product Creation contract and E2E determinism
 
 - `Implemented`: Product submit, moderation and public visibility now share the

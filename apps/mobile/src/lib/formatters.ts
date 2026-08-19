@@ -80,6 +80,19 @@ export function formatRelativeTime(value: string | Date) {
   return `${seconds} с`;
 }
 
+export function formatCountdownHms(endsAt: string, now: number): string {
+  const seconds = Math.max(
+    0,
+    Math.ceil((new Date(endsAt).getTime() - now) / 1_000),
+  );
+  const hours = Math.floor(seconds / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const remainder = seconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
+}
+
 export function formatDurationRange(
   startAt: string | Date,
   endAt: string | Date,

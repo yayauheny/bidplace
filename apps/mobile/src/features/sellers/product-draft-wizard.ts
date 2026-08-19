@@ -98,3 +98,23 @@ export function shouldRewriteProductWizardStepParam(
 ): boolean {
   return firstRouteParam(stepParam) !== String(resolvedStep);
 }
+
+export const productWizardStepOneIncompleteMessage =
+  'Проверьте обязательные поля';
+
+export function createProductWizardHref(
+  productId: string,
+  step: number,
+): {
+  pathname: '/(seller)/products/[id]';
+  params: { id: string; flow: 'creation'; step: string };
+} {
+  return {
+    pathname: '/(seller)/products/[id]',
+    params: {
+      id: productId,
+      flow: 'creation',
+      step: String(step),
+    },
+  };
+}

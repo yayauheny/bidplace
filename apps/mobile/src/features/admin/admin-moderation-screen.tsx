@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
 import { Link, type Href } from 'expo-router';
@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout/FormPageShell';
+import { FormPageShell } from '../../components/layout';
 import {
   AppDialog,
   AppText,
@@ -29,6 +29,7 @@ import {
   sellerStatusLabels,
   sellerTypeLabels,
 } from '../../lib/presentation';
+import { ModerationCard } from './ModerationCard';
 
 type AdminSellersData = Awaited<
   ReturnType<ApiClient['admin']['listSellerProfiles']>
@@ -175,9 +176,9 @@ export function AdminModerationScreen() {
 
   if (activeModerationQuery?.isLoading)
     return (
-      <AdminShell>
+      <FormPageShell>
         <PageState title="Загружаем модерацию…" loading />
-      </AdminShell>
+      </FormPageShell>
     );
   if (
     activeModerationQuery?.isError ||
@@ -185,14 +186,14 @@ export function AdminModerationScreen() {
     (moderationTab === 'works' && !products.data)
   )
     return (
-      <AdminShell>
+      <FormPageShell>
         <PageState
           title="Не удалось загрузить модерацию"
           retry={() => {
             void activeModerationQuery?.refetch();
           }}
         />
-      </AdminShell>
+      </FormPageShell>
     );
 
   const confirm = () => {
@@ -264,7 +265,7 @@ export function AdminModerationScreen() {
   };
 
   return (
-    <AdminShell>
+    <FormPageShell>
       <PageHeader
         title="Модерация"
         description="Проверка продавцов и предметов перед публикацией."
@@ -693,36 +694,6 @@ export function AdminModerationScreen() {
           />
         </AppDialog>
       ) : null}
-    </AdminShell>
+    </FormPageShell>
   );
-}
-
-function ModerationCard({
-  title,
-  status,
-  children,
-}: {
-  title: string;
-  status: string;
-  children: ReactNode;
-}) {
-  return (
-    <View
-      style={{
-        gap: designTokens.space.x2,
-        borderBottomWidth: 1,
-        borderBottomColor: designTokens.color.border,
-        paddingBottom: designTokens.space.x4,
-      }}
-    >
-      <AppText role="label">{title}</AppText>
-      <AppText role="bodySmall" tone="secondary">
-        {status}
-      </AppText>
-      {children}
-    </View>
-  );
-}
-function AdminShell({ children }: { children: ReactNode }) {
-  return <FormPageShell>{children}</FormPageShell>;
 }

@@ -22,7 +22,7 @@ test.describe('desktop account menu hover', () => {
   });
 
   test.afterAll(async () => {
-    await context.close();
+    await context?.close();
   });
 
   test('hover trigger opens the portaled dropdown', async () => {
@@ -62,6 +62,27 @@ test.describe('desktop account menu hover', () => {
 
     await expect(dropdown).toBeVisible();
     await expect(page.getByRole('link', { name: 'Кабинет' })).toBeVisible();
+  });
+
+  test('keeps the menu open while hovering nested items', async () => {
+    const account = page.getByRole('button', {
+      name: /Открыть меню аккаунта/,
+    });
+    const dropdown = page.locator('#account-menu-dropdown');
+
+    await account.hover();
+    await expect(dropdown).toBeVisible();
+
+    for (const item of [
+      page.getByRole('link', { name: 'Кабинет' }),
+      page.getByRole('link', { name: 'Покупки' }),
+      page.getByRole('button', { name: 'Выйти' }),
+    ]) {
+      await item.hover();
+      await page.waitForTimeout(hoverCloseWaitMs);
+      await expect(dropdown).toBeVisible();
+      await expect(item).toBeVisible();
+    }
   });
 
   test('closes after the cursor leaves trigger and dropdown', async () => {
@@ -106,6 +127,7 @@ test.describe('desktop account menu hover', () => {
     await page.keyboard.press('Escape');
     await expect(dropdown).toHaveCount(0);
 
+    await page.mouse.move(8, 400);
     await account.hover();
     await expect(dropdown).toBeVisible();
     await page.mouse.click(8, 400);

@@ -13,42 +13,26 @@ import {
   PageState,
   PrimaryButton,
   ResilientRemoteImage,
-  SelectableRow,
   SecondaryButton,
-  TextField,
 } from '../../components/ui';
 import {
   FormPageColumns,
   FormPageShell,
-} from '../../components/layout/FormPageShell';
+} from '../../components/layout';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
-import {
-  handoffContactTypeLabels,
-  handoffInitiatorLabels,
-  presentEnum,
-  sellerStatusLabels,
-} from '../../lib/presentation';
+import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
 import {
   getHandoffContactError,
   getProfileFieldErrors,
 } from './profile-validation';
-
-type ProfileFields = {
-  slug: string;
-  fullName: string;
-  discipline: string;
-  country: string;
-  socialLink: string;
-  telegramUrl: string;
-  instagramUrl: string;
-  websiteUrl: string;
-  shortDescription: string;
-  handoffContactType: 'TELEGRAM' | 'PHONE' | 'INSTAGRAM';
-  handoffContactValue: string;
-  handoffInitiator: 'BUYER_CONTACTS_SELLER' | 'SELLER_CONTACTS_BUYER';
-};
+import {
+  SellerProfileCreationStepSelector,
+  SellerProfileFormSteps,
+  SellerProfileVerificationSection,
+  type ProfileFields,
+} from './seller-profile-steps';
 
 const emptyFields: ProfileFields = {
   slug: '',
@@ -200,9 +184,9 @@ export function SellerProfileScreen() {
 
   if (query.isLoading) {
     return (
-      <ProfileShell>
+      <FormPageShell>
         <PageState title="Загружаем профиль продавца…" loading />
-      </ProfileShell>
+      </FormPageShell>
     );
   }
 
@@ -212,12 +196,12 @@ export function SellerProfileScreen() {
       query.error.kind !== 'not_found')
   ) {
     return (
-      <ProfileShell>
+      <FormPageShell>
         <PageState
           title="Не удалось загрузить профиль"
           retry={() => void query.refetch()}
         />
-      </ProfileShell>
+      </FormPageShell>
     );
   }
 
@@ -261,7 +245,7 @@ export function SellerProfileScreen() {
   const photoPreview = photoUri;
 
   return (
-    <ProfileShell>
+    <FormPageShell>
       <View style={{ gap: designTokens.space.x5 }}>
         <View style={{ gap: designTokens.space.x2 }}>
           <PageHeader
@@ -289,36 +273,10 @@ export function SellerProfileScreen() {
         </View>
 
         {isProfileCreation ? (
-          <FormSection
-            title="Создание профиля"
-            description="Соберите публичную страницу автора и отдельно укажите закрытые данные для передачи предмета."
-          >
-            <View
-              accessibilityRole="tablist"
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: designTokens.space.x2,
-              }}
-            >
-              {['Об авторе', 'Публичные ссылки', 'Передача и проверка'].map(
-                (label, index) => {
-                  const step = index + 1;
-                  return (
-                    <SecondaryButton
-                      key={label}
-                      label={`${step}. ${label}`}
-                      disabled={step > profileStep}
-                      onPress={() => setProfileStep(step)}
-                    />
-                  );
-                },
-              )}
-            </View>
-            <AppText role="metadata" tone="secondary">
-              Шаг {profileStep} из 3
-            </AppText>
-          </FormSection>
+          <SellerProfileCreationStepSelector
+            profileStep={profileStep}
+            setProfileStep={setProfileStep}
+          />
         ) : null}
 
         <FormPageColumns
@@ -375,206 +333,32 @@ export function SellerProfileScreen() {
             </FormSection>
           }
         >
-          {(!isProfileCreation || profileStep === 1) && (
-            <FormSection
-              title="Публичный профиль"
-              description="Эти данные увидят коллекционеры на странице автора."
-            >
-              <TextField
-                label="URL-slug"
-                value={fields.slug}
-                onChangeText={(value) => update('slug', value)}
-                placeholder="my-store"
-                autoCapitalize="none"
-                editable={editable}
-                required
-              />
-              <TextField
-                label="Имя или название"
-                value={fields.fullName}
-                onChangeText={(value) => update('fullName', value)}
-                placeholder="Иван Иванов"
-                editable={editable}
-                required
-              />
-              <TextField
-                label="Страна"
-                value={fields.country}
-                onChangeText={(value) => update('country', value)}
-                placeholder="BY"
-                autoCapitalize="characters"
-                editable={editable}
-                required
-              />
-              <TextField
-                label="Дисциплина"
-                value={fields.discipline}
-                onChangeText={(value) => update('discipline', value)}
-                placeholder="Керамика, живопись, текстиль"
-                editable={editable}
-                required
-              />
-              <TextField
-                label="Публичная ссылка"
-                value={fields.socialLink}
-                onChangeText={(value) => update('socialLink', value)}
-                placeholder="https://t.me/..."
-                autoCapitalize="none"
-                editable={editable}
-                error={fieldErrors.socialLink}
-              />
-              <TextField
-                label="Короткое описание"
-                value={fields.shortDescription}
-                onChangeText={(value) => update('shortDescription', value)}
-                placeholder="Расскажите о себе и своих работах"
-                multiline
-                editable={editable}
-                required
-              />
-            </FormSection>
-          )}
-          {(!isProfileCreation || profileStep === 2) && (
-            <FormSection
-              title="Публичные ссылки"
-              description="Эти ссылки попадут на открытую страницу автора."
-            >
-              <TextField
-                label="Telegram"
-                value={fields.telegramUrl}
-                onChangeText={(value) => update('telegramUrl', value)}
-                placeholder="https://t.me/username"
-                autoCapitalize="none"
-                editable={editable}
-                error={fieldErrors.telegramUrl}
-              />
-              <TextField
-                label="Instagram"
-                value={fields.instagramUrl}
-                onChangeText={(value) => update('instagramUrl', value)}
-                placeholder="https://instagram.com/username"
-                autoCapitalize="none"
-                editable={editable}
-                error={fieldErrors.instagramUrl}
-              />
-              <TextField
-                label="Сайт"
-                value={fields.websiteUrl}
-                onChangeText={(value) => update('websiteUrl', value)}
-                placeholder="https://example.com"
-                autoCapitalize="none"
-                editable={editable}
-                error={fieldErrors.websiteUrl}
-              />
-              <TextField
-                label="Основная публичная ссылка"
-                value={fields.socialLink}
-                onChangeText={(value) => update('socialLink', value)}
-                placeholder="Одна ссылка обязательна"
-                autoCapitalize="none"
-                editable={editable}
-                required
-                error={fieldErrors.socialLink}
-              />
-              {!hasPublicLink ? (
-                <AppText role="bodySmall" tone="danger">
-                  Добавьте хотя бы одну публичную ссылку.
-                </AppText>
-              ) : null}
-            </FormSection>
-          )}
-          {(!isProfileCreation || profileStep === 3) && (
-            <FormSection
-              title="Передача предмета"
-              description="Контакт используется для передачи предмета после завершения аукциона."
-            >
-              {!profile || editable ? (
-                <>
-                  <SelectableRow
-                    label="Способ передачи"
-                    value={fields.handoffContactType}
-                    options={Object.entries(handoffContactTypeLabels).map(
-                      ([value, label]) => ({ value, label }),
-                    )}
-                    onChange={(value) =>
-                      update(
-                        'handoffContactType',
-                        value as ProfileFields['handoffContactType'],
-                      )
-                    }
-                    disabled={!editable}
-                  />
-                  <TextField
-                    label="Контакт для передачи"
-                    value={fields.handoffContactValue}
-                    onChangeText={(value) =>
-                      update('handoffContactValue', value)
-                    }
-                    placeholder="@username или +375..."
-                    autoCapitalize="none"
-                    editable={editable}
-                    error={
-                      isProfileCreation &&
-                      profileStep === 3 &&
-                      !fields.handoffContactValue.trim()
-                        ? 'Укажите контакт для передачи'
-                        : handoffContactError
-                    }
-                  />
-                  <SelectableRow
-                    label="Кто начинает контакт"
-                    value={fields.handoffInitiator}
-                    options={Object.entries(handoffInitiatorLabels).map(
-                      ([value, label]) => ({ value, label }),
-                    )}
-                    onChange={(value) =>
-                      update(
-                        'handoffInitiator',
-                        value as ProfileFields['handoffInitiator'],
-                      )
-                    }
-                    disabled={!editable}
-                  />
-                </>
-              ) : (
-                <View style={{ gap: designTokens.space.x2 }}>
-                  <AppText role="bodySmall" tone="secondary">
-                    {presentEnum(
-                      profile.handoffContactType,
-                      handoffContactTypeLabels,
-                      'Неизвестный тип контакта',
-                    )}
-                    : {profile.handoffContactValue}
-                  </AppText>
-                  <AppText role="bodySmall" tone="secondary">
-                    Инициатор:{' '}
-                    {presentEnum(
-                      profile.handoffInitiator,
-                      handoffInitiatorLabels,
-                      'Неизвестный режим контакта',
-                    )}
-                  </AppText>
-                </View>
-              )}
-            </FormSection>
-          )}
+          <SellerProfileFormSteps
+            isProfileCreation={isProfileCreation}
+            profileStep={profileStep}
+            editable={editable}
+            fields={fields}
+            profile={
+              profile
+                ? {
+                    handoffContactType: profile.handoffContactType,
+                    handoffContactValue: profile.handoffContactValue,
+                    handoffInitiator: profile.handoffInitiator,
+                  }
+                : null
+            }
+            fieldErrors={fieldErrors}
+            hasPublicLink={hasPublicLink}
+            handoffContactError={handoffContactError}
+            update={update}
+          />
         </FormPageColumns>
 
-        {isProfileCreation && profileStep === 3 ? (
-          <FormSection
-            title="Проверка профиля"
-            description="Публичная страница показывает имя, адрес, описание, фото и ссылки. Контакт передачи остаётся закрытым до завершения сделки."
-          >
-            <AppText role="label">
-              {fields.fullName || 'Имя автора'} · @
-              {fields.slug || 'profile-address'}
-            </AppText>
-            <AppText role="bodySmall" tone="secondary">
-              {fields.discipline || 'Дисциплина не заполнена'} ·{' '}
-              {fields.country || 'Страна не заполнена'}
-            </AppText>
-          </FormSection>
-        ) : null}
+        <SellerProfileVerificationSection
+          isProfileCreation={isProfileCreation}
+          profileStep={profileStep}
+          fields={fields}
+        />
 
         {!editable ? (
           <AppText role="bodySmall" tone="secondary">
@@ -624,10 +408,6 @@ export function SellerProfileScreen() {
           </AppText>
         ) : null}
       </View>
-    </ProfileShell>
+    </FormPageShell>
   );
-}
-
-function ProfileShell({ children }: { children: React.ReactNode }) {
-  return <FormPageShell>{children}</FormPageShell>;
 }

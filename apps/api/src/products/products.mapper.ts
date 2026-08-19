@@ -1,6 +1,9 @@
 import { productResponseSchema, type Product } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
+import { publicListingStatuses } from './public-visibility';
+import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
+
 export const productSelect = {
   id: true,
   publicId: true,
@@ -79,4 +82,90 @@ export function toContractProduct(product: ProductRecord): Product {
 
 export function toProductResponse(product: ProductRecord) {
   return productResponseSchema.parse({ product: toContractProduct(product) });
+}
+
+export const publicCatalogProductSelect = {
+  id: true,
+  publicId: true,
+  sellerProfileId: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  packaging: true,
+  deliveryInfo: true,
+  creationIntro: true,
+  publishedAt: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerProfile: { select: publicSellerProfileSelect },
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: {
+      id: true,
+      position: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+      width: true,
+      height: true,
+    },
+  },
+  listings: {
+    where: { status: { in: publicListingStatuses } },
+    orderBy: { createdAt: 'desc' as const },
+    select: {
+      id: true,
+      productId: true,
+      status: true,
+      startsAt: true,
+      originalEndsAt: true,
+      endsAt: true,
+      currentPrice: true,
+      bidCount: true,
+      closedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      auctionRules: { select: { startPrice: true } },
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+export function toCreationStepContract(step: {
+  id: string;
+  position: number;
+  title: string;
+  body: string;
+  mimeType: string | null;
+  byteLength: number | null;
+  checksum: string | null;
+  width: number | null;
+  height: number | null;
+}) {
+  return {
+    id: step.id,
+    position: step.position,
+    title: step.title,
+    body: step.body,
+    image:
+      step.mimeType && step.byteLength && step.checksum
+        ? {
+            url: `/api/creation-steps/${step.id}/image`,
+            mimeType: step.mimeType,
+            byteLength: step.byteLength,
+            checksum: step.checksum,
+            width: step.width,
+            height: step.height,
+          }
+        : null,
+  };
 }

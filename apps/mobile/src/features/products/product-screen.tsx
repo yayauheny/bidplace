@@ -14,10 +14,9 @@ import {
 } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
-import type { ActivityStatus } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { AppShell } from '../../components/layout';
 import {
   AppDialog,
   AppIcon,
@@ -34,16 +33,27 @@ import {
   type ProductTabId,
   SecondaryButton,
   SlideToBid,
-  TextField,
   MotionPressable,
 } from '../../components/ui';
-import { formatDateTime, formatDisplayPrice } from '../../lib/formatters';
+import {
+  formatCountdownHms,
+  formatDateTime,
+  formatDisplayPrice,
+} from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
 import { getErrorStatus, getUserFacingErrorMessage } from '../../lib/errors';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
+import {
+  auctionListingStatusLabels,
+  auctionParticipationLabels,
+  auctionListingStatusTone,
+  auctionParticipationTone,
+} from '../../lib/presentation';
+import { AboutAccordionRow, ProductAboutAuthorPanel, SurfacePanel } from './product-about';
+import { BidForm } from './product-bid-panel';
 import {
   EmailRulesDialog,
   useEmailRulesEligibility,
@@ -55,7 +65,6 @@ type BidItem = Awaited<
   ReturnType<ApiClient['listings']['listBids']>
 >['bids'][number];
 type BidAttempt = { listingId: string; amount: number; idempotencyKey: string };
-type ListingStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' | 'DRAFT';
 type DetailItem = { label: string; value: string };
 type AboutSectionId = 'characteristics' | 'packaging' | 'delivery';
 
@@ -63,286 +72,6 @@ function newIdempotencyKey(): string {
   if (!globalThis.crypto?.randomUUID)
     throw new Error('Secure idempotency keys are unavailable on this device');
   return globalThis.crypto.randomUUID();
-}
-
-function formatRemainingTime(endsAt: string, now: number): string {
-  const seconds = Math.max(
-    0,
-    Math.ceil((new Date(endsAt).getTime() - now) / 1_000),
-  );
-  const hours = Math.floor(seconds / 3_600);
-  const minutes = Math.floor((seconds % 3_600) / 60);
-  const remainder = seconds % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
-}
-
-function listingStatusLabel(status: ListingStatus): string {
-  return {
-    SCHEDULED: 'Торги запланированы',
-    LIVE: 'Торги идут',
-    ENDED: 'Торги завершены',
-    CANCELLED: 'Размещение отменено',
-    DRAFT: 'Черновик размещения',
-  }[status];
-}
-
-function listingStatusTone(
-  status: ListingStatus,
-): 'accent' | 'success' | 'secondary' | 'danger' {
-  if (status === 'LIVE') return 'success';
-  if (status === 'SCHEDULED') return 'accent';
-  if (status === 'CANCELLED') return 'danger';
-  return 'secondary';
-}
-
-function participationLabel(status: ActivityStatus): string {
-  const labels: Record<ActivityStatus, string> = {
-    LEADING: 'Побеждаете',
-    OUTBID: 'Ставка перебита',
-    WON: 'Выиграли',
-    LOST: 'Торги завершены',
-    AWAITING_SELLER_CONTACT: 'Ожидается связь с автором',
-    WIN_CANCELLED: 'Покупка отменена',
-    COMPLETED: 'Покупка завершена',
-  };
-  return labels[status];
-}
-
-function participationTone(
-  status: ActivityStatus,
-): 'accent' | 'success' | 'secondary' | 'danger' {
-  if (status === 'LEADING' || status === 'WON') return 'success';
-  if (status === 'OUTBID') return 'accent';
-  return 'secondary';
-}
-
-function SurfacePanel({
-  eyebrow,
-  children,
-}: {
-  eyebrow?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View
-      style={{
-        gap: designTokens.space.x4,
-        borderRadius: designTokens.radius.panel,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surface,
-        padding: designTokens.space.x5,
-      }}
-    >
-      {eyebrow ? (
-        <AppText role="metadata" tone="secondary">
-          {eyebrow}
-        </AppText>
-      ) : null}
-      {children}
-    </View>
-  );
-}
-
-function AboutAccordionRow({
-  body,
-  expanded,
-  index,
-  label,
-  onToggle,
-}: {
-  body: React.ReactNode;
-  expanded: boolean;
-  index: number;
-  label: string;
-  onToggle: () => void;
-}) {
-  return (
-    <View
-      style={{
-        borderTopWidth: 1,
-        borderTopColor: designTokens.color.border,
-      }}
-    >
-      <MotionPressable
-        accessibilityRole="button"
-        accessibilityLabel={`${String(index).padStart(2, '0')} ${label}`}
-        accessibilityState={{ expanded }}
-        onPress={onToggle}
-        preset="button"
-        style={{
-          minHeight: 64,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: designTokens.space.x3,
-          paddingHorizontal: designTokens.space.x3,
-        }}
-      >
-        <AppText role="metadata" tone="secondary" style={{ width: 24 }}>
-          {String(index).padStart(2, '0')}
-        </AppText>
-        <AppText role="label" style={{ flex: 1 }}>
-          {label}
-        </AppText>
-        <AppIcon name={expanded ? 'minus' : 'plus'} size={16} />
-      </MotionPressable>
-      {expanded ? (
-        <View
-          nativeID={`product-about-section-${index}`}
-          accessibilityRole="summary"
-          style={{
-            gap: designTokens.space.x3,
-            paddingHorizontal: designTokens.space.x8,
-            paddingBottom: designTokens.space.x5,
-          }}
-        >
-          {body}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function ProductAboutAuthorPanel({
-  profile,
-}: {
-  profile: {
-    fullName: string;
-    slug: string;
-    profilePhotoUrl: string;
-    shortDescription: string;
-  };
-}) {
-  return (
-    <View
-      style={{
-        width: 376,
-        minHeight: 310,
-        gap: designTokens.space.x4,
-        paddingHorizontal: 28,
-        paddingVertical: 24,
-        borderRadius: designTokens.radius.aboutPanel,
-        backgroundColor: designTokens.color.surfacePanel,
-      }}
-    >
-      <AppText role="sectionTitle">Автор</AppText>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: designTokens.space.x3,
-        }}
-      >
-        <ResilientRemoteImage
-          uri={getApiAssetUrl(profile.profilePhotoUrl)}
-          component="ProductAuthor"
-          accessibilityLabel={`Фото автора: ${profile.fullName}`}
-          fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-          style={{ width: 48, height: 48, borderRadius: 24 }}
-          contentFit="cover"
-        />
-        <View style={{ flex: 1, gap: designTokens.space.x1 }}>
-          <AppText role="label">{profile.fullName}</AppText>
-          <AppText role="bodySmall" tone="secondary">
-            @{profile.slug}
-          </AppText>
-        </View>
-      </View>
-      <AppText role="bodySmall" tone="secondary">
-        {profile.shortDescription}
-      </AppText>
-      <Link
-        href={
-          { pathname: '/seller/[slug]', params: { slug: profile.slug } } as Href
-        }
-        asChild
-      >
-        <MotionPressable
-          accessibilityRole="link"
-          accessibilityLabel={`Открыть страницу автора ${profile.fullName}`}
-          preset="button"
-          style={{
-            minHeight: designTokens.size.touch,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTopWidth: 1,
-            borderTopColor: designTokens.color.border,
-            paddingTop: designTokens.space.x3,
-          }}
-        >
-          <AppText role="label">Страница автора</AppText>
-          <AppIcon name="chevronRight" size={16} />
-        </MotionPressable>
-      </Link>
-    </View>
-  );
-}
-
-function BidForm({
-  amount,
-  minimumNextBid,
-  validationError,
-  isPending,
-  hasFailedAttempt,
-  onAmountChange,
-  onSubmit,
-  onRetry,
-  showPrimaryAction = true,
-}: {
-  amount: string;
-  minimumNextBid: number | null;
-  validationError: string | null;
-  isPending: boolean;
-  hasFailedAttempt: boolean;
-  onAmountChange: (value: string) => void;
-  onSubmit: () => void;
-  onRetry: () => void;
-  showPrimaryAction?: boolean;
-}) {
-  return (
-    <View style={{ gap: designTokens.space.x3 }}>
-      <TextField
-        label="Ваша ставка, BYN"
-        value={amount}
-        onChangeText={onAmountChange}
-        keyboardType="decimal-pad"
-        placeholder={
-          minimumNextBid !== null ? `от ${minimumNextBid}` : undefined
-        }
-        error={validationError ?? undefined}
-      />
-      {showPrimaryAction ? (
-        <PrimaryButton
-          label="Сделать ставку"
-          loading={isPending}
-          onPress={onSubmit}
-          accessibilityHint="Сервер проверит актуальную цену и условия торгов"
-        />
-      ) : null}
-      {hasFailedAttempt ? (
-        <SecondaryButton
-          label="Повторить ставку"
-          disabled={isPending}
-          onPress={onRetry}
-        />
-      ) : null}
-    </View>
-  );
-}
-
-function ProductShell({
-  children,
-  bottomAction,
-}: {
-  children: React.ReactNode;
-  bottomAction?: React.ReactNode;
-}) {
-  return (
-    <AppShell bottomAction={bottomAction} ambientVariant="product">
-      {children}
-    </AppShell>
-  );
 }
 
 export function ProductScreen({
@@ -522,18 +251,18 @@ export function ProductScreen({
 
   if (query.isLoading)
     return (
-      <ProductShell>
+      <AppShell ambientVariant="product">
         <PageState title="Загружаем предмет…" loading />
-      </ProductShell>
+      </AppShell>
     );
   if (query.isError || !query.data)
     return (
-      <ProductShell>
+      <AppShell ambientVariant="product">
         <PageState
           title="Не удалось загрузить предмет"
           retry={() => void query.refetch()}
         />
-      </ProductShell>
+      </AppShell>
     );
 
   const {
@@ -667,13 +396,15 @@ export function ProductScreen({
     ) : null;
   const auctionPlayer = listing ? (
     <AuctionPlayer
-      statusLabel={listingStatusLabel(listing.status)}
-      statusTone={listingStatusTone(listing.status)}
+      statusLabel={auctionListingStatusLabels[listing.status]}
+      statusTone={auctionListingStatusTone(listing.status)}
       participationLabel={
-        participation ? participationLabel(participation.status) : undefined
+        participation
+          ? auctionParticipationLabels[participation.status]
+          : undefined
       }
       participationTone={
-        participation ? participationTone(participation.status) : undefined
+        participation ? auctionParticipationTone(participation.status) : undefined
       }
       currentPriceLabel={formatDisplayPrice(listing.currentPrice)}
       startPriceLabel={formatDisplayPrice(listing.auctionRules.startPrice)}
@@ -682,7 +413,7 @@ export function ProductScreen({
       }
       timingLabel={
         listing.status === 'LIVE'
-          ? `До завершения: ${formatRemainingTime(listing.endsAt, now)}`
+          ? `До завершения: ${formatCountdownHms(listing.endsAt, now)}`
           : listing.status === 'SCHEDULED'
             ? `Начало: ${formatDateTime(listing.startsAt)}`
             : 'Статус: Торги завершены'
@@ -1097,7 +828,7 @@ export function ProductScreen({
   ) : null;
 
   return (
-    <ProductShell
+    <AppShell ambientVariant="product"
       bottomAction={
         !isProductWide && canParticipate ? (
           <BottomActionBar
@@ -1427,6 +1158,6 @@ export function ProductScreen({
           void openBidDialog();
         }}
       />
-    </ProductShell>
+    </AppShell>
   );
 }

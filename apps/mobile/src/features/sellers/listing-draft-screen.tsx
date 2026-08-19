@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { listingCreateRequestSchema } from '@bidplace/contracts';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import {
   FormPageColumns,
   FormPageShell,
-} from '../../components/layout/FormPageShell';
+} from '../../components/layout';
 import {
   AppText,
   FormSection,
@@ -146,7 +146,7 @@ export function ListingDraftScreen({
 
   if (!products.data)
     return (
-      <ListingShell>
+      <FormPageShell>
         {products.isLoading ? (
           <PageState title="Загружаем ваши предметы…" loading />
         ) : (
@@ -158,11 +158,11 @@ export function ListingDraftScreen({
             />
           </>
         )}
-      </ListingShell>
+      </FormPageShell>
     );
 
   return (
-    <ListingShell>
+    <FormPageShell>
       <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="screenTitle">Новое размещение</AppText>
         <AppText role="bodySmall" tone="secondary">
@@ -369,10 +369,6 @@ export function ListingDraftScreen({
           попытку.
         </AppText>
       ) : null}
-    </ListingShell>
+    </FormPageShell>
   );
-}
-
-function ListingShell({ children }: { children: ReactNode }) {
-  return <FormPageShell>{children}</FormPageShell>;
 }

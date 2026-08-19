@@ -19,12 +19,13 @@ import { createHash } from 'node:crypto';
 
 import { isPrismaUniqueConstraintError, PrismaService } from '../core/database';
 import { type ValidatedImageUpload } from '../images/image-policy';
-import { productSelect, toContractProduct } from '../products/products.mapper';
 import {
-  ProductsService,
+  productSelect,
+  toContractProduct,
   publicCatalogProductSelect,
   toCreationStepContract,
-} from '../products/products.service';
+} from '../products/products.mapper';
+import { ProductsService } from '../products/products.service';
 import {
   publicCatalogProductWhere,
   publicProductContentSql,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  auctionListingStatusLabels,
+  auctionParticipationLabels,
   cancellationReasonLabels,
   handoffContactTypeLabels,
   handoffInitiatorLabels,
@@ -58,5 +60,33 @@ describe('presentation adapters', () => {
   it('returns null for invalid date-time input', () => {
     expect(parseDateTimeInputValue('not-a-date')).toBeNull();
     expect(toDateTimeInputValue('not-a-date')).toBe('');
+  });
+
+  it('keeps auction listing status labels stable', () => {
+    expect(auctionListingStatusLabels.DRAFT).toBe('Черновик размещения');
+    expect(auctionListingStatusLabels.SCHEDULED).toBe(
+      'Торги запланированы',
+    );
+    expect(auctionListingStatusLabels.LIVE).toBe('Торги идут');
+    expect(auctionListingStatusLabels.ENDED).toBe('Торги завершены');
+    expect(auctionListingStatusLabels.CANCELLED).toBe(
+      'Размещение отменено',
+    );
+  });
+
+  it('keeps auction participation labels stable', () => {
+    expect(auctionParticipationLabels.LEADING).toBe('Побеждаете');
+    expect(auctionParticipationLabels.OUTBID).toBe('Ставка перебита');
+    expect(auctionParticipationLabels.WON).toBe('Выиграли');
+    expect(auctionParticipationLabels.LOST).toBe('Торги завершены');
+    expect(auctionParticipationLabels.AWAITING_SELLER_CONTACT).toBe(
+      'Ожидается связь с автором',
+    );
+    expect(auctionParticipationLabels.WIN_CANCELLED).toBe(
+      'Покупка отменена',
+    );
+    expect(auctionParticipationLabels.COMPLETED).toBe(
+      'Покупка завершена',
+    );
   });
 });

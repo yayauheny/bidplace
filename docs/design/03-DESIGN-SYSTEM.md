@@ -168,6 +168,8 @@ exposes its expanded state.
 - Buttons and links remain visually and semantically distinct.
 - Dropdown/menu is not a generic select; sort/filter controls use appropriate
   listbox/select semantics.
+- Implementation: shared discovery dropdown `components/layout/FilterMenu.tsx`
+  (single dismiss + focus return contract for all sort/filter controls).
 - Status chips are informational unless the contract makes them controls.
 - Loading disables only the action in progress and keeps result/error legible.
 - Destructive actions retain explicit confirmation where product docs require

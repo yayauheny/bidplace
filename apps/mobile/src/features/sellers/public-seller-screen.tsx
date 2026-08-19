@@ -1,34 +1,26 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Link, type Href, useRouter } from 'expo-router';
-import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { ScrollView, useWindowDimensions, View } from 'react-native';
 
-import type { PublicSellerWorksQuery } from '@bidplace/contracts';
+import type {
+  PublicListingStatus,
+  PublicSellerWorksQuery,
+} from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { AppShell, FilterMenu } from '../../components/layout';
 import {
-  AppIcon,
   AppText,
   AuctionCardGrid,
-  MotionPressable,
   PageState,
-  ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
-import { getApiAssetUrl } from '../../lib/environment';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { getAuthorWorkColumnCount } from './author-layout';
-
-type CreatorStatus = 'LIVE' | 'SCHEDULED' | 'ENDED';
-
-const statusTabs: Array<{ value: CreatorStatus; label: string }> = [
-  { value: 'LIVE', label: 'Идут торги' },
-  { value: 'SCHEDULED', label: 'Запланированы' },
-  { value: 'ENDED', label: 'Завершены' },
-];
+import { CreatorHero } from './CreatorHero';
+import { CreatorStatusTabs } from './CreatorStatusTabs';
 
 const sortOptions: Array<{
   value: PublicSellerWorksQuery['sort'];
@@ -47,379 +39,21 @@ function CreatorSort({
   sort: PublicSellerWorksQuery['sort'];
   onChange: (sort: PublicSellerWorksQuery['sort']) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const current = sortOptions.find((option) => option.value === sort);
-  const menuId = 'creator-sort-menu';
-
-  useEffect(() => {
-    if (!open || Platform.OS !== 'web') return;
-
-    const closeIfOutside = (target: EventTarget | null) => {
-      const menu = document.getElementById(menuId);
-      if (menu && target instanceof Node && !menu.contains(target)) {
-        setOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      setOpen(false);
-    };
-
-    const closeOnPointerDown = (event: PointerEvent) =>
-      closeIfOutside(event.target);
-    document.addEventListener('keydown', closeOnEscape);
-    document.addEventListener('pointerdown', closeOnPointerDown);
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.removeEventListener('pointerdown', closeOnPointerDown);
-    };
-  }, [open]);
-
   return (
-    <View
-      nativeID={menuId}
-      style={{ position: 'relative', alignSelf: 'flex-start' }}
-    >
-      <MotionPressable
-        accessibilityRole="button"
-        accessibilityLabel="Сортировка работ автора"
-        accessibilityState={{ expanded: open }}
-        onAccessibilityEscape={() => setOpen(false)}
-        onPress={() => setOpen((value) => !value)}
-        preset="button"
-        style={{
-          minHeight: 40,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: designTokens.space.x3,
-          minWidth: 160,
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          paddingHorizontal: 16,
+    <View style={{ alignSelf: 'flex-start', position: 'relative' }}>
+      <FilterMenu
+        variant="sort"
+        label="Сортировка работ автора"
+        value={sort}
+        options={sortOptions}
+        onSelect={(next) => {
+          if (!next) return;
+          onChange(next as PublicSellerWorksQuery['sort']);
         }}
-      >
-        <AppText role="label">{current?.label}</AppText>
-        <AppIcon
-          name="chevronDown"
-          size={16}
-          color={designTokens.color.textSecondary}
-        />
-      </MotionPressable>
-      {open ? (
-        <View
-          accessibilityRole="menu"
-          style={{
-            position: 'absolute',
-            top: 48,
-            right: 0,
-            zIndex: designTokens.layer.popover,
-            minWidth: 190,
-            gap: designTokens.space.x1,
-            borderWidth: 1,
-            borderColor: designTokens.color.border,
-            borderRadius: 16,
-            backgroundColor: designTokens.color.surface,
-            padding: 10,
-            ...designTokens.elevation.floating,
-          }}
-        >
-          {sortOptions.map((option) => (
-            <MotionPressable
-              key={option.value}
-              accessibilityRole="menuitem"
-              accessibilityLabel={option.label}
-              onPress={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              preset="button"
-              style={{
-                minHeight: designTokens.size.touch,
-                justifyContent: 'center',
-                borderRadius: designTokens.radius.small,
-                paddingHorizontal: designTokens.space.x2,
-              }}
-              interactionStyle={({ hovered, pressed }) => ({
-                backgroundColor:
-                  hovered || pressed
-                    ? designTokens.color.surfaceStrong
-                    : 'transparent',
-              })}
-            >
-              <AppText role="label">{option.label}</AppText>
-            </MotionPressable>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function SocialLink({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: 'send' | 'instagram' | 'globe';
-  label: string;
-}) {
-  return (
-    <Link href={href as Href} target="_blank" asChild>
-      <MotionPressable
-        accessibilityRole="link"
-        accessibilityLabel={label}
-        preset="icon"
-        style={{
-          width: 28,
-          height: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          borderRadius: 14,
-        }}
-      >
-        <AppIcon
-          name={icon}
-          size={20}
-          color={designTokens.color.textSecondary}
-        />
-      </MotionPressable>
-    </Link>
-  );
-}
-
-function CreatorHero({
-  profile,
-  slug,
-}: {
-  profile: {
-    fullName: string;
-    profilePhotoUrl: string;
-    shortDescription: string;
-    telegramUrl: string | null;
-    instagramUrl: string | null;
-    websiteUrl: string | null;
-  };
-  slug: string;
-}) {
-  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  );
-  const copyProfileLink = () => {
-    if (
-      Platform.OS !== 'web' ||
-      typeof window === 'undefined' ||
-      !navigator.clipboard
-    ) {
-      setCopyState('error');
-      return;
-    }
-    void navigator.clipboard
-      .writeText(new URL(`/seller/${slug}`, window.location.origin).toString())
-      .then(() => setCopyState('success'))
-      .catch(() => setCopyState('error'));
-  };
-
-  return (
-    <View
-      style={{
-        minHeight: 500,
-        alignItems: 'center',
-        gap: 18,
-        paddingTop: 64,
-        paddingBottom: 72,
-        backgroundColor: 'transparent',
-      }}
-    >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(profile.profilePhotoUrl)}
-        component="AuthorPhoto"
-        accessibilityLabel={`Фото автора ${profile.fullName}`}
-        fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-        style={{ width: 120, height: 120, borderRadius: 60 }}
-        contentFit="cover"
+        dropdownAlign="right"
+        dropdownMinWidth={190}
+        dismissOnOutside
       />
-      <View style={{ alignItems: 'center', gap: 6 }}>
-        <AppText
-          accessibilityRole="header"
-          role="display"
-          style={{
-            fontFamily: 'Inter_700Bold',
-            fontSize: 48,
-            lineHeight: 50,
-            letterSpacing: -1,
-            textAlign: 'center',
-          }}
-        >
-          {profile.fullName}
-        </AppText>
-        {Platform.OS === 'web' ? (
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel={`Скопировать ссылку на профиль ${profile.fullName}`}
-            onPress={copyProfileLink}
-            preset="button"
-            style={{
-              minHeight: 28,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: designTokens.space.x2,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              backgroundColor: designTokens.color.surfaceMuted,
-              paddingHorizontal: 9,
-            }}
-          >
-            <AppText role="label" tone="secondary" style={{ fontSize: 15 }}>
-              @{slug}
-            </AppText>
-            <AppIcon name="copy" size={14} color={designTokens.color.ink} />
-          </MotionPressable>
-        ) : (
-          <AppText role="label" tone="secondary">
-            @{slug}
-          </AppText>
-        )}
-        {copyState === 'success' ? (
-          <AppText role="caption" tone="success">
-            Ссылка скопирована.
-          </AppText>
-        ) : null}
-        {copyState === 'error' ? (
-          <AppText role="caption" tone="danger">
-            Не удалось скопировать ссылку.
-          </AppText>
-        ) : null}
-      </View>
-      <View
-        style={{
-          height: 28,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 16,
-        }}
-      >
-        {profile.telegramUrl ? (
-          <SocialLink
-            href={profile.telegramUrl}
-            icon="send"
-            label="Telegram автора"
-          />
-        ) : null}
-        {profile.instagramUrl ? (
-          <SocialLink
-            href={profile.instagramUrl}
-            icon="instagram"
-            label="Instagram автора"
-          />
-        ) : null}
-        {profile.websiteUrl ? (
-          <SocialLink
-            href={profile.websiteUrl}
-            icon="globe"
-            label="Сайт автора"
-          />
-        ) : null}
-      </View>
-      <AppText
-        role="body"
-        tone="secondary"
-        style={{ maxWidth: 680, textAlign: 'center' }}
-      >
-        {profile.shortDescription}
-      </AppText>
-    </View>
-  );
-}
-
-function CreatorStatusTabs({
-  status,
-  statusCounts,
-  onChange,
-}: {
-  status?: CreatorStatus;
-  statusCounts: Record<CreatorStatus, number>;
-  onChange: (status?: CreatorStatus) => void;
-}) {
-  return (
-    <View
-      role="tablist"
-      accessibilityLabel="Статусы работ автора"
-      style={{
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: designTokens.space.x2,
-      }}
-    >
-      {statusTabs.map((tab) => {
-        const selected = tab.value === status;
-        return (
-          <MotionPressable
-            key={tab.value}
-            accessibilityRole="tab"
-            accessibilityLabel={tab.label}
-            accessibilityState={{ selected }}
-            aria-selected={selected}
-            aria-controls="creator-works-panel"
-            onPress={() => onChange(selected ? undefined : tab.value)}
-            preset="button"
-            style={{
-              minHeight: 40,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              borderRadius: 20,
-              backgroundColor: selected
-                ? designTokens.color.action
-                : designTokens.color.surface,
-              borderWidth: selected ? 0 : 1,
-              borderColor: designTokens.color.border,
-              paddingHorizontal: 17,
-            }}
-          >
-            <AppText
-              role="label"
-              style={{
-                color: selected
-                  ? designTokens.color.surface
-                  : designTokens.color.ink,
-              }}
-            >
-              {tab.label}
-            </AppText>
-            <View
-              style={{
-                minWidth: 24,
-                height: 24,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 12,
-                backgroundColor: selected
-                  ? designTokens.color.surfaceStrong
-                  : designTokens.color.surfaceMuted,
-                paddingHorizontal: 6,
-              }}
-            >
-              <AppText
-                role="metadata"
-                style={{
-                  color: selected
-                    ? designTokens.color.ink
-                    : designTokens.color.textSecondary,
-                }}
-              >
-                {statusCounts[tab.value]}
-              </AppText>
-            </View>
-          </MotionPressable>
-        );
-      })}
     </View>
   );
 }
@@ -430,7 +64,7 @@ export function PublicSellerScreen({
   sort = 'activity',
 }: {
   slug: string;
-  status?: CreatorStatus;
+  status?: PublicListingStatus;
   sort?: PublicSellerWorksQuery['sort'];
 }) {
   const api = useApiClient();

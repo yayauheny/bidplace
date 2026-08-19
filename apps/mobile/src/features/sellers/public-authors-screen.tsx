@@ -1,18 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
-import { useState } from 'react';
 
 import type { PublicSellerSort } from '@bidplace/contracts';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout/AppShell';
+import { AppShell, FilterMenu } from '../../components/layout';
 import {
-  AppIcon,
   AppText,
   CreatorCardGrid,
-  MotionPressable,
   PageState,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
@@ -30,83 +27,22 @@ function AuthorSort({
   sort: PublicSellerSort;
   onChange: (sort: PublicSellerSort) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const current = authorSortOptions.find((option) => option.value === sort);
-
   return (
-    <View style={{ position: 'relative', alignSelf: 'flex-end' }}>
-      <MotionPressable
-        accessibilityRole="button"
-        accessibilityLabel="Сортировка авторов"
-        accessibilityState={{ expanded: open }}
-        onPress={() => setOpen((value) => !value)}
-        preset="button"
-        style={{
-          minHeight: 40,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: designTokens.space.x3,
-          minWidth: 160,
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          paddingHorizontal: 16,
+    <View style={{ alignSelf: 'flex-end', position: 'relative' }}>
+      <FilterMenu
+        variant="sort"
+        label="Сортировка авторов"
+        value={sort}
+        options={authorSortOptions.map((option) => ({
+          value: option.value,
+          label: option.label,
+        }))}
+        onSelect={(next) => {
+          if (!next) return;
+          onChange(next as PublicSellerSort);
         }}
-      >
-        <AppText role="label">{current?.label}</AppText>
-        <AppIcon
-          name="chevronDown"
-          size={16}
-          color={designTokens.color.textSecondary}
-        />
-      </MotionPressable>
-      {open ? (
-        <View
-          accessibilityRole="menu"
-          style={{
-            position: 'absolute',
-            top: 48,
-            left: 0,
-            zIndex: designTokens.layer.popover,
-            minWidth: 180,
-            gap: designTokens.space.x1,
-            borderWidth: 1,
-            borderColor: designTokens.color.border,
-            borderRadius: 16,
-            backgroundColor: designTokens.color.surface,
-            padding: 10,
-            ...designTokens.elevation.floating,
-          }}
-        >
-          {authorSortOptions.map((option) => (
-            <MotionPressable
-              key={option.value}
-              accessibilityRole="menuitem"
-              accessibilityLabel={option.label}
-              onPress={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              preset="button"
-              style={{
-                minHeight: designTokens.size.touch,
-                justifyContent: 'center',
-                borderRadius: designTokens.radius.small,
-                paddingHorizontal: designTokens.space.x2,
-              }}
-              interactionStyle={({ hovered, pressed }) => ({
-                backgroundColor:
-                  hovered || pressed
-                    ? designTokens.color.surfaceStrong
-                    : 'transparent',
-              })}
-            >
-              <AppText role="label">{option.label}</AppText>
-            </MotionPressable>
-          ))}
-        </View>
-      ) : null}
+        dismissOnOutside={false}
+      />
     </View>
   );
 }

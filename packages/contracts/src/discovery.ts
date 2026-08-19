@@ -5,7 +5,8 @@ import { publicSellerListItemSchema } from './public-seller';
 import { paginationQuerySchema } from './pagination';
 import { uuidSchema } from './primitives';
 
-const publicListingStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED']);
+export const publicListingStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED']);
+export type PublicListingStatus = z.infer<typeof publicListingStatusSchema>;
 
 export const publicDiscoverySortSchema = z.enum([
   'activity',

@@ -4,9 +4,11 @@ import {
   canOpenProductWizardStep,
   clampProductWizardStep,
   createProductWizardDraft,
+  createProductWizardHref,
   highestOpenableProductWizardStep,
   parseProductWizardStepParam,
   productWizardStep,
+  productWizardStepOneIncompleteMessage,
   resolveProductWizardStep,
   shouldRewriteProductWizardStepParam,
 } from './product-draft-wizard';
@@ -136,5 +138,25 @@ describe('product draft wizard accessibility', () => {
     expect(
       shouldRewriteProductWizardStepParam(undefined, productWizardStep.about),
     ).toBe(true);
+  });
+
+  it('builds the creation-flow product href without inventing extra params', () => {
+    expect(createProductWizardHref('abc123xyz', productWizardStep.review)).toEqual(
+      {
+        pathname: '/(seller)/products/[id]',
+        params: {
+          id: 'abc123xyz',
+          flow: 'creation',
+          step: '4',
+        },
+      },
+    );
+  });
+
+  it('keeps the form-level incomplete message distinct from field errors', () => {
+    expect(productWizardStepOneIncompleteMessage).toBe(
+      'Проверьте обязательные поля',
+    );
+    expect(productWizardStepOneIncompleteMessage).not.toBe('Введите название');
   });
 });
