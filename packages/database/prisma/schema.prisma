@@ -342,3 +342,42 @@ model AuditEvent {
   @@index([targetType, targetId, createdAt])
   @@map("audit_events")
 }
+
+model AnalyticsEvent {
+  id               String    @id @default(uuid()) @db.Uuid
+  eventName        String    @map("event_name") @db.VarChar(64)
+  anonymousId      String    @map("anonymous_id") @db.Uuid
+  userId           String?   @map("user_id") @db.Uuid
+  properties       Json      @default("{}")
+  platform         String?   @db.VarChar(32)
+  appVersion       String?   @map("app_version") @db.VarChar(32)
+  environment      String    @db.VarChar(32)
+  clientCapturedAt DateTime? @map("client_captured_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([eventName, createdAt])
+  @@index([anonymousId, createdAt])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+model AcquisitionAttribution {
+  id          String    @id @default(uuid()) @db.Uuid
+  anonymousId String    @unique @map("anonymous_id") @db.Uuid
+  userId      String?   @unique @map("user_id") @db.Uuid
+  source      String?   @db.VarChar(120)
+  medium      String?   @db.VarChar(120)
+  campaign    String?   @db.VarChar(120)
+  content     String?   @db.VarChar(120)
+  referrer    String?   @db.VarChar(512)
+  landingPath String?   @map("landing_path") @db.VarChar(512)
+  capturedAt  DateTime  @map("captured_at")
+  linkedAt    DateTime? @map("linked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([source, capturedAt])
+  @@index([capturedAt])
+  @@map("acquisition_attributions")
+}

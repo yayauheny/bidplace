@@ -38,6 +38,8 @@
 | `10-CODE-ARCHITECTURE.md`               | Фактическая архитектура, stack, contracts, persistence и технические границы |
 | `11-PROJECT-STATUS.md`                  | Часто меняющийся фактический статус кода                                     |
 | `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
+| `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
+| `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
 | `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Открытые юридические вопросы и minimum checklist до real pilot в Беларуси    |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |

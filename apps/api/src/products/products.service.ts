@@ -563,6 +563,7 @@ export class ProductsService {
   ) {
     const record = product as typeof product & {
       sellerProfile: {
+        id: string;
         slug: string;
         sellerType: 'creator' | 'influencer';
         discipline: string;

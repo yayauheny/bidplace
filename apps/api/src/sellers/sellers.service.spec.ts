@@ -113,6 +113,7 @@ describe('SellersService', () => {
     const prisma = {
       sellerProfile: {
         findFirst: vi.fn().mockResolvedValue({
+          id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
           slug: 'seller-slug',
           sellerType: 'creator',
           discipline: 'Керамика',

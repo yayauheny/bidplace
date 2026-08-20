@@ -10,7 +10,13 @@ describe('AdminController Product approval', () => {
     const moderation = {
       updateProductStatus: vi.fn().mockRejectedValue(new Error('Product does not meet approval requirements')),
     };
-    const controller = new AdminController(prisma as never, {} as never, moderation as never);
+    const controller = new AdminController(
+      prisma as never,
+      {} as never,
+      moderation as never,
+      {} as never,
+      { now: () => new Date() },
+    );
 
     await expect(controller.updateProduct({ sub: 'admin-id' }, 'product-id', { status: 'APPROVED' }))
       .rejects.toThrow('Product does not meet approval requirements');

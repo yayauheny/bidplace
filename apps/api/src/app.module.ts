@@ -1,12 +1,17 @@
-import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DatabaseModule } from './core/database';
 import { ApiExceptionFilter } from './core/errors';
 import { HealthModule } from './core/health';
+import {
+  RequestIdMiddleware,
+  RequestLoggingInterceptor,
+} from './core/request-context';
 import { ClockModule } from './core/time';
 import { PublicIdModule } from './core/public-id';
 import { ProductsModule } from './products/products.module';
@@ -31,6 +36,7 @@ import { DiscoveryModule } from './discovery/discovery.module';
     CategoriesModule,
     DatabaseModule,
     AuthModule,
+    AnalyticsModule,
     ProductsModule,
     ListingsModule,
     BidsModule,
@@ -49,6 +55,14 @@ import { DiscoveryModule } from './discovery/discovery.module';
       provide: APP_FILTER,
       useClass: ApiExceptionFilter,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggingInterceptor,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

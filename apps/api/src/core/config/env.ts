@@ -56,6 +56,10 @@ const serverEnvSchema = z
     TEST_EMAIL_BYPASS: booleanEnvSchema,
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
+    ANALYTICS_INGEST_ENABLED: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.enum(['true', 'false']).optional(),
+    ),
   })
   .passthrough()
   .refine(
@@ -123,7 +127,14 @@ const serverEnvSchema = z
         });
       }
     }
-  });
+  })
+  .transform((env) => ({
+    ...env,
+    ANALYTICS_INGEST_ENABLED:
+      env.ANALYTICS_INGEST_ENABLED === undefined
+        ? env.NODE_ENV !== 'test'
+        : env.ANALYTICS_INGEST_ENABLED === 'true',
+  }));
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 

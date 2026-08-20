@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import type { ApiClient } from '@bidplace/api-client';
+import { apiErrorCodeSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
@@ -47,8 +48,10 @@ import {
   getErrorCode,
   getUserFacingErrorMessage,
 } from '../../lib/errors';
+import { useTrackListingView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
+import { useAnalytics } from '../../providers/analytics-provider';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import {
@@ -90,6 +93,7 @@ export function ProductScreen({
 }) {
   const api = useApiClient();
   const auth = useAuth();
+  const analytics = useAnalytics();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { eligibility } = useEmailRulesEligibility();
@@ -150,6 +154,13 @@ export function ProductScreen({
     queryKey: ['user', 'activity'],
     queryFn: () => api.activity.get(),
     enabled: auth.isAuthenticated && !auth.isAdmin,
+  });
+
+  useTrackListingView({
+    productPublicId: publicId,
+    listingId: query.data?.listing?.id,
+    sellerProfileId: query.data?.product.sellerProfileId,
+    enabled: Boolean(query.data),
   });
 
   useEffect(() => {
@@ -230,6 +241,15 @@ export function ProductScreen({
       refreshListing();
     },
     onError: async (error, attempt) => {
+      const parsedCode = apiErrorCodeSchema.safeParse(getErrorCode(error));
+      if (parsedCode.success) {
+        analytics.track('bid_rejected', {
+          listingId: attempt.listingId,
+          errorCode: parsedCode.data,
+          productPublicId: publicId,
+        });
+      }
+
       const refreshed = await query.refetch();
       const refreshedMinimum = refreshed.data?.minimumNextBid ?? null;
       const detailMinimum = getBidTooLowMinimum(error);
@@ -302,6 +322,10 @@ export function ProductScreen({
   };
   const openBidDialog = async () => {
     if (!listing) return;
+    analytics.track('bid_cta_clicked', {
+      listingId: listing.id,
+      productPublicId: publicId,
+    });
     setIsRefreshingBid(true);
     const refreshed = await query.refetch();
     setIsRefreshingBid(false);

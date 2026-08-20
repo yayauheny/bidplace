@@ -2,6 +2,7 @@ import { type ZodType } from 'zod';
 
 import { createAdminClient } from './admin';
 import { createActivityClient } from './activity';
+import { createAnalyticsClient } from './analytics';
 import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
 import { createDiscoveryClient } from './discovery';
@@ -35,6 +36,7 @@ export function createApiClient(options: ApiClientOptions) {
     },
     auth: createAuthClient(context),
     activity: createActivityClient(context),
+    analytics: createAnalyticsClient(context),
     listings: createListingsClient(context),
     images: createImagesClient(context),
     products: createProductsClient(context),

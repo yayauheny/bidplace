@@ -1,4 +1,6 @@
 import {
+  adminAnalyticsOverviewSchema,
+  adminAnalyticsQuerySchema,
   adminCreateListingOrderResponseSchema,
   adminListingsNeedingOrderResponseSchema,
   adminOrderCancellationRequestSchema,
@@ -11,6 +13,7 @@ import {
   adminProductsResponseSchema,
   adminSellerStatusUpdateRequestSchema,
   productResponseSchema,
+  type AdminAnalyticsQuery,
   type AdminOrderCancellationRequest,
   type AdminOrderReplacementRequest,
   type AdminProductStatusUpdateRequest,
@@ -33,6 +36,23 @@ export function createAdminClient(context: RequestContext) {
         context,
         '/api/admin/products',
         adminProductsResponseSchema,
+      );
+    },
+    getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {
+      const parsed = adminAnalyticsQuerySchema.parse(query);
+
+      return requestJson(
+        context,
+        '/api/admin/analytics/overview',
+        adminAnalyticsOverviewSchema,
+        {
+          query: {
+            period: parsed.period,
+            from: parsed.from,
+            to: parsed.to,
+            drilldown: parsed.drilldown,
+          },
+        },
       );
     },
     updateSellerStatus(id: string, input: AdminSellerStatusUpdateRequest) {

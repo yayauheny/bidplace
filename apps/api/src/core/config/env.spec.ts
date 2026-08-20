@@ -163,3 +163,38 @@ describe('resolveCorsOrigin', () => {
     ).toBeUndefined();
   });
 });
+
+describe('ANALYTICS_INGEST_ENABLED', () => {
+  it('defaults to false in test and true otherwise', () => {
+    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
+
+    expect(
+      loadServerEnv({
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
+        JWT_SECRET: 'secret',
+      }).ANALYTICS_INGEST_ENABLED,
+    ).toBe(false);
+
+    expect(
+      loadServerEnv({
+        NODE_ENV: 'development',
+        DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
+        JWT_SECRET: 'secret',
+      }).ANALYTICS_INGEST_ENABLED,
+    ).toBe(true);
+  });
+
+  it('honors an explicit false outside test', () => {
+    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
+
+    expect(
+      loadServerEnv({
+        NODE_ENV: 'development',
+        DATABASE_URL: 'postgres://user:pass@localhost:5432/bidplace',
+        JWT_SECRET: 'secret',
+        ANALYTICS_INGEST_ENABLED: 'false',
+      }).ANALYTICS_INGEST_ENABLED,
+    ).toBe(false);
+  });
+});

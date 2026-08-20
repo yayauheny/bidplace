@@ -1,4 +1,5 @@
 import {
+  adminAnalyticsQuerySchema,
   adminListingsNeedingOrderResponseSchema,
   adminProductsResponseSchema,
   adminOrderCancellationRequestSchema,
@@ -14,13 +15,15 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { type Prisma } from '@bidplace/database';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { PrismaService } from '../core/database';
-import { parseBody } from '../core/validation';
+import { Clock } from '../core/time';
+import { parseBody, parseQuery } from '../core/validation';
 import { OrdersService } from '../orders/orders.service';
 import {
   productSelect,
@@ -32,6 +35,7 @@ import {
   toSellerProfileResponse,
 } from '../sellers/seller-profile.mapper';
 import { AdminGuard } from './admin.guard';
+import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminModerationService } from './admin-moderation.service';
 
 const adminProductSelect = {
@@ -67,7 +71,17 @@ export class AdminController {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersService,
     private readonly moderation: AdminModerationService,
+    private readonly analytics: AdminAnalyticsService,
+    private readonly clock: Clock,
   ) {}
+
+  @Get('analytics/overview')
+  async analyticsOverview(@Query() query: unknown) {
+    return this.analytics.buildOverview(
+      parseQuery(adminAnalyticsQuerySchema, query),
+      this.clock.now(),
+    );
+  }
 
   @Get('seller-profiles')
   async listSellers() {

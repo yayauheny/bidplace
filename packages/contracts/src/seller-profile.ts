@@ -58,6 +58,7 @@ export const sellerProfileSchema = z
   .strict();
 
 export const publicSellerProfileSchema = sellerProfileSchema.pick({
+  id: true,
   slug: true,
   sellerType: true,
   discipline: true,

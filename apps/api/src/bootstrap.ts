@@ -18,6 +18,7 @@ export function configureHttpApp(
     app.enableCors({
       origin: runtimeEnv.CORS_ORIGIN,
       credentials: true,
+      exposedHeaders: ['X-Request-Id'],
     });
   }
 }

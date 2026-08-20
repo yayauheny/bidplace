@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiClient } from '@bidplace/api-client';
-import { Link, type Href } from 'expo-router';
+import { Link, type Href, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -56,6 +56,7 @@ type ModerationFilter =
 
 export function AdminModerationScreen() {
   const api = useApiClient();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [moderationTab, setModerationTab] = useState<ModerationTab>('authors');
   const [moderationFilter, setModerationFilter] =
@@ -269,6 +270,10 @@ export function AdminModerationScreen() {
       <PageHeader
         title="Модерация"
         description="Проверка продавцов и предметов перед публикацией."
+      />
+      <SecondaryButton
+        label="Аналитика"
+        onPress={() => router.push('/(admin)/analytics')}
       />
       <FormSection
         title="Очередь модерации"

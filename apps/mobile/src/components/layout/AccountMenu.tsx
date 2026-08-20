@@ -403,6 +403,23 @@ function AccountDropdown({
           </MotionPressable>
         </Link>
       ) : null}
+      {showModeration ? (
+        <Link href="/(admin)/analytics" asChild>
+          <MotionPressable
+            accessibilityRole="link"
+            accessibilityLabel="Аналитика"
+            preset="button"
+            style={menuItemStyle}
+            interactionStyle={menuItemInteractionStyle}
+          >
+            <AppIcon name="catalog" size={19} />
+            <AppText role="label" style={{ flex: 1 }}>
+              Аналитика
+            </AppText>
+            <AppIcon name="chevronRight" size={18} />
+          </MotionPressable>
+        </Link>
+      ) : null}
       {profileLabel || showPurchases || showModeration ? (
         <View
           style={{ height: 1, backgroundColor: designTokens.color.border }}

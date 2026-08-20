@@ -16,6 +16,7 @@ import {
   PageState,
   SecondaryButton,
 } from '../../components/ui';
+import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { getAuthorWorkColumnCount } from './author-layout';
@@ -91,6 +92,13 @@ export function PublicSellerScreen({
   });
   const firstPage = query.data?.pages[0];
   const products = query.data?.pages.flatMap((page) => page.products) ?? [];
+  const sellerProfileId = firstPage?.sellerProfile.id;
+
+  useTrackSellerView({
+    sellerProfileId,
+    sellerSlug: firstPage?.sellerProfile.slug ?? slug,
+    enabled: Boolean(firstPage && sellerProfileId),
+  });
 
   let content: React.ReactNode;
   if (query.isLoading) {

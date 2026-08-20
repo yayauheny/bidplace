@@ -328,7 +328,6 @@ export class SellersService {
       this.prisma.sellerProfile.findMany({
         where,
         select: {
-          id: true,
           ...publicSellerProfileSelect,
           products: {
             where: publicCatalogProductWhere,

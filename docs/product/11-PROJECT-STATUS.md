@@ -17,8 +17,30 @@
   `adminCreateListingOrderResponseSchema`. Client methods on `@bidplace/api-client`.
 - Coverage: `apps/api/test/integration/auction/order-recovery.integration.spec.ts`.
 - Auction core is closed after this path unless a new production risk is found.
-- `Verified`: API typecheck; API unit `178/178`; auction PostgreSQL integration
-  including recovery (`50/50` under `auction/`).
+- `Verified`: API typecheck; API unit `178/178` (orders filter); auction
+  PostgreSQL integration including recovery (all passed under `auction/`);
+  eslint on recovery touchpoints.
+
+## 2026-08-20 — Analytics foundation + admin dashboard
+
+- `Implemented`: first-party analytics ingest (`AnalyticsEvent`,
+  `AcquisitionAttribution`), request `X-Request-Id` + request logging,
+  `POST /api/analytics/events`, and `GET /api/admin/analytics/overview`.
+- `Implemented`: mobile anonymousId / first-touch / identify / logout reset and
+  funnel events `listing_viewed`, `seller_viewed`, `registration_started`,
+  `bid_cta_clicked`, `bid_rejected` (no impressions/search/`bid_accepted`).
+- `Implemented`: admin UI `/admin/analytics` (overview, acquisition, funnels,
+  marketplace health, growth, recent activity, needs attention); linked from
+  account menu and moderation. Public seller profiles now expose `id` for
+  stable `seller_viewed` joins.
+- `Implemented`: docs `analytics-contract.md`, `analytics-metrics.md`, `DEC-067`.
+- `Partial` vs `05-MVP-RFC.md` §16: remaining planned names
+  (`email verification*`, `participation viewed`, `auction closed`, handoff
+  outcomes) stay DB-derived or deferred; not duplicated as analytics events.
+- `Verified`: API unit `178/178`, mobile unit `201/201`, contracts `13/13`,
+  API/mobile typecheck and lint.
+
+## 2026-08-19 — Post-refactor hardening
 
 ## 2026-08-20 — Auction core concurrency and close hardening
 
@@ -32,9 +54,10 @@
 - `Implemented`: schedule/activation require seller handoff contact; activation
   cron also filters on non-null handoff fields.
 - `Implemented`: auction business integration suites live under
-  `apps/api/test/integration/auction/` (bidding, lifecycle, soft-close,
-  order-recovery) with Listing/Bid DB invariants after concurrent scenarios.
-- `Verified`: API unit `178/178`, PostgreSQL auction integration `50/50`, API
+  `apps/api/test/integration/auction/` (bidding, lifecycle, soft-close) with
+  Listing/Bid DB invariants after concurrent scenarios.
+- Error contract / business codes were not changed in this pass.
+- `Verified`: API unit `167/167`, PostgreSQL integration `46/46`, API
   typecheck/lint. E2E not re-run in this pass.
 
 ## 2026-08-20 — API error contract for bidding
@@ -50,10 +73,9 @@
   `@bidplace/api-client` parses codes and exposes `getBidTooLowMinimum`.
 - `Implemented`: Product bid UI branches on `ApiErrorCode.BID_TOO_LOW` instead of
   HTTP 400 + message heuristics.
-- Bid placement rules, soft close and auction lifecycle were not changed in the
-  error-contract pass.
-- `Verified`: contracts error suite, api-client helpers, API unit, typecheck/lint,
-  mobile typecheck, auction PostgreSQL integration.
+- Bid placement rules, soft close and auction lifecycle were not changed.
+- `Verified`: contracts `13/13`, api-client `2/2`, API unit `166/166`, API
+  typecheck/lint, mobile typecheck, PostgreSQL integration `40/40`.
 
 ## 2026-08-19 — Post-refactor hardening
 
@@ -516,7 +538,7 @@ remaining product boundaries still apply.
 | Product moderation and visibility        | Implemented        | `submit`, admin moderation service, reasoned `CHANGES_REQUESTED` correction flow, LIVE-listing guard, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place.                                                                   |
 | Seller handoff actions                   | Implemented        | Order snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator`; seller actions and admin replacement/cancellation preserve audit and role-scoped projections.                                                                                               |
 | Timestamps                               | Partial            | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented.                                                                                                                                               |
-| Pilot analytics                          | Not implemented    | Add minimal first-party funnel and outcome events only; no dashboard or third-party marketing tracker.                                                                                                                                                                                             |
+| Pilot analytics                          | Implemented        | First-party ingest + admin `/admin/analytics` dashboard (`DEC-067`). Canonical events in `analytics-contract.md`; metrics definitions in `analytics-metrics.md`. Remaining RFC §16 names are DB-derived or deferred, not duplicate analytics events. |
 | Production email verification            | Implemented        | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/bids/bid-eligibility.ts` now enforce SMTP-backed email verification, versioned rules acceptance and a test-only bypass that stays disabled in production.                                                                                   |
 | Closed-pilot rehearsal                   | Needs verification | Chromium Playwright now covers the buyer path, seller/admin browser flow, seller handoff actions, and the order privacy matrix against disposable PostgreSQL; the isolated 10-user rehearsal still needs to be run.                                                                                |
 

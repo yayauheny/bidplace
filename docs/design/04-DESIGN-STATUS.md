@@ -1,8 +1,15 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-16
+Последнее обновление: 2026-08-20
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
+
+## 2026-08-20 — Admin analytics screen
+
+- `Implemented`: admin-only `/admin/analytics` (Expo route `/(admin)/analytics`)
+  with KPI overview, acquisition, buyer/seller funnels, marketplace health,
+  growth bars, recent activity and needs-attention drilldowns. Linked from
+  account menu and moderation. Not a Pen v2 public surface; operational admin UI.
 
 ## Creator-first exploration (not production canon)
 

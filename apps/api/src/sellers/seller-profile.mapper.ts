@@ -2,6 +2,7 @@ import { sellerProfileResponseSchema } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 export const publicSellerProfileSelect = {
+  id: true,
   slug: true,
   sellerType: true,
   discipline: true,
@@ -63,6 +64,7 @@ export function toPublicSellerProfile(
   sellerProfile: PublicSellerProfileRecord,
 ) {
   return {
+    id: sellerProfile.id,
     slug: sellerProfile.slug,
     sellerType: sellerProfile.sellerType,
     discipline: sellerProfile.discipline,

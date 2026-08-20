@@ -6,6 +6,8 @@
 ## Applications and shared boundaries
 
 - `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
+- First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating Bid/Order business facts. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`.
+- HTTP requests receive `X-Request-Id` (incoming or generated) for correlation in logs and error responses.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps and process-photo metadata. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard.
 - `apps/api/src/discovery` owns the public Home projection. Discovery delegates to
   Product/Seller services, which select the canonical public Listing before

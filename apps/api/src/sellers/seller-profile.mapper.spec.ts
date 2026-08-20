@@ -43,12 +43,13 @@ describe('toSellerProfileResponse', () => {
 describe('toPublicSellerProfile', () => {
   it('keeps structured public links while excluding private handoff fields', () => {
     const profile = toPublicSellerProfile({
+      id: '2b2e93b2-1428-40fc-a15a-b9cd98e422b6',
       slug: 'maker',
       sellerType: 'creator',
       discipline: 'Керамика',
       fullName: 'Maker',
       country: 'BY',
-      socialLink: null,
+      socialLink: 'https://example.com/maker',
       telegramUrl: 'https://t.me/maker',
       instagramUrl: 'https://instagram.com/maker',
       websiteUrl: null,
@@ -56,6 +57,7 @@ describe('toPublicSellerProfile', () => {
     });
 
     expect(profile).toMatchObject({
+      id: '2b2e93b2-1428-40fc-a15a-b9cd98e422b6',
       telegramUrl: 'https://t.me/maker',
       instagramUrl: 'https://instagram.com/maker',
       websiteUrl: null,

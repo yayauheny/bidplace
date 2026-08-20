@@ -1055,3 +1055,36 @@ duplicate screen anatomy.
 This decision changes only the creator-profile visual target. It does not alter
 seller permissions, public data visibility, auction behavior or the requirement
 to use structured public social fields rather than private handoff contact.
+
+## DEC-067 — First-party analytics foundation and admin dashboard
+
+Date: 2026-08-20
+Status: Confirmed
+
+### Decision
+
+MVP analytics is first-party: client events ingest into PostgreSQL
+(`analytics_events`, `acquisition_attributions`) via `POST /api/analytics/events`.
+Canonical identity remains `User.id`; anonymous installations use a persistent
+client `anonymousId`. First-touch attribution is immutable per anonymousId and
+may link to a User once on register. Product events are limited to
+`listing_viewed`, `seller_viewed`, `registration_started`, `bid_cta_clicked`,
+`bid_rejected`. DB-derived marketplace outcomes are not duplicated as analytics
+events.
+
+Admin dashboard lives in the existing Expo admin surface
+(`/admin/analytics`) and aggregates analytics tables plus PostgreSQL business
+tables through `GET /api/admin/analytics/overview`. No third-party marketing
+tracker, warehouse, or separate BI service for MVP.
+
+### Revises
+
+Revises `DEC-046` only where it excluded any dashboard: a compact admin
+dashboard is now in scope for pilot operations. The first-party / no marketing
+tracker constraint remains.
+
+### Rationale
+
+Pre-signup journey and acquisition are otherwise irrecoverable. Storing events
+in PostgreSQL lets the founder join funnels with Bid/Order without ETL and keep
+one operational UI.

@@ -1,5 +1,5 @@
 import { Link, useRouter, type Href } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { View } from 'react-native';
@@ -10,6 +10,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/ui';
+import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { getUserFacingErrorMessage } from '../../lib/errors';
 import {
@@ -154,16 +155,28 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
 }
 export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
+  const analytics = useAnalytics();
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const trackedRegistrationStart = useRef(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: { email: '', password: '', phone: '', displayName: '' },
   });
+
+  useEffect(() => {
+    if (trackedRegistrationStart.current) {
+      return;
+    }
+    trackedRegistrationStart.current = true;
+    analytics.track('registration_started', {});
+  }, [analytics]);
+
   const submit = form.handleSubmit(async (values) => {
     setSubmitError(null);
     try {
-      await auth.register(values);
+      const response = await auth.register(values);
+      analytics.identify(response.user.id, { claimAcquisition: true });
       router.replace(redirectTo as Href);
     } catch (error) {
       setSubmitError(
