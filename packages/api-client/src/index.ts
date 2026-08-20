@@ -7,6 +7,8 @@ import { createCategoriesClient } from './categories';
 import { createDiscoveryClient } from './discovery';
 export {
   ApiClientError,
+  getApiErrorCode,
+  getBidTooLowMinimum,
   type ApiClientErrorKind,
 } from './errors';
 import { createListingsClient } from './listings';

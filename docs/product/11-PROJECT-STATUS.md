@@ -1,5 +1,60 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-20 — Admin Order recovery for ended Listings
+
+- `Implemented`: admin path for `Listing=ENDED`, Bids present, Order absent:
+  `GET /api/admin/listings/needs-order` and
+  `POST /api/admin/listings/:listingId/create-order`.
+- `Implemented`: `OrdersService.listEndedWithoutOrder` and
+  `createOrderForEndedListing` (SERIALIZABLE). Winner is re-read from canonical
+  Bid ranking (`amount DESC`, `createdAt ASC`, `id ASC`). Existing non-cancelled
+  Order is returned unchanged; cancelled-only history conflicts; no Bids or
+  missing handoff conflicts. Repeated retry does not duplicate Orders.
+- Auction state / winner semantics at close were not changed; no new Listing
+  statuses, queues, outbox, or workflow engine.
+- Contracts: `adminListingNeedsOrderItemSchema`,
+  `adminListingsNeedingOrderResponseSchema`,
+  `adminCreateListingOrderResponseSchema`. Client methods on `@bidplace/api-client`.
+- Coverage: `apps/api/test/integration/auction/order-recovery.integration.spec.ts`.
+- Auction core is closed after this path unless a new production risk is found.
+- `Verified`: API typecheck; API unit `178/178`; auction PostgreSQL integration
+  including recovery (`50/50` under `auction/`).
+
+## 2026-08-20 — Auction core concurrency and close hardening
+
+- `Implemented`: `BidsService.place` retries CAS `LISTING_CHANGED` up to 3 times
+  with full re-validation against a fresh Listing snapshot; `LISTING_CHANGED`
+  remains only after retries are exhausted.
+- `Implemented`: `ListingLifecycleService.close` always marks expired Listings
+  `ENDED`. Winner Order creation is best-effort: missing seller handoff, missing
+  buyer, or exhausted publicId attempts leave `ENDED` without Order and log an
+  error instead of rolling back to stuck `LIVE`.
+- `Implemented`: schedule/activation require seller handoff contact; activation
+  cron also filters on non-null handoff fields.
+- `Implemented`: auction business integration suites live under
+  `apps/api/test/integration/auction/` (bidding, lifecycle, soft-close,
+  order-recovery) with Listing/Bid DB invariants after concurrent scenarios.
+- `Verified`: API unit `178/178`, PostgreSQL auction integration `50/50`, API
+  typecheck/lint. E2E not re-run in this pass.
+
+## 2026-08-20 — API error contract for bidding
+
+- `Implemented`: unified API errors keep `{ status, code, message, details? }`.
+  Category codes remain the default for plain Nest exceptions; bidding now throws
+  `AppException` with stable business codes (`BID_TOO_LOW`, `LISTING_NOT_OPEN`,
+  `SELF_BID_FORBIDDEN`, `ADMIN_BID_FORBIDDEN`, eligibility and idempotency codes,
+  `LISTING_CHANGED`, `LISTING_NOT_FOUND`). `BID_TOO_LOW` includes `details.minimumBid`.
+- `Implemented`: `ApiExceptionFilter` honors explicit codes/details, maps Zod
+  validation to `validation_error`, and masks unexpected exceptions as
+  `internal_error`. Shared `ApiErrorCode` lives in `packages/contracts`;
+  `@bidplace/api-client` parses codes and exposes `getBidTooLowMinimum`.
+- `Implemented`: Product bid UI branches on `ApiErrorCode.BID_TOO_LOW` instead of
+  HTTP 400 + message heuristics.
+- Bid placement rules, soft close and auction lifecycle were not changed in the
+  error-contract pass.
+- `Verified`: contracts error suite, api-client helpers, API unit, typecheck/lint,
+  mobile typecheck, auction PostgreSQL integration.
+
 ## 2026-08-19 — Post-refactor hardening
 
 - `Implemented`: Product Creation step-1 validation keeps a unique field error

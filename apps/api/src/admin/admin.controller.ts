@@ -1,4 +1,5 @@
 import {
+  adminListingsNeedingOrderResponseSchema,
   adminProductsResponseSchema,
   adminOrderCancellationRequestSchema,
   adminOrderReplacementRequestSchema,
@@ -204,12 +205,31 @@ export class AdminController {
     );
   }
 
+  @Get('listings/needs-order')
+  async listListingsNeedingOrder(@CurrentUser() auth: { role: string }) {
+    return adminListingsNeedingOrderResponseSchema.parse(
+      await this.orders.listEndedWithoutOrder(auth.role),
+    );
+  }
+
   @Get('listings/:listingId/bids')
   listRankedBids(
     @CurrentUser() auth: { sub: string; role: string },
     @Param('listingId') listingId: string,
   ) {
     return this.orders.listRankedBids(auth.sub, auth.role, listingId);
+  }
+
+  @Post('listings/:listingId/create-order')
+  createOrderForEndedListing(
+    @CurrentUser() auth: { sub: string; role: string },
+    @Param('listingId') listingId: string,
+  ) {
+    return this.orders.createOrderForEndedListing(
+      auth.sub,
+      auth.role,
+      listingId,
+    );
   }
 
   @Post('orders/:publicId/cancel')

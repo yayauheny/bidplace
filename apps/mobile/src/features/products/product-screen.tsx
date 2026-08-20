@@ -41,7 +41,12 @@ import {
   formatDisplayPrice,
 } from '../../lib/formatters';
 import { getApiAssetUrl } from '../../lib/environment';
-import { getErrorStatus, getUserFacingErrorMessage } from '../../lib/errors';
+import {
+  ApiErrorCode,
+  getBidTooLowMinimum,
+  getErrorCode,
+  getUserFacingErrorMessage,
+} from '../../lib/errors';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useListingRealtime } from '../../lib/use-listing-realtime';
 import { useApiClient } from '../../providers/api-provider';
@@ -227,16 +232,18 @@ export function ProductScreen({
     onError: async (error, attempt) => {
       const refreshed = await query.refetch();
       const refreshedMinimum = refreshed.data?.minimumNextBid ?? null;
+      const detailMinimum = getBidTooLowMinimum(error);
+      const nextMinimum = detailMinimum ?? refreshedMinimum;
 
       if (
-        getErrorStatus(error) === 400 &&
-        refreshedMinimum !== null &&
-        refreshedMinimum > attempt.amount
+        getErrorCode(error) === ApiErrorCode.BID_TOO_LOW &&
+        nextMinimum !== null &&
+        nextMinimum > attempt.amount
       ) {
         setBidValidationError(
-          `Ставка уже изменилась. Новая минимальная ставка — ${formatDisplayPrice(refreshedMinimum)}.`,
+          `Ставка уже изменилась. Новая минимальная ставка — ${formatDisplayPrice(nextMinimum)}.`,
         );
-        setAmount(String(refreshedMinimum));
+        setAmount(String(nextMinimum));
       } else {
         setBidValidationError(
           getUserFacingErrorMessage(

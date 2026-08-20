@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ListingLifecycleService } from './listing-lifecycle.service';
 
 describe('ListingLifecycleService', () => {
-  it('only activates scheduled listings whose product and seller remain approved', async () => {
+  it('only activates scheduled listings with approved product/seller and handoff', async () => {
     const now = new Date('2026-07-31T12:00:00.000Z');
     const scheduled = {
       id: 'listing-id',
@@ -13,7 +13,10 @@ describe('ListingLifecycleService', () => {
     };
     const prisma = {
       listing: {
-        findMany: vi.fn().mockResolvedValueOnce([scheduled]).mockResolvedValueOnce([]),
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([scheduled])
+          .mockResolvedValueOnce([]),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     };
@@ -26,13 +29,33 @@ describe('ListingLifecycleService', () => {
 
     await service.run();
 
+    expect(prisma.listing.findMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        status: 'SCHEDULED',
+        startsAt: { lte: now },
+        endsAt: { gt: now },
+        product: {
+          status: 'APPROVED',
+          sellerProfile: {
+            status: 'APPROVED',
+            handoffContactType: { not: null },
+            handoffContactValue: { not: null },
+          },
+        },
+      },
+      select: { id: true, currentPrice: true, bidCount: true, endsAt: true },
+    });
     expect(prisma.listing.updateMany).toHaveBeenCalledWith({
       where: {
         id: 'listing-id',
         status: 'SCHEDULED',
         product: {
           status: 'APPROVED',
-          sellerProfile: { status: 'APPROVED' },
+          sellerProfile: {
+            status: 'APPROVED',
+            handoffContactType: { not: null },
+            handoffContactValue: { not: null },
+          },
         },
       },
       data: { status: 'LIVE' },

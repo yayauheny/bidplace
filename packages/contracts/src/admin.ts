@@ -6,12 +6,17 @@ import {
   productStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import { uuidSchema } from './primitives';
+import {
+  isoDateTimeSchema,
+  moneyAmountSchema,
+  uuidSchema,
+} from './primitives';
 import {
   sellerProfileResponseSchema,
   sellerProfileSchema,
 } from './seller-profile';
 import { creationStepSchema, productSchema } from './product';
+import { adminOrderResponseSchema } from './order';
 
 const sellerModerationStatusSchema = sellerStatusSchema.extract([
   'APPROVED',
@@ -77,6 +82,28 @@ export const adminRankedBidsResponseSchema = z
   .object({ bids: z.array(bidSchema) })
   .strict();
 
+export const adminListingNeedsOrderItemSchema = z
+  .object({
+    listingId: uuidSchema,
+    productId: uuidSchema,
+    productPublicId: z.string().min(1),
+    productTitle: z.string().nullable(),
+    sellerProfileId: uuidSchema,
+    sellerSlug: z.string().min(1),
+    bidCount: z.number().int().positive(),
+    currentPrice: moneyAmountSchema,
+    endsAt: isoDateTimeSchema,
+    closedAt: isoDateTimeSchema.nullable(),
+    handoffReady: z.boolean(),
+  })
+  .strict();
+
+export const adminListingsNeedingOrderResponseSchema = z
+  .object({ listings: z.array(adminListingNeedsOrderItemSchema) })
+  .strict();
+
+export const adminCreateListingOrderResponseSchema = adminOrderResponseSchema;
+
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminSellerProfileSchema = sellerProfileSchema
   .extend({
@@ -117,4 +144,13 @@ export type AdminOrderCancellationRequest = z.infer<
 >;
 export type AdminOrderReplacementRequest = z.infer<
   typeof adminOrderReplacementRequestSchema
+>;
+export type AdminListingNeedsOrderItem = z.infer<
+  typeof adminListingNeedsOrderItemSchema
+>;
+export type AdminListingsNeedingOrderResponse = z.infer<
+  typeof adminListingsNeedingOrderResponseSchema
+>;
+export type AdminCreateListingOrderResponse = z.infer<
+  typeof adminCreateListingOrderResponseSchema
 >;

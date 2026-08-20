@@ -71,9 +71,15 @@ SellerProfile
   compare-and-update guarded; admin accounts are explicitly denied by the Bids
   service and have no buyer Activity projection. Public aliases hash
   `(listingId, bidderUserId)`, remaining stable within one Listing without
-  correlating the user across Listings.
+  correlating the user across Listings. Optimistic CAS conflicts retry up to
+  three times with full re-validation before returning `LISTING_CHANGED`.
+- HTTP errors use one response shape `{ status, code, message, details? }` from
+  `ApiExceptionFilter`. Category codes (`bad_request`, `conflict`, …) remain the
+  default for plain Nest exceptions; bidding emits stable business codes such as
+  `BID_TOO_LOW` via `AppException`. Clients branch on `code`, not `message`.
+  Unexpected errors become `internal_error` without leaking internals.
 - The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
-- Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID.
+- Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID. Expired Listings always become `ENDED`; Order creation after a winner is best-effort and must not roll back the close. Schedule/activation require seller handoff contact. Admin recovery for `ENDED` + Bids + no Order is list + idempotent create-order only (same Bid ranking as close); no new Listing statuses, queues, or outbox.
 - Public Product, Listing, Bid history, ProductImage and Socket.IO access share
   approved Product/SellerProfile gates and contain no buyer contacts or seller
   internal identifiers. Order projections stay role-scoped: buyer sees the

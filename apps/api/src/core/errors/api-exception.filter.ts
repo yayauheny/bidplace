@@ -1,7 +1,9 @@
 import {
+  ApiErrorCode,
+  apiErrorCodeSchema,
   apiErrorResponseSchema,
   validationErrorDetailsSchema,
-  type ApiErrorCode,
+  type ApiErrorCode as ApiErrorCodeValue,
   type ApiErrorResponse,
   type ValidationErrorDetails,
 } from '@bidplace/contracts';
@@ -14,13 +16,17 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { AppException } from './app.exception';
+
 type HttpRequestLike = {
   method?: string;
   url?: string;
+  requestId?: string;
 };
 
 type HttpResponseLike = {
   status(code: number): HttpResponseLike;
+  setHeader?(name: string, value: string): void;
   json(payload: unknown): void;
 };
 
@@ -32,37 +38,53 @@ type HttpExceptionResponse =
       details?: unknown;
     };
 
-const defaultErrorMessages: Record<ApiErrorCode, string> = {
-  bad_request: 'Bad request',
-  validation_error: 'Request validation failed',
-  unauthorized: 'Unauthorized',
-  forbidden: 'Forbidden',
-  not_found: 'Not found',
-  conflict: 'Conflict',
-  rate_limited: 'Too many requests',
-  internal_error: 'Internal server error',
+const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
+  [ApiErrorCode.BAD_REQUEST]: 'Bad request',
+  [ApiErrorCode.VALIDATION_ERROR]: 'Request validation failed',
+  [ApiErrorCode.UNAUTHORIZED]: 'Unauthorized',
+  [ApiErrorCode.FORBIDDEN]: 'Forbidden',
+  [ApiErrorCode.NOT_FOUND]: 'Not found',
+  [ApiErrorCode.CONFLICT]: 'Conflict',
+  [ApiErrorCode.RATE_LIMITED]: 'Too many requests',
+  [ApiErrorCode.INTERNAL_ERROR]: 'Internal server error',
+  [ApiErrorCode.BID_TOO_LOW]: 'Bid is below the minimum',
+  [ApiErrorCode.LISTING_NOT_OPEN]: 'Listing is not open for bids',
+  [ApiErrorCode.LISTING_NOT_FOUND]: 'Listing not found',
+  [ApiErrorCode.LISTING_CHANGED]: 'Listing changed while placing bid',
+  [ApiErrorCode.SELF_BID_FORBIDDEN]: 'Cannot bid on your own Listing',
+  [ApiErrorCode.ADMIN_BID_FORBIDDEN]: 'Administrators cannot place bids',
+  [ApiErrorCode.EMAIL_VERIFICATION_REQUIRED]: 'Email verification is required',
+  [ApiErrorCode.RULES_ACCEPTANCE_REQUIRED]:
+    'Service rules acceptance is required',
+  [ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED]: 'Idempotency-Key is required',
+  [ApiErrorCode.IDEMPOTENCY_CONFLICT]:
+    'Idempotency key does not match request',
 };
 
-function mapStatusToCode(status: number): ApiErrorCode {
+function mapStatusToCode(status: number): ApiErrorCodeValue {
   switch (status) {
     case HttpStatus.BAD_REQUEST:
-      return 'bad_request';
+      return ApiErrorCode.BAD_REQUEST;
     case HttpStatus.UNAUTHORIZED:
-      return 'unauthorized';
+      return ApiErrorCode.UNAUTHORIZED;
     case HttpStatus.FORBIDDEN:
-      return 'forbidden';
+      return ApiErrorCode.FORBIDDEN;
     case HttpStatus.NOT_FOUND:
-      return 'not_found';
+      return ApiErrorCode.NOT_FOUND;
     case HttpStatus.CONFLICT:
-      return 'conflict';
+      return ApiErrorCode.CONFLICT;
     case HttpStatus.TOO_MANY_REQUESTS:
-      return 'rate_limited';
+      return ApiErrorCode.RATE_LIMITED;
     default:
-      return status >= 500 ? 'internal_error' : 'bad_request';
+      return status >= 500
+        ? ApiErrorCode.INTERNAL_ERROR
+        : ApiErrorCode.BAD_REQUEST;
   }
 }
 
-function extractHttpExceptionMessage(response: HttpExceptionResponse): string | null {
+function extractHttpExceptionMessage(
+  response: HttpExceptionResponse,
+): string | null {
   if (typeof response === 'string') {
     return response;
   }
@@ -73,13 +95,27 @@ function extractHttpExceptionMessage(response: HttpExceptionResponse): string | 
 
   if (Array.isArray(response?.message)) {
     const joinedMessage = response.message
-      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .filter(
+        (value): value is string =>
+          typeof value === 'string' && value.trim().length > 0,
+      )
       .join(', ');
 
     return joinedMessage || null;
   }
 
   return null;
+}
+
+function extractExplicitCode(
+  response: HttpExceptionResponse,
+): ApiErrorCodeValue | null {
+  if (typeof response === 'string') {
+    return null;
+  }
+
+  const parsed = apiErrorCodeSchema.safeParse(response?.code);
+  return parsed.success ? parsed.data : null;
 }
 
 function extractValidationDetails(
@@ -89,7 +125,9 @@ function extractValidationDetails(
     return undefined;
   }
 
-  const explicitDetails = validationErrorDetailsSchema.safeParse(response?.details);
+  const explicitDetails = validationErrorDetailsSchema.safeParse(
+    response?.details,
+  );
 
   if (explicitDetails.success) {
     return explicitDetails.data;
@@ -99,6 +137,25 @@ function extractValidationDetails(
 
   if (implicitDetails.success) {
     return implicitDetails.data;
+  }
+
+  return undefined;
+}
+
+function extractDetails(
+  response: HttpExceptionResponse,
+  code: ApiErrorCodeValue,
+): unknown {
+  if (typeof response === 'string') {
+    return undefined;
+  }
+
+  if (code === ApiErrorCode.VALIDATION_ERROR) {
+    return extractValidationDetails(response);
+  }
+
+  if (response?.details !== undefined) {
+    return response.details;
   }
 
   return undefined;
@@ -122,6 +179,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
       this.logUnexpectedError(exception, request, body);
     }
 
+    if (request.requestId && typeof response.setHeader === 'function') {
+      response.setHeader('X-Request-Id', request.requestId);
+    }
+
     response.status(status).json(body);
   }
 
@@ -135,8 +196,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         body: createApiErrorResponse({
           status: HttpStatus.INTERNAL_SERVER_ERROR,
-          code: 'internal_error',
-          message: defaultErrorMessages.internal_error,
+          code: ApiErrorCode.INTERNAL_ERROR,
+          message: defaultErrorMessages[ApiErrorCode.INTERNAL_ERROR],
         }),
         shouldLog: true,
       };
@@ -145,14 +206,22 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
     const response = exception.getResponse() as HttpExceptionResponse;
     const validationDetails = extractValidationDetails(response);
+    const explicitCode =
+      exception instanceof AppException
+        ? exception.apiCode
+        : extractExplicitCode(response);
     const code =
-      validationDetails && status === HttpStatus.BAD_REQUEST
-        ? 'validation_error'
-        : mapStatusToCode(status);
+      explicitCode ??
+      (validationDetails && status === HttpStatus.BAD_REQUEST
+        ? ApiErrorCode.VALIDATION_ERROR
+        : mapStatusToCode(status));
     const message =
       status >= 500
-        ? defaultErrorMessages.internal_error
-        : extractHttpExceptionMessage(response) ?? defaultErrorMessages[code];
+        ? defaultErrorMessages[ApiErrorCode.INTERNAL_ERROR]
+        : extractHttpExceptionMessage(response) ??
+          defaultErrorMessages[code] ??
+          defaultErrorMessages[ApiErrorCode.BAD_REQUEST];
+    const details = extractDetails(response, code);
 
     return {
       status,
@@ -160,7 +229,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         status,
         code,
         message,
-        details: validationDetails,
+        ...(details !== undefined ? { details } : {}),
       }),
       shouldLog: status >= 500,
     };
@@ -171,8 +240,15 @@ export class ApiExceptionFilter implements ExceptionFilter {
     request: HttpRequestLike,
     body: ApiErrorResponse,
   ): void {
-    const requestLabel = [request.method, request.url].filter(Boolean).join(' ');
-    const context = requestLabel ? `[${requestLabel}]` : '[unknown request]';
+    const requestLabel = [request.method, request.url]
+      .filter(Boolean)
+      .join(' ');
+    const requestIdLabel = request.requestId
+      ? ` requestId=${request.requestId}`
+      : '';
+    const context = requestLabel
+      ? `[${requestLabel}]${requestIdLabel}`
+      : `[unknown request]${requestIdLabel}`;
 
     if (exception instanceof Error) {
       this.logger.error(

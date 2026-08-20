@@ -135,6 +135,200 @@ export class OrdersService {
     };
   }
 
+  async listEndedWithoutOrder(role: string) {
+    if (role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    const listings = await this.prisma.listing.findMany({
+      where: {
+        status: 'ENDED',
+        bidCount: { gt: 0 },
+        orders: { none: {} },
+      },
+      orderBy: [{ closedAt: 'asc' }, { endsAt: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        productId: true,
+        bidCount: true,
+        currentPrice: true,
+        endsAt: true,
+        closedAt: true,
+        product: {
+          select: {
+            publicId: true,
+            title: true,
+            sellerProfile: {
+              select: {
+                id: true,
+                slug: true,
+                handoffContactType: true,
+                handoffContactValue: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      listings: listings.map((listing) => ({
+        listingId: listing.id,
+        productId: listing.productId,
+        productPublicId: listing.product.publicId,
+        productTitle: listing.product.title,
+        sellerProfileId: listing.product.sellerProfile.id,
+        sellerSlug: listing.product.sellerProfile.slug,
+        bidCount: listing.bidCount,
+        currentPrice: listing.currentPrice.toNumber(),
+        endsAt: listing.endsAt.toISOString(),
+        closedAt: listing.closedAt?.toISOString() ?? null,
+        handoffReady: Boolean(
+          listing.product.sellerProfile.handoffContactType &&
+            listing.product.sellerProfile.handoffContactValue,
+        ),
+      })),
+    };
+  }
+
+  async createOrderForEndedListing(
+    adminUserId: string,
+    role: string,
+    listingId: string,
+  ) {
+    if (role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    const createdOrExisting = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const listing = await tx.listing.findUnique({
+          where: { id: listingId },
+          include: {
+            product: {
+              include: {
+                sellerProfile: true,
+              },
+            },
+          },
+        });
+
+        if (!listing) {
+          throw new NotFoundException('Listing not found');
+        }
+
+        if (listing.status !== 'ENDED') {
+          throw new ConflictException('Listing is not ended');
+        }
+
+        const activeOrder = await tx.order.findFirst({
+          where: {
+            listingId,
+            status: { not: 'CANCELLED' },
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        if (activeOrder) {
+          return activeOrder;
+        }
+
+        const anyOrder = await tx.order.findFirst({
+          where: { listingId },
+          select: { id: true },
+        });
+
+        if (anyOrder) {
+          throw new ConflictException(
+            'Listing already has Order history; use replacement after cancellation',
+          );
+        }
+
+        const winner = await tx.bid.findFirst({
+          where: { listingId },
+          orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        });
+
+        if (!winner) {
+          throw new ConflictException('Order recovery is unavailable');
+        }
+
+        const buyer = await tx.user.findUnique({
+          where: { id: winner.bidderUserId },
+          select: { email: true },
+        });
+
+        if (!buyer) {
+          throw new NotFoundException('Buyer not found');
+        }
+
+        const sellerProfile = listing.product.sellerProfile;
+        if (
+          !sellerProfile.handoffContactType ||
+          !sellerProfile.handoffContactValue
+        ) {
+          throw new ConflictException('Seller handoff contact is missing');
+        }
+
+        const now = new Date();
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+          try {
+            const created = await tx.order.create({
+              data: {
+                publicId: this.publicIds.generate(),
+                listingId,
+                sellerId: sellerProfile.userId,
+                buyerId: winner.bidderUserId,
+                sourceBidId: winner.id,
+                finalAmount: winner.amount,
+                contactDueAt: new Date(now.getTime() + 86_400_000),
+                ...createOrderSnapshot({
+                  sellerHandoffType: sellerProfile.handoffContactType,
+                  sellerHandoffValue: sellerProfile.handoffContactValue,
+                  buyerEmailAtClose: buyer.email,
+                  handoffInitiator: sellerProfile.handoffInitiator,
+                }),
+              },
+            });
+
+            await this.recordAudit(tx, {
+              actorUserId: adminUserId,
+              targetType: 'ORDER',
+              targetId: created.id,
+              oldStatus: null,
+              newStatus: created.status,
+              reason: `Admin created Order for ended Listing ${listingId} from Bid ${winner.id}`,
+            });
+
+            return created;
+          } catch (error) {
+            if (
+              !(
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                error.code === 'P2002'
+              )
+            ) {
+              throw error;
+            }
+          }
+        }
+
+        throw new ConflictException('Could not assign Order number');
+      },
+    );
+
+    const response = await this.findWithProduct(createdOrExisting.publicId);
+    if (!response) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.toResponse(response, 'admin');
+  }
+
   async cancel(
     adminUserId: string,
     role: string,

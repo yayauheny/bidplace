@@ -1,14 +1,10 @@
 import {
+  ApiErrorCode,
   type BidCreateRequest,
   type PaginationQuery,
 } from '@bidplace/contracts';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { type Prisma } from '@bidplace/database';
 
 import { Clock } from '../core/time';
 import {
@@ -16,6 +12,7 @@ import {
   resolveSoftCloseEndsAt,
   toDecimalAmount,
 } from '../core/auction';
+import { AppException } from '../core/errors';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { RealtimeService } from '../realtime/realtime.service';
 import { publicListingWhere } from '../products/public-visibility';
@@ -24,6 +21,19 @@ import {
   bidEligibilityUserSelect,
 } from './bid-eligibility';
 import { createBidderAlias } from './bid-alias';
+
+const PLACE_CAS_ATTEMPTS = 3;
+
+type PlaceResult = {
+  bid: {
+    id: string;
+    listingId: string;
+    bidderUserId: string;
+    amount: Prisma.Decimal;
+    createdAt: Date;
+  };
+  replay: boolean;
+};
 
 @Injectable()
 export class BidsService {
@@ -41,110 +51,28 @@ export class BidsService {
     input: BidCreateRequest,
   ) {
     if (role === 'admin') {
-      throw new ForbiddenException('Administrators cannot place bids');
+      throw new AppException({
+        status: HttpStatus.FORBIDDEN,
+        code: ApiErrorCode.ADMIN_BID_FORBIDDEN,
+        message: 'Administrators cannot place bids',
+      });
     }
 
     if (!idempotencyKey || idempotencyKey.length > 80) {
-      throw new BadRequestException('Idempotency-Key is required');
+      throw new AppException({
+        status: HttpStatus.BAD_REQUEST,
+        code: ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED,
+        message: 'Idempotency-Key is required',
+      });
     }
 
     const amount = toDecimalAmount(input.amount);
-
-    const result = await runSerializableTransaction(this.prisma, async (tx) => {
-      const replay = await tx.bid.findUnique({
-        where: {
-          bidderUserId_idempotencyKey: { bidderUserId: userId, idempotencyKey },
-        },
-      });
-
-      if (replay) {
-        if (replay.listingId !== listingId || !replay.amount.equals(amount)) {
-          throw new ConflictException('Idempotency key does not match request');
-        }
-
-        return { bid: replay, replay: true };
-      }
-
-      const listing = await tx.listing.findUnique({
-        where: { id: listingId },
-        include: {
-          auctionRules: true,
-          product: { include: { sellerProfile: true } },
-        },
-      });
-
-      if (!listing || !listing.auctionRules) {
-        throw new NotFoundException('Listing not found');
-      }
-
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: bidEligibilityUserSelect,
-      });
-
-      assertBidEligibility(user);
-
-      const now = this.clock.now();
-
-      if (listing.product.sellerProfile.userId === userId) {
-        throw new ForbiddenException('Cannot bid on your own Listing');
-      }
-
-      if (
-        listing.status !== 'LIVE' ||
-        listing.product.status !== 'APPROVED' ||
-        listing.product.sellerProfile.status !== 'APPROVED' ||
-        listing.startsAt > now ||
-        listing.endsAt <= now
-      ) {
-        throw new ConflictException('Listing is not open for bids');
-      }
-
-      const minimum = resolveMinimumBidAmount({
-        currentPrice: listing.currentPrice,
-        startPrice: listing.auctionRules.startPrice,
-        bidCount: listing.bidCount,
-      });
-
-      if (amount.lessThan(minimum)) {
-        throw new BadRequestException(
-          `Bid must be at least ${minimum.toFixed(2)}`,
-        );
-      }
-
-      const endsAt = resolveSoftCloseEndsAt(
-        listing.endsAt,
-        listing.originalEndsAt,
-        now,
-        listing.auctionRules.softCloseWindowSeconds,
-        listing.auctionRules.softCloseExtensionSeconds,
-        listing.auctionRules.softCloseMaxTotalSeconds,
-      );
-
-      const updated = await tx.listing.updateMany({
-        where: {
-          id: listingId,
-          status: 'LIVE',
-          currentPrice: listing.currentPrice,
-          endsAt: listing.endsAt,
-        },
-        data: {
-          currentPrice: amount,
-          bidCount: { increment: 1 },
-          endsAt,
-        },
-      });
-
-      if (updated.count !== 1) {
-        throw new ConflictException('Listing changed while placing bid');
-      }
-
-      const bid = await tx.bid.create({
-        data: { listingId, bidderUserId: userId, idempotencyKey, amount },
-      });
-
-      return { bid, replay: false };
-    });
+    const result = await this.placeWithCasRetry(
+      userId,
+      listingId,
+      idempotencyKey,
+      amount,
+    );
 
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
@@ -152,7 +80,11 @@ export class BidsService {
     });
 
     if (!listing?.auctionRules) {
-      throw new NotFoundException('Listing not found');
+      throw new AppException({
+        status: HttpStatus.NOT_FOUND,
+        code: ApiErrorCode.LISTING_NOT_FOUND,
+        message: 'Listing not found',
+      });
     }
 
     const response = {
@@ -207,6 +139,160 @@ export class BidsService {
     }
 
     return response;
+  }
+
+  private async placeWithCasRetry(
+    userId: string,
+    listingId: string,
+    idempotencyKey: string,
+    amount: Prisma.Decimal,
+  ): Promise<PlaceResult> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= PLACE_CAS_ATTEMPTS; attempt += 1) {
+      try {
+        return await runSerializableTransaction(this.prisma, async (tx) =>
+          this.placeOnce(tx, userId, listingId, idempotencyKey, amount),
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (
+          !(error instanceof AppException) ||
+          error.apiCode !== ApiErrorCode.LISTING_CHANGED ||
+          attempt === PLACE_CAS_ATTEMPTS
+        ) {
+          throw error;
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  private async placeOnce(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    listingId: string,
+    idempotencyKey: string,
+    amount: Prisma.Decimal,
+  ): Promise<PlaceResult> {
+    const replay = await tx.bid.findUnique({
+      where: {
+        bidderUserId_idempotencyKey: { bidderUserId: userId, idempotencyKey },
+      },
+    });
+
+    if (replay) {
+      if (replay.listingId !== listingId || !replay.amount.equals(amount)) {
+        throw new AppException({
+          status: HttpStatus.CONFLICT,
+          code: ApiErrorCode.IDEMPOTENCY_CONFLICT,
+          message: 'Idempotency key does not match request',
+        });
+      }
+
+      return { bid: replay, replay: true };
+    }
+
+    const listing = await tx.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        auctionRules: true,
+        product: { include: { sellerProfile: true } },
+      },
+    });
+
+    if (!listing || !listing.auctionRules) {
+      throw new AppException({
+        status: HttpStatus.NOT_FOUND,
+        code: ApiErrorCode.LISTING_NOT_FOUND,
+        message: 'Listing not found',
+      });
+    }
+
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: bidEligibilityUserSelect,
+    });
+
+    assertBidEligibility(user);
+
+    const now = this.clock.now();
+
+    if (listing.product.sellerProfile.userId === userId) {
+      throw new AppException({
+        status: HttpStatus.FORBIDDEN,
+        code: ApiErrorCode.SELF_BID_FORBIDDEN,
+        message: 'Cannot bid on your own Listing',
+      });
+    }
+
+    if (
+      listing.status !== 'LIVE' ||
+      listing.product.status !== 'APPROVED' ||
+      listing.product.sellerProfile.status !== 'APPROVED' ||
+      listing.startsAt > now ||
+      listing.endsAt <= now
+    ) {
+      throw new AppException({
+        status: HttpStatus.CONFLICT,
+        code: ApiErrorCode.LISTING_NOT_OPEN,
+        message: 'Listing is not open for bids',
+      });
+    }
+
+    const minimum = resolveMinimumBidAmount({
+      currentPrice: listing.currentPrice,
+      startPrice: listing.auctionRules.startPrice,
+      bidCount: listing.bidCount,
+    });
+
+    if (amount.lessThan(minimum)) {
+      throw new AppException({
+        status: HttpStatus.BAD_REQUEST,
+        code: ApiErrorCode.BID_TOO_LOW,
+        message: `Bid must be at least ${minimum.toFixed(2)}`,
+        details: { minimumBid: minimum.toFixed(2) },
+      });
+    }
+
+    const endsAt = resolveSoftCloseEndsAt(
+      listing.endsAt,
+      listing.originalEndsAt,
+      now,
+      listing.auctionRules.softCloseWindowSeconds,
+      listing.auctionRules.softCloseExtensionSeconds,
+      listing.auctionRules.softCloseMaxTotalSeconds,
+    );
+
+    const updated = await tx.listing.updateMany({
+      where: {
+        id: listingId,
+        status: 'LIVE',
+        currentPrice: listing.currentPrice,
+        endsAt: listing.endsAt,
+      },
+      data: {
+        currentPrice: amount,
+        bidCount: { increment: 1 },
+        endsAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new AppException({
+        status: HttpStatus.CONFLICT,
+        code: ApiErrorCode.LISTING_CHANGED,
+        message: 'Listing changed while placing bid',
+      });
+    }
+
+    const bid = await tx.bid.create({
+      data: { listingId, bidderUserId: userId, idempotencyKey, amount },
+    });
+
+    return { bid, replay: false };
   }
 
   async list(listingId: string, query: PaginationQuery) {

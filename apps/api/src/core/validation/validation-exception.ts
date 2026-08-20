@@ -1,6 +1,11 @@
-import type { ValidationErrorDetails } from '@bidplace/contracts';
-import { BadRequestException } from '@nestjs/common';
+import {
+  ApiErrorCode,
+  type ValidationErrorDetails,
+} from '@bidplace/contracts';
+import { HttpStatus } from '@nestjs/common';
 import { type ZodError } from 'zod';
+
+import { AppException } from '../errors/app.exception';
 
 function toValidationErrorDetails(error: ZodError): ValidationErrorDetails {
   const flattenedError = error.flatten();
@@ -16,9 +21,10 @@ function toValidationErrorDetails(error: ZodError): ValidationErrorDetails {
   };
 }
 
-export function createValidationException(error: ZodError): BadRequestException {
-  return new BadRequestException({
-    code: 'validation_error',
+export function createValidationException(error: ZodError): AppException {
+  return new AppException({
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.VALIDATION_ERROR,
     message: 'Request validation failed',
     details: toValidationErrorDetails(error),
   });

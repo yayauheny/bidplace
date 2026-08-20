@@ -1,5 +1,8 @@
 import {
+  ApiErrorCode,
   apiErrorResponseSchema,
+  bidTooLowDetailsSchema,
+  type ApiErrorCode as ApiErrorCodeValue,
   type ApiErrorResponse,
 } from '@bidplace/contracts';
 
@@ -18,7 +21,7 @@ export type ApiClientErrorKind =
 export class ApiClientError extends Error {
   readonly kind: ApiClientErrorKind;
   readonly status: number;
-  readonly code: string | null;
+  readonly code: ApiErrorCodeValue | string | null;
   readonly details: unknown;
 
   constructor(
@@ -26,7 +29,7 @@ export class ApiClientError extends Error {
     options: {
       kind: ApiClientErrorKind;
       status: number;
-      code?: string | null;
+      code?: ApiErrorCodeValue | string | null;
       details?: unknown;
     },
   ) {
@@ -39,29 +42,51 @@ export class ApiClientError extends Error {
   }
 }
 
+const businessCodeKinds: Partial<
+  Record<ApiErrorCodeValue, ApiClientErrorKind>
+> = {
+  [ApiErrorCode.BID_TOO_LOW]: 'bad_request',
+  [ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED]: 'bad_request',
+  [ApiErrorCode.LISTING_NOT_OPEN]: 'conflict',
+  [ApiErrorCode.LISTING_CHANGED]: 'conflict',
+  [ApiErrorCode.IDEMPOTENCY_CONFLICT]: 'conflict',
+  [ApiErrorCode.LISTING_NOT_FOUND]: 'not_found',
+  [ApiErrorCode.SELF_BID_FORBIDDEN]: 'forbidden',
+  [ApiErrorCode.ADMIN_BID_FORBIDDEN]: 'forbidden',
+  [ApiErrorCode.EMAIL_VERIFICATION_REQUIRED]: 'forbidden',
+  [ApiErrorCode.RULES_ACCEPTANCE_REQUIRED]: 'forbidden',
+};
+
 function mapApiErrorToKind(
   status: number,
   payload: ApiErrorResponse | null,
 ): ApiClientErrorKind {
-  switch (payload?.code) {
-    case 'validation_error':
-      return 'validation';
-    case 'bad_request':
-      return 'bad_request';
-    case 'unauthorized':
-      return 'unauthorized';
-    case 'forbidden':
-      return 'forbidden';
-    case 'not_found':
-      return 'not_found';
-    case 'conflict':
-      return 'conflict';
-    case 'rate_limited':
-      return 'rate_limited';
-    case 'internal_error':
-      return 'server';
-    default:
-      break;
+  if (payload?.code) {
+    const businessKind = businessCodeKinds[payload.code];
+    if (businessKind) {
+      return businessKind;
+    }
+
+    switch (payload.code) {
+      case ApiErrorCode.VALIDATION_ERROR:
+        return 'validation';
+      case ApiErrorCode.BAD_REQUEST:
+        return 'bad_request';
+      case ApiErrorCode.UNAUTHORIZED:
+        return 'unauthorized';
+      case ApiErrorCode.FORBIDDEN:
+        return 'forbidden';
+      case ApiErrorCode.NOT_FOUND:
+        return 'not_found';
+      case ApiErrorCode.CONFLICT:
+        return 'conflict';
+      case ApiErrorCode.RATE_LIMITED:
+        return 'rate_limited';
+      case ApiErrorCode.INTERNAL_ERROR:
+        return 'server';
+      default:
+        break;
+    }
   }
 
   switch (status) {
@@ -87,7 +112,7 @@ function createApiClientError(
   options: {
     kind: ApiClientErrorKind;
     status: number;
-    code?: string | null;
+    code?: ApiErrorCodeValue | string | null;
     details?: unknown;
   },
 ): ApiClientError {
@@ -124,7 +149,7 @@ export async function throwApiClientResponseError(
     kind,
     status: response.status,
     code: payload?.code ?? null,
-    details: payload?.details ?? payload ?? null,
+    details: payload?.details ?? null,
   });
 }
 
@@ -140,4 +165,26 @@ export function createUnexpectedResponseError(status: number): ApiClientError {
     kind: 'unexpected_response',
     status,
   });
+}
+
+export function getApiErrorCode(error: unknown): string | null {
+  return error instanceof ApiClientError ? error.code : null;
+}
+
+export function getBidTooLowMinimum(error: unknown): number | null {
+  if (!(error instanceof ApiClientError)) {
+    return null;
+  }
+
+  if (error.code !== ApiErrorCode.BID_TOO_LOW) {
+    return null;
+  }
+
+  const parsed = bidTooLowDetailsSchema.safeParse(error.details);
+  if (!parsed.success) {
+    return null;
+  }
+
+  const value = Number(parsed.data.minimumBid);
+  return Number.isFinite(value) ? value : null;
 }

@@ -121,6 +121,15 @@ export class ListingsService {
       throw new ConflictException('Product must be approved');
     }
 
+    if (
+      !listing.product.sellerProfile.handoffContactType ||
+      !listing.product.sellerProfile.handoffContactValue
+    ) {
+      throw new ConflictException(
+        'Seller handoff contact is required before scheduling',
+      );
+    }
+
     if (listing.startsAt <= now || listing.originalEndsAt <= listing.startsAt) {
       throw new ConflictException('Listing dates are invalid');
     }

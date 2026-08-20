@@ -1,4 +1,10 @@
-import { ApiClientError, type ApiClientErrorKind } from '@bidplace/api-client';
+import {
+  ApiClientError,
+  getApiErrorCode,
+  getBidTooLowMinimum,
+  type ApiClientErrorKind,
+} from '@bidplace/api-client';
+import { ApiErrorCode } from '@bidplace/contracts';
 
 const genericMessagesByKind: Record<ApiClientErrorKind, string> = {
   bad_request: 'Не удалось выполнить запрос.',
@@ -9,7 +15,8 @@ const genericMessagesByKind: Record<ApiClientErrorKind, string> = {
   conflict: 'Операцию не удалось выполнить из-за конфликта данных.',
   rate_limited: 'Слишком много запросов. Попробуйте немного позже.',
   server: 'Сервис временно недоступен. Попробуйте позже.',
-  network: 'Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.',
+  network:
+    'Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.',
   unexpected_response: 'Сервис вернул неожиданный ответ. Попробуйте позже.',
 };
 
@@ -24,6 +31,10 @@ const publicMessageKinds = new Set<ApiClientErrorKind>([
 
 export function getErrorStatus(error: unknown): number | null {
   return error instanceof ApiClientError ? error.status : null;
+}
+
+export function getErrorCode(error: unknown): string | null {
+  return getApiErrorCode(error);
 }
 
 export function isNotFoundError(error: unknown): boolean {
@@ -51,3 +62,5 @@ export function getUserFacingErrorMessage(
 
   return fallbackMessage;
 }
+
+export { ApiErrorCode, getBidTooLowMinimum };

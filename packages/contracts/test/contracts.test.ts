@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
+  apiErrorResponseSchema,
+  ApiErrorCode,
   bidCreateRequestSchema,
   listingCreateRequestSchema,
   listingStatusSchema,
@@ -160,6 +162,42 @@ describe('shared contracts', () => {
     expect(
       sellerProfileUpdateRequestSchema.safeParse({
         discipline: 'a'.repeat(161),
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts unified API errors with business codes and optional details', () => {
+    expect(
+      apiErrorResponseSchema.safeParse({
+        status: 400,
+        code: ApiErrorCode.BID_TOO_LOW,
+        message: 'Bid must be at least 11.50',
+        details: { minimumBid: '11.50' },
+      }).success,
+    ).toBe(true);
+    expect(
+      apiErrorResponseSchema.safeParse({
+        status: 400,
+        code: ApiErrorCode.VALIDATION_ERROR,
+        message: 'Request validation failed',
+        details: {
+          formErrors: [],
+          fieldErrors: { amount: ['Required'] },
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      apiErrorResponseSchema.safeParse({
+        status: 500,
+        code: ApiErrorCode.INTERNAL_ERROR,
+        message: 'Internal server error',
+      }).success,
+    ).toBe(true);
+    expect(
+      apiErrorResponseSchema.safeParse({
+        status: 400,
+        code: 'UNKNOWN_CODE',
+        message: 'nope',
       }).success,
     ).toBe(false);
   });
