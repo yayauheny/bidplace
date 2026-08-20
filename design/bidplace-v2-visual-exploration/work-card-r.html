@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1440">
+  <title>WORK CARD / pass 2</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="review-chrome">
+    <strong>WORK CARD · refined</strong>
+    <span class="mark">pass 2 · same fixtures · not canon</span>
+    <a href="index.html">Index</a>
+    <a href="work-card.html">Cards</a>
+    <a href="home-a-r.html">A2</a>
+    <a href="home-b-r.html">B2</a>
+    <a href="home-c-r.html">C2</a>
+    <a href="home-product.html">Home</a>
+    <a href="work-card-r.html" aria-current="page">Cards2</a>
+  </div>
+
+  <section class="page-notes" aria-label="Exploration notes">
+    <h2>Notes</h2>
+    <dl>
+      <dt>Default</dt>
+      <dd>minimal → кандидат в work_card/default. Картина / название / автор. Hover на изображении, без кнопки.</dd>
+          <dt>Feature</dt>
+          <dd>work_feature. Не сетка. Тихие ‹ 1 / 6 › на медиа — язык галереи для будущего Work Detail, не взаимодействие.</dd>
+          <dt>Dense</dt>
+          <dd>Explore. Та же грамматика, крупнее прежней «крошки». Цены нет.</dd>
+          <dt>Graphic</dt>
+          <dd>REJECTED — decorative accent adds no useful hierarchy.</dd>
+    </dl>
+  </section>
+
+  <div class="artboard r">
+    <div class="cards-r">
+      <p class="kicker">Work card / pass 2</p>
+      <h1>Три роли. Graphic не обязателен.</h1>
+
+      <section class="block">
+        <h2>work_card / default</h2>
+        <p class="intent">Discovery. Иерархия: изображение → название → автор. Кандидат выжить в следующий раунд.</p>
+        <a class="wc" href="#">
+          <span class="media"><img src="../creator-first-v2/assets/media/asset_w1024_01_cover.jpg" alt=""></span>
+          <span class="t">Тихий берег</span>
+          <span class="c">Полина Мирош</span>
+        </a>
+      </section>
+
+      <section class="block">
+        <h2>work_feature</h2>
+        <p class="intent">Избранная работа, не ячейка сетки. Иерархия: изображение → название → автор → один дескриптор → открыть. Кандидат выжить.</p>
+        <article class="wf">
+          <div class="shot">
+            <a class="media" href="#" aria-label="Открыть работу Тихий берег">
+              <img src="../creator-first-v2/assets/media/asset_w1024_01_cover.jpg" alt="">
+            </a>
+            <p class="gal" aria-hidden="true">
+              <span class="garr">‹</span>
+              <span class="n">1 / 6</span>
+              <span class="garr">›</span>
+            </p>
+          </div>
+          <div class="text">
+            <p class="t"><a href="#">Тихий берег</a></p>
+            <p class="c"><a href="#">Полина Мирош<span class="arr">↗</span></a></p>
+            <p class="d">Единственный большой формат серии «Полесье»</p>
+            <a class="open" href="#">Открыть работу<span class="arr">→</span></a>
+          </div>
+        </article>
+      </section>
+
+      <section class="block">
+        <h2>work_card / dense</h2>
+        <p class="intent">Explore / результаты. Та же иерархия, меньше воздуха. Кандидат выжить, если сетка остаётся читаемой.</p>
+        <div class="dense-row">
+          <a class="wd" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w1024_01_cover.jpg" alt=""></span>
+            <span class="t">Тихий берег</span>
+            <span class="c">Полина Мирош</span>
+          </a>
+          <a class="wd" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w4096_01_cover.jpg" alt=""></span>
+            <span class="t">Ваза «Полевой обжиг №7»</span>
+            <span class="c">Артём Гончар</span>
+          </a>
+          <a class="wd" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w2048_01_cover.jpg" alt=""></span>
+            <span class="t">Свет 03</span>
+            <span class="c">Ксения Лапко</span>
+          </a>
+          <a class="wd" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w3072_01_cover.jpg" alt=""></span>
+            <span class="t">Портрет незнакомки с гранатовым браслетом в зимнем саду после дождя</span>
+            <span class="c">Александра-Виктория Круглова-Пташникова</span>
+          </a>
+          <a class="wd land" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w3072_03_wip.jpg" alt=""></span>
+            <span class="t">Лён. Проба III</span>
+            <span class="c">Александра-Виктория Круглова-Пташникова</span>
+          </a>
+          <a class="wd" href="#">
+            <span class="media"><img src="../creator-first-v2/assets/media/asset_w1024_s1_plein_air.jpg" alt=""></span>
+            <span class="t">Этюды на разливе</span>
+            <span class="c">Полина Мирош</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>work_card / graphic</h2>
+        <div class="reject-note">
+          <strong>REJECTED — decorative accent adds no useful hierarchy</strong>
+          Жёлтая зарубка на карточке выдачи ничего не сообщает. Цвет, если нужен, принадлежит композиции экрана — не каждой ячейке.
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

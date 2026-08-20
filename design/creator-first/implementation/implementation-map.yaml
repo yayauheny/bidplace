@@ -1,0 +1,812 @@
+meta:
+  name: creator-first-implementation-map
+  version: 1
+  status: binding
+  source_specs:
+    - design/creator-first/spec/design-system.yaml
+    - design/creator-first/spec/component-specs.yaml
+    - design/creator-first/spec/screen-blueprints.yaml
+    - design/creator-first/spec/content-fixtures.yaml
+  contract: design/creator-first/implementation/TECHNICAL-IMPLEMENTATION-CONTRACT.md
+  visual_reference_policy: creator-first specs only; old UI is behavior reference, never visual reference
+  component_count: 34
+  screen_count: 11
+
+stack:
+  app: apps/mobile (single Expo app for web + iOS + Android)
+  expo: 57.0.4
+  expo_router: 57.0.4
+  react: 19.2.3
+  react_native: 0.86.0
+  react_native_web: 0.21.2
+  typescript: 6.0.3
+  server_state: "@tanstack/react-query 5.101.2"
+  forms: "react-hook-form 7.81.0 + @hookform/resolvers 5.4.0 + zod 3.25.76"
+  images: "expo-image 57.0.1"
+  motion: "react-native-reanimated 4.5.0 (activate; currently unused)"
+  gestures: "react-native-gesture-handler 2.32.0"
+  overlays: "@rn-primitives/dialog 1.5.2 + @rn-primitives/portal"
+  realtime: "socket.io-client 4.8.1 (events -> React Query invalidation)"
+  contracts: "@bidplace/contracts (zod)"
+  api_client: "@bidplace/api-client (fetch + zod validation)"
+  tokens: "@bidplace/design-tokens (rewritten in Wave 0)"
+  e2e: "@playwright/test 1.61.1 (API + Expo web harness)"
+  unit: "vitest 4.1.10 (node env, pure logic)"
+  react_compiler: not enabled; manual memo rules apply
+
+dependency_policy:
+  rule: no dependency without a named owner component; must support Expo native + RNW or declare platform fallback
+  add:
+    - name: phosphor-react-native
+      owner_component: primitives/Icon
+      reason: canonical Phosphor icons per design contract; renders via installed react-native-svg
+    - name: piazzolla-golos-ttf-assets
+      kind: repo assets (not npm)
+      owner_component: font-gate (app/_layout)
+      reason: build-time embedded typography via expo-font config plugin
+  keep_activate:
+    - name: react-native-reanimated
+      owner_component: primitives/InteractiveSurface
+  remove_later:  # Wave 9
+    - "@gorhom/bottom-sheet"
+    - nativewind
+    - tailwindcss
+    - react-native-css-interop
+    - lucide-react-native
+    - "@expo-google-fonts/inter"
+    - "@expo-google-fonts/onest"
+    - expo-linear-gradient
+  defer:
+    - name: expo-video
+      owner_component: composite/VideoProcessStory
+      condition: install only in the post-MVP video wave
+  do_not_add:
+    - "@shopify/flash-list"
+    - expo-blur
+    - zustand
+    - moti
+
+architecture_layers:
+  - id: L0
+    name: tokens
+    path: packages/design-tokens/src
+  - id: L1
+    name: primitives
+    path: apps/mobile/src/components/ui/primitives
+  - id: L2
+    name: controls
+    path: apps/mobile/src/components/ui/controls
+  - id: L3
+    name: composite
+    path: apps/mobile/src/components/ui/composite
+  - id: L4
+    name: scenes
+    path: apps/mobile/src/components/ui/scenes
+  - id: L5
+    name: screens
+    path: apps/mobile/src/app + apps/mobile/src/features
+
+import_rules:
+  - a layer may import only lower layers and lib/
+  - features own queries/mutations/presentation mapping; components/ui is data-source-agnostic
+  - new code must not import legacy designTokens alias or legacy visual components
+  - raw expo-image imports allowed only inside primitives/MediaImage
+  - phosphor imports allowed only inside primitives/Icon
+
+token_owner:
+  package: "@bidplace/design-tokens"
+  structure: primitive -> semantic -> component
+  files: [primitives.ts, semantic.ts, component.ts]
+  breakpoints: { mobileMax: 767, tabletMin: 768, desktopMin: 1280 }
+  layout: { maxContentDesktop: 1280, maxContentTablet: 928, gutters: [32, 24, 20] }
+  legacy_alias: deprecated designTokens export removed in Wave 9
+  rule: one visual role = one canonical token; Pen values enter code only through this package
+
+responsive_strategy:
+  hook: useBreakpoint (only allowed useWindowDimensions consumer for layout)
+  helpers: [Container, buildGridRows, getSpanWidth]
+  helper_path: apps/mobile/src/components/ui/layout
+  compositions: conditional composition per breakpoint inside scenes/screens; no absolute-position reordering
+  forbidden: route-local width comparisons; Dimensions.get in components; per-screen breakpoint constants
+  horizontal_scroll: only Rail and MediaStack; e2e overflow guards at 390/1024/1440
+
+motion_strategy:
+  engine: reanimated (get/set API) + gesture-handler
+  rule: animate transform and opacity only; no layout animation without written contract exception
+  press_surface: primitives/InteractiveSurface (Gesture.Tap pressed state, interpolate visuals)
+  pressable_direct: allowed only for non-animated tap targets
+  infinite_animation: LIVE pulse only (StatusChip), disabled under reduced motion
+  reduced_motion: useReducedMotion + getMotionDuration mandatory on every duration
+  forbidden: [WebGL, RN Animated for new code, PanResponder for new gestures, decorative infinite loops]
+
+media_strategy:
+  primitive: primitives/MediaImage (wraps expo-image, absorbs media-recovery.ts retry machine)
+  retry: "1s, 3s, 8s with cache-bust, then manual retry"
+  missing_media: MediaFallback deterministic block (no request)
+  focal_point: contentPosition, default center
+  placeholders: surface-tone block (no blurhash in MVP)
+  alt_required: alt or explicit decorative flag
+  forbidden: raw Image/expo-image usage outside primitives; lightbox dependencies
+
+overlay_strategy:
+  component: composite/AdaptiveModal
+  base: "@rn-primitives/dialog + portal"
+  presentation: dialog >=768 / bottom-sheet panel <768 (radius top 24, translateY enter)
+  behavior: [focus trap, focus return, escape, android back, backdrop close unless blocking, keyboard avoidance, safe-area, aria-modal]
+  serves: [bid dialog, explore filters mobile, navigation overlay, auth gate, validation info, future selection dialogs]
+  no_snap_points: true
+  forbidden: gorhom bottom-sheet usage; native Modal formSheet fork; per-feature bespoke overlays
+
+form_strategy:
+  library: react-hook-form + zodResolver + packages/contracts schemas (all creator-first forms)
+  step_flows: composite/StepShell with typed step config; one RHF form spans steps
+  async_validation: debounced 300ms queryClient.fetchQuery (slug/username availability)
+  draft_hydration: useForm values from server draft query
+  media_upload: composite/MediaInput over existing expo-image-picker -> FormData pipeline
+  forbidden: ad-hoc useState field forms in new/migrated flows; local-storage drafts
+
+auction_state_strategy:
+  snapshot: React Query (products, listing bids, activity)
+  realtime: useListingRealtime socket events -> invalidation only (listing.updated, bid.placed, listing.ended)
+  presentation: pure deriveAuctionPanelState in features/products/presentation (13 panel states)
+  dialog_machine: 8 states from RHF validity + mutation status + server error codes
+  client_must_not: [compute minimum bid, simulate soft close, derive winner, optimistic acceptance, mask bidders client-side]
+  countdown: derived from server endsAt; 1s tick only while live panel mounted
+  sticky_bar: scroll-driven visibility; same derived state and mutation as panel
+
+testing_strategy:
+  unit: [auction panel state derivation, bid dialog machine, grid math, breakpoint map, price formatting, media recovery, step config, slug debounce]
+  e2e: [screen flows, overlay a11y, keyboard bid path, reduced motion, image error recovery, filter/pagination, long and minimal content fixtures]
+  visual: playwright screenshots 1440x900 / 1024x768 / 390x844 per screen; manual Pen comparison at wave gates
+  ci_assertions: no horizontal overflow, grid column counts, sticky bar visibility
+  forbidden: large pixel-diff snapshot suite as CI gate
+
+components:
+  - design_id: global_navigation
+    production_name: GlobalNavigation
+    file_path: apps/mobile/src/components/ui/scenes/GlobalNavigation.tsx
+    layer: L4
+    primitives: [InteractiveSurface, Icon, Text]
+    libraries: [expo-router]
+    state_owner: auth context + seller capability (read-only)
+    responsive: desktop bar / mobile top bar / bottom floating pill
+    motion: overlay open transition
+    accessibility: navigation landmark, focus order
+    consumers: [all screens via AppShell]
+    product_phase: confirmed_mvp
+    tests: [e2e navigation and roles]
+    forbidden: [route-local nav copies, native tabs conversion]
+  - design_id: creator_action
+    production_name: CreatorActionButton
+    file_path: apps/mobile/src/components/ui/scenes/CreatorActionButton.tsx
+    layer: L4
+    primitives: [InteractiveSurface, Icon, Text]
+    libraries: []
+    state_owner: derived from auth + seller capability
+    responsive: same control, placement per breakpoint
+    motion: press scale
+    accessibility: label per role state
+    consumers: [GlobalNavigation, creator_profile empty states]
+    product_phase: confirmed_mvp
+    tests: [unit role branch, e2e gate flow]
+    forbidden: [client role invention]
+  - design_id: search_entry
+    production_name: SearchEntry
+    file_path: apps/mobile/src/components/ui/controls/SearchEntry.tsx
+    layer: L2
+    primitives: [InteractiveSurface, Icon, Text]
+    libraries: [expo-router]
+    state_owner: local text state; submit pushes /search
+    responsive: inline >=768 / icon trigger + overlay <768
+    motion: focus transition
+    accessibility: search role and label
+    consumers: [GlobalNavigation]
+    product_phase: confirmed_mvp
+    tests: [e2e search submit]
+    forbidden: [fetching results inside the control]
+  - design_id: status_chip
+    production_name: StatusChip
+    file_path: apps/mobile/src/components/ui/controls/StatusChip.tsx
+    layer: L2
+    primitives: [Text, Icon]
+    libraries: [reanimated]
+    state_owner: props only
+    responsive: fixed size
+    motion: LIVE pulse (sole infinite animation), static under reduced motion
+    accessibility: status conveyed by text, not color alone
+    consumers: [WorkCard, AuctionPanel, BidHistoryRow]
+    product_phase: confirmed_mvp
+    tests: [unit status map, e2e reduced-motion pulse]
+    forbidden: [client status computation]
+  - design_id: work_card
+    production_name: WorkCard
+    file_path: apps/mobile/src/components/ui/composite/WorkCard.tsx
+    layer: L3
+    primitives: [InteractiveSurface, MediaImage, Text]
+    libraries: []
+    state_owner: props only (primitive props, React.memo)
+    responsive: width from grid span helpers
+    motion: hover lift translateY(-2), press scale 0.98
+    accessibility: single link with combined label
+    consumers: [home, explore, creator_profile, rails, recommendations]
+    product_phase: confirmed_mvp
+    tests: [unit prop mapping, e2e grid rendering]
+    forbidden: [per-screen copies, query objects as props]
+  - design_id: creator_card
+    production_name: CreatorCard
+    file_path: apps/mobile/src/components/ui/composite/CreatorCard.tsx
+    layer: L3
+    primitives: [InteractiveSurface, MediaImage, Text]
+    libraries: []
+    state_owner: props only (React.memo)
+    responsive: grid span
+    motion: hover lift
+    accessibility: link labelled by creator name
+    consumers: [home, explore creators, related creators]
+    product_phase: confirmed_mvp
+    tests: [unit mirror fallback logic, e2e blur fallback]
+    forbidden: [blur outside bounded caption strip]
+  - design_id: media_stack
+    production_name: MediaStack
+    file_path: apps/mobile/src/components/ui/composite/MediaStack.tsx
+    layer: L3
+    primitives: [MediaImage, Icon, InteractiveSurface]
+    libraries: [reanimated, gesture-handler]
+    state_owner: local current-index state
+    responsive: swipe mobile / arrows + dots desktop
+    motion: translateX snap, transform/opacity only
+    accessibility: keyboard arrows, index announced
+    consumers: [work_detail, WorkScene]
+    product_phase: confirmed_mvp
+    tests: [unit index math, e2e swipe and keyboard]
+    forbidden: [lightbox dependency, layout animation]
+  - design_id: work_scene
+    production_name: WorkScene
+    file_path: apps/mobile/src/components/ui/scenes/WorkScene.tsx
+    layer: L4
+    primitives: [MediaImage, Text]
+    libraries: []
+    state_owner: props only
+    responsive: tilted layers desktop / stacked mobile
+    motion: static (entry fade only)
+    accessibility: reading order preserved
+    consumers: [home hero, work_detail hero]
+    product_phase: confirmed_mvp
+    tests: [e2e three viewports]
+    forbidden: [dynamic blur of creator media]
+  - design_id: creator_scene
+    production_name: CreatorScene
+    file_path: apps/mobile/src/components/ui/scenes/CreatorScene.tsx
+    layer: L4
+    primitives: [MediaImage, Text]
+    libraries: []
+    state_owner: props only
+    responsive: two-column desktop / stacked mobile
+    motion: static
+    accessibility: creator name as top heading
+    consumers: [creator_profile]
+    product_phase: confirmed_mvp
+    tests: [e2e three viewports]
+    forbidden: [scene-local token values]
+  - design_id: story_chapter
+    production_name: StoryChapter
+    file_path: apps/mobile/src/components/ui/composite/StoryChapter.tsx
+    layer: L3
+    primitives: [MediaImage, Text]
+    libraries: []
+    state_owner: props only
+    responsive: side-by-side >=768 / stacked
+    motion: static
+    accessibility: heading per chapter
+    consumers: [creator_profile, work_detail]
+    product_phase: confirmed_mvp
+    tests: [e2e long and short text fixtures]
+    forbidden: [measurement-driven layout]
+  - design_id: process_steps
+    production_name: ProcessSteps
+    file_path: apps/mobile/src/components/ui/composite/ProcessSteps.tsx
+    layer: L3
+    primitives: [MediaImage, Text, Icon]
+    libraries: []
+    state_owner: props only
+    responsive: grid >=768 / vertical list
+    motion: static
+    accessibility: ordered list semantics
+    consumers: [work_detail]
+    product_phase: confirmed_mvp
+    tests: [e2e with fixtures]
+    forbidden: [virtualization]
+  - design_id: creator_links
+    production_name: CreatorLinks
+    file_path: apps/mobile/src/components/ui/composite/CreatorLinks.tsx
+    layer: L3
+    primitives: [InteractiveSurface, Icon, Text]
+    libraries: []
+    state_owner: props only
+    responsive: wrapping row
+    motion: press
+    accessibility: external-link hints
+    consumers: [creator_profile]
+    product_phase: confirmed_mvp
+    tests: [unit url allowlist]
+    forbidden: [arbitrary url schemes]
+  - design_id: auction_panel
+    production_name: AuctionPanel
+    file_path: apps/mobile/src/components/ui/composite/AuctionPanel.tsx
+    layer: L3
+    primitives: [Text, Icon]
+    libraries: [reanimated]
+    state_owner: derived state via props; queries in features/products
+    responsive: side panel desktop / inline mobile
+    motion: countdown tick, state fade
+    accessibility: polite live region for price only
+    consumers: [work_detail]
+    product_phase: confirmed_mvp
+    tests: [unit 13 states exhaustive, e2e realtime update]
+    forbidden: [business-rule computation in component]
+  - design_id: bid_dialog
+    production_name: BidDialog
+    file_path: apps/mobile/src/components/ui/composite/BidDialog.tsx
+    layer: L3
+    primitives: [Text]
+    libraries: [react-hook-form, zod]
+    state_owner: dialog machine local; placeBid mutation in features/products
+    responsive: dialog 480 desktop / bottom sheet mobile (via AdaptiveModal)
+    motion: modal transition
+    accessibility: focus trap, error announcement
+    consumers: [work_detail, StickyBidBar]
+    product_phase: confirmed_mvp
+    tests: [unit 8 states, e2e bid accept and reject]
+    forbidden: [optimistic acceptance, second bid path]
+  - design_id: bid_history_row
+    production_name: BidHistoryRow
+    file_path: apps/mobile/src/components/ui/composite/BidHistoryRow.tsx
+    layer: L3
+    primitives: [Text]
+    libraries: []
+    state_owner: props only (server-masked labels)
+    responsive: fixed row
+    motion: none
+    accessibility: row text order
+    consumers: [work_detail bids tab]
+    product_phase: confirmed_mvp
+    tests: [unit formatting]
+    forbidden: [client-side bidder masking]
+  - design_id: facts_group
+    production_name: FactsGroup
+    file_path: apps/mobile/src/components/ui/composite/FactsGroup.tsx
+    layer: L3
+    primitives: [Text, Icon]
+    libraries: []
+    state_owner: props only
+    responsive: two-column / one-column
+    motion: none
+    accessibility: term-value pairs
+    consumers: [CreatorScene, work_detail]
+    product_phase: confirmed_mvp
+    tests: [unit empty-fact skipping]
+    forbidden: [invented facts]
+  - design_id: tab_pill
+    production_name: TabPill
+    file_path: apps/mobile/src/components/ui/controls/TabPill.tsx
+    layer: L2
+    primitives: [InteractiveSurface, Text]
+    libraries: [expo-router]
+    state_owner: active state from route or props
+    responsive: scrollable row on overflow
+    motion: active indicator slide
+    accessibility: tab role with selected state
+    consumers: [explore, work_detail tabs]
+    product_phase: confirmed_mvp
+    tests: [e2e tab switch]
+    forbidden: [screen-local tab styles]
+  - design_id: filter_chip
+    production_name: FilterChip
+    file_path: apps/mobile/src/components/ui/controls/FilterChip.tsx
+    layer: L2
+    primitives: [InteractiveSurface, Text, Icon]
+    libraries: []
+    state_owner: selected via props; URL params owned by screen
+    responsive: wrap row desktop / sheet on mobile
+    motion: press
+    accessibility: selected state announced
+    consumers: [explore]
+    product_phase: confirmed_mvp
+    tests: [e2e filter flow]
+    forbidden: [duplicated local filter state]
+  - design_id: creator_step_shell
+    production_name: StepShell
+    file_path: apps/mobile/src/components/ui/composite/StepShell.tsx
+    layer: L3
+    primitives: [Text]
+    libraries: [react-hook-form]
+    state_owner: step index in screen; answers in one RHF form
+    responsive: single column all breakpoints
+    motion: step translate transition
+    accessibility: step X of N announced
+    consumers: [creator_onboarding_mobile, work_creation_mobile]
+    product_phase: confirmed_mvp
+    tests: [unit step config, e2e full flow]
+    forbidden: [separate form per step]
+  - design_id: form_field
+    production_name: FormField
+    file_path: apps/mobile/src/components/ui/controls/FormField.tsx
+    layer: L2
+    primitives: [Text]
+    libraries: [react-hook-form]
+    state_owner: RHF
+    responsive: full width
+    motion: focus border transition
+    accessibility: label association, error link
+    consumers: [all creator-first forms]
+    product_phase: confirmed_mvp
+    tests: [unit field states, e2e validation]
+    forbidden: [uncontrolled ad-hoc inputs]
+  - design_id: media_input
+    production_name: MediaInput
+    file_path: apps/mobile/src/components/ui/composite/MediaInput.tsx
+    layer: L3
+    primitives: [MediaImage, Icon, Text]
+    libraries: [expo-image-picker]
+    state_owner: upload state local; mutations in features/sellers
+    responsive: grid of slots
+    motion: progress opacity
+    accessibility: upload status announced
+    consumers: [work_creation_mobile, creator_onboarding_mobile]
+    product_phase: confirmed_mvp
+    tests: [e2e upload and retry]
+    forbidden: [drag-and-drop dependency in MVP]
+  - design_id: inline_validation
+    production_name: InlineFeedback
+    file_path: apps/mobile/src/components/ui/controls/InlineFeedback.tsx
+    layer: L2
+    primitives: [Text, Icon]
+    libraries: []
+    state_owner: props only
+    responsive: full width
+    motion: fade in
+    accessibility: alert or polite live region by severity
+    consumers: [forms, slug availability check]
+    product_phase: confirmed_mvp
+    tests: [unit tone mapping]
+    forbidden: [color-only feedback]
+  - design_id: review_submit
+    production_name: ReviewSubmit
+    file_path: apps/mobile/src/components/ui/composite/ReviewSubmit.tsx
+    layer: L3
+    primitives: [Text, MediaImage]
+    libraries: [react-hook-form]
+    state_owner: RHF values; submit mutation in features/sellers
+    responsive: single column
+    motion: none
+    accessibility: summary headings
+    consumers: [work_creation_mobile final step]
+    product_phase: confirmed_mvp
+    tests: [e2e submit]
+    forbidden: [editing inside review step]
+  - design_id: section_header
+    production_name: SectionHeader
+    file_path: apps/mobile/src/components/ui/controls/SectionHeader.tsx
+    layer: L2
+    primitives: [Text, InteractiveSurface]
+    libraries: []
+    state_owner: props only
+    responsive: row / stacked
+    motion: none
+    accessibility: heading role and level on web
+    consumers: [home, explore, creator_profile]
+    product_phase: confirmed_mvp
+    tests: [unit]
+    forbidden: [detached custom headers]
+  - design_id: rail
+    production_name: Rail
+    file_path: apps/mobile/src/components/ui/composite/Rail.tsx
+    layer: L3
+    primitives: [ScreenScroll]
+    libraries: []
+    state_owner: props only
+    responsive: peek widths per breakpoint
+    motion: native snap physics only
+    accessibility: group label, keyboard scroll on web
+    consumers: [home, work_detail related]
+    product_phase: confirmed_mvp
+    tests: [e2e snap and overflow guard]
+    forbidden: [vertical nesting, virtualization]
+  - design_id: skeleton
+    production_name: Skeleton
+    file_path: apps/mobile/src/components/ui/controls/Skeleton.tsx
+    layer: L2
+    primitives: [Surface]
+    libraries: [reanimated]
+    state_owner: none
+    responsive: matches target slot
+    motion: subtle opacity loop, off under reduced motion
+    accessibility: aria-hidden, busy on region
+    consumers: [all loading states]
+    product_phase: confirmed_mvp
+    tests: [e2e reduced motion]
+    forbidden: [shimmer gradients]
+  - design_id: error_block
+    production_name: ErrorBlock
+    file_path: apps/mobile/src/components/ui/controls/ErrorBlock.tsx
+    layer: L2
+    primitives: [Text, Icon]
+    libraries: []
+    state_owner: props only (retry callback)
+    responsive: full width
+    motion: none
+    accessibility: alert role, retry receives focus
+    consumers: [screens, AuctionPanel]
+    product_phase: confirmed_mvp
+    tests: [e2e retry]
+    forbidden: [silent failures]
+  - design_id: empty_state
+    production_name: EmptyState
+    file_path: apps/mobile/src/components/ui/controls/EmptyState.tsx
+    layer: L2
+    primitives: [Text, Icon]
+    libraries: []
+    state_owner: props only
+    responsive: centered
+    motion: none
+    accessibility: informative text
+    consumers: [grids, search, history]
+    product_phase: confirmed_mvp
+    tests: [e2e empty fixtures]
+    forbidden: [decorative-only empty states]
+  - design_id: sticky_bid_bar
+    production_name: StickyBidBar
+    file_path: apps/mobile/src/components/ui/composite/StickyBidBar.tsx
+    layer: L3
+    primitives: [Text]
+    libraries: [reanimated]
+    state_owner: derived auction state via props; visibility from scroll shared value
+    responsive: mobile and tablet per spec
+    motion: translateY enter and exit
+    accessibility: same action label as panel, no focus trap
+    consumers: [work_detail]
+    product_phase: confirmed_mvp
+    tests: [e2e scroll show and hide]
+    forbidden: [duplicate bid logic]
+  - design_id: auth_panel
+    production_name: AuthPanel
+    file_path: apps/mobile/src/components/ui/composite/AuthPanel.tsx
+    layer: L3
+    primitives: [Text]
+    libraries: [react-hook-form, zod]
+    state_owner: mutations in features/auth (existing contract)
+    responsive: centered card >=768 / full mobile
+    motion: none
+    accessibility: error announcement, autofill text content types
+    consumers: [auth screens, auth gate]
+    product_phase: confirmed_mvp
+    tests: [e2e login register verify]
+    forbidden: [new auth contract without product decision]
+  - design_id: footer
+    production_name: SiteFooter
+    file_path: apps/mobile/src/components/ui/composite/SiteFooter.tsx
+    layer: L3
+    primitives: [Text, InteractiveSurface]
+    libraries: []
+    state_owner: none (static link config)
+    responsive: three columns / stacked
+    motion: none
+    accessibility: contentinfo landmark
+    consumers: [public screens >=768]
+    product_phase: confirmed_mvp
+    tests: [e2e links]
+    forbidden: [per-page footers]
+  - design_id: follow_creator
+    production_name: FollowCreatorButton
+    file_path: apps/mobile/src/components/ui/composite/FollowCreatorButton.tsx
+    layer: L3
+    primitives: [InteractiveSurface, Icon, Text]
+    libraries: []
+    state_owner: server (future contract required)
+    responsive: button
+    motion: press with fill-icon swap
+    accessibility: pressed state announced
+    consumers: [creator_profile (future)]
+    product_phase: designed_post_mvp
+    tests: [deferred]
+    forbidden: [implementation before server contract exists]
+  - design_id: wishlist_saved_work
+    production_name: SaveWorkButton
+    file_path: apps/mobile/src/components/ui/composite/SaveWorkButton.tsx
+    layer: L3
+    primitives: [InteractiveSurface, Icon]
+    libraries: []
+    state_owner: server (future contract required)
+    responsive: icon button in card slot
+    motion: fill swap
+    accessibility: save and saved labels
+    consumers: [WorkCard slot (future)]
+    product_phase: designed_post_mvp
+    tests: [deferred]
+    forbidden: [local-only fake saves]
+  - design_id: video_process_story
+    production_name: VideoProcessStory
+    file_path: apps/mobile/src/components/ui/composite/VideoProcessStory.tsx
+    layer: L3
+    primitives: [MediaImage, Icon, InteractiveSurface]
+    libraries: [expo-video (deferred install)]
+    state_owner: local playback state
+    responsive: bounded 16:9
+    motion: play and pause fade
+    accessibility: captions required, no autoplay
+    consumers: [work_detail (future)]
+    product_phase: designed_post_mvp
+    tests: [deferred]
+    forbidden: [autoplay, expo-av]
+
+screens:
+  - screen_id: creator_profile
+    route: /seller/[slug]
+    components: [GlobalNavigation, CreatorScene, TabPill, WorkCard, StoryChapter, CreatorLinks, FactsGroup, SectionHeader, Skeleton, ErrorBlock, EmptyState, SiteFooter]
+    data_owner: features/sellers (public-seller query)
+    scroll_owner: ScreenScroll
+    collection_technology: flex grid 3/2/1 with server pagination
+    responsive: two-column hero desktop / stacked mobile
+    states: [loading, empty_works, error, missing_media]
+    role_variants: [visitor, owner_edit_entry]
+    product_phase: confirmed_mvp
+    tests: [e2e three viewports, e2e empty and error]
+  - screen_id: work_detail
+    route: /product/[publicId]
+    components: [GlobalNavigation, WorkScene, MediaStack, AuctionPanel, BidDialog, StickyBidBar, ProcessSteps, StoryChapter, FactsGroup, BidHistoryRow, TabPill, Rail, WorkCard, Skeleton, ErrorBlock, SiteFooter]
+    data_owner: features/products (product, bids, activity, realtime)
+    scroll_owner: ScreenScroll with scroll shared value
+    collection_technology: bounded rows and rails
+    responsive: two-column desktop (panel right) / single column with sticky bar mobile
+    states: [loading, error, missing_media, socket_offline]
+    role_variants: [guest, eligible_buyer, ineligible_buyer, self_view_seller, disabled_role]
+    product_phase: confirmed_mvp
+    tests: [unit state derivation, e2e bid, e2e realtime, e2e keyboard, e2e reduced motion]
+  - screen_id: bid_states_board
+    route: null  # Pen QA board; realized as component state coverage
+    components: [AuctionPanel, BidDialog]
+    data_owner: fixtures
+    scroll_owner: null
+    collection_technology: null
+    responsive: per component
+    states: [all 13 panel states, all 8 dialog states]
+    role_variants: [all]
+    product_phase: confirmed_mvp
+    tests: [unit exhaustive states]
+  - screen_id: home
+    route: /
+    components: [GlobalNavigation, WorkScene, Rail, WorkCard, CreatorCard, SectionHeader, Skeleton, ErrorBlock, EmptyState, SiteFooter]
+    data_owner: features/home (discovery-home query)
+    scroll_owner: ScreenScroll
+    collection_technology: snap rails (max 8) + bounded flex grids
+    responsive: hero scales, rail peek per breakpoint
+    states: [loading, empty_sections, error, missing_media]
+    role_variants: [guest_nav, authenticated_nav]
+    product_phase: confirmed_mvp
+    tests: [e2e three viewports, e2e overflow guard]
+  - screen_id: explore
+    route: /works + /authors  # TabPill links between the two committed routes
+    components: [GlobalNavigation, TabPill, FilterChip, WorkCard, CreatorCard, AdaptiveModal, SectionHeader, Skeleton, ErrorBlock, EmptyState, SiteFooter]
+    data_owner: features/products list + features/sellers list (URL params own filters)
+    scroll_owner: ScreenScroll
+    collection_technology: flex grid 3/2/1 with show-more pagination
+    responsive: filters row desktop / filter sheet mobile
+    states: [loading, empty_with_reset, error, missing_media]
+    role_variants: []
+    product_phase: confirmed_mvp
+    tests: [e2e filter flow, e2e pagination]
+  - screen_id: creator_action_states_board
+    route: null  # Pen QA board
+    components: [CreatorActionButton]
+    data_owner: fixtures
+    scroll_owner: null
+    collection_technology: null
+    responsive: per component
+    states: [guest, authenticated_non_seller, seller, pending]
+    role_variants: [all]
+    product_phase: confirmed_mvp
+    tests: [unit role branch]
+  - screen_id: creator_onboarding_mobile
+    route: /profile  # step flow internal; dedicated step URLs = open decision R6
+    components: [StepShell, FormField, MediaInput, InlineFeedback, ReviewSubmit, Skeleton, ErrorBlock]
+    data_owner: features/sellers (profile mutations, slug check)
+    scroll_owner: StepShell scroll
+    collection_technology: null
+    responsive: single column all breakpoints
+    states: [loading, inline_errors, submit_error, upload_retry]
+    role_variants: [authenticated_non_seller]
+    product_phase: confirmed_mvp
+    tests: [e2e full flow, e2e slug availability]
+  - screen_id: work_creation_mobile
+    route: /products/new + /products/[id]
+    components: [StepShell, FormField, MediaInput, ProcessSteps, InlineFeedback, ReviewSubmit, Skeleton, ErrorBlock]
+    data_owner: features/sellers (product draft CRUD, images)
+    scroll_owner: StepShell scroll
+    collection_technology: media slot grid
+    responsive: single column
+    states: [draft_loading, inline_errors, submit_error, upload_retry]
+    role_variants: [seller_only]
+    product_phase: confirmed_mvp
+    tests: [e2e create and submit, e2e image reorder]
+  - screen_id: auth
+    route: /login + /register
+    components: [AuthPanel, AdaptiveModal, InlineFeedback]
+    data_owner: features/auth (existing mutations)
+    scroll_owner: ScreenScroll
+    collection_technology: null
+    responsive: centered card >=768 / full mobile
+    states: [pending, error]
+    role_variants: [guest_only_redirect]
+    product_phase: confirmed_mvp
+    tests: [e2e login, e2e register, e2e email verify]
+  - screen_id: tablet_1024_derivations
+    route: null  # responsive verification of the screens above at 1024
+    components: [GlobalNavigation, CreatorScene, WorkScene, MediaStack, AuctionPanel, BidDialog, StickyBidBar, WorkCard, CreatorCard, Rail, TabPill, FilterChip, StepShell, AuthPanel, SiteFooter]
+    data_owner: same as source screens
+    scroll_owner: same
+    collection_technology: same
+    responsive: verified at 1024 viewport
+    states: [same]
+    role_variants: [same]
+    product_phase: confirmed_mvp
+    tests: [e2e 1024 screenshots]
+  - screen_id: future_boards
+    route: null
+    components: [FollowCreatorButton, SaveWorkButton, VideoProcessStory]
+    data_owner: future server contracts
+    scroll_owner: null
+    collection_technology: null
+    responsive: per component
+    states: [designed only]
+    role_variants: []
+    product_phase: designed_post_mvp
+    tests: [deferred]
+
+implementation_waves:
+  - wave: 0
+    scope: phosphor dependency, font assets + expo-font plugin, design-tokens rewrite, tabular-nums verification
+    stop_gate: typecheck and token tests green
+  - wave: 1
+    scope: primitives (Text, Surface, InteractiveSurface, MediaImage, Icon, ScreenScroll, VisuallyHidden) + layout helpers
+    stop_gate: primitive API review
+  - wave: 2
+    scope: controls + AdaptiveModal
+    stop_gate: control gallery screenshots at three viewports
+  - wave: 3
+    scope: cards, scenes, rails, story and facts composites, SiteFooter
+    stop_gate: screenshots vs Pen masters
+  - wave: 4
+    scope: creator_profile screen
+    stop_gate: founder visual approval
+  - wave: 5
+    scope: work_detail + auction vertical (panel, dialog, sticky bar, derivation, realtime)
+    stop_gate: founder approval + legacy bid e2e green
+  - wave: 6
+    scope: home + explore + GlobalNavigation chrome
+    stop_gate: founder approval
+  - wave: 7
+    scope: creator publishing flows + RHF migration of seller drafts
+    stop_gate: founder approval
+  - wave: 8
+    scope: designed_post_mvp features, only after server contracts and founder go
+    stop_gate: product decision
+  - wave: 9
+    scope: legacy deletion (components, nativewind stack, lucide, google-fonts, gradient, gorhom, deprecated token alias) + full QA
+    stop_gate: final founder sign-off
+
+forbidden_patterns:
+  - copying DOM/Tailwind/shadcn/21st.dev component code into Expo/RNW
+  - screen-local token values or breakpoint constants
+  - duplicate card, dialog, or navigation components per screen
+  - separate web-only and mobile-only UI trees
+  - client-owned auction business rules or optimistic bid acceptance
+  - Pen-generated HTML/CSS pasted into production
+  - giant boolean-flag components instead of composition
+  - full-screen or unbounded blur of creator media
+  - unvirtualized unbounded feeds (boundedness is the contract; virtualize before unbounding)
+  - inaccessible custom controls
+  - speculative dependencies (flash-list, expo-blur, zustand, moti, premature expo-video)
+  - NativeWind adoption mid-migration; two styling systems
+  - mixing legacy designTokens values into creator-first components
+  - route contract changes without a recorded product decision
+  - unapproved payment, chat, crypto, ratings, or follower-count contracts

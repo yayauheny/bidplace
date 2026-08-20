@@ -1,0 +1,902 @@
+# bidplace creator-first — component contract V2.1
+# Art-direction correction: DATA and BEHAVIOR contracts are preserved.
+# VISUAL anatomy follows V2, with V2.1: pills not forbidden, display/radius
+# provisional, strong accent optional, creator identity is not a chip,
+# human reading rhythm (one dominant event, macro whitespace, chrome last).
+# Measurements in px at 1x are starting ranges until a golden candidate
+# is selected. Golden explorations own composition; these components must
+# allow editorial placement, not force a card kit.
+# Every component lists do_not_invent: facts/controls that must NOT appear.
+# Prefer content on canvas. Do not wrap components in extra chrome to look complete.
+
+components:
+  - id: global_navigation
+    purpose: "Calm service chrome: routes, search, role-aware creator action, account. Never a competing visual event."
+    anatomy:
+      desktop: [logo symbol 28×28 left (no wordmark), nav_links as meta 12/600 in open space (Главная, Авторы, Работы) — nav is not a pill kit; moderate rounding on search/action allowed, right cluster (search_entry compact, creator_action, auth/account)]
+      mobile_top_bar: [logo symbol left, contextual title center (routes), share/back contextual right]
+      mobile_bottom_nav: [Главная (nav_home House icon + 11px label), Обзор (nav_explore Compass icon + label), creator_action_plus (48 square radius_control, Plus icon), Профиль/Войти (nav_profile User icon + label)]
+    required_data: [current route, auth state, creator capability state]
+    optional_data: []
+    variants: [desktop, tablet (same as desktop, margins 48), mobile]
+    states: [default, scrolled (hairline bottom + surface fill 0.96 opacity), nav_overlay_open, guest, authenticated]
+    measurements:
+      desktop: {height: 72, link_gap: 32, right_cluster_gap: 12}
+      tablet: {height: 64, link_gap: 24}
+      mobile: {top_bar_height: 56, bottom_nav: {height: 64, radius: 16, margin_h: 20, float_offset: 12, item_min_width: 64, shadow: e1, bg: surface}}
+    interactions:
+      - "Nav overlay (mobile): full-screen surface panel (radius 12), vertical route list in display_3, then one recommended work card (real newWorks[0]), close + search in bottom rectangular control (WePresent IA, not a magazine overlay); sheet_enter motion."
+      - "Active route: label ink 600, no underline fetish; a 2px ink tick under the label is allowed. Desktop nav items are not a filled-pill kit."
+    accessibility: ["bottom nav items have labels", "overlay traps focus", "logo links home with label «bidplace — на главную»"]
+    content_limits: {nav_label_max_chars: 12}
+    do_not_invent: ["notifications bell", "cart", "wishlist icon", "messages"]
+
+  - id: creator_action
+    purpose: "Persistent role-aware creation entry (founder decision 18–20)."
+    anatomy:
+      desktop: [ink control radius_control (starting 8; moderate rounding allowed if golden exploration justifies), 20px plus icon white, label 15/600 white]
+      mobile: [48x48 ink control radius_control, 24px white plus, in bottom_nav slot 3]
+    required_data:
+      - "capability state: guest | registered_non_creator | pending_review | changes_requested | approved | restricted"
+    optional_data: []
+    variants:
+      - {state: guest_or_non_creator, label: "Стать автором", destination: "auth (if guest) → creator onboarding, with return path"}
+      - {state: approved, label: "Добавить работу", icon: plus, destination: "work creation step 1"}
+      - {state: pending_review, label: "Кабинет автора", destination: "status screen «Заявка на проверке»", badge: "ink_soft dot"}
+      - {state: changes_requested, label: "Кабинет автора", destination: "status screen with correction path", badge: "error dot 6px + accessible text"}
+      - {state: restricted, label: "Кабинет автора", destination: "status screen with real allowed next step"}
+    states:
+      - "default"
+      - "hover (action_primary_hover + lift -1)"
+      - "pressed (scale .98)"
+      - "focus (ring)"
+      - "disabled: none — action always enabled toward an honest destination"
+    measurements:
+      desktop: {height: 44, padding_h: 20, icon_gap: 8}
+      tablet: {height: 44}
+      mobile: {circle: 48}
+    interactions: ["never inside overflow menu", "mobile accessible label mirrors desktop label per state"]
+    accessibility: ["accessibilityLabel = role label", "state badge has text equivalent in destination screen"]
+    content_limits: {label_max_chars: 18}
+    do_not_invent: ["publish shortcut for pending creators", "camera quick-post", "drafts dropdown"]
+
+  - id: search_entry
+    purpose: "Quiet global search entry; routes to Explore with query focus."
+    anatomy: [surface canvas_deep radius_input (starting 8; moderate rounding allowed), 20px search icon ink_soft, placeholder «Поиск работ и авторов» caption ink_soft]
+    required_data: []
+    optional_data: [prefilled query]
+    variants: [desktop_compact (icon+label button 44h), explore_full (input h48), mobile_explore (input h48 full-width)]
+    states: [default, hover (bg canvas_deep_hover), focus (ring + border_control), filled, loading (inline spinner 16 right), disabled]
+    measurements:
+      desktop: {compact: {height: 44, padding_h: 16, radius: 8}, full: {height: 48, radius: 8, padding_h: 20}}
+      tablet: {full: {height: 48}}
+      mobile: {full: {height: 48}}
+    interactions: ["desktop compact click → Explore works tab with focused field", "clear button appears when filled (44 target)"]
+    accessibility: ["label «Поиск»", "results count announced politely on Explore"]
+    content_limits: {query_max_chars: 120}
+    do_not_invent: ["instant suggestion dropdown (no server contract)", "voice search"]
+
+  - id: status_chip
+    purpose: "Honest auction/listing status; the only place live_dot exists."
+    anatomy: [pill, optional 8px dot, label label_sm]
+    required_data: [listing status + relevant time]
+    optional_data: []
+    variants:
+      - {status: LIVE, bg: ink, fg: white, dot: live_dot pulse, label: "Идут торги"}
+      - {status: SCHEDULED, bg: surface, border: hairline, fg: ink, label: "Релиз 24 августа, 19:00"}
+      - {status: SOFT_CLOSE, bg: accent_yellow_soft, fg: ink, label: "Продлено · 04:12"}
+      - {status: ENDED, bg: disabled_surface, fg: ink_soft, label: "Завершено"}
+      - {status: ENDED_WON, bg: disabled_surface, fg: ink_soft, label: "Продано"}
+    states:
+      - "default; reduced_motion: dot static"
+    measurements:
+      desktop: {height: 28, padding_h: 12, dot_gap: 8}
+      tablet: {height: 28}
+      mobile: {height: 28}
+    interactions: ["non-interactive; never a button"]
+    accessibility: ["announced as plain text; dot decorative"]
+    content_limits: {label_max_chars: 28}
+    do_not_invent: ["«Осталось 3 штуки», «Хит», «Скидка», bid-count on chip"]
+
+  - id: work_card
+    purpose: "Default discovery card: desire before commerce."
+    anatomy:
+      - "media (fixed ratio per slot) nearly full-bleed, radius_media 8 — not a pastel frame"
+      - "no mandatory accent_soft card fill; card sits on canvas — no wrapping card chrome"
+      - "caption zone independent below media (or overlapping as a small surface plate on featured/wide only): title title_1 max 2 lines ellipsis, ink"
+      - "creator name caption ink_soft (1 line)"
+      - "optional descriptor caption (1 line) — omit rather than invent a second line of meta"
+      - "optional entity accent as a tiny tag (label_sm on accent_*_strong) — optional, not required because the work has an assigned accent; not a wrapping color card; omit if it competes"
+      - "corner arrow-up-right 32px square — featured/wide slots only, and omit if the card already reads as a whole-target; omitted on dense grids"
+      - "future slot (designed_post_mvp, never on MVP frames): wishlist_saved_work 44 target, top-right of media, 12 inset; never overlaps the corner arrow"
+      - "content priority: work → title → creator → one descriptor. No price, deadline, extra badges."
+    required_data: [main image, title, creator fullName, route]
+    optional_data: [descriptor (uniqueness first phrase, display truncation at 60 chars), status_chip (only in explicit auction/status contexts), accent tag (by accent_selection of the work)]
+    variants:
+      - {name: standard, media_ratio: "3:4", caption: "below media on canvas", grid_span: "span 4 of 12 (desktop/tablet)"}
+      - {name: wide, media_ratio: "16:10", grid_span: "span 8 of 12 (desktop/tablet)"}
+      - {name: square, media_ratio: "1:1", grid_span: "span 4 of 12 (desktop/tablet); span 2 of 4 in mobile 2-up rows"}
+      - {name: plate, note: "V2: independent surface plate that may overlap the lower media edge on featured slots only. Not a Get Hyped-in-a-box. Not an accent_soft WePresent frame."}
+    states: [default, hover (media zoom 1.03 inside crop, no tilt), focus (ring on card), pressed, loading (skeleton), image_missing (accent_*_strong slab + 24px white or ink ImageBroken icon per pair + label «Изображение недоступно» caption)]
+    measurements:
+      desktop: {standard_width: "span_4 = 410.67", wide_width: "span_8 = 845.33", square_width: "span_4 = 410.67", radius: 8, frame_padding: 0, caption_padding: 12, gap_title_creator: 6}
+      tablet: {standard_width: "span_4 = 296", wide_width: "span_8 = 612", square_width: "span_4 = 296"}
+      mobile: {full_width: "span_4 = 350", two_up_square_width: "span_2 = 167", rail_width: "280 (rail exception — rails are not grid-bound)"}
+    interactions: ["whole card one target → work detail", "corner arrow decorative duplicate of same action (not separately focusable)"]
+    accessibility: ["accessible name: «{title} — {creator}»", "descriptor read after name"]
+    content_limits: {title_lines: 2, creator_lines: 1, descriptor_chars: 60}
+    do_not_invent: ["price", "deadline/countdown", "bid count", "materials/dimensions", "like/save button on MVP frames (wishlist_saved_work is designed_post_mvp, future slot only)", "seller rating"]
+
+  - id: creator_card
+    purpose: "Portrait-first creator discovery. Home may stagger sizes. No pastel frame, no mirrored caption."
+    anatomy:
+      - "portrait media 3:4 radius_media 8, full-bleed of the media box, on canvas — not inset in accent_soft"
+      - "caption below on canvas: fullName title_1 or label 15/600 ink (1 line ellipsis; long_name 2 lines)"
+      - "discipline meta 12 ink_soft (1 line)"
+      - "optional workCount «12 работ» appended to discipline line — not a separate chip"
+      - "optional 8px accent_*_strong tick under the name — not a color card; omit if it competes"
+      - "content priority: portrait → name → discipline. No extra badges."
+    required_data: [profilePhotoUrl, fullName, slug]
+    optional_data: [discipline, workCount]
+    variants: [grid (Explore), rail/carousel (Home, peek of next card, no «Авторы» heading; widths may vary 280/360/420)]
+    states:
+      - "default"
+      - "hover (zoom inside crop, no tilt)"
+      - "focus"
+      - "pressed"
+      - "photo_missing (portrait slot → accent_*_strong slab by accent_selection(slug) + 96px ink-or-white initial letter Golos 700; caption remains ink on canvas)"
+      - "long_name (2-line name allowed, caption grows; discipline drops)"
+    measurements:
+      desktop: {width: 360, frame_padding: 0, carousel_gap: 20, peek: true}
+      tablet: {width: 300, carousel_gap: 16, peek: true}
+      mobile: {rail_width: 280, carousel_gap: 16, peek: true}
+    interactions: ["whole card → creator profile"]
+    accessibility: ["name+discipline as accessible name"]
+    content_limits: {name_lines: 2, discipline_chars: 40}
+    do_not_invent: ["followers", "rating", "verification badge", "location city", "online status"]
+
+  - id: media_stack
+    purpose: "Work hero media: one sharp front image; back layers only when they read as a physical pile."
+    anatomy:
+      - "front media (ratio matches source — 3:4 | 1:1 | 4:3, radius_media 8 or radius_media_tight 4, not a soft card)"
+      - "back layers: only when ≥2 images AND the stack is the intended composition. Layer 1 up to -8deg offset x -24 y 12; layer 2 up to +6deg offset x 20 y 16. Single-image: no fake accent panel behind."
+      - "gallery controls — right arrow 44 square radius_control surface e1 + counter caption «2 / 6» (Get Hyped-like small floating control, functional)"
+    required_data: [ordered images (1–10)]
+    optional_data: []
+    variants:
+      - {name: multi, condition: "≥2 images", back_layers: "real next images, 0.92 opacity; omit layers if they would look like garnish"}
+      - {name: single, condition: "1 image", back_layers: "none — one large image on canvas, no accent_soft ghost card, no counter, no arrow"}
+    states: [default, advancing (gallery_advance motion), focus (ring on arrow), reduced_motion (instant swap), image_error (per-image missing state), loading (skeleton front)]
+    measurements:
+      desktop: {front_max_width: 640, front_max_height: 800}
+      tablet: {front_max_width: 480}
+      mobile: {front_width: 350, controls_below: true}
+    interactions: ["one visible rightward arrow (founder rule) + swipe/drag + keyboard Left/Right", "tapping front media opens next (mobile) — arrow remains the discoverable control", "back layers non-interactive, hidden from a11y tree"]
+    accessibility: ["arrow label «Следующее изображение»", "counter announced «Изображение 2 из 6»"]
+    content_limits: {max_images: 10}
+    do_not_invent: ["two-arrow decorative pair", "thumbnails strip in hero (thumbnails live in facts/gallery section on desktop only if ≥5 images)", "zoom lightbox (unresolved)", "autoplay video"]
+
+  - id: work_scene
+    purpose: "Featured release: media and information plate in shared space (profile current release, home featured moment)."
+    anatomy:
+      - "NO wrapping accent_soft rounded rectangle. Canvas is the scene. Prefer media on canvas over a plate-inside-card."
+      - "media_stack and info plate are independent objects; overlap is optional (starting range ≤48px), never covering interactive targets or required facts"
+      - "home_featured / profile_release: placement is owned by golden explorations A/B/C — do not lock left/center-right/lower-left"
+      - "mobile: media first, plate below, no fake stack behind"
+      - "info group is one thought: creator + title, then status/open. Do not scatter kicker, chip, title, creator, and CTA as equal objects"
+      - "kicker («Текущий релиз» | «Сейчас на bidplace») is optional chrome — omit if the composition already reads"
+      - "work title display_2 (max 3 lines) — grotesk display, not serif"
+      - "creator name body_strong"
+      - "one-line value statement body ink_soft (2 lines max) — omit if it competes with title"
+      - "status_chip"
+      - "CTA «Открыть работу» may be a primary control or plain text link if the media is already the target; geometry follows shape.pill_not_default; not a wrapping scene"
+    required_data: [work (image, title, creator, route), listing status]
+    optional_data: [value statement (uniqueness ≤ 120 chars)]
+    variants:
+      - "profile_release (kicker «Текущий релиз»)"
+      - "home_featured (creator emphasis: creator name title_1 above work title)"
+      - "color_field (optional: plate may use accent_*_strong of the work; media stays on canvas — never wrap both; do not force a strong plate because the work has an assigned accent)"
+    states: [default, hover CTA, no_current_release (component omitted — no empty shell), single_image, reduced_motion]
+    measurements:
+      desktop: {height_min: 520, plate_width: 420, stack_zone: 640}
+      tablet: {height_min: 420, plate_width: 360}
+      mobile: {stacked: true, media_first: true, plate_padding: 20}
+    interactions: ["CTA → work detail; whole media → work detail"]
+    accessibility: ["scene is a region labeled by kicker", "reading order: kicker → title → creator → statement → status → CTA"]
+    content_limits: {title_lines: 3, statement_chars: 120}
+    do_not_invent: ["price", "deadline as headline (status chip only)", "bid count"]
+
+  - id: creator_scene
+    purpose: "Creator profile hero: identity and portrait as one composition, not a corporate split. Referenced by screen-blueprints creator_profile hero_identity on all viewports."
+    anatomy:
+      desktop:
+        - "one composition, not text-left / portrait-right. fullName is display_1 (starting ~88). Overlap with the portrait is optional, not required; if used, contrast must hold and interactive targets stay clear"
+        - "portrait oversized 3:4 (starting range ~480×640), radius_media starting 8, may flush toward a margin or float; optional accent_*_strong slab behind/beside — not a soft rounded back card, and not required because the creator has an assigned accent"
+        - "name + portrait are the one dominant event. Meta, statement, links, and share are secondary — not equal-weight chips around the hero"
+        - "meta row as meta 12 (discipline · Беларусь · «N работ» from statusCounts sum) — one line, not separate chips"
+        - "statement body, measure starting ~480, offset — not a 640 magazine lede under a masthead; may sit below the first viewport"
+        - "creator_links as compact controls or text+icon; share as plain text-button. Do not form a floating chip row that competes with the name"
+        - "future slot (designed_post_mvp, never on MVP frames): follow_creator button after creator_links row"
+      tablet:
+        - "same composition compressed; portrait starting 360×480; overlap optional"
+      mobile:
+        - "portrait full-width 350×437 (3:4), then identity: kicker, name display_1 mobile 40, meta, statement, links wrap (2 per row max), share"
+        - "future slot (designed_post_mvp): follow_creator full-width secondary button below links"
+    media_behavior:
+      ratio: "portrait 3:4, fit cover, focal center; no upscaling beyond 1.15x source"
+      back_slab: "optional strong accent rectangle; decorative; hidden from a11y tree; never overlaps interactive targets or required text; do not force because an accent is assigned"
+    required_data: [slug, fullName, discipline, country, statusCounts]
+    optional_data: [profilePhotoUrl, shortDescription, links (telegramUrl/instagramUrl/websiteUrl/socialLink)]
+    variants: [desktop, tablet, mobile]
+    states:
+      - "default"
+      - "photo_missing (portrait slot → accent_*_strong slab by accent_selection(slug) + ink-or-white initial letter Golos 700 96px; announced as «Фото автора отсутствует»)"
+      - "minimal_content (statement ≤ 200 chars shown in full, no «Ещё»; missing links row collapses; composition unchanged)"
+      - "long_content (fullName wraps to 2 lines display_1 — fixture 39 chars; statement display-truncated at 200 chars with «Ещё» anchor to practice chapter; no ellipsis on the name)"
+      - "loading (skeleton: portrait media block + 3 text lines 60/90/40%)"
+      - "reduced_motion (no entrance settle; «Ещё» expansion is an instant state swap)"
+    measurements:
+      desktop: {portrait: {width: 480, height: 640, lock: starting_range}, statement_measure: 480, column_gap: 24, back_slab_offset: {x: 24, y: 24}}
+      tablet: {portrait: {width: 360, height: 480, lock: starting_range}, statement_measure: 400, back_slab_offset: {x: 16, y: 16}}
+      mobile: {portrait: {width: 350, height: 437}, back_slab_offset: {x: 0, y: 0}, block_gap: 24}
+    content_dependencies:
+      - "statement text = shortDescription; display truncation at 200 chars is a display rule, not a data limit"
+      - "meta counter «N работ» = sum of statusCounts values; omitted when 0"
+      - "practice chapter (story_chapter «О практике») renders only when shortDescription exceeds the 200-char display truncation"
+    missing_media_behavior: "photo_missing state above; never a gray placeholder box, never a stock avatar"
+    long_short_content_behavior: "Name: wrap up to 2 lines — layout grows vertically (no clamp/ellipsis on names). Statement: display truncation at 200 chars with «Ещё». Empty statement: type closes up; portrait composition unchanged."
+    interactions: ["share opens native share sheet / web share API", "«Ещё» expands in place (mobile: 6-line clamp, expand in place, no modal)"]
+    accessibility:
+      - "fullName is the page h1"
+      - "scene is a region labeled «Автор»"
+      - "portrait alt «Портрет: {fullName}»; photo_missing announced honestly"
+      - "«Ещё» is a real button with expanded state announced"
+      - "reading order: kicker → name → meta → statement → links → share"
+    reduced_motion: "No settle/entrance animation; expansions are instant; back slab is always static."
+    content_limits: {name_lines: 2, statement_display_truncation_chars: 200}
+    do_not_invent: ["followers/follower counts", "rating", "verification badge", "edit-profile affordance (owner tools have no contract in packet)", "location beyond country", "price/deadline anywhere"]
+
+  - id: story_chapter
+    purpose: "Editorial story module. Data is a title + body + optional images; visual composition varies."
+    anatomy:
+      - "optional kicker"
+      - "chapter title display_3 (Golos) — not automatically serif"
+      - "reading text max measure 640 — 640 is a text measure, not the chapter container"
+      - "optional media (1–3 images); layouts chosen per variant, never one 640 article block"
+      - "do not repeat the same image+title+body formula for consecutive chapters; change scale and density"
+    required_data: [title, body text]
+    optional_data: [images, optional editorial_quote if the fixture text is a real quote already in data]
+    variants:
+      - "plain_offset (text starts at col 3 or 5, not a centered magazine column)"
+      - "media_led (one large image, title/body as an independent plate beside or overlapping)"
+      - "color_field (short thesis on accent_*_strong of the work; body continues on canvas)"
+      - "split (8/4 or 5/7 image + text)"
+      - "text_only"
+    states: [default, no_media (text only, measure unchanged), long_text (paragraph split every ≤ 90 words, no scroll traps), loading, error]
+    measurements:
+      desktop: {text_measure: 640, container: "full content width — do not shrink the chapter to 640"}
+      tablet: {text_measure: 608}
+      mobile: {text_measure: 350, media: "full-width stacked"}
+    interactions: []
+    accessibility: ["images carry alt from step titles or «Процесс, шаг N»"]
+    content_limits: {title_chars: 80, body_words_per_paragraph: 90}
+    do_not_invent: ["author quotes not in data", "pull-quotes with invented text"]
+
+  - id: process_steps
+    purpose: "Creation story: intro + up to 20 ordered steps. Irregular editorial rhythm, not a catalogue grid."
+    anatomy:
+      - "section header «Как создавалась работа» (leading display_3, not centered)"
+      - "optional intro body"
+      - "steps: each = number kicker («Шаг 3»)"
+      - "step title title_1"
+      - "body"
+      - "optional image; sizes alternate by sequence recipe, not a uniform 3×2"
+    required_data: [ordered steps (title, body)]
+    optional_data: [intro, step images, video_process_story (designed_post_mvp; omitted entirely when absent)]
+    variants:
+      - "editorial_sequence (default): large image / small image / text-only / detail crop — recipe in screen blueprint"
+      - "list (fallback when ≤2 images)"
+      - "filmstrip (≥3 sequential images AND the screen asks for a rail: items mixed 3:4 widths 240–400, 0deg, one right arrow + counter + swipe/keyboard)"
+    states: [default, no_steps (section omitted), text_only_steps, reduced_motion, loading, image_error]
+    measurements:
+      desktop: {step_gap: "48–96 uneven", filmstrip_gap: 20}
+      tablet: {step_gap: 48}
+      mobile: {step_gap: 40, filmstrip_item_width: 240}
+    interactions: ["filmstrip: same control contract as media_stack"]
+    accessibility: ["steps are an ordered list semantically"]
+    content_limits: {max_steps: 20, step_title_chars: 80}
+    do_not_invent: ["video slots as MVP controls (video_process_story is designed_post_mvp, future boards only)", "timestamps"]
+
+  - id: creator_links
+    purpose: "Public contact/social links row."
+    anatomy:
+      - "compact link controls h40: icon 20 + label (Telegram, Instagram, Сайт, Ссылка for legacy socialLink). Pill or moderate radius allowed; they must not read as the page's visual language."
+      - "external-link glyph 16"
+    required_data: [at least one link (legacy socialLink required by contract)]
+    optional_data: [telegramUrl, instagramUrl, websiteUrl]
+    variants: [row (desktop), wrap (mobile 2 per row max)]
+    states: [default, hover (bg canvas_deep), focus, pressed]
+    measurements:
+      desktop: {chip_height: 40, gap: 12, padding_h: 16, radius: 4}
+      tablet: {chip_height: 40}
+      mobile: {chip_height: 44}
+    interactions: ["opens external URL; new tab web / system browser native"]
+    accessibility: ["label announces platform + external («Telegram, внешняя ссылка»)"]
+    content_limits: {label: "platform name only; never raw URL text; legacy link label «Ссылка» (do not invent platform)"}
+    do_not_invent: ["private handoff contacts", "follower counts", "DM buttons"]
+
+  - id: auction_panel
+    purpose: "Quiet transaction block on work detail; server-authoritative facts. Dense local module, visually secondary to the work. Do not decorate it into a competing event."
+    anatomy:
+      - "surface white radius_control (starting 8) border hairline padding 24 — not a capsule, not a decorative colored wrapper"
+      - "status_chip"
+      - "price row: label caption («Текущая ставка» | «Стартовая цена») + price price_lg (LIVE) / price_md (SCHEDULED)"
+      - "deadline row caption ink_soft with clock icon 16 («До завершения: 2 дн 4 ч» | «Старт: 24 августа, 19:00»)"
+      - "primary action full-width"
+      - "helper row: link «Как работает аукцион» label_sm underline"
+      - "bid_count caption («7 ставок») linking to history section"
+    required_data: [listing status, currency BYN, start/current price, server end time, next minimum (for dialog), bid count]
+    optional_data: [soft-close banner]
+    # Exactly 13 semantic states (canonical names, synced with screen-blueprints
+    # bid_states_board and pen-build-plan). Auxiliary component states (loading,
+    # stale_refetch, error) are not semantic auction states and appear on
+    # work_detail loading/error frames, not on the bid states board.
+    variants:
+      - {state: scheduled_preview, price_label: "Стартовая цена", action: "secondary outline «Напомнить» — NOT included (no contract); instead no action, caption «Ставки откроются в момент старта»"}
+      - {state: live_guest, action: "primary «Войти, чтобы сделать ставку» → auth with return"}
+      - {state: live_not_eligible_email, action: "primary «Подтвердить почту», helper caption explains the one missing step"}
+      - {state: live_not_eligible_rules, action: "primary «Принять правила», helper caption explains the one missing step"}
+      - {state: live_eligible, action: "primary «Сделать ставку» → bid_dialog"}
+      - {state: leading, action: "disabled-look info row success_soft «Вы лидируете · 260 BYN» + secondary «Повысить ставку»"}
+      - {state: outbid, banner: "error_soft row «Вашу ставку перебили» + primary «Сделать ставку»"}
+      - {state: soft_close, banner: "accent_yellow_soft «Аукцион продлён · осталось 04:12», countdown_short"}
+      - {state: ended_won_viewer, note: "buyer context: success_soft «Вы выиграли» + link to Order/handoff status"}
+      - {state: ended_lost, rows: "final price row «Финальная ставка», caption winner alias if public («победитель: tikhon_v»), no action"}
+      - {state: ended_no_bids, rows: "caption «Аукцион завершён без ставок», no fake demand"}
+      - {state: role_disabled_admin, action: "disabled rectangle + caption «Администратор не участвует в торгах»"}
+      - {state: role_disabled_self, action: "disabled rectangle + caption «Это ваша работа — ставки недоступны»"}
+    states: [the 13 semantic variants above, loading (skeleton), stale_refetch (price row shimmer 120ms on update, polite announcement), error (retry block inline)]
+    measurements:
+      desktop: {width: 400, sticky_top: 88}
+      tablet: {width: 360}
+      mobile: {full_width: 350, inline_position: "after title/value statement"}
+    interactions: ["desktop: sticky within hero+story scroll range (LIVE only; static otherwise)", "price slot reserves width of longest fixture («12 000 BYN») against numeral reflow"]
+    accessibility: ["price change announced politely", "deadline is text, not only a ticking clock; countdown updates at minute granularity except soft-close (seconds)"]
+    content_limits: {price_max_chars: 10}
+    do_not_invent: ["reserve price", "Buy Now", "auto-bid", "proxy ceiling", "payment", "delivery calculator", "external outbid push copy"]
+
+  - id: bid_dialog
+    purpose: "Focused first-class bid entry/confirmation (Foundation anatomy, light theme)."
+    anatomy:
+      - "dialog (desktop 480w radius 12 e3, mobile bottom sheet radius top 16 + safe-area)"
+      - "title display_3 «Ваша ставка»"
+      - "summary card ink radius 8 padding 16: thumb 64 radius 4"
+      - "work title title_2 white (1 line)"
+      - "creator caption rgba(255,255,255,0.72)"
+      - "row: «До завершения» + value"
+      - "row: «Текущая ставка» + price_md white"
+      - "amount field: input h52 numeric with suffix «BYN»"
+      - "helper zone (fixed h24): «Минимальная ставка: 260 BYN» caption"
+      - "first-bid rules row (checkbox 24 + label «Принимаю правила сервиса» + link «версия правил»)"
+      - "feedback zone (fixed h24): loading/success/error/stale"
+      - "primary full-width «Подтвердить ставку»"
+    required_data: [work summary, server snapshot (current price, next minimum, end time), first-bid flag, rules version]
+    optional_data: []
+    variants: [first_bid (rules row visible), repeat_bid (rules row hidden)]
+    # Exactly 8 semantic states (canonical names, synced with screen-blueprints
+    # bid_states_board and pen-build-plan).
+    states:
+      - "default (action disabled until amount ≥ server minimum and rules accepted when required)"
+      - "editing (keyboard-safe on mobile: sheet content above keyboard, action visible)"
+      - "submitting («Проверяем ставку…» spinner in feedback zone, action disabled, inputs locked)"
+      - "accepted (success flash 120ms → dialog closes → panel state leading)"
+      - "stale_minimum (feedback: «Минимальная ставка изменилась — 280 BYN» + inline button «Обновить» refetches snapshot; amount preserved)"
+      - "rejected_validation (error text in feedback zone, field border error, role=alert)"
+      - "rejected_server (error_soft block with server reason + «Попробовать снова»)"
+      - "soft_close_notice (yellow row appears above action: «Аукцион продлён на 60 секунд»)"
+    measurements:
+      desktop: {width: 480, padding: 32, field_height: 52}
+      tablet: {width: 480}
+      mobile: {sheet_padding: 20, action_height: 52}
+    interactions: ["focus trap; Esc/close returns focus to bid button", "amount input numeric keypad on native", "no client-side minimum computation — server value displayed verbatim"]
+    accessibility: ["feedback zone role=alert for errors, polite for loading/success", "summary card readable order: work, creator, deadline, current bid"]
+    content_limits: {amount_max_chars: 10}
+    do_not_invent: ["wallet balance", "fee breakdown", "increment slider", "auto-bid toggle"]
+
+  - id: bid_history_row
+    purpose: "Public bid history fact row: alias, amount, time only. Compact dense module; surround the list with chapter-level pause, do not add avatars or card chrome."
+    anatomy:
+      - "row h52: alias body_strong (guest-visible alias)"
+      - "amount price_sm right-aligned"
+      - "time caption ink_soft"
+    required_data: [alias, amount, timestamp]
+    optional_data:
+      - "leader marker (first row only: success dot 6px + «лидирует» caption)"
+    variants: [default, own_bid (bg canvas_deep, caption «ваша ставка»)]
+    states: [default, list_loading (3 skeleton rows), empty («Ставок пока нет» caption — scheduled/live-no-bids), error (retry)]
+    measurements:
+      desktop: {height: 52, divider: hairline}
+      tablet: {height: 52}
+      mobile: {height: 56}
+    interactions: ["list shows 5, then «Показать все ставки» text button expands"]
+    accessibility: ["row reads «anna_k, 260 BYN, сегодня 14:32»"]
+    content_limits: {alias_chars: 24}
+    do_not_invent: ["bidder profiles/links", "avatars", "country flags"]
+
+  - id: facts_group
+    purpose: "Object facts with honest missing states."
+    anatomy:
+      - "group title title_2"
+      - "rows: term caption ink_soft + value body (Категория, Техника, Материалы, Размеры, Вес, Год, Состояние, Уникальность, Провенанс, Упаковка)"
+      - "separate block «Передача и доставка»: city + delivery info body"
+    required_data: [category, uniqueness, provenance, city, delivery info]
+    optional_data: [technique, materials, dimensions, weight, year, condition, packaging]
+    variants: [two_column (desktop, term 200 + value flexible), stacked (mobile)]
+    states: [default, missing_optional (row omitted entirely — no dashes/placeholders), long_values (value wraps, term top-aligned)]
+    measurements:
+      desktop: {row_min_height: 44, row_gap: 8, columns_gap: 24}
+      tablet: {row_min_height: 44}
+      mobile: {row_gap: 12}
+    interactions: []
+    accessibility: ["semantic definition list"]
+    content_limits: {value_chars: 400}
+    do_not_invent: ["authentication certificates", "appraisal value", "shipping cost calculator"]
+
+  - id: tab_pill
+    purpose: "Local tabs/filters grammar. Id kept. Pills are allowed when they improve composition; they are not the default product language."
+    anatomy:
+      - "no wrapping scene-as-pill container"
+      - "items: label 15/600, padding 12 16; geometry may be pill or moderate radius_control — choose in golden explorations"
+      - "active = ink fill, underline 2px, or equivalent selected state; pick what serves the composition"
+    required_data: [items, active index]
+    optional_data: []
+    variants:
+      - "tabs (Explore: Работы | Авторы)"
+      - "status_filter (profile works: Все | Сейчас | Скоро | Завершены)"
+    states: [default, hover item (bg canvas_deep), focus, active, disabled item]
+    measurements:
+      desktop: {height: 40, item_padding_h: 16}
+      tablet: {height: 40}
+      mobile: {height: 40, scrollable: true}
+    interactions: ["keyboard arrows move between tabs; role=tablist"]
+    accessibility: ["selected state announced"]
+    content_limits: {items_max: 5}
+    do_not_invent: ["counts in tabs unless real (statusCounts allowed on profile: «Сейчас · 2»)"]
+
+  - id: filter_chip
+    purpose: "Secondary transactional narrowing layer on Explore."
+    anatomy:
+      - "control h40 surface border hairline: label 14/500 + chevron-down 16; active: ink border 1.5 + count badge label_sm. Pill or moderate radius allowed (shape.pill_allowed_when_it_helps)."
+    required_data: [filter name, options from server capabilities (Категория, Статус, Материалы, Уникальность, Цена, Год, Сортировка)]
+    optional_data: []
+    variants: [dropdown (desktop popover 280w radius 8 e2), sheet (mobile bottom sheet with apply button)]
+    states:
+      - "default"
+      - "open"
+      - "applied (label «Цена: до 500 BYN»)"
+      - "focus"
+      - "disabled"
+    measurements:
+      desktop: {height: 40, gap: 8}
+      tablet: {height: 40}
+      mobile: {height: 40, row_scrollable: true, reset_action: "«Сбросить» text button at row end when any applied"}
+    interactions: ["price/year ranges: two numeric fields + apply", "changes announce result count"]
+    accessibility: ["expanded state announced; sheet traps focus"]
+    content_limits: {applied_label_chars: 24}
+    do_not_invent: ["saved filters", "popularity sort (only server sorts: активность, новизна, цена, имя)"]
+
+  - id: creator_step_shell
+    purpose: "Sequential onboarding/work-creation frame (Medallion grammar)."
+    anatomy:
+      - "top bar h56: back arrow 44"
+      - "progress label caption «Шаг 2 из 5» center"
+      - "optional «Сохранить и выйти» text right"
+      - "question zone: step title display_3 (mobile 24/30) + helper body ink_soft"
+      - "content zone (one principal task)"
+      - "inline feedback zone (fixed h24, above action)"
+      - "primary action rectangle h52 full-width bottom (12 above safe-area) radius_control 8"
+      - "keyboard behavior: action stays visible above keyboard"
+    required_data: [step index/count, step title, validity state]
+    optional_data:
+      - "helper text"
+      - "skip affordance (optional steps only: «Пропустить» text button)"
+    variants: [form_step, media_step, choice_step, review_step]
+    states:
+      - "default"
+      - "keyboard_open (content scrolls, question may collapse to title_1)"
+      - "validating (feedback: spinner + «Проверяем…», action disabled)"
+      - "valid (success line, action enabled)"
+      - "invalid (error line role=alert, action disabled)"
+      - "submitting"
+      - "server_error (feedback + retry in place)"
+      - "offline_retry («Нет соединения. Повторить» button in feedback zone)"
+    measurements:
+      mobile: {action_height: 52, content_padding: 20, feedback_height: 24, progress_zone_stable: true}
+      tablet: {max_width: 480, centered: true}
+      desktop: {max_width: 480, centered: true, card: "surface radius 12 e1 padding 32"}
+    interactions: ["back preserves entered data", "one principal task per step (founder decision 21)", "no modal for validation (inline only)"]
+    accessibility: ["progress announced on step change", "focus moves to step title on transition"]
+    content_limits: {step_title_chars: 60}
+    do_not_invent: ["gamified progress", "XP/rewards", "post language"]
+
+  - id: form_field
+    purpose: "Text input/textarea with stable validation zone."
+    anatomy: [label 14/600 above, input h52 radius 14 surface border control, optional prefix (e.g. «bidplace.by/» for slug) caption ink_soft, optional counter «34 / 160» label_sm right-bottom, helper/error zone fixed h20 below]
+    required_data: [label, value, constraints]
+    optional_data: [prefix, counter, helper]
+    variants: [text, textarea (min_h 128, counter), numeric (bid amount, price), email, code (6 cells 48x56, auto-advance)]
+    states:
+      - "default"
+      - "focus (ring)"
+      - "filled"
+      - "disabled"
+      - "error (border error + message role=alert)"
+      - "success (success caption, e.g. slug available)"
+      - "loading (async check: spinner 16 in field right + caption «Проверяем…»)"
+    measurements:
+      desktop: {height: 52, gap_label: 8}
+      tablet: {height: 52}
+      mobile: {height: 52}
+    interactions: ["async validation never shifts layout (fixed zones)", "counter turns error color at limit"]
+    accessibility: ["label always visible (no placeholder-as-label)", "error linked via described-by"]
+    content_limits:
+      discipline: "160 chars — the only confirmed server limit in the packet; counter «N / 160» shown"
+      fullName: "Missing input: no confirmed server limit; no counter rendered until the contract states one"
+      shortDescription: "Missing input: no confirmed server limit; no counter rendered; display truncation rules live in creator_scene"
+      work_title: "Missing input: no confirmed server limit; no counter rendered"
+    do_not_invent: ["floating labels", "character counters for fields without a confirmed server limit", "password strength meters (no password contract in packet — auth is email-first; flag: Missing input if password exists)"]
+
+  - id: media_input
+    purpose: "Product image upload/reorder (1–10) and profile photo step."
+    anatomy:
+      - "preview card (profile: 240x240 radius 8 centered with camera affordance 44 square ink bottom-right; work: grid of tiles 3:4 radius 8)"
+      - "add tile (dashed border_control 2, plus 24, label «Добавить фото»)"
+      - "tile overlay: reorder handle 44"
+      - "main-photo marker chip «Обложка»"
+      - "remove 44"
+    required_data: [images list (ordered)]
+    optional_data: []
+    variants: [profile_photo_single, work_gallery_grid]
+    states:
+      - "empty"
+      - "uploading (tile progress ring + percent)"
+      - "uploaded"
+      - "upload_error (tile error_soft + «Повторить» 44 target)"
+      - "permission_denied (inline block: icon camera-off, body «Нет доступа к камере или галерее», button «Открыть настройки» + «Выбрать другой способ»)"
+      - "limit_reached (add tile disabled + caption «Максимум 10 фотографий»)"
+      - "reorder_active"
+    measurements:
+      mobile: {tile: {width: 108, height: 144, gap: 12}, profile_preview: 240}
+      tablet: {tile: {width: 120, height: 160}}
+      desktop: {tile: {width: 132, height: 176}}
+    interactions: ["reorder via drag handle + accessible move-up/move-down menu alternative", "first image is cover by default; cover reassignable"]
+    accessibility: ["each tile labeled «Фото N из M»", "upload progress announced politely"]
+    content_limits: {max_images: 10, min_images_for_submit: 1}
+    do_not_invent: ["filters/editing tools", "AI enhancement", "video upload as MVP control (future label only)"]
+
+  - id: inline_validation
+    purpose: "Single stable feedback line (Medallion 4–5)."
+    anatomy:
+      - "fixed-height row: icon 16 (spinner | check | warning) + caption"
+    required_data: [state, message]
+    optional_data: [inline action («Обновить», «Повторить»)]
+    variants: [field_level (under input), step_level (above primary action), panel_level (auction panel row)]
+    states: [idle (empty, height reserved), loading, success (success color), error (error color, role=alert), info (ink_soft)]
+    measurements: {height: 24, icon_gap: 8}
+    interactions: ["state swap via 120ms crossfade; no layout shift"]
+    accessibility: ["polite for loading/success; assertive only for errors"]
+    content_limits: {message_chars: 90}
+    do_not_invent: ["toasts as primary error channel"]
+
+  - id: review_submit
+    purpose: "Final review before moderation submit (onboarding/work creation)."
+    anatomy:
+      - "summary list: rows per section (icon check/warning, section label, first-line preview, «Изменить» text button 44 target)"
+      - "requirements checklist (from publication contract: title, story, uniqueness, provenance, city, delivery, category, ≥1 photo)"
+      - "primary «Отправить на проверку»"
+      - "caption below: «Работа станет публичной после проверки модератором»"
+    required_data: [all entered fields, completeness map]
+    optional_data: []
+    variants: [creator_application_review, work_review]
+    states:
+      - "complete (action enabled)"
+      - "incomplete (action disabled + missing rows warning icons + error caption count)"
+      - "submitting"
+      - "submit_error (retry)"
+      - "submitted (status screen: icon clock, title «Заявка на проверке», body honest expectations, secondary «На главную»)"
+    measurements:
+      mobile: {row_height: 56}
+      desktop: {max_width: 480}
+    interactions: ["«Изменить» returns to that step preserving data"]
+    accessibility: ["incomplete reasons listed as focusable error summary (focused after failed submit)"]
+    content_limits: {}
+    do_not_invent: ["instant publish", "scheduled auto-publish", "moderation ETA promises"]
+
+  - id: section_header
+    purpose: "Section opener. Leading, not a centered magazine title."
+    anatomy: [optional kicker, title display_2 or display_3 (Golos), optional trailing link «Все работы →» label 600]
+    required_data: [title]
+    optional_data: [kicker, link]
+    variants: [leading (default), compact]
+    states: [default]
+    measurements: {desktop: {gap_below: 32, lock: starting_value}, tablet: {gap_below: 24}, mobile: {gap_below: 20}, note: "Chapter pause after a dense section may be 80–240, not this intra gap."}
+    interactions: []
+    accessibility: ["real heading levels: page h1 unique, sections h2, chapters h3"]
+    content_limits: {title_chars: 60}
+    do_not_invent: []
+
+  - id: rail
+    purpose: "Horizontal card sequence with one visible rightward control."
+    anatomy:
+      - "section_header"
+      - "scroll row (cards)"
+      - "control cluster right: arrow-right 44 square radius_control + counter caption (desktop)"
+      - "mobile: native snap scroll + peek 24px of next card"
+    required_data: [items]
+    optional_data: []
+    variants: [work_rail, creator_rail, archive_rail (ended works, calm equal sizing, status chip «Завершено»)]
+    states: [default, end_reached (arrow disabled 40% opacity), reduced_motion (instant scroll), loading (3 skeletons), empty (section omitted)]
+    measurements:
+      desktop: {gap: 24, scroll_step: "one card width"}
+      tablet: {gap: 20}
+      mobile: {gap: 16, peek: 24}
+    interactions: ["arrow + drag/swipe + keyboard; scroll snap"]
+    accessibility: ["rail is a labeled region; items focusable in order"]
+    content_limits: {items_max_visible_desktop: 4}
+    do_not_invent: ["auto-advancing carousels"]
+
+  - id: skeleton
+    purpose: "Loading primitives."
+    anatomy: [blocks in canvas_deep with 8% ink overlay shimmer sweep 1200ms; static two-tone under reduced motion]
+    required_data: []
+    optional_data: []
+    variants: [media_block, text_lines (3 lines 60/90/40%), card, panel, row]
+    states: [animated, static]
+    measurements: {radius: "matches replaced component"}
+    interactions: []
+    accessibility: ["container announces «Загрузка»; content not focusable"]
+    content_limits: {}
+    do_not_invent: []
+
+  - id: error_block
+    purpose: "Recoverable error primitive."
+    anatomy: [icon warning 24 ink_soft, title title_2 «Не удалось загрузить», body caption reason-free, primary-outline «Повторить» 44h]
+    required_data: [retry handler]
+    optional_data: [context label]
+    variants: [section_inline, full_screen (with top bar preserved), panel_inline (auction panel)]
+    states: [default, retrying (button spinner)]
+    measurements: {padding: 32, max_width: 400}
+    interactions: ["retry re-requests only failed scope"]
+    accessibility: ["role=alert on appearance"]
+    content_limits: {}
+    do_not_invent: ["technical stack traces", "blame copy"]
+
+  - id: empty_state
+    purpose: "Honest empty primitive."
+    anatomy: [title title_2, body caption, optional action]
+    required_data: [context]
+    optional_data: [action]
+    variants:
+      - {context: explore_no_results, title: "Ничего не нашлось", body: "Попробуйте изменить запрос или сбросить фильтры", action: "«Сбросить фильтры»"}
+      - {context: profile_no_works, title: "Пока без публичных работ", body: "Автор ещё готовит первую публикацию"}
+      - {context: bid_history_empty, inline: true, caption: "Ставок пока нет"}
+      - {context: home_section_empty, rule: "section omitted entirely"}
+    states: [default]
+    measurements: {padding_v: 48}
+    interactions: []
+    accessibility: []
+    content_limits: {}
+    do_not_invent: ["fake teaser cards", "artificial urgency copy"]
+
+  - id: sticky_bid_bar
+    purpose: "Mobile persistent auction action during LIVE only."
+    anatomy: [bar h64 surface e2 radius 8 margins 12, price_md left («260 BYN» + caption «текущая ставка»), primary rectangle «Сделать ставку» right (min width 156, h44, radius_control 8)]
+    required_data: [current price, eligibility state]
+    optional_data: []
+    variants: [eligible, guest («Войти и сделать ставку»), leading (success_soft bar «Вы лидируете» + secondary «Повысить»)]
+    states: [hidden (until inline auction_panel scrolls out of view), visible (sticky_bar_enter), ended_removed (bar removed when auction ends), reduced_motion (instant show)]
+    measurements: {mobile: {height: 64, bottom_offset: "12 + safe-area", replaces: "bottom_nav on work detail LIVE while visible"}}
+    interactions: ["tap price scrolls back to auction_panel", "never covers focused element (scroll padding contract)"]
+    accessibility: ["bar is a labeled region; price updates polite"]
+    content_limits: {}
+    do_not_invent: ["countdown in bar (deadline stays in panel; exception: soft-close chip replaces caption)"]
+
+  - id: auth_panel
+    purpose: "Light one-decision welcome/auth (COLORS composition + Medallion pacing)."
+    anatomy:
+      - "welcome word display_1 «Привет!»"
+      - "body 16 ink_soft (1–2 lines)"
+      - "email form_field"
+      - "primary «Продолжить» full-width"
+      - "legal caption 13 ink_soft bottom with links; second screen: code field (6 cells) + resend text button with 60s timer caption + inline_validation"
+    required_data:
+      - "auth contract: email + code verification"
+      - "rules acceptance versioning at first bid"
+    optional_data: [return path context caption («Чтобы сделать ставку, войдите»)]
+    variants:
+      - "desktop_split (left auth column 480, right graphic field: fixed accent_periwinkle_strong slab OR one large work media crop — no pale rectangle, no -2deg garnish card)"
+      - "mobile_single (no split; small media stack cards 3 over heading as Medallion 6)"
+    states: [default, email_invalid, sending, code_entry, code_error, code_success (redirect), resend_cooldown, server_error]
+    measurements: {desktop: {left_min: 640, field_width: 352}, mobile: {padding: 20}}
+    interactions: ["return path preserved (post-auth: bid dialog or onboarding)"]
+    accessibility: ["single h1; code cells grouped with one label"]
+    content_limits: {welcome_chars: 12}
+    do_not_invent: ["social providers (no contract in packet — flag Missing input if providers exist)", "passwords (same flag)", "captcha visuals"]
+
+  - id: footer
+    purpose: "Quiet service footer."
+    anatomy:
+      - "hairline top"
+      - "columns: logo + one-line positioning caption"
+      - "routes list"
+      - "legal links (Правила сервиса, Конфиденциальность)"
+      - "caption «© bidplace, 2026»"
+    required_data: []
+    optional_data: []
+    variants: [desktop (3 columns), mobile (stacked)]
+    states: [default]
+    measurements: {desktop: {padding_v: 64}, mobile: {padding_v: 48}}
+    interactions: []
+    accessibility: ["footer landmark"]
+    content_limits: {}
+    do_not_invent: ["newsletter signup", "app-store badges", "social follow icons for bidplace itself (no contract)"]
+
+  # ==========================================================================
+  # DESIGNED POST-MVP COMPONENTS — full UX contracts, built only on labeled
+  # future boards (never on MVP frames, never in MVP acceptance checks).
+  # ==========================================================================
+
+  - id: follow_creator
+    classification:
+      product_phase: designed_post_mvp
+      design_status: designed
+      backend_status: not_implemented
+      pen_priority: future_board_after_p0
+      implementation_status: backend_required
+    purpose: "Follow a creator to be reminded about future releases. Bidding is MVP; follow creator is post-MVP — both are named in the approved auth copy «Войдите, чтобы делать ставки и следить за авторами»."
+    anatomy:
+      desktop: "secondary outline pill h44 (ink_outline_button 1.5): Heart icon 20 + label label 15/600 «Следить»; followed: ink fill pill, Heart weight=fill white 20 + «Вы следите»"
+      mobile: "same pill full-width (h48) below creator_links in creator_scene mobile order"
+    placement:
+      desktop: "creator_scene identity column, after creator_links row, gap 16"
+      mobile: "creator_scene mobile block, full-width below links wrap"
+      rule: "Never on discovery cards, never in navigation, never on work detail (creator identity stays a link, not a control chip)."
+    required_data: [creator slug, viewer auth state, followed flag for viewer]
+    optional_data: []
+    variants: [desktop, mobile]
+    states:
+      - "anonymous (button visible; press → auth redirect with return path back to this profile; label unchanged «Следить»)"
+      - "default (authenticated, not followed)"
+      - "followed («Вы следите», Heart fill)"
+      - "loading (optimistic: visual state flips immediately, CircleNotch 16 replaces Heart while request is in flight; label keeps target state)"
+      - "error (rollback to previous visual state + inline_validation error row «Не получилось. Попробуйте ещё раз», role=alert)"
+    optimistic_contract:
+      on_press: "Flip visual state immediately; fire request; announce politely («Вы следите за автором» / «Вы больше не следите»)."
+      on_error: "Roll back to the pre-press state, show the error row for 5s or until next interaction; no toast, no modal."
+      double_press: "Presses during loading are ignored (no queueing)."
+    accessibility:
+      - "accessibilityLabel: «Следить за автором {fullName}»"
+      - "followed state exposed as pressed/selected (aria-pressed true / accessibilityState selected)"
+      - "state changes announced politely; error row role=alert"
+      - "44x44 minimum target; focus ring per design-system"
+    reduced_motion: "State swap is instant; no heart animation."
+    future_surfaces: "Followed creators appear in a future «Мои авторы» list (creator_card grid + release status) — concept card on the future board; unresolved until a product decision."
+    backend_required:
+      required_data: "follow relation (viewer id + creator id + created_at); followed flag included in the public profile payload for authenticated viewers"
+      required_endpoint_or_event: "POST /creators/{slug}/follow and DELETE /creators/{slug}/follow (or a single toggle mutation); future event creator.release → follower notification (separate contract)"
+      permissions: "authenticated users only; a creator cannot follow themselves; admin accounts excluded (same policy as bidding)"
+      optimistic_behavior: "as optimistic_contract above; server response reconciles the flag"
+      expected_errors: "401 → auth redirect with return path; 403 (self/admin) → button hidden, never disabled-dead; 409 already-followed → reconcile silently to followed; 5xx/network → rollback + error row"
+      analytics_event: "follow_creator_toggled {creatorSlug, action: follow|unfollow, source: creator_profile}"
+      graceful_unavailable: "Until the backend exists the button is not rendered at all (feature flag off); the layout slot collapses with no gap; no dead or disabled control is ever shown."
+    content_limits: {label_max_chars: 18}
+    do_not_invent: ["follower counts", "public follower lists", "notification settings UI", "feed of followed creators", "подписчики vocabulary (use «следить»)"]
+
+  - id: wishlist_saved_work
+    classification:
+      product_phase: designed_post_mvp
+      design_status: designed
+      backend_status: not_implemented
+      pen_priority: future_board_after_p0
+      implementation_status: backend_required
+    purpose: "Save a work for later. Template: follow_creator (same anonymous/default/saved/loading/error machine, optimistic rollback, auth redirect). Bidding is MVP; saving a work is designed_post_mvp."
+    anatomy:
+      desktop_card: "44×44 circle surface e1, Bookmark 20 ink, top-right of work_card media inset 12; saved: Bookmark Fill ink; never overlaps the corner ArrowUpRight"
+      mobile_card: "same 44 circle; hit target 44; inset 8 on 390"
+      desktop_detail: "secondary outline control h44 (ink_outline_button 1.5): Bookmark 20 + label 15/600 «Сохранить»; saved: ink fill, Bookmark Fill white 20 + «Сохранено»; sits in work_detail hero with the creator identity link, above title, gap 12"
+      mobile_detail: "44 icon-only in the work_detail top bar, left of share; accessibilityLabel required"
+    placement:
+      work_card: "top-right of media; future slot declared on work_card; never on MVP frames"
+      work_detail: "desktop hero identity cluster; mobile top bar; never inside auction_panel"
+      rule: "Never in navigation, never on creator_card, never on discovery rails as a second target overlapping the card."
+    required_data: [work publicId, viewer auth state, saved flag for viewer]
+    optional_data: []
+    variants: [card_icon, detail_pill, detail_icon_mobile]
+    states:
+      - "anonymous (control visible; press → auth redirect with return path back to this work; label unchanged «Сохранить»)"
+      - "default (authenticated, not saved)"
+      - "saved («Сохранено», Bookmark Fill)"
+      - "loading (optimistic: visual state flips immediately, CircleNotch 16 replaces Bookmark while request is in flight; label keeps target state)"
+      - "error (rollback to previous visual state + inline_validation error row «Не получилось. Попробуйте ещё раз», role=alert; on card_icon the error is announced only, no layout shift)"
+    optimistic_contract:
+      on_press: "Flip visual state immediately; fire request; announce politely («Работа сохранена» / «Работа удалена из сохранённых»)."
+      on_error: "Roll back to the pre-press state, show the error row for 5s or until next interaction (detail only); no toast, no modal."
+      double_press: "Presses during loading are ignored (no queueing)."
+    accessibility:
+      - "accessibilityLabel: «Сохранить работу {title}»"
+      - "saved state exposed as pressed/selected (aria-pressed true / accessibilityState selected)"
+      - "state changes announced politely; error row role=alert"
+      - "44×44 minimum target; focus ring per design-system"
+      - "card_icon is a separate control from the card target; tab order: card → wishlist"
+    reduced_motion: "State swap is instant; no bookmark animation."
+    future_surfaces: "Saved works appear in a future «Сохранённые работы» list (work_card grid) — concept card on the future board; unresolved until a product decision."
+    backend_required:
+      required_data: "wishlist relation (viewer id + work publicId + created_at); saved flag included in the public work payload for authenticated viewers"
+      required_endpoint_or_event: "POST /works/{publicId}/save and DELETE /works/{publicId}/save (or a single toggle mutation)"
+      permissions: "authenticated users only; a creator cannot save their own work (button hidden, never disabled-dead); admin accounts excluded (same policy as bidding)"
+      optimistic_behavior: "as optimistic_contract above; server response reconciles the flag"
+      expected_errors: "401 → auth redirect with return path; 403 (self/admin) → button hidden; 409 already-saved → reconcile silently to saved; 5xx/network → rollback + error row"
+      analytics_event: "wishlist_toggled {workPublicId, action: save|unsave, source: work_card|work_detail}"
+      graceful_unavailable: "Until the backend exists the control is not rendered at all (feature flag off); the layout slot collapses with no gap; no dead or disabled control is ever shown."
+    content_limits: {label_max_chars: 18}
+    do_not_invent: ["saved counts", "public wishlist", "price alerts", "like/heart on works (Heart is follow_creator only)", "избранное vocabulary (use «сохранить»)"]
+
+  - id: video_process_story
+    classification:
+      product_phase: designed_post_mvp
+      design_status: designed
+      backend_status: not_implemented
+      pen_priority: future_board_after_p0
+      implementation_status: backend_required
+    purpose: "Optional process-story video inside the creation chapter. Template: media_stack (one media surface, bounded chrome) + process_steps (omission when absent). Never required for layout completeness."
+    anatomy:
+      - "optional kicker «Видео о процессе» label_sm ink_soft"
+      - "player surface radius 24 e1, ratio 16:10, cover poster"
+      - "center control 48 circle surface e2: Play / Pause"
+      - "bottom-right mute 44 circle surface: SpeakerHigh / SpeakerSlash"
+      - "no timeline, no fullscreen, no related videos"
+    media_behavior:
+      poster: "cover, focal center; poster_asset_id from the work fixture; never a generated frame"
+      playback: "native player (expo-av / HTML video); one tap starts; looping forbidden; autoplay forbidden on every platform including reduced-motion"
+      tilt: "0deg — player never tilts (process_steps filmstrip tilt does not apply)"
+    required_data: [poster_asset_id]
+    optional_data: [video_url]
+    variants: [desktop, mobile]
+    states:
+      - "poster (default resting: poster + Play 48; no chrome except the play control)"
+      - "ready (asset loaded, not playing; poster visible, Play 48 + mute 44)"
+      - "playing (video visible, Pause 48, mute control live)"
+      - "paused (current frame held, Play 48)"
+      - "muted (SpeakerSlash; may combine with playing or paused; default after first play is unmuted)"
+      - "loading (skeleton matching media_stack front card; CircleNotch 24 center; no autoplay after load — lands on ready)"
+      - "error (poster dimmed + error_block overlay «Не удалось загрузить видео» + «Повторить»)"
+      - "unavailable (component omitted entirely — same collapse as process_steps no_steps; surrounding layout does not reserve a hole)"
+    measurements:
+      desktop: {width: 560, height: 350, play: 48, mute: 44, radius: 24}
+      tablet: {width: 480, height: 300}
+      mobile: {width: 350, height: 219, play: 48, mute: 44}
+    placement:
+      desktop: "work_detail process section, above process_steps list, gap 40; max width 560 in the reading column"
+      mobile: "same order, full-width 350; gap 24"
+      rule: "Omitted when video is absent or unavailable; process_steps list does not shift horizontally."
+    interactions:
+      - "Play/Pause toggles playing ↔ paused; first Play from poster goes loading → ready → playing only after explicit tap"
+      - "Mute toggles muted; state persists for the session on this work"
+      - "No autoplay, no hover-to-play, no scroll-into-view play"
+    accessibility:
+      - "region labeled «Видео о процессе»"
+      - "Play control accessibilityLabel «Смотреть видео о процессе»; Pause «Пауза»"
+      - "Mute «Выключить звук» / «Включить звук»"
+      - "error role=alert"
+      - "keyboard: Space/Enter on focused play control; mute is a separate tab stop"
+    reduced_motion: "Autoplay remains forbidden. Playing is allowed only after an explicit tap. No looped motion on the poster. Loading spinner is static under reduced motion (same as skeleton)."
+    backend_required:
+      required_data: "optional video object on the public product: {url, posterAssetId, durationSeconds}; absence is a first-class null"
+      required_endpoint_or_event: "GET product payload field product.video (nullable); no separate stream contract in this packet"
+      permissions: "public read when the work is public; no upload UI in this component (work creation video input remains unresolved)"
+      optimistic_behavior: "none for playback; poster renders from poster_asset_id immediately"
+      expected_errors: "missing url → unavailable (omit); 404/decode failure → error + retry; network → error"
+      analytics_event: "video_process_played {workPublicId, source: work_detail}"
+      graceful_unavailable: "Until the backend field exists the component is not rendered; process_steps layout is identical to today."
+    content_limits: {}
+    do_not_invent: ["autoplay", "background video", "captions UI (Missing input: no caption contract)", "quality picker", "PiP", "related videos", "video as a required publication field"]

@@ -1,0 +1,619 @@
+# bidplace creator-first — screen blueprints V2.1
+# Art-direction correction. Product routes, data, states, roles, a11y, and
+# fixtures are preserved. Visual composition of the three golden screens is
+# explored as A/B/C candidates before any recipe is locked. Other screens
+# keep V1 product structure and follow V2 principles after a candidate is
+# selected. Grids/margins from design-system.yaml layout.*. Component IDs
+# from component-specs.yaml. Fixtures from content-fixtures.yaml.
+
+v2_gate:
+  golden_screens:
+    - {id: home, viewport: desktop_1440, state: default}
+    - {id: creator_profile, viewport: desktop_1440, state: default}
+    - {id: work_detail, viewport: desktop_1440, state: LIVE}
+  explorations_per_golden_screen: [A_type_dominant, B_media_dominant, C_graphic_interplay]
+  rule: "Do not lock a single visual recipe, and do not art-direct remaining frames in Pen, until founder selects or combines a direction from the nine explorations."
+  wepresent_vs_get_hyped: "WePresent = IA, whitespace, image-first, clarity. Get Hyped = attitude, scale, asymmetry, overlap, bold color. Do not average 50/50."
+  process: |
+    V2.1 principles
+    → 3 visual explorations × 3 golden screens
+    → founder selects / combines
+    → update golden screen blueprints
+    → lock display typography / radius / accent usage
+    → propagate design system
+    → remaining states / viewports
+    → only then Pen
+  same_across_explorations: [content, product hierarchy, functionality, auction requirements, fixtures, routes, accessibility]
+  different_across_explorations: [composition, scale, image placement, typography relationship, negative space, accent treatment]
+  hard_vs_provisional: "Hard: auction price+action visible in LIVE; no price/deadline on discovery cards; nav/actions reachable; readable text; overlaps never cover controls or required facts; fixture stress cases work. Provisional: portrait size, overlap px, statement width, display sizes, plate positions."
+  human_reading_rhythm: "Every exploration must answer first / second / ignore-until-continue. One dominant event per viewport. Macro whitespace is valid. Density is local. Remove chrome before adding gaps. Pass the AI-like design check."
+
+global_rules:
+  safe_area:
+    web: "none"
+    native: "top inset added to top bar; bottom inset added to bottom_nav / sticky_bid_bar / step shell action"
+  required_states_every_screen:
+    - default
+    - realistic_long_content
+    - minimal_content
+    - loading (skeleton per section)
+    - empty (per empty_state contract)
+    - recoverable_error (error_block scope per section)
+    - missing_failed_media
+    - guest_and_relevant_roles
+    - focus_hover_pressed_disabled
+    - reduced_motion
+    - text_zoom_localization
+  scroll_ownership: "One vertical page scroll; rails scroll horizontally inside; dialogs/sheets own internal scroll."
+
+screens:
+  # ============================================================
+  - id: creator_profile
+    priority: "GOLDEN — visual source of truth at 1440 (product P0-A)"
+    route: "/{slug}"
+    data: [public seller profile (slug, fullName, discipline, country, profilePhotoUrl, shortDescription, links, statusCounts), creator works list (status filter + sort), current release = newest LIVE else soonest SCHEDULED]
+    viewports:
+      desktop_1440:
+        grid: {columns: 12, margins: 80, gutter: 24, max_width: 1280}
+        wepresent: "Whitespace, sequential story (person → current work → works → practice), one template, no marketplace chrome in the hero."
+        get_hyped: "Huge name and/or oversized portrait, optional overlap, optional strong color slab, uneven works rhythm."
+        keep:
+          - "Creator identity before commerce."
+          - "Huge name / strong portrait relationship — not a corporate 7/5 split."
+          - "No pastel portrait backing card."
+        reading_order:
+          first: "One identity event: portrait + name as one thought, not competing chrome."
+          second: "Discipline, and a path to a work."
+          ignore_until_continue: "Works grid, practice, archive, share, and links as equal-weight objects."
+        content_priority: [portrait, name, discipline]
+        hard_product_constraints:
+          - "Visitor can state creator name, discipline, and open a work within one viewport at 1440."
+          - "No price/deadline except status chips under explicit status filters."
+          - "Share and links reachable; overlaps never cover interactive targets or required text."
+          - "Long-name and missing-photo fixtures still work."
+        provisional_starting_ranges:
+          - "display_1 ~88, portrait ~480×640, statement measure ~480, overlap ≤48 if used — negotiable."
+        first_viewport:
+          note: "Do not lock one recipe. Produce explorations A/B/C with the same fixtures. One dominant event. Do not fill leftover space."
+          required_presence:
+            - "Sparse nav on canvas — chrome, not a competing event."
+            - "Identity (fullName + portrait as one composition). Kicker, meta, statement, links, and share exist but must not share visual weight with the name/portrait event."
+            - "Strong accent slab is optional. Do not force it because the creator has an assigned accent."
+        explorations:
+          A_type_dominant:
+            visual_event: "The name is the graphic event — oversized grotesk, substantial negative space."
+            media: "Portrait supports the type; may be smaller, offset, or secondary."
+            accent: "Usually none, or a small secondary mark."
+            overlap: "Not required."
+            whitespace: "Macro empty zones around the name. Do not fill leftover columns with links, chips, or a second card."
+          B_media_dominant:
+            visual_event: "The portrait dominates the viewport."
+            type: "Name and meta are precise but secondary."
+            media: "Large or unexpectedly placed photography; independent information plates."
+            overlap: "Allowed if contrast holds; not required."
+            whitespace: "Portrait isolated. Do not surround it with equal-weight UI."
+          C_graphic_interplay:
+            visual_event: "Portrait + typography + optional one strong color slab form one graphic composition."
+            overlap: "Controlled overlap allowed; still a usable profile, not an agency landing."
+            accent: "At most one dominant strong-color gesture."
+            whitespace: "The graphic group is one event; leftover canvas stays empty."
+        sections:
+          - order: 1
+            name: hero_identity
+            components: [creator_scene desktop]
+            layout: "One composition (see explorations). Not text-left / portrait-right corporate. Future slot for follow_creator (designed_post_mvp) exists in the component but is never rendered on MVP frames."
+            typography: [display_1, meta, kicker, body, label]
+          - order: 2
+            name: current_release
+            components: [work_scene profile_release]
+            layout: "Independent media + plate in shared space. Placement follows the selected exploration. Do not wrap in accent_soft. Painting must not sit under the hero portrait."
+            rule: "Omitted entirely when no LIVE/SCHEDULED work."
+          - order: 3
+            name: works
+            components: [section_header leading «Работы», tab_pill status_filter (Все | Сейчас · n | Скоро · n | Завершены · n from statusCounts), work field]
+            grid_pattern: "Editorial, not a repeating ABC catalogue. Dense locally if needed, then a chapter-level pause. First row: one large portrait (span 6–8) + one smaller (span 4). Second row: two mismatched sizes, not three equals. Repeat only if the list is long; vary the first two rows. No accent_soft frames. Do not fill every column."
+            card: work_card (no price/deadline; status chips visible only when a status filter other than «Все» is active)
+          - order: 4
+            name: practice
+            components: [story_chapter media_led or color_field «О практике»]
+            rule: "Rendered only when shortDescription > 200 chars. Not a 640 article block. Prefer offset text + one image, or a short thesis on the creator accent strong field."
+          - order: 5
+            name: archive
+            components: [rail archive_rail «Завершённые работы»]
+            rule: "Only ENDED works; omitted when none; no sold price. Calmer, smaller than live works — not identical cards."
+          - order: 6
+            name: footer
+            components: [footer]
+        sticky: [global_navigation]
+      tablet_1024:
+        grid: {columns: 12, margins: 48, gutter: 20, max_width: 928}
+        transform: "Same product order compressed. Visual follow-up after a 1440 golden candidate is selected."
+      mobile_390:
+        grid: {columns: 4, margins: 20, gutter: 16, max_width: 350}
+        order:
+          - "top bar (back + share)"
+          - "creator_scene mobile (portrait 350x437, then identity: kicker, name display_1 mobile 40, meta, statement, links wrap)"
+          - "current_release work_scene stacked (media first)"
+          - "works section — tab_pill scrollable + single column cards (media ratio alternates 3:4 / 1:1 by list position — layout rhythm only)"
+          - "practice chapter"
+          - "archive horizontal rail (items 240)"
+          - "footer"
+          - "bottom_nav"
+        notes: "Statement clamp 6 lines with «Ещё» expanding in place (no modal). Visual follow-up after 1440 golden approval."
+    states:
+      minimal_content: "No portrait → creator_scene photo_missing state (strong accent slab + 96px Golos initial); one work; short statement (fixture creator_minimal, 20 chars): hero keeps composition, works field = single standard card + no filler."
+      long_content: "39-char fixture name (creator_long_names) wraps 2 lines display_1; 469-char statement (creator_rich shortDescription_long) display-truncated at 200 chars with «Ещё» anchor; 24 works paginate «Показать ещё» after 12."
+      loading: "Skeletons: hero (media block + 3 text lines), grid 6 cards."
+      error: "Works section error_block inline; hero cached/instant."
+      empty: "profile_no_works empty_state after tabs."
+    annotations_for_pen:
+      - "Portrait and typography form one composition. Overlap is optional; if used, text stays readable and never covers interactive targets."
+      - "Do not restore the V1 two-column corporate split."
+      - "Do not require a strong color slab in every exploration. At most one dominant strong-color gesture if used."
+      - "Human reading rhythm: one identity event; links/share/meta do not compete; leftover space stays empty; pass the AI-like design check."
+    acceptance_checks:
+      - "Visitor can state creator name, discipline, and open a work within one viewport at 1440 and within two swipes at 390."
+      - "No price/deadline anywhere on this screen except status chips under explicit status filters."
+      - "Share and links reachable by keyboard in first 10 tab stops."
+      - "GOLDEN: three explorations exist (A type / B media / C graphic); founder selects before locking geometry. Next to Get Hyped: attitude and scale; next to WePresent: still clear and image-first. Each candidate answers first/second/ignore and passes the AI-like design check."
+
+  # ============================================================
+  - id: work_detail
+    priority: "GOLDEN — visual source of truth at 1440 LIVE (product P0-B)"
+    route: "/{slug}/{publicId}"
+    data: [public product (title, story, uniqueness, provenance, facts, city, delivery, category, images 1–10, creation intro + steps ≤ 20), listing (status, prices, times, bid count), public bid history, more works by creator]
+    viewports:
+      desktop_1440:
+        grid: {columns: 12, margins: 80, gutter: 24, max_width: 1280}
+        wepresent: "Image-first storytelling, sequential chapters, quiet transaction, curated facts."
+        get_hyped: "Large media in shared space, independent type/transaction, optional one strong color field."
+        keep:
+          - "Work remains desirable and visually dominant."
+          - "Creator identity is visible (link, not a control chip)."
+          - "Current price and bid action are immediately findable."
+          - "Auction panel remains calm and trustworthy."
+          - "Do not wrap the hero inside one large decorative container."
+        reading_order:
+          first: "The work itself — one dominant visual event."
+          second: "Title/value, then the auction decision (price + bid action)."
+          ignore_until_continue: "Story, process, facts, bid history, more-from-creator. Deadline stays caption-level."
+        content_priority: [work, title_or_value, auction_action, story]
+        grouping: "Creator identity + title are one thought (e.g. «Полина Мирош ↗» then «Тихий берег»). Do not scatter author chip, status chip, share, category tag, and title as equal objects."
+        hard_product_constraints:
+          - "LIVE: price + bid action visible without scroll at 1440."
+          - "Deadline accessible but visually secondary; never red urgency."
+          - "Overlaps never cover auction price/action or interactive controls."
+          - "Long-title fixture still works; panel remains untilted."
+        provisional_starting_ranges:
+          - "front media ~640×800, display_2 ~56, auction_panel ~400 wide, overlap ≤48 if used — negotiable."
+        first_viewport_LIVE:
+          note: "Do not lock one recipe. Produce explorations A/B/C with the same LIVE fixture. One dominant event. Do not fill leftover space with extra chrome."
+          required_presence:
+            - "Sparse nav — chrome, not a competing event."
+            - "Dominant work media (media_stack). Not inside one large decorative container."
+            - "Creator identity link grouped with the title (e.g. «Полина Мирош ↗» then «Тихий берег»). Not a chip/control. Avatar only if the composition needs it."
+            - "Auction panel: quiet, trustworthy; price + bid action immediately findable, visually secondary to the work."
+            - "Value statement if present; do not add category tags, extra badges, or share as first-viewport peers."
+        explorations:
+          A_type_dominant:
+            visual_event: "Typography + transaction on one side; oversized title/identity as the graphic event."
+            media: "Dominant media elsewhere; supports type rather than filling the whole frame."
+            accent: "Usually none, or a small secondary mark."
+            whitespace: "Macro pause around type. Do not fill leftover columns with facts or extra cards."
+          B_media_dominant:
+            visual_event: "Near-full-height work photography dominates."
+            type: "Precise but secondary."
+            transaction: "Auction panel attached to the composition, still immediately findable."
+            whitespace: "The work owns the viewport. Do not add a second media grid in the first screen."
+          C_graphic_interplay:
+            visual_event: "Shared-space composition: media and type roughly equal power; limited overlap and/or one optional graphic field."
+            accent: "At most one dominant strong-color gesture. Never wrap the whole hero in a colored container."
+            whitespace: "The graphic group is one event; leftover canvas stays empty."
+        sections:
+          - order: 1
+            name: hero
+            layout: "Shared space, not two equal columns inside a card. Media independent; info + auction_panel independent. Placement follows the selected exploration. Future slot wishlist_saved_work (designed_post_mvp, never on MVP frames)."
+            sticky: "auction_panel sticky top 88 while hero+story+process in viewport, LIVE only."
+          - order: 2
+            name: story
+            components: [story_chapter media_led «История работы» (story field), story_chapter color_field «Что делает её особенной» (uniqueness), story_chapter plain_offset «Происхождение» (provenance)]
+            rule: "Do not alternate rounded accent_soft chapters. Uniqueness may use the work's accent_*_strong as a short thesis field; body continues on canvas. Provenance is small precise offset text."
+          - order: 3
+            name: process
+            components: [video_process_story (designed_post_mvp, omitted when absent), process_steps editorial_sequence]
+            rule: "process_steps omitted when no steps and no intro. video_process_story omitted when video is absent — layout does not reserve a hole. Never rendered on MVP frames. Sequence: one large process image, then a small pair or a text step — not a 3×2 catalogue, not a tilted filmstrip by default."
+          - order: 4
+            name: facts
+            components: [facts_group two_column]
+          - order: 5
+            name: bid_history
+            components:
+              - "section_header «Ставки» + bid count"
+              - "bid_history_row list (5 + expand)"
+              - "link «Как работает аукцион» → rules explainer block (calm accordion: soft-close 60/600s rule, first-bid confirmation, BYN-only)"
+          - order: 6
+            name: more_from_creator
+            components: ["rail work_rail «Ещё от {fullName}» + link «Все работы автора»"]
+          - order: 7
+            name: footer
+            components: [footer]
+      tablet_1024:
+        transform: "Hero compressed; panel sticky preserved. Visual follow-up after a 1440 golden candidate is selected."
+      mobile_390:
+        order:
+          - "top bar (back + share; future slot wishlist_saved_work detail_icon_mobile, designed_post_mvp, never on MVP frames)"
+          - "media_stack full-width (controls below: arrow + counter)"
+          - "creator identity link"
+          - "title display_2 mobile 32"
+          - "value statement"
+          - "auction_panel inline full-width"
+          - "story chapters stacked"
+          - "process (video_process_story designed_post_mvp then sequence; video omitted when absent)"
+          - "facts stacked"
+          - "bid history"
+          - "more rail"
+          - "footer"
+        sticky: "sticky_bid_bar appears when inline auction_panel leaves viewport; LIVE only; replaces bottom_nav on this screen while visible; page bottom padding 96 + inset."
+    listing_states:
+      scheduled: "Panel scheduled_preview: start price price_md, «Старт: 24 августа, 19:00», no action, caption «Ставки откроются в момент старта». Chip SCHEDULED. No sticky bar."
+      live: "Panel per eligibility variant; chip LIVE; sticky bar mobile."
+      soft_close: "Panel soft_close banner + countdown_short; extension announced politely."
+      ended_won: "Chip «Продано», final price row, winner alias caption; history intact; no action."
+      ended_no_bids: "Chip «Завершено», caption «Аукцион завершён без ставок»; start price row retained."
+    states:
+      single_image: "media_stack single variant (accent back panel); process omitted if absent; page remains complete."
+      long_title: "67-char fixture title (work_long_title_live) wraps 3 lines; panel drops below without overlap (min gap 24)."
+      missing_optional_facts: "facts rows omitted; group never shows dashes."
+      media_error: "front image missing state; gallery counter excludes failed images."
+      loading: "hero skeleton (media + panel), sections lazy skeletons."
+      guest_vs_roles: "panel variants: live_guest / live_not_eligible_email / live_not_eligible_rules / live_eligible / leading / outbid / role_disabled_admin / role_disabled_self."
+    annotations_for_pen:
+      - "Deadline is caption-level everywhere; never larger than price; never red."
+      - "Panel never tilts. Media back layers tilt only when the stack is a real pile."
+      - "Bid history uses aliases exactly as fixtures; no avatars."
+      - "Do not wrap the hero in an accent_soft rounded rectangle or any one large decorative container."
+      - "Human reading rhythm: work first, auction second, story later; grouped identity+title; pass the AI-like design check."
+    acceptance_checks:
+      - "In LIVE at 390: price and bid action visible at all scroll positions (inline panel or sticky bar)."
+      - "Reading order desire→story→facts→history holds on all viewports."
+      - "All 13 semantic auction_panel states and all 8 semantic bid_dialog states are reachable from this screen; the 19 visual frames live on bid_states_board."
+      - "GOLDEN 1440 LIVE: three explorations exist (A type / B media / C graphic); price + bid visible without scroll; work remains desirable; auction panel is quiet. Each candidate answers first/second/ignore and passes the AI-like design check."
+
+  # ============================================================
+  - id: bid_states_board
+    priority: "P0 — focused state board (not a route)"
+    purpose: "Single Pen board enumerating auction interaction states for QA and build."
+    semantic_state_model:
+      auction_panel_semantic_states: 13
+      auction_panel_state_names: [scheduled_preview, live_guest, live_not_eligible_email, live_not_eligible_rules, live_eligible, leading, outbid, soft_close, ended_won_viewer, ended_lost, ended_no_bids, role_disabled_admin, role_disabled_self]
+      bid_dialog_semantic_states: 8
+      bid_dialog_state_names: [default, editing, submitting, accepted, stale_minimum, rejected_validation, rejected_server, soft_close_notice]
+      visual_frames: 19
+      derivation_notes:
+        - "19 visual frames cover 21 semantic states (13 panel + 8 dialog): two states are shown inside another state's frame."
+        - "Frame 09 is an interaction derivative: dialog accepted and panel leading in one before/after frame."
+        - "Frame 07 is a viewport derivative of dialog editing (390 keyboard-open geometry; other frames are 480-wide desktop component frames)."
+        - "Frame 14 carries dialog soft_close_notice as a labeled inset inside the panel soft_close frame (the notice only ever appears while the dialog is open during an extension)."
+        - "bid_dialog repeat_bid variant (rules row hidden) is a variant of frame 06, documented by annotation, not a separate frame."
+        - "auction_panel auxiliary component states (loading, stale_refetch, error) are not semantic auction states; they appear on work_detail loading/error frames."
+    frames:  # frame id → panel/dialog semantic state → fixture
+      - "01 scheduled_preview — panel.scheduled_preview — fixture work_minimal_scheduled"
+      - "02 live_guest — panel.live_guest — fixture work_rich_live"
+      - "03 live_not_eligible_email — panel.live_not_eligible_email («Подтвердить почту») — fixture work_rich_live"
+      - "04 live_not_eligible_rules — panel.live_not_eligible_rules («Принять правила») — fixture work_rich_live"
+      - "05 live_eligible — panel.live_eligible — fixture work_rich_live"
+      - "06 bid_dialog_default — dialog.default (first_bid variant; repeat_bid via annotation) — fixture work_rich_live"
+      - "07 bid_dialog_editing_390 — dialog.editing (390 keyboard-open derivative) — fixture work_rich_live"
+      - "08 bid_dialog_submitting — dialog.submitting — fixture work_rich_live"
+      - "09 bid_dialog_accepted_panel_leading — dialog.accepted + panel.leading (interaction derivative) — fixture work_rich_live"
+      - "10 bid_dialog_stale_minimum — dialog.stale_minimum — fixture stale_minimum"
+      - "11 bid_dialog_rejected_validation — dialog.rejected_validation — fixture work_rich_live"
+      - "12 bid_dialog_rejected_server — dialog.rejected_server — fixture rejected_server_example"
+      - "13 panel_outbid — panel.outbid — fixture work_rich_live"
+      - "14 panel_soft_close — panel.soft_close + dialog.soft_close_notice inset — fixture soft_close_extension"
+      - "15 panel_ended_won_viewer — panel.ended_won_viewer (link to Order status) — fixture ended_with_winner"
+      - "16 panel_ended_lost — panel.ended_lost (winner alias caption) — fixture ended_with_winner"
+      - "17 panel_ended_no_bids — panel.ended_no_bids — fixture ended_no_bids"
+      - "18 panel_role_disabled_admin — panel.role_disabled_admin — fixture role_disabled_admin"
+      - "19 panel_role_disabled_self — panel.role_disabled_self — fixture role_disabled_self"
+    layout: "Grid of 480-wide component frames on canvas, labeled with state id kicker; mobile duplicates only where geometry differs (frame 07; sticky bar geometry lives on work_detail 390 frames)."
+    acceptance_checks:
+      - "Every state uses server-supplied values verbatim (min bid, times); no client math shown."
+      - "Feedback zones identical position across states (no jumping)."
+      - "All 19 frames present; frame names match this list and the pen-build-plan frame manifest exactly."
+
+  # ============================================================
+  - id: home
+    priority: "GOLDEN — visual source of truth at 1440 (product was P1; V2 elevates it to golden)"
+    route: "/"
+    data: [topAuctions, creators, newWorks — current Home projection only]
+    viewports:
+      desktop_1440:
+        wepresent: "Sparse chrome, generous negative space, image-first featured work, curated not catalog-first, routes obvious."
+        get_hyped: "Asymmetric composition, floating or dominant media, independent plates, variable work sizes, optional one sharp color mark."
+        keep:
+          - "Sparse navigation."
+          - "Image-first discovery."
+          - "No catalogue-first opening."
+          - "Asymmetric composition."
+          - "Large whitespace."
+        reading_order:
+          first: "One opening event — either the statement or the featured work, depending on A/B/C. Not both at equal weight."
+          second: "How to continue: open the featured work, or reach creators/works/search."
+          ignore_until_continue: "Live field, creators row, new works, become-creator. Do not pull those into the first viewport to fill columns."
+        content_priority: [featured_work_or_statement, path_to_continue]
+        hard_product_constraints:
+          - "First viewport contains a path to featured creator/work/status + nav + creator action."
+          - "Routes to creators, works, search without scroll at 1440."
+          - "No price/deadline on discovery cards."
+        provisional_starting_ranges:
+          - "display_1 ~88, statement max-width ~720, featured media large, plate ~420 — negotiable; do not enforce left statement + center-right media + lower-left plate."
+        first_viewport:
+          note: "Do not lock one recipe. Produce explorations A/B/C with the same fixtures. One dominant event. Leftover space stays empty."
+          required_presence:
+            - "Sparse nav: symbol, tiny grotesk links, search, role-aware Создать — chrome, not a competing event."
+            - "Home statement from fixture «Работы с историей — напрямую от авторов» plus subline. In direction B this is secondary to media."
+            - "Featured work moment (work_scene home_featured): work → title → creator → status/open. Do not add extra badges."
+            - "Large leftover space. Do not fill the viewport with a catalogue or a second row of cards."
+        explorations:
+          A_type_dominant:
+            visual_event: "Oversized manifesto is the graphic event; substantial negative space; Get Hyped type confidence."
+            media: "Featured photography supports the type; may be smaller or offset."
+            accent: "Usually none, or a small secondary mark."
+            whitespace: "Macro empty zones around the statement. Do not fill leftover columns."
+          B_media_dominant:
+            visual_event: "Featured work photography dominates the viewport."
+            type: "Statement is precise but secondary."
+            plates: "Independent information plates; unexpected media placement."
+            whitespace: "The work is isolated. Do not add a second work beside it to fill the grid."
+          C_graphic_interplay:
+            visual_event: "Statement, media, and one optional color field share the viewport with roughly equal power — still one composed event, not three competing objects."
+            overlap: "Controlled overlap allowed; still a usable platform, not an agency landing."
+            whitespace: "The graphic group is one event; leftover canvas stays empty."
+        sections:
+          - order: 1
+            name: statement
+            layout: "Statement typography, top padding starting 72–96, not a centered serif manifesto. Placement follows the selected exploration."
+          - order: 2
+            name: featured_moment
+            components: [work_scene home_featured]
+            data_rule: "topAuctions[0]; fallback newWorks[0]; if both empty → section replaced by creators row promoted up."
+          - order: 3
+            name: live_field
+            components: [section_header leading «Сейчас на аукционе» optional, mixed work_card sizes — not an equal rail of identical cards]
+            data_rule: "topAuctions[1..6]; status chip LIVE allowed (auction context); no price/deadline; omitted if < 2 items. Prefer 1 large + 2 small over a 4-up identical track. Dense locally, then a chapter-level pause before the next section."
+          - order: 4
+            name: creators_row
+            components: [creator_card row ×4, no section title]
+            layout: "Portraits on canvas, possibly staggered Y-offsets of 24–40. Peek of the next card allowed (WePresent IA). No «Авторы» heading. No accent_soft frames. Macro pause before and after — do not stack another equal card row immediately."
+          - order: 5
+            name: new_works
+            components:
+              - "section_header leading «Новые работы»"
+              - "asymmetric field: one wide, two portraits, one square — not the V1 ABC repeating grid"
+              - "6–8 work_card"
+          - order: 6
+            name: become_creator
+            components:
+              - "canvas band, no rounded pastel fill: display_3 «Покажите свою работу миру»"
+              - "optional accent_yellow_strong graphic mark if the composition uses a strong accent; do not force it"
+              - "body 1 line"
+              - "creator_action desktop rounded-rect"
+            rule: "For approved creators label switches to «Добавьте новую работу»; for pending — honest status line + cabinet link."
+          - order: 7
+            name: footer
+        sticky: [global_navigation]
+      tablet_1024:
+        transform: "Statement and featured moment recompose for width. Visual follow-up after a 1440 golden candidate is selected."
+      mobile_390:
+        order: [top bar, statement (display_1 40, padding top 48), featured_moment stacked, live_field horizontal snap, creators row (cards 280, no «Авторы» heading), new_works single column (4 cards + «Смотреть все работы» outline button → Explore), become_creator, footer, bottom_nav]
+    states:
+      minimal: "Empty topAuctions → featured falls back; empty creators → section omitted; page never shows placeholder cards."
+      loading: "statement instant (static), sections skeleton."
+      error: "per-section error_block; nav/footer always alive."
+    annotations_for_pen:
+      - "Exactly one home statement on page. Featured work title is not a second manifesto."
+      - "Discovery cards are image-led on canvas. Do not restore accent_soft WePresent frames as the home signature."
+      - "Do not translate Get Hyped as a rounded colored container with a tilted stack inside."
+      - "Do not enforce left statement + center-right media + lower-left plate across all explorations."
+      - "Human reading rhythm: one opening event; do not fill leftover columns; later sections change scale/density; pass the AI-like design check."
+    acceptance_checks:
+      - "First viewport at 1440 contains statement + featured creator/work/status + nav + creator action."
+      - "A first-time visitor sees routes to creators, works, search without scroll at 1440; within one swipe at 390."
+      - "GOLDEN: three explorations exist (A type / B media / C graphic); next to Get Hyped: whitespace, scale contrast, attitude; next to WePresent: IA stays clear. Each candidate answers first/second/ignore and passes the AI-like design check."
+
+  # ============================================================
+  - id: explore
+    priority: "P1 — visual follow-up after golden screens. Product/filter/search contracts unchanged."
+    v2_note: "Keep mixed-size results and all states. Do not use accent_soft frames. Do not lock a 3×2 matrix. Art-direct after home/profile/work 1440 are approved."
+    route: "/explore (tabs: works | creators)"
+    data: [works search (query, author, status, category, materials, uniqueness, price/year ranges, pagination, sort), creators search (query, pagination, activity/name sort)]
+    viewports:
+      desktop_1440:
+        sections:
+          - order: 1
+            name: header
+            layout: "Title display_2 «Обзор», tab_pill (Работы | Авторы), search_entry full width 640 centered."
+          - order: 2
+            name: filter_layer
+            components:
+              - "filter_chip row (works tab: Категория, Статус, Материалы, Уникальность, Цена, Год + Сортировка right-aligned; creators tab: Сортировка only)"
+            note: "Transactional narrowing lives here (secondary layer), founder decision 10–11."
+          - order: 3
+            name: results_works
+            layout: "Deterministic mixed grid: 12-col rows [4+4+4] / [8+4] / [4+8] cycling; work_card standard/wide/square by slot. Image-led on canvas; no accent_soft frames."
+            pagination: "«Показать ещё» outline button; server pagination; result count caption top-right («124 работы»)."
+          - order: 3_alt
+            name: results_creators
+            layout: "creator_card grid 4-up rows; workCount visible."
+          - order: 4
+            name: footer
+      tablet_1024:
+        transform: "Works rows 2-up ([6+6] / [12] wide); creators 3-up."
+      mobile_390:
+        order: [top bar with title, search_entry full, tab_pill, filter chips horizontal scroll + «Фильтры» chip opening full sheet (apply/reset), results single column (work_card full-width; every 4th pair renders 2-up squares), «Показать ещё», footer, bottom_nav]
+    states:
+      status_filter_active: "Cards show status_chip; price/deadline still hidden (price filter narrows without exposing values on cards)."
+      no_results: "empty_state explore_no_results + reset action."
+      loading_more: "button spinner; existing results stable."
+      query_loading: "grid skeleton preserving layout."
+      error: "error_block full results zone, filters intact."
+    annotations_for_pen:
+      - "Masonry is deterministic row templates; never measurement-driven."
+      - "Filter chips wrap to sheet on mobile; applied count badge on «Фильтры» chip."
+    acceptance_checks:
+      - "Works/creators paths separate but one tab-switch apart."
+      - "Default cards contain only media/title/creator/descriptor."
+      - "Filters reachable by keyboard; applied filters announced with result count."
+
+  # ============================================================
+  - id: creator_action_states_board
+    priority: "P1 — required initial frame set 8"
+    purpose: "Global creator action in all capability states, desktop + mobile shell."
+    frames:  # frame id → creator_action variant (names match component-specs exactly)
+      - "desktop_guest_or_non_creator — variant guest_or_non_creator: nav with «Стать автором» rounded-rect"
+      - "desktop_approved — variant approved: nav with «Добавить работу» rounded-rect"
+      - "desktop_pending_review — variant pending_review: nav with «Кабинет автора» + dot; destination status screen «Заявка на проверке» (icon Clock, honest body, no publish affordance)"
+      - "desktop_changes_requested — variant changes_requested: same pill; status screen with correction list + «Исправить и отправить снова»"
+      - "desktop_restricted — variant restricted: status screen with real allowed next step only"
+      - "mobile_guest_or_non_creator — variant guest_or_non_creator: plus 48 → accessibleLabel «Стать автором»; tapping opens onboarding intro"
+      - "mobile_approved — variant approved: plus → work creation step 1"
+      - "mobile_pending_review — variant pending_review: plus → cabinet/status screen"
+    acceptance_checks:
+      - "Action visible in shell on Home, Explore, profile, work detail at all viewports; never overflow-only."
+      - "No state visually implies publishing capability that the backend denies."
+
+  # ============================================================
+  - id: creator_onboarding_mobile
+    priority: "P1 — minimum 390 sequence"
+    route: "modal flow from creator_action (guest → auth first with return path)"
+    shell: creator_step_shell
+    steps:
+      - step: 0_intro
+        content: "Value screen: display_3 «Станьте автором на bidplace», 3 benefit rows (icon + body: публичный профиль, страница работы со ссылкой, честный аукцион), primary «Создать кабинет», caption «Заявку проверяет модератор»."
+      - step: 1_name
+        field: "fullName (form_field text, no counter — limit is Missing input per form_field content_limits)"
+        question: "Как вас представить?"
+        helper: "Имя, псевдоним или название студии"
+      - step: 2_discipline_country
+        fields: [discipline (text, counter 160 — confirmed limit), country (select, default Беларусь)]
+        question: "Чем вы занимаетесь?"
+      - step: 3_slug
+        field: "slug (form_field text with prefix «bidplace.by/», async availability check)"
+        states_required: [loading «Проверяем адрес…», success «Адрес свободен», error «Адрес занят»]
+        flag: "Missing input: slug authorship (user-chosen vs generated). Step drops cleanly if generated."
+      - step: 4_photo
+        component: media_input profile_photo_single
+        states_required: [empty, uploading, uploaded, permission_denied, upload_error retry]
+        skippable: true
+      - step: 5_about
+        field: "shortDescription (textarea, no counter — limit is Missing input per form_field content_limits)"
+        question: "Расскажите о своей практике"
+        helper: "Это увидят посетители вашего профиля"
+      - step: 6_links
+        fields: [telegramUrl, instagramUrl, websiteUrl, socialLink legacy]
+        rule: "Minimum one public link required (legacy contract); inline URL validation."
+      - step: 7_review
+        component: review_submit creator_application_review
+        submit: "«Отправить на проверку» → status screen pending (honest)"
+    required_state_frames_390:
+      - default (step 1)
+      - keyboard_open (step 1, action visible above keyboard)
+      - validating_async (step 3 loading)
+      - validation_success (step 3)
+      - validation_error (step 3)
+      - media_permission_denied (step 4)
+      - disabled_submit (step 7 incomplete)
+      - retry_offline (any step, feedback zone)
+      - review_submit (step 7 complete)
+      - submitted_status (pending screen)
+    acceptance_checks:
+      - "One principal task per step; progress zone stable; feedback zone fixed height."
+      - "Back preserves data; exit confirm only when data entered («Сохранить черновик?» → contract: local draft only, labeled)."
+      - "Vocabulary: автор/кабинет/работа; never post/подписчики."
+
+  # ============================================================
+  - id: work_creation_mobile
+    priority: "P1 — minimum 390 sequence"
+    route: "from creator_action (approved only)"
+    shell: creator_step_shell
+    steps:
+      - step: 1_basics
+        fields: ["title (text, no counter — limit is Missing input per form_field content_limits)", "category (select from server; loading + error states)"]
+        question: "Что за работа?"
+      - step: 2_media
+        component: media_input work_gallery_grid (1–10, reorder, cover marker)
+        states_required: [empty, uploading progress, limit_reached, permission_denied, upload_error retry]
+      - step: 3_story
+        field: story (textarea)
+        question: "Расскажите историю работы"
+      - step: 4_value
+        fields: [uniqueness (textarea), provenance (textarea)]
+        question: "Почему она особенная?"
+      - step: 5_facts
+        fields: [technique, materials, dimensions, weight, year, condition, packaging — all optional; city (required), delivery info (required)]
+        question: "Факты о работе"
+        note: "Optional fields collapsed under «Добавить детали» accordion to keep one screen scannable."
+      - step: 6_process
+        component: "creation story: intro (textarea, skippable) + steps editor (add up to 20: title, body, image); list with reorder"
+        skippable: true
+      - step: 7_review
+        component: "review_submit work_review (publication checklist — title, story, uniqueness, provenance, city, delivery, category, ≥1 photo)"
+        submit: "«Отправить на модерацию» → status «Работа на проверке» (honest; no listing scheduling until approved — scheduling flow follows approval per contract)"
+    required_state_frames_390: [default step 2 media grid, uploading, permission_denied, keyboard_open step 3, validation_error step 1 (empty title), disabled_submit review, retry, review complete, submitted_status]
+    acceptance_checks:
+      - "No price/listing fields in Product creation (Listing scheduling is a separate post-approval flow — one screen stub: date/time + start price BYN + confirm, labeled «после одобрения»)."
+      - "Draft is private until moderation approves (status copy honest)."
+
+  # ============================================================
+  - id: auth
+    priority: "P2 spec (frames after required set)"
+    route: "/auth (modal-capable)"
+    components: [auth_panel]
+    viewports:
+      desktop_1440: {layout: "split 50/50: left auth column centered (field width 352), right accent field (fixed accent_periwinkle_soft per accent_selection.fixed_assignments) with one floating work card (fixture image)"}
+      mobile_390: {layout: "single column: mini media stack (3 cards from fixtures) → «Привет!» display_1 → body → email field → primary; legal above safe area"}
+    states: [default, email_invalid, sending, code_entry, code_error, resend_cooldown, code_success_redirect, server_error]
+    acceptance_checks:
+      - "One decision per screen; return path honored (bid/onboarding)."
+      - "Light, welcoming; no gradient decoration; accent field from approved palette."
+
+  # ============================================================
+  - id: tablet_1024_derivations
+    priority: "after vertical slice coherence"
+    rule: "Tablet derives from desktop with layout.tablet_1024 tokens and the transform notes above. Dedicated frames: creator_profile, work_detail (LIVE), home, explore_works."
+
+  # ============================================================
+  - id: future_boards
+    priority: "future_board_after_p0 — built only after P0 frames are approved; never mixed with MVP acceptance"
+    classification: {product_phase: designed_post_mvp_and_unresolved, note: "Pen shows the whole future application; these boards are labeled and separated."}
+    boards:
+      - id: future_follow_creator
+        source_component: follow_creator
+        frames:
+          - "follow-creator/states — all 5 states (anonymous, default, followed, loading, error) as 1440 component frames in creator_scene context, each labeled with state kicker"
+          - "follow-creator/profile-placement-1440 — creator_profile default frame (fixture creator_rich) with follow_creator default rendered in its identity-column slot, visible chip «Будущее — не MVP»"
+          - "follow-creator/profile-placement-390 — same at 390 (full-width button below links), same chip"
+        annotations: ["bidding = confirmed_mvp; follow creator = designed_post_mvp / backend_required", "auth redirect + optimistic/rollback contract per component spec", "future «Мои авторы» list is a concept card on future_concepts, unresolved"]
+      - id: future_wishlist_saved_work
+        source_component: wishlist_saved_work
+        frames:
+          - "wishlist/states — all 5 states (anonymous, default, saved, loading, error) as 1440 component frames in work_card and work_detail context, each labeled with state kicker"
+          - "wishlist/card-placement-1440 — work_card standard (fixture work_rich_live) with wishlist_saved_work default in the top-right media slot, visible chip «Будущее — не MVP»"
+          - "wishlist/card-placement-390 — same at 390"
+          - "wishlist/detail-placement-1440 — work_detail LIVE (fixture work_rich_live) with detail control near the creator identity link, same chip"
+          - "wishlist/detail-placement-390 — work_detail 390 top bar icon-only, same chip"
+        annotations: ["bidding = confirmed_mvp; wishlist_saved_work = designed_post_mvp / backend_required", "auth redirect + optimistic/rollback contract per component spec"]
+      - id: future_video_process_story
+        source_component: video_process_story
+        frames:
+          - "video-process/states — all 8 states (poster, ready, playing, paused, muted, loading, error, unavailable) as 1440 component frames; unavailable shown as process_steps without a reserved hole"
+          - "video-process/placement-1440 — work_detail process section (fixture work_rich_live, poster_asset_id asset_w1024_s4_working) with video_process_story poster above process_steps, chip «Будущее — не MVP»"
+          - "video-process/placement-390 — same at 390"
+        annotations: ["autoplay forbidden; reduced-motion still requires explicit tap; absence omits the block"]
+      - id: future_concepts
+        frames:
+          - "future/concepts — one board with labeled concept cards from content-fixtures future_concepts_labels; every card carries a visible «Будущее — не MVP» chip on fixed accent_red_soft via deprecated alias accent_brown_soft (accent_selection.fixed_assignments.future_board_chips)"
+    acceptance_checks:
+      - "No future control appears on any MVP frame."
+      - "Every future frame carries the «Будущее — не MVP» chip."

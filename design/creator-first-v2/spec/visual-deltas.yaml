@@ -1,0 +1,491 @@
+# V1 historical deltas — do not use as V2 acceptance.
+# V2 has no Pen yet. See spec/VISUAL-QA.md in this packet.
+
+result: revise
+summary: "QA-001–QA-039 addressed. Founder color pass 2026-08-14: WePresent accent_soft frames on work cards; home authors is a headerless peek carousel. Reload copy.pen."
+pen_file: "design/pen/bidplace-creator-first-v1-copy.pen"
+blockers_addressed: ["QA-001", "QA-002", "QA-003", "QA-004", "QA-005", "QA-006", "QA-028", "QA-033", "QA-034", "QA-035", "QA-039"]
+majors_addressed: ["QA-007", "QA-008", "QA-009", "QA-010", "QA-011", "QA-012", "QA-013", "QA-014", "QA-015", "QA-016", "QA-017", "QA-018", "QA-019", "QA-020", "QA-021", "QA-022", "QA-023", "QA-024", "QA-025", "QA-026", "QA-027", "QA-029", "QA-032", "QA-036", "QA-037"]
+minors_addressed: ["QA-030", "QA-031", "QA-038"]
+issues:
+  - id: QA-001
+    status: addressed
+    severity: blocker
+    screen: "home/*, explore/*, creator-profile/* works grids, rails"
+    region: "work_card and creator_card instances (names w1024/w2048/w3072/w4096, polina/artyom/ksenia/alex)"
+    contract: "content-fixtures.yaml creators/works + accent_assignments; screen-blueprints.yaml home/explore/creator_profile"
+    observed: "Every instance targets work_card/standard|wide|plate or creator_card/grid with baked copy «Тихий берег» / «Полина Мирош» and yellow/orange accents. Name on the ref does not override nested text."
+    expected: "Four works (w-1024 yellow, w-2048 pink, w-3072 orange, w-4096 yellow) and four creators (orange/pink/yellow/periwinkle), including Ксения photo_missing «К» and Александра long_name strip 88."
+    exact_change: "Create per-fixture masters or Pen descendant overrides for title, creator, descriptor, media/asset_* name, and accent fill. Do not reuse one card master for every entity."
+    rationale: "Hierarchy creator → work is fake if every card is Polina."
+    verification: "On home/1440/default the four creator names and four work titles are all different; accents match accent_assignments."
+
+  - id: QA-002
+    status: addressed
+    severity: blocker
+    screen: "home/1440/default, home/1024/default, home/390/default"
+    region: "section_header instance named Авторы → gNwaD section_header/centered"
+    contract: "screen-blueprints.yaml home.creators_row; component-specs.yaml section_header"
+    observed: "Instance name «Авторы» with no content override. Master copy is «Новые работы» + «Все работы →». Both Home headers therefore read as Новые работы."
+    expected: "creators_row: «Авторы» + «Все авторы». new_works: «Новые работы» + trailing link per spec."
+    exact_change: "Override both text refs on the Авторы instance. Trailing link «Все авторы»."
+    rationale: "First-time navigation to creators is mislabeled."
+    verification: "Home shows two different section titles: Авторы then Новые работы."
+
+  - id: QA-003
+    status: addressed
+    severity: blocker
+    screen: "home/390/default, creator-profile/390/*, explore/390/*, work-detail/390/*"
+    region: "instances of work_scene/home_featured (1280), work_scene/profile_release (1280), rail/work_rail (1440), work_card/standard (410.67)"
+    contract: "design-system.yaml layout.mobile_390 (max_content_width 350, margins 20, spans span_2 167 / span_4 350)"
+    observed: "390 frames pad [0,20,96,20] but instance desktop masters 1280/1440/410.67."
+    expected: "Stacked mobile geometry ≤350. Cards 350 or 167. Rails 350. Scenes not 1280."
+    exact_change: "Add mobile masters and retarget every 390 instance. Never instance 1280/1440/410.67 on a 390 frame."
+    rationale: "Mobile is a re-composed story, not scaled desktop (DESIGN-DIRECTION §3)."
+    verification: "No descendant of a 390 frame has width > 350 except the 390 artboard itself and the 64px bottom nav."
+
+  - id: QA-004
+    status: addressed
+    severity: blocker
+    screen: "home/1024/default, creator-profile/1024/default, work-detail/1024/live-default, explore/1024/works-default"
+    region: "all text refs"
+    contract: "design-system.yaml typography.roles.*.tablet (display_1 56/62/−1.2); screen-blueprints tablet transforms"
+    observed: "0 /tablet type refs. Manifesto uses display_1/desktop 72."
+    expected: "Tablet type masters on every 1024 frame. Featured plate 400. Creators 3-up (home already drops 4th)."
+    exact_change: "Swap text refs to /tablet. Rebuild featured plate width 400."
+    rationale: "72px display on 1024 is the desktop cut."
+    verification: "home/1024 manifesto text ref is display_1/tablet (56)."
+
+  - id: QA-005
+    status: addressed
+    severity: blocker
+    screen: "creator-profile/390/default"
+    region: "hero_identity"
+    contract: "screen-blueprints.yaml creator_profile.viewports.mobile_390; creator_scene mobile 350×437"
+    observed: "Portrait 350×280, works tabs, one card, practice, bottom nav. No kicker Автор, no display_1 name, no meta, no creator_scene/mobile instance."
+    expected: "creator_scene mobile: portrait 350×437 then kicker, name 40, meta, statement, links."
+    exact_change: "Instance creator_scene/mobile with creator_rich. Portrait 3:4 = 350×437."
+    rationale: "P0 mobile profile must identify the creator in the first viewport."
+    verification: "F026 shows «Автор», «Полина Мирош» display_1/mobile 40, discipline/country/workCount."
+
+  - id: QA-006
+    status: addressed
+    severity: blocker
+    screen: "explore/390/works-default"
+    region: "title + 2-up squares"
+    contract: "screen-blueprints.yaml explore mobile: title display_2; span_2 167 squares"
+    observed: "Title title_2/desktop 17 «Обзор». Square cards instance work_card/square width 410.67. Search correctly 350."
+    expected: "display_2/mobile 30. Full-width 350 cards; 2-up pair 167+167+gutter 16."
+    exact_change: "Retarget title to display_2/mobile. Instance a 167-wide square master for the pair."
+    rationale: "Explore title is the route name; 17px under-hierarchies the page."
+    verification: "F070 title fontSize 30; two-up cards width 167."
+
+  - id: QA-007
+    status: addressed
+    severity: major
+    screen: "home/1440/default (and 1024/390 via same masters)"
+    region: "rail/work_rail, section_header/centered, footer/desktop"
+    contract: "design-system.yaml layout.desktop_1440.max_content_width 1280, margins 80"
+    observed: "Masters width 1440 inside a 1440 frame with padding 80 (inner 1280)."
+    expected: "Content 1280."
+    exact_change: "Rebuild those masters at 1280 / 928 / 350 per viewport."
+    rationale: "Grid is 12 columns inside 1280, not full bleed 1440."
+    verification: "rail/work_rail.width == 1280 on desktop."
+
+  - id: QA-008
+    status: addressed
+    severity: major
+    screen: "home/*/default live_rail"
+    region: "work_card in rail/work_rail"
+    contract: "screen-blueprints.yaml home.live_rail: status chip LIVE allowed; no price/deadline"
+    observed: "Rail cards have title/creator/descriptor only. No status_chip/live."
+    expected: "Chip «Идут торги» on live_rail cards only."
+    exact_change: "Add status_chip/live to the rail card variant, not to new_works cards."
+    rationale: "Auction context is the one place discovery may show live status."
+    verification: "live_rail cards show the chip; new_works cards do not."
+
+  - id: QA-009
+    status: addressed
+    severity: major
+    screen: "home/390/default"
+    region: "manifesto sub; bottom nav labels"
+    contract: "screen-blueprints.yaml home manifesto sub body ink_soft; design-system.yaml label_sm 11px exception under 24px icons"
+    observed: "Sub is caption/desktop 14. Nav labels label_sm/desktop 13."
+    expected: "Sub body/mobile 16 ink_soft. Nav labels 11/14 600."
+    exact_change: "Retarget sub to body/mobile fill $ink_soft. Nav labels 11px 600 Golos."
+    rationale: "Body never below 16px; 11px is the only documented exception, and it is for those icons."
+    verification: "Sub fontSize 16; nav label fontSize 11."
+
+  - id: QA-010
+    status: addressed
+    severity: major
+    screen: "home/1440/default new_works"
+    region: "work grid"
+    contract: "screen-blueprints.yaml home.new_works: pattern as creator_profile.works, 6–8 cards"
+    observed: "Row of wide+standard then standard+plate (4 cards) plus Missing spec for 6–8."
+    expected: "Row A wide+standard; row B three standards; Missing spec only for cards 5–8 given 4 fixtures."
+    exact_change: "Match the profile grid pattern. Keep the Missing spec caption for the fixture shortage (contract_revision_required for extra works)."
+    rationale: "Pattern is specified; count shortage is a fixture gap."
+    verification: "Row B has three span_4 cards."
+
+  - id: QA-011
+    status: addressed
+    severity: major
+    screen: "home/390/default"
+    region: "featured_moment"
+    contract: "screen-blueprints.yaml home.mobile: stacked card with 24px peek of next topAuction"
+    observed: "Instances desktop work_scene/home_featured 1280 (also QA-003)."
+    expected: "Stacked ≤350 with 24px peek behind."
+    exact_change: "Mobile featured master; peek of work_minimal or second live card, static."
+    rationale: "WePresent stack cue is a specified mobile composition, not optional decoration."
+    verification: "A second card edge 24px visible behind the featured card."
+
+  - id: QA-012
+    status: addressed
+    severity: major
+    screen: "explore/1440/creators, explore/390/*"
+    region: "creator results; 390 title (see QA-006)"
+    contract: "content-fixtures.yaml creators; screen-blueprints.yaml explore"
+    observed: "Creators tab instances creator_card/grid four times (QA-001). 390 title wrong (QA-006)."
+    expected: "Four distinct creators. 390 title display_2/mobile."
+    exact_change: "Per-fixture creator cards. Title already covered by QA-006."
+    rationale: "Explore creators is the directory of authors."
+    verification: "Four different fullName strings on F067."
+
+  - id: QA-013
+    status: addressed
+    severity: major
+    screen: "explore/1440/works-default"
+    region: "named slots w1024/w2048/w3072/w4096"
+    contract: "pen-prompts/09-s4b-explore.txt + accent_assignments"
+    observed: "Slot types (standard/plate/standard/wide) match the intended mixed grid; content is still Тихий берег / yellow."
+    expected: "Each slot bound to its publicId, title, creator, descriptor, media id, accent."
+    exact_change: "w-2048 plate = pink + 2px accent_pink_strong; others per accent_assignments."
+    rationale: "Grid pattern without entity data is still marketplace sameness."
+    verification: "Four different titles on F066."
+
+  - id: QA-014
+    status: addressed
+    severity: major
+    screen: "components/work_card/board plate; explore/home plate instances"
+    region: "work_card/plate"
+    contract: "component-specs.yaml work_card.variants.plate"
+    observed: "Vertical stack: 3:4 media then accent_yellow_soft caption. No 24px overlap, no 2px strong frame."
+    expected: "Colored lower plate overlapping media bottom by 24px; matching accent_*_strong 2px frame; max 1 per row."
+    exact_change: "Rebuild plate anatomy. Overlap 24. Stroke 2 matching strong token."
+    rationale: "Plate is the Get Hyped info-plate, not a recolored standard card."
+    verification: "Plate caption overlaps media by 24±0.5px; strokeWidth 2."
+
+  - id: QA-015
+    status: addressed
+    severity: major
+    screen: "explore/390/filters-sheet"
+    region: "scrim caption; apply control"
+    contract: "design-system.yaml color.scrim; screen-blueprints.yaml explore filters sheet"
+    observed: "Visible text «scrim rgba(31,35,55,0.50)». Missing spec apply button label."
+    expected: "Fill $scrim. Apply label from fixtures or Missing spec only in annotation."
+    exact_change: "Delete the scrim caption node. Use fill $scrim on the overlay."
+    rationale: "Technical notes are not UI copy."
+    verification: "No rgba/English string inside the 390 frame."
+
+  - id: QA-016
+    status: addressed
+    severity: major
+    screen: "creator-profile/1440/default"
+    region: "works grid; archive"
+    contract: "screen-blueprints.yaml creator_profile works grid_pattern + archive_rail"
+    observed: "One work_card/wide. No archive rail despite tab «Завершены · 3»."
+    expected: "Row A wide+standard; row B three standards. Archive rail of ENDED works, no sold price. Extra cards may be Missing spec (statusCounts 5)."
+    exact_change: "Build the grid. Add archive_rail «Завершённые работы» when ENDED count > 0."
+    rationale: "Profile is the creator home; one card undercounts the template."
+    verification: "At least the pattern row A is visible; archive present or annotated omitted-only-if-zero."
+
+  - id: QA-017
+    status: addressed
+    severity: major
+    screen: "creator-profile/390/*"
+    region: "section titles"
+    contract: "typography.roles.display_3.mobile 24"
+    observed: "«Работы» is display_3/desktop 32."
+    expected: "display_3/mobile 24."
+    exact_change: "Retarget to display_3/mobile (and title_2/mobile for О практике)."
+    rationale: "Desktop display_3 on 390 overflows hierarchy."
+    verification: "F026 «Работы» fontSize 24."
+
+  - id: QA-018
+    status: addressed
+    severity: major
+    screen: "work_scene, creator_scene, profile/work-detail kickers"
+    region: "kicker role text"
+    contract: "design-system.yaml typography.rules: uppercase only in kicker; roles.kicker.transform uppercase"
+    observed: "«Сейчас на bidplace», «Текущий релиз», «Автор» sentence case. Master already has letterSpacing 0.78."
+    expected: "«СЕЙЧАС НА BIDPLACE», «ТЕКУЩИЙ РЕЛИЗ», «АВТОР»."
+    exact_change: "Uppercase the kicker content strings. Pen has no text-transform."
+    rationale: "Kicker is the only allowed uppercase role; sentence case reads as a title."
+    verification: "All kicker-role strings on P0 screens are full caps Cyrillic."
+
+  - id: QA-019
+    status: addressed
+    severity: major
+    screen: "work-detail/1440/live-default"
+    region: "bid history"
+    contract: "component-specs.yaml bid_history_row; content-fixtures.yaml bid_history_fixture (7 rows, show 5)"
+    observed: "One instance bid_history_row/default plus «Показать все ставки»."
+    expected: "Five fixture rows (anna_k 1 250 leader … severny_vecher 1 000) then the expand control."
+    exact_change: "Instance five rows with fixture alias/amount/time. Leader dot on first."
+    rationale: "History is the proof of a real auction, not a single dummy row."
+    verification: "Five distinct aliases visible before expand."
+
+  - id: QA-020
+    status: addressed
+    severity: major
+    screen: "work-detail/1440/live-default and other full LIVE/ENDED frames"
+    region: "more-from-creator rail"
+    contract: "screen-blueprints.yaml work_detail rail «Ещё от {fullName}» + «Все работы автора»"
+    observed: "No rail after history."
+    expected: "work_rail with creator's other works; no prices."
+    exact_change: "Add the rail on LIVE/ENDED viewer frames. Omit on scheduled-minimal if blueprint omits it."
+    rationale: "Work detail must lead back to the creator."
+    verification: "F030 contains kicker/title «Ещё от Полина Мирош» or the spec string with fullName."
+
+  - id: QA-021
+    status: addressed
+    severity: major
+    screen: "work-detail/390/live-inline-panel, work-detail/390/live-sticky-bar"
+    region: "«Ставки» heading; sticky label"
+    contract: "typography mobile cuts; sticky_bid_bar anatomy"
+    observed: "«Ставки» display_3/desktop 32. Sticky helper «текущая ставка» lowercase. F038 story uses title_2/desktop."
+    expected: "display_3/mobile 24. Sticky «Текущая ставка» + price_md/mobile. Story title_2/mobile."
+    exact_change: "Retarget mobile type refs. Fix sticky label casing."
+    rationale: "Findability of bid chrome on 390 depends on correct type and copy."
+    verification: "F037 «Ставки» fontSize 24; F038 sticky label matches ui_copy.auction.current_bid."
+
+  - id: QA-022
+    status: addressed
+    severity: major
+    screen: "work-detail/1440/media-error, work-detail/1440/loading, bid-states/07-bid_dialog_editing_390"
+    region: "in-frame builder notes"
+    contract: "pen-build-plan.md §0 allowed text sources; annotations sit outside the frame"
+    observed: "«остальные секции идентичны…»; «sections below load lazily as skeletons»; «system keyboard»."
+    expected: "Only fixture/spec copy inside the artboard. Notes in the 420 annotation frame."
+    exact_change: "Move those strings to annotation. F034 keeps «Изображение недоступно» on media."
+    rationale: "English/builder notes break the Russian product surface."
+    verification: "Grep of those three frames has no English sentences."
+
+  - id: QA-023
+    status: addressed
+    severity: major
+    screen: "bid-states/07-bid_dialog_editing_390"
+    region: "sheet + keyboard"
+    contract: "component-specs.yaml bid_dialog mobile sheet radius_sheet_top_mobile 24"
+    observed: "15 desktop type refs. Keyboard is a labeled string."
+    expected: "Mobile types. Keyboard as dimmed OS chrome without English label, or annotation-only."
+    exact_change: "Retarget /mobile types. Delete «system keyboard» text."
+    rationale: "F047 exists specifically for keyboard-open geometry."
+    verification: "No «system keyboard» string; sheet top radius 24."
+
+  - id: QA-024
+    status: addressed
+    severity: major
+    screen: "F001–F013"
+    region: "missing sibling annotation frames"
+    contract: "pen-build-plan.md §0: every frame gets an annotation layer"
+    observed: "105 annotation frames. Missing after F001–F013 plus the two boardless masters."
+    expected: "Annotation beside every manifest frame. Masters may stay boardless."
+    exact_change: "Add 420-wide annotation frames for F001–F013 (tokens, states, motion)."
+    rationale: "QA and implementation need the server/role/motion notes on foundations too."
+    verification: "Each of F001–F013 is immediately followed by a frame named annotation."
+
+  - id: QA-025
+    status: addressed
+    severity: major
+    screen: "onboarding/390/intro"
+    region: "title"
+    contract: "ui_copy.onboarding intro title (single)"
+    observed: "«Станьте автором на bidplace» twice, both display_3/mobile."
+    expected: "One title."
+    exact_change: "Delete the duplicate text ref."
+    rationale: "Stacked duplicate reads as a layout error."
+    verification: "Exactly one occurrence of that string on F081."
+
+  - id: QA-026
+    status: addressed
+    severity: major
+    screen: "auth/390/*, onboarding/390/*, creator-action/*, bid-states/*"
+    region: "kicker slot used as state-id label"
+    contract: "pen-build-plan.md frame_name is the frame name; UI kickers are spec copy"
+    observed: "Kickers «default», «intro», «step1-default», «guest_or_non_creator», «05-live_eligible» inside the artboard."
+    expected: "State ids live in frame_name and/or annotation. UI kickers are product copy."
+    exact_change: "Remove state-id kickers from inside 390/1440/480 UI. Keep them as annotation or above the frame."
+    rationale: "Board labels leaked into the product chrome."
+    verification: "No English state id as the first text in those screens' identity column."
+
+  - id: QA-027
+    status: addressed
+    severity: major
+    screen: "F081–F105, F093–F101 (all 390 steps)"
+    region: "text refs"
+    contract: "typography.roles.*.mobile"
+    observed: "Mostly /desktop body, label, caption, kicker (e.g. kicker 13 vs 12, body lh 1.625 vs 1.5)."
+    expected: "/mobile type refs."
+    exact_change: "Retarget every text ref on those frames to the matching /mobile master."
+    rationale: "Same class of bug as QA-003/QA-004 for type instead of width."
+    verification: "Python count of /desktop text refs on /390 frames is 0 except true desktop-only chrome if any."
+
+  - id: QA-028
+    status: addressed
+    severity: major
+    screen: "all frames with media/* or logo/symbol"
+    region: "fills"
+    contract: "pen-build-plan.md Gate M media_asset_manifest + logo PNG"
+    observed: "JSON image fills at images/creator-first/<asset_id>.jpg and logo-transparent-256.png. Ксения photo_missing yellow + К. Unused process stills (stitches/kiln/print) have no named slots yet."
+    expected: "Packet JPEGs/PNG at those names, exact asset_id."
+    exact_change: "When image fills work, attach Gate M files. Until then keep names; do not invent photos."
+    rationale: "Visual parity with references is blocked without photography."
+    verification: "Image fill type present on media/asset_w1024_01_cover and logo/symbol."
+
+  - id: QA-029
+    status: addressed
+    severity: major
+    screen: "components/creator_card/board; home/explore creator cards"
+    region: "Mirror Caption Strip"
+    contract: "design-system.yaml media.mirror_caption_effect; component-specs.yaml creator_card"
+    observed: "h72 fill $mirror_caption_veil; name 15/600 #FFFFFF; discipline 13 #FFFFFFD1. No mirrored bitmap, no blurRadius 20. photo_missing state exists separately."
+    expected: "Mirrored bottom slice + blur 20 + veil + text; opaque fallback when blur/image unavailable."
+    exact_change: "If Pen cannot blur, label the current strip as the opaque fallback specimen and add a second specimen if a fake-mirror is possible. Do not claim blur."
+    rationale: "This is the only allowed blur. Fallback is mandatory; fake blur is not."
+    verification: "Board shows fallback clearly; no unlabeled blur."
+
+  - id: QA-030
+    status: addressed
+    severity: minor
+    screen: "auction_panel/default, bid_dialog/first_bid"
+    region: "extra named reusable frames"
+    contract: "pen-build-plan.md §6: 118 frames; masters may be boardless"
+    observed: "120 named non-annotation frames = 118 + these two masters."
+    expected: "118 manifest names. Extra reusables OK if not presented as screens."
+    exact_change: "Keep masters. Do not count them as extra screens. No action unless they appear in the 118 list."
+    rationale: "Hygiene only."
+    verification: "Manifest name set == 118; extras are reusable true."
+
+  - id: QA-031
+    status: addressed
+    severity: minor
+    screen: "auction_panel/default, bid_dialog, creator_card"
+    region: "hardcoded hex fills"
+    contract: "pen-build-plan.md §0: no ad-hoc hex; tokens only"
+    observed: "#FFFFFF, #FFFFFFB8, #FFFFFFD1, #1F23371F. Spec quotes rgba(255,255,255,0.72/0.82) for those surfaces."
+    expected: "Tokenized equivalents, or documented spec-quoted rgba."
+    exact_change: "Prefer surface / new rgba tokens. Do not use random hex elsewhere."
+    rationale: "Quoted rgba is the exception; it should still not spread."
+    verification: "Hex grep only on caption-on-photo and dialog summary."
+
+  - id: QA-032
+    status: addressed
+    severity: minor
+    screen: "work-detail/390/live-sticky-bar"
+    region: "sticky_bid_bar/eligible"
+    contract: "ui_copy.auction.current_bid «Текущая ставка»; layout sticky height 64"
+    observed: "Width 366, height 64, copy «текущая ставка» lowercase + 1 250 BYN + «Сделать ставку»."
+    expected: "Full content width 350 + side safe; label exact ui_copy."
+    exact_change: "Width 350 (or 390 minus margins). Label «Текущая ставка»."
+    rationale: "Copy must be verbatim."
+    verification: "Exact string match to ui_copy.auction.current_bid."
+
+  - id: QA-033
+    status: addressed
+    severity: blocker
+    screen: "home/1440/default, home/1024/default, creator-profile/1440/*, creator-profile/1024/default"
+    region: "work_scene/home_featured, work_scene/profile_release, media_stack/multi"
+    contract: "component-specs.yaml work_scene + media_stack measurements; founder visual: profile media left / plate right"
+    observed: "Masters had no horizontal layout; info plate painted at artboard origin over the header; media_stack 640×700 with three 480 photos + arrow at x=572 overflowed the yellow scene."
+    expected: "Scene is a clipped horizontal frame. Home: plate 480 left, stack 560 right. Profile: stack left, plate right. Three back/front layers stay inside stack_zone. Tablet plate 400 + stack 424."
+    exact_change: "Set layout horizontal + clip on WdZ0B/hkRZF; rebuild H9LP3Z to 560×640 with spec offsets; swap hkRZF children; tablet/mobile descendant geometry."
+    rationale: "Detached absolute children are not a scene. Overflowing back layers are not a gallery."
+    verification: "Reload home/1440: plate sits inside the yellow scene, not over the nav. Reload creator-profile/1440: painting left, «Тихий берег» right. 1024 stack does not spill out of the scene."
+
+  - id: QA-034
+    status: addressed
+    severity: blocker
+    screen: "home/1024/default live_rail, home/390/default live_rail"
+    region: "rail/work_rail three work_card/standard"
+    contract: "work_card tablet standard_width 296; mobile rail_width 280; layout.mobile_390 max 350"
+    observed: "Three desktop 410.67 cards instanced into 928 and 350 rails, so three photos did not fit."
+    expected: "Tablet 3×296 in 928. Mobile 280-wide cards, rail clipped to 350 (snap + peek)."
+    exact_change: "Descendant widths on sf9kK (296) and qAN81 (280); clip rails; q4N1l horizontal."
+    rationale: "Founder asked for three photos that fit, not three that overflow."
+    verification: "home/1024 live row is three cards inside 928. home/390 live row is clipped to 350."
+
+  - id: QA-035
+    status: addressed
+    severity: blocker
+    screen: "home/390/*, creator-profile/390/*"
+    region: "escaped work_scene/home_featured/mobile and profile_release/mobile at document root x=None"
+    contract: "Reusable masters live in component board Master Registry, never at canvas origin"
+    observed: "Two reusable mobile scenes sat at the document root with no x/y, overlapping 390 artboards; 1280 rail guts painted into the canvas void."
+    expected: "Masters parked in work_scene registry. 390 artboards clip. Footer width 350."
+    exact_change: "Move 7uff0L and yn9Ffc into tv036; clip 390 frames; BKdlJ/quVha width 350."
+    rationale: "Canvas overlap is not a mobile composition."
+    verification: "Document root has 0 frames named work_scene/*/mobile. home/390/default.clip is true."
+
+  - id: QA-036
+    status: addressed
+    severity: major
+    screen: "home/1440/default new_works 3-up row"
+    region: "work_card/standard caption zone (long title w-3072)"
+    contract: "work_card title_lines 2, creator_lines 1, gap_title_creator 4"
+    observed: "Title row had no layout; long title painted over creator name."
+    expected: "Title 2 lines in 56px; creator and descriptor 1 line each; no overlap."
+    exact_change: "RX7Wk horizontal height 56; d7L0J/ckGWq/jtGBS fixed-width-height."
+    rationale: "Caption is a vertical stack, not a pile at 0,0."
+    verification: "«Портрет незнакомки…» wraps to two lines above the creator, not through it."
+
+  - id: QA-037
+    status: addressed
+    severity: major
+    screen: "explore/1440/*, explore/1024/works-default"
+    region: "header search_entry/desktop_compact vs page search_entry/explore_full"
+    contract: "Explore owns the in-page search field; compact search is global chrome elsewhere"
+    observed: "Compact search in the header and explore_full in the page body on the same screen."
+    expected: "One search on Explore: the page field. Header compact search disabled on explore/*."
+    exact_change: "enabled false on r58cQ named search inside explore/ frames. YU99m remains."
+    rationale: "Founder reported duplicate search in header and page center."
+    verification: "explore/1440/works-default header search enabled false; child wqag1 YU99m still present."
+
+  - id: QA-038
+    status: addressed
+    severity: minor
+    screen: "creator-profile/*/default identity + featured CTA"
+    region: "creator_links + share; info plate statement vs «Открыть работу»"
+    contract: "creator_scene links row includes share; work_scene statement then CTA in flow"
+    observed: "Share sat on its own row; statement height 52 covered by the CTA on tablet."
+    expected: "Links and share in one horizontal row. Statement hugs text; CTA below."
+    exact_change: "Identity Actions wrap; statement textGrowth fixed-width without fixed height."
+    rationale: "Shifted buttons were leftover absolute/fixed geometry."
+    verification: "Share sits on the links row. Plate CTA does not cover the last statement line."
+
+  - id: QA-039
+    status: addressed
+    severity: blocker
+    screen: "home/1440/default, home/1024/default, home/390/default, work_card/*, creator_card/*"
+    region: "work_card fills; home creators_row"
+    contract: "content-fixtures.yaml accent_assignments; founder WePresent reference 2026-08-14"
+    observed: "Work cards were $surface (white) with white captions; home authors was a titled 4-up grid; creator photos full-bleed so accent fills were invisible."
+    expected: "Each work has accent_soft frame (16px inset media, caption on the fill) from accent_assignments. Home authors is a peek carousel with no «Авторы» heading. Creator cards show the color around an inset portrait, ink caption below."
+    exact_change: "Masters padded + accent fill; instance fills mapped to fixtures; Bdb81/UPuNF/DZUaC enabled false; W9bz3m 360-wide clipped row; YC9vj 300 + alex peek; mobile rail header hidden."
+    rationale: "Founder: the service looked too gray; works need different backgrounds; home should match WePresent; authors carousel without the Авторы label."
+    verification: "home/1440 new works: yellow/pink/orange/yellow/teal/brown. Authors row has no title and a fourth card peek. Canonical bidplace-web-v2.pen untouched."
+
+contract_revision_required:
+  - "ui_copy.home_sections become-band body line missing (parked to annotation; band is title+CTA only)"
+  - "Explore result count is 6 работ from fixtures; blueprint «124 работы» remains a server-owned example, not this catalog"
+  - "footer positioning caption missing (omitted from footer chrome; parked on feedback_group annotation)"
+  - "ui_copy.auth: email field label, code error, resend cooldown format"
+  - "ui_copy.onboarding: step 3/4 questions, review section labels, incomplete count"
+  - "ui_copy.work_creation: step 2 question, title/error/helper, checklist labels, percent sample"
+  - "ui_copy.auction: eligibility helpers, validation error, first-bid/BYN explainer, order/handoff label"
+  - "bid_history_fixture missing winning row tikhon_v 1 450 BYN"
+  - "creator_action changes_requested title/list and restricted status copy"
+  - "global_rules.required_states_every_screen vs 118-frame manifest (hover/focus/reduced-motion are board-level, not per-screen)"
+  - "work_scene profile_release desktop is media left / plate right (founder 2026-08-14); home_featured stays plate left / media right"
+  - "home discovery cards are WePresent accent_soft frames; home authors carousel has no «Авторы» heading (founder 2026-08-14); max-2 accent surfaces cap lifted for home"

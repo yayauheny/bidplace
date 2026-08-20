@@ -1,0 +1,37 @@
+You are mechanically building the bidplace creator-first design system in Pen. This session builds STAGE 1 (foundations) only: exactly two board frames, plus reusable styles and icon components. Do not build any other screens or components yet.
+
+READ FIRST (files in the working directory; the only sources of truth):
+1. design/creator-first/spec/design-system.yaml — every token value: color.*, typography (families, roles with per-breakpoint sizes), spacing, shape, border, elevation, iconography.required, motion, accessibility.
+2. design/creator-first/spec/pen-build-plan.md — section "1. Build order — stage 1: foundations" and manifest rows F001, F002.
+
+HARD RULES:
+- Invent nothing. Every hex, size, radius, shadow, font family/size/weight/line-height, and label comes from design-system.yaml. If a needed value is absent, omit that element and add a small text note "Missing spec: <element>".
+- Fonts: ONLY "Piazzolla" (weights 500, 600, 700) and "Golos Text" (weights 400, 500, 600, 700). Static TTFs exist at design/creator-first/assets/fonts/*.ttf if you need to register them. No other font may appear anywhere, including labels.
+- Icons: ONLY the SVG files under design/creator-first/assets/icons/regular/ and design/creator-first/assets/icons/fill/. Read each SVG file and reproduce its exact vector path data at the 24px grid. Never redraw approximations, never substitute another glyph, never edit the viewBox.
+- No emoji. Sample/visible text in Russian.
+- Page background inside the boards: canvas #FAF4EA (token "canvas").
+
+BUILD 1 — reusable styles (create BEFORE the frames so everything references them):
+- Color styles, one per token in design-system.yaml color.*, named exactly by token id (canvas, canvas_deep, canvas_deep_hover, surface, ink, ink_soft, hairline, border_control, disabled_surface, accent_periwinkle_strong, accent_periwinkle_soft, accent_teal_strong, accent_teal_soft, accent_orange_strong, accent_orange_soft, accent_yellow_strong, accent_yellow_soft, accent_pink_strong, accent_pink_soft, accent_brown_strong, accent_brown_soft, action_primary, action_primary_hover, success, success_soft, error, error_soft, focus_ring, focus_ring_inverse, live_dot, scrim, mirror_caption_veil, mirror_caption_fallback).
+- Text styles for every typography role × breakpoint, named "role/breakpoint" (e.g. display_1/desktop, display_1/tablet, display_1/mobile, … body/desktop … price_sm/mobile). Use the exact family, weight, size, line_height, letter_spacing from the YAML. kicker is uppercase per its spec.
+- Effect styles e1, e2, e3 exactly per elevation block.
+
+BUILD 2 — frame named exactly "foundations/tokens" (board, width 1600, height as needed, generous 64px section spacing, section titles in title_1 style):
+Sections in order:
+1. Color swatches grid: one card per color token — swatch block (120x88, radius 16, the token color; hairline border for light values), then token id (label style, ink), hex value (caption, ink_soft), contrast intent line from YAML (caption, ink_soft). Group neutrals, accent pairs, semantic, overlay tokens in labeled rows.
+2. Typography ramp: for each role (display_1, display_2, display_3, title_1, title_2, body, body_strong, caption, label, label_sm, kicker, price_lg, price_md, price_sm) show the Russian sample «Тихий берег — Полина Мирош» rendered in the desktop text style, with a small caption "role · desktop 72/78" style metadata line (use each role's real numbers). Then a compact three-column block showing display_1 in desktop vs tablet vs mobile sizes to document breakpoint scaling (labels "1440", "1024", "390").
+3. Spacing scale: horizontal bars for each step [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 120] — bar height 16, width equal to the value ×4 for visibility, fill ink at 12% opacity, каждая подписана значением (caption).
+4. Radius chips: cards 96x96 fill surface hairline border, one per shape token (radius_media 24, radius_media_inner 16, radius_scene 28, radius_card 24, radius_input 14, radius_dialog_desktop 28, radius_sheet_top_mobile 24, radius_pill 999) each with its radius applied and labeled.
+5. Elevation cards: three 200x120 surface cards with e1, e2, e3 applied, labeled with the exact shadow strings.
+6. Accent row: six pairs in accent_order (periwinkle, teal, orange, yellow, pink, brown) — for each, a strong swatch with its declared foreground text sample («Aa Бб») and a soft swatch with ink text sample, labeled accent_01…accent_06 plus the token names.
+7. Status colors row: static (non-master) samples of the five status chip appearances per component-specs status_chip variants: «Идут торги» (ink pill, white text, 8px live_dot green dot), «Релиз 24 августа, 19:00» (surface pill, hairline border, ink text), «Продлено · 04:12» (accent_yellow_soft pill, ink), «Завершено» (disabled_surface pill, ink_soft), «Продано» (disabled_surface pill, ink_soft). Pill height 28, padding-h 12, label_sm.
+ANNOTATION (text block placed OUTSIDE the frame, to the right of it, width 420, caption style): quote verbatim the accent_selection.algorithm_pseudocode from design-system.yaml, then list motion.durations and motion.easings values, then the reduced_motion rule sentence.
+
+BUILD 3 — frame named exactly "foundations/icons" (board, width 1600):
+- Title row, then a grid of icon cells: one cell per entry in design-system.yaml iconography.required, in YAML order. Each cell: 24px icon rendered from the exact packet SVG on a 48x48 surface tile (radius 12, hairline border), the canonical Phosphor name below (label_sm, ink), the role id below that (caption, ink_soft).
+- Make each icon a reusable component named "icon/<role>" (e.g. icon/search, icon/plus … icon/nav_profile, icon/spinner, icon/follow_heart, icon/wishlist_bookmark, icon/play, icon/pause, icon/speaker_on, icon/speaker_off). Fill-weight counterparts (fill/heart.svg, fill/bookmark.svg) are separate components icon/follow_heart_fill and icon/wishlist_bookmark_fill shown next to their regular versions.
+- Separate the last 7 designed_post_mvp entries (follow_heart + fill, wishlist_bookmark + fill, play, pause, speaker_on, speaker_off) into a visually distinct sub-group with a kicker label "designed_post_mvp — только future boards".
+- Also show the three declared sizes (24 standard, 20 small, 16 inline) once, using icon/search as the sample, labeled.
+ANNOTATION outside the frame: iconography.rules list verbatim (4 bullets).
+
+VERIFY before finishing: exactly 2 frames exist named "foundations/tokens" and "foundations/icons"; every color style matches YAML hex exactly; every text style matches family/weight/size/line-height exactly; all 32 icons present and componentized; no fonts other than Piazzolla/Golos Text; no invented values.

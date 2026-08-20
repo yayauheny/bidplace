@@ -1,0 +1,408 @@
+# bidplace creator-first — content fixtures
+# ALL PERSONS, WORKS, PRICES, BIDS, TIMES, AND MEDIA INTENTS BELOW ARE INVENTED
+# DESIGN FIXTURES for stress-testing. They are not product facts, provenance
+# claims, real bids, or real people. Label: fixture_invented = true (global).
+
+meta:
+  fixture_invented: true
+  language: "ru"
+  currency: "BYN"
+  note: "Media described by intent + aspect ratio and mapped to stable asset ids in media_asset_manifest below. The Pen builder uses ONLY files at manifest asset_path values — it never invents, searches, or generates imagery. No real artwork is claimed."
+
+creators:
+  - id: creator_rich
+    scenario: "Painter with rich process photography (brief scenario 1)"
+    slug: "polina-mirosh"
+    fullName: "Полина Мирош"
+    sellerType: "creator"
+    discipline: "Живопись, масло и левкас"
+    country: "Беларусь"
+    profilePhoto: {asset_id: asset_creator_polina_portrait, intent: "studio portrait, warm daylight, looking at camera", ratio: "3:4"}
+    shortDescription_long: >-
+      Пишу медленные пейзажи северной Беларуси: болота под низким небом, кромки
+      леса, свет после дождя. Работаю сериями — одна местность, один сезон,
+      несколько состояний. Для меня картина начинается не с холста, а с дороги:
+      сначала долгие прогулки и этюды на месте, потом левкас, подмалёвок и
+      несколько недель лессировок в мастерской. Люблю, когда у работы есть
+      дневник — фотографии этапов, заметки, следы сомнений. Покупателю я отдаю
+      не только предмет, но и всю его историю.
+    shortDescription_short: "Пишу медленные пейзажи северной Беларуси."
+    links: {telegramUrl: "https://t.me/fixture", instagramUrl: "https://instagram.com/fixture", websiteUrl: "https://fixture.example"}
+    statusCounts: {SCHEDULED: 1, LIVE: 1, ENDED: 3}
+    workCount: 5
+
+  - id: creator_other_discipline
+    scenario: "Non-fine-art discipline to prove inclusivity (brief scenario 2)"
+    frame_refs: ["creator-profile/1440/other-discipline", "work-detail/1440/live-no-bids (via work_ceramics_live)"]
+    slug: "artyom-hanchar"
+    fullName: "Артём Гончар"
+    sellerType: "creator"
+    discipline: "Керамика ручной формовки"
+    country: "Беларусь"
+    profilePhoto: {asset_id: asset_creator_artyom_portrait, intent: "hands shaping clay on wheel, side light", ratio: "3:4"}
+    shortDescription_long: >-
+      Делаю посуду и вазы из шамота с полевыми обжигами. Каждая партия — маленькая
+      серия из пяти-семи предметов, дальше форма уходит. Глазури смешиваю сам,
+      поэтому повторить цвет невозможно даже при желании.
+    links: {socialLink: "https://example.social/fixture"}  # legacy single link case (brief scenario: one legacy link only)
+    statusCounts: {SCHEDULED: 0, LIVE: 1, ENDED: 0}
+    workCount: 1
+
+  - id: creator_minimal
+    scenario: "New creator, minimal content (brief scenario 3)"
+    slug: "ksenia-lapko"
+    fullName: "Ксения Лапко"
+    sellerType: "creator"
+    discipline: "Графика"
+    country: "Беларусь"
+    profilePhoto: null   # photo_missing state
+    shortDescription_short: "Тушь, бумага, тишина."
+    links: {socialLink: "https://example.social/fixture2"}
+    statusCounts: {SCHEDULED: 1, LIVE: 0, ENDED: 0}
+    workCount: 1
+
+  - id: creator_long_names
+    scenario: "Long name + long titles stress (brief scenario: long creator name)"
+    slug: "alexandra-viktoria"
+    fullName: "Александра-Виктория Круглова-Пташникова"   # 39 chars (actual measured length; longest realistic name fixture)
+    sellerType: "creator"
+    discipline: "Текстильные объекты, ручная вышивка по фотографии, печать на льне и хлопке, экспериментальные техники соединения текстиля с архивными семейными снимками"  # 152 chars (actual measured; stresses the confirmed 160 limit)
+    country: "Беларусь"
+    profilePhoto: {asset_id: asset_creator_alexandra_portrait, intent: "portrait against textile backdrop", ratio: "3:4"}
+    shortDescription_long: >-
+      Работаю на границе фотографии и текстиля: печатаю снимки на льне и прошиваю
+      их вручную, слой за слоем, пока изображение не начнёт жить собственной
+      фактурой. Каждая работа существует в единственном экземпляре.
+    links: {telegramUrl: "https://t.me/fixture3", websiteUrl: "https://fixture3.example"}
+    statusCounts: {SCHEDULED: 0, LIVE: 1, ENDED: 1}
+    workCount: 2
+
+works:
+  - id: work_rich_live
+    creator: creator_rich
+    scenario: "Multi-image, rich story, six process steps, LIVE"
+    publicId: "w-1024"
+    title: "Тихий берег"
+    category: "Живопись"
+    value_statement: "Большой пейзаж из серии «Полесье», написанный за три недели на месте и в мастерской."
+    story: >-
+      «Тихий берег» начался с апрельской поездки на Припять, когда вода стояла
+      выше обычного и деревья выходили из разлива, как тёмные свечи. Я сделала
+      два десятка этюдов и почти месяц не решалась начать большой холст.
+      Основной слой написан за одну долгую сессию, потом были лессировки —
+      тонкие, почти прозрачные, чтобы сохранить дыхание воды. Это последняя
+      работа серии и единственная, где горизонт почти растворён.
+    uniqueness: "Единственный большой формат серии «Полесье»; авторская техника лессировок по левкасу."
+    provenance: "Написана в 2026 году в мастерской автора в Минске; ранее не выставлялась и не публиковалась."
+    facts: {technique: "Масло, левкас", materials: "Лён, дубовый подрамник", dimensions: "120 × 90 см", weight: "4,2 кг", year: "2026", condition: "Отличное", packaging: "Жёсткий короб, углы из пенопласта"}
+    city: "Минск"
+    delivery: "Личная передача в Минске или доставка по Беларуси перевозчиком после договорённости."
+    images:
+      - {asset_id: asset_w1024_01_cover, intent: "full front view of painting, even light", ratio: "3:4", role: "cover"}
+      - {asset_id: asset_w1024_02_macro, intent: "macro of glazing texture", ratio: "1:1"}
+      - {asset_id: asset_w1024_03_studio, intent: "painting on easel in studio", ratio: "4:3"}
+      - {asset_id: asset_w1024_04_detail, intent: "detail of horizon line", ratio: "1:1"}
+      - {asset_id: asset_w1024_05_interior, intent: "painting in interior above sofa, scale reference", ratio: "4:3"}
+      - {asset_id: asset_w1024_06_back, intent: "back of canvas with signature", ratio: "3:4"}
+    creation_intro: "Серия «Полесье» пишется с 2024 года; каждый холст начинается с этюдов на месте."
+    creation_steps:
+      - {title: "Этюды на разливе", body: "Двадцать быстрых этюдов маслом по картону за четыре дня.", image: {asset_id: asset_w1024_s1_plein_air, intent: "plein air easel by flooded river", ratio: "3:4"}}
+      - {title: "Левкас", body: "Пять слоёв левкаса с промежуточной шлифовкой.", image: {asset_id: asset_w1024_s2_gesso, intent: "white gesso panel closeup", ratio: "3:4"}}
+      - {title: "Подмалёвок", body: "Тёплая умбра, вся композиция за одну сессию.", image: {asset_id: asset_w1024_s3_umber, intent: "umber underpainting", ratio: "3:4"}}
+      - {title: "Основной слой", body: "Небо и вода — мокрым по мокрому.", image: {asset_id: asset_w1024_s4_working, intent: "artist working, brush in hand", ratio: "3:4"}}
+      - {title: "Лессировки", body: "Три недели тонких прозрачных слоёв.", image: {asset_id: asset_w1024_s5_glaze, intent: "thin glaze layer macro", ratio: "3:4"}}
+      - {title: "Подпись и покрытие", body: "Дамарный лак, подпись, паспорт работы.", image: {asset_id: asset_w1024_s6_signature, intent: "signature corner", ratio: "3:4"}}
+    video: {present: true, poster_asset_id: asset_w1024_s4_working, label: "designed_post_mvp — video_process_story; never required for MVP layout"}
+    listing:
+      status: "LIVE"
+      currency: "BYN"
+      start_price: 900
+      current_price: 1250
+      next_minimum: 1300   # server-provided display value
+      bid_count: 7
+      starts_at: "2026-08-10T19:00+03:00"
+      ends_at: "2026-08-16T20:00+03:00"
+      countdown_display: "2 дн 4 ч"
+
+  - id: work_minimal_scheduled
+    creator: creator_minimal
+    scenario: "One image, no steps, no video, SCHEDULED (brief scenario 2/4)"
+    frame_refs: ["work-detail/1440/scheduled-minimal (minimal-content work)", "work-detail/390/scheduled-minimal", "bid-states/01 scheduled_preview"]
+    publicId: "w-2048"
+    title: "Свет 03"
+    category: "Графика"
+    value_statement: "Лист тушью из первой серии автора."
+    story: "Серия «Свет» — двенадцать листов тушью, сделанных за одну зиму. Каждый лист — одно движение кисти без права на поправку."
+    uniqueness: "Единственный экземпляр; лист не тиражировался."
+    provenance: "Из мастерской автора, 2026 год."
+    facts: {materials: "Тушь, бумага 300 г/м²", dimensions: "42 × 59,4 см", year: "2026"}   # technique/weight/condition/packaging intentionally missing
+    city: "Гродно"
+    delivery: "Отправка почтой по Беларуси в жёстком тубусе."
+    images:
+      - {asset_id: asset_w2048_01_cover, intent: "single ink sheet, flat scan look", ratio: "3:4", role: "cover"}
+    creation_intro: null
+    creation_steps: []
+    video: {present: false}
+    listing:
+      status: "SCHEDULED"
+      currency: "BYN"
+      start_price: 180
+      starts_at: "2026-08-24T19:00+03:00"
+      start_display: "Релиз 24 августа, 19:00"
+
+  - id: work_long_title_live
+    creator: creator_long_names
+    scenario: "Long title + long descriptor stress, LIVE"
+    publicId: "w-3072"
+    title: "Портрет незнакомки с гранатовым браслетом в зимнем саду после дождя"   # 67 chars (actual measured length)
+    category: "Текстиль"
+    value_statement: "Фотография, напечатанная на льне и прошитая вручную более чем сорока тысячами стежков."
+    story: "Работа собиралась восемь месяцев: печать выцветала, и я прошивала её заново, слой за слоем."
+    uniqueness: "Единственный экземпляр; повторение технически невозможно."
+    provenance: "Мастерская автора, Минск, 2025–2026."
+    facts: {technique: "Печать на льне, ручная вышивка", materials: "Лён, хлопковая нить", dimensions: "80 × 100 см", year: "2026", condition: "Отличное"}
+    city: "Минск"
+    delivery: "Личная передача в Минске."
+    images:
+      - {asset_id: asset_w3072_01_cover, intent: "textile piece full view on wall", ratio: "3:4", role: "cover"}
+      - {asset_id: asset_w3072_02_stitches, intent: "macro of stitches over printed image", ratio: "1:1"}
+      - {asset_id: asset_w3072_03_wip, intent: "work in progress on frame", ratio: "4:3"}
+    creation_steps:
+      - {title: "Печать", body: "Три пробы печати на разном льне.", image: {asset_id: asset_w3072_s1_print, intent: "linen print test strips", ratio: "3:4"}}
+      - {title: "Вышивка", body: "Сорок тысяч стежков за восемь месяцев.", image: {asset_id: asset_w3072_s2_stitch, intent: "hand stitching closeup", ratio: "3:4"}}
+    listing:
+      status: "LIVE"
+      currency: "BYN"
+      start_price: 400
+      current_price: 640
+      next_minimum: 670
+      bid_count: 5
+      ends_at: "2026-08-14T21:00+03:00"
+      countdown_display: "22 ч 40 мин"
+
+  - id: work_ceramics_live
+    creator: creator_other_discipline
+    scenario: "Non-painting discipline, LIVE, few images"
+    publicId: "w-4096"
+    title: "Ваза «Полевой обжиг №7»"
+    category: "Керамика"
+    value_statement: "Шамотная ваза из седьмого полевого обжига; глазурь легла единственным возможным образом."
+    story: "Седьмой обжиг шёл четырнадцать часов на берёзе и ольхе. Из девяти предметов уцелели три; эта ваза — самая крупная."
+    uniqueness: "Пепловая глазурь не повторяется: рисунок зависит от ветра и температуры конкретного обжига."
+    provenance: "Мастерская автора под Минском, июль 2026."
+    facts: {technique: "Ручная формовка, полевой обжиг", materials: "Шамот, пепловая глазурь", dimensions: "34 × 22 см", weight: "2,1 кг", year: "2026", packaging: "Двойной короб, стружка"}
+    city: "Минск"
+    delivery: "Передача в Минске или доставка перевозчиком по Беларуси."
+    images:
+      - {asset_id: asset_w4096_01_cover, intent: "vase on neutral pedestal", ratio: "3:4", role: "cover"}
+      - {asset_id: asset_w4096_02_glaze, intent: "glaze texture macro", ratio: "1:1"}
+      - {asset_id: asset_w4096_03_kiln, intent: "field kiln fire at dusk", ratio: "4:3"}
+    listing:
+      status: "LIVE"
+      currency: "BYN"
+      start_price: 220
+      current_price: 220
+      next_minimum: 240
+      bid_count: 0    # live with no bids yet: history shows «Ставок пока нет»
+      ends_at: "2026-08-15T20:00+03:00"
+      countdown_display: "1 дн 20 ч"
+
+  # Extra discovery works — founder asked to fill the 6–8 card home grid
+  # using existing Gate M photos (no new photography).
+  - id: work_plein_air_ended
+    creator: creator_rich
+    scenario: "Ended painting using plein-air process photo as cover"
+    publicId: "w-5120"
+    title: "Этюды на разливе"
+    category: "Живопись"
+    value_statement: "Двадцать быстрых этюдов маслом по картону за четыре дня на Припяти."
+    story: "Серия картонных этюдов с апрельского разлива; это последний сохранившийся лист."
+    uniqueness: "Единственный сохранившийся этюд серии; остальные ушли в грунт подмалёвка."
+    provenance: "Мастерская автора, Минск, 2026."
+    facts: {technique: "Масло по картону", materials: "Картон, масло", dimensions: "24 × 32 см", year: "2026"}
+    city: "Минск"
+    delivery: "Личная передача в Минске."
+    images:
+      - {asset_id: asset_w1024_s1_plein_air, intent: "plein air easel by flooded river", ratio: "3:4", role: "cover"}
+    listing:
+      status: "ENDED"
+      currency: "BYN"
+      start_price: 320
+      current_price: 480
+      bid_count: 4
+      ends_at: "2026-08-08T20:00+03:00"
+
+  - id: work_linen_wip_live
+    creator: creator_long_names
+    scenario: "Second textile work using existing WIP photo as cover"
+    publicId: "w-6144"
+    title: "Лён. Проба III"
+    category: "Текстиль"
+    value_statement: "Печатная проба на льне до вышивки; оставлена как самостоятельная работа."
+    story: "Третья проба печати на грубом льне. Стежок не начинала — фактура бумаги и пигмента оказалась достаточным событием."
+    uniqueness: "Единственная проба, не пошедшая в вышивку."
+    provenance: "Мастерская автора, Минск, 2026."
+    facts: {technique: "Пигментная печать на льне", materials: "Лён", dimensions: "40 × 50 см", year: "2026"}
+    city: "Минск"
+    delivery: "Личная передача в Минске."
+    images:
+      - {asset_id: asset_w3072_03_wip, intent: "work in progress on frame", ratio: "4:3", role: "cover"}
+    listing:
+      status: "LIVE"
+      currency: "BYN"
+      start_price: 280
+      current_price: 310
+      next_minimum: 340
+      bid_count: 2
+      ends_at: "2026-08-18T19:00+03:00"
+      countdown_display: "4 дн 2 ч"
+
+auction_state_fixtures:
+  soft_close_extension:
+    base_work: work_long_title_live
+    banner: "Аукцион продлён · осталось 04:12"
+    rule_display: "Ставка в последние 60 секунд продлевает торги на 60 секунд (не более 10 минут суммарно)."
+    frame_refs: ["bid-states/14 panel_soft_close"]
+  ended_with_winner:
+    base_work: work_rich_live
+    final_price: 1450
+    winner_alias: "tikhon_v"
+    chip: "Продано"
+    ended_display: "Завершён 16 августа, 20:04"
+    frame_refs: ["work-detail/1440/ended-won-viewer (full screen, panel ended_won_viewer)", "bid-states/15 panel_ended_won_viewer", "bid-states/16 panel_ended_lost"]
+  ended_no_bids:
+    base_work: work_minimal_scheduled
+    chip: "Завершено"
+    caption: "Аукцион завершён без ставок"
+    frame_refs: ["bid-states/17 panel_ended_no_bids"]
+  stale_minimum:
+    old_minimum: 1300
+    new_minimum: 1350
+    message: "Минимальная ставка изменилась — 1 350 BYN"
+    frame_refs: ["bid-states/10 bid_dialog_stale_minimum"]
+  rejected_server_example:
+    message: "Ставка не принята: аукцион уже завершён. Обновите страницу."
+    frame_refs: ["bid-states/12 bid_dialog_rejected_server"]
+  role_disabled_admin: "Администратор не участвует в торгах"
+  role_disabled_self: "Это ваша работа — ставки недоступны"
+
+# Deterministic accent expectations, precomputed with the exact algorithm in
+# design-system.yaml accent_selection (hash*31 mod 2^32, mod 6). The Pen builder
+# uses these verbatim and computes nothing.
+accent_assignments:
+  creators:
+    polina-mirosh: {index: 2, accent: orange}
+    artyom-hanchar: {index: 4, accent: pink}
+    ksenia-lapko: {index: 3, accent: yellow}
+    alexandra-viktoria: {index: 0, accent: periwinkle}
+  works:
+    w-1024: {index: 3, accent: yellow}
+    w-2048: {index: 4, accent: pink}
+    w-3072: {index: 2, accent: orange}
+    w-4096: {index: 3, accent: yellow}
+    w-5120: {index: 1, accent: teal}
+    w-6144: {index: 5, accent: brown}
+  note: "Adjacent collisions (w-1024 and w-4096 both yellow) are expected and acceptable. w-5120/w-6144 added to fill the home 6-card grid from existing Gate M photos."
+
+bid_history_fixture:   # aliases + amounts + times only (public contract)
+  - {alias: "anna_k", amount: 1250, time: "сегодня, 14:32", leader: true}
+  - {alias: "collector_by", amount: 1200, time: "сегодня, 11:05"}
+  - {alias: "m_hlebus", amount: 1150, time: "вчера, 22:47"}
+  - {alias: "anna_k", amount: 1100, time: "вчера, 20:16"}
+  - {alias: "severny_vecher", amount: 1000, time: "12 августа, 09:30"}
+  - {alias: "collector_by", amount: 950, time: "11 августа, 18:04"}
+  - {alias: "first_light", amount: 900, time: "10 августа, 19:02"}
+
+ui_copy:
+  home_manifesto: "Работы с историей — напрямую от авторов"
+  home_manifesto_sub: "Живые авторы, настоящие предметы и честный аукцион"
+  home_sections: {live: "Сейчас на аукционе", creators: "Авторы", new: "Новые работы", become: "Покажите свою работу миру"}
+  nav: {home: "Главная", creators: "Авторы", works: "Работы", explore: "Обзор", profile: "Профиль", login: "Войти", search_placeholder: "Поиск работ и авторов"}
+  creator_action_labels: {guest_or_non_creator: "Стать автором", approved: "Добавить работу", pending_review: "Кабинет автора", changes_requested: "Кабинет автора", restricted: "Кабинет автора"}
+  auction: {current_bid: "Текущая ставка", start_price: "Стартовая цена", place_bid: "Сделать ставку", raise_bid: "Повысить ставку", login_to_bid: "Войти, чтобы сделать ставку", confirm_email: "Подтвердить почту", accept_rules: "Принять правила", leading: "Вы лидируете", outbid: "Вашу ставку перебили", until_end: "До завершения", starts: "Старт", how_it_works: "Как работает аукцион", bids_open_at_start: "Ставки откроются в момент старта", min_bid: "Минимальная ставка", confirm_bid: "Подтвердить ставку", checking_bid: "Проверяем ставку…", final_bid: "Финальная ставка", winner: "победитель", no_bids_yet: "Ставок пока нет"}
+  rules_version_fixture: "Правила сервиса — версия от 1 августа 2026"   # fixture_invented; server-owned in product
+  auth: {welcome: "Привет!", sub: "Войдите, чтобы делать ставки и следить за авторами", continue: "Продолжить", code_title: "Код из письма", resend: "Отправить ещё раз", legal: "Продолжая, вы принимаете правила сервиса и политику конфиденциальности"}
+  # auth.sub scope note: «делать ставки» = confirmed_mvp (bidding); «следить за
+  # авторами» = designed_post_mvp (follow_creator, backend_required). The phrase
+  # is approved and stays; the split of phases is explicit here and in
+  # component-specs follow_creator.
+  follow: # designed_post_mvp — used only on future boards (follow_creator component)
+    follow: "Следить"
+    following: "Вы следите"
+    error: "Не получилось. Попробуйте ещё раз"
+    a11y_follow: "Следить за автором"
+    a11y_following: "Вы следите за автором"
+  wishlist: # designed_post_mvp — used only on future boards (wishlist_saved_work component)
+    save: "Сохранить"
+    saved: "Сохранено"
+    error: "Не получилось. Попробуйте ещё раз"
+    a11y_save: "Сохранить работу"
+    a11y_saved: "Работа сохранена"
+    announce_saved: "Работа сохранена"
+    announce_removed: "Работа удалена из сохранённых"
+  video: # designed_post_mvp — used only on future boards (video_process_story component)
+    kicker: "Видео о процессе"
+    play: "Смотреть"
+    pause: "Пауза"
+    mute: "Выключить звук"
+    unmute: "Включить звук"
+    error: "Не удалось загрузить видео"
+    retry: "Повторить"
+  onboarding: {intro_title: "Станьте автором на bidplace", benefit_1: "Публичный профиль и адрес, которым удобно делиться", benefit_2: "Страница работы с историей и фотографиями", benefit_3: "Честный аукцион без витрины и мерчандайзинга", create_cabinet: "Создать кабинет", moderation_note: "Заявку проверяет модератор", pending_title: "Заявка на проверке", pending_body: "Мы посмотрим профиль и ответим. После одобрения вы сможете добавить первую работу."}
+  work_creation: {submit: "Отправить на модерацию", after_submit_title: "Работа на проверке", after_submit_body: "После проверки модератором работа станет публичной, и вы сможете назначить аукцион."}
+  errors: {load_failed: "Не удалось загрузить", retry: "Повторить", offline: "Нет соединения. Повторить", image_unavailable: "Изображение недоступно"}
+  empty: {explore: "Ничего не нашлось", explore_body: "Попробуйте изменить запрос или сбросить фильтры", reset_filters: "Сбросить фильтры", profile_works: "Пока без публичных работ", profile_works_body: "Автор ещё готовит первую публикацию"}
+
+future_concepts_labels:
+  note: "These may appear ONLY on clearly labeled future boards after P0 approval; never as MVP controls. product_phase per item below."
+  items:
+    - {id: follow_creator_release_reminder, label: "Следить за автором — напоминания о релизах", product_phase: designed_post_mvp, implementation_status: backend_required, design: "full contract in component-specs follow_creator + future_follow_creator board"}
+    - {id: wishlist_saved_work, label: "Сохранённые работы", product_phase: designed_post_mvp, implementation_status: backend_required, design: "full contract in component-specs wishlist_saved_work + future_wishlist_saved_work board"}
+    - {id: fixed_price_sale, label: "Продажа по фиксированной цене", product_phase: unresolved, implementation_status: product_decision_required}
+    - {id: editorial_collections, label: "Редакционные подборки", product_phase: unresolved, implementation_status: product_decision_required}
+    - {id: video_process_story, label: "Видео о процессе", product_phase: designed_post_mvp, implementation_status: backend_required, design: "full contract in component-specs video_process_story + future_video_process_story board"}
+
+# ============================================================================
+# MEDIA ASSET MANIFEST — the only allowed sources of imagery in Pen.
+# The Pen builder never invents, searches, or generates a photograph. Every
+# media slot maps to a stable asset id below. Files exist at asset_path
+# (status: ready). The Pen builder must not search or generate imagery.
+# ============================================================================
+media_asset_manifest:
+  resolution_rule: "Required resolution = 2x of the largest render slot for the ratio: 3:4 → 1200x1600, 1:1 → 1200x1200, 4:3 → 1600x1200 (minimums; larger allowed)."
+  crop_rule_default: "fit cover, focal center; subject must survive center crop at 3:4, 1:1 and 16:10 card slots; no text/watermarks in frame."
+  path_root: "design/creator-first/assets/media/"
+  status_note: "status: ready = file exists at asset_path. Pen builder uses only these files."
+  assets:
+    # --- creator portraits ---
+    - {id: asset_creator_polina_portrait, subject: "studio portrait, warm daylight, looking at camera", ratio: "3:4", crop: "head and shoulders fully inside center 1:1 crop", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_creator_polina_portrait.jpg", status: ready}
+    - {id: asset_creator_artyom_portrait, subject: "hands shaping clay on wheel, side light", ratio: "3:4", crop: "hands + wheel centered; readable at 240px width", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_creator_artyom_portrait.jpg", status: ready}
+    - {id: asset_creator_alexandra_portrait, subject: "portrait against textile backdrop", ratio: "3:4", crop: "face inside center 1:1 crop", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_creator_alexandra_portrait.jpg", status: ready}
+    # creator_minimal (ksenia-lapko) intentionally has NO asset — photo_missing state.
+    # --- work w-1024 «Тихий берег» gallery ---
+    - {id: asset_w1024_01_cover, subject: "full front view of landscape painting, even light", ratio: "3:4", crop: "entire canvas visible incl. edges", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_01_cover.jpg", status: ready}
+    - {id: asset_w1024_02_macro, subject: "macro of glazing texture", ratio: "1:1", crop: "texture fills frame", resolution: "1200x1200", asset_path: "design/creator-first/assets/media/asset_w1024_02_macro.jpg", status: ready}
+    - {id: asset_w1024_03_studio, subject: "painting on easel in studio", ratio: "4:3", crop: "easel centered, breathing room both sides", resolution: "1600x1200", asset_path: "design/creator-first/assets/media/asset_w1024_03_studio.jpg", status: ready}
+    - {id: asset_w1024_04_detail, subject: "detail of horizon line", ratio: "1:1", crop: "horizon in middle third", resolution: "1200x1200", asset_path: "design/creator-first/assets/media/asset_w1024_04_detail.jpg", status: ready}
+    - {id: asset_w1024_05_interior, subject: "painting in interior above sofa, scale reference", ratio: "4:3", crop: "painting fully visible", resolution: "1600x1200", asset_path: "design/creator-first/assets/media/asset_w1024_05_interior.jpg", status: ready}
+    - {id: asset_w1024_06_back, subject: "back of canvas with signature", ratio: "3:4", crop: "stretcher bars visible", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_06_back.jpg", status: ready}
+    # --- work w-1024 process steps ---
+    - {id: asset_w1024_s1_plein_air, subject: "plein air easel by flooded river", ratio: "3:4", crop: "easel + water context", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s1_plein_air.jpg", status: ready}
+    - {id: asset_w1024_s2_gesso, subject: "white gesso panel closeup", ratio: "3:4", crop: "surface texture visible", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s2_gesso.jpg", status: ready}
+    - {id: asset_w1024_s3_umber, subject: "umber underpainting", ratio: "3:4", crop: "composition readable", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s3_umber.jpg", status: ready}
+    - {id: asset_w1024_s4_working, subject: "artist working, brush in hand", ratio: "3:4", crop: "hand + canvas, no face required", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s4_working.jpg", status: ready}
+    - {id: asset_w1024_s5_glaze, subject: "thin glaze layer macro", ratio: "3:4", crop: "texture fills frame", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s5_glaze.jpg", status: ready}
+    - {id: asset_w1024_s6_signature, subject: "signature corner of canvas", ratio: "3:4", crop: "corner + signature readable", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w1024_s6_signature.jpg", status: ready}
+    # --- work w-2048 «Свет 03» ---
+    - {id: asset_w2048_01_cover, subject: "single ink sheet, flat scan look", ratio: "3:4", crop: "sheet edges visible on neutral ground", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w2048_01_cover.jpg", status: ready}
+    # --- work w-3072 «Портрет незнакомки…» ---
+    - {id: asset_w3072_01_cover, subject: "textile piece full view on wall", ratio: "3:4", crop: "entire piece + mounting visible", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w3072_01_cover.jpg", status: ready}
+    - {id: asset_w3072_02_stitches, subject: "macro of stitches over printed image", ratio: "1:1", crop: "stitch texture fills frame", resolution: "1200x1200", asset_path: "design/creator-first/assets/media/asset_w3072_02_stitches.jpg", status: ready}
+    - {id: asset_w3072_03_wip, subject: "work in progress on frame", ratio: "4:3", crop: "frame + hands context", resolution: "1600x1200", asset_path: "design/creator-first/assets/media/asset_w3072_03_wip.jpg", status: ready}
+    - {id: asset_w3072_s1_print, subject: "linen print test strips", ratio: "3:4", crop: "strips parallel, fill frame", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w3072_s1_print.jpg", status: ready}
+    - {id: asset_w3072_s2_stitch, subject: "hand stitching closeup", ratio: "3:4", crop: "needle + thread visible", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w3072_s2_stitch.jpg", status: ready}
+    # --- work w-4096 «Ваза "Полевой обжиг №7"» ---
+    - {id: asset_w4096_01_cover, subject: "ceramic vase on neutral pedestal", ratio: "3:4", crop: "full vase + pedestal top", resolution: "1200x1600", asset_path: "design/creator-first/assets/media/asset_w4096_01_cover.jpg", status: ready}
+    - {id: asset_w4096_02_glaze, subject: "ash glaze texture macro", ratio: "1:1", crop: "texture fills frame", resolution: "1200x1200", asset_path: "design/creator-first/assets/media/asset_w4096_02_glaze.jpg", status: ready}
+    - {id: asset_w4096_03_kiln, subject: "field kiln fire at dusk", ratio: "4:3", crop: "fire + kiln silhouette", resolution: "1600x1200", asset_path: "design/creator-first/assets/media/asset_w4096_03_kiln.jpg", status: ready}
+  sourcing_policy: "The asset-preparation pass may create test images. The Pen builder uses only already prepared files at asset_path and must not search or generate imagery. No real artist artwork is claimed; no branded or reference-site imagery."

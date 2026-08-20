@@ -1,0 +1,709 @@
+version: 2
+updated_at: "2026-08-13"
+status: "founder_reference_set_complete_ready_for_design_architect"
+purpose: >-
+  Curated reference contract for the creator-first redesign. Apply each source
+  only to the assigned problem; do not average all references into one style.
+
+asset_policy:
+  commit_binaries: false
+  local_root: "design/creator-first/references"
+  analysis_file: "design/creator-first/REFERENCE-ANALYSIS.md"
+  preferred_format: "full-resolution PNG or JPG"
+  annotation_authority:
+    founder: "Explicit founder preference; highest visual-reference weight."
+    research: "Distilled external research; useful but subordinate to founder decisions."
+    audit: "Interpretation to validate during the design pass."
+
+global_rules:
+  - "Creator and work are primary; commerce is a quiet service layer."
+  - "Use screenshots before live browsing."
+  - "Never copy third-party logos, assets, text, or proprietary brand identity."
+  - "Do not introduce data or interactions absent from the product audit."
+  - "A mobile screenshot is required before approving a reference-dependent mobile interaction."
+
+founder_anchors:
+  - id: "wepresent"
+    name: "WePresent"
+    url: "https://wepresent.wetransfer.com/"
+    tier: 1
+    influence: "equal primary; 50% of synthesis; structural/editorial owner"
+    authority: "founder"
+    roles:
+      - "global navigation"
+      - "homepage editorial rhythm"
+      - "creator cultural positioning"
+      - "mixed-size story grids"
+      - "dynamic card fills"
+    take:
+      - "immediate magazine-like cultural impression"
+      - "clear, restrained navigation despite expressive content"
+      - "large editorial statement with deliberate whitespace"
+      - "heterogeneous cards and sections"
+      - "creator and story as linked entities"
+    avoid:
+      - "publisher-only information architecture"
+      - "long editorial copy without transactional orientation"
+      - "literal typography, brand mark, assets, or pixel-copy"
+    assets:
+      - path: "design/creator-first/references/wepresent/01-editorial-hero.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Centered statement, sparse header, horizontal story parade, confident spacing."
+        apply_to: ["home", "global_navigation", "creator_scene"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/02-latest-stories-grid.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Mixed card widths, editorial grouping, restrained colored frames, room around content."
+        apply_to: ["home", "explore", "related_stories"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/03-home-manifesto-card-rail.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Display manifesto, sparse centered navigation, generous whitespace, and a vivid horizontal story rail."
+        apply_to: ["home", "global_navigation"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/04-selects-asymmetric-grid.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Mixed-size cards preserve one image-plus-caption anatomy while varied pastel fills create curation rather than catalog repetition."
+        apply_to: ["home", "explore", "work_card"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/05-homepage-rhythm-overview.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Page rhythm moves from manifesto to card parade to a calmer editorial grid."
+        apply_to: ["home"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/06-story-detail-text-and-photo-sequence.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Metadata rail, bounded reading column, short chapters, and journey photographs sequence the author/work story."
+        apply_to: ["creator_story", "work_story"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/07-keep-exploring-card-rail.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Primary work-card reference: dominant image, one concise caption, variable card width/fill, and quiet filters."
+        apply_to: ["work_card", "explore", "related_works"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/08-navigation-overlay-feature-card.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large rounded navigation overlay with clear categories and one square rounded featured-media card."
+        apply_to: ["global_navigation", "work_card"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/09-mobile-home-hero-stack.png"
+        platform: "web mobile"
+        status: "available_local"
+        take: "Intentional vertical hero, stacked swipe cue, and separate floating navigation surface."
+        apply_to: ["home_mobile", "mobile_navigation"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/10-mobile-latest-story-card.png"
+        platform: "web mobile"
+        status: "available_local"
+        take: "Single-column dominant media card with a separate readable caption field."
+        apply_to: ["work_card_mobile", "explore_mobile"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/11-mobile-navigation-overlay.png"
+        platform: "web mobile"
+        status: "available_local"
+        take: "Vertical primary navigation first, then one recommended media card, with explicit close/search controls."
+        apply_to: ["mobile_navigation"]
+        authority: "founder"
+      - path: "design/creator-first/references/wepresent/12-mobile-story-detail.png"
+        platform: "web mobile"
+        status: "available_local"
+        take: "Colored editorial hero flows into media, metadata, share/save and a narrow reading column."
+        apply_to: ["work_detail_mobile", "creator_story_mobile"]
+        authority: "founder"
+    missing_assets:
+      - "mobile creator/artist profile"
+
+  - id: "gethyped-bullit"
+    name: "Get Hyped / Bullit"
+    url: "https://www.gethyped.nl/work/bullit"
+    tier: 1
+    influence: "equal primary; 50% of synthesis; card/media/motion/energy owner"
+    authority: "founder"
+    roles:
+      - "work and creator card composition"
+      - "stacked/rotated media"
+      - "bold grotesk voice"
+      - "saturated framing"
+      - "short case-story chapters"
+    take:
+      - "photo-first presentation with minimal metadata"
+      - "controlled overlap and rotation"
+      - "separate concise information plate beside dominant media"
+      - "youthful color and confidence"
+      - "clear chapter rhythm and behind-the-scenes media"
+    avoid:
+      - "agency navigation and lead-generation CTA"
+      - "oversized treatment for every block"
+      - "hype language, excessive controls, and constant animation"
+      - "turning bidplace into a social-content agency site"
+    assets:
+      - path: "design/creator-first/references/gethyped/01-stacked-media-detail.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Dominant stacked media plus compact tilted description card; very low chrome."
+        apply_to: ["work_hero", "creator_feature"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/02-home-hero.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Bold opening statement and overlapping colored/media cards below the fold."
+        apply_to: ["home"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/03-editorial-copy.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large short thesis, small human portrait, compact explanatory copy."
+        apply_to: ["creator_story", "work_story"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/04-expertise-card-white.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "One thought, one image, one action, large whitespace."
+        apply_to: ["story_chapter", "facts_chapter"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/05-expertise-card-pink.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Color-filled chapter and casual portrait while preserving the same anatomy."
+        apply_to: ["story_chapter"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/06-expertise-card-green.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Controlled color variation across repeatable sections."
+        apply_to: ["story_chapter", "creator_profile"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/07-work-card-overlap.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Media cards with bright lower information fields and simple arrow action."
+        apply_to: ["work_card", "explore"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/08-stacked-media-hero.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Central media stack, compact copy panel, calm surrounding canvas."
+        apply_to: ["work_gallery", "creator_feature"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/09-video-triptych.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Three portrait media windows with different heights and simple rounded geometry."
+        apply_to: ["process_media", "future_video"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/10-story-layout.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large chapter heading separated from media and compact readable paragraphs."
+        apply_to: ["work_story", "creator_biography"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/11-results-cards.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Overlapping card field and vivid quantitative plate as composition only."
+        avoid: "Do not invent platform metrics or turn work value into growth statistics."
+        apply_to: ["explore_composition"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/12-home-hero-tilted-card-field.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large grotesk statement followed by a tilted field of vivid media and information cards."
+        apply_to: ["home"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/13-pill-navigation-active-state.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Compact grouped navigation with an unambiguous active state; use as local tabs grammar when appropriate."
+        apply_to: ["tabs", "filters"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/14-creator-intro-work-cards.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Creator statement and short copy lead into staggered media cards with one corner action."
+        apply_to: ["creator_profile", "work_card"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/15-work-card-trio-animation-state.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Stable tilted card geometry supports changing media without reflow; information remains concise."
+        apply_to: ["work_card", "card_motion"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/16-work-hero-video-caption-plate.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Dominant rounded work media with a separate angled information plate and quiet media controls."
+        apply_to: ["work_hero", "future_video"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/17-story-thesis-photo-triptych.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "One concise thesis followed by three staggered portrait process images."
+        apply_to: ["work_story", "creator_story", "process_media"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/18-behind-the-scenes-filmstrip.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Lightly rotated behind-the-scenes filmstrip; bidplace uses one visible next control plus swipe/drag and keyboard."
+        apply_to: ["process_gallery", "work_gallery"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/19-author-left-photo-right-copy.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large thesis above a small left portrait and bounded right text column."
+        apply_to: ["creator_story", "creator_profile"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/20-stacked-color-chapters.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Stacked vivid chapters create rhythm and anticipation; use selectively without scroll-jacking."
+        apply_to: ["work_story", "story_chapter"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/21-work-media-stack-info-card.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Founder target for work presentation: centered media stack, separate concise information card, low chrome."
+        apply_to: ["work_hero", "work_gallery"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/22-creator-story-editorial-layout.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Oversized creator thesis with left portrait and right narrative copy on a calm canvas."
+        apply_to: ["creator_profile", "creator_story"]
+        authority: "founder"
+      - path: "design/creator-first/references/gethyped/23-work-video-stack-info-card.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Alternative work stack confirms the same repeatable hero anatomy for video or portrait media."
+        apply_to: ["work_hero", "future_video"]
+        authority: "founder"
+    missing_assets:
+      - "mobile work page"
+      - "mobile stacked gallery interaction"
+      - "mobile navigation"
+
+supporting_references:
+  - id: "medallion"
+    name: "Medallion"
+    url: "https://medallion.fm/"
+    tier: 2
+    authority: "founder_and_research"
+    role: "Creator homebase plus the primary mobile control, onboarding, search, and validation grammar."
+    take:
+      - "creator is the top-level entity"
+      - "mobile simplicity and low control count"
+      - "work/release lives inside creator world"
+      - "large pill actions with one decision per step"
+      - "quiet rounded search and input surfaces"
+      - "visible loading, success, disabled, and keyboard states"
+      - "clear familiar icons and sequential screen transitions"
+    avoid:
+      - "unsupported fan metrics, posts, or community mechanics"
+      - "dark theme as a visual requirement"
+      - "music-service integrations, subscriptions, comments, follows, ranking percentages, and verification badges"
+    assets:
+      - path: "design/creator-first/references/medallion/01-onboarding-artist-search-grid.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "One centered question, quiet search pill, and a fast three-column visual identity grid with minimal chrome."
+        apply_to: ["mobile_search", "explore_creators", "onboarding"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/02-onboarding-connect-options.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "One decision screen with two large branded-action pills, optional skip, concise explanation, and strong vertical pacing."
+        apply_to: ["onboarding", "auth_options", "mobile_actions"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/03-onboarding-profile-photo.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Large preview card, obvious image-edit affordance, optional help link, and one bottom primary action."
+        apply_to: ["creator_profile_creation", "media_input"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/04-username-validation-loading.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Focused input with prefix/count, explicit async loading copy, disabled CTA, keyboard-safe composition, and no modal interruption."
+        apply_to: ["form_validation", "creator_profile_creation", "keyboard_state"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/05-username-validation-success.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Inline positive validation replaces loading feedback and activates the primary CTA without changing the screen hierarchy."
+        apply_to: ["form_validation", "creator_profile_creation", "success_state"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/06-auth-hero-email.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Compact visual proposition, one labeled field, one full-width primary action, and quiet legal copy above the safe area."
+        apply_to: ["auth", "onboarding"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/07-explore-search-suggested-artists.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Persistent quiet search, horizontally scrollable suggestion cards, one obvious card action, contextual panel, and three-item bottom navigation."
+        apply_to: ["explore_mobile", "mobile_search", "bottom_navigation"]
+        authority: "founder"
+      - path: "design/creator-first/references/medallion/08-content-detail-action-about-comments.png"
+        platform: "native mobile"
+        status: "available_local"
+        take: "Back/share chrome, clear identity and title, one large action, then an About surface and secondary content in strict sequence."
+        avoid: "Do not introduce subscribers-only access, comments, likes, or music-track semantics."
+        apply_to: ["work_detail_mobile", "mobile_information_sequence"]
+        authority: "founder"
+    status: "mobile_search_onboarding_validation_and_detail_assets_available"
+
+  - id: "avant-arte"
+    name: "Avant Arte"
+    url: "https://avantarte.com/"
+    tier: 2
+    authority: "founder_and_research"
+    role: "Work detail, process, materials, and object storytelling."
+    take:
+      - "artist → work → process → details → edition/provenance"
+      - "large object and detail media"
+      - "work worthy of a standalone story"
+    avoid:
+      - "luxury/conservative tone"
+      - "fashion-serif dominance"
+      - "price-on-request ambiguity"
+    assets:
+      - path: "design/creator-first/references/avant-arte/01-work-gallery-sticky-transaction.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large multi-angle object gallery beside a quiet sticky transaction panel and progressive detail accordions."
+        apply_to: ["work_detail", "transaction_panel", "work_facts"]
+        authority: "founder"
+      - path: "design/creator-first/references/avant-arte/02-work-hero-quiet-commerce.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Artwork dominates while author, title, price, edition/shipping and one action stay clear but subordinate."
+        apply_to: ["work_hero", "transaction_panel"]
+        authority: "founder"
+      - path: "design/creator-first/references/avant-arte/03-variant-selection-modal.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Simple visual option selection and one action; future-only unless a variant/fixed-sale contract is approved."
+        apply_to: ["future_variants", "future_fixed_price"]
+        authority: "founder"
+      - path: "design/creator-first/references/avant-arte/04-works-catalog-object-grid.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Consistent object staging and clear status pills across a calm grid. Treat the commerce-heavy labels as negative evidence for bidplace discovery cards."
+        avoid: "Do not surface price/deadline on default discovery cards or copy the draw mechanic."
+        apply_to: ["explore", "work_card_media"]
+        authority: "founder"
+      - path: "design/creator-first/references/avant-arte/05-artist-profile-artwork-banner.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "A creator portrait overlaps a wide work-context banner, creating an immediate author-plus-practice identity."
+        apply_to: ["creator_profile", "creator_hero"]
+        authority: "founder"
+      - path: "design/creator-first/references/avant-arte/06-artist-profile-works-tabs.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Clean identity hierarchy flows into simple Works/About tabs and an artwork-led grid."
+        avoid: "Do not invent update subscriptions or unsupported profile data."
+        apply_to: ["creator_profile", "creator_works"]
+        authority: "founder"
+    status: "desktop_work_transaction_catalog_and_creator_profile_assets_available; mobile_pending"
+
+  - id: "creator-publishing-flow"
+    name: "Creator publishing flow — source not confirmed"
+    tier: 2
+    authority: "founder"
+    role: "Visible creator activation and sequential mobile work creation."
+    take:
+      - "obvious plus-and-label primary creation action"
+      - "one principal task per screen"
+      - "media preview before publication"
+      - "clear category selection and disabled/review states"
+    avoid:
+      - "social post terminology"
+      - "collect/reward mechanics"
+      - "invented categories or moderation behavior"
+    assets:
+      - path: "design/creator-first/references/creator-publishing/01-mobile-create-work-flow.png"
+        platform: "native mobile concept"
+        status: "available_local"
+        take: "How-to-post explanation, persistent + New post action, preview-led creation, explicit field/category steps, and visible disabled state. Translate to creator profile/work vocabulary and real capability gates."
+        apply_to: ["creator_activation", "creator_onboarding", "work_creation_mobile"]
+        authority: "founder"
+    status: "one_mobile_flow_available; source_identity_unconfirmed"
+
+  - id: "foundation"
+    name: "Foundation — composition patterns only"
+    tier: 2
+    authority: "founder"
+    role: "Persistent creator action, split work layout, media stacking, bid-dialog anatomy, and bounded artwork atmosphere."
+    take:
+      - "high-visibility Create control in the global shell"
+      - "artwork-first split detail with compact transaction action"
+      - "stacked media communicating a set or multiple images"
+      - "short bid confirmation with work summary and clear disabled state"
+      - "bounded image-derived atmosphere where readability is protected"
+    avoid:
+      - "NFT, wallet, ETH, minting, packs, offers, feed, followers, and crypto taxonomy"
+      - "price-led public feed or dense marketplace metadata"
+      - "full-page low-contrast blur"
+    assets:
+      - path: "design/creator-first/references/foundation/01-created-grid-visible-create.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Global search/navigation keeps Create explicit while the main area remains artwork-led."
+        apply_to: ["global_navigation", "creator_activation", "explore"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/02-work-detail-story-media-stack.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Large media stack opposite creator/title/story and one bounded action surface."
+        apply_to: ["work_hero", "work_gallery"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/03-pack-selection-modal.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Three-column visual choice and stacked-image quantity cue as future interaction anatomy only."
+        avoid: "No packs, minting, ETH, or variant purchase in MVP."
+        apply_to: ["future_variants"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/04-sold-works-archive-grid.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Clean ended/archive work row with consistent media staging and one View all continuation."
+        avoid: "Do not emphasize sold price or use NFT labels."
+        apply_to: ["creator_archive", "ended_works"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/05-place-bid-modal.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Focused bid modal with short explanation, dark work summary, amount input, deadline/highest-bid context, and a single disabled/active action."
+        avoid: "No wallet balance, ETH, or client-owned auction calculations."
+        apply_to: ["bid_entry", "bid_confirmation"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/06-feed-visible-create-action.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Black Create pill remains permanently visible beside search/account controls."
+        avoid: "Do not import a social feed or Make Offer."
+        apply_to: ["global_navigation", "creator_activation"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/07-work-detail-visible-create.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Persistent Create action coexists with an artwork-first split detail and compact bid action."
+        avoid: "Do not import crypto navigation or collection semantics."
+        apply_to: ["global_navigation", "work_hero", "auction_action"]
+        authority: "founder"
+      - path: "design/creator-first/references/foundation/08-immersive-work-atmosphere.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Same-image atmosphere creates an immersive work scene while the original media and facts remain distinct."
+        avoid: "Do not let blur reduce contrast or become a per-creator generated theme."
+        apply_to: ["work_hero", "media_atmosphere"]
+        authority: "founder"
+    status: "eight_desktop_composition_assets_available"
+
+  - id: "mobbin-awards"
+    name: "Mobbin Awards — curator presentation"
+    tier: 2
+    authority: "founder"
+    role: "Creator card, creator preview, readable biography, and bounded lower mirror/blur caption."
+    take:
+      - "portrait-first creator grid"
+      - "large rounded profile preview surface"
+      - "short title over a bounded lower mirrored/blurred media strip"
+      - "comfortable long biography measure"
+    avoid:
+      - "awards or curator-only positioning"
+      - "effect on every media surface"
+      - "full-page blur or low-contrast text"
+    assets:
+      - path: "design/creator-first/references/mobbin-awards/01-curator-portrait-grid-blur-caption.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Simple portrait grid with rounded media and a quiet lower caption zone tied to each image."
+        apply_to: ["creator_card", "explore_creators"]
+        authority: "founder"
+      - path: "design/creator-first/references/mobbin-awards/02-curator-profile-modal.png"
+        platform: "web desktop/mobile-like overlay"
+        status: "available_local"
+        take: "Large rounded profile preview, immediate identity, image-first biography, and a bounded lower caption effect."
+        apply_to: ["creator_preview", "creator_profile", "media_caption"]
+        authority: "founder"
+      - path: "design/creator-first/references/mobbin-awards/03-curator-profile-bio.png"
+        platform: "web desktop/mobile-like overlay"
+        status: "available_local"
+        take: "Readable long biography with clear paragraph rhythm and no secondary chrome."
+        apply_to: ["creator_biography", "long_content_state"]
+        authority: "founder"
+    status: "three_creator_presentation_assets_available"
+
+  - id: "auction-layout-concept"
+    name: "Auction layout concept — source not confirmed"
+    tier: 3
+    authority: "founder"
+    role: "General composition mood for artwork-first split detail."
+    take:
+      - "large work media and concise creator/title/auction block"
+      - "clear separation between visual desire and transaction facts"
+    avoid:
+      - "wallet connection, ETH, or copied branding"
+    assets:
+      - path: "design/creator-first/references/concepts/01-auction-work-hero-purple-frame.png"
+        platform: "web desktop concept"
+        status: "available_local"
+        take: "Artwork-first split hero with one creator chip, title, price/deadline facts, and a clear action."
+        apply_to: ["work_hero", "auction_action"]
+        authority: "founder"
+    status: "one_composition_asset_available; source_identity_unconfirmed"
+
+  - id: "stationhead"
+    name: "Stationhead"
+    url: "https://www.stationhead.com/"
+    tier: 2
+    authority: "founder_and_research"
+    role: "Simple creator recognition and release moment."
+    take:
+      - "nothing unnecessary between artist identity and participation"
+      - "event/release feels current"
+    avoid:
+      - "celebrity verification badges"
+      - "dark entertainment default"
+      - "live audio/chat product semantics"
+    assets:
+      - path: "design/creator-first/references/stationhead/01-artist-grid.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Extremely simple artist recognition grid with one clear identity per tile."
+        apply_to: ["explore_creators"]
+        authority: "founder"
+    missing_assets:
+      - "mobile artist/release experience"
+
+  - id: "pinterest"
+    name: "Pinterest"
+    url: "https://www.pinterest.com/"
+    tier: 2
+    authority: "founder_and_research"
+    role: "Explore, recommendations, and related visual paths."
+    take:
+      - "fast visual scanning"
+      - "related content paths and taste discovery"
+      - "progressive filters/search"
+    avoid:
+      - "endless engagement feed"
+      - "popularity bias and generic masonry clone"
+      - "recommendations before data exists"
+    assets: []
+    status: "awaiting_founder_web_and_mobile_screenshots"
+
+  - id: "metalabel"
+    name: "Metalabel"
+    url: "https://www.metalabel.com/"
+    tier: 3
+    authority: "research"
+    role: "Entity-model reference only."
+    take:
+      - "release identity, date, credits, edition, collaboration, archive"
+    avoid:
+      - "dense terminology, visual complexity, niche culture codes"
+    assets: []
+    status: "screenshots_optional"
+
+  - id: "joopiter"
+    name: "JOOPITER"
+    url: "https://www.joopiter.com/"
+    tier: 3
+    authority: "research"
+    role: "Clear auction state after cultural context."
+    take:
+      - "provenance and transaction clarity"
+      - "auction as a bounded cultural release"
+    avoid:
+      - "luxury auction-house styling and lot-grid dominance"
+    assets: []
+    status: "screenshots_optional_for_transaction_state"
+
+  - id: "colors"
+    name: "COLORS"
+    url: "https://colorsxstudios.com/"
+    tier: 3
+    authority: "founder_and_research"
+    role: "Light welcome/auth composition plus one creator, one scene, one memorable visual world."
+    take:
+      - "controlled visual world around one creator"
+      - "identity created by media and color"
+      - "expressive welcome heading with a very small choice set"
+      - "light, direct auth hierarchy and generous breathing room"
+    avoid:
+      - "performance-only product structure"
+      - "literal COLORS typography, branding, text, or gradient"
+      - "generic AI-gradient decoration as a system rule"
+    assets:
+      - path: "design/creator-first/references/colors/01-auth-hello-split-gradient.png"
+        platform: "web desktop"
+        status: "available_local"
+        take: "Friendly oversized Hello, compact auth choices, vast whitespace, and a separate color/media field."
+        apply_to: ["auth", "creator_onboarding"]
+        authority: "founder"
+    status: "one_auth_asset_available"
+
+  - id: "even"
+    name: "EVEN"
+    url: "https://www.even.biz/"
+    tier: 3
+    authority: "research"
+    role: "Pre-release window and direct-to-audience moment."
+    take:
+      - "release timing and anticipation"
+    avoid:
+      - "music-specific storefront assumptions"
+    assets: []
+    status: "screenshots_optional"
+
+  - id: "are-na"
+    name: "Are.na"
+    url: "https://www.are.na/"
+    tier: 3
+    authority: "research"
+    role: "Human curation and thematic discovery trails."
+    take:
+      - "connections and collections as navigation"
+    avoid:
+      - "abstract block semantics that hide creator/work relationship"
+    assets: []
+    status: "screenshots_optional"
+
+mood:
+  - id: "color-mood-01"
+    path: "design/creator-first/references/mood/01-color-mood.png"
+    authority: "founder"
+    status: "available_local"
+    interpretation: >-
+      Mood only: warm light surfaces, deep ink/navy, periwinkle, teal, muted
+      brown, orange, yellow, and pink. The design architect must create a new
+      accessible palette rather than copy sampled hex values.
+
+asset_completion_gate:
+  minimum_before_design_architect:
+    wepresent: "Desktop and mobile Home/navigation/story evidence is sufficient; mobile creator profile remains useful but optional."
+    gethyped: "Desktop work/card/story evidence is sufficient; add 2–3 mobile work/gallery views if available."
+    medallion: "Eight mobile screenshots cover search, onboarding, profile media, validation, auth, Explore, actions, and detail sequencing; sufficient."
+    avant_arte: "Desktop work/gallery/transaction evidence is sufficient; 2 mobile process/detail views remain strongly preferred."
+    creator_publishing: "One four-screen mobile publishing reference is sufficient for visibility/sequencing; real bidplace fields and permissions come only from the audit."
+    foundation: "Eight desktop screenshots are sufficient for Create/work/bid composition; all crypto semantics remain excluded."
+    mobbin_awards: "Three creator-card/profile/bio screenshots are sufficient to evaluate a bounded lower caption effect."
+    colors: "One desktop auth screenshot is sufficient for light welcome hierarchy; mobile auth derives from Medallion plus the brief."
+    stationhead: "Current desktop asset is usable; add 1 mobile creator/release view if available."
+    pinterest: "At least 1 desktop and 2 mobile Explore/recommendation views strongly preferred."
+  can_start_without_full_completion: true
+  rule: >-
+    Missing supporting assets do not block audit files. They block only design
+    decisions that depend on an unseen mobile or interaction pattern.

@@ -1,0 +1,45 @@
+STAGE 2A — build exactly 5 component board frames (F003–F007) with reusable masters. No other frames.
+
+READ FIRST:
+1. design/creator-first/spec/component-specs.yaml — components: status_chip, tab_pill, filter_chip, form_field, inline_validation, search_entry (anatomy, variants, states, measurements, content_limits, do_not_invent).
+2. design/creator-first/spec/design-system.yaml — border block (control 1.5 border_control, control_focus 2 focus_ring, control_error 2 error); shape radii; spacing; accessibility.focus ring rule.
+3. design/creator-first/spec/content-fixtures.yaml — ui_copy, fixtures.
+
+MASTERS: create reusable components named "<component_id>/<variant>" (e.g. status_chip/live, tab_pill/tabs, filter_chip/dropdown, form_field/text, inline_validation/field_level, search_entry/desktop_compact). States on boards are labeled instances with per-state overrides. Later screens will instantiate these masters — build with auto-layout so longer Russian text does not break them.
+
+FRAME 1 — name exactly "components/status_chip/board":
+One row with all 5 status_chip variants per spec: LIVE «Идут торги» (ink pill, white label_sm, 8px live_dot dot, dot_gap 8), SCHEDULED «Релиз 24 августа, 19:00» (surface pill + hairline border, ink), SOFT_CLOSE «Продлено · 04:12» (accent_yellow_soft, ink), ENDED «Завершено» (disabled_surface, ink_soft), ENDED_WON «Продано» (disabled_surface, ink_soft). Height 28, padding_h 12, radius 999. Below: reduced_motion row — the LIVE chip again with caption "reduced_motion: dot static". Annotation: non-interactive, never a button; dot decorative, hidden from a11y tree; label_max_chars 28.
+
+FRAME 2 — name exactly "components/tab_pill/board":
+Master per spec: white (surface) pill container h48 radius 999 padding 4; items in label/desktop style (15/600); active item = ink pill, white text. Variant rows:
+(a) tabs — items «Работы» | «Авторы» (ui_copy nav.works / nav.creators), first active.
+(b) status_filter — items «Все» | «Сейчас · 1» | «Скоро · 1» | «Завершены · 3» (counts strictly from fixture creator_rich statusCounts: LIVE 1, SCHEDULED 1, ENDED 3), «Все» active.
+State columns demonstrated on the tabs variant: default, hover (inactive item bg canvas_deep), focus-visible (2px focus_ring outer ring offset 2 on an item), active (ink pill), disabled item (label ink_soft at 40% opacity).
+Mobile row: same master at height 44 with caption "mobile: h44, scrollable". Annotation: role=tablist, keyboard arrows move tabs, selected state announced; counts only real statusCounts.
+
+FRAME 3 — name exactly "components/filter_chip/board":
+Master: chip h40, surface fill, hairline border, radius 999, label 14/500 Golos Text + icon/chevron_down at 16. Rows:
+(a) states: default («Категория»), open («Категория» + dropdown popover 280w radius 16 e2 below: header caption «Категория», option rows «Живопись», «Графика», «Керамика», «Текстиль» — the four fixture work categories), applied («Цена: до 500 BYN», ink border 1.5, count badge label_sm «1»), focus-visible (ring), disabled (disabled_surface fill, ink_soft label).
+(b) full works-tab chip row per explore blueprint: «Категория», «Статус», «Материалы», «Уникальность», «Цена», «Год», «Сортировка», plus text button «Сбросить» at row end (shown because one chip is applied).
+(c) sheet variant: mobile bottom sheet 390w, radius top 24, e3, drag handle, title title_2 «Фильтры», same option rows, bottom row: primary ink pill (label: caption note "Missing spec: apply button label" — do NOT invent a label) + text button «Сбросить». Annotation: expanded state announced; sheet traps focus; price/year ranges are two numeric fields + apply; changes announce result count.
+
+FRAME 4 — name exactly "components/form_field/board":
+form_field master per spec: label 14/600 Golos above (gap 8), input h52 radius 14 surface fill border 1.5 border_control, helper/error zone fixed h20 below. Sub-sections by variant, each state labeled with latin kicker:
+(a) text — label «Как вас представить?» (onboarding step 1 question), helper «Имя, псевдоним или название студии»; states: default (empty), focus (border 2 focus_ring + outer ring), filled (value «Полина Мирош»), disabled (disabled_surface).
+(b) text with prefix — prefix «bidplace.by/» caption ink_soft inside left, value «polina-mirosh»; async states: loading (spinner 16 right in field + caption «Проверяем адрес…»), success (success caption «Адрес свободен»), error (border 2 error + message «Адрес занят», role=alert note).
+(c) textarea — min height 128; label «Чем вы занимаетесь?» (step 2 question); value = fixture creator_rich discipline «Живопись, масло и левкас»; counter «34 / 160» label_sm bottom-right (discipline is the only confirmed 160 limit).
+(d) numeric — latin kicker "numeric (bid amount)"; no invented label; value «1 300» (fixture next_minimum 1300, thin-space format), suffix «BYN» caption inside right.
+(e) email — latin kicker "email"; empty field; caption note "Missing spec: email field label string" (do not invent).
+(f) code — 6 cells 48x56 radius 14, gap 8; empty cells, focus ring on cell 1; latin kicker "code (6 cells, auto-advance)".
+inline_validation master (fixed h24 row: icon 16 + caption, icon_gap 8) — labeled row of its 5 states: idle (reserved empty height), loading (icon/spinner + «Проверяем адрес…»), success (icon/check in success color + «Адрес свободен»), error (icon/warning in error color + «Адрес занят»), info (ink_soft + «Минимальная ставка: 260 BYN»).
+Annotation: async validation never shifts layout (fixed zones); counter turns error color at limit; label always visible — no placeholder-as-label; errors linked via described-by; no counters for fields without confirmed server limits (fullName, shortDescription, work title).
+
+FRAME 5 — name exactly "components/search_entry/board":
+Master per spec: pill canvas_deep fill, icon/search at 20 ink_soft, placeholder «Поиск работ и авторов» (ui_copy nav.search_placeholder) caption ink_soft. Variant rows:
+(a) desktop_compact — h44, padding_h 16, icon + placeholder as label;
+(b) explore_full — input h48 radius 999 padding_h 20 width 640;
+(c) mobile_explore — h48 width 350.
+States on explore_full row: default, hover (canvas_deep_hover fill), focus (2px focus_ring + border_control), filled (value «Керамика» — fixture category word; clear button 44 target with icon/close 16), loading (spinner 16 right), disabled (disabled_surface, label 40%).
+Annotation: desktop compact click → Explore works tab with focused field; accessible label «Поиск»; results count announced politely; query_max_chars 120.
+
+VERIFY before finishing: exactly 5 new frames named "components/status_chip/board", "components/tab_pill/board", "components/filter_chip/board", "components/form_field/board", "components/search_entry/board"; every state from component-specs appears exactly once per its variant row; masters reusable and named "<component>/<variant>"; no invented strings; existing foundations frames untouched.

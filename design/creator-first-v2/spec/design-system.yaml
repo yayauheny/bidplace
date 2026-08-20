@@ -1,0 +1,790 @@
+# bidplace creator-first — design system contract V2.1
+# Direction: «Площадка авторов, а не журнал» (see DESIGN-DIRECTION.md)
+# V2 art-direction is kept. V2.1 amends process, shape, display lock, and
+# accent visibility. Token *ids* that fixtures already reference are preserved.
+# Contrast ratios are computed intent (WCAG 2.x relative luminance);
+# visual QA re-verifies rendered output.
+# Do not freeze display type, radius, or accent-usage tokens until a golden
+# candidate is selected after nine explorations (3 screens × 3 directions).
+
+meta:
+  version: 2.1
+  date: "2026-08-15"
+  supersedes: "this packet V2 (2026-08-14). V1 beige/serif/all-rounded system remains retired."
+  platforms: [web, ios, android]
+  runtime: "Expo + React Native + React Native Web"
+  viewports:
+    desktop: 1440
+    tablet: 1024
+    mobile: 390
+  language_primary: "ru"
+  currency: "BYN"
+  golden_screens_before_global_lock:
+    - "home / desktop 1440"
+    - "creator_profile / desktop 1440"
+    - "work_detail LIVE / desktop 1440"
+  golden_explorations_before_blueprint_lock: "3 directions × each golden screen (type / media / graphic). See screen-blueprints.yaml."
+  logo:
+    rule: "Existing reversed-b symbol is reused as-is. Redesign, retracing, and recoloring forbidden."
+    symbol:
+      display_size: {width: 28, height: 28}
+      status: available_now
+      source_assets:
+        folder: "/Users/yayauheny/Downloads/Telegram Desktop/logo_assets_web_expo"
+        copied_from: "web/logo-transparent-256.png"
+      packet_target: "design/creator-first-v2/assets/logo/logo-transparent-256.png"
+      pen_file: "design/creator-first-v2/assets/logo/logo-transparent-256.png"
+      gate_m_status: ready
+    wordmark: false
+    nav_rule: "Navigation uses only the existing reversed-b symbol at 28×28. No wordmark slot, no empty placeholder, no typeset wordmark."
+
+classification:
+  # Shared taxonomy for every feature in this packet. Statuses order development;
+  # they never limit design scope. Pen shows the whole future application.
+  product_phase:
+    confirmed_mvp: "Designed and implemented now; part of the MVP acceptance contract."
+    designed_post_mvp: "Fully designed now (anatomy, states, a11y, UX contract); implemented later; appears in Pen only on labeled future boards."
+    unresolved: "Designed only after an explicit product decision; appears only as a labeled concept card."
+  implementation_status:
+    available_now: "Current backend supports it."
+    backend_required: "Design complete; implementation waits for the declared data/endpoints."
+    product_decision_required: "Blocked on a founder/product decision, not on backend."
+  rules:
+    - "Default for every component and screen in this packet: product_phase confirmed_mvp, implementation_status available_now, unless the item declares otherwise."
+    - "Every backend_required feature must declare: required data, required endpoint or event, permissions, optimistic behavior, expected errors, analytics event, and a graceful unavailable state until implemented."
+    - "Nothing designed_post_mvp or unresolved may appear on MVP frames or inside MVP acceptance checks."
+    - "Build priority order: creator → work → discovery/search → bid/auction → profile and work creation → follow, wishlist, video and other additional scenarios. Priority is assembly order, never permission to delete later capabilities."
+
+accent_selection:
+  purpose: "One deterministic assigned accent per entity; identical on every screen and every visit. Assigned accent is an identity source, not a mandate to show a large colored object. Not a pastel scene wrapper."
+  algorithm_pseudocode: |
+    # input: stableId — creator.slug for creators, product.publicId for works
+    # output: index 0..5 into accent_order
+    function accentIndex(stableId):
+        h = 0
+        for byte in utf8_bytes(stableId):
+            h = (h * 31 + byte) mod 2^32
+        return h mod 6
+  # Fixture accent_assignments still use these ids (including brown at index 5).
+  # Canonical color names: periwinkle, teal, orange, yellow, pink, red.
+  # brown is a deprecated alias of red — see color.accent_red_* and color.accent_brown_*.
+  accent_order: [periwinkle, teal, orange, yellow, pink, brown]
+  canonical_names: [periwinkle, teal, orange, yellow, pink, red]
+  deprecated_aliases:
+    brown:
+      canonical: red
+      index: 5
+      note: "Fixtures may still say accent: brown. Resolve to accent_red_*. Do not render a brown appearance."
+  entity_keys:
+    creator: "slug"
+    work: "publicId"
+  forbidden_inputs: ["position in the result list", "sort order", "current date or day", "viewport", "viewer identity or session", "colors derived from user media"]
+  collision_note: "Adjacent items may share an accent; that is acceptable — variety comes from real media, not from forced rotation."
+  assigned_vs_visible:
+    assigned_accent: "Deterministic per entity. Always exists. Used for missing-media fallbacks and optional marks."
+    visible_strong_accent: "Optional at composition level. Do not force a slab, tag, or plate because an entity has an assigned accent."
+  usage_v2:
+    strong_on_product: "Optional tags, independent graphic slabs, occasional info plates, selected editorial fields. Allowed — not required in every composition."
+    composition_rules:
+      - "Real media is the primary source of visual variety."
+      - "One viewport should normally have at most one dominant strong-color gesture."
+      - "Small secondary accent details are allowed."
+      - "Do not place multiple unrelated strong slabs competing in the same viewport."
+    soft_allowed: "Chips, hover fills, missing-media fallbacks, tiny indicators. Not default scene/card/chapter fills."
+    forbidden_default: "Do not wrap every large scene, chapter, or discovery card in accent_*_soft. Do not return to pastel entity cards."
+  fixed_assignments:
+    rule: "Surfaces without an entity id use an explicitly fixed token; never a computed or rotating value."
+    auth_accent_field: accent_periwinkle_strong  # V2: graphic blue field or media, not pale rectangle
+    become_creator_band: canvas  # V2: type on canvas + ink CTA; not a pastel rounded band
+    become_creator_mark: accent_yellow_strong  # optional small graphic mark beside the statement
+    onboarding_intro_band: canvas
+    future_board_chips: accent_yellow_strong
+  precomputed: "Accent expectations for every fixture are precomputed in content-fixtures.yaml accent_assignments; the Pen builder uses those values verbatim and computes nothing."
+
+color:
+  # ---------- core neutrals (V2: near-white + ink, not vanilla/cream) ----------
+  canvas:
+    value: "#F5F5F3"
+    foreground: "#111111"
+    contrast_intent: "17.8:1 (ink on canvas)"
+    usage: "Primary page background. Near-white cool-neutral. Not beige, not vanilla, not mandatory cream."
+    forbidden_usage: "Never as text color; never behind white text; never replaced by #FAF4EA or similar cream."
+  canvas_deep:
+    value: "#ECECEA"
+    foreground: "#111111"
+    contrast_intent: ">= 16:1 with ink"
+    usage: "Quiet input/search fills, skeleton base. Optional supporting band — not a warm identity color."
+    forbidden_usage: "Not for primary buttons or status semantics; not a cream substitute."
+  canvas_deep_hover:
+    value: "#E2E2DE"
+    foreground: "#111111"
+    contrast_intent: ">= 14:1 with ink"
+    usage: "Hover fill for quiet canvas_deep surfaces (search entry, quiet inputs); pointer devices only."
+    forbidden_usage: "Never a resting fill; never for status semantics."
+  surface:
+    value: "#FFFFFF"
+    foreground: "#111111"
+    contrast_intent: "19.0:1 (ink on white)"
+    usage: "Independent plates, dialogs, auction panel, floating text cards."
+    forbidden_usage: "Not a mandatory wrapper around every image."
+  ink:
+    value: "#111111"
+    foreground: "#FFFFFF"
+    contrast_intent: "19.0:1 (white on ink)"
+    usage: "Primary text; primary buttons; bid dialog summary; live status chip."
+    forbidden_usage: "Not as a full-page dark theme; large ink fields are allowed as graphic slabs, not as the default canvas."
+  ink_soft:
+    value: "#5C5C59"
+    foreground: null
+    contrast_intent: "7.0:1 on canvas, 7.4:1 on white"
+    usage: "Secondary text, captions, meta rows, placeholder text."
+    forbidden_usage: "Not for body copy below 14px on accent strong yellow/pink/orange (use ink)."
+  hairline:
+    value: "#E1E1DC"
+    foreground: null
+    contrast_intent: "decorative separator; not a control boundary"
+    usage: "Dividers, table rules, optional plate edges."
+    forbidden_usage: "Not as input border (too low contrast)."
+  border_control:
+    value: "#7A7A74"
+    foreground: null
+    contrast_intent: ">= 3:1 vs canvas (non-text)"
+    usage: "Default input/select borders, unchecked checkbox outline."
+    forbidden_usage: "Not for text."
+  disabled_surface:
+    value: "#E8E8E4"
+    foreground: "#8A8A84"
+    contrast_intent: "exempt (disabled)"
+    usage: "Disabled buttons and inputs."
+    forbidden_usage: "Never for enabled controls."
+
+  # ---------- accent pairs (ids preserved; values and usage rewritten) ----------
+  # Strong colors appear on product surfaces. Soft colors are chips/hover only.
+  # Do not assign every large scene a pale colored rounded rectangle.
+  accent_periwinkle_strong:
+    value: "#3A47FF"
+    visual_name: "electric blue"
+    foreground: "#FFFFFF"
+    contrast_intent: "5.4:1 white on strong (AA large / re-check small)"
+    usage: "Graphic slabs, tags, independent plates, auth color field. Label text >= 15px 600."
+    forbidden_usage: "No ink text on it; not for error/success meaning; not a wrapping scene around media."
+  accent_periwinkle_soft:
+    value: "#D4D8FF"
+    foreground: "#111111"
+    contrast_intent: ">= 12:1 ink on soft"
+    usage: "Chips, hover, missing-media fallbacks only."
+    forbidden_usage: "No white text; not default scene/card/chapter fill."
+  accent_teal_strong:
+    value: "#0B8F78"
+    visual_name: "sharp teal"
+    foreground: "#FFFFFF"
+    contrast_intent: "4.7:1 white on strong (AA large / re-check small — 15px 600 min)"
+    usage: "Same roles as electric-blue strong."
+    forbidden_usage: "No ink text on it."
+  accent_teal_soft:
+    value: "#C8EFE6"
+    foreground: "#111111"
+    contrast_intent: ">= 13:1 ink on soft"
+    usage: "Chips/hover only."
+    forbidden_usage: "No white text; not default large fill."
+  accent_orange_strong:
+    value: "#FF4E12"
+    visual_name: "vivid orange"
+    foreground: "#111111"
+    contrast_intent: ">= 5.5:1 ink on orange"
+    usage: "Graphic slabs, tags, plates. Ink text only."
+    forbidden_usage: "No white text; not for error meaning."
+  accent_orange_soft:
+    value: "#FFD5C6"
+    foreground: "#111111"
+    contrast_intent: ">= 12:1 ink on soft"
+    usage: "Chips/hover only."
+    forbidden_usage: "No white text; not default large fill."
+  accent_yellow_strong:
+    value: "#F0DE00"
+    visual_name: "graphic yellow (WePresent energy)"
+    foreground: "#111111"
+    contrast_intent: ">= 10:1 ink on yellow"
+    usage: "High-energy graphic marks, tags, occasional independent plates, become-creator mark, soft-close banner fill."
+    forbidden_usage: "Never white text on yellow; never paired with cream canvas as a dominant combo; never a pale wash behind serif type."
+  accent_yellow_soft:
+    value: "#FFF6A8"
+    foreground: "#111111"
+    contrast_intent: ">= 14:1 ink on soft"
+    usage: "Tiny chips only. Prefer yellow_strong for any surface larger than a chip."
+    forbidden_usage: "No white text; not scene/chapter fill; not a cream substitute."
+  accent_pink_strong:
+    value: "#FF3D8A"
+    visual_name: "bright pink (Get Hyped energy)"
+    foreground: "#111111"
+    contrast_intent: ">= 4.6:1 ink on pink (re-check small text)"
+    usage: "Tags, graphic slabs, occasional plates. Ink text only."
+    forbidden_usage: "No white text; not error/success meaning."
+  accent_pink_soft:
+    value: "#FFD0E4"
+    foreground: "#111111"
+    contrast_intent: ">= 12:1 ink on soft"
+    usage: "Chips/hover only."
+    forbidden_usage: "No white text; not default large fill."
+  accent_red_strong:
+    value: "#E10F24"
+    visual_name: "vivid red"
+    foreground: "#FFFFFF"
+    contrast_intent: "5.3:1 white on strong"
+    usage: "Optional graphic slabs, tags, ended/archive marks when a strong color is needed."
+    forbidden_usage: "No ink text; never a pastel entity card; never a craft-brown appearance."
+  accent_red_soft:
+    value: "#FFD2D6"
+    foreground: "#111111"
+    contrast_intent: ">= 12:1 ink on soft"
+    usage: "Chips/hover/missing-media only."
+    forbidden_usage: "No white text; not default large fill; not beige."
+  accent_brown_strong:
+    deprecated_alias_of: accent_red_strong
+    value: "#E10F24"
+    visual_name: "DEPRECATED alias — renders as accent_red_strong (vivid red). Do not read this id as brown."
+    foreground: "#FFFFFF"
+    contrast_intent: "5.3:1 white on strong"
+    usage: "Compatibility only. Fixtures and fixed_assignments may still say brown / accent_brown_*. Resolve to accent_red_strong."
+    forbidden_usage: "No ink text; never render a brown appearance. New specs must use accent_red_strong."
+    deprecation: "V2 remapped craft brown to red to keep fixture ids. V2.1 names the color red. Keep this alias until a mechanical fixture migration."
+  accent_brown_soft:
+    deprecated_alias_of: accent_red_soft
+    value: "#FFD2D6"
+    visual_name: "DEPRECATED alias — renders as accent_red_soft."
+    foreground: "#111111"
+    contrast_intent: ">= 12:1 ink on soft"
+    usage: "Compatibility only. Resolve to accent_red_soft."
+    forbidden_usage: "No white text; not default large fill; not beige. New specs must use accent_red_soft."
+    deprecation: "Same as accent_brown_strong."
+
+  # ---------- semantic (reserved; never decorative) ----------
+  action_primary:
+    value: "#111111"
+    foreground: "#FFFFFF"
+    contrast_intent: "19.0:1"
+    usage: "Primary buttons (bid, submit, CTA), creator action, auction actions. Geometry follows shape.pill_not_default — not a pill kit, moderate rounding allowed if a golden exploration justifies it."
+    forbidden_usage: "Not for editorial decoration."
+  action_primary_hover:
+    value: "#000000"
+    foreground: "#FFFFFF"
+    contrast_intent: ">= 19:1"
+    usage: "Hover/pressed fill of primary actions."
+    forbidden_usage: "-"
+  success:
+    value: "#1E6B45"
+    foreground: "#FFFFFF"
+    contrast_intent: "6.5:1 white on success"
+    usage: "Inline validation success text/icon, leading-bid confirmation."
+    forbidden_usage: "Never as editorial accent or card fill."
+  success_soft:
+    value: "#DDF0E4"
+    foreground: "#1E6B45"
+    contrast_intent: ">= 4.5:1 success text on soft"
+    usage: "Success banners/rows."
+    forbidden_usage: "Not decorative."
+  error:
+    value: "#B3362B"
+    foreground: "#FFFFFF"
+    contrast_intent: "6.0:1 white on error; >= 4.5:1 error text on canvas"
+    usage: "Error text, invalid borders, destructive confirm."
+    forbidden_usage: "Never decorative; never for live-auction urgency styling."
+  error_soft:
+    value: "#FAE6E2"
+    foreground: "#B3362B"
+    contrast_intent: "5.0:1 error text on soft"
+    usage: "Error banners, rejected-bid feedback zone."
+    forbidden_usage: "Not decorative."
+  focus_ring:
+    value: "#2E5AE8"
+    foreground: null
+    contrast_intent: ">= 3:1 vs canvas and vs typical surfaces (QA re-check per fill)"
+    usage: "2px outer focus ring on all interactive elements (light surfaces)."
+    forbidden_usage: "Never as text/decoration; on ink surfaces use focus_ring_inverse."
+  focus_ring_inverse:
+    value: "#FFFFFF"
+    foreground: null
+    contrast_intent: ">= 3:1 on ink"
+    usage: "2px focus ring on ink/dark surfaces (plus 1px #111111 inner offset)."
+    forbidden_usage: "-"
+  live_dot:
+    value: "#35C97E"
+    foreground: null
+    contrast_intent: "non-text indicator inside ink chip; paired with text label"
+    usage: "8px dot inside live status chip only."
+    forbidden_usage: "Anywhere else; never text; never a bare color-only signal (label always present)."
+  scrim:
+    value: "rgba(17,17,17,0.50)"
+    foreground: null
+    contrast_intent: "dialog backdrop"
+    usage: "Behind dialogs/sheets."
+    forbidden_usage: "Not on media as text background."
+  mirror_caption_veil:
+    value: "rgba(17,17,17,0.55)"
+    foreground: "#FFFFFF"
+    contrast_intent: "reserved; effect remains retired on product surfaces"
+    usage: "Do not reintroduce on MVP frames."
+    forbidden_usage: "Any product component; any full-page use."
+  mirror_caption_fallback:
+    value: "#111111"
+    foreground: "#FFFFFF"
+    contrast_intent: "19.0:1"
+    usage: "Opaque fallback if a caption-on-media treatment is ever re-approved."
+    forbidden_usage: "-"
+
+typography:
+  families:
+    display:
+      family: "Golos Text"
+      source: "Google Fonts"
+      license: "OFL — verified"
+      cyrillic: "verified (subsets: cyrillic, cyrillic-ext; Cyrillic-first design by Paratype)"
+      variable_axes: {wght: "400..900"}
+      native_embedding: "static instances 400, 500, 600, 700 via expo-font config plugin"
+      packet_paths:
+        400: "design/creator-first-v2/assets/fonts/GolosText-Regular.ttf"
+        500: "design/creator-first-v2/assets/fonts/GolosText-Medium.ttf"
+        600: "design/creator-first-v2/assets/fonts/GolosText-SemiBold.ttf"
+        700: "design/creator-first-v2/assets/fonts/GolosText-Bold.ttf"
+      packet_status: "ready — static TTF files exist at packet_paths. Pen builder must not download or search Google Fonts."
+      status: provisional_until_golden_approval
+      fallback: ["-apple-system", "Roboto", "Segoe UI", "Arial", "sans-serif"]
+      tabular_figures: "needs_verification — price slots reserve fixed width (see components auction_panel); layout independent of feature"
+      note: "provisional_until_golden_approval. Safe starting candidate for large statements, not the permanent display identity. Visual explorations may test another modern Cyrillic-capable grotesk/display family if Golos feels too neutral or product-UI-like. Do not return to a literary serif-led identity."
+    grotesk:
+      family: "Golos Text"
+      source: "Google Fonts"
+      license: "OFL — verified"
+      cyrillic: "verified (subsets: cyrillic, cyrillic-ext; Cyrillic-first design by Paratype)"
+      variable_axes: {wght: "400..900"}
+      native_embedding: "static instances 400, 500, 600, 700 via expo-font config plugin"
+      packet_paths:
+        400: "design/creator-first-v2/assets/fonts/GolosText-Regular.ttf"
+        500: "design/creator-first-v2/assets/fonts/GolosText-Medium.ttf"
+        600: "design/creator-first-v2/assets/fonts/GolosText-SemiBold.ttf"
+        700: "design/creator-first-v2/assets/fonts/GolosText-Bold.ttf"
+      packet_status: "ready — same files as display. Locked for UI, forms, auction values, and transactional controls."
+      fallback: ["-apple-system", "Roboto", "Segoe UI", "Arial", "sans-serif"]
+      tabular_figures: "needs_verification — price slots reserve fixed width"
+    editorial:
+      family: "Piazzolla"
+      source: "Google Fonts"
+      license: "OFL — verified"
+      cyrillic: "verified (subsets: cyrillic, cyrillic-ext)"
+      variable_axes: {wght: "100..900", opsz: "8..30"}
+      native_embedding: "static instances 500, 600, 700 via expo-font config plugin; opsz locked to 30 for display cuts"
+      packet_paths:
+        500: "design/creator-first-v2/assets/fonts/Piazzolla-Medium.ttf"
+        600: "design/creator-first-v2/assets/fonts/Piazzolla-SemiBold.ttf"
+        700: "design/creator-first-v2/assets/fonts/Piazzolla-Bold.ttf"
+      packet_status: "ready — kept in packet for optional editorial contrast only."
+      fallback: ["Georgia", "Times New Roman", "serif"]
+      note: "V2: secondary only. Never the default for creator names, work titles, or chapter headings."
+  rules:
+    - "No uppercase body text. Uppercase only in kicker role at 12–13px with +0.06em tracking."
+    - "Hyphenation off; Russian long words handled by measure and wrapping, tested with fixtures."
+    - "Body text never below 16px. Captions never below 13px. Meta/nav may use 12px 600."
+    - "Prices always in grotesk; editorial serif never renders numbers in transactional contexts."
+    - "Serif is opt-in via role editorial_quote only. Do not assign Piazzolla to creator names, work titles, or chapter headings."
+    - "Scale contrast is a starting principle on golden explorations: one very large statement + small precise metadata. Exact display sizes lock after a candidate is selected."
+  roles:
+    display_1:
+      family: "Golos Text"
+      weight: 700
+      lock: starting_value
+      desktop: {size: 88, line_height: 86, letter_spacing: -2.4}
+      tablet: {size: 64, line_height: 64, letter_spacing: -1.6}
+      mobile: {size: 40, line_height: 42, letter_spacing: -1.0}
+      usage: "Home statement, creator name hero. Starting Get Hyped-scale values — not immutable production canon."
+    display_2:
+      family: "Golos Text"
+      weight: 700
+      lock: starting_value
+      desktop: {size: 56, line_height: 58, letter_spacing: -1.4}
+      tablet: {size: 44, line_height: 46, letter_spacing: -1.0}
+      mobile: {size: 32, line_height: 36, letter_spacing: -0.6}
+      usage: "Work title on detail, featured work title, major section openers. Starting values until golden approval."
+    display_3:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 32, line_height: 36, letter_spacing: -0.6}
+      tablet: {size: 28, line_height: 32, letter_spacing: -0.4}
+      mobile: {size: 24, line_height: 28, letter_spacing: -0.3}
+      usage: "Section titles, dialog titles. Not automatically a serif chapter head."
+    editorial_quote:
+      family: "Piazzolla"
+      weight: 600
+      desktop: {size: 28, line_height: 34, letter_spacing: -0.2}
+      tablet: {size: 24, line_height: 30, letter_spacing: -0.2}
+      mobile: {size: 22, line_height: 28, letter_spacing: 0}
+      usage: "Optional pull quote / one editorial aside per long story page. Never default."
+    title_1:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 20, line_height: 26, letter_spacing: -0.2}
+      tablet: {size: 20, line_height: 26, letter_spacing: -0.2}
+      mobile: {size: 18, line_height: 24, letter_spacing: 0}
+      usage: "Card titles, panel headings, form step questions."
+    title_2:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 17, line_height: 24, letter_spacing: 0}
+      tablet: {size: 17, line_height: 24, letter_spacing: 0}
+      mobile: {size: 16, line_height: 22, letter_spacing: 0}
+      usage: "Sub-headings, list group titles, bid-history header."
+    body:
+      family: "Golos Text"
+      weight: 400
+      desktop: {size: 16, line_height: 26, letter_spacing: 0}
+      tablet: {size: 16, line_height: 26, letter_spacing: 0}
+      mobile: {size: 16, line_height: 24, letter_spacing: 0}
+      usage: "All reading copy; max measure 640px. 640 is a text measure, not a chapter container."
+    body_strong:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 16, line_height: 24, letter_spacing: 0}
+      tablet: {size: 16, line_height: 24, letter_spacing: 0}
+      mobile: {size: 16, line_height: 24, letter_spacing: 0}
+      usage: "Emphasis inline, fact values, creator identity on cards."
+    caption:
+      family: "Golos Text"
+      weight: 400
+      desktop: {size: 14, line_height: 20, letter_spacing: 0}
+      tablet: {size: 14, line_height: 20, letter_spacing: 0}
+      mobile: {size: 14, line_height: 20, letter_spacing: 0}
+      usage: "Meta rows, deadlines, counters, helper text (color ink_soft)."
+    label:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 15, line_height: 20, letter_spacing: 0}
+      tablet: {size: 15, line_height: 20, letter_spacing: 0}
+      mobile: {size: 15, line_height: 20, letter_spacing: 0}
+      usage: "Button labels, tabs, compact controls, tags."
+    label_sm:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 13, line_height: 16, letter_spacing: 0}
+      tablet: {size: 13, line_height: 16, letter_spacing: 0}
+      mobile: {size: 13, line_height: 16, letter_spacing: 0}
+      usage: "Small chips, counters, bottom-nav labels (11px exception allowed only under 24px icons: 11/14 600)."
+    meta:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 12, line_height: 16, letter_spacing: 0.48}
+      tablet: {size: 12, line_height: 16, letter_spacing: 0.48}
+      mobile: {size: 12, line_height: 16, letter_spacing: 0.36}
+      usage: "Global nav links, tiny metadata, Get Hyped-scale contrast against display_1."
+    kicker:
+      family: "Golos Text"
+      weight: 600
+      transform: uppercase
+      desktop: {size: 12, line_height: 16, letter_spacing: 0.84}
+      tablet: {size: 12, line_height: 16, letter_spacing: 0.84}
+      mobile: {size: 11, line_height: 14, letter_spacing: 0.72}
+      usage: "Section kickers («Автор», «Сейчас на аукционе»), scene labels."
+    price_lg:
+      family: "Golos Text"
+      weight: 700
+      desktop: {size: 32, line_height: 38, letter_spacing: -0.3}
+      tablet: {size: 28, line_height: 34, letter_spacing: -0.3}
+      mobile: {size: 26, line_height: 32, letter_spacing: -0.3}
+      usage: "Current price in auction_panel (LIVE)."
+    price_md:
+      family: "Golos Text"
+      weight: 700
+      desktop: {size: 22, line_height: 28, letter_spacing: -0.2}
+      tablet: {size: 22, line_height: 28, letter_spacing: -0.2}
+      mobile: {size: 20, line_height: 26, letter_spacing: -0.2}
+      usage: "Start price (SCHEDULED), bid dialog summary, sticky bid bar."
+    price_sm:
+      family: "Golos Text"
+      weight: 600
+      desktop: {size: 16, line_height: 22, letter_spacing: 0}
+      tablet: {size: 16, line_height: 22, letter_spacing: 0}
+      mobile: {size: 16, line_height: 22, letter_spacing: 0}
+      usage: "Bid history amounts, minimum-bid helper."
+
+number_and_date_format:
+  currency: "1 200 BYN (non-breaking thin space thousands separator, code after amount, non-breaking space before code)"
+  datetime: "24 августа, 19:00"
+  countdown_long: "2 дн 4 ч"
+  countdown_short: "04:12 (mm:ss, only inside soft-close final phase)"
+  bid_time: "сегодня, 14:32 / вчера, 09:15 / 21 августа, 18:04"
+
+spacing:
+  base: 4
+  scale: [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 120, 160, 240]
+  section_gap: {desktop: 96, tablet: 72, mobile: 48, lock: starting_value, note: "Not a mandate to space every section equally. Macro pauses may be larger."}
+  intra_section_gap: {desktop: 40, tablet: 32, mobile: 24}
+  card_padding: {desktop: 24, tablet: 20, mobile: 16}
+  plate_padding: {desktop: 24, tablet: 24, mobile: 20}
+  macro_whitespace:
+    status: "allowed and expected; not a missing component"
+    typical: [80, 120, 160, 240]
+    rule: "Use chapter-level pauses. Do not think only in 16/24/32 component gaps. Do not auto-fill unused space."
+
+shape:
+  # V2.1: substantially straighter than V1. Pills are not the default language
+  # and not forbidden. Radii below are starting values, not ideology.
+  status: "provisional_until_golden_approval"
+  radius_none: 0
+  radius_media: 8
+  radius_media_tight: 4
+  radius_card: 8
+  radius_control: 8
+  radius_input: 8
+  radius_dialog_desktop: 12
+  radius_sheet_top_mobile: 16
+  radius_chip: 4
+  radius_pill: 999
+  pill_not_default_on: ["scenes", "chapters", "auction_panel", "work_card", "creator_card", "large info plates", "editorial composition"]
+  pill_allowed_when_it_helps: ["tabs", "filters", "tags", "status_chip", "compact functional controls"]
+  pill_moderate_rounding_allowed: ["buttons", "search", "creator_action"]
+  note: "Do not let pills define the product language. Do not force radius 4/8 simply because V1 used 24/28/999. Radius serves the composition."
+  border_curve: "continuous (iOS borderCurve: continuous) on radius_control and above; radius_none stays sharp"
+
+border:
+  hairline: {width: 1, color: "hairline"}
+  control: {width: 1.5, color: "border_control"}
+  control_focus: {width: 2, color: "focus_ring"}
+  control_error: {width: 2, color: "error"}
+  accent_frame: {width: 0, usage: "V2 retired as a default. Do not put a 2px colored frame around every card. Strong color appears as a slab or tag, not a wrapping stroke."}
+  ink_outline_button: {width: 1.5, color: "ink"}
+
+elevation:
+  e0: "none — default; separation via space, not a card chrome kit"
+  e1: {shadow: "0 2px 8px rgba(17,17,17,0.08)", usage: "optional hover, floating bottom nav"}
+  e2: {shadow: "0 8px 24px rgba(17,17,17,0.12)", usage: "sticky bid bar, nav overlay, lifted plate"}
+  e3: {shadow: "0 16px 48px rgba(17,17,17,0.16)", usage: "dialogs, sheets"}
+  rn_note: "Implement via boxShadow string syntax (RN 0.76+); Android parity verified in QA."
+
+composition:
+  status: "principles for golden explorations; not a frozen decoration quota and not a locked recipe"
+  hard_product_constraints:
+    - "LIVE: auction price + bid action visible without scroll at 1440; sticky bar counts at 390"
+    - "no price/deadline on discovery cards"
+    - "navigation and creator action reachable"
+    - "text remains readable; contrast holds"
+    - "overlaps never cover interactive controls, focus rings, or required facts"
+    - "fixture stress cases (long names/titles, missing media, minimal content) still work"
+  provisional_art_direction:
+    - "portrait ~480×640, overlap ≤48px, statement width ~720, display_1 88 / display_2 56, specific plate positions — starting ranges only"
+    - "negotiable until a golden candidate is selected"
+  wepresent_owns: [information_architecture, whitespace, image_first_storytelling, curated_presentation, navigation_clarity]
+  get_hyped_owns: [visual_attitude, type_scale, asymmetry, floating_media, independent_plates, variable_image_size, controlled_overlap, strong_color]
+  forbidden_translation: "rounded colored container + tilted stack inside"
+  page_must_not_reveal_component_system: true
+  rigid_scene_chapter_rail_rhythm: false
+  human_reading_rhythm:
+    whitespace: "active compositional element, not leftover to fill"
+    do_not_optimize_for: ["maximum information per viewport", "filling every grid column", "showing every metadata field", "equal spacing between every section", "equal visual weight for every component"]
+    reading_order:
+      - "What should I notice first?"
+      - "What should I understand second?"
+      - "What can I safely ignore until I choose to continue?"
+    one_dominant_event: "A viewport should normally contain one dominant visual event. Secondary information supports it. Nav, links, status, CTA, cards, and decorative color must not compete at the same level."
+    density: "local, not global. Allowed: dense work grid, compact bid history, dense filter row. Surround dense blocks with calmer space. Rhythm: quiet → dense → quiet → focal → quiet."
+    chrome_before_gaps: "When crowded, remove card backgrounds, borders, chips, icons, and unneeded metadata before increasing gaps. Prefer content on canvas."
+    empty_space: "valid if it creates hierarchy, separates chapters, focuses attention, or improves reading. Empty space is not a missing component."
+    generated_rhythm: "forbidden. Do not repeat image+title+body or card-grid+card-grid. Change scale and density intentionally."
+    ai_like_check: "If branding were removed, would this look like an AI-generated UI kit? If yes, revise."
+  content_priority:
+    creator_discovery: [portrait, name, discipline]
+    work_discovery: [work, title, creator, one_descriptor]
+    work_detail: [work, title_or_value, auction_action, story]
+    rule: "Everything else is secondary or progressive disclosure. Do not surface a field merely because the API provides it."
+  human_grouping: "Related information is one thought. Do not scatter one group across floating chips/cards. Example: «Полина Мирош ↗» then «Тихий берег»; utility actions secondary."
+  avoid:
+    - "centered magazine manifesto as the default home hero"
+    - "3x2 identical image matrices as the visual signature"
+    - "repeated equal-size cards as the only discovery pattern"
+    - "identical section templates stacked down the page"
+    - "locking one composition recipe before A/B/C explorations"
+    - "algorithmically filled viewports"
+    - "too many containers, badges, or equal-sized elements"
+    - "suspiciously complete grid filling"
+    - "uniform spacing everywhere"
+    - "decorative asymmetry without reading purpose"
+  allow:
+    - "intentional negative space, including large empty zones"
+    - "asymmetric balance"
+    - "media that visually floats on canvas"
+    - "independent text plates that may overlap media"
+    - "variable image sizes and uneven vertical rhythm"
+    - "occasional overlap that never covers interactive targets, focus rings, or required auction facts"
+    - "large scale changes between sections"
+    - "three exploration directions per golden screen (type / media / graphic)"
+    - "dense local modules surrounded by chapter-level pauses"
+  overlap_limits:
+    max_overlap: 48
+    lock: starting_value
+    rule: "Overlap is compositional, not decorative garnish, and not required in every exploration. Never cover interactive targets, focus rings, auction price/action, or required text."
+  tilt:
+    default: 0
+    stack_back_layers_max: "±8deg and only when the stack reads as a physical pile of images — not on every media_stack"
+    filmstrip_default: 0
+    hover_card: 0
+    text_blocks: 0
+    auction_surfaces: 0
+  accent_surface_quota: "Not frozen. Strong accent is optional. Rule of thumb after selection: at most one dominant strong-color gesture in a viewport; discovery cards are not pastel frames."
+
+iconography:
+  family: "Phosphor Icons"
+  weight: "regular (stroke-based; visually matches 1.5px stroke at the 24px grid)"
+  license: "MIT — verified"
+  packages:
+    web: "@phosphor-icons/react"
+    native: "phosphor-react-native"
+    pen: "SVG files at svg_packet_path / fill_svg_packet_path; regular weight 24px grid; no substitutes, no redraws, no viewBox edits"
+    gate_m_status: ready
+  sizes: {standard: 24, small: 20, inline: 16}
+  rules:
+    - "No emoji as icons."
+    - "Decorative icons hidden from accessibility tree."
+    - "Icon-only controls always carry accessible labels; visible text labels added where ambiguous."
+    - "One weight (regular) everywhere; Fill counterparts only where a state explicitly declares it."
+  required:
+    - {role: search, phosphor: "MagnifyingGlass", svg_packet_path: "design/creator-first-v2/assets/icons/regular/magnifying-glass.svg"}
+    - {role: plus, phosphor: "Plus", svg_packet_path: "design/creator-first-v2/assets/icons/regular/plus.svg"}
+    - {role: arrow_right, phosphor: "ArrowRight", svg_packet_path: "design/creator-first-v2/assets/icons/regular/arrow-right.svg"}
+    - {role: arrow_up_right, phosphor: "ArrowUpRight", svg_packet_path: "design/creator-first-v2/assets/icons/regular/arrow-up-right.svg"}
+    - {role: arrow_left_back, phosphor: "ArrowLeft", svg_packet_path: "design/creator-first-v2/assets/icons/regular/arrow-left.svg"}
+    - {role: close, phosphor: "X", svg_packet_path: "design/creator-first-v2/assets/icons/regular/x.svg"}
+    - {role: share, phosphor: "ShareNetwork", svg_packet_path: "design/creator-first-v2/assets/icons/regular/share-network.svg"}
+    - {role: clock, phosphor: "Clock", svg_packet_path: "design/creator-first-v2/assets/icons/regular/clock.svg"}
+    - {role: chevron_down, phosphor: "CaretDown", svg_packet_path: "design/creator-first-v2/assets/icons/regular/caret-down.svg"}
+    - {role: check, phosphor: "Check", svg_packet_path: "design/creator-first-v2/assets/icons/regular/check.svg"}
+    - {role: warning, phosphor: "Warning", svg_packet_path: "design/creator-first-v2/assets/icons/regular/warning.svg"}
+    - {role: image_missing, phosphor: "ImageBroken", svg_packet_path: "design/creator-first-v2/assets/icons/regular/image-broken.svg"}
+    - {role: camera, phosphor: "Camera", svg_packet_path: "design/creator-first-v2/assets/icons/regular/camera.svg"}
+    - {role: camera_off, phosphor: "CameraSlash", svg_packet_path: "design/creator-first-v2/assets/icons/regular/camera-slash.svg"}
+    - {role: reorder_handle, phosphor: "DotsSixVertical", svg_packet_path: "design/creator-first-v2/assets/icons/regular/dots-six-vertical.svg"}
+    - {role: remove_photo, phosphor: "Trash", svg_packet_path: "design/creator-first-v2/assets/icons/regular/trash.svg"}
+    - {role: link_external, phosphor: "ArrowSquareOut", svg_packet_path: "design/creator-first-v2/assets/icons/regular/arrow-square-out.svg"}
+    - {role: telegram, phosphor: "TelegramLogo", svg_packet_path: "design/creator-first-v2/assets/icons/regular/telegram-logo.svg"}
+    - {role: instagram, phosphor: "InstagramLogo", svg_packet_path: "design/creator-first-v2/assets/icons/regular/instagram-logo.svg"}
+    - {role: globe_site, phosphor: "Globe", svg_packet_path: "design/creator-first-v2/assets/icons/regular/globe.svg"}
+    - {role: nav_home, phosphor: "House", svg_packet_path: "design/creator-first-v2/assets/icons/regular/house.svg"}
+    - {role: nav_explore, phosphor: "Compass", svg_packet_path: "design/creator-first-v2/assets/icons/regular/compass.svg"}
+    - {role: nav_profile, phosphor: "User", svg_packet_path: "design/creator-first-v2/assets/icons/regular/user.svg"}
+    - {role: spinner, phosphor: "CircleNotch", svg_packet_path: "design/creator-first-v2/assets/icons/regular/circle-notch.svg", note: "rotation animation; static under reduced motion"}
+    - {role: follow_heart, phosphor: "Heart", svg_packet_path: "design/creator-first-v2/assets/icons/regular/heart.svg", fill_svg_packet_path: "design/creator-first-v2/assets/icons/fill/heart.svg", note: "designed_post_mvp follow_creator only; Fill weight for followed state; never on MVP frames"}
+    - {role: wishlist_bookmark, phosphor: "Bookmark", svg_packet_path: "design/creator-first-v2/assets/icons/regular/bookmark.svg", fill_svg_packet_path: "design/creator-first-v2/assets/icons/fill/bookmark.svg", note: "designed_post_mvp wishlist_saved_work only; Fill weight for saved state; never on MVP frames"}
+    - {role: play, phosphor: "Play", svg_packet_path: "design/creator-first-v2/assets/icons/regular/play.svg", note: "designed_post_mvp video_process_story only"}
+    - {role: pause, phosphor: "Pause", svg_packet_path: "design/creator-first-v2/assets/icons/regular/pause.svg", note: "designed_post_mvp video_process_story only"}
+    - {role: speaker_on, phosphor: "SpeakerHigh", svg_packet_path: "design/creator-first-v2/assets/icons/regular/speaker-high.svg", note: "designed_post_mvp video_process_story only"}
+    - {role: speaker_off, phosphor: "SpeakerSlash", svg_packet_path: "design/creator-first-v2/assets/icons/regular/speaker-slash.svg", note: "designed_post_mvp video_process_story only"}
+
+media:
+  aspect_ratios:
+    portrait: "3:4"
+    square: "1:1"
+    landscape: "4:3"
+    wide: "16:10"
+    filmstrip_item: "3:4"
+  fit: "cover, focal center default; no forced upscaling beyond 1.15x source"
+  radius_default: "radius_media (8). Some hero images may use radius_media_tight (4) or radius_none. Do not use radius 24 on every image."
+  tilt_limits:
+    default: "0deg"
+    stack_back_layer_1: "up to -8deg, only when ≥2 images and the stack is meant to read as a physical pile"
+    stack_back_layer_2: "up to +6deg, only when ≥3 images"
+    filmstrip_alternate: "0deg default; do not zigzag every process image"
+    info_plate: "0deg — plates do not tilt"
+    hover_card: "0deg — zoom inside crop only"
+    text_blocks: "0deg"
+    auction_surfaces: "0deg"
+  overlap_limits:
+    max_overlap: 48
+    rule: "Overlap is compositional (independent plate vs media). Never covers interactive targets, focus rings, required text, or auction price/action."
+  mirror_caption_effect:
+    owner: "retired on product surfaces (V1 WePresent pass + V2). Do not reintroduce."
+    anatomy: "Creator cards are portrait-first on canvas with ink meta below. No glass strip, no accent_soft frame."
+    fallback: "photo_missing uses a strong accent slab + ink initial, not a pastel card"
+    forbidden: "any other component, full-page use, per-creator manual tuning"
+
+layout:
+  span_formula: "span_n = n × column_width + (n−1) × gutter; column_width = (max_content_width − (columns−1) × gutter) / columns. Fractional px are exact contract values; Pen/auto-layout may round to the nearest 0.5 while keeping the row sum equal to max_content_width."
+  desktop_1440:
+    max_content_width: 1280
+    margins: 80
+    columns: 12
+    gutter: 24
+    column_width: 84.67
+    spans: {span_3: 302, span_4: 410.67, span_6: 628, span_8: 845.33, span_12: 1280}
+    top_bar_height: 72
+    reading_column: 640  # max text measure, not a mandatory chapter container
+    detail_side_column: 400
+  tablet_1024:
+    max_content_width: 928
+    margins: 48
+    columns: 12
+    gutter: 20
+    column_width: 59
+    spans: {span_4: 296, span_6: 454, span_8: 612, span_12: 928}
+    top_bar_height: 64
+    reading_column: 608
+    detail_side_column: 360
+  mobile_390:
+    max_content_width: 350
+    margins: 20
+    columns: 4
+    gutter: 16
+    column_width: 75.5
+    spans: {span_2: 167, span_4: 350}
+    top_bar_height: 56
+    bottom_nav: {height: 64, float_offset: 12, safe_area: "plus bottom inset"}
+    sticky_bid_bar: {height: 64, safe_area: "plus bottom inset"}
+    scroll_bottom_padding: "96 + safe-area inset (content never hidden behind floating chrome)"
+
+motion:
+  intensity: "medium-low"
+  durations:
+    micro: 120
+    standard: 200
+    gallery: 240
+    entrance: 280
+  easings:
+    standard: "cubic-bezier(0.2, 0, 0, 1)"
+    decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+    settle: "cubic-bezier(0.16, 0.84, 0.44, 1)"
+  patterns:
+    hover_media_zoom: {scale: 1.03, duration: 200, easing: standard, note: "inside cropped frame; pointer devices only; no tilt"}
+    card_lift: {translate_y: -2, shadow: "e0→e1", duration: 200, note: "subtle; do not advertise a card kit"}
+    stack_settle: {rotation: "only when a stack actually uses tilt; otherwise none", duration: 280, easing: settle, trigger: "once on mount/in-view"}
+    gallery_advance: {type: "slide 24px + crossfade", duration: 240, easing: standard}
+    dialog_enter: {opacity: "0→1", translate_y: "16→0", duration: 200, easing: decelerate}
+    sheet_enter: {translate_y: "100%→0", duration: 280, easing: decelerate}
+    sticky_bar_enter: {translate_y: "72→0", duration: 200, easing: decelerate}
+    inline_feedback_swap: {crossfade: 120}
+    pressed_state: {scale: 0.98, duration: 120}
+    live_dot_pulse: {opacity: "1→0.55→1", period: 2000, note: "the only looped animation; disabled under reduced motion"}
+  forbidden: ["scroll-jacking", "background video", "continuous decorative loops (except live_dot_pulse)", "bounce > 1.02 scale", "hover-only meaning", "animation delaying price/status updates"]
+  reduced_motion:
+    rule: "All transitions become instant state swaps (0ms) or single 120ms opacity fades; stack renders final tilt without settle; live_dot static; skeleton shimmer becomes static two-tone; gallery advance is instant swap; sticky bar appears without slide."
+    layout_guarantee: "No layout depends on animation completing."
+
+accessibility:
+  contrast: "WCAG AA minimum for all text and 3:1 for UI boundaries/focus; pairs listed per token; QA re-verifies rendered."
+  touch_targets: "44x44 minimum everywhere; bottom-nav plus 48x48; filmstrip arrows 44x44."
+  focus:
+    ring: "2px focus_ring, offset 2 outside radius; focus_ring_inverse on ink surfaces"
+    obscured_rule: "scroll offset accounts for sticky top bar and mobile sticky bid bar/bottom nav; focused element never fully covered (scroll-padding = chrome height + 8)"
+    order: "matches visual reading order; overlapping decorative layers are not focusable"
+  keyboard:
+    gallery: "Left/Right arrows advance; Home/End jump; control is a real button"
+    dialogs: "focus trap, Esc closes, focus returns to invoker"
+    forms: "error summary focused after failed submit; role=alert on inline errors; aria-describedby links errors to fields (accessibilityHint/State on native)"
+  screen_reader:
+    status_chip: "status announced as text («Идут торги», «Релиз 24 августа, 19:00»)"
+    price_updates: "polite live region on current price in LIVE panel"
+    creator_action: "always has accessible name equal to its role label"
+    decorative_media: "back stack layers and any decorative slabs hidden from tree"
+  zoom_localization: "Layouts tolerate 200% text zoom (web) and long Russian strings; measure and wrap rules in typography.rules; no fixed-height text containers except single-line ellipsis slots declared in component content_limits."
+  reduced_motion: "see motion.reduced_motion"
+
+feasibility_notes:
+  - "Blur: expo-image blurRadius; no WebGL. Mirror: transform scaleY(-1) on a cropped copy."
+  - "Tilt/overlap: static transforms; RN + RNW support rotate/translate."
+  - "Sticky panel/bars: absolute positioning + scroll events (Reanimated); no CSS-only dependency."
+  - "Mixed-size layouts are deterministic flex compositions (not measurement-driven masonry). Golden screens may use irregular row recipes; do not force one repeating ABC grid."
+  - "Variable fonts shipped as static instances for native reliability."

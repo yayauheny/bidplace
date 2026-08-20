@@ -1,0 +1,66 @@
+STAGE 5 — build exactly 12 labeled future boards (F107–F118). No other frames. These are designed_post_mvp / unresolved and MUST stay visually separated from MVP acceptance. Every frame carries a visible chip «Будущее — не MVP» on accent_brown_soft (design-system.yaml accent_selection.fixed_assignments.future_board_chips). Bidding remains confirmed_mvp; follow, wishlist, and process video are designed_post_mvp — annotate that split on every board.
+
+READ FIRST:
+1. design/creator-first/spec/screen-blueprints.yaml — future_boards (future_follow_creator, future_wishlist_saved_work, future_video_process_story, future_concepts) + acceptance_checks.
+2. design/creator-first/spec/pen-build-plan.md — §5 and §6 manifest rows F107–F118.
+3. design/creator-first/spec/component-specs.yaml — follow_creator, wishlist_saved_work, video_process_story (anatomy, placement, states, optimistic_contract, do_not_invent, graceful_unavailable).
+4. design/creator-first/spec/design-system.yaml — accent_selection.fixed_assignments.future_board_chips, iconography.required designed_post_mvp roles (follow_heart + fill, wishlist_bookmark + fill, play, pause, speaker_on, speaker_off).
+5. design/creator-first/spec/content-fixtures.yaml — ui_copy.follow / wishlist / video, future_concepts_labels, creator_rich, work_rich_live, accent_assignments, media_asset_manifest.
+
+SHARED RULES: append BELOW all existing content, 200px gaps, x=0. Reuse existing screen masters as instances (creator_scene, work_card, media_stack, auction_panel, status_chip, story_chapter, process_steps, facts_group, bid_history_row, sticky_bid_bar, rail, footer, global_navigation, inline_validation). THIS is the first (and only) stage allowed to instance icon/follow_heart, icon/follow_heart_fill, icon/wishlist_bookmark, icon/wishlist_bookmark_fill, icon/play, icon/pause, icon/speaker_on, icon/speaker_off. Never place those icons on F001–F106. Never add follow/wishlist/video controls onto existing MVP frames — only onto these new future frames. Chip «Будущее — не MVP»: label_sm ink on accent_brown_soft pill, radius 999, padding_h 12, height 28, placed OUTSIDE the top-left of each frame (or a dedicated slot in the annotation column if it would overlap chrome) AND repeated as a small overlay in the top-right of placement screens so a screenshot of the screen still shows the label. Invent nothing. Accent for creator_rich / w-1024 from accent_assignments (polina-mirosh orange, w-1024 yellow). Every frame: latin state kicker outside + annotation (right, 420, caption) with product_phase, backend_required notes, and motion (state swap instant under reduced_motion; no heart/bookmark animation; video autoplay forbidden).
+
+MASTERS to create this stage, named "<component_id>/<variant>": follow_creator/desktop, follow_creator/mobile, wishlist_saved_work/card_icon, wishlist_saved_work/detail_pill, wishlist_saved_work/detail_icon_mobile, video_process_story/desktop, video_process_story/mobile.
+
+— FOLLOW CREATOR (ui_copy.follow; fixture creator_rich «Полина Мирош») —
+F107 — name exactly "future/follow-creator/states", width 1440 board: five labeled columns in a creator_scene identity-column context (kicker «Автор», «Полина Мирош», links row present). Chip «Будущее — не MVP» on the board. Master follow_creator/desktop: secondary outline pill h44 (border 1.5 ink), icon/follow_heart 20 + label 15/600 «Следить»; followed: ink fill pill, icon/follow_heart_fill 20 white + «Вы следите». Columns:
+(a) anonymous — «Следить»; annotation: press → auth redirect with return path; label unchanged.
+(b) default — authenticated, not followed, same «Следить».
+(c) followed — «Вы следите», Heart fill, aria-pressed true note.
+(d) loading — visual state already flipped to followed, icon/spinner 16 replaces Heart, label keeps «Вы следите».
+(e) error — rolled back to default «Следить» + inline_validation error row «Не получилось. Попробуйте ещё раз» (role=alert).
+Annotation: a11y «Следить за автором» / «Вы следите за автором»; 401 → auth; 403 self/admin → button hidden never disabled-dead; 409 reconcile silently; 5xx rollback; no follower counts, no «подписчики», never on discovery cards / nav / work detail; until backend exists the control is not on MVP frames (slot collapses).
+
+F108 — name exactly "future/follow-creator/profile-placement-1440", width 1440: instance of creator-profile/1440/default composition (creator_rich, work_rich_live) WITH follow_creator/desktop default inserted in the identity-column slot after creator_links, gap 16. Visible chip «Будущее — не MVP». Do not modify the existing "creator-profile/1440/default" frame — this is a new frame. Annotation: bidding = confirmed_mvp; follow = designed_post_mvp / backend_required; future «Мои авторы» list is a concept card on the future/concepts board, unresolved.
+
+F109 — name exactly "future/follow-creator/profile-placement-390", width 390: creator_scene mobile (portrait, kicker, name, meta, statement, links wrap) with follow_creator/mobile default — same pill full-width h48 below links. Chip «Будущее — не MVP». Annotation: same phase split; full-width below links only.
+
+— CONCEPTS —
+F110 — name exactly "future/concepts", width 1440 board: labeled concept cards, each on accent_brown_soft (fixed future_board_chips), each with chip «Будущее — не MVP». Cards use future_concepts_labels.items verbatim (label + product_phase + implementation_status as caption, never rewritten):
+1. «Следить за автором — напоминания о релизах» — designed_post_mvp / backend_required
+2. «Сохранённые работы» — designed_post_mvp / backend_required
+3. «Продажа по фиксированной цене» — unresolved / product_decision_required
+4. «Редакционные подборки» — unresolved / product_decision_required
+5. «Видео о процессе» — designed_post_mvp / backend_required
+Also include a sixth concept card for the unresolved follow surface named in follow_creator.future_surfaces: caption "Missing spec: «Мои авторы» list label" if that exact string is not in future_concepts_labels (do not invent the list UI; the card is a label only). Annotation: these are not MVP controls; never mixed into F001–F106.
+
+— WISHLIST (ui_copy.wishlist; fixture work_rich_live «Тихий берег») —
+F111 — name exactly "future/wishlist/states", width 1440 board: five labeled columns. Chip «Будущее — не MVP». Show BOTH contexts per state where anatomy differs:
+- card_icon: 44×44 circle surface e1, icon/wishlist_bookmark 20 ink, top-right of work_card/standard media (w-1024 cover asset_w1024_01_cover.jpg) inset 12; saved = icon/wishlist_bookmark_fill ink; never overlaps the corner icon/arrow_up_right.
+- detail_pill: secondary outline pill h44, Bookmark 20 + «Сохранить»; saved = ink fill, Bookmark Fill white + «Сохранено».
+Columns: anonymous («Сохранить») · default · saved («Сохранено») · loading (spinner 16 replaces Bookmark, label keeps target state) · error (rollback + inline_validation «Не получилось. Попробуйте ещё раз»; on card_icon the error is announced only, no layout shift). Annotation: a11y «Сохранить работу»; announce «Работа сохранена» / «Работа удалена из сохранённых»; never in nav / creator_card; Heart is follow_creator only; no «избранное»; creator cannot save own work (hidden, not dead); tab order on card: card → wishlist.
+
+F112 — name exactly "future/wishlist/card-placement-1440", width 1440: work_card/standard of work_rich_live (title «Тихий берег», creator «Полина Мирош», media asset_w1024_01_cover.jpg, NO price/deadline) with wishlist_saved_work/card_icon default in the top-right media slot. Chip «Будущее — не MVP».
+
+F113 — name exactly "future/wishlist/card-placement-390", width 390: same card at mobile width 350, icon inset 8. Chip «Будущее — не MVP».
+
+F114 — name exactly "future/wishlist/detail-placement-1440", width 1440: work-detail LIVE composition (work_rich_live: media_stack, auction_panel live_eligible, status_chip LIVE «Идут торги», story_chapter, process_steps, facts_group, bid_history_row, rail omitted-note, footer) with wishlist_saved_work/detail_pill default in the hero right column, below creator chip, above title, gap 12. Chip «Будущее — не MVP». Never inside auction_panel. Accent yellow for w-1024.
+
+F115 — name exactly "future/wishlist/detail-placement-390", width 390: work-detail 390 LIVE (media_stack, inline auction_panel, sticky_bid_bar eligible) with wishlist_saved_work/detail_icon_mobile default — 44 icon-only in the top bar, left of share. Chip «Будущее — не MVP». accessibilityLabel required note.
+
+— VIDEO PROCESS STORY (ui_copy.video; poster_asset_id asset_w1024_s4_working) —
+F116 — name exactly "future/video-process/states", width 1440 board: eight labeled states of video_process_story/desktop. Chip «Будущее — не MVP». Player surface radius 24 e1, ratio 16:10, width 560 height 350, tilt 0deg. Poster fill: design/creator-first/assets/media/asset_w1024_s4_working.jpg (cover, focal center). Kicker «Видео о процессе» label_sm ink_soft. No timeline, no fullscreen, no related videos.
+(a) poster — poster + center control 48 circle surface e2 icon/play; no other chrome.
+(b) ready — poster visible, Play 48 + mute 44 circle surface icon/speaker_on bottom-right.
+(c) playing — video visible (use the same poster image as the held frame — do not generate a frame), Pause 48 (icon/pause), mute live.
+(d) paused — current frame held, Play 48.
+(e) muted — SpeakerSlash (icon/speaker_off); combine with playing.
+(f) loading — skeleton matching media_stack front card; icon/spinner 24 center; lands on ready after load, no autoplay.
+(g) error — poster dimmed + error_block overlay «Не удалось загрузить видео» + «Повторить».
+(h) unavailable — component omitted entirely; show process_steps/list of work_rich_live (6 steps) with NO reserved hole and a latin kicker "unavailable: omitted".
+Annotation: autoplay forbidden on every platform including reduced-motion; looping forbidden; first Play from poster goes loading → ready → playing only after explicit tap; region labeled «Видео о процессе»; Play a11y «Смотреть»; Pause «Пауза»; Mute «Выключить звук» / «Включить звук»; captions UI = Missing input (omit).
+
+F117 — name exactly "future/video-process/placement-1440", width 1440: work-detail process section (work_rich_live) with video_process_story/desktop poster above process_steps/list, gap 40, max width 560 in the reading column. Surrounding: media_stack, auction_panel, status_chip, story_chapter, facts_group, bid_history_row, rail omit-note, footer. Chip «Будущее — не MVP». Poster asset_w1024_s4_working.jpg.
+
+F118 — name exactly "future/video-process/placement-390", width 390: same order, video_process_story/mobile width 350 height 219, gap 24, poster above process_steps, plus media_stack and auction_panel. Chip «Будущее — не MVP».
+
+VERIFY before finishing: exactly 12 new frames named "future/follow-creator/states", "future/follow-creator/profile-placement-1440", "future/follow-creator/profile-placement-390", "future/concepts", "future/wishlist/states", "future/wishlist/card-placement-1440", "future/wishlist/card-placement-390", "future/wishlist/detail-placement-1440", "future/wishlist/detail-placement-390", "future/video-process/states", "future/video-process/placement-1440", "future/video-process/placement-390"; every frame has chip «Будущее — не MVP» on accent_brown_soft; post-MVP icons appear only on these frames; no follow/wishlist/video control added to F001–F106; concept labels verbatim from future_concepts_labels; existing frames untouched.

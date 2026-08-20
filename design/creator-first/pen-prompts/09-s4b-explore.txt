@@ -1,0 +1,36 @@
+STAGE 4B — build exactly 7 screen frames (F066–F072): explore at 1440 / 390 / 1024. No other frames.
+
+READ FIRST:
+1. design/creator-first/spec/screen-blueprints.yaml — screen explore (sections, filter layer, deterministic grid, states, annotations_for_pen, acceptance_checks).
+2. design/creator-first/spec/pen-build-plan.md — §6 manifest rows F066–F072.
+3. design/creator-first/spec/component-specs.yaml — search_entry, tab_pill, filter_chip, work_card, creator_card, empty_state, skeleton.
+4. design/creator-first/spec/content-fixtures.yaml — works (all 4), creators (all 4), ui_copy, accent_assignments, media_asset_manifest.
+
+RULES: masonry is deterministic row templates ([4+4+4] / [8+4] / [4+8] cycling at 1440), never measurement-driven. Default cards contain only media/title/creator/descriptor — no price/deadline/countdown/bid count; status chips appear only under an active status filter (none of these frames applies one). Plate variant max 1 per row, accent by each work's own assignment. Filter chips (works tab): «Категория», «Статус», «Материалы», «Уникальность», «Цена», «Год» + «Сортировка» right-aligned; creators tab: «Сортировка» only. Server sorts only: активность, новизна, цена, имя (annotation — do not draw a sort popover unless stated). Every frame: annotation outside right 420 (server-owned: result counts, pagination; filters announce result count politely; motion refs; reduced_motion).
+
+FRAME F066 — name exactly "explore/1440/works-default", width 1440, all works fixtures, guest nav:
+1. header: title display_2 «Обзор»; tab_pill tabs «Работы» (active) | «Авторы»; search_entry explore_full width 640 centered (placeholder «Поиск работ и авторов»).
+2. filter_layer: filter_chip row «Категория» «Статус» «Материалы» «Уникальность» «Цена» «Год» + «Сортировка» right-aligned (all default state, h40).
+3. results_works: result count caption top-right «4 работы» (real rendered count; blueprint example «124 работы» represents the server-owned value — annotate); grid row 1 [4+4+4]: standard w-1024 (asset_w1024_01_cover.jpg), plate w-2048 (asset_w2048_01_cover.jpg; plate accent_pink_soft + 2px accent_pink_strong frame), standard w-3072 (asset_w3072_01_cover.jpg); row 2 [8+4]: wide w-4096 (asset_w4096_01_cover.jpg) + slot caption "Missing spec: only 4 work fixtures — row 2 incomplete". Titles/creators/descriptors per fixtures («Тихий берег» — «Полина Мирош» — «Единственный большой формат серии «Полесье»»; «Свет 03» — «Ксения Лапко» — «Единственный экземпляр»; long title 2-line ellipsis — «Александра-Виктория Круглова-Пташникова» — «Единственный экземпляр»; «Ваза «Полевой обжиг №7»» — «Артём Гончар» — descriptor = uniqueness first phrase cut at 60 chars: «Пепловая глазурь не повторяется: рисунок зависит от ветра и т…»).
+4. pagination: outline button «Показать ещё» (annotate: server pagination).
+5. footer.
+
+FRAME F067 — name exactly "explore/1440/creators", width 1440, all creators fixtures:
+Header: «Обзор», tabs «Работы» | «Авторы» (active), search_entry. Filter layer: «Сортировка» chip only. Results: creator_card/grid 4-up row (span_3 each) with workCount visible: «Полина Мирош» «Живопись, масло и левкас · 5 работ»; «Артём Гончар» «Керамика ручной формовки · 1 работа»; «Ксения Лапко» photo_missing (accent_yellow_soft + «К») «Графика · 1 работа»; «Александра-Виктория Круглова-Пташникова» long_name (strip 88, discipline drops). Footer. Annotation: works/creators one tab-switch apart; creators sort = активность | имя.
+
+FRAME F068 — name exactly "explore/1440/filtered-empty", width 1440:
+Header + tabs («Работы» active) + search default. Filter layer: chip «Цена» in applied state «Цена: до 500 BYN» (ink border 1.5 + count badge «1») + other chips default + text button «Сбросить» at row end (visible because a filter is applied). Results zone: empty_state explore_no_results — «Ничего не нашлось», «Попробуйте изменить запрос или сбросить фильтры», action «Сбросить фильтры». Footer. Annotation: applied filters announced with result count; state is a server empty response demo.
+
+FRAME F069 — name exactly "explore/1440/query-loading", width 1440:
+Header + tabs; search_entry loading state (value «Керамика», spinner 16 right); filter chips default; results: skeleton grid preserving the row template ([4+4+4] then [8+4] skeleton cards). Footer. Annotation: layout never jumps on load; shimmer static under reduced motion.
+
+FRAME F070 — name exactly "explore/390/works-default", width 390, all works fixtures:
+Mobile order: top bar h56 with title «Обзор»; search_entry mobile_explore full-width h48; tab_pill h44 scrollable («Работы» active | «Авторы»); filter chips horizontal scroll: «Фильтры» chip first (opens full sheet — annotate) + «Категория» «Статус» «Материалы» «Уникальность» «Цена» «Год» «Сортировка»; results single column: work_card full-width w-1024 (350), full-width w-2048, then a 2-up square pair [w-3072, w-4096] at span_2 = 167 each (annotate the rhythm rule: every 4th pair renders 2-up squares); outline «Показать ещё»; footer mobile; bottom_nav floating. Bottom padding 96 + inset.
+
+FRAME F071 — name exactly "explore/390/filters-sheet", width 390, height 844 (overlay snapshot — annotate):
+Background: F070 content dimmed under scrim rgba(31,35,55,0.50). Bottom sheet: width 390, radius top 24, e3, drag handle, title title_2 «Фильтры», section caption «Категория» + option rows «Живопись» «Графика» «Керамика» «Текстиль» (44 targets), bottom row: primary ink pill with caption "Missing spec: apply button label" (do NOT invent) + text button «Сбросить». Annotation: sheet traps focus; sheet_enter 280ms decelerate; price/year ranges = two numeric fields + apply; applied count badge appears on «Фильтры» chip.
+
+FRAME F072 — name exactly "explore/1024/works-default", width 1024, all works fixtures:
+Tablet transform (margins 48, content 928, gutter 20): header «Обзор» + tabs + search_entry explore_full 640 centered (annotate width kept from desktop master); filter chip row; results 2-up rows [6+6] / [12] cycling: row 1 [w-1024 span_6=454, w-2048 span_6], row 2 [wide w-3072 span_12=928], row 3 [w-4096 span_6 + caption "Missing spec: only 4 work fixtures"]; «Показать ещё»; footer.
+
+VERIFY before finishing: exactly 7 new frames named "explore/1440/works-default", "explore/1440/creators", "explore/1440/filtered-empty", "explore/1440/query-loading", "explore/390/works-default", "explore/390/filters-sheet", "explore/1024/works-default"; deterministic row templates only; no price/deadline/countdown/bid count on any card; filters keyboard-reachable; no invented sort options or filter values; existing frames untouched.
