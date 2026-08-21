@@ -1,5 +1,33 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-21 — Irreversible auction close (P0-1)
+
+- `Implemented`: `ListingLifecycleService.close` commits `LIVE → ENDED` in its
+  own SERIALIZABLE transaction, emits `listing.ended`, then creates the winner
+  Order via `createWinnerOrder` in separate short-lived transactions. Generic
+  Order failures leave `ENDED` without Order and are logged; they no longer roll
+  back the close.
+- `Implemented`: shared `createWinnerOrder` helper
+  (`apps/api/src/orders/create-winner-order.ts`) for close and admin recovery.
+  Each create attempt is its own SERIALIZABLE TX. On `P2002`, classification uses
+  `getPrismaUniqueConstraintTargets` **after** the failed TX ends: `public_id`
+  retries with a new id; `source_bid_id` resolves via a fresh root
+  `findUnique` to `already_exists`. Exhausted publicId attempts throw without
+  undoing `ENDED`. Admin recovery writes its AuditEvent in the same TX as create
+  via optional `onCreated`.
+- `Implemented`: cron `run()` isolates activate/close per Listing so one failure
+  does not stop the remaining expired queue.
+- Ranking and admin recovery API unchanged; no new Listing statuses, queues, or
+  outbox.
+- Coverage: unit `create-winner-order.spec.ts` (fresh-TX retry mocks), lifecycle
+  cron isolation; PostgreSQL real `orders_public_id_key` collision → retry → one
+  Order; secondary generate-throw → `ENDED` + admin recovery
+  (`lifecycle.integration.spec.ts`); `order-recovery.integration.spec.ts` green.
+- `Verified`: API typecheck; eslint on touchpoints; API unit helper/lifecycle;
+  auction PostgreSQL integration under `test/integration/auction/`.
+- Remaining pilot P0 (password reset, emergency admin, image limits,
+  release/backup) are unchanged.
+
 ## 2026-08-20 — Admin Order recovery for ended Listings
 
 - `Implemented`: admin path for `Listing=ENDED`, Bids present, Order absent:
@@ -16,7 +44,9 @@
   `adminListingsNeedingOrderResponseSchema`,
   `adminCreateListingOrderResponseSchema`. Client methods on `@bidplace/api-client`.
 - Coverage: `apps/api/test/integration/auction/order-recovery.integration.spec.ts`.
-- Auction core is closed after this path unless a new production risk is found.
+- `Partial` (superseded 2026-08-21): recovery API was complete, but close could
+  still roll back `ENDED` on generic Order create failure until the two-step
+  close fix.
 - `Verified`: API typecheck; API unit `178/178` (orders filter); auction
   PostgreSQL integration including recovery (all passed under `auction/`);
   eslint on recovery touchpoints.
@@ -47,10 +77,10 @@
 - `Implemented`: `BidsService.place` retries CAS `LISTING_CHANGED` up to 3 times
   with full re-validation against a fresh Listing snapshot; `LISTING_CHANGED`
   remains only after retries are exhausted.
-- `Implemented`: `ListingLifecycleService.close` always marks expired Listings
-  `ENDED`. Winner Order creation is best-effort: missing seller handoff, missing
-  buyer, or exhausted publicId attempts leave `ENDED` without Order and log an
-  error instead of rolling back to stuck `LIVE`.
+- `Partial` (corrected 2026-08-21): earlier claim that Order creation was
+  best-effort inside the same close transaction was wrong for generic
+  `Order.create` failures (they rolled back `ENDED`). Two-step close now matches
+  the intended invariant; see 2026-08-21 entry.
 - `Implemented`: schedule/activation require seller handoff contact; activation
   cron also filters on non-null handoff fields.
 - `Implemented`: auction business integration suites live under

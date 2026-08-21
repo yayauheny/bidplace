@@ -187,6 +187,20 @@ describe('admin Order recovery for ended Listings', () => {
     expect(persisted.buyerId).toBe(fixture.buyerA.id);
     expect(persisted.sellerHandoffValue).toBe('@recovered_seller');
 
+    const auditEvents = await prisma.auditEvent.findMany({
+      where: {
+        targetType: 'ORDER',
+        targetId: persisted.id,
+      },
+    });
+    expect(auditEvents).toHaveLength(1);
+    expect(auditEvents[0]).toMatchObject({
+      actorUserId: fixture.seller.id,
+      oldStatus: null,
+      newStatus: 'PENDING_CONTACT',
+      reason: expect.stringContaining('Admin created Order for ended Listing'),
+    });
+
     const needing = await orders.listEndedWithoutOrder('admin');
     expect(needing.listings).toHaveLength(0);
   });

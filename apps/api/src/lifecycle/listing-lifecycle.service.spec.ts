@@ -19,6 +19,7 @@ describe('ListingLifecycleService', () => {
           .mockResolvedValueOnce([]),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
+      $transaction: vi.fn(),
     };
     const service = new ListingLifecycleService(
       prisma as never,
@@ -60,5 +61,32 @@ describe('ListingLifecycleService', () => {
       },
       data: { status: 'LIVE' },
     });
+  });
+
+  it('continues closing remaining expired listings when one close throws', async () => {
+    const now = new Date('2026-07-31T12:00:00.000Z');
+    const prisma = {
+      listing: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([{ id: 'listing-a' }, { id: 'listing-b' }]),
+      },
+    };
+    const service = new ListingLifecycleService(
+      prisma as never,
+      { now: () => now } as never,
+      {} as never,
+      { emit: vi.fn() } as never,
+    );
+    const close = vi
+      .spyOn(service, 'close')
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(true);
+
+    await service.run();
+
+    expect(close).toHaveBeenNthCalledWith(1, 'listing-a', now);
+    expect(close).toHaveBeenNthCalledWith(2, 'listing-b', now);
   });
 });

@@ -1,21 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { type Prisma } from '@bidplace/database';
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
+import {
+  createWinnerOrder,
+  WINNER_BID_ORDER_BY,
+} from '../orders/create-winner-order';
 import { RealtimeService } from '../realtime/realtime.service';
 import { Clock } from '../core/time';
-
-type CloseListing = Prisma.ListingGetPayload<{
-  include: {
-    product: {
-      include: {
-        sellerProfile: true;
-      };
-    };
-  };
-}>;
 
 @Injectable()
 export class ListingLifecycleService {
@@ -50,30 +43,37 @@ export class ListingLifecycleService {
     });
 
     for (const listing of scheduled) {
-      const activated = await this.prisma.listing.updateMany({
-        where: {
-          id: listing.id,
-          status: 'SCHEDULED',
-          product: {
-            status: 'APPROVED',
-            sellerProfile: {
+      try {
+        const activated = await this.prisma.listing.updateMany({
+          where: {
+            id: listing.id,
+            status: 'SCHEDULED',
+            product: {
               status: 'APPROVED',
-              handoffContactType: { not: null },
-              handoffContactValue: { not: null },
+              sellerProfile: {
+                status: 'APPROVED',
+                handoffContactType: { not: null },
+                handoffContactValue: { not: null },
+              },
             },
           },
-        },
-        data: { status: 'LIVE' },
-      });
-
-      if (activated.count === 1) {
-        this.realtime.emit(listing.id, 'listing.updated', {
-          listingId: listing.id,
-          currentPrice: listing.currentPrice.toNumber(),
-          bidCount: listing.bidCount,
-          status: 'LIVE',
-          endsAt: listing.endsAt.toISOString(),
+          data: { status: 'LIVE' },
         });
+
+        if (activated.count === 1) {
+          this.realtime.emit(listing.id, 'listing.updated', {
+            listingId: listing.id,
+            currentPrice: listing.currentPrice.toNumber(),
+            bidCount: listing.bidCount,
+            status: 'LIVE',
+            endsAt: listing.endsAt.toISOString(),
+          });
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to activate SCHEDULED Listing ${listing.id}`,
+          error instanceof Error ? error.stack : undefined,
+        );
       }
     }
 
@@ -84,7 +84,14 @@ export class ListingLifecycleService {
     });
 
     for (const listing of expired) {
-      await this.close(listing.id, now);
+      try {
+        await this.close(listing.id, now);
+      } catch (error) {
+        this.logger.error(
+          `Failed to close expired Listing ${listing.id}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
     }
   }
 
@@ -92,12 +99,12 @@ export class ListingLifecycleService {
     const closed = await runSerializableTransaction(this.prisma, async (tx) => {
       const listing = await tx.listing.findUnique({
         where: { id: listingId },
-        include: {
-          product: {
-            include: {
-              sellerProfile: true,
-            },
-          },
+        select: {
+          id: true,
+          status: true,
+          endsAt: true,
+          currentPrice: true,
+          bidCount: true,
         },
       });
 
@@ -114,15 +121,6 @@ export class ListingLifecycleService {
         return null;
       }
 
-      const winner = await tx.bid.findFirst({
-        where: { listingId },
-        orderBy: [{ amount: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
-      });
-
-      if (winner) {
-        await this.tryCreateWinnerOrder(tx, listing, winner, now);
-      }
-
       return {
         listingId,
         currentPrice: listing.currentPrice.toNumber(),
@@ -137,16 +135,50 @@ export class ListingLifecycleService {
     }
 
     this.realtime.emit(listingId, 'listing.ended', closed);
+
+    try {
+      await this.ensureWinnerOrder(listingId, now);
+    } catch (error) {
+      this.logger.error(
+        `Listing ${listingId} ended without Order: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+
     return true;
   }
 
-  private async tryCreateWinnerOrder(
-    tx: Prisma.TransactionClient,
-    listing: CloseListing,
-    winner: { id: string; bidderUserId: string; amount: Prisma.Decimal },
+  private async ensureWinnerOrder(
+    listingId: string,
     now: Date,
   ): Promise<void> {
-    const buyer = await tx.user.findUnique({
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      include: {
+        product: {
+          include: {
+            sellerProfile: true,
+          },
+        },
+      },
+    });
+
+    if (!listing || listing.status !== 'ENDED') {
+      return;
+    }
+
+    const winner = await this.prisma.bid.findFirst({
+      where: { listingId },
+      orderBy: WINNER_BID_ORDER_BY,
+    });
+
+    if (!winner) {
+      return;
+    }
+
+    const buyer = await this.prisma.user.findUnique({
       where: { id: winner.bidderUserId },
       select: { email: true },
     });
@@ -169,42 +201,18 @@ export class ListingLifecycleService {
       return;
     }
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        await tx.order.create({
-          data: {
-            publicId: this.publicIds.generate(),
-            listingId: listing.id,
-            sellerId: sellerProfile.userId,
-            buyerId: winner.bidderUserId,
-            sourceBidId: winner.id,
-            finalAmount: winner.amount,
-            contactDueAt: new Date(now.getTime() + 86_400_000),
-            sellerHandoffType: sellerProfile.handoffContactType,
-            sellerHandoffValue: sellerProfile.handoffContactValue,
-            buyerEmailAtClose: buyer.email,
-            handoffInitiator: sellerProfile.handoffInitiator,
-          },
-        });
-        return;
-      } catch (error) {
-        if (
-          !(
-            typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            error.code === 'P2002'
-          )
-        ) {
-          throw error;
-        }
-
-        if (attempt === 4) {
-          this.logger.error(
-            `Listing ${listing.id} ended without Order: could not assign Order public identifier`,
-          );
-        }
-      }
-    }
+    await createWinnerOrder(this.prisma, {
+      listingId: listing.id,
+      sellerId: sellerProfile.userId,
+      buyerId: winner.bidderUserId,
+      sourceBidId: winner.id,
+      finalAmount: winner.amount,
+      contactDueAt: new Date(now.getTime() + 86_400_000),
+      sellerHandoffType: sellerProfile.handoffContactType,
+      sellerHandoffValue: sellerProfile.handoffContactValue,
+      buyerEmailAtClose: buyer.email,
+      handoffInitiator: sellerProfile.handoffInitiator,
+      generatePublicId: () => this.publicIds.generate(),
+    });
   }
 }

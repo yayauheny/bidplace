@@ -2,21 +2,30 @@
 
 Снимок проверен на branch `fix/final-pen-v2-rework`, HEAD `aadfba3d900080686488d9104bba0374338fc326`.
 
+> **Актуализация 2026-08-21 (P0-1).** `ListingLifecycleService.close` больше не
+> держит `ENDED` и `Order.create` в одной транзакции. Generic ошибка создания
+> Order оставляет Listing в `ENDED`; admin recovery остаётся путём восстановления.
+> Evidence: `docs/product/11-PROJECT-STATUS.md` (запись 2026-08-21),
+> `apps/api/test/integration/auction/lifecycle.integration.spec.ts`,
+> `apps/api/src/orders/create-winner-order.ts`. Остальные P0 ниже без изменений.
+
 Цель этого файла — не описывать желаемый продукт, а честно отвечать: что уже существует, какие реальные поля и маршруты доступны, что работает частично и что блокирует живую продажу.
 
 ## 1. Короткий вывод
 
 Архитектуру переписывать с нуля не нужно. Modular NestJS monolith, PostgreSQL/Prisma, shared Zod contracts, typed API client, React Query, Expo Router и Socket.IO подходят текущему масштабу.
 
-Но проект остаётся **NO-GO для первого необратимого реального аукциона** из-за пяти конкретных P0:
+Проект остаётся **NO-GO для первого необратимого реального аукциона** из-за оставшихся P0 (P0-1 закрыт 2026-08-21):
 
-1. обычная ошибка `Order.create()` может откатить `ENDED` и оставить истёкший Listing в `LIVE`;
+1. ~~обычная ошибка `Order.create()` может откатить `ENDED`~~ — **закрыто**: двухфазный close;
 2. нет forgot/reset password;
 3. founder не может безопасно остановить проблемный Listing или заблокировать User без ручной БД;
 4. загрузка изображения допускает дорогой decode до полной проверки capability и не ограничивает pixels/frames/concurrency;
 5. не доказаны воспроизводимый production release, backup и restore.
 
 Новые Fixed/Offer/Scheduled decisions добавляют архитектурную работу, но не отменяют эти P0.
+
+Актуализация scope: Fixed/Offer больше не входят в первый MVP и не являются launch-blocker. Новый подтверждённый design/code gap — у автора нет структурированных карточек опыта, выставок и других фактов, нет выбора трёх публичных акцентов и нет соответствующих contract/API/storage полей.
 
 ## 2. Текущая архитектура
 
@@ -87,6 +96,13 @@ packages/design-tokens
 - `shortDescription`;
 - legacy `socialLink`;
 - структурированные `telegramUrl`, `instagramUrl`, `websiteUrl`.
+
+Не реализовано:
+
+- универсальные карточки фактов автора;
+- период/одиночный год/факт без даты;
+- ручной выбор и порядок максимум трёх публичных акцентов;
+- полный публичный список «Опыт и события».
 
 Реальные приватные поля передачи:
 
@@ -358,19 +374,21 @@ API содержит:
 
 ## 6. P0 до живого пилота
 
-### P0-1: close и outcome в одной транзакции
+### P0-1: close и outcome в одной транзакции — закрыто 2026-08-21
 
-`ListingLifecycleService.close()` делает:
+Ранее `close()` делал `ENDED` и `Order.create` в одной serializable transaction, и generic ошибка откатывала `ENDED`.
+
+Текущее поведение:
 
 ```text
-Listing LIVE → ENDED
-→ winner query
-→ Order.create
+TX1: LIVE → ENDED (commit)
+→ emit listing.ended
+createWinnerOrder: each attempt is a fresh TX
+  P2002 public_id → retry outside aborted TX
+  P2002 source_bid_id → root findUnique → already_exists
 ```
 
-в одной serializable transaction. `tryCreateWinnerOrder` поглощает только missing buyer/handoff и отдельный случай P2002. Любая другая ошибка пробрасывается, PostgreSQL откатывает весь transaction, включая ENDED.
-
-Нужен durable two-step invariant и integration test с injected generic failure.
+Real PostgreSQL `orders_public_id_key` collision leaves `ENDED` and creates exactly one Order after retry. Secondary generate-throw still proves generic post-close errors cannot roll back to `LIVE`. Cron изолирует activate/close per Listing. См. `11-PROJECT-STATUS.md` 2026-08-21.
 
 ### P0-2: нет восстановления пароля
 
@@ -449,14 +467,14 @@ Multipart validation вызывает тяжёлый `sharp(...animated).raw().t
 - idempotent recovery при уже существующем Order;
 - новые integration suites.
 
-Не подтверждены или неполны:
+Не подтверждены или неполны на момент аудита (часть закрыта позже):
 
-- unconditional `ENDED` при generic Order failure — P0;
+- ~~unconditional `ENDED` при generic Order failure — P0~~ — **закрыто 2026-08-21** (двухфазный close + real publicId collision + generate-throw integration);
 - пропущенный целиком SCHEDULED interval — P1;
 - recovery UI — P1;
-- retry P2002 внутри той же failed PostgreSQL transaction — нужен реальный integration proof.
+- ~~retry P2002 внутри той же failed PostgreSQL transaction~~ — **закрыто 2026-08-21** (каждая попытка createWinnerOrder — fresh TX; P2002 обрабатывается после abort).
 
-Поэтому формулировка «Auction core закрыт» заменяется на: **основной happy path и часть recovery реализованы; необратимость close не доказана и имеет известный counterexample**.
+Формулировка после 2026-08-21: **необратимость close доказана для generic Order failure**; остальные pilot P0 остаются.
 
 ### `450d405`
 

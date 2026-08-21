@@ -14,6 +14,7 @@ import { BidsService } from '../../../src/bids/bids.service';
 import { AppException } from '../../../src/core/errors';
 import { Clock } from '../../../src/core/time';
 import { ListingLifecycleService } from '../../../src/lifecycle/listing-lifecycle.service';
+import { OrdersService } from '../../../src/orders/orders.service';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -127,6 +128,156 @@ describe('auction lifecycle business guarantees', () => {
     expect(
       await prisma.order.count({ where: { listingId: fixture.listing.id } }),
     ).toBe(1);
+  });
+
+  it('retries a real publicId collision after ENDED and creates exactly one Order', async () => {
+    const clock = new MutableClock();
+    const takenPublicId = 'takenPubId1';
+    const freePublicId = 'freshPubId1';
+
+    const occupied = await createAuctionFixture(prisma, {
+      startPrice: 10,
+      originalEndsAt: auctionNow,
+      endsAt: auctionNow,
+    });
+    await prisma.bid.create({
+      data: {
+        listingId: occupied.listing.id,
+        bidderUserId: occupied.buyerA.id,
+        idempotencyKey: 'taken-public-id-winner',
+        amount: new Prisma.Decimal(10),
+      },
+    });
+    await prisma.listing.update({
+      where: { id: occupied.listing.id },
+      data: { currentPrice: new Prisma.Decimal(10), bidCount: 1 },
+    });
+    const closeAt = new Date(auctionNow.getTime() + 1);
+    expect(
+      await lifecycle(clock, vi.fn(), takenPublicId).service.close(
+        occupied.listing.id,
+        closeAt,
+      ),
+    ).toBe(true);
+    expect(
+      (
+        await prisma.order.findFirstOrThrow({
+          where: { listingId: occupied.listing.id },
+        })
+      ).publicId,
+    ).toBe(takenPublicId);
+
+    const target = await createAuctionFixture(prisma, {
+      startPrice: 20,
+      originalEndsAt: auctionNow,
+      endsAt: auctionNow,
+    });
+    const winner = await prisma.bid.create({
+      data: {
+        listingId: target.listing.id,
+        bidderUserId: target.buyerA.id,
+        idempotencyKey: 'retry-public-id-winner',
+        amount: new Prisma.Decimal(20),
+      },
+    });
+    await prisma.listing.update({
+      where: { id: target.listing.id },
+      data: { currentPrice: new Prisma.Decimal(20), bidCount: 1 },
+    });
+
+    let generateCalls = 0;
+    const collidingPublicIds = {
+      generate: () => {
+        generateCalls += 1;
+        return generateCalls === 1 ? takenPublicId : freePublicId;
+      },
+    };
+    const emit = vi.fn();
+    const service = new ListingLifecycleService(
+      prisma as never,
+      clock,
+      collidingPublicIds as never,
+      { emit } as never,
+    );
+
+    expect(await service.close(target.listing.id, closeAt)).toBe(true);
+
+    const closed = await prisma.listing.findUniqueOrThrow({
+      where: { id: target.listing.id },
+    });
+    expect(closed.status).toBe('ENDED');
+    expect(closed.closedAt).toEqual(closeAt);
+    expect(
+      await prisma.order.count({ where: { listingId: target.listing.id } }),
+    ).toBe(1);
+    const created = await prisma.order.findFirstOrThrow({
+      where: { listingId: target.listing.id },
+    });
+    expect(created.publicId).toBe(freePublicId);
+    expect(created.sourceBidId).toBe(winner.id);
+    expect(generateCalls).toBeGreaterThanOrEqual(2);
+    expect(emit).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Listing ENDED when Order creation fails, then recovery creates one Order', async () => {
+    const clock = new MutableClock();
+    const fixture = await createAuctionFixture(prisma, { startPrice: 10 });
+    const winner = await prisma.bid.create({
+      data: {
+        listingId: fixture.listing.id,
+        bidderUserId: fixture.buyerA.id,
+        idempotencyKey: 'injected-fail-winner',
+        amount: new Prisma.Decimal(10),
+      },
+    });
+    await prisma.listing.update({
+      where: { id: fixture.listing.id },
+      data: { currentPrice: new Prisma.Decimal(10), bidCount: 1 },
+    });
+    const emit = vi.fn();
+    const failingPublicIds = {
+      generate: () => {
+        throw new Error('injected Order create failure');
+      },
+    };
+    const service = new ListingLifecycleService(
+      prisma as never,
+      clock,
+      failingPublicIds as never,
+      { emit } as never,
+    );
+    const closeAt = new Date(fixture.listing.endsAt.getTime() + 1);
+
+    expect(await service.close(fixture.listing.id, closeAt)).toBe(true);
+
+    const closed = await prisma.listing.findUniqueOrThrow({
+      where: { id: fixture.listing.id },
+    });
+    expect(closed.status).toBe('ENDED');
+    expect(closed.closedAt).toEqual(closeAt);
+    expect(
+      await prisma.order.count({ where: { listingId: fixture.listing.id } }),
+    ).toBe(0);
+    expect(emit).toHaveBeenCalledTimes(1);
+
+    const orders = new OrdersService(prisma as never, {
+      generate: () => 'recoveryOrd',
+    } as never);
+    const recovered = await orders.createOrderForEndedListing(
+      fixture.seller.id,
+      'admin',
+      fixture.listing.id,
+    );
+
+    expect(recovered.order.listingId).toBe(fixture.listing.id);
+    expect(
+      await prisma.order.count({ where: { listingId: fixture.listing.id } }),
+    ).toBe(1);
+    const persisted = await prisma.order.findFirstOrThrow({
+      where: { listingId: fixture.listing.id },
+    });
+    expect(persisted.sourceBidId).toBe(winner.id);
+    expect(persisted.buyerId).toBe(fixture.buyerA.id);
   });
 
   it('uses amount/createdAt/id tie-break for equal winning Bids', async () => {

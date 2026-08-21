@@ -40,6 +40,13 @@
 | B-032 | Hugeicons Stroke Rounded Free; custom owned fills for approved gaps | Решено |
 | B-033 | Old docs and history are preserved | Решено |
 | B-034 | New versioned folder becomes entry point for new work | Решено |
+| B-035 | Первый MVP и первый пилот остаются auction-only: только Timed Auction | Решено; пересматривает B-003 |
+| B-036 | Fixed, Offer и остальные способы продажи показываются отдельно как будущее, не как MVP | Решено; пересматривает прежнюю очередность B-010–B-016, но не отменяет целевую модель |
+| B-037 | Факты автора создаются одной универсальной формой; до трёх выбранных фактов выносятся на публичную страницу как акценты | Решено; design MVP, code gap |
+
+### Актуализация 1.1: приоритет решений
+
+`B-035` — последнее решение основателя и имеет приоритет над `B-003` и всеми старыми фразами «Fixed входит в MVP». `B-010`–`B-016` сохраняются как решения о форме будущей модели, но не о сроке её реализации. История не удаляется: в owner-файлах сверху добавлена датированная оговорка.
 
 ## 2. Что переопределено относительно старых документов
 
@@ -81,9 +88,9 @@
 
 ### «Auction core закрыт»
 
-`7189219` и обновлённая архитектурная документация утверждают безусловное `ENDED` best-effort Order.
+`7189219` и обновлённая архитектурная документация утверждали безусловное `ENDED` best-effort Order.
 
-Проверка текущего кода подтверждает counterexample: generic `Order.create` error откатывает одну transaction. Новый статус: P0, не закрыто.
+Аудит baseline нашёл counterexample: generic `Order.create` error откатывал одну transaction. **Исправлено 2026-08-21**: двухфазный close + shared `createWinnerOrder`; injected-failure integration доказательство в `lifecycle.integration.spec.ts`.
 
 ### Buy Now в `DO NOT TOUCH`
 
@@ -156,7 +163,7 @@ Hugeicons free/license/package source: https://github.com/hugeicons/hugeicons
 | Offer | нет | seller capability | lawyer + design + later code |
 | Scheduled | auction lifecycle | common release | architecture audit |
 | Order source | required Bid | Auction/Fixed/Offer | domain design |
-| Close | same transaction | independent ENDED | P0 fix |
+| Close | two-step ENDED then Order (2026-08-21) | independent ENDED | done for P0-1 |
 | Replacement | manual admin | async ranking intent | lawyer gate |
 | Seller cabinet | нет | purchases/sales workspace | design phase 2 + API |
 | Password reset | нет | required | P0 |
@@ -282,7 +289,7 @@ legal:
 release:
   current: NO_GO_REAL_IRREVERSIBLE_SALE
   p0:
-    - auction_close_generic_rollback
+    # auction_close_generic_rollback closed 2026-08-21
     - password_recovery_missing
     - founder_emergency_controls_missing
     - image_decode_resource_limits_missing
