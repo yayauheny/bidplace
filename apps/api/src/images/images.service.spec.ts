@@ -16,12 +16,15 @@ const validateAndNormalizeProductImageUploads = vi.mocked(
   imagePolicy.validateAndNormalizeProductImageUploads,
 );
 
-function createApprovedProduct(images: { position: number; byteLength: number }[]) {
+function createApprovedProduct(
+  images: { position: number; byteLength: number }[],
+  sellerStatus: 'APPROVED' | 'PENDING' | 'SUSPENDED' = 'APPROVED',
+) {
   return {
     status: 'DRAFT',
     sellerProfile: {
       userId: 'owner-id',
-      status: 'APPROVED',
+      status: sellerStatus,
     },
     images,
   };
@@ -69,7 +72,7 @@ describe('ImagesService', () => {
     ]);
   });
 
-  it('checks aggregate Product capacity inside a serializable transaction', async () => {
+  it('rejects maxFiles overflow before normalize', async () => {
     const { prisma, createMany } = createPrismaForAdd({
       product: createApprovedProduct(
         Array.from({ length: productImageUploadLimitMax() }, (_, position) => ({
@@ -87,11 +90,25 @@ describe('ImagesService', () => {
     ).rejects.toThrow(
       `A Product can have at most ${productImageUploadLimitMax()} images`,
     );
-    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
+    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
     expect(createMany).not.toHaveBeenCalled();
-    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
-      isolationLevel: 'Serializable',
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('does not normalize when the seller profile is not approved', async () => {
+    const { prisma } = createPrismaForAdd({
+      product: createApprovedProduct([], 'PENDING'),
     });
+    const service = new ImagesService(prisma as never);
+
+    await expect(
+      service.add('owner-id', 'product-id', [
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
+      ]),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('does not normalize when the caller is not the product owner', async () => {

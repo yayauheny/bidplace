@@ -9,6 +9,8 @@
   and other disallowed MIME types (not empty-upload wording).
 - `Implemented`: animated WebP detection via metadata read with `animated: true`
   (`pages`/`delay` gate); unit fixture + `image-policy.spec.ts` coverage.
+- `Implemented`: early `maxFiles` capacity gate before Sharp normalize when the
+  product is already full (`images.service.ts`, `images.service.spec.ts`).
 - Coverage: `images.service.spec.ts` (authz-before-decode spy), extended
   `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`.
 - `Verified`: API typecheck; targeted unit + integration.

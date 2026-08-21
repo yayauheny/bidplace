@@ -133,7 +133,6 @@ export class AdminUserService {
           displayName: true,
           role: true,
           status: true,
-          sessionVersion: true,
         },
       });
 

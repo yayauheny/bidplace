@@ -35,6 +35,11 @@ export class ImagesService {
 
     assertApprovedSeller(product.sellerProfile.status as SellerStatus);
 
+    assertProductImageCapacity(
+      product.images,
+      files.map((file) => ({ byteLength: file.buffer.byteLength })),
+    );
+
     const validated = await validateAndNormalizeProductImageUploads(files);
 
     await runSerializableTransaction(this.prisma, async (tx) => {
