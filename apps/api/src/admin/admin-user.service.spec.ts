@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AdminUserService } from './admin-user.service';
@@ -72,6 +73,68 @@ describe('AdminUserService', () => {
     });
   });
 
+  it('rejects self status changes', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'admin-1',
+          email: 'admin@example.com',
+          displayName: 'Admin',
+          role: 'admin',
+          status: 'active',
+        }),
+        update: vi.fn(),
+      },
+      auditEvent: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+
+    await expect(
+      createService(prisma).updateStatus('admin-1', 'admin-1', {
+        status: 'banned',
+        reason: 'Self ban',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects admin account status changes', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'admin-2',
+          email: 'other-admin@example.com',
+          displayName: 'Other admin',
+          role: 'admin',
+          status: 'active',
+        }),
+        update: vi.fn(),
+      },
+      auditEvent: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+
+    await expect(
+      createService(prisma).updateStatus('admin-1', 'admin-2', {
+        status: 'banned',
+        reason: 'Ban admin',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
   it('returns without audit when status is unchanged', async () => {
     const tx = {
       user: {
@@ -103,7 +166,7 @@ describe('AdminUserService', () => {
     expect(tx.auditEvent.create).not.toHaveBeenCalled();
   });
 
-  it('revokes sessions and writes audit', async () => {
+  it('revokes sessions and writes audit with stable labels', async () => {
     const tx = {
       user: {
         findUnique: vi.fn().mockResolvedValue({
@@ -144,10 +207,40 @@ describe('AdminUserService', () => {
     expect(tx.auditEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         targetType: 'USER',
-        oldStatus: '2',
-        newStatus: '3',
+        oldStatus: 'session',
+        newStatus: 'revoked',
         reason: 'Compromised account',
       }),
     });
+  });
+
+  it('rejects self session revoke', async () => {
+    const tx = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'admin-1',
+          email: 'admin@example.com',
+          displayName: 'Admin',
+          role: 'admin',
+          status: 'active',
+          sessionVersion: 1,
+        }),
+        update: vi.fn(),
+      },
+      auditEvent: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+
+    await expect(
+      createService(prisma).revokeSessions('admin-1', 'admin-1', {
+        reason: 'Self revoke',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

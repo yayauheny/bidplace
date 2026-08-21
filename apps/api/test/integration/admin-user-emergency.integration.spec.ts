@@ -154,4 +154,37 @@ describe('admin user emergency controls HTTP transport', () => {
     });
     expect(relogin.status).toBe(201);
   });
+
+  it('rejects banning another admin account', async () => {
+    const targetAdmin = await createAdmin();
+    const admin = await createAdmin();
+    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+
+    await login(client, admin);
+
+    const ban = await client.patch(`/admin/users/${targetAdmin.id}/status`, {
+      status: 'banned',
+      reason: 'Attempt admin ban',
+    });
+    expect(ban.status).toBe(403);
+  });
+
+  it('rejects self ban and self session revoke', async () => {
+    const admin = await createAdmin();
+    const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+
+    await login(client, admin);
+
+    const selfBan = await client.patch(`/admin/users/${admin.id}/status`, {
+      status: 'banned',
+      reason: 'Self ban',
+    });
+    expect(selfBan.status).toBe(403);
+
+    const selfRevoke = await client.post(
+      `/admin/users/${admin.id}/revoke-sessions`,
+      { reason: 'Self revoke' },
+    );
+    expect(selfRevoke.status).toBe(403);
+  });
 });

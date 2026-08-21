@@ -3,6 +3,7 @@ import {
   type AdminUserStatusUpdateRequest,
 } from '@bidplace/contracts';
 import {
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -12,6 +13,28 @@ import { PrismaService, runSerializableTransaction } from '../core/database';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function assertIncidentTargetAllowed(
+  adminUserId: string,
+  target: { id: string; role: string },
+  action: 'status' | 'revoke-sessions',
+): void {
+  if (target.id === adminUserId) {
+    throw new ForbiddenException(
+      action === 'status'
+        ? 'Admins cannot change their own account status'
+        : 'Admins cannot revoke their own sessions through emergency controls',
+    );
+  }
+
+  if (target.role === 'admin') {
+    throw new ForbiddenException(
+      action === 'status'
+        ? 'Admin accounts cannot be banned or unbanned through emergency controls'
+        : 'Admin sessions cannot be revoked through emergency controls',
+    );
+  }
 }
 
 @Injectable()
@@ -57,6 +80,8 @@ export class AdminUserService {
         this.logger.warn('Admin user status target was not found');
         throw new NotFoundException('User not found');
       }
+
+      assertIncidentTargetAllowed(adminUserId, user, 'status');
 
       if (user.status === input.status) {
         return user;
@@ -117,6 +142,8 @@ export class AdminUserService {
         throw new NotFoundException('User not found');
       }
 
+      assertIncidentTargetAllowed(adminUserId, user, 'revoke-sessions');
+
       const updated = await tx.user.update({
         where: { id: userId },
         data: { sessionVersion: { increment: 1 } },
@@ -134,8 +161,8 @@ export class AdminUserService {
           actorUserId: adminUserId,
           targetType: 'USER',
           targetId: user.id,
-          oldStatus: String(user.sessionVersion),
-          newStatus: String(user.sessionVersion + 1),
+          oldStatus: 'session',
+          newStatus: 'revoked',
           reason: input.reason,
         },
       });
