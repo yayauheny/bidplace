@@ -19,10 +19,12 @@ export const userSchema = z
   })
   .strict();
 
+export const passwordSchema = z.string().min(8);
+
 export const registerRequestSchema = z
   .object({
     email: z.string().email(),
-    password: z.string().min(8),
+    password: passwordSchema,
     phone: z.string().trim().min(1).nullable().optional(),
     displayName: z.string().trim().min(1),
   })

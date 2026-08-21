@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-08-21
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -52,6 +52,7 @@ SellerProfile
   until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
 - buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version, and `otp.service.ts` uses SMTP/nodemailer in production with a test-only bypass that cannot activate in production;
+- password recovery lives in `apps/api/src/password-reset/` (mirror of OTP module layout): forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; mail delivery reuses `apps/api/src/core/email` with single-address recipients; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
 - active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. Buyer, seller and admin receive role-scoped projections, seller actions and admin cancellation/replacement enforce actor role at the service boundary, terminal handoff transitions are not repeatable, and admin cancellation/replacement preserves the original record with append-only audit;
 - Order audience is resolved from the Order relation itself: admin sees the full admin projection, the seller sees the seller projection when `order.sellerId === userId`, and the buyer sees the buyer projection when `order.buyerId === userId`. Cancelled Orders stay hidden from buyer and seller projections when historical contacts must remain private.
 - Public Socket.IO is anonymous but fenced: handshake origins are allow-listed

@@ -5,7 +5,7 @@
 ## 0. Действующая последовательность до пилота
 
 1. Исправить необратимое завершение аукциона и доказать сценарии ошибок/retry.
-2. Закрыть password recovery, emergency admin actions, image resource limits и проверенный release/backup/restore.
+2. ~~Закрыть password recovery~~ (2026-08-21), emergency admin actions, image resource limits и проверенный release/backup/restore.
 3. Реализовать принятые responsive-экраны аукциона, состояния и кабинеты без подмешивания будущих CTA.
 4. Добавить модель фактов автора, API, одну форму управления карточками и публичную выдачу трёх выбранных акцентов.
 5. Провести legal/content pass для аукциона, прямой оплаты и передачи.

@@ -50,9 +50,10 @@
 - `Implemented`: reference hierarchy и motion/blur/hover specification внесены
   в `01`, `03`, `05`, `06` и основной аудит `07`.
 - `Partial`: production UI перенесён на Pen v2 foundation, header, Browse
-  Works, Home, Authors, Search, Product/Auction, Creator Profile, auth, seller
-  editors и supporting routes. Discovery data is server-authoritative, but
-  exact fixed-scale comparison and visual/device acceptance are open.
+  Works, Home, Authors, Search, Product/Auction, Creator Profile, auth
+  (login/register/forgot/reset), seller editors и supporting routes. Discovery
+  data is server-authoritative, but exact fixed-scale comparison and visual/device
+  acceptance are open.
 - `Verified`: 1440/1024/390 runtime compositions, Onest/Inter loading,
   responsive overflow, Product URL/back tabs, related public works, focused E2E
   and production Expo exports.

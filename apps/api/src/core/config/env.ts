@@ -54,6 +54,7 @@ const serverEnvSchema = z
     SERVICE_RULES_TEXT: z.string().min(1).optional(),
     TEST_EMAIL_FILE: z.string().min(1).optional(),
     TEST_EMAIL_BYPASS: booleanEnvSchema,
+    PASSWORD_RESET_URL_BASE: z.string().url().optional(),
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_WEBAPP_URL: z.string().url().optional(),
     ANALYTICS_INGEST_ENABLED: z.preprocess(
@@ -104,6 +105,7 @@ const serverEnvSchema = z
         'SMTP_SECURE',
         'SMTP_AUTH_MODE',
         'SMTP_FROM',
+        'PASSWORD_RESET_URL_BASE',
         'SERVICE_RULES_OWNER',
         'SERVICE_RULES_CONTACT',
         'SERVICE_RULES_TEXT',

@@ -13,10 +13,13 @@ import {
 } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
 import {
+  assertSingleEmailRecipient,
+  buildSmtpTransportOptions,
+} from '../core/email';
+import {
   createTransport,
   type Transporter,
 } from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 export type OtpRequestContext = {
   ip?: string;
@@ -64,6 +67,7 @@ export class SmtpOtpTransport extends OtpTransport {
   }
 
   async deliver(email: string, code: string): Promise<void> {
+    assertSingleEmailRecipient(email);
     await this.transport.sendMail({
       from: this.env.SMTP_FROM,
       to: email,
@@ -71,37 +75,6 @@ export class SmtpOtpTransport extends OtpTransport {
       text: `Your bidplace verification code is ${code}.`,
     });
   }
-}
-
-export function buildSmtpTransportOptions(env: ServerEnv): SMTPTransport.Options {
-  const hasUsername = env.SMTP_USERNAME !== undefined;
-  const hasPassword = env.SMTP_PASSWORD !== undefined;
-
-  if (env.SMTP_AUTH_MODE === 'login' && (!hasUsername || !hasPassword)) {
-    throw new Error('SMTP_USERNAME and SMTP_PASSWORD must be configured together');
-  }
-
-  if (env.SMTP_AUTH_MODE !== 'login' && (hasUsername || hasPassword)) {
-    throw new Error('SMTP_USERNAME and SMTP_PASSWORD require SMTP_AUTH_MODE=login');
-  }
-
-  const auth =
-    env.SMTP_AUTH_MODE === 'login' && hasUsername && hasPassword
-      ? {
-          user: env.SMTP_USERNAME,
-          pass: env.SMTP_PASSWORD,
-        }
-      : undefined;
-
-  return {
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_SECURE ?? false,
-    requireTLS: env.SMTP_SECURE === false,
-    ...(auth ? { auth } : {}),
-    connectionTimeout: 10_000,
-    socketTimeout: 10_000,
-  };
 }
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');

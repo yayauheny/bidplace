@@ -3,7 +3,7 @@ export type SafeRedirect = `/${string}`;
 const DEFAULT_REDIRECT: SafeRedirect = '/';
 const INTERNAL_ORIGIN = 'https://bidplace.local';
 
-const AUTH_PATHS = new Set(['/login', '/register']);
+const AUTH_PATHS = new Set(['/login', '/register', '/forgot-password', '/reset-password']);
 
 export function getSafeRedirect(
   rawParam: string | string[] | null | undefined,

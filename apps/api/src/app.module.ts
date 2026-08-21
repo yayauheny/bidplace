@@ -20,6 +20,7 @@ import { BidsModule } from './bids/bids.module';
 import { LifecycleModule } from './lifecycle/lifecycle.module';
 import { OrdersModule } from './orders/orders.module';
 import { OtpModule } from './otp/otp.module';
+import { PasswordResetModule } from './password-reset/password-reset.module';
 import { AdminModule } from './admin/admin.module';
 import { ActivityModule } from './activity/activity.module';
 import { ImagesModule } from './images/images.module';
@@ -43,6 +44,7 @@ import { DiscoveryModule } from './discovery/discovery.module';
     LifecycleModule,
     OrdersModule,
     OtpModule,
+    PasswordResetModule,
     AdminModule,
     ActivityModule,
     ImagesModule,

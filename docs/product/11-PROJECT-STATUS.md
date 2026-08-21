@@ -1,5 +1,35 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-21 — Password recovery (P0-2)
+
+- `Implemented`: `PasswordResetModule` (`apps/api/src/password-reset/`) with
+  `POST /api/auth/password/forgot` and `POST /api/auth/password/reset`.
+  Forgot always returns neutral `{ ok: true }` (unknown email, banned user, SMTP
+  failure after token create). Reset stores only `sha256(token)`, invalidates
+  outstanding tokens, updates password hash and increments `sessionVersion` in
+  one transaction.
+- `Implemented`: shared SMTP helper in `apps/api/src/core/email/` used by OTP
+  and password-reset transports; single-address recipient guard.
+- `Implemented`: contracts `forgotPasswordRequestSchema` /
+  `resetPasswordRequestSchema`, `ApiErrorCode.PASSWORD_RESET_INVALID`, and
+  `api-client` auth methods.
+- `Implemented`: mobile routes `(auth)/forgot-password` and
+  `(auth)/reset-password` with feature forms, login link, localized invalid-link
+  copy, and success → login (no auto-login).
+- `Implemented`: `PasswordResetToken` persistence +
+  `20260821120000_add_password_reset_tokens` migration; production requires
+  `PASSWORD_RESET_URL_BASE`.
+- Coverage: unit `password-reset.service.spec.ts`, `core/email/smtp-transport.spec.ts`;
+  PostgreSQL HTTP `password-reset.integration.spec.ts` (neutral forgot, replay,
+  session invalidation, second-forgot invalidates first token).
+- `Verified`: API/contracts typecheck; API unit + integration; mobile schema
+  unit for confirm-password mismatch.
+- Review polish (2026-08-21): resend cooldown applies only to unused tokens;
+  per-email forgot rate limit runs after active-user lookup; reset link base
+  falls back to `resolveCorsOrigin()` in local dev; mobile forgot flow preserves
+  `redirectTo`; local OTP/reset mail artifacts ignored via `.gitignore`.
+- Remaining pilot P0: emergency admin, image limits, release/backup.
+
 ## 2026-08-21 — Irreversible auction close (P0-1)
 
 - `Implemented`: `ListingLifecycleService.close` commits `LIVE → ENDED` in its
@@ -25,8 +55,7 @@
   (`lifecycle.integration.spec.ts`); `order-recovery.integration.spec.ts` green.
 - `Verified`: API typecheck; eslint on touchpoints; API unit helper/lifecycle;
   auction PostgreSQL integration under `test/integration/auction/`.
-- Remaining pilot P0 (password reset, emergency admin, image limits,
-  release/backup) are unchanged.
+- Remaining pilot P0 (emergency admin, image limits, release/backup) are unchanged.
 
 ## 2026-08-20 — Admin Order recovery for ended Listings
 
@@ -519,7 +548,7 @@ verification.
 | Seller privacy and image reorder | `apps/api/src/orders/orders.service.ts`, `apps/api/src/images/images.service.ts`: buyer-facing Order projections hide seller contacts in `SELLER_CONTACTS_BUYER`, keep them in `BUYER_CONTACTS_SELLER`; image reordering avoids unique-position collisions and aggregate count/byte capacity is enforced transactionally across uploads.                                                                                                                                                                                                                                                                                                                                                                        |
 | Bids and soft close              | `apps/api/src/bids`, `apps/api/src/core/auction/pricing-policy.ts`, `apps/api/src/bids/bid-eligibility.ts`: serializable transaction, idempotency key, self-bid gate, compare-and-update, Listing-scoped public aliases, BYN increment policy, first-bid start-price floor, 60/60/600 soft close, email verification and versioned rules acceptance.                                                                                                                                                                                                                                                                                                                                                            |
 | Lifecycle and Order              | `apps/api/src/lifecycle`, `apps/api/src/orders`, `apps/api/src/orders/order-snapshot.ts`, `apps/api/test/integration/order-mutations.integration.spec.ts`, `apps/api/test/integration/order-replacement.integration.spec.ts`: scheduler activation/closing, deterministic winner, atomic Order foundation, role-gated seller handoff, manual admin cancellation/replacement, immutable snapshots and append-only audit. PostgreSQL tests cover terminal repeats, unauthorized actions, ranked replacement and one-active-Order behavior.                                                                                                                                                                        |
-| Email verification and rules     | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Email verification and rules     | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation. Password recovery: `apps/api/src/password-reset`, `PasswordResetToken`, neutral forgot + session-invalidating reset.                                                                                                                                                                                                                                                                                                                                                      |
 | Public and realtime API          | `packages/contracts`, `packages/api-client`, `apps/api/src/products/public-visibility.ts`, `apps/api/src/realtime`: public Product, Bid history, media and socket joins share approved Product/SellerProfile gates; projections exclude seller internal identifiers and buyer PII; sockets are origin allow-listed, credential-free, IP rate-limited and room-capped; mobile uses HTTP as canonical snapshot and refetches on reconnect/events.                                                                                                                                                                                                                                                                 |
 | Local reset and seed             | The reset guard is present. The deterministic local/test-only seed creates four approved demo Products with local PNG fixtures (three auction states plus a second scheduled vase), eight approved creator profiles with local profile photos, plus pending seller/product moderation fixtures. Bid/Order fixtures require an explicit local/test profile and fail closed in production-like environments; `apps/api/test/integration/seed-contract.integration.spec.ts` verifies current price, bid count, winner and Order consistency. The dedicated `test:e2e-fence` guard and disposable guarded seed smoke pass; the public catalog includes the four approved Products and excludes the pending Product. |
 | Prisma generated client          | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -551,7 +580,7 @@ left rail and absence of `components/ui` callers no longer describe runtime.
 - Product/Bid final content is Partial: `features/products/product-screen.tsx`, `features/auth/email-rules-gate.tsx` and `components/modern-ui/AuctionPanel.tsx` render the Product facts, desktop contextual auction panel, mobile safe-area action, OTP/rules gate, confirmation and retry through final primitives. `bid-validation.ts` still validates the confirmed BYN increment table; unknown/no participation requires confirmation; same-amount retry preserves its idempotency key; stale/rejected mutations refetch canonical Product/Bid/Activity projections. The API remains authoritative for minimum, Listing state and close. Final global navigation, iOS/Android smoke and accessibility evidence remain.
 - Activity final content is Partial: `features/activity/activity-screen.tsx` renders the server-projected participation and authorized Order link through final `ActivityRow` UI. Shared navigation, device smoke and accessibility evidence remain.
 - Order final content is Partial: `features/orders/order-screen.tsx` preserves buyer/seller/admin server projections and seller action refetches through final primitives; the irreversible handoff-failed action now has explicit client confirmation. Full device and accessibility evidence remains.
-- Auth final content is Partial: `features/auth/auth-form.tsx` retains RHF/Zod validation, safe redirect and user-facing recovery through final form primitives. Device and accessibility evidence remains.
+- Auth final content is Partial: `features/auth/auth-form.tsx` retains RHF/Zod validation, safe redirect and user-facing recovery through final form primitives; forgot/reset flows live in `(auth)/forgot-password`, `(auth)/reset-password` with neutral success and invalid-link states. Device and accessibility evidence remains.
 - Seller profile final content is Partial: `features/sellers/seller-profile-screen.tsx` retains the server `CHANGES_REQUESTED` edit lock and multipart public-photo contract through final primitives. Device acceptance evidence remains.
 - Seller Product draft/edit is Partial final migration: `features/sellers/product-draft-screen.tsx` uses `FormSection`, `TextField` and final media/actions, preserves create/update/submit, server locks, image upload/delete/reorder, and confirms only image deletion. Creator input no longer asks for `condition`; an existing returned value is read-only. Listing draft and `/admin` likewise use final primitives, with explicit Listing scheduling and confirmed destructive admin actions. Automated evidence is complete; founder acceptance remains.
 

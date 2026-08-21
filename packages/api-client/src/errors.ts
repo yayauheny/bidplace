@@ -55,6 +55,7 @@ const businessCodeKinds: Partial<
   [ApiErrorCode.ADMIN_BID_FORBIDDEN]: 'forbidden',
   [ApiErrorCode.EMAIL_VERIFICATION_REQUIRED]: 'forbidden',
   [ApiErrorCode.RULES_ACCEPTANCE_REQUIRED]: 'forbidden',
+  [ApiErrorCode.PASSWORD_RESET_INVALID]: 'bad_request',
 };
 
 function mapApiErrorToKind(

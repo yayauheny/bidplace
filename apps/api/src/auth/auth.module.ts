@@ -33,6 +33,7 @@ import { RateLimitModule } from '../core/rate-limit';
     BearerAuthGuard,
     LogoutAuthGuard,
     OptionalBearerAuthGuard,
+    PasswordHasherService,
   ],
 })
 export class AuthModule {}

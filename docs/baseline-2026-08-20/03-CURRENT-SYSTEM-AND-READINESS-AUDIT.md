@@ -18,7 +18,7 @@
 Проект остаётся **NO-GO для первого необратимого реального аукциона** из-за оставшихся P0 (P0-1 закрыт 2026-08-21):
 
 1. ~~обычная ошибка `Order.create()` может откатить `ENDED`~~ — **закрыто**: двухфазный close;
-2. нет forgot/reset password;
+2. ~~нет forgot/reset password~~ — **закрыто 2026-08-21**: neutral forgot, hashed token, session invalidation;
 3. founder не может безопасно остановить проблемный Listing или заблокировать User без ручной БД;
 4. загрузка изображения допускает дорогой decode до полной проверки capability и не ограничивает pixels/frames/concurrency;
 5. не доказаны воспроизводимый production release, backup и restore.
@@ -78,7 +78,7 @@ packages/design-tokens
 
 Проблемы/границы:
 
-- password recovery отсутствует;
+- ~~password recovery отсутствует~~ — **закрыто 2026-08-21**: neutral forgot, hashed token, session invalidation;
 - User status есть, но полного reasoned admin ban/unban flow нет;
 - phone verification — legacy, не текущий auth direction;
 - social login отсутствует и сейчас не приоритет.
@@ -304,9 +304,11 @@ Order уже имеет role-scoped buyer/seller/admin projections. Но Product
 ### Auth
 
 - `/login`;
-- `/register`.
+- `/register`;
+- `/forgot-password` — запрос ссылки с neutral `{ ok: true }`;
+- `/reset-password?token=` — новый пароль и invalidation сессий.
 
-Нет forgot password, reset password и social login routes.
+Social login routes отсутствуют и не приоритетны.
 
 ### Buyer
 
@@ -361,7 +363,7 @@ API содержит:
 | Search | реализован базово | works/authors | новая Figma должна сохранить реальные query limits |
 | Product | функционально силён | real Product/Listing/Bid | auction-only, Fixed/Offer отсутствуют |
 | Creator | функционально | public profile + works | точная visual acceptance |
-| Auth | реализован email/password | register/login/session | password reset, stable all-domain error codes |
+| Auth | реализован email/password | register/login/session/forgot/reset | stable all-domain error codes |
 | Email gate | реализован | email OTP + rules | production SMTP/recovery proof |
 | Become creator | частично | реальные public/private fields | final design/device QA, rejected recovery |
 | Create work | частично/функционально | real Product fields/story/images | designer хочет один проход с sale config; код разделён |
@@ -390,9 +392,20 @@ createWinnerOrder: each attempt is a fresh TX
 
 Real PostgreSQL `orders_public_id_key` collision leaves `ENDED` and creates exactly one Order after retry. Secondary generate-throw still proves generic post-close errors cannot roll back to `LIVE`. Cron изолирует activate/close per Listing. См. `11-PROJECT-STATUS.md` 2026-08-21.
 
-### P0-2: нет восстановления пароля
+### P0-2: нет восстановления пароля — закрыто 2026-08-21
 
-Session живёт 12 часов. Потеряв пароль, winner не может открыть activity/order/contacts. Нужны neutral forgot response, hashed single-use expiring token, rate limits, password reset, `sessionVersion++`, deep link и SMTP proof.
+Ранее не было forgot/reset routes, token model и mobile screens.
+
+Текущее поведение:
+
+```text
+POST /auth/password/forgot → always { ok: true }
+  active user → invalidate unused tokens → create tokenHash → send link
+  SMTP fail → delete token, still { ok: true }
+POST /auth/password/reset → passwordHash + usedAt + sessionVersion++ in one TX
+```
+
+Mobile: `/forgot-password`, `/reset-password?token=`, login link on sign-in. См. `11-PROJECT-STATUS.md` 2026-08-21.
 
 ### P0-3: нет emergency controls
 

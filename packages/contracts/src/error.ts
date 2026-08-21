@@ -24,6 +24,7 @@ export const ApiErrorCode = {
   RULES_ACCEPTANCE_REQUIRED: 'RULES_ACCEPTANCE_REQUIRED',
   IDEMPOTENCY_KEY_REQUIRED: 'IDEMPOTENCY_KEY_REQUIRED',
   IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
+  PASSWORD_RESET_INVALID: 'PASSWORD_RESET_INVALID',
 } as const;
 
 export const apiErrorCodeSchema = z.enum([
@@ -45,6 +46,7 @@ export const apiErrorCodeSchema = z.enum([
   ApiErrorCode.RULES_ACCEPTANCE_REQUIRED,
   ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED,
   ApiErrorCode.IDEMPOTENCY_CONFLICT,
+  ApiErrorCode.PASSWORD_RESET_INVALID,
 ]);
 
 export const validationErrorDetailsSchema = z

@@ -290,7 +290,7 @@ release:
   current: NO_GO_REAL_IRREVERSIBLE_SALE
   p0:
     # auction_close_generic_rollback closed 2026-08-21
-    - password_recovery_missing
+    # password_recovery closed 2026-08-21
     - founder_emergency_controls_missing
     - image_decode_resource_limits_missing
     - release_backup_restore_unproven

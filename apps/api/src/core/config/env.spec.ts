@@ -54,6 +54,7 @@ describe('resolveServerEnvFilePath', () => {
         SMTP_SECURE: 'true',
         SMTP_AUTH_MODE: 'none',
         SMTP_FROM: 'no-reply@example.com',
+        PASSWORD_RESET_URL_BASE: 'http://localhost:8081',
         SERVICE_RULES_OWNER: 'Bidplace',
         SERVICE_RULES_CONTACT: 'support@example.com',
         SERVICE_RULES_TEXT: 'Rules text',

@@ -1,5 +1,5 @@
 import { Link, useRouter, type Href } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { View } from 'react-native';
@@ -20,38 +20,7 @@ import {
   type RegisterFormValues,
 } from './schemas';
 import type { SafeRedirect } from './auth-redirect';
-
-function AuthCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <View
-      style={{
-        width: '100%',
-        gap: designTokens.space.x6,
-        borderRadius: designTokens.radius.sheet,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surfaceWarm,
-        padding: designTokens.space.x8,
-      }}
-    >
-      <View style={{ gap: designTokens.space.x2 }}>
-        <AppText role="sectionTitle">{title}</AppText>
-        <AppText role="body" tone="secondary">
-          {description}
-        </AppText>
-      </View>
-      {children}
-    </View>
-  );
-}
+import { AuthCard } from './auth-card';
 type AuthFormProps = { redirectTo?: SafeRedirect };
 export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
   const auth = useAuth();
@@ -137,6 +106,15 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
+        <Link
+          href={{
+            pathname: '/forgot-password',
+            params: redirectTo !== '/' ? { redirectTo } : undefined,
+          }}
+          asChild
+        >
+          <TextButton label="Забыли пароль?" onPress={() => undefined} />
+        </Link>
         <Link
           href={{
             pathname: '/register',

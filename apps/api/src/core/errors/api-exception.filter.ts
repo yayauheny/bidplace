@@ -59,6 +59,8 @@ const defaultErrorMessages: Record<ApiErrorCodeValue, string> = {
   [ApiErrorCode.IDEMPOTENCY_KEY_REQUIRED]: 'Idempotency-Key is required',
   [ApiErrorCode.IDEMPOTENCY_CONFLICT]:
     'Idempotency key does not match request',
+  [ApiErrorCode.PASSWORD_RESET_INVALID]:
+    'Password reset link is invalid or expired',
 };
 
 function mapStatusToCode(status: number): ApiErrorCodeValue {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { userRoleSchema } from './enums';
 import { uuidSchema } from './primitives';
-import { userSchema } from './user';
+import { passwordSchema, userSchema } from './user';
 
 export const authResponseSchema = z
   .object({
@@ -27,3 +27,19 @@ export type AuthTokenPayload = z.infer<typeof authTokenPayloadSchema>;
 export const emailOtpVerifyRequestSchema = z
   .object({ code: z.string().regex(/^\d{6}$/) })
   .strict();
+
+export const forgotPasswordRequestSchema = z
+  .object({
+    email: z.string().email().transform((value) => value.trim().toLowerCase()),
+  })
+  .strict();
+
+export const resetPasswordRequestSchema = z
+  .object({
+    token: z.string().trim().min(1),
+    password: passwordSchema,
+  })
+  .strict();
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;

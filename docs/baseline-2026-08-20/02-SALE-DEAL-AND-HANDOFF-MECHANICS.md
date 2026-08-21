@@ -189,7 +189,7 @@ ACTIVE/LIVE
 → recovery создаёт не больше одной сделки по тому же ranking
 ```
 
-Текущий код (с 2026-08-21) разделяет `ENDED` и `Order.create` на две транзакции: generic ошибка Order оставляет Listing в `ENDED`. Admin recovery закрывает missing Order. Остальные pilot P0 (password, emergency controls, images, release) по-прежнему держат real auction на NO-GO.
+Текущий код (с 2026-08-21) разделяет `ENDED` и `Order.create` на две транзакции: generic ошибка Order оставляет Listing в `ENDED`. Admin recovery закрывает missing Order. Password recovery закрыт отдельно; оставшиеся pilot P0 (emergency controls, images, release) по-прежнему держат real auction на NO-GO.
 
 ## 5. Серьёзность ставки и отказ победителя
 

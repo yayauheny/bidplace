@@ -2,9 +2,11 @@ import {
   acceptRulesRequestSchema,
   authResponseSchema,
   emailOtpVerifyRequestSchema,
+  forgotPasswordRequestSchema,
   loginRequestSchema,
   meResponseSchema,
   registerRequestSchema,
+  resetPasswordRequestSchema,
   serviceRulesResponseSchema,
   type LoginRequest,
   type RegisterRequest,
@@ -58,6 +60,18 @@ export function createAuthClient(context: RequestContext) {
       return requestJson(context, '/api/auth/email/verify', okResponseSchema, {
         method: 'POST',
         body: emailOtpVerifyRequestSchema.parse(input),
+      });
+    },
+    forgotPassword(input: { email: string }) {
+      return requestJson(context, '/api/auth/password/forgot', okResponseSchema, {
+        method: 'POST',
+        body: forgotPasswordRequestSchema.parse(input),
+      });
+    },
+    resetPassword(input: { token: string; password: string }) {
+      return requestJson(context, '/api/auth/password/reset', okResponseSchema, {
+        method: 'POST',
+        body: resetPasswordRequestSchema.parse(input),
       });
     },
   };

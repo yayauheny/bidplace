@@ -126,6 +126,19 @@ admin moderation остаются функционально обязатель�
 tokens не должна делать их недоступными. Их визуальная миграция требует
 отдельных Pen targets или явного правила наследования новой системы.
 
+### Auth (mobile)
+
+| Экран | Route | Поведение |
+| ----- | ----- | --------- |
+| Sign in | `/login` | email/password; ссылка «Забыли пароль?» → forgot |
+| Register | `/register` | email/password registration |
+| Forgot password | `/forgot-password` | email submit; always neutral success |
+| Reset password | `/reset-password?token=` | new password + confirm; invalid/expired token → recoverable error |
+
+После успешного reset пользователь возвращается на `/login`. Deep link token
+парсится из query string; expired/replay token показывает localized error state.
+Login → forgot сохраняет `redirectTo` query param через auth routes.
+
 ## 8. Обязательные состояния каждого реализуемого экрана
 
 - default и realistic long content;
