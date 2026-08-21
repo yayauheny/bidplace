@@ -1,12 +1,19 @@
 import {
   adminAnalyticsQuerySchema,
+  adminEmergencyCancelRequestSchema,
   adminListingsNeedingOrderResponseSchema,
-  adminProductsResponseSchema,
+  adminOkResponseSchema,
   adminOrderCancellationRequestSchema,
   adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
+  adminProductsResponseSchema,
   adminSellerProfilesResponseSchema,
   adminSellerStatusUpdateRequestSchema,
+  adminUserRevokeSessionsRequestSchema,
+  adminUserStatusResponseSchema,
+  adminUserStatusUpdateRequestSchema,
+  adminUsersLookupQuerySchema,
+  adminUsersLookupResponseSchema,
 } from '@bidplace/contracts';
 import {
   Body,
@@ -36,7 +43,9 @@ import {
 } from '../sellers/seller-profile.mapper';
 import { AdminGuard } from './admin.guard';
 import { AdminAnalyticsService } from './admin-analytics.service';
+import { AdminListingEmergencyService } from './admin-listing-emergency.service';
 import { AdminModerationService } from './admin-moderation.service';
+import { AdminUserService } from './admin-user.service';
 
 const adminProductSelect = {
   ...productSelect,
@@ -72,6 +81,8 @@ export class AdminController {
     private readonly orders: OrdersService,
     private readonly moderation: AdminModerationService,
     private readonly analytics: AdminAnalyticsService,
+    private readonly users: AdminUserService,
+    private readonly listingEmergency: AdminListingEmergencyService,
     private readonly clock: Clock,
   ) {}
 
@@ -219,6 +230,44 @@ export class AdminController {
     );
   }
 
+  @Get('users')
+  async lookupUsers(@Query() query: unknown) {
+    const parsed = parseQuery(adminUsersLookupQuerySchema, query);
+    return adminUsersLookupResponseSchema.parse(
+      await this.users.lookupByEmail(parsed.email),
+    );
+  }
+
+  @Patch('users/:id/status')
+  async updateUserStatus(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    return adminUserStatusResponseSchema.parse(
+      await this.users.updateStatus(
+        auth.sub,
+        id,
+        parseBody(adminUserStatusUpdateRequestSchema, body),
+      ),
+    );
+  }
+
+  @Post('users/:id/revoke-sessions')
+  async revokeUserSessions(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ) {
+    return adminUserStatusResponseSchema.parse(
+      await this.users.revokeSessions(
+        auth.sub,
+        id,
+        parseBody(adminUserRevokeSessionsRequestSchema, body),
+      ),
+    );
+  }
+
   @Get('listings/needs-order')
   async listListingsNeedingOrder(@CurrentUser() auth: { role: string }) {
     return adminListingsNeedingOrderResponseSchema.parse(
@@ -232,6 +281,21 @@ export class AdminController {
     @Param('listingId') listingId: string,
   ) {
     return this.orders.listRankedBids(auth.sub, auth.role, listingId);
+  }
+
+  @Post('listings/:listingId/emergency-cancel')
+  async emergencyCancelListing(
+    @CurrentUser() auth: { sub: string },
+    @Param('listingId') listingId: string,
+    @Body() body: unknown,
+  ) {
+    return adminOkResponseSchema.parse(
+      await this.listingEmergency.emergencyCancel(
+        auth.sub,
+        listingId,
+        parseBody(adminEmergencyCancelRequestSchema, body),
+      ),
+    );
   }
 
   @Post('listings/:listingId/create-order')

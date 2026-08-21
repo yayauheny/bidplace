@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canActivateListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';
+import { canActivateListing, canAdminEmergencyCancelListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';
 
 const now = new Date('2026-07-18T12:00:00.000Z');
 
@@ -18,6 +18,14 @@ describe('Listing state machine', () => {
     expect(canCancelListing('SCHEDULED')).toBe(true);
     expect(canCancelListing('LIVE')).toBe(false);
     expect(canCancelListing('ENDED')).toBe(false);
+  });
+
+  it('allows admin emergency cancellation only for scheduled or live listings', () => {
+    expect(canAdminEmergencyCancelListing('SCHEDULED')).toBe(true);
+    expect(canAdminEmergencyCancelListing('LIVE')).toBe(true);
+    expect(canAdminEmergencyCancelListing('DRAFT')).toBe(false);
+    expect(canAdminEmergencyCancelListing('ENDED')).toBe(false);
+    expect(canAdminEmergencyCancelListing('CANCELLED')).toBe(false);
   });
 
   it('activates and ends only at the server-time boundaries', () => {

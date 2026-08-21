@@ -19,7 +19,7 @@
 
 1. ~~обычная ошибка `Order.create()` может откатить `ENDED`~~ — **закрыто**: двухфазный close;
 2. ~~нет forgot/reset password~~ — **закрыто 2026-08-21**: neutral forgot, hashed token, session invalidation;
-3. founder не может безопасно остановить проблемный Listing или заблокировать User без ручной БД;
+3. ~~founder не может безопасно остановить проблемный Listing или заблокировать User без ручной БД~~ — **закрыто 2026-08-21**: admin user ban/revoke, emergency cancel, needs-order UI;
 4. загрузка изображения допускает дорогой decode до полной проверки capability и не ограничивает pixels/frames/concurrency;
 5. не доказаны воспроизводимый production release, backup и restore.
 
@@ -351,7 +351,7 @@ API содержит:
 - `GET /api/admin/listings/needs-order`;
 - `POST /api/admin/listings/:listingId/create-order`.
 
-Но missing-Order recovery пока API-only: admin screen не показывает очередь/action. Нет safe user ban/unban, session revoke, emergency Listing hide/cancel и stuck-SCHEDULED recovery UI/API.
+Но stuck-SCHEDULED recovery UI/API остаётся P1. User ban/unban, session revoke, emergency Listing cancel и needs-order queue доступны в admin **Пользователи** / **Восстановление** (2026-08-21).
 
 ## 5. Реальное состояние основных экранов
 
@@ -407,15 +407,17 @@ POST /auth/password/reset → passwordHash + usedAt + sessionVersion++ in one TX
 
 Mobile: `/forgot-password`, `/reset-password?token=`, login link on sign-in. См. `11-PROJECT-STATUS.md` 2026-08-21.
 
-### P0-3: нет emergency controls
+### P0-3: нет emergency controls — закрыто 2026-08-21
 
-При prohibited item, compromised seller или abuse admin вынужден использовать SQL. Нужны маленькие reasoned/idempotent/audited actions, а не generic CRUD:
+```
+GET /admin/users?email=
+PATCH /admin/users/:id/status → ban/unban + reason (+ sessionVersion++ on ban)
+POST /admin/users/:id/revoke-sessions
+POST /admin/listings/:listingId/emergency-cancel → SCHEDULED|LIVE → CANCELLED
+GET /admin/listings/needs-order + POST create-order (UI wired in Recovery tab)
+```
 
-- hide/cancel Sale;
-- ban/unban User;
-- revoke sessions;
-- inspect affected bids/deals;
-- recovery queue.
+Mobile: admin **Пользователи** / **Восстановление** tabs. Stuck SCHEDULED auto-queue остаётся P1.
 
 ### P0-4: image resource exhaustion
 

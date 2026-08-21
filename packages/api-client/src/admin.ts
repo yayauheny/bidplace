@@ -2,7 +2,9 @@ import {
   adminAnalyticsOverviewSchema,
   adminAnalyticsQuerySchema,
   adminCreateListingOrderResponseSchema,
+  adminEmergencyCancelRequestSchema,
   adminListingsNeedingOrderResponseSchema,
+  adminOkResponseSchema,
   adminOrderCancellationRequestSchema,
   adminOrderResponseSchema,
   adminOrderReplacementRequestSchema,
@@ -12,12 +14,21 @@ import {
   adminSellerProfilesResponseSchema,
   adminProductsResponseSchema,
   adminSellerStatusUpdateRequestSchema,
+  adminUserRevokeSessionsRequestSchema,
+  adminUserStatusResponseSchema,
+  adminUserStatusUpdateRequestSchema,
+  adminUsersLookupQuerySchema,
+  adminUsersLookupResponseSchema,
   productResponseSchema,
   type AdminAnalyticsQuery,
+  type AdminEmergencyCancelRequest,
   type AdminOrderCancellationRequest,
   type AdminOrderReplacementRequest,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
+  type AdminUserRevokeSessionsRequest,
+  type AdminUserStatusUpdateRequest,
+  type AdminUsersLookupQuery,
 } from '@bidplace/contracts';
 
 import { requestJson, type RequestContext } from './request';
@@ -89,6 +100,52 @@ export function createAdminClient(context: RequestContext) {
         context,
         '/api/admin/listings/needs-order',
         adminListingsNeedingOrderResponseSchema,
+      );
+    },
+    lookupUsers(query: AdminUsersLookupQuery) {
+      const parsed = adminUsersLookupQuerySchema.parse(query);
+
+      return requestJson(
+        context,
+        '/api/admin/users',
+        adminUsersLookupResponseSchema,
+        { query: { email: parsed.email } },
+      );
+    },
+    updateUserStatus(id: string, input: AdminUserStatusUpdateRequest) {
+      return requestJson(
+        context,
+        `/api/admin/users/${id}/status`,
+        adminUserStatusResponseSchema,
+        {
+          method: 'PATCH',
+          body: adminUserStatusUpdateRequestSchema.parse(input),
+        },
+      );
+    },
+    revokeUserSessions(id: string, input: AdminUserRevokeSessionsRequest) {
+      return requestJson(
+        context,
+        `/api/admin/users/${id}/revoke-sessions`,
+        adminUserStatusResponseSchema,
+        {
+          method: 'POST',
+          body: adminUserRevokeSessionsRequestSchema.parse(input),
+        },
+      );
+    },
+    emergencyCancelListing(
+      listingId: string,
+      input: AdminEmergencyCancelRequest,
+    ) {
+      return requestJson(
+        context,
+        `/api/admin/listings/${listingId}/emergency-cancel`,
+        adminOkResponseSchema,
+        {
+          method: 'POST',
+          body: adminEmergencyCancelRequestSchema.parse(input),
+        },
       );
     },
     createOrderForEndedListing(listingId: string) {

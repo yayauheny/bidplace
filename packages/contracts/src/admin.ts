@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { bidSchema } from './bid';
+import { userRoleSchema, userStatusSchema } from './enums';
 import {
   orderCancellationReasonSchema,
   productStatusSchema,
@@ -104,6 +105,54 @@ export const adminListingsNeedingOrderResponseSchema = z
 
 export const adminCreateListingOrderResponseSchema = adminOrderResponseSchema;
 
+export const adminUsersLookupQuerySchema = z
+  .object({
+    email: z.string().email().transform((value) => value.trim().toLowerCase()),
+  })
+  .strict();
+
+export const adminUserSchema = z
+  .object({
+    id: uuidSchema,
+    email: z.string().email(),
+    displayName: z.string().min(1),
+    role: userRoleSchema,
+    status: userStatusSchema,
+  })
+  .strict();
+
+export const adminUsersLookupResponseSchema = z
+  .object({ users: z.array(adminUserSchema) })
+  .strict();
+
+const adminUserIncidentStatusSchema = userStatusSchema.extract([
+  'active',
+  'banned',
+]);
+
+export const adminUserStatusUpdateRequestSchema = z
+  .object({
+    status: adminUserIncidentStatusSchema,
+    reason: z.string().trim().min(1),
+  })
+  .strict();
+
+export const adminUserRevokeSessionsRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1),
+  })
+  .strict();
+
+export const adminUserStatusResponseSchema = adminUserSchema;
+
+export const adminEmergencyCancelRequestSchema = z
+  .object({
+    reason: z.string().trim().min(1),
+  })
+  .strict();
+
+export const adminOkResponseSchema = z.object({ ok: z.literal(true) }).strict();
+
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminSellerProfileSchema = sellerProfileSchema
   .extend({
@@ -153,4 +202,18 @@ export type AdminListingsNeedingOrderResponse = z.infer<
 >;
 export type AdminCreateListingOrderResponse = z.infer<
   typeof adminCreateListingOrderResponseSchema
+>;
+export type AdminUsersLookupQuery = z.infer<typeof adminUsersLookupQuerySchema>;
+export type AdminUser = z.infer<typeof adminUserSchema>;
+export type AdminUsersLookupResponse = z.infer<
+  typeof adminUsersLookupResponseSchema
+>;
+export type AdminUserStatusUpdateRequest = z.infer<
+  typeof adminUserStatusUpdateRequestSchema
+>;
+export type AdminUserRevokeSessionsRequest = z.infer<
+  typeof adminUserRevokeSessionsRequestSchema
+>;
+export type AdminEmergencyCancelRequest = z.infer<
+  typeof adminEmergencyCancelRequestSchema
 >;

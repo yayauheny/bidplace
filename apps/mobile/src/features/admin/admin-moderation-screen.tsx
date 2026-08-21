@@ -30,6 +30,8 @@ import {
   sellerTypeLabels,
 } from '../../lib/presentation';
 import { ModerationCard } from './ModerationCard';
+import { AdminRecoveryPanel } from './AdminRecoveryPanel';
+import { AdminUsersPanel } from './AdminUsersPanel';
 
 type AdminSellersData = Awaited<
   ReturnType<ApiClient['admin']['listSellerProfiles']>
@@ -47,7 +49,7 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
-type ModerationTab = 'authors' | 'works' | 'orders';
+type ModerationTab = 'authors' | 'works' | 'orders' | 'users' | 'recovery';
 type ModerationFilter =
   | 'ALL'
   | 'PENDING_REVIEW'
@@ -308,8 +310,22 @@ export function AdminModerationScreen() {
               setModerationSearch('');
             }}
           />
+          <SecondaryButton
+            label="Пользователи"
+            onPress={() => {
+              setModerationTab('users');
+              setModerationSearch('');
+            }}
+          />
+          <SecondaryButton
+            label="Восстановление"
+            onPress={() => {
+              setModerationTab('recovery');
+              setModerationSearch('');
+            }}
+          />
         </View>
-        {moderationTab !== 'orders' ? (
+        {moderationTab === 'authors' || moderationTab === 'works' ? (
           <>
             <TextField
               label={
@@ -660,6 +676,8 @@ export function AdminModerationScreen() {
           ) : null}
         </FormSection>
       ) : null}
+      {moderationTab === 'users' ? <AdminUsersPanel /> : null}
+      {moderationTab === 'recovery' ? <AdminRecoveryPanel /> : null}
       {confirmation ? (
         <AppDialog
           open

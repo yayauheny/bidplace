@@ -67,6 +67,7 @@
 - `Verified`: post-implementation API/security audit aligned public Product,
   Bid history, realtime and image visibility; aggregate image limits are
   transactional and bidder aliases are Listing-scoped.
+- `Implemented`: admin moderation screen adds **Пользователи** (email lookup, ban/unban, session revoke) and **Восстановление** (needs-order queue, emergency listing cancel) tabs alongside Authors/Works/Orders.
 - `Partial`: route/IA для Home, Browse Authors и Search, contracts для
   search/filter/sort/author directory, header/account popover and shared
   controls. Creation story and structured socials are now implemented in the

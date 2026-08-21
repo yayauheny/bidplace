@@ -122,7 +122,9 @@ handoff contact никогда не появляется здесь.
 ## 7. Остальные routes
 
 Auth, Activity, Order, seller application/profile, Product/Listing draft и
-admin moderation остаются функционально обязательными. Смена Global Header или
+admin moderation остаются функционально обязательными. Admin moderation включает
+Authors/Works/Orders plus **Пользователи** (ban/revoke) and **Восстановление**
+(needs-order queue, emergency cancel). Смена Global Header или
 tokens не должна делать их недоступными. Их визуальная миграция требует
 отдельных Pen targets или явного правила наследования новой системы.
 

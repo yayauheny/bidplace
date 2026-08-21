@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-21 — Emergency admin controls (P0-3)
+
+- `Implemented`: `AdminUserService` with `GET /api/admin/users?email=`,
+  `PATCH /api/admin/users/:id/status` (ban/unban + reason, ban increments
+  `sessionVersion`), and `POST /api/admin/users/:id/revoke-sessions`.
+- `Implemented`: `AdminListingEmergencyService` with
+  `POST /api/admin/listings/:listingId/emergency-cancel` for `SCHEDULED|LIVE →
+  CANCELLED` (bids preserved, no Order create, append-only `AuditEvent`, realtime
+  `listing.updated`). Idempotent when already `CANCELLED`.
+- `Implemented`: `AuditTargetType.USER` migration
+  `20260821130000_add_audit_target_user`; contracts + `api-client` admin methods.
+- `Implemented`: mobile admin tabs **Пользователи** (`AdminUsersPanel`) and
+  **Восстановление** (`AdminRecoveryPanel`) — email lookup, ban/revoke, needs-order
+  queue, emergency cancel by listing id.
+- Coverage: unit `admin-user.service.spec.ts`, `admin-listing-emergency.service.spec.ts`,
+  `state-machine.spec.ts`; PostgreSQL HTTP
+  `admin-user-emergency.integration.spec.ts`, `admin-listing-emergency.integration.spec.ts`.
+- `Verified`: API/mobile typecheck; targeted integration suites.
+- Remaining pilot P0: image limits (P0-4), release/backup (P0-5). Stuck
+  SCHEDULED auto-rule queue remains P1.
+
 ## 2026-08-21 — Password recovery (P0-2)
 
 - `Implemented`: `PasswordResetModule` (`apps/api/src/password-reset/`) with
@@ -28,7 +49,7 @@
   per-email forgot rate limit runs after active-user lookup; reset link base
   falls back to `resolveCorsOrigin()` in local dev; mobile forgot flow preserves
   `redirectTo`; local OTP/reset mail artifacts ignored via `.gitignore`.
-- Remaining pilot P0: emergency admin, image limits, release/backup.
+- Remaining pilot P0: image limits, release/backup.
 
 ## 2026-08-21 — Irreversible auction close (P0-1)
 
@@ -55,7 +76,7 @@
   (`lifecycle.integration.spec.ts`); `order-recovery.integration.spec.ts` green.
 - `Verified`: API typecheck; eslint on touchpoints; API unit helper/lifecycle;
   auction PostgreSQL integration under `test/integration/auction/`.
-- Remaining pilot P0 (emergency admin, image limits, release/backup) are unchanged.
+- Remaining pilot P0 (image limits, release/backup) are unchanged.
 
 ## 2026-08-20 — Admin Order recovery for ended Listings
 
