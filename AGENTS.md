@@ -78,6 +78,7 @@ The core product principle is value. bidplace is for direct sales of significant
 - Growth and creator launch: `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md`.
 - Seller and item eligibility: `08-SELLER-AND-ITEM-POLICY.md`.
 - Bids, provenance, privacy, and integrity: `09-TRUST-AND-AUCTION-INTEGRITY.md`.
+- Application-layer security (auth, admin emergency, uploads, rate limits): `13-APPLICATION-SECURITY.md`.
 - Architecture and long-lived technical decisions: `10-CODE-ARCHITECTURE.md`.
 - Current implementation state: `11-PROJECT-STATUS.md`.
 - Decision history: `12-DECISION-LOG.md`.

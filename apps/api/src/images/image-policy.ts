@@ -1,54 +1,53 @@
 import { BadRequestException } from '@nestjs/common';
-import sharp from 'sharp';
+import sharp, { type Metadata } from 'sharp';
 
-import { loadServerEnv } from '../core/config';
+export const productImageUploadLimits = {
+  maxFiles: 10,
+  maxFileBytes: 5 * 1024 * 1024,
+  maxTotalBytes: 20 * 1024 * 1024,
+} as const;
 
-const serverEnv = loadServerEnv();
+export const productImagePixelBudgets = {
+  maxEdgePx: 4096,
+  maxPixels: 16_777_216,
+} as const;
 
-export const supportedImageMimeTypes = [
+const supportedImageMimeTypes = [
   'image/jpeg',
   'image/png',
   'image/webp',
-  'image/gif',
 ] as const;
+
+export { supportedImageMimeTypes };
 
 export type SupportedImageMimeType = (typeof supportedImageMimeTypes)[number];
 
 export type RawImageUpload = {
   buffer: Buffer;
-  mimetype?: string;
+  mimetype: string;
 };
 
 export type ValidatedImageUpload = {
   buffer: Buffer;
   mimeType: SupportedImageMimeType;
-  width?: number | null;
-  height?: number | null;
+  width?: number;
+  height?: number;
 };
-
-export const productImageUploadLimits = {
-  maxFiles: serverEnv.LOT_IMAGE_MAX_FILES,
-  maxFileBytes: serverEnv.LOT_IMAGE_MAX_FILE_BYTES,
-  maxTotalBytes: serverEnv.LOT_IMAGE_MAX_TOTAL_BYTES,
-} as const;
 
 export function assertProductImageCapacity(
   existingImages: readonly { byteLength: number }[],
-  incomingImages: readonly { byteLength: number }[],
+  incomingFiles: readonly { byteLength: number }[],
 ): void {
-  if (
-    existingImages.length + incomingImages.length >
-    productImageUploadLimits.maxFiles
-  ) {
+  const totalCount = existingImages.length + incomingFiles.length;
+  if (totalCount > productImageUploadLimits.maxFiles) {
     throw new BadRequestException(
       `A Product can have at most ${productImageUploadLimits.maxFiles} images`,
     );
   }
 
-  const totalBytes = [...existingImages, ...incomingImages].reduce(
-    (sum, image) => sum + image.byteLength,
-    0,
-  );
+  const totalBytes =
+    existingImages.reduce((sum, image) => sum + image.byteLength, 0) +
+    incomingFiles.reduce((sum, file) => sum + file.byteLength, 0);
 
   if (totalBytes > productImageUploadLimits.maxTotalBytes) {
     throw new BadRequestException(
@@ -57,11 +56,20 @@ export function assertProductImageCapacity(
   }
 }
 
-const supportedImageMimeTypeSet = new Set<string>(supportedImageMimeTypes);
+export function detectImageMimeType(buffer: Buffer): SupportedImageMimeType | null {
+  if (buffer.length < 12) {
+    return null;
+  }
 
-function isPng(buffer: Buffer): boolean {
-  return (
-    buffer.length >= 8 &&
+  if (
+    buffer[0] === 0xff &&
+    buffer[1] === 0xd8 &&
+    buffer[2] === 0xff
+  ) {
+    return 'image/jpeg';
+  }
+
+  if (
     buffer[0] === 0x89 &&
     buffer[1] === 0x50 &&
     buffer[2] === 0x4e &&
@@ -70,136 +78,162 @@ function isPng(buffer: Buffer): boolean {
     buffer[5] === 0x0a &&
     buffer[6] === 0x1a &&
     buffer[7] === 0x0a
-  );
-}
-
-function isJpeg(buffer: Buffer): boolean {
-  return (
-    buffer.length >= 3 &&
-    buffer[0] === 0xff &&
-    buffer[1] === 0xd8 &&
-    buffer[2] === 0xff
-  );
-}
-
-function isGif(buffer: Buffer): boolean {
-  return (
-    buffer.length >= 6 &&
-    (buffer.subarray(0, 6).equals(Buffer.from('GIF87a')) ||
-      buffer.subarray(0, 6).equals(Buffer.from('GIF89a')))
-  );
-}
-
-function isWebp(buffer: Buffer): boolean {
-  return (
-    buffer.length >= 12 &&
-    buffer.subarray(0, 4).equals(Buffer.from('RIFF')) &&
-    buffer.subarray(8, 12).equals(Buffer.from('WEBP'))
-  );
-}
-
-export function detectImageMimeType(
-  buffer: Buffer,
-): SupportedImageMimeType | null {
-  if (isJpeg(buffer)) {
-    return 'image/jpeg';
-  }
-
-  if (isPng(buffer)) {
+  ) {
     return 'image/png';
   }
 
-  if (isWebp(buffer)) {
+  if (
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50
+  ) {
     return 'image/webp';
-  }
-
-  if (isGif(buffer)) {
-    return 'image/gif';
   }
 
   return null;
 }
 
-async function assertDecodableRasterImage(
+function assertSupportedMimeType(
+  mimetype: string,
+): asserts mimetype is SupportedImageMimeType {
+  if (
+    !supportedImageMimeTypes.includes(mimetype as SupportedImageMimeType)
+  ) {
+    throw new BadRequestException('Unsupported image type');
+  }
+}
+
+function assertStaticImageMetadata(
+  mimeType: SupportedImageMimeType,
+  metadata: Metadata,
+): void {
+  if ((metadata.pages ?? 1) > 1) {
+    throw new BadRequestException('Animated images are not supported');
+  }
+
+  const frameCount = metadata.pages ?? 1;
+  if (frameCount > 1) {
+    throw new BadRequestException('Animated images are not supported');
+  }
+
+  if (Array.isArray(metadata.delay) && metadata.delay.length > 1) {
+    throw new BadRequestException('Animated images are not supported');
+  }
+
+  const width = metadata.width;
+  const height = metadata.height;
+  if (!width || !height) {
+    throw new BadRequestException(`${mimeType} payload is corrupted or not decodable`);
+  }
+
+  if (
+    width > productImagePixelBudgets.maxEdgePx ||
+    height > productImagePixelBudgets.maxEdgePx
+  ) {
+    throw new BadRequestException(
+      `Image dimensions cannot exceed ${productImagePixelBudgets.maxEdgePx}px on either edge`,
+    );
+  }
+
+  if (width * height > productImagePixelBudgets.maxPixels) {
+    throw new BadRequestException(
+      `Image cannot exceed ${productImagePixelBudgets.maxPixels} pixels`,
+    );
+  }
+}
+
+async function normalizeStaticImage(
   buffer: Buffer,
   mimeType: SupportedImageMimeType,
-): Promise<void> {
+): Promise<{ buffer: Buffer; width: number; height: number; mimeType: SupportedImageMimeType }> {
+  const outputMimeType: SupportedImageMimeType =
+    mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+  const outputFormat = outputMimeType === 'image/png' ? 'png' : 'jpeg';
+
   try {
-    await sharp(buffer, {
-      animated: true,
-      failOn: 'error',
+    const normalized = await sharp(buffer, {
+      limitInputPixels: productImagePixelBudgets.maxPixels,
+      animated: false,
     })
-      .raw()
-      .toBuffer();
+      .rotate()
+      .toFormat(outputFormat)
+      .toBuffer({ resolveWithObject: true });
+
+    return {
+      buffer: normalized.data,
+      width: normalized.info.width,
+      height: normalized.info.height,
+      mimeType: outputMimeType,
+    };
   } catch {
-    throw new BadRequestException(
-      `${mimeType} payload is corrupted or not decodable`,
-    );
+    throw new BadRequestException(`${mimeType} payload is corrupted or not decodable`);
   }
 }
 
-export async function validateProductImageUploads(
+export async function validateAndNormalizeProductImageUploads(
   files: readonly RawImageUpload[],
 ): Promise<ValidatedImageUpload[]> {
-  if (files.length > productImageUploadLimits.maxFiles) {
-    throw new BadRequestException(
-      `A Product can have at most ${productImageUploadLimits.maxFiles} images`,
-    );
+  const validated: ValidatedImageUpload[] = [];
+
+  for (const file of files) {
+    if (!file.buffer?.length) {
+      throw new BadRequestException('Image file is empty');
+    }
+
+    if (file.buffer.byteLength > productImageUploadLimits.maxFileBytes) {
+      throw new BadRequestException(
+        `Each image must be at most ${productImageUploadLimits.maxFileBytes} bytes`,
+      );
+    }
+
+    assertSupportedMimeType(file.mimetype);
+
+    const detectedMimeType = detectImageMimeType(file.buffer);
+    if (!detectedMimeType) {
+      throw new BadRequestException('Unsupported image type');
+    }
+
+    if (detectedMimeType !== file.mimetype) {
+      throw new BadRequestException('Image MIME type does not match file contents');
+    }
+
+    let metadata: Metadata;
+    try {
+      metadata = await sharp(file.buffer, {
+        limitInputPixels: productImagePixelBudgets.maxPixels,
+        animated: false,
+      }).metadata();
+    } catch {
+      throw new BadRequestException(
+        `${detectedMimeType} payload is corrupted or not decodable`,
+      );
+    }
+
+    assertStaticImageMetadata(detectedMimeType, metadata);
+
+    const normalized = await normalizeStaticImage(file.buffer, detectedMimeType);
+
+    validated.push({
+      buffer: normalized.buffer,
+      mimeType: normalized.mimeType,
+      width: normalized.width,
+      height: normalized.height,
+    });
   }
 
-  let totalBytes = 0;
-
-  const validatedFiles = await Promise.all(
-    files.map(async (file) => {
-      if (file.mimetype && !supportedImageMimeTypeSet.has(file.mimetype)) {
-        throw new BadRequestException('Unsupported image type');
-      }
-
-      if (file.buffer.length === 0) {
-        throw new BadRequestException('Image file is empty');
-      }
-
-      if (file.buffer.length > productImageUploadLimits.maxFileBytes) {
-        throw new BadRequestException('Image file is too large');
-      }
-
-      totalBytes += file.buffer.length;
-
-      const detectedMimeType = detectImageMimeType(file.buffer);
-
-      if (!detectedMimeType) {
-        throw new BadRequestException('Unsupported or invalid image file');
-      }
-
-      if (file.mimetype && file.mimetype !== detectedMimeType) {
-        throw new BadRequestException(
-          'Image MIME type does not match file contents',
-        );
-      }
-
-      await assertDecodableRasterImage(file.buffer, detectedMimeType);
-      const metadata = await sharp(file.buffer, { animated: true }).metadata();
-
-      return {
-        buffer: file.buffer,
-        mimeType: detectedMimeType,
-        width: metadata.width ?? null,
-        height: metadata.height ?? null,
-      };
-    }),
-  );
-
-  if (totalBytes > productImageUploadLimits.maxTotalBytes) {
-    throw new BadRequestException(
-      `A Product cannot exceed ${productImageUploadLimits.maxTotalBytes} total image bytes`,
-    );
-  }
-
-  return validatedFiles;
+  return validated;
 }
+
+/** @deprecated Prefer validateAndNormalizeProductImageUploads */
+export const validateProductImageUploads = validateAndNormalizeProductImageUploads;
 
 export function getImageCacheControl(isPublic: boolean): string {
   return isPublic
     ? 'public, max-age=31536000, immutable'
-    : 'private, max-age=60';
+    : 'private, no-store';
 }

@@ -5,8 +5,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   assertProductImageCapacity,
   detectImageMimeType,
+  productImagePixelBudgets,
   productImageUploadLimits,
-  validateProductImageUploads,
+  validateAndNormalizeProductImageUploads,
 } from './image-policy';
 
 let pngBuffer = Buffer.alloc(0);
@@ -14,6 +15,7 @@ const corruptedPngBuffer = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   Buffer.alloc(32, 0),
 ]);
+const gifBuffer = Buffer.from('GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;');
 
 beforeAll(async () => {
   pngBuffer = await sharp({
@@ -55,29 +57,62 @@ describe('image policy', () => {
 
   it('detects supported image signatures', () => {
     expect(detectImageMimeType(pngBuffer)).toBe('image/png');
+    expect(detectImageMimeType(gifBuffer)).toBeNull();
   });
 
-  it('normalizes validated uploads to detected mime types', async () => {
+  it('normalizes validated uploads to canonical static bytes', async () => {
+    const [validated] = await validateAndNormalizeProductImageUploads([
+      {
+        buffer: pngBuffer,
+        mimetype: 'image/png',
+      },
+    ]);
+
+    expect(validated.mimeType).toBe('image/png');
+    expect(validated.width).toBe(1);
+    expect(validated.height).toBe(1);
+    expect(validated.buffer).toBeInstanceOf(Buffer);
+    expect(validated.buffer.byteLength).toBeGreaterThan(0);
+  });
+
+  it('rejects gif uploads', async () => {
     await expect(
-      validateProductImageUploads([
+      validateAndNormalizeProductImageUploads([
         {
-          buffer: pngBuffer,
+          buffer: gifBuffer,
+          mimetype: 'image/gif',
+        },
+      ]),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects oversized dimensions', async () => {
+    const oversized = await sharp({
+      create: {
+        width: productImagePixelBudgets.maxEdgePx + 1,
+        height: 1,
+        channels: 3,
+        background: { r: 0, g: 0, b: 0 },
+      },
+    })
+      .png()
+      .toBuffer();
+
+    await expect(
+      validateAndNormalizeProductImageUploads([
+        {
+          buffer: oversized,
           mimetype: 'image/png',
         },
       ]),
-    ).resolves.toEqual([
-      {
-        buffer: pngBuffer,
-        mimeType: 'image/png',
-        width: 1,
-        height: 1,
-      },
-    ]);
+    ).rejects.toThrow(
+      `Image dimensions cannot exceed ${productImagePixelBudgets.maxEdgePx}px on either edge`,
+    );
   });
 
   it('rejects empty uploads', async () => {
     await expect(
-      validateProductImageUploads([
+      validateAndNormalizeProductImageUploads([
         {
           buffer: Buffer.alloc(0),
           mimetype: 'image/png',
@@ -88,7 +123,7 @@ describe('image policy', () => {
 
   it('rejects files whose claimed mime type does not match the contents', async () => {
     await expect(
-      validateProductImageUploads([
+      validateAndNormalizeProductImageUploads([
         {
           buffer: pngBuffer,
           mimetype: 'image/jpeg',
@@ -99,7 +134,7 @@ describe('image policy', () => {
 
   it('rejects unsupported signatures such as svg payloads', async () => {
     await expect(
-      validateProductImageUploads([
+      validateAndNormalizeProductImageUploads([
         {
           buffer: Buffer.from('<svg viewBox="0 0 1 1"></svg>'),
           mimetype: 'image/svg+xml',
@@ -110,7 +145,7 @@ describe('image policy', () => {
 
   it('rejects corrupted raster payloads even when the signature matches', async () => {
     await expect(
-      validateProductImageUploads([
+      validateAndNormalizeProductImageUploads([
         {
           buffer: corruptedPngBuffer,
           mimetype: 'image/png',

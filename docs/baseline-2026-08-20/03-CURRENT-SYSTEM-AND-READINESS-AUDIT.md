@@ -419,9 +419,9 @@ GET /admin/listings/needs-order + POST create-order (UI wired in Recovery tab)
 
 Mobile: admin **Пользователи** / **Восстановление** tabs. Stuck SCHEDULED auto-queue остаётся P1.
 
-### P0-4: image resource exhaustion
+### P0-4: image resource exhaustion — закрыто 2026-08-21
 
-Multipart validation вызывает тяжёлый `sharp(...animated).raw().toBuffer()` до полной seller capability boundary, параллельно и без pixel/frame budget. Нужны authorization first, request rate limit, max dimensions/pixels/pages/frames, bounded decode и canonical normalization.
+Authorization (owner + approved seller) runs before Sharp decode. Upload POSTs are rate-limited. GIF and animated WebP/PNG rejected; static JPEG/PNG/WebP only. Max edge 4096px, max 16_777_216 pixels; sequential bounded normalize stores canonical bytes. См. `13-APPLICATION-SECURITY.md`, `apps/api/src/images/image-policy.ts`, `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`.
 
 ### P0-5: release/backup/restore
 
@@ -432,7 +432,6 @@ Multipart validation вызывает тяжёлый `sharp(...animated).raw().t
 - seller Orders inbox;
 - generic Deal inbox с учётом будущего Fixed/Offer;
 - stuck expired SCHEDULED rule и admin recovery;
-- UI для `needs-order`;
 - immutable Order identity snapshot;
 - адекватный replacement contact deadline;
 - DB constraints для cross-listing Bid/Order и active deal invariants;

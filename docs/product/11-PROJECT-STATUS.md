@@ -1,5 +1,25 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-21 — Image upload safety (P0-4) + admin incident guards
+
+- `Implemented`: `ImagesService` validates ownership and approved-seller capability
+  **before** Sharp decode/normalize. Controller accepts multipart byte limits only;
+  `validateAndNormalizeProductImageUploads` runs in the service.
+- `Implemented`: static-only policy — GIF and animated WebP/PNG rejected; max edge
+  4096px and 16_777_216 pixels; sequential bounded normalize stores canonical JPEG/PNG
+  bytes (`apps/api/src/images/image-policy.ts`).
+- `Implemented`: upload rate limits (10/min per user) on product and creation-step
+  image POSTs (`images.controller.ts`).
+- `Implemented`: admin incident guards — cannot ban/revoke self or other admins;
+  session revoke audit uses `oldStatus: session`, `newStatus: revoked`.
+- `Implemented`: engineering owner doc [`13-APPLICATION-SECURITY.md`](13-APPLICATION-SECURITY.md);
+  **DEC-068** in decision log.
+- Coverage: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`,
+  extended `admin-user.service.spec.ts`, `admin-user-emergency.integration.spec.ts`.
+- `Verified`: API unit + targeted integration; API/mobile typecheck.
+- Remaining pilot P0: release/backup (P0-5) only. Stuck SCHEDULED auto-rule queue
+  remains P1.
+
 ## 2026-08-21 — Emergency admin controls (P0-3)
 
 - `Implemented`: `AdminUserService` with `GET /api/admin/users?email=`,
@@ -18,7 +38,7 @@
   `state-machine.spec.ts`; PostgreSQL HTTP
   `admin-user-emergency.integration.spec.ts`, `admin-listing-emergency.integration.spec.ts`.
 - `Verified`: API/mobile typecheck; targeted integration suites.
-- Remaining pilot P0: image limits (P0-4), release/backup (P0-5). Stuck
+- Remaining pilot P0: ~~image limits (P0-4)~~, release/backup (P0-5). Stuck
   SCHEDULED auto-rule queue remains P1.
 
 ## 2026-08-21 — Password recovery (P0-2)

@@ -12,7 +12,8 @@ import { type Prisma } from '@bidplace/database';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import {
   assertProductImageCapacity,
-  type ValidatedImageUpload,
+  type RawImageUpload,
+  validateAndNormalizeProductImageUploads,
 } from './image-policy';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
@@ -25,7 +26,7 @@ export class ImagesService {
   async add(
     userId: string,
     productId: string,
-    files: readonly ValidatedImageUpload[],
+    files: readonly RawImageUpload[],
   ) {
     await runSerializableTransaction(this.prisma, async (tx) => {
       const product = await this.requireEditableOwner(tx, userId, productId, {
@@ -34,15 +35,18 @@ export class ImagesService {
       });
 
       assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+
+      const validated = await validateAndNormalizeProductImageUploads(files);
+
       assertProductImageCapacity(
         product.images,
-        files.map((file) => ({ byteLength: file.buffer.byteLength })),
+        validated.map((file) => ({ byteLength: file.buffer.byteLength })),
       );
 
       const start = product.images.length;
 
       await tx.productImage.createMany({
-        data: files.map((file, index) => ({
+        data: validated.map((file, index) => ({
           productId,
           position: start + index,
           mimeType: file.mimeType,
@@ -158,7 +162,7 @@ export class ImagesService {
     userId: string,
     productId: string,
     stepId: string,
-    file: ValidatedImageUpload,
+    file: RawImageUpload,
   ) {
     const product = await this.requireEditableOwner(
       this.prisma,
@@ -174,15 +178,22 @@ export class ImagesService {
       select: { id: true },
     });
     if (!step) throw new NotFoundException('Creation step not found');
+
+    const validatedFiles = await validateAndNormalizeProductImageUploads([file]);
+    const validated = validatedFiles[0];
+    if (!validated) {
+      throw new BadRequestException('An image is required');
+    }
+
     await this.prisma.productCreationStep.update({
       where: { id: step.id },
       data: {
-        mimeType: file.mimeType,
-        byteLength: file.buffer.byteLength,
-        data: Uint8Array.from(file.buffer),
-        checksum: createHash('sha256').update(file.buffer).digest('hex'),
-        width: file.width ?? null,
-        height: file.height ?? null,
+        mimeType: validated.mimeType,
+        byteLength: validated.buffer.byteLength,
+        data: Uint8Array.from(validated.buffer),
+        checksum: createHash('sha256').update(validated.buffer).digest('hex'),
+        width: validated.width ?? null,
+        height: validated.height ?? null,
       },
     });
     return { ok: true as const };

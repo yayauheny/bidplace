@@ -1088,3 +1088,27 @@ tracker constraint remains.
 Pre-signup journey and acquisition are otherwise irrecoverable. Storing events
 in PostgreSQL lets the founder join funnels with Bid/Order without ETL and keep
 one operational UI.
+
+## DEC-068 — MVP static-only image uploads with authz-before-decode
+
+Status: Confirmed  
+Date: 2026-08-21
+
+### Decision
+
+Product image uploads accept **static JPEG, PNG, and WebP only**. Reject GIF and
+any animated WebP/PNG. Run ownership and approved-seller checks **before** Sharp
+decode. Enforce max edge 4096px and 16_777_216 pixels; normalize sequentially to
+canonical bytes with bounded `limitInputPixels`; rate-limit upload POSTs.
+
+### Alternatives considered
+
+- Allow GIF/animated assets for creator storytelling — rejected for MVP decode
+  risk and catalog consistency.
+- Client-only size limits — rejected; server must enforce regardless of client.
+
+### Revisit when
+
+Creators need motion assets, print-resolution uploads above the pixel budget, or
+object-storage/CDN replaces PostgreSQL blobs. Any animated-media change requires
+an explicit product decision and update to `13-APPLICATION-SECURITY.md`.

@@ -1,0 +1,98 @@
+# bidplace — application security (engineering)
+
+Последнее обновление: 2026-08-21  
+Статус: Confirmed (engineering owner)
+
+## 1. Purpose and non-goals
+
+This document owns **application-layer attacker defense** for the bidplace API and
+clients: authentication, session invalidation, admin emergency controls, upload
+hardening, and request rate limits.
+
+It does **not** own auction integrity, bid ranking, provenance policy, or trust
+investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND-AUCTION-INTEGRITY.md).
+
+## 2. Auth and passwords
+
+| Control | Status | Modules / tests |
+| --- | --- | --- |
+| Password hashing (Argon2) | Implemented | `apps/api/src/auth/` |
+| Session JWT with `sessionVersion` invalidation on ban/reset/revoke | Implemented | `auth-token.service.ts`, `bearer-auth.guard.ts` |
+| Neutral forgot-password (no email enumeration) | Implemented | `password-reset/` + `password-reset.integration.spec.ts` |
+| Reset token stored as SHA-256 only; single-use + session bump in one TX | Implemented | `password-reset.service.ts` |
+| SMTP single-recipient guard | Implemented | `core/email/smtp-transport.ts` |
+
+**Pros:** predictable auth surface; banned/compromised users cannot keep old cookies.  
+**Cons:** no MFA, device binding, or breach-password list yet.  
+**Revisit when:** real pilot abuse, credential stuffing, or compliance asks for step-up auth.
+
+## 3. Admin emergency controls
+
+| Control | Status | Modules / tests |
+| --- | --- | --- |
+| Lookup user by email | Implemented | `admin-user.service.ts` |
+| Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
+| Revoke all sessions (`sessionVersion++`) | Implemented | same |
+| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
+| Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
+| **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
+| Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
+
+**Pros:** founder can stop abuse without schema churn; guards prevent admin lockout.  
+**Cons:** listing emergency cancel still requires listing UUID in UI; no bulk actions.  
+**Revisit when:** pilot volume needs search-by-public-id or automated stuck-queue rules.
+
+## 4. Media upload defense
+
+### Attack model
+
+- Decompression bombs and oversized rasters exhausting CPU/RAM during decode.
+- Animated GIF/WebP/PNG used for resource burn or unexpected motion in catalog.
+- Upload spam against seller endpoints.
+- Authorization bypass attempts before expensive work.
+
+### Controls (MVP)
+
+| Control | Status | Detail |
+| --- | --- | --- |
+| Authz before decode | Implemented | `ImagesService` runs owner + editable product + `assertApprovedSeller` before Sharp |
+| Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
+| Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
+| Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
+| Sequential bounded normalize | Implemented | Metadata gate → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; no full raw expand |
+| Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
+| Canonical storage | Implemented | Normalized bytes persisted to PostgreSQL |
+
+Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`.  
+Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`.
+
+**Pros:** cheap failures for non-owners; bounded decode; no animated surface in MVP catalog.  
+**Cons:** no object storage, CDN, thumbnails, or versioned mutable URLs yet; JPEG re-encode for jpeg/webp input.  
+**Revisit when:** creators need motion assets, larger prints, or off-DB media; revisit animated policy explicitly with product/design.
+
+## 5. Rate limits and enumeration
+
+| Surface | Pattern | Status |
+| --- | --- | --- |
+| Register / login | IP-scoped limits | Implemented (`auth.controller.ts`) |
+| OTP send | IP + user | Implemented (`otp.service.ts`) |
+| Forgot / reset password | IP + email bucket | Implemented (`password-reset.controller.ts`) |
+| Bid place | User + listing resource | Implemented (`bids.controller.ts`) |
+| Image upload | User, 10/min | Implemented (`images.controller.ts`) |
+| Forgot password response | Always `{ ok: true }` | Implemented |
+
+**Pros:** raises cost of spray attacks without changing product contracts.  
+**Cons:** in-memory limits assume single API replica (same as scheduler note in architecture).  
+**Revisit when:** multi-instance deployment or shared Redis rate-limit store.
+
+## 6. Decision table (summary)
+
+| Decision | Status | Pros | Cons | Revisit when |
+| --- | --- | --- | --- | --- |
+| MVP static-only product images | Implemented | Predictable catalog; lower decode risk | No GIF/motion for creators | Explicit product ask for motion |
+| Authz-before-decode uploads | Implemented | Forbidden before CPU spend | Slightly more service logic | N/A unless upload path splits |
+| 4096 / 16M pixel budgets | Implemented | Blocks common bombs | May reject very large art scans | Creator uploads exceed budget in pilot |
+| Admin self/admin incident guards | Implemented | Prevents founder lockout | Stricter emergency ops | Never without alternate break-glass |
+| PostgreSQL binary image storage | Implemented (pilot) | Simple ops | DB size / egress | Object storage decision |
+
+See [`12-DECISION-LOG.md`](12-DECISION-LOG.md) **DEC-068** for the static-only image decision record.

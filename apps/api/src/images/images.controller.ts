@@ -17,12 +17,13 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { productImageOrderRequestSchema } from '@bidplace/contracts';
 import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
 import { parseBody } from '../core/validation';
+import { RateLimit } from '../core/rate-limit/rate-limit.decorator';
+import { RateLimitGuard } from '../core/rate-limit/rate-limit.guard';
 import {
   getImageCacheControl,
   productImageUploadLimits,
   supportedImageMimeTypes,
   type RawImageUpload,
-  validateProductImageUploads,
 } from './image-policy';
 import { ImagesService } from './images.service';
 
@@ -31,7 +32,13 @@ export class ImagesController {
   constructor(private readonly images: ImagesService) {}
 
   @Post('products/:productId/images')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:product-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('images', productImageUploadLimits.maxFiles, {
       limits: {
@@ -49,15 +56,17 @@ export class ImagesController {
   ) {
     if (!files.length)
       throw new BadRequestException('At least one image is required');
-    return this.images.add(
-      auth.sub,
-      productId,
-      await validateProductImageUploads(files),
-    );
+    return this.images.add(auth.sub, productId, files);
   }
 
   @Post('products/:productId/creation-steps/:stepId/image')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:creation-step-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('image', 1, {
       limits: {
@@ -75,8 +84,12 @@ export class ImagesController {
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
     if (!files.length) throw new BadRequestException('An image is required');
-    const file = (await validateProductImageUploads(files))[0]!;
-    return this.images.addCreationStepImage(auth.sub, productId, stepId, file);
+    return this.images.addCreationStepImage(
+      auth.sub,
+      productId,
+      stepId,
+      files[0]!,
+    );
   }
 
   @Delete('products/:productId/images/:imageId')

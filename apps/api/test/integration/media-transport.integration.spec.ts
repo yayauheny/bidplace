@@ -69,7 +69,7 @@ describe('public media transport over HTTP and PostgreSQL', () => {
 
     await expect(
       images.add(fixture.sellers.approved.id, product.id, [
-        { buffer: permissionImage, mimeType: 'image/png' },
+        { buffer: permissionImage, mimetype: 'image/png' },
       ]),
     ).rejects.toThrow(
       `A Product can have at most ${productImageUploadLimits.maxFiles} images`,

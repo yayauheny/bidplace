@@ -38,6 +38,7 @@
 | `10-CODE-ARCHITECTURE.md`               | Фактическая архитектура, stack, contracts, persistence и технические границы |
 | `11-PROJECT-STATUS.md`                  | Часто меняющийся фактический статус кода                                     |
 | `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
+| `13-APPLICATION-SECURITY.md`            | Инженерная application security: auth, admin emergency, uploads, rate limits |
 | `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
@@ -80,6 +81,7 @@
 Дополнительно:
 
 - `09-TRUST-AND-AUCTION-INTEGRITY.md`
+- `13-APPLICATION-SECURITY.md` — auth, admin emergency, upload hardening, rate limits
 - `08-SELLER-AND-ITEM-POLICY.md`
 
 ### Real pilot и юридические материалы
