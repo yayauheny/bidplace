@@ -27,6 +27,18 @@ import {
 } from './image-policy';
 import { ImagesService } from './images.service';
 
+function acceptSupportedUploadMimeType(
+  mimetype: string,
+  done: (error: Error | null, accept: boolean) => void,
+): void {
+  if (supportedImageMimeTypes.includes(mimetype as never)) {
+    done(null, true);
+    return;
+  }
+
+  done(new BadRequestException('Unsupported image type'), false);
+}
+
 @Controller()
 export class ImagesController {
   constructor(private readonly images: ImagesService) {}
@@ -46,7 +58,7 @@ export class ImagesController {
         files: productImageUploadLimits.maxFiles,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async add(
@@ -74,7 +86,7 @@ export class ImagesController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async addCreationStepImage(

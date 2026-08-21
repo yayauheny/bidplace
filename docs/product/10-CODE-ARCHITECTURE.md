@@ -96,8 +96,9 @@ SellerProfile
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
-  sequential bounded normalize to canonical bytes, and per-user upload rate limits.
-  See `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
+  sequential bounded normalize to canonical bytes outside the DB transaction, and
+  a short SERIALIZABLE transaction for capacity re-check + insert. Per-user upload
+  rate limits apply. See `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - Product images remain binary PostgreSQL storage for the pilot; object storage is a future operational change.
 
 ## Runtime topology and extension boundary

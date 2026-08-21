@@ -112,10 +112,6 @@ function assertStaticImageMetadata(
   mimeType: SupportedImageMimeType,
   metadata: Metadata,
 ): void {
-  if ((metadata.pages ?? 1) > 1) {
-    throw new BadRequestException('Animated images are not supported');
-  }
-
   const frameCount = metadata.pages ?? 1;
   if (frameCount > 1) {
     throw new BadRequestException('Animated images are not supported');
@@ -206,7 +202,7 @@ export async function validateAndNormalizeProductImageUploads(
     try {
       metadata = await sharp(file.buffer, {
         limitInputPixels: productImagePixelBudgets.maxPixels,
-        animated: false,
+        animated: true,
       }).metadata();
     } catch {
       throw new BadRequestException(

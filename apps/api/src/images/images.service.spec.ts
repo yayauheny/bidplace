@@ -1,42 +1,134 @@
-import { describe, expect, it, vi } from 'vitest';
+import { ForbiddenException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ImagesService } from './images.service';
+import * as imagePolicy from './image-policy';
+
+vi.mock('./image-policy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./image-policy')>();
+  return {
+    ...actual,
+    validateAndNormalizeProductImageUploads: vi.fn(),
+  };
+});
+
+const validateAndNormalizeProductImageUploads = vi.mocked(
+  imagePolicy.validateAndNormalizeProductImageUploads,
+);
+
+function createApprovedProduct(images: { position: number; byteLength: number }[]) {
+  return {
+    status: 'DRAFT',
+    sellerProfile: {
+      userId: 'owner-id',
+      status: 'APPROVED',
+    },
+    images,
+  };
+}
+
+function createPrismaForAdd(options: {
+  product?: ReturnType<typeof createApprovedProduct> | null;
+  ownerUserId?: string;
+}) {
+  const createMany = vi.fn();
+  const productPayload =
+    options.product === null
+      ? null
+      : (options.product ?? createApprovedProduct([]));
+
+  const tx = {
+    product: {
+      findUnique: vi.fn().mockResolvedValue(productPayload),
+    },
+    productImage: { createMany },
+  };
+  const prisma = {
+    product: {
+      findUnique: vi.fn().mockResolvedValue(productPayload),
+    },
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>, config?: unknown) =>
+        callback(tx),
+    ),
+  };
+
+  return { prisma, tx, createMany };
+}
 
 describe('ImagesService', () => {
-  it('checks aggregate Product capacity inside a serializable transaction', async () => {
-    const createMany = vi.fn();
-    const tx = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue({
-          status: 'DRAFT',
-          sellerProfile: {
-            userId: 'owner-id',
-            status: 'APPROVED',
-          },
-          images: Array.from({ length: 8 }, (_, position) => ({
-            position,
-            byteLength: 1,
-          })),
-        }),
+  beforeEach(() => {
+    validateAndNormalizeProductImageUploads.mockReset();
+    validateAndNormalizeProductImageUploads.mockResolvedValue([
+      {
+        buffer: Buffer.from('normalized'),
+        mimeType: 'image/png',
+        width: 1,
+        height: 1,
       },
-      productImage: { createMany },
-    };
-    const prisma = {
-      $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) =>
-          callback(tx),
+    ]);
+  });
+
+  it('checks aggregate Product capacity inside a serializable transaction', async () => {
+    const { prisma, createMany } = createPrismaForAdd({
+      product: createApprovedProduct(
+        Array.from({ length: productImageUploadLimitMax() }, (_, position) => ({
+          position,
+          byteLength: 1,
+        })),
       ),
-    };
+    });
     const service = new ImagesService(prisma as never);
 
     await expect(
       service.add('owner-id', 'product-id', [
-        { buffer: Buffer.from([1]), mimeType: 'image/png' },
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
       ]),
-    ).rejects.toThrow('A Product can have at most 8 images');
+    ).rejects.toThrow(
+      `A Product can have at most ${productImageUploadLimitMax()} images`,
+    );
+    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
     expect(createMany).not.toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
       isolationLevel: 'Serializable',
+    });
+  });
+
+  it('does not normalize when the caller is not the product owner', async () => {
+    const { prisma } = createPrismaForAdd({
+      product: createApprovedProduct([]),
+    });
+    const service = new ImagesService(prisma as never);
+
+    await expect(
+      service.add('other-user-id', 'product-id', [
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
+      ]),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('normalizes outside the transaction and persists inside a short serializable tx', async () => {
+    const { prisma, createMany } = createPrismaForAdd({
+      product: createApprovedProduct([]),
+    });
+    const service = new ImagesService(prisma as never);
+
+    await service.add('owner-id', 'product-id', [
+      { buffer: Buffer.from([1]), mimetype: 'image/png' },
+    ]);
+
+    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          mimeType: 'image/png',
+          byteLength: Buffer.from('normalized').byteLength,
+        }),
+      ],
     });
   });
 
@@ -142,3 +234,7 @@ describe('ImagesService', () => {
     ]);
   });
 });
+
+function productImageUploadLimitMax(): number {
+  return imagePolicy.productImageUploadLimits.maxFiles;
+}

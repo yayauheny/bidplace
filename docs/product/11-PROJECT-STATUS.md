@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-21 — Image upload TX boundary follow-up (P0-4 polish)
+
+- `Implemented`: `ImagesService.add` runs authz, then Sharp normalize **outside**
+  `runSerializableTransaction`; SERIALIZABLE TX only re-checks owner/capacity and
+  persists normalized bytes.
+- `Implemented`: Multer `fileFilter` returns `400 Unsupported image type` for GIF
+  and other disallowed MIME types (not empty-upload wording).
+- `Implemented`: animated WebP detection via metadata read with `animated: true`
+  (`pages`/`delay` gate); unit fixture + `image-policy.spec.ts` coverage.
+- Coverage: `images.service.spec.ts` (authz-before-decode spy), extended
+  `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`.
+- `Verified`: API typecheck; targeted unit + integration.
+
 ## 2026-08-21 — Image upload safety (P0-4) + admin incident guards
 
 - `Implemented`: `ImagesService` validates ownership and approved-seller capability

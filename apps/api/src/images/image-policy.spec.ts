@@ -11,6 +11,11 @@ import {
 } from './image-policy';
 
 let pngBuffer = Buffer.alloc(0);
+let staticWebpBuffer = Buffer.alloc(0);
+const animatedWebpBuffer = Buffer.from(
+  'UklGRroAAABXRUJQVlA4WAoAAAACAAAAAQAAAQAAQU5JTQYAAAD/////AABBTk1GRgAAAAAAAAAAAAEAAAEAAEYAAAJWUDggLgAAAPABAJ0BKgIAAgABQCYliAJ0ugADCQb7gAD++5bCe9sfP8OVPp2d36FGyiXzAABBTk1GQAAAAAAAAAAAAAAAAAAAAAIDAABWUDggKAAAAJQBAJ0BKgEAAQAAACYliAJ0ugADmAD+8iJf1difCfoPxW+oGaQAAAA=',
+  'base64',
+);
 const corruptedPngBuffer = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   Buffer.alloc(32, 0),
@@ -27,6 +32,17 @@ beforeAll(async () => {
     },
   })
     .png()
+    .toBuffer();
+
+  staticWebpBuffer = await sharp({
+    create: {
+      width: 2,
+      height: 2,
+      channels: 3,
+      background: { r: 0, g: 128, b: 255 },
+    },
+  })
+    .webp()
     .toBuffer();
 });
 
@@ -84,6 +100,30 @@ describe('image policy', () => {
         },
       ]),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('accepts static webp uploads and normalizes to jpeg', async () => {
+    const [validated] = await validateAndNormalizeProductImageUploads([
+      {
+        buffer: staticWebpBuffer,
+        mimetype: 'image/webp',
+      },
+    ]);
+
+    expect(validated.mimeType).toBe('image/jpeg');
+    expect(validated.width).toBe(2);
+    expect(validated.height).toBe(2);
+  });
+
+  it('rejects animated webp uploads', async () => {
+    await expect(
+      validateAndNormalizeProductImageUploads([
+        {
+          buffer: animatedWebpBuffer,
+          mimetype: 'image/webp',
+        },
+      ]),
+    ).rejects.toThrow('Animated images are not supported');
   });
 
   it('rejects oversized dimensions', async () => {

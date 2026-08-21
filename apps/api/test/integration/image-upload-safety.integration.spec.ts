@@ -77,6 +77,7 @@ describe('image upload safety HTTP transport', () => {
       gifForm(),
     );
     expect(response.status).toBe(400);
+    expect((await response.json()).message).toMatch(/Unsupported image type/i);
 
     expect(
       await prisma.productImage.count({

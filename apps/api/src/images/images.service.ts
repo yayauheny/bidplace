@@ -28,6 +28,15 @@ export class ImagesService {
     productId: string,
     files: readonly RawImageUpload[],
   ) {
+    const product = await this.requireEditableOwner(this.prisma, userId, productId, {
+      position: true,
+      byteLength: true,
+    });
+
+    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+
+    const validated = await validateAndNormalizeProductImageUploads(files);
+
     await runSerializableTransaction(this.prisma, async (tx) => {
       const product = await this.requireEditableOwner(tx, userId, productId, {
         position: true,
@@ -35,8 +44,6 @@ export class ImagesService {
       });
 
       assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
-      const validated = await validateAndNormalizeProductImageUploads(files);
 
       assertProductImageCapacity(
         product.images,

@@ -59,7 +59,8 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
 | Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
-| Sequential bounded normalize | Implemented | Metadata gate → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; no full raw expand |
+| Decode outside TX | Implemented | Normalize outside `runSerializableTransaction`; short TX for capacity check + insert |
+| Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
 | Canonical storage | Implemented | Normalized bytes persisted to PostgreSQL |
 
