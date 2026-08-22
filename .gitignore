@@ -21,5 +21,6 @@ apps/mobile/test-results/
 apps/mobile/playwright-report/
 /.agents/tmp/
 /.pnpm-store/
+/backups/
 /docs.zip
 /docs 2.zip

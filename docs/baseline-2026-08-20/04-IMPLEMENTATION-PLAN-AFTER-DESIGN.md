@@ -5,7 +5,7 @@
 ## 0. Действующая последовательность до пилота
 
 1. Исправить необратимое завершение аукциона и доказать сценарии ошибок/retry.
-2. ~~Закрыть password recovery~~ (2026-08-21), ~~emergency admin actions~~ (2026-08-21), ~~image resource limits~~ (2026-08-21), и проверенный release/backup/restore.
+2. ~~Закрыть password recovery~~ (2026-08-21), ~~emergency admin actions~~ (2026-08-21), ~~image resource limits~~ (2026-08-21), ~~и проверенный release/backup/restore~~ (2026-08-22).
 3. Реализовать принятые responsive-экраны аукциона, состояния и кабинеты без подмешивания будущих CTA.
 4. Добавить модель фактов автора, API, одну форму управления карточками и публичную выдачу трёх выбранных акцентов.
 5. Провести legal/content pass для аукциона, прямой оплаты и передачи.
@@ -79,17 +79,17 @@ Generic Sale-oriented, а не только auction-oriented:
 - append-only AuditEvent;
 - no Bid edit/delete и no arbitrary winner selection.
 
-### Волна E — release safety
+### Волна E — release safety — закрыта 2026-08-22
 
-- точные Node/pnpm versions;
-- один clean-checkout verification command;
-- typecheck/lint/unit/integration/browser/build gate;
-- readiness падает без DB;
-- fail-closed production env;
-- documented deploy/rollback;
-- backup по расписанию;
-- restore в отдельную БД;
-- сверка Bid/Listing/Order/media counts и sample checksums.
+- ~~точные Node/pnpm versions~~;
+- ~~один clean-checkout verification command~~ (`pnpm verify`);
+- ~~typecheck/lint/unit/integration/build gate~~ (+ GitHub Actions);
+- ~~readiness падает без DB~~ (`GET /api/health/ready`);
+- fail-closed production env (unchanged);
+- ~~documented deploy/rollback~~ (`docs/ops/00-RELEASE-AND-BACKUP.md`, Compose `app` profile);
+- ~~backup по расписанию~~ (`scripts/ops/backup-db.sh`);
+- ~~restore в отдельную БД~~ (`scripts/ops/restore-db.sh`);
+- ~~сверка Bid/Listing/Order/media counts и sample checksums~~ (`verify-restore-integrity.mjs`).
 
 Волны A–E являются pre-pilot и могут идти технически до финального нового визуального кода.
 

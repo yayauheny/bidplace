@@ -11,6 +11,32 @@ services:
       POSTGRES_PASSWORD: auction
     volumes:
       - bidplace_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U auction -d bidplace']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: bidplace-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV: production
+      APP_ENV: local
+      API_PORT: '3001'
+      DATABASE_URL: postgresql://auction:auction@postgres:5432/bidplace?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env for the API container}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081}
+      TRUST_PROXY: 'true'
 
 volumes:
   bidplace_postgres_data:

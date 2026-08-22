@@ -1112,3 +1112,27 @@ canonical bytes with bounded `limitInputPixels`; rate-limit upload POSTs.
 Creators need motion assets, print-resolution uploads above the pixel budget, or
 object-storage/CDN replaces PostgreSQL blobs. Any animated-media change requires
 an explicit product decision and update to `13-APPLICATION-SECURITY.md`.
+
+## DEC-069 — Pilot ops: single-replica Compose + pg_dump backup
+
+Status: Confirmed  
+Date: 2026-08-22
+
+### Decision
+
+Pilot production operations use **one API replica** deployed via Docker Compose
+(`--profile app`) with PostgreSQL. Media remains in-database `BYTEA`; backup is
+encrypted-optional `pg_dump -Fc` via `scripts/ops/backup-db.sh`. Restore targets a
+separate database name only; integrity checks sample `ProductImage.checksum`
+values after restore.
+
+### Alternatives considered
+
+- Kubernetes / managed PaaS for pilot — rejected as unnecessary scope before first
+  users.
+- Separate object-storage backup for images — rejected while blobs live in Postgres.
+
+### Revisit when
+
+Multi-instance API, object storage for media, or managed backup/restore service is
+required for scale or compliance.

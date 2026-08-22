@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-22 — Release / backup / restore (P0-5)
+
+- `Implemented`: pinned Node `22` (`.nvmrc`); root `test:unit` and `pnpm verify`
+  (`db:generate` → typecheck → lint → unit → integration → build).
+- `Implemented`: GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml)
+  with PostgreSQL service container.
+- `Implemented`: `GET /api/health/ready` — Prisma `SELECT 1`; `503` when DB
+  unreachable; liveness remains `GET /api/health` (`health.service.ts`,
+  `health.service.spec.ts`). Playwright waits on `/api/health/ready`.
+- `Implemented`: API `Dockerfile`, `docker compose --profile app`, ops runbook
+  [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
+- `Implemented`: `scripts/ops/backup-db.sh`, `restore-db.sh`,
+  `verify-restore-integrity.mjs` with `pnpm ops:backup|restore|verify-restore`;
+  local restore drill to `bidplace_restore` verified counts + 5 image checksums
+  (2026-08-22).
+- `Verified`: `pnpm verify`; health/ready smoke; restore drill evidence in ops doc.
+- Pilot P0-1…P0-5 closed. Remaining pre-pilot queue: P1 stuck SCHEDULED
+  auto-rule and separate UI/release-gate items in status history.
+
 ## 2026-08-21 — Image upload TX boundary follow-up (P0-4 polish)
 
 - `Implemented`: `ImagesService.add` runs authz, then Sharp normalize **outside**

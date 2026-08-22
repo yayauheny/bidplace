@@ -97,3 +97,8 @@ Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `selle
 | PostgreSQL binary image storage | Implemented (pilot) | Simple ops | DB size / egress | Object storage decision |
 
 See [`12-DECISION-LOG.md`](12-DECISION-LOG.md) **DEC-068** for the static-only image decision record.
+
+## 7. Deferred ops/security (post-pilot)
+
+- **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
+- **Multi-instance rate limits:** in-memory upload/auth limits remain single-replica until a shared store is chosen (**DEC-069**).

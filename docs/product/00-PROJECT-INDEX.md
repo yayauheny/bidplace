@@ -43,6 +43,7 @@
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
 | `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Открытые юридические вопросы и minimum checklist до real pilot в Беларуси    |
+| `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
 | `../research/README.md`                 | Правила хранения сырого исследования                                         |
 | `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |

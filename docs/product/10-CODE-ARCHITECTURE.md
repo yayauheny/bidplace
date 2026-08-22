@@ -103,7 +103,14 @@ SellerProfile
 
 ## Runtime topology and extension boundary
 
-The API currently assumes a single scheduler and Socket.IO instance. The pilot deployment must enforce one API replica. Before multi-instance deployment, lifecycle work needs a distributed lock or external queue and realtime needs an adapter. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
+The API currently assumes a single scheduler and Socket.IO instance. The pilot deployment must enforce one API replica via Docker Compose (`docker compose --profile app`). Before multi-instance deployment, lifecycle work needs a distributed lock or external queue and realtime needs an adapter. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
+
+Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
+
+- `pnpm verify` — clean-checkout gate (`db:generate`, typecheck, lint, unit, integration, build);
+- GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml);
+- `GET /api/health` (liveness) and `GET /api/health/ready` (PostgreSQL `SELECT 1`);
+- `scripts/ops/` backup/restore/integrity with `pnpm ops:*` aliases.
 
 ## Verification
 

@@ -423,9 +423,9 @@ Mobile: admin **Пользователи** / **Восстановление** ta
 
 Authorization (owner + approved seller) runs before Sharp decode. Upload POSTs are rate-limited. GIF and animated WebP/PNG rejected; static JPEG/PNG/WebP only. Max edge 4096px, max 16_777_216 pixels; sequential bounded normalize stores canonical bytes. См. `13-APPLICATION-SECURITY.md`, `apps/api/src/images/image-policy.ts`, `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`.
 
-### P0-5: release/backup/restore
+### P0-5: release/backup/restore — закрыто 2026-08-22
 
-Нельзя доказать, что чистый checkout воспроизводимо проходит полный gate и production DB/media восстанавливаются. Нужны exact toolchain, one CI gate, deploy runbook, backup policy, restore в отдельную БД и sample integrity checks.
+`pnpm verify` + GitHub Actions CI; `GET /api/health/ready`; Compose API profile + ops runbook; `scripts/ops/` backup/restore/integrity; local restore drill to `bidplace_restore` with counts and sample `ProductImage.checksum` verification. См. `docs/ops/00-RELEASE-AND-BACKUP.md`, `.github/workflows/verify.yml`, `apps/api/Dockerfile`.
 
 ## 7. P1 до/в начале первых 5–10 пользователей
 
