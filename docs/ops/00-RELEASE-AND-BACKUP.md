@@ -42,6 +42,16 @@ GitHub Actions runs the same gate on push and pull requests via [`.github/workfl
 
 ### Deploy steps
 
+Ensure root `.env` includes the production keys the API container validates when
+`NODE_ENV=production` (copy from [`.env.example`](../../.env.example) if needed):
+
+- `JWT_SECRET`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`
+- `PASSWORD_RESET_URL_BASE`
+- `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`
+- optional: `SMTP_USERNAME`, `SMTP_PASSWORD` when `SMTP_AUTH_MODE=login`
+- optional: `CORS_ORIGIN` (defaults to `http://localhost:8081`)
+
 ```bash
 # Build and start API + Postgres
 docker compose --profile app up -d --build
@@ -54,9 +64,9 @@ curl -sf http://localhost:3001/api/health
 curl -sf http://localhost:3001/api/health/ready
 ```
 
-`GET /api/health` is liveness only. `GET /api/health/ready` returns `503` when PostgreSQL is unreachable.
+`GET /api/health` is liveness only. `GET /api/health/ready` returns `503` when PostgreSQL is unreachable or the probe times out (2s).
 
-Set `JWT_SECRET` in `.env` before starting the API container. Default local Postgres URL inside Compose is:
+Compose reads the required keys from `.env` at the repo root. Default local Postgres URL inside Compose is:
 
 `postgresql://auction:auction@postgres:5432/bidplace?schema=public`
 

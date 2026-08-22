@@ -1,21 +1,36 @@
 # bidplace — текущий статус проекта
 
+## 2026-08-22 — ImageStore + MailTransport ports (review fixes)
+
+- `Implemented`: `core/image-store/` — `ImageStore` port with `PostgresImageStore`;
+  product/creation-step/seller photo bytes written via `put` and read via `get`.
+- `Implemented`: `ImagesService.add` — Sharp outside TX; SERIALIZABLE TX re-checks
+  owner/capacity, then `create` + `ImageStore.put` per image.
+- `Implemented`: `get` / `getCreationStepImage` — authz before `imageStore.get`;
+  Prisma queries exclude binary columns.
+- `Implemented`: `core/mail/` — unified `MailTransport` for OTP and password-reset.
+- Coverage: `postgres-image-store.spec.ts`, `images.service.spec.ts`,
+  `media-transport`, `image-upload-safety`, `password-reset` integration.
+- `Verified`: API typecheck; API unit 223/223; targeted integration 8/8.
+
 ## 2026-08-22 — Release / backup / restore (P0-5)
 
 - `Implemented`: pinned Node `22` (`.nvmrc`); root `test:unit` and `pnpm verify`
   (`db:generate` → typecheck → lint → unit → integration → build).
 - `Implemented`: GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml)
   with PostgreSQL service container.
-- `Implemented`: `GET /api/health/ready` — Prisma `SELECT 1`; `503` when DB
-  unreachable; liveness remains `GET /api/health` (`health.service.ts`,
+- `Implemented`: `GET /api/health/ready` — Prisma `SELECT 1` with 2s timeout; `503`
+  when DB unreachable; liveness remains `GET /api/health` (`health.service.ts`,
   `health.service.spec.ts`). Playwright waits on `/api/health/ready`.
-- `Implemented`: API `Dockerfile`, `docker compose --profile app`, ops runbook
+- `Implemented`: API `Dockerfile` (`pnpm deploy --prod` runtime layout),
+  `docker compose --profile app` with production env from `.env`, ops runbook
   [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
 - `Implemented`: `scripts/ops/backup-db.sh`, `restore-db.sh`,
   `verify-restore-integrity.mjs` with `pnpm ops:backup|restore|verify-restore`;
   local restore drill to `bidplace_restore` verified counts + 5 image checksums
   (2026-08-22).
-- `Verified`: `pnpm verify`; health/ready smoke; restore drill evidence in ops doc.
+- `Verified`: `pnpm verify`; health/ready smoke; restore drill evidence in ops doc;
+  Compose `app` profile image boot + `/api/health/ready` smoke (2026-08-22).
 - Pilot P0-1…P0-5 closed. Remaining pre-pilot queue: P1 stuck SCHEDULED
   auto-rule and separate UI/release-gate items in status history.
 

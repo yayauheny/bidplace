@@ -12,8 +12,6 @@ COPY apps/api/package.json apps/api/
 COPY packages/config/package.json packages/config/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/database/package.json packages/database/
-COPY packages/eslint-config/package.json packages/eslint-config/
-COPY packages/tsconfig/package.json packages/tsconfig/
 
 RUN pnpm install --frozen-lockfile
 
@@ -21,7 +19,9 @@ COPY apps/api apps/api
 COPY packages packages
 
 RUN pnpm db:generate \
-  && pnpm --filter @bidplace/api... build
+  && pnpm --filter @bidplace/api... build \
+  && cp packages/database/src/generated/prisma/*.node packages/database/dist/generated/prisma/ \
+  && pnpm --filter @bidplace/api deploy --prod --legacy /out
 
 FROM node:22-bookworm-slim AS production
 RUN apt-get update \
@@ -30,10 +30,7 @@ RUN apt-get update \
 ENV NODE_ENV=production
 WORKDIR /app
 
-COPY --from=build /repo/node_modules ./node_modules
-COPY --from=build /repo/apps/api/dist ./dist
-COPY --from=build /repo/apps/api/package.json ./package.json
-COPY --from=build /repo/packages ./packages
+COPY --from=build /out/ ./
 
 EXPOSE 3001
 CMD ["node", "dist/main.js"]

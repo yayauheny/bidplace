@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../database/prisma.service';
 
+export const READY_TIMEOUT_MS = 2000;
+
 export type HealthStatus = {
   status: 'ok';
   timestamp: string;
@@ -24,11 +26,20 @@ export class HealthService {
     };
   }
 
-  async getReadyStatus(): Promise<ReadyHealthStatus> {
+  async getReadyStatus(
+    timeoutMs: number = READY_TIMEOUT_MS,
+  ): Promise<ReadyHealthStatus> {
     const timestamp = new Date().toISOString();
 
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await Promise.race([
+        this.prisma.$queryRaw`SELECT 1`,
+        new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('database readiness probe timed out'));
+          }, timeoutMs);
+        }),
+      ]);
 
       return {
         status: 'ok',

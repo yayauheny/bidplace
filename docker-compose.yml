@@ -37,6 +37,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env for the API container}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8081}
       TRUST_PROXY: 'true'
+      SMTP_HOST: ${SMTP_HOST:?Set SMTP_HOST in .env for the API container}
+      SMTP_PORT: ${SMTP_PORT:?Set SMTP_PORT in .env for the API container}
+      SMTP_SECURE: ${SMTP_SECURE:?Set SMTP_SECURE in .env for the API container}
+      SMTP_AUTH_MODE: ${SMTP_AUTH_MODE:?Set SMTP_AUTH_MODE in .env for the API container}
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM in .env for the API container}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      PASSWORD_RESET_URL_BASE: ${PASSWORD_RESET_URL_BASE:?Set PASSWORD_RESET_URL_BASE in .env for the API container}
+      SERVICE_RULES_OWNER: ${SERVICE_RULES_OWNER:?Set SERVICE_RULES_OWNER in .env for the API container}
+      SERVICE_RULES_CONTACT: ${SERVICE_RULES_CONTACT:?Set SERVICE_RULES_CONTACT in .env for the API container}
+      SERVICE_RULES_TEXT: ${SERVICE_RULES_TEXT:?Set SERVICE_RULES_TEXT in .env for the API container}
 
 volumes:
   bidplace_postgres_data:

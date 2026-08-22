@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HealthService } from './health.service';
 
@@ -12,6 +12,10 @@ describe('HealthService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new HealthService(prisma as never);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('returns liveness status without touching the database', () => {
@@ -36,6 +40,26 @@ describe('HealthService', () => {
     prisma.$queryRaw.mockRejectedValue(new Error('connection refused'));
 
     await expect(service.getReadyStatus()).resolves.toEqual({
+      status: 'error',
+      database: 'unavailable',
+      timestamp: expect.any(String),
+    });
+  });
+
+  it('returns error ready status when the database probe times out', async () => {
+    vi.useFakeTimers();
+    prisma.$queryRaw.mockImplementation(
+      () =>
+        new Promise(() => {
+          // never resolves
+        }),
+    );
+
+    const readyPromise = service.getReadyStatus(50);
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    await expect(readyPromise).resolves.toEqual({
       status: 'error',
       database: 'unavailable',
       timestamp: expect.any(String),
