@@ -36,6 +36,19 @@ describe('HealthService', () => {
     });
   });
 
+  it('clears the readiness timeout after a fast database response', async () => {
+    vi.useFakeTimers();
+    prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+
+    await expect(service.getReadyStatus(50)).resolves.toEqual({
+      status: 'ok',
+      database: 'ok',
+      timestamp: expect.any(String),
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+  });
+
   it('returns error ready status when the database is unavailable', async () => {
     prisma.$queryRaw.mockRejectedValue(new Error('connection refused'));
 

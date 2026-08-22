@@ -31,6 +31,9 @@
   (2026-08-22).
 - `Verified`: `pnpm verify`; health/ready smoke; restore drill evidence in ops doc;
   Compose `app` profile image boot + `/api/health/ready` smoke (2026-08-22).
+- `Implemented` (review polish): ready probe clears timeout in `finally`;
+  Prisma `binaryTargets` for debian/linux-arm64 deploy engines; Compose omits
+  empty `SMTP_USERNAME`/`SMTP_PASSWORD` unless `SMTP_AUTH_MODE=login`.
 - Pilot P0-1…P0-5 closed. Remaining pre-pilot queue: P1 stuck SCHEDULED
   auto-rule and separate UI/release-gate items in status history.
 

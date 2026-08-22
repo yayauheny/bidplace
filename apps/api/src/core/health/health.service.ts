@@ -30,12 +30,13 @@ export class HealthService {
     timeoutMs: number = READY_TIMEOUT_MS,
   ): Promise<ReadyHealthStatus> {
     const timestamp = new Date().toISOString();
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     try {
       await Promise.race([
         this.prisma.$queryRaw`SELECT 1`,
         new Promise<never>((_, reject) => {
-          setTimeout(() => {
+          timer = setTimeout(() => {
             reject(new Error('database readiness probe timed out'));
           }, timeoutMs);
         }),
@@ -52,6 +53,10 @@ export class HealthService {
         database: 'unavailable',
         timestamp,
       };
+    } finally {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
     }
   }
 }

@@ -49,8 +49,12 @@ Ensure root `.env` includes the production keys the API container validates when
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`
 - `PASSWORD_RESET_URL_BASE`
 - `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`
-- optional: `SMTP_USERNAME`, `SMTP_PASSWORD` when `SMTP_AUTH_MODE=login`
 - optional: `CORS_ORIGIN` (defaults to `http://localhost:8081`)
+
+When `SMTP_AUTH_MODE=login`, add `SMTP_USERNAME` and `SMTP_PASSWORD` to the
+`api` service `environment` in [`docker-compose.yml`](../../docker-compose.yml)
+(or a compose override). The default compose file omits them so
+`SMTP_AUTH_MODE=none` does not inject empty credential strings.
 
 ```bash
 # Build and start API + Postgres
