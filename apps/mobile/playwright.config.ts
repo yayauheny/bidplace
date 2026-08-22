@@ -22,7 +22,7 @@ export default defineConfig({
       command:
         'node apps/mobile/e2e/prepare.mjs && corepack pnpm --filter @bidplace/api... build && node apps/api/dist/main.js',
       cwd: '../..',
-      url: `${apiBaseURL}/api/health`,
+      url: `${apiBaseURL}/api/health/ready`,
       reuseExistingServer: false,
       env: {
         NODE_ENV: 'test',

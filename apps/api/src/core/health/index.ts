@@ -1,2 +1,2 @@
 export { HealthModule } from './health.module';
-export type { HealthStatus } from './health.service';
+export type { HealthStatus, ReadyHealthStatus } from './health.service';

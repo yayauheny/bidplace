@@ -1,4 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 import { HealthService } from './health.service';
 
@@ -9,5 +13,16 @@ export class HealthController {
   @Get('health')
   getHealth() {
     return this.healthService.getStatus();
+  }
+
+  @Get('health/ready')
+  async getReady() {
+    const ready = await this.healthService.getReadyStatus();
+
+    if (ready.status !== 'ok') {
+      throw new ServiceUnavailableException(ready);
+    }
+
+    return ready;
   }
 }
