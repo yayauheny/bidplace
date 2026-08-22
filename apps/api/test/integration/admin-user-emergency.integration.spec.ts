@@ -7,6 +7,7 @@ import {
 } from './test-database';
 import {
   createPermissionFixture,
+  fixturePasswordHash,
   resetPermissionFixture,
 } from './permission-fixtures';
 import {
@@ -14,7 +15,6 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
-import { fixturePasswordHash } from './permission-fixtures';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;

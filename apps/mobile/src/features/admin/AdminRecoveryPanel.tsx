@@ -7,7 +7,6 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
-  PrimaryButton,
   SecondaryButton,
   TextField,
 } from '../../components/ui';

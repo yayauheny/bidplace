@@ -105,9 +105,9 @@ docs/
 
 ### Требования
 
-- Node.js 22+
-- pnpm 11+
-- Docker Desktop или Docker Engine
+- Node.js 22 (см. [`.nvmrc`](.nvmrc); `engines.node` в `package.json`)
+- pnpm 11.7.0 (`corepack enable` или установка вручную)
+- Docker Desktop или Docker Engine (PostgreSQL для dev, integration и restore drill)
 
 ### Быстрый старт
 
@@ -118,13 +118,31 @@ pnpm docker:up
 pnpm dev
 ```
 
+### Verify gate
+
+Полный clean-checkout gate для CI и локальной проверки перед релизом:
+
+```bash
+pnpm docker:up
+pnpm verify
+```
+
+`pnpm verify` выполняет `db:generate`, `typecheck`, `lint`, `test:unit`, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
+
+Операционный runbook (deploy, backup, restore drill): [`docs/ops/00-RELEASE-AND-BACKUP.md`](docs/ops/00-RELEASE-AND-BACKUP.md).
+
 ## Скрипты корня
 
 - `pnpm dev` — запустить все dev-сервисы
 - `pnpm build` — собрать workspace
 - `pnpm lint` — прогнать lint
 - `pnpm typecheck` — прогнать TypeScript checks
-- `pnpm format` — форматирование через Prettier
+- `pnpm test:unit` — unit-тесты API и contracts
+- `pnpm test:integration` — integration-тесты API (нужен PostgreSQL)
+- `pnpm verify` — полный gate: generate, typecheck, lint, unit, integration, build
+- `pnpm ops:backup` — `pg_dump` backup текущей БД
+- `pnpm ops:restore` — restore dump в отдельную БД (`TARGET_DATABASE_URL` обязателен)
+- `pnpm ops:verify-restore` — counts и sample checksum после restore
 - `pnpm format:check` — проверка форматирования
 - `pnpm clean` — очистка build output и `node_modules`
 - `pnpm docker:up` — поднять локальный PostgreSQL
