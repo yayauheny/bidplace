@@ -1,5 +1,6 @@
 import { type ServerEnv, loadServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
+import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
 import {
   ConflictException,
@@ -7,19 +8,7 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import {
-  createHash,
-  randomInt,
-} from 'node:crypto';
-import { appendFile } from 'node:fs/promises';
-import {
-  assertSingleEmailRecipient,
-  buildSmtpTransportOptions,
-} from '../core/email';
-import {
-  createTransport,
-  type Transporter,
-} from 'nodemailer';
+import { createHash, randomInt } from 'node:crypto';
 
 export type OtpRequestContext = {
   ip?: string;
@@ -27,55 +16,6 @@ export type OtpRequestContext = {
     remoteAddress?: string;
   };
 };
-
-export abstract class OtpTransport {
-  abstract deliver(email: string, code: string): Promise<void>;
-}
-
-@Injectable()
-export class LocalOtpTransport extends OtpTransport {
-  async deliver(email: string, code: string): Promise<void> {
-    const env = loadServerEnv();
-
-    if (env.NODE_ENV === 'production') {
-      throw new Error('Local OTP transport cannot run in production');
-    }
-
-    if (env.TEST_EMAIL_FILE) {
-      await appendFile(
-        env.TEST_EMAIL_FILE,
-        `${JSON.stringify({ email, code })}\n`,
-      );
-    }
-  }
-}
-
-@Injectable()
-export class SmtpOtpTransport extends OtpTransport {
-  constructor(
-    private readonly env: ServerEnv,
-    private readonly transport: Transporter,
-  ) {
-    super();
-  }
-
-  static create(env: ServerEnv): SmtpOtpTransport {
-    return new SmtpOtpTransport(
-      env,
-      createTransport(buildSmtpTransportOptions(env)),
-    );
-  }
-
-  async deliver(email: string, code: string): Promise<void> {
-    assertSingleEmailRecipient(email);
-    await this.transport.sendMail({
-      from: this.env.SMTP_FROM,
-      to: email,
-      subject: 'bidplace email verification code',
-      text: `Your bidplace verification code is ${code}.`,
-    });
-  }
-}
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -91,7 +31,7 @@ function resolveIp(context?: OtpRequestContext): string {
 export class OtpService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly transport: OtpTransport,
+    private readonly mail: MailTransport,
     private readonly rateLimits: RateLimitService,
   ) {}
 
@@ -149,7 +89,11 @@ export class OtpService {
     }
 
     try {
-      await this.transport.deliver(user.email, code);
+      await this.mail.send({
+        to: user.email,
+        subject: 'bidplace email verification code',
+        text: `Your bidplace verification code is ${code}.`,
+      });
     } catch {
       await this.prisma.emailVerificationCode.delete({
         where: { id: record.id },

@@ -6,7 +6,7 @@ import {
   PasswordResetService,
   type PasswordResetRequestContext,
 } from './password-reset.service';
-import { PasswordResetTransport } from './password-reset.transport';
+import { MailTransport } from '../core/mail';
 
 const passwordHasher = {
   hash: vi.fn().mockResolvedValue('new-hash'),
@@ -16,15 +16,15 @@ const rateLimits = {
   consume: vi.fn().mockReturnValue(true),
 };
 
-const transport: PasswordResetTransport = {
-  deliver: vi.fn().mockResolvedValue(undefined),
+const mail: MailTransport = {
+  send: vi.fn().mockResolvedValue(undefined),
 };
 
 function createService(prisma: unknown) {
   return new PasswordResetService(
     prisma as never,
     passwordHasher as never,
-    transport,
+    mail,
     rateLimits as never,
   );
 }
@@ -32,8 +32,8 @@ function createService(prisma: unknown) {
 describe('PasswordResetService', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.mocked(transport.deliver).mockReset();
-    vi.mocked(transport.deliver).mockResolvedValue(undefined);
+    vi.mocked(mail.send).mockReset();
+    vi.mocked(mail.send).mockResolvedValue(undefined);
     vi.mocked(rateLimits.consume).mockReset();
     vi.mocked(rateLimits.consume).mockReturnValue(true);
   });
@@ -52,7 +52,7 @@ describe('PasswordResetService', () => {
     await createService(prisma).requestReset('missing@example.com');
 
     expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
-    expect(transport.deliver).not.toHaveBeenCalled();
+    expect(mail.send).not.toHaveBeenCalled();
   });
 
   it('returns without creating a token for banned users', async () => {
@@ -110,9 +110,12 @@ describe('PasswordResetService', () => {
         }),
       }),
     );
-    expect(transport.deliver).toHaveBeenCalledWith(
-      'user@example.com',
-      expect.stringContaining('/reset-password?token='),
+    expect(mail.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'user@example.com',
+        subject: 'bidplace password reset',
+        text: expect.stringContaining('/reset-password?token='),
+      }),
     );
   });
 
@@ -134,7 +137,7 @@ describe('PasswordResetService', () => {
 
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(transport.deliver).not.toHaveBeenCalled();
+    expect(mail.send).not.toHaveBeenCalled();
   });
 
   it('returns without creating a token when forgot email rate limits are exceeded', async () => {
@@ -161,7 +164,7 @@ describe('PasswordResetService', () => {
 
     expect(prisma.user.findUnique).toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(transport.deliver).not.toHaveBeenCalled();
+    expect(mail.send).not.toHaveBeenCalled();
   });
 
   it('ignores resend cooldown for already-used tokens', async () => {
@@ -201,7 +204,7 @@ describe('PasswordResetService', () => {
 
   it('deletes the token but still completes when mail delivery fails', async () => {
     vi.stubEnv('PASSWORD_RESET_URL_BASE', 'http://localhost:8081');
-    vi.mocked(transport.deliver).mockRejectedValueOnce(new Error('smtp down'));
+    vi.mocked(mail.send).mockRejectedValueOnce(new Error('smtp down'));
 
     const tx = {
       passwordResetToken: {

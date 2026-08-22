@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { countPublicSellerStatuses, SellersService } from './sellers.service';
 import { publicSellerProfileSelect } from './seller-profile.mapper';
 
+const imageStore = {
+  get: vi.fn(),
+  put: vi.fn().mockResolvedValue(undefined),
+  delete: vi.fn(),
+};
+
 describe('SellersService', () => {
   it('counts one public listing state per visible creator work', () => {
     expect(
@@ -16,13 +22,20 @@ describe('SellersService', () => {
   });
 
   it('maps a concurrent duplicate SellerProfile or slug to a conflict', async () => {
-    const prisma = {
+    const tx = {
       sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockRejectedValue({ code: 'P2002' }),
       },
     };
-    const service = new SellersService(prisma as never, {} as never);
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const service = new SellersService(prisma as never, {} as never, imageStore as never);
 
     await expect(
       service.create(
@@ -44,6 +57,141 @@ describe('SellersService', () => {
     ).rejects.toThrow('Seller profile already exists or slug is already taken');
   });
 
+  it('persists seller photo metadata and bytes in one transaction', async () => {
+    const now = new Date('2026-07-24T00:00:00.000Z');
+    const order: string[] = [];
+    const createdProfile = {
+      id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+      userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      slug: 'seller-slug',
+      fullName: 'Seller',
+      sellerType: 'creator',
+      discipline: 'Керамика',
+      country: 'BY',
+      socialLink: 'https://example.com/seller',
+      shortDescription: 'Description',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@seller',
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'PENDING_REVIEW',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const tx = {
+      sellerProfile: {
+        create: vi.fn().mockImplementation(async () => {
+          order.push('create');
+          return createdProfile;
+        }),
+      },
+    };
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const put = vi.fn().mockImplementation(async () => {
+      order.push('put');
+    });
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      { ...imageStore, put } as never,
+    );
+
+    await service.create(
+      'user-id',
+      {
+        slug: 'seller-slug',
+        sellerType: 'creator',
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        socialLink: 'https://example.com/seller',
+        shortDescription: 'Description',
+        handoffContactType: 'TELEGRAM',
+        handoffContactValue: '@seller',
+        handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      },
+      { buffer: Buffer.from([1, 2, 3]), mimeType: 'image/png' },
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['create', 'put']);
+    expect(put).toHaveBeenCalledWith(
+      'seller-photo:a0d82a10-3170-49eb-904f-a8bc87d311a5',
+      {
+        bytes: Buffer.from([1, 2, 3]),
+        mimeType: 'image/png',
+      },
+      tx,
+    );
+  });
+
+  it('fails seller create when image put rejects inside the transaction', async () => {
+    const now = new Date('2026-07-24T00:00:00.000Z');
+    const tx = {
+      sellerProfile: {
+        create: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          slug: 'seller-slug',
+          fullName: 'Seller',
+          sellerType: 'creator',
+          discipline: 'Керамика',
+          country: 'BY',
+          socialLink: 'https://example.com/seller',
+          shortDescription: 'Description',
+          handoffContactType: 'TELEGRAM',
+          handoffContactValue: '@seller',
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+          status: 'PENDING_REVIEW',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      },
+    };
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const put = vi.fn().mockRejectedValue(new Error('store down'));
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      { ...imageStore, put } as never,
+    );
+
+    await expect(
+      service.create(
+        'user-id',
+        {
+          slug: 'seller-slug',
+          sellerType: 'creator',
+          discipline: 'Керамика',
+          fullName: 'Seller',
+          country: 'BY',
+          socialLink: 'https://example.com/seller',
+          shortDescription: 'Description',
+          handoffContactType: 'TELEGRAM',
+          handoffContactValue: '@seller',
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+        },
+        { buffer: Buffer.from([1, 2, 3]), mimeType: 'image/png' },
+      ),
+    ).rejects.toThrow('store down');
+
+    expect(tx.sellerProfile.create).toHaveBeenCalled();
+    expect(put).toHaveBeenCalled();
+  });
+
   it.each(['PENDING_REVIEW', 'SUSPENDED'] as const)(
     'rejects edits while a SellerProfile is %s',
     async (status) => {
@@ -57,7 +205,7 @@ describe('SellersService', () => {
           update: vi.fn(),
         },
       };
-      const service = new SellersService(prisma as never, {} as never);
+      const service = new SellersService(prisma as never, {} as never, imageStore as never);
 
       await expect(
         service.update('user-id', { fullName: 'Updated seller' }),
@@ -94,7 +242,7 @@ describe('SellersService', () => {
         }),
       },
     };
-    const service = new SellersService(prisma as never, {} as never);
+    const service = new SellersService(prisma as never, {} as never, imageStore as never);
 
     const result = await service.update('user-id', {
       fullName: 'Updated seller',
@@ -107,6 +255,68 @@ describe('SellersService', () => {
       }),
     );
     expect(result.sellerProfile.fullName).toBe('Updated seller');
+  });
+
+  it('updates seller photo metadata and bytes in one transaction', async () => {
+    const now = new Date('2026-07-24T00:00:00.000Z');
+    const tx = {
+      sellerProfile: {
+        update: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          slug: 'seller-slug',
+          fullName: 'Updated seller',
+          sellerType: 'creator',
+          discipline: 'Керамика',
+          country: 'BY',
+          socialLink: 'https://example.com/seller',
+          shortDescription: 'Updated description',
+          handoffContactType: 'TELEGRAM',
+          handoffContactValue: '@seller',
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+          status: 'CHANGES_REQUESTED',
+          createdAt: now,
+          updatedAt: now,
+        }),
+      },
+    };
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          status: 'CHANGES_REQUESTED',
+          slug: 'seller-slug',
+        }),
+        update: vi.fn(),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const put = vi.fn().mockResolvedValue(undefined);
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      { ...imageStore, put } as never,
+    );
+
+    await service.update(
+      'user-id',
+      { fullName: 'Updated seller' },
+      { buffer: Buffer.from([9, 8, 7]), mimeType: 'image/png' },
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.sellerProfile.update).toHaveBeenCalled();
+    expect(prisma.sellerProfile.update).not.toHaveBeenCalled();
+    expect(put).toHaveBeenCalledWith(
+      'seller-photo:a0d82a10-3170-49eb-904f-a8bc87d311a5',
+      {
+        bytes: Buffer.from([9, 8, 7]),
+        mimeType: 'image/png',
+      },
+      tx,
+    );
   });
 
   it('uses a narrow seller select for public SellerProfile pages', async () => {
@@ -131,6 +341,7 @@ describe('SellersService', () => {
       {
         toPublicProduct: vi.fn(),
       } as never,
+      imageStore as never,
     );
 
     const result = await service.getPublic('seller-slug');
@@ -188,7 +399,7 @@ describe('SellersService', () => {
         }),
       },
     };
-    const service = new SellersService(prisma as never, {} as never);
+    const service = new SellersService(prisma as never, {} as never, imageStore as never);
 
     const result = await service.getProduct(
       'owner-id',

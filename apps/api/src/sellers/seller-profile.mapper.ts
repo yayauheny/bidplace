@@ -45,11 +45,10 @@ export type SellerProfileResponseRecord = Prisma.SellerProfileGetPayload<{
 }>;
 
 export const sellerProfilePhotoSelect = {
+  id: true,
   slug: true,
   userId: true,
   status: true,
-  profilePhotoMimeType: true,
-  profilePhotoData: true,
 } satisfies Prisma.SellerProfileSelect;
 
 export type SellerProfilePhotoRecord = Prisma.SellerProfileGetPayload<{

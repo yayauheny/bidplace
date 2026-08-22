@@ -64,7 +64,7 @@ describe('ImagesController binary response', () => {
       response,
     );
 
-    expect(response.headers.get('Cache-Control')).toBe('private, max-age=60');
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   });
 
   it('does not expose private media to an anonymous request', async () => {

@@ -10,6 +10,7 @@ import { type SellerStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
+import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import {
   assertProductImageCapacity,
   type RawImageUpload,
@@ -21,17 +22,25 @@ import { isEditableProductStatus } from '../products/product-state';
 
 @Injectable()
 export class ImagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly imageStore: ImageStore,
+  ) {}
 
   async add(
     userId: string,
     productId: string,
     files: readonly RawImageUpload[],
   ) {
-    const product = await this.requireEditableOwner(this.prisma, userId, productId, {
-      position: true,
-      byteLength: true,
-    });
+    const product = await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+      {
+        position: true,
+        byteLength: true,
+      },
+    );
 
     assertApprovedSeller(product.sellerProfile.status as SellerStatus);
 
@@ -42,33 +51,54 @@ export class ImagesService {
 
     const validated = await validateAndNormalizeProductImageUploads(files);
 
-    await runSerializableTransaction(this.prisma, async (tx) => {
-      const product = await this.requireEditableOwner(tx, userId, productId, {
-        position: true,
-        byteLength: true,
-      });
+    assertProductImageCapacity(
+      product.images,
+      validated.map((file) => ({ byteLength: file.buffer.byteLength })),
+    );
 
-      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+    await runSerializableTransaction(this.prisma, async (tx) => {
+      const freshProduct = await this.requireEditableOwner(
+        tx,
+        userId,
+        productId,
+        {
+          position: true,
+          byteLength: true,
+        },
+      );
+
+      assertApprovedSeller(freshProduct.sellerProfile.status as SellerStatus);
 
       assertProductImageCapacity(
-        product.images,
+        freshProduct.images,
         validated.map((file) => ({ byteLength: file.buffer.byteLength })),
       );
 
-      const start = product.images.length;
+      const start = freshProduct.images.length;
 
-      await tx.productImage.createMany({
-        data: validated.map((file, index) => ({
-          productId,
-          position: start + index,
-          mimeType: file.mimeType,
-          byteLength: file.buffer.byteLength,
-          data: Uint8Array.from(file.buffer),
-          checksum: createHash('sha256').update(file.buffer).digest('hex'),
-          width: file.width ?? null,
-          height: file.height ?? null,
-        })),
-      });
+      for (const [index, file] of validated.entries()) {
+        const row = await tx.productImage.create({
+          data: {
+            productId,
+            position: start + index,
+            mimeType: file.mimeType,
+            byteLength: file.buffer.byteLength,
+            data: emptyImageBytes,
+            checksum: createHash('sha256').update(file.buffer).digest('hex'),
+            width: file.width ?? null,
+            height: file.height ?? null,
+          },
+        });
+
+        await this.imageStore.put(
+          imageKey.productImage(row.id),
+          {
+            bytes: file.buffer,
+            mimeType: file.mimeType,
+          },
+          tx,
+        );
+      }
     });
 
     return { ok: true as const };
@@ -98,6 +128,7 @@ export class ImagesService {
         orderBy: { position: 'asc' },
       });
 
+      await this.imageStore.delete(imageKey.productImage(imageId), tx);
       await tx.productImage.delete({ where: { id: imageId } });
 
       const temporaryBase = product.images.length;
@@ -197,26 +228,42 @@ export class ImagesService {
       throw new BadRequestException('An image is required');
     }
 
-    await this.prisma.productCreationStep.update({
-      where: { id: step.id },
-      data: {
-        mimeType: validated.mimeType,
-        byteLength: validated.buffer.byteLength,
-        data: Uint8Array.from(validated.buffer),
-        checksum: createHash('sha256').update(validated.buffer).digest('hex'),
-        width: validated.width ?? null,
-        height: validated.height ?? null,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productCreationStep.update({
+        where: { id: step.id },
+        data: {
+          mimeType: validated.mimeType,
+          byteLength: validated.buffer.byteLength,
+          checksum: createHash('sha256').update(validated.buffer).digest('hex'),
+          width: validated.width ?? null,
+          height: validated.height ?? null,
+        },
+      });
+
+      await this.imageStore.put(
+        imageKey.creationStep(step.id),
+        {
+          bytes: validated.buffer,
+          mimeType: validated.mimeType,
+        },
+        tx,
+      );
     });
+
     return { ok: true as const };
   }
 
   async getCreationStepImage(stepId: string, userId?: string, role?: string) {
     const step = await this.prisma.productCreationStep.findUnique({
       where: { id: stepId },
-      include: {
+      select: {
+        id: true,
+        mimeType: true,
+        byteLength: true,
+        checksum: true,
         product: {
-          include: {
+          select: {
+            status: true,
             sellerProfile: { select: { userId: true, status: true } },
             listings: {
               where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
@@ -229,13 +276,13 @@ export class ImagesService {
     });
     if (
       !step ||
-      !step.data ||
       !step.mimeType ||
       !step.byteLength ||
       !step.checksum
     ) {
       throw new NotFoundException('Creation step image not found');
     }
+
     const isOwner = step.product.sellerProfile.userId === userId;
     const isAdmin = role === 'admin';
     const isPublic =
@@ -245,15 +292,28 @@ export class ImagesService {
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Creation step image not found');
     }
-    return { ...step, isPublic };
+
+    const stored = await this.imageStore.get(imageKey.creationStep(stepId));
+    if (!stored) {
+      throw new NotFoundException('Creation step image not found');
+    }
+
+    return {
+      mimeType: stored.mimeType,
+      data: stored.bytes,
+      isPublic,
+    };
   }
 
   async get(imageId: string, userId?: string, role?: string) {
     const image = await this.prisma.productImage.findUnique({
       where: { id: imageId },
-      include: {
+      select: {
+        id: true,
+        mimeType: true,
         product: {
-          include: {
+          select: {
+            status: true,
             sellerProfile: {
               select: {
                 userId: true,
@@ -286,7 +346,16 @@ export class ImagesService {
       throw new NotFoundException('Image not found');
     }
 
-    return { ...image, isPublic };
+    const stored = await this.imageStore.get(imageKey.productImage(imageId));
+    if (!stored) {
+      throw new NotFoundException('Image not found');
+    }
+
+    return {
+      mimeType: stored.mimeType,
+      data: stored.bytes,
+      isPublic,
+    };
   }
 
   private async requireEditableOwner(

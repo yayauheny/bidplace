@@ -4,6 +4,8 @@
 
 - `Implemented`: `core/image-store/` — `ImageStore` port with `PostgresImageStore`;
   product/creation-step/seller photo bytes written via `put` and read via `get`.
+- `Implemented`: seller photo and creation-step writes — meta update + `ImageStore.put`
+  in the same Prisma transaction (`SellersService`, `ImagesService.addCreationStepImage`).
 - `Implemented`: `ImagesService.add` — Sharp outside TX; SERIALIZABLE TX re-checks
   owner/capacity, then `create` + `ImageStore.put` per image.
 - `Implemented`: `get` / `getCreationStepImage` — authz before `imageStore.get`;
@@ -11,7 +13,7 @@
 - `Implemented`: `core/mail/` — unified `MailTransport` for OTP and password-reset.
 - Coverage: `postgres-image-store.spec.ts`, `images.service.spec.ts`,
   `media-transport`, `image-upload-safety`, `password-reset` integration.
-- `Verified`: API typecheck; API unit 223/223; targeted integration 8/8.
+- `Verified`: API typecheck; API unit 228/228; targeted integration 5/5 (`media-transport`, `image-upload-safety`).
 
 ## 2026-08-22 — Release / backup / restore (P0-5)
 

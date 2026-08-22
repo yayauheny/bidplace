@@ -6,11 +6,9 @@ import { PasswordHasherService } from '../auth/password-hasher.service';
 import { type ServerEnv, loadServerEnv, resolveCorsOrigin } from '../core/config';
 import { PrismaService } from '../core/database';
 import { AppException } from '../core/errors';
+import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
-import {
-  buildPasswordResetLink,
-  PasswordResetTransport,
-} from './password-reset.transport';
+import { buildPasswordResetLink } from './password-reset-link';
 
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60_000;
@@ -45,7 +43,7 @@ export class PasswordResetService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
-    private readonly transport: PasswordResetTransport,
+    private readonly mail: MailTransport,
     private readonly rateLimits: RateLimitService,
   ) {}
 
@@ -112,7 +110,11 @@ export class PasswordResetService {
     const resetLink = buildPasswordResetLink(resetUrlBase, rawToken);
 
     try {
-      await this.transport.deliver(user.email, resetLink);
+      await this.mail.send({
+        to: user.email,
+        subject: 'bidplace password reset',
+        text: `Reset your bidplace password using this link: ${resetLink}`,
+      });
     } catch (error) {
       await this.prisma.passwordResetToken.delete({ where: { id: record.id } });
       this.logger.error(

@@ -18,6 +18,7 @@ import {
 import { createHash } from 'node:crypto';
 
 import { isPrismaUniqueConstraintError, PrismaService } from '../core/database';
+import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productSelect,
@@ -124,6 +125,7 @@ export class SellersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly products: ProductsService,
+    private readonly imageStore: ImageStore,
   ) {}
 
   async getMine(userId: string) {
@@ -152,33 +154,44 @@ export class SellersService {
       throw new ConflictException('Seller profile already exists');
     }
 
-    const profilePhotoData = Uint8Array.from(profilePhoto.buffer);
-
     try {
-      const sellerProfile = await this.prisma.sellerProfile.create({
-        data: {
-          userId,
-          slug: input.slug,
-          sellerType: input.sellerType,
-          ...(input.discipline ? { discipline: input.discipline } : {}),
-          fullName: input.fullName,
-          country: input.country,
-          socialLink: input.socialLink,
-          telegramUrl: input.telegramUrl ?? null,
-          instagramUrl: input.instagramUrl ?? null,
-          websiteUrl: input.websiteUrl ?? null,
-          shortDescription: input.shortDescription,
-          handoffContactType: input.handoffContactType,
-          handoffContactValue: input.handoffContactValue,
-          handoffInitiator: input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
-          profilePhotoMimeType: profilePhoto.mimeType,
-          profilePhotoByteLength: profilePhoto.buffer.byteLength,
-          profilePhotoChecksum: createHash('sha256')
-            .update(profilePhoto.buffer)
-            .digest('hex'),
-          profilePhotoData,
-        },
-        select: sellerProfileResponseSelect,
+      const sellerProfile = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.sellerProfile.create({
+          data: {
+            userId,
+            slug: input.slug,
+            sellerType: input.sellerType,
+            ...(input.discipline ? { discipline: input.discipline } : {}),
+            fullName: input.fullName,
+            country: input.country,
+            socialLink: input.socialLink,
+            telegramUrl: input.telegramUrl ?? null,
+            instagramUrl: input.instagramUrl ?? null,
+            websiteUrl: input.websiteUrl ?? null,
+            shortDescription: input.shortDescription,
+            handoffContactType: input.handoffContactType,
+            handoffContactValue: input.handoffContactValue,
+            handoffInitiator: input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
+            profilePhotoMimeType: profilePhoto.mimeType,
+            profilePhotoByteLength: profilePhoto.buffer.byteLength,
+            profilePhotoChecksum: createHash('sha256')
+              .update(profilePhoto.buffer)
+              .digest('hex'),
+            profilePhotoData: emptyImageBytes,
+          },
+          select: sellerProfileResponseSelect,
+        });
+
+        await this.imageStore.put(
+          imageKey.sellerPhoto(created.id),
+          {
+            bytes: profilePhoto.buffer,
+            mimeType: profilePhoto.mimeType,
+          },
+          tx,
+        );
+
+        return created;
       });
 
       return toSellerProfileResponse(sellerProfile);
@@ -220,19 +233,39 @@ export class SellersService {
     );
 
     if (profilePhoto) {
-      const profilePhotoData = Uint8Array.from(profilePhoto.buffer);
-
       Object.assign(data, {
         profilePhotoMimeType: profilePhoto.mimeType,
         profilePhotoByteLength: profilePhoto.buffer.byteLength,
         profilePhotoChecksum: createHash('sha256')
           .update(profilePhoto.buffer)
           .digest('hex'),
-        profilePhotoData,
       });
     }
 
     try {
+      if (profilePhoto) {
+        const sellerProfile = await this.prisma.$transaction(async (tx) => {
+          const updated = await tx.sellerProfile.update({
+            where: { id: current.id },
+            data,
+            select: sellerProfileResponseSelect,
+          });
+
+          await this.imageStore.put(
+            imageKey.sellerPhoto(current.id),
+            {
+              bytes: profilePhoto.buffer,
+              mimeType: profilePhoto.mimeType,
+            },
+            tx,
+          );
+
+          return updated;
+        });
+
+        return toSellerProfileResponse(sellerProfile);
+      }
+
       const sellerProfile = await this.prisma.sellerProfile.update({
         where: { id: current.id },
         data,
@@ -456,6 +489,18 @@ export class SellersService {
       throw new NotFoundException('Seller profile not found');
     }
 
-    return sellerProfile;
+    const stored = await this.imageStore.get(
+      imageKey.sellerPhoto(sellerProfile.id),
+    );
+
+    if (!stored) {
+      throw new NotFoundException('Seller profile not found');
+    }
+
+    return {
+      status: sellerProfile.status,
+      profilePhotoMimeType: stored.mimeType,
+      profilePhotoData: stored.bytes,
+    };
   }
 }

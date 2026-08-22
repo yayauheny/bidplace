@@ -6,6 +6,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { DatabaseModule } from './core/database';
+import { ImageStoreModule } from './core/image-store';
+import { MailModule } from './core/mail';
 import { ApiExceptionFilter } from './core/errors';
 import { HealthModule } from './core/health';
 import {
@@ -34,6 +36,8 @@ import { DiscoveryModule } from './discovery/discovery.module';
     HealthModule,
     ClockModule,
     PublicIdModule,
+    ImageStoreModule,
+    MailModule,
     CategoriesModule,
     DatabaseModule,
     AuthModule,

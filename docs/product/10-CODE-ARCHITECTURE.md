@@ -51,8 +51,8 @@ SellerProfile
   mandatory for creator-made Product; the current optional field is preserved
   until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version, and `otp.service.ts` uses SMTP/nodemailer in production with a test-only bypass that cannot activate in production;
-- password recovery lives in `apps/api/src/password-reset/` (mirror of OTP module layout): forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; mail delivery reuses `apps/api/src/core/email` with single-address recipients; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
+- buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version; OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` in production, `LocalMailTransport` in dev/test) with a test-only OTP bypass that cannot activate in production;
+- password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
 - active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. Buyer, seller and admin receive role-scoped projections, seller actions and admin cancellation/replacement enforce actor role at the service boundary, terminal handoff transitions are not repeatable, and admin cancellation/replacement preserves the original record with append-only audit;
 - admin emergency controls live in `apps/api/src/admin/admin-user.service.ts` and `admin-listing-emergency.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, session revoke, and emergency `SCHEDULED|LIVE → CANCELLED` without bid edits; `AuditTargetType.USER` records user incidents; mobile admin exposes Users and Recovery tabs wired to needs-order API;
 - Order audience is resolved from the Order relation itself: admin sees the full admin projection, the seller sees the seller projection when `order.sellerId === userId`, and the buyer sees the buyer projection when `order.buyerId === userId`. Cancelled Orders stay hidden from buyer and seller projections when historical contacts must remain private.
@@ -97,9 +97,12 @@ SellerProfile
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
   sequential bounded normalize to canonical bytes outside the DB transaction, and
-  a short SERIALIZABLE transaction for capacity re-check + insert. Per-user upload
-  rate limits apply. See `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
-- Product images remain binary PostgreSQL storage for the pilot; object storage is a future operational change.
+  a short SERIALIZABLE transaction that re-checks owner/capacity then persists via
+  `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
+  then `ImageStore.get`. Per-user upload rate limits apply. See
+  `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
+- Product images remain binary PostgreSQL storage for the pilot; swapping to object
+  storage is a future `ImageStore` adapter change, not a service rewrite.
 
 ## Runtime topology and extension boundary
 

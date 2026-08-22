@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { OtpService, OtpTransport } from './otp.service';
+import { MailTransport } from '../core/mail';
+import { OtpService } from './otp.service';
 
-const transport: OtpTransport = { deliver: vi.fn() };
+const mail: MailTransport = { send: vi.fn() };
 const rateLimits = { consume: vi.fn().mockReturnValue(true) };
 
 describe('OtpService', () => {
@@ -23,7 +24,7 @@ describe('OtpService', () => {
         update: vi.fn(),
       },
     };
-    const service = new OtpService(prisma as never, transport, rateLimits as never);
+    const service = new OtpService(prisma as never, mail, rateLimits as never);
 
     await expect(service.verify('user-id', '123456')).rejects.toThrow('OTP has expired');
     expect(prisma.user.update).not.toHaveBeenCalled();
@@ -46,7 +47,7 @@ describe('OtpService', () => {
         update: vi.fn(),
       },
     };
-    const service = new OtpService(prisma as never, transport, rateLimits as never);
+    const service = new OtpService(prisma as never, mail, rateLimits as never);
 
     await expect(service.verify('user-id', '123456')).rejects.toThrow('OTP retry limit reached');
     expect(prisma.user.update).not.toHaveBeenCalled();
@@ -65,7 +66,7 @@ describe('OtpService', () => {
         }),
       },
     };
-    const service = new OtpService(prisma as never, transport, rateLimits as never);
+    const service = new OtpService(prisma as never, mail, rateLimits as never);
 
     await expect(service.request('user-id')).rejects.toThrow('OTP resend cooldown is active');
     expect(prisma.emailVerificationCode.create).not.toHaveBeenCalled();

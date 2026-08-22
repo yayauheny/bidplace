@@ -153,7 +153,9 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       handoffContactValue: '@wave3_applicant',
       status: 'PENDING_REVIEW',
     });
-    expect(persisted.profilePhotoByteLength).toBe(permissionImage.byteLength);
+    expect(persisted.profilePhotoByteLength).toBe(
+      Buffer.from(persisted.profilePhotoData).byteLength,
+    );
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(0);
   });
 
