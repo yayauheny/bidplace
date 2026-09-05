@@ -1209,3 +1209,58 @@ public publication.
 
 A later item class needs a different post-rejection workflow, or legal process
 requires a distinct appeal record separate from Product identity.
+
+## DEC-072 — Expanded MVP product contract (founder defaults)
+
+Date: 2026-09-05
+Status: Confirmed
+Source: founder defaults in the 2026-09-05 reconciliation audit §12, recorded
+here so P0-E can proceed. This is a product contract, not an implementation
+claim.
+
+### Decision
+
+The target web MVP for RF+BY users is **auction + fixed-price sale + optional
+price offer**. Item money and delivery stay direct between seller and buyer.
+The service starts free; subscription stays future scope. Figma is the visual
+direction; Pen remains on disk until a separate cleanup after a complete
+handoff.
+
+| Topic | Confirmed default |
+| --- | --- |
+| Offers | Buyer offer is server-owned. Seller may accept or reject. **No counteroffer** in MVP. |
+| Next bidder | Manual audited admin replacement only. Automatic next bidder is out of MVP (`DEC-054` stands). |
+| Contact window | Fixed 48-hour snapshot on every new Order (`DEC-070`). Seller 24/48/72 is deferred. |
+| Fixed buy | A unique work has at most one buyer. Buyer confirmation **atomically** creates the Order. Seller reconfirm is not required. The seller may withdraw the listing only **before** a successful buy. Auction Buy Now / buyout on a live auction is not added. |
+| Currency | Listing stores `BYN` or `RUB` by the seller's chosen market. No IP-based conversion. |
+| Portfolio | Portfolio-only author surface is **wave 2**, even if a Figma frame exists. RFC §12 keeps a simple examples block. |
+| Transactional email | In contract: verification, password reset, sale result, replacement/deadline, security/complaint. Outbid and marketing email stay later. RFC §9 still forbids outbid spam. |
+| Complaint attachments | Limited private images only. No video or arbitrary files. |
+| Legal review | Human legal review is required before a public audience. A closed local test among acquaintances is a separate gate. |
+| Pen files | Do not delete or edit canonical Pen in ordinary work. Cleanup is a separate commit only after a complete Figma handoff and an untracked-file inventory. |
+
+Current runtime may remain auction + BYN until P0-E implements this contract.
+Code status lives in `11-PROJECT-STATUS.md`.
+
+### Revises
+
+- `DEC-039` only where it said the product uses BYN alone: the **product**
+  allows `BYN` or `RUB` on Listing. Soft close, startPrice and the ban on auction
+  reserve / auction Buy Now stay.
+- RFC §19 “fixed price is out of MVP”: fixed-price sale and optional offer are
+  now in the product contract for P0-E. They are not in the current runtime.
+
+### Alternatives considered
+
+- Counteroffer in cabinet — rejected for MVP; accept/reject only.
+- Automatic next bidder at close — rejected for MVP; keep manual admin
+  replacement.
+- IP-detected currency — rejected; seller market on Listing is the source.
+- Seller reconfirm after fixed buy — rejected; the buy itself creates the deal.
+- Portfolio-only in wave 1 because Figma drew it — rejected; wave 2.
+
+### Revisit when
+
+P0-E implementation starts, a lawyer requires a different contract moment for
+fixed vs auction, or an explicit founder decision adds counteroffer or
+automatic replacement.

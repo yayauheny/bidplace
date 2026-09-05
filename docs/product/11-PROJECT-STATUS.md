@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Expanded MVP product contract (P0-A)
+
+- `Confirmed` (product): `DEC-072` and RFC §21 record founder defaults: no counteroffer; manual next bidder; 48h contact (`DEC-070`); atomic fixed buy; Listing `BYN|RUB` by seller market; portfolio-only in wave 2; transactional email set; complaint images only; human legal review before a public audience.
+- `Not implemented` (code): fixed-price Listing, optional offers, and `RUB` runtime. Current runtime remains `AUCTION` + `BYN`. P0-E must not start until Order snapshot exists.
+- Protected `01` / `08` / `09` were not rewritten. RFC §3, §9, §12, §14, §19 and §21 were updated to match `DEC-072`.
+
 ## 2026-09-05 — Rejected Product recovery (QW-04)
 
 - `Implemented`: Product `REJECTED` is owner-editable on the same Product ID.
