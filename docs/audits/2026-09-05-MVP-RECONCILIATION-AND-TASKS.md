@@ -327,3 +327,17 @@ DoD: matched screenshots 390/1024/1440 per route; all states; keyboard/zoom/scre
 Начать с **P0-A**. Параллельно без code changes готовить **P0-B**. После ответов — P0-C и P0-D. Fixed/offers идут после state decisions. Redesign начинается после ядра и завершённого Figma handoff.
 
 Не начинать сейчас: subscription, payments, chat, reviews/rating, wishlist, AI, native app, drops/presale и advanced fraud scoring.
+
+## 14. Актуальный реестр работ
+
+Подробные ready-now prompts находятся в [`../tasks/2026-09-05-quick-wins/00-README.md`](../tasks/2026-09-05-quick-wins/00-README.md).
+
+| Категория | Сейчас | После решений/зависимостей | После MVP |
+|---|---|---|---|
+| Код и безопасность | QW-01 HTTPS links; QW-02 Activity; QW-03 env; QW-04 rejected recovery | expired SCHEDULED; Order snapshot/deadline; seller inbox; DB invariants; stable error codes; fixed/offers; complaints; CI/release proof | analytics retention; legacy auth cleanup; native auth |
+| Product | Зафиксировать ответы §12 и подготовить P0-A | revised decision log/RFC; cabinet contract; currency/market; next bidder | subscription, chat, reviews, wishlist, drops/presale/services |
+| Legal и данные | Подготовить факты и вопросы P0-B | BY+RF written validation; operator/form; data map; consent/cookies; final public docs | payment/subscription/AI/chat-specific revisions |
+| Design | Завершить дизайнером create/footer/cabinet frames | read-only Figma handoff; docs normalization; Hugeicons; redesign 390→1024→1440 | native app and future feature screens |
+| Operations | Не блокировать quick wins | staging email; 10-user auction/fixed races; backup/restore/rollback; one scheduler | scale/object storage/advanced monitoring |
+
+QW-01–QW-04 имеют согласованные founder defaults и не требуют сильного дополнительного анализа. Каждая выполняется и проверяется отдельно; merge order определяется после независимого review.
