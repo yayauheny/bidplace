@@ -1,12 +1,33 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { paginationQuerySchema } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
+import { parseQuery } from '../core/validation';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
 @UseGuards(BearerAuthGuard)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
+
+  @Get()
+  list(
+    @CurrentUser() auth: { sub: string; role: string },
+    @Query() query: unknown,
+  ) {
+    return this.orders.listForSeller(
+      auth.sub,
+      auth.role,
+      parseQuery(paginationQuerySchema, query),
+    );
+  }
 
   @Get(':publicId')
   get(

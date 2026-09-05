@@ -1,9 +1,22 @@
-import { orderResponseSchema } from '@bidplace/contracts';
+import {
+  orderResponseSchema,
+  paginationQuerySchema,
+  sellerOrderListResponseSchema,
+  type PaginationQueryInput,
+} from '@bidplace/contracts';
 
 import { requestJson, type RequestContext } from './request';
 
 export function createOrdersClient(context: RequestContext) {
   return {
+    list(query?: PaginationQueryInput) {
+      return requestJson(
+        context,
+        '/api/orders',
+        sellerOrderListResponseSchema,
+        { query: paginationQuerySchema.parse(query ?? {}) },
+      );
+    },
     get(publicId: string) {
       return requestJson(context, `/api/orders/${publicId}`, orderResponseSchema);
     },

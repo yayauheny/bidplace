@@ -14,6 +14,7 @@ import {
   publicProductSchema,
   publicSellerQuerySchema,
   realtimeEventPayloadSchema,
+  sellerOrderListQuerySchema,
   sellerOrderResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
@@ -317,5 +318,18 @@ describe('shared contracts', () => {
         order: { ...base.order, currency: 'BYN' },
       }).success,
     ).toBe(true);
+  });
+
+  it('paginates seller Order inbox without a client-supplied sellerId', () => {
+    expect(sellerOrderListQuerySchema.parse({ limit: '10' })).toEqual({
+      page: 1,
+      limit: 10,
+    });
+    expect(
+      sellerOrderListQuerySchema.safeParse({ sellerId: 'seller-id' }).success,
+    ).toBe(false);
+    expect(sellerOrderListQuerySchema.safeParse({ limit: 101 }).success).toBe(
+      false,
+    );
   });
 });

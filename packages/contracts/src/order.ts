@@ -6,6 +6,7 @@ import {
   orderCancellationReasonSchema,
   orderStatusSchema,
 } from './enums';
+import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import {
   currencyCodeSchema,
   isoDateTimeSchema,
@@ -86,7 +87,20 @@ export const orderResponseSchema = z.union([
   adminOrderResponseSchema,
 ]);
 
+export const sellerOrderListQuerySchema = paginationQuerySchema;
+
+export const sellerOrderListResponseSchema = z
+  .object({
+    orders: z.array(sellerOrderResponseSchema),
+    pagination: paginationMetaSchema,
+  })
+  .strict();
+
 export type Order = z.infer<typeof orderSchema>;
 export type BuyerOrderResponse = z.infer<typeof buyerOrderResponseSchema>;
 export type SellerOrderResponse = z.infer<typeof sellerOrderResponseSchema>;
 export type AdminOrderResponse = z.infer<typeof adminOrderResponseSchema>;
+export type SellerOrderListQuery = z.infer<typeof sellerOrderListQuerySchema>;
+export type SellerOrderListResponse = z.infer<
+  typeof sellerOrderListResponseSchema
+>;

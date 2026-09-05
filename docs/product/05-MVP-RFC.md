@@ -311,7 +311,9 @@ Privacy mode seller:
 
 Каждый новый Order (lifecycle close, admin recovery и manual replacement) сохраняет `contactDueAt` как 48-часовой snapshot от фактического момента создания этой сделки. Настройка seller 24/48/72 отложена. См. `DEC-070`.
 
-Тот же create-path замораживает title, final amount, currency и Listing identity (`listingId` + product public id). Карточка сделки и будущий seller inbox читают эти поля, а не живой Product. Исторические ряды без snapshot-колонок читают live Product/Listing до отдельного backfill. См. `DEC-074`.
+Тот же create-path замораживает title, final amount, currency и Listing identity (`listingId` + product public id). Карточка сделки и seller Orders inbox читают эти поля, а не живой Product. Исторические ряды без snapshot-колонок читают live Product/Listing до отдельного backfill. См. `DEC-074`.
+
+Seller находит свои сделки, кроме `CANCELLED`, через paginated `GET /api/orders` (sellerId из сессии, не из query). Cancelled Orders скрыты так же, как в карточке.
 
 SLA 24 часа и штрафы — Hypothesis, не MVP.
 

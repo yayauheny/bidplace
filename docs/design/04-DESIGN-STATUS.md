@@ -4,6 +4,12 @@
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
+## 2026-09-05 — Seller Orders inbox
+
+- `Implemented`: current-style `/orders` seller inbox with Activity-like rows,
+  loading/empty/error and page fetch. Linked from `/profile` and the account
+  menu. Frozen snapshot fields only; no Pen/Figma redesign.
+
 ## 2026-09-05 — Order frozen currency display
 
 - `Implemented`: Order detail formats `finalAmount` with the frozen `order.currency` from the deal snapshot. No new layout, Pen node or visual system.

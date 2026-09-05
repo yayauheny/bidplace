@@ -121,12 +121,19 @@ handoff contact никогда не появляется здесь.
 
 ## 7. Остальные routes
 
-Auth, Activity, Order, seller application/profile, Product/Listing draft и
+Auth, Activity, Order, seller Orders inbox, seller application/profile, Product/Listing draft и
 admin moderation остаются функционально обязательными. Admin moderation включает
 Authors/Works/Orders plus **Пользователи** (ban/revoke) and **Восстановление**
 (needs-order queue, emergency cancel). Смена Global Header или
 tokens не должна делать их недоступными. Их визуальная миграция требует
 отдельных Pen targets или явного правила наследования новой системы.
+
+### Seller Orders inbox
+
+`/orders` lists the current seller's non-cancelled deals from `GET /api/orders`.
+Cards show frozen snapshot title, amount/currency, contact deadline and buyer
+email, then open `/order/[publicId]`. Loading, empty, error/retry and
+"Загрузить ещё" pagination are required. Current-style UI, not a Pen target.
 
 ### Seller product draft
 

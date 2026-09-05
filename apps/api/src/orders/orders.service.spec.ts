@@ -124,4 +124,50 @@ describe('OrdersService', () => {
     });
     expect(result.order.currency).toBe('BYN');
   });
+
+  it('lists the current seller Orders with frozen titles and hides cancelled rows', async () => {
+    const visible = {
+      ...baseOrder,
+      snapshotTitle: 'Frozen inbox title',
+      snapshotCurrency: 'BYN',
+      snapshotProductPublicId: 'product0011',
+      listing: {
+        currency: 'RUB',
+        product: { publicId: 'changed0001', title: 'Changed title' },
+      },
+    };
+    const findMany = vi.fn().mockResolvedValue([visible]);
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = { order: { findMany, count } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    const result = await service.listForSeller('seller-id', 'user', {
+      page: 2,
+      limit: 10,
+    });
+
+    expect(result.orders).toHaveLength(1);
+    expect(result.orders[0]?.productSummary.title).toBe('Frozen inbox title');
+    expect(result.pagination).toEqual({ page: 2, limit: 10, total: 1 });
+    expect(findMany).toHaveBeenCalledWith({
+      where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
+      select: expect.any(Object),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: 10,
+      take: 10,
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
+    });
+  });
+
+  it('rejects admin listing through the seller inbox', async () => {
+    const prisma = { order: { findMany: vi.fn(), count: vi.fn() } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(
+      service.listForSeller('admin-id', 'admin', { page: 1, limit: 20 }),
+    ).rejects.toThrow('Seller access required');
+    expect(prisma.order.findMany).not.toHaveBeenCalled();
+  });
 });

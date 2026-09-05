@@ -3,6 +3,8 @@ import {
   type AdminOrderReplacementRequest,
   adminOrderResponseSchema,
   buyerOrderResponseSchema,
+  type PaginationQuery,
+  sellerOrderListResponseSchema,
   sellerOrderResponseSchema,
 } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
@@ -90,6 +92,36 @@ export class OrdersService {
     }
 
     return this.toResponse(order, audience);
+  }
+
+  async listForSeller(userId: string, role: string, query: PaginationQuery) {
+    if (role !== 'user') {
+      throw new ForbiddenException('Seller access required');
+    }
+
+    const where = {
+      sellerId: userId,
+      status: { not: 'CANCELLED' as const },
+    };
+    const [total, rows] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        select: orderWithProductSelect,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+    ]);
+
+    return sellerOrderListResponseSchema.parse({
+      orders: rows.map((order) => this.toResponse(order, 'seller')),
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    });
   }
 
   async markContacted(userId: string, role: string, publicId: string) {

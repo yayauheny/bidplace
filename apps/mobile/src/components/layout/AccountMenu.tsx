@@ -283,6 +283,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
             <AccountDropdown
               profileLabel={profileLabel}
               showPurchases={!auth.isAdmin}
+              showOrders={Boolean(capability.profile) && !auth.isAdmin}
               showModeration={auth.isAdmin}
               loggingOut={loggingOut}
               onLogout={() => void logout()}
@@ -294,6 +295,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           <AccountDropdown
             profileLabel={profileLabel}
             showPurchases={!auth.isAdmin}
+            showOrders={Boolean(capability.profile) && !auth.isAdmin}
             showModeration={auth.isAdmin}
             loggingOut={loggingOut}
             onLogout={() => void logout()}
@@ -309,6 +311,7 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
 function AccountDropdown({
   profileLabel,
   showPurchases,
+  showOrders,
   showModeration,
   loggingOut,
   onLogout,
@@ -317,6 +320,7 @@ function AccountDropdown({
 }: {
   profileLabel: string | null;
   showPurchases: boolean;
+  showOrders: boolean;
   showModeration: boolean;
   loggingOut: boolean;
   onLogout: () => void;
@@ -381,11 +385,33 @@ function AccountDropdown({
           </MotionPressable>
         </Link>
       ) : null}
+      {showOrders ? (
+        <Link href="/orders" asChild>
+          <MotionPressable
+            ref={
+              profileLabel || showPurchases
+                ? undefined
+                : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
+            }
+            accessibilityRole="link"
+            accessibilityLabel="Сделки"
+            preset="button"
+            style={menuItemStyle}
+            interactionStyle={menuItemInteractionStyle}
+          >
+            <AppIcon name="seller" size={19} />
+            <AppText role="label" style={{ flex: 1 }}>
+              Сделки
+            </AppText>
+            <AppIcon name="chevronRight" size={18} />
+          </MotionPressable>
+        </Link>
+      ) : null}
       {showModeration ? (
         <Link href="/admin" asChild>
           <MotionPressable
             ref={
-              profileLabel || showPurchases
+              profileLabel || showPurchases || showOrders
                 ? undefined
                 : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
             }
@@ -420,14 +446,14 @@ function AccountDropdown({
           </MotionPressable>
         </Link>
       ) : null}
-      {profileLabel || showPurchases || showModeration ? (
+      {profileLabel || showPurchases || showOrders || showModeration ? (
         <View
           style={{ height: 1, backgroundColor: designTokens.color.border }}
         />
       ) : null}
       <MotionPressable
         ref={
-          profileLabel || showPurchases || showModeration
+          profileLabel || showPurchases || showOrders || showModeration
             ? undefined
             : (node) => assignFocusableAnchorRef(firstMenuItemRef, node)
         }
