@@ -1,7 +1,9 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-07-18  
+Последнее обновление: 2026-08-30  
 Статус: Confirmed
+
+Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Юрист: [`../legal/02-LAWYER-ANSWERS-2026-08-24.md`](../legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
 
 ## 1. Назначение набора
 
@@ -42,7 +44,17 @@
 | `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
-| `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Открытые юридические вопросы и minimum checklist до real pilot в Беларуси    |
+| `../design-handoff/00-BRIEF.md`         | Бриф волны 1 для дизайнера: поля, механики, вопросы на встречу               |
+| `../design-handoff/13-FOOTER-AND-COMPLAINT.md` | Подвал, cookie, галочки, жалоба                                         |
+| `../design-handoff/14-CABINET-LOGIC.md`  | Статусы кабинета, правка работы, блок после продажи                          |
+| `../00-WAVES.md`                        | Две волны: сначала MVP, потом оплата сервиса и остальное                     |
+| `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Когда публиковать документы; не бриф дизайнеру                              |
+| `../legal/01-LAWYER-CONSULTATION-PACK.md` | Пакет вопросов юристу: оформление, автор, заработок, механики              |
+| `../legal/02-LAWYER-ANSWERS-2026-08-24.md` | Фиксация встречи 24 августа (с наложением расшифровки 26 августа)         |
+| `../legal/03-BIDBAITS-MAPPING.md`        | Что брать со структуры bidbaits, что нельзя копировать                     |
+| `../legal/04-DOCUMENT-SET.md`            | Комплект из шести публичных документов, слои сейчас / если включено        |
+| `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
+| `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
 | `../research/README.md`                 | Правила хранения сырого исследования                                         |
@@ -89,9 +101,14 @@
 
 Дополнительно:
 
-- `../legal/00-MVP-LAUNCH-CHECKLIST.md`.
+- `../legal/01-LAWYER-CONSULTATION-PACK.md` — исторический бриф на консультацию 24 августа;
+- `../legal/02-LAWYER-ANSWERS-2026-08-24.md` — фиксация решений встречи 24 августа;
+- `../legal/04-DOCUMENT-SET.md` — какие шесть файлов, слои, галочки;
+- `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
+- `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
+- `../legal/05-REVIEW-PROMPT.md` — промпт на ревью этого пакета.
 
-Этот файл фиксирует scope и открытые вопросы для legal review; он не является юридической консультацией или подтверждением compliance.
+Эти файлы не являются юридической консультацией или подтверждением compliance.
 
 ### Позиционирование, реклама, запуск автора
 
