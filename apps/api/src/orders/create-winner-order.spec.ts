@@ -5,6 +5,7 @@ import {
   createWinnerOrder,
   WinnerOrderPublicIdExhaustedError,
 } from './create-winner-order';
+import { orderContactSchedule } from './order-contact-deadline';
 
 const baseInput = {
   listingId: 'listing-1',
@@ -12,7 +13,7 @@ const baseInput = {
   buyerId: 'buyer-1',
   sourceBidId: 'bid-1',
   finalAmount: { toString: () => '10' } as Prisma.Decimal,
-  contactDueAt: new Date('2026-08-21T12:00:00.000Z'),
+  now: new Date('2026-08-21T12:00:00.000Z'),
   sellerHandoffType: 'TELEGRAM' as const,
   sellerHandoffValue: '@seller',
   buyerEmailAtClose: 'buyer@example.com',
@@ -211,5 +212,29 @@ describe('createWinnerOrder', () => {
     );
 
     expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it('writes createdAt and contactDueAt from the shared 48h schedule', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'order-6' });
+    const prisma = {
+      order: { findUnique: vi.fn() },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          order: {
+            findUnique: vi.fn().mockResolvedValue(null),
+            create,
+          },
+        }),
+      ),
+    };
+
+    await createWinnerOrder(prisma as never, {
+      ...baseInput,
+      generatePublicId: () => 'publicIdOk6',
+    });
+
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining(orderContactSchedule(baseInput.now)),
+    });
   });
 });

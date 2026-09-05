@@ -21,6 +21,7 @@ import {
   WINNER_BID_ORDER_BY,
   WinnerOrderPublicIdExhaustedError,
 } from './create-winner-order';
+import { orderContactSchedule } from './order-contact-deadline';
 import { createOrderSnapshot } from './order-snapshot';
 import { createBidderAlias } from '../bids/bid-alias';
 
@@ -305,7 +306,7 @@ export class OrdersService {
                   buyerId: prepared.buyerId,
                   sourceBidId: prepared.sourceBidId,
                   finalAmount: prepared.finalAmount,
-                  contactDueAt: new Date(Date.now() + 86_400_000),
+                  now: new Date(),
                   sellerHandoffType: prepared.sellerHandoffType,
                   sellerHandoffValue: prepared.sellerHandoffValue,
                   buyerEmailAtClose: prepared.buyerEmailAtClose,
@@ -474,6 +475,8 @@ export class OrdersService {
           throw new ConflictException('Seller handoff contact is missing');
         }
 
+        const schedule = orderContactSchedule(new Date());
+
         for (let attempt = 0; attempt < 5; attempt += 1) {
           try {
             const created = await tx.order.create({
@@ -484,7 +487,7 @@ export class OrdersService {
                 buyerId: bid.bidderUserId,
                 sourceBidId: bid.id,
                 finalAmount: bid.amount,
-                contactDueAt: new Date(),
+                ...schedule,
                 ...createOrderSnapshot({
                   sellerHandoffType: sellerProfile.handoffContactType,
                   sellerHandoffValue: sellerProfile.handoffContactValue,

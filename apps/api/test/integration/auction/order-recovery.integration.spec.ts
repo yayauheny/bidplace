@@ -11,6 +11,7 @@ import { Prisma, type PrismaClient } from '@bidplace/database';
 
 import { Clock } from '../../../src/core/time';
 import { ListingLifecycleService } from '../../../src/lifecycle/listing-lifecycle.service';
+import { ORDER_CONTACT_WINDOW_MS } from '../../../src/orders/order-contact-deadline';
 import { OrdersService } from '../../../src/orders/orders.service';
 import {
   createIntegrationDatabaseContext,
@@ -177,6 +178,7 @@ describe('admin Order recovery for ended Listings', () => {
 
     expect(first.order.publicId).toBe(second.order.publicId);
     expect(first.order.listingId).toBe(fixture.listing.id);
+    expect(first.order.contactDueAt).toBe(second.order.contactDueAt);
     expect(
       await prisma.order.count({ where: { listingId: fixture.listing.id } }),
     ).toBe(1);
@@ -186,6 +188,11 @@ describe('admin Order recovery for ended Listings', () => {
     expect(persisted.sourceBidId).toBe(winner.id);
     expect(persisted.buyerId).toBe(fixture.buyerA.id);
     expect(persisted.sellerHandoffValue).toBe('@recovered_seller');
+    expect(persisted.contactDueAt.getTime()).toBeGreaterThan(Date.now());
+    expect(persisted.contactDueAt.toISOString()).toBe(first.order.contactDueAt);
+    expect(
+      persisted.contactDueAt.getTime() - persisted.createdAt.getTime(),
+    ).toBe(ORDER_CONTACT_WINDOW_MS);
 
     const auditEvents = await prisma.auditEvent.findMany({
       where: {

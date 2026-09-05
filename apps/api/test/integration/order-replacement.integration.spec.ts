@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { ORDER_CONTACT_WINDOW_MS } from '../../src/orders/order-contact-deadline';
 import { OrdersService } from '../../src/orders/orders.service';
 import {
   createOrderFixture,
@@ -97,6 +98,17 @@ describe('manual Order replacement against PostgreSQL', () => {
         sourceBidId: fixture.nextRankedBid.id,
       },
     ]);
+    const replacementRow = state.orders[1];
+    if (!replacementRow) {
+      throw new Error('replacement Order was not created');
+    }
+    expect(replacementRow.contactDueAt.getTime()).toBeGreaterThan(
+      replacementRow.createdAt.getTime(),
+    );
+    expect(
+      replacementRow.contactDueAt.getTime() -
+        replacementRow.createdAt.getTime(),
+    ).toBe(ORDER_CONTACT_WINDOW_MS);
     expect(state.listing?.currentPrice.toNumber()).toBe(200);
     expect(state.listing?.bidCount).toBe(2);
     expect(state.audits).toHaveLength(2);

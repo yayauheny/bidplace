@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
 Версия: 1.1
-Последнее обновление: 2026-07-23
-Статус: Confirmed  
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`
+Последнее обновление: 2026-09-05
+Статус: Confirmed
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070`
 
 ## 1. Цель MVP
 
@@ -303,13 +303,15 @@ Privacy mode seller:
 
 Будущее: internal inbox.
 
+Каждый новый Order (lifecycle close, admin recovery и manual replacement) сохраняет `contactDueAt` как 48-часовой snapshot от фактического момента создания этой сделки. Настройка seller 24/48/72 отложена. См. `DEC-070`.
+
 SLA 24 часа и штрафы — Hypothesis, не MVP.
 
 ## 14. Отказ победителя
 
 1. Seller отмечает отказ/нет ответа.
 2. Admin проверяет.
-3. Admin вручную отменяет исходный Order с причиной и выбирает replacement из ranked Bid list.
+3. Admin вручную отменяет исходный Order с причиной и выбирает replacement из ranked Bid list. Replacement Order получает новое 48-часовое окно контакта от своего создания и не наследует deadline исходной сделки.
 4. История не меняется.
 5. Original winner остаётся в audit.
 

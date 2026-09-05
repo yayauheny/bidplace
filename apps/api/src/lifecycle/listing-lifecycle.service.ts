@@ -207,7 +207,7 @@ export class ListingLifecycleService {
       buyerId: winner.bidderUserId,
       sourceBidId: winner.id,
       finalAmount: winner.amount,
-      contactDueAt: new Date(now.getTime() + 86_400_000),
+      now,
       sellerHandoffType: sellerProfile.handoffContactType,
       sellerHandoffValue: sellerProfile.handoffContactValue,
       buyerEmailAtClose: buyer.email,
