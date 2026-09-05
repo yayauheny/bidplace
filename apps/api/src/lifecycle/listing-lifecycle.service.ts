@@ -7,6 +7,7 @@ import {
   createWinnerOrder,
   WINNER_BID_ORDER_BY,
 } from '../orders/create-winner-order';
+import { computeOrderContactDueAt } from '../orders/order-contact-deadline';
 import { RealtimeService } from '../realtime/realtime.service';
 import { Clock } from '../core/time';
 
@@ -207,7 +208,7 @@ export class ListingLifecycleService {
       buyerId: winner.bidderUserId,
       sourceBidId: winner.id,
       finalAmount: winner.amount,
-      contactDueAt: new Date(now.getTime() + 86_400_000),
+      contactDueAt: computeOrderContactDueAt(now),
       sellerHandoffType: sellerProfile.handoffContactType,
       sellerHandoffValue: sellerProfile.handoffContactValue,
       buyerEmailAtClose: buyer.email,

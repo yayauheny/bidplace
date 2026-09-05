@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-08-10
+Последнее обновление: 2026-09-05
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1136,3 +1136,36 @@ values after restore.
 
 Multi-instance API, object storage for media, or managed backup/restore service is
 required for scale or compliance.
+
+## DEC-070 — Fixed 48-hour Order contact window
+
+Status: Confirmed
+Date: 2026-09-05
+Revises: contact-deadline arithmetic implied by close/recovery implementation
+
+### Decision
+
+Every new auction Order stores `contactDueAt` as a **48-hour snapshot** counted
+from that Order's actual creation time. The same window applies to lifecycle
+close, admin missing-Order recovery, and manual admin replacement. Seller-chosen
+24/48/72 windows are deferred. Historical Orders are not rewritten.
+
+Replacement creates a new Order and therefore receives a fresh 48-hour window. It
+does not inherit the cancelled Order's deadline. Idempotent retry of an already
+created Order must not extend `contactDueAt`.
+
+The duration lives in one shared server policy
+(`apps/api/src/orders/order-contact-deadline.ts`). It is not a database-configurable
+field in MVP.
+
+### Alternatives considered
+
+- Keep 24 hours for first Orders and fix only replacement — rejected; one window
+  is the founder MVP rule.
+- Configurable 24/48/72 per seller or Listing — deferred.
+- Automatic next-bidder replacement — still outside MVP (`DEC-054`).
+
+### Revisit when
+
+Seller-configurable contact windows, automatic replacement, or a different
+handoff SLA is an explicit product decision.

@@ -14,6 +14,7 @@ import { BidsService } from '../../../src/bids/bids.service';
 import { AppException } from '../../../src/core/errors';
 import { Clock } from '../../../src/core/time';
 import { ListingLifecycleService } from '../../../src/lifecycle/listing-lifecycle.service';
+import { computeOrderContactDueAt } from '../../../src/orders/order-contact-deadline';
 import { OrdersService } from '../../../src/orders/orders.service';
 import {
   createIntegrationDatabaseContext,
@@ -122,6 +123,9 @@ describe('auction lifecycle business guarantees', () => {
     });
     expect(order?.sourceBidId).toBe(winner.bid.id);
     expect(order?.buyerId).toBe(fixture.buyerB.id);
+    expect(order?.contactDueAt.getTime()).toBe(
+      computeOrderContactDueAt(closeAt).getTime(),
+    );
     expect(emit).toHaveBeenCalledTimes(1);
 
     expect(await service.close(fixture.listing.id, closeAt)).toBe(false);
