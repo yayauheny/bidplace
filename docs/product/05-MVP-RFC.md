@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
-Версия: 1.3
-Последнее обновление: 2026-09-05
+Версия: 1.4
+Последнее обновление: 2026-09-06
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-074`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-075`
 
 ## 1. Цель MVP
 
@@ -30,7 +30,8 @@ MVP не проверяет полноценный marketplace.
 
 - Беларусь и Россия как рынки пользователей;
 - русский язык;
-- валюта Listing: `BYN` или `RUB` по рынку продавца, без IP-конверсии (`DEC-072`); текущий runtime по-прежнему только `BYN` до P0-E;
+- валюта MVP пока `BYN`; `RUB` и viewer conversion hint открыты до research и
+  письменной BY+RF проверки (`DEC-075`);
 - закрытый pilot: публичная заявка seller доступна, но продавать можно только после ручного admin approval;
 - вероятный первый продавец — Таисия Борисова;
 - оригинальная физическая работа;
@@ -236,7 +237,10 @@ MVP использует только start price в BYN. Это минимал�
 
 Критические сообщения об оплате и безопасности позднее отделяются от маркетинговых.
 
-В продуктовый контракт входят транзакционные письма: verification, password reset, результат сделки, replacement/deadline, security/complaint (`DEC-072`). Письма об outbid и маркетинг по-прежнему вне MVP.
+In-app notifications входят в MVP до redesign. Точный набор transactional email
+для результата сделки, replacement/deadline, security и complaint определяется
+после legal/product mapping (`DEC-075`). Verification и password reset остаются
+обязательными service messages. Outbid/marketing email пока вне MVP.
 
 ## 10. Email verification
 
@@ -291,7 +295,9 @@ SellerProfile отделён от buyer account. Для MVP использует
 Другие работы:
 
 - простой блок примеров или других аукционов;
-- без сложного portfolio engine (portfolio-only — волна 2, `DEC-072`).
+- Work автора может существовать как portfolio-only и позже получить Listing.
+  Collections, сложная сортировка и social portfolio mechanics остаются после MVP
+  (`DEC-075`).
 
 Ранги «профессионал/любитель» не используются.
 
@@ -325,7 +331,9 @@ SLA 24 часа и штрафы — Hypothesis, не MVP.
 4. История не меняется.
 5. Original winner остаётся в audit.
 
-Автоматическая замена winner и AI-анализ evidence не входят в MVP и не имеют утверждённого будущего workflow. До отдельного решения все replacement выполняются вручную admin. `DEC-072` подтверждает этот default.
+Текущий runtime выполняет replacement вручную через admin. Target-механика
+second chance, ранга и раскрытия контактов открыта до marketplace research и
+письменного legal answer (`DEC-075`). AI-анализ evidence вне MVP.
 
 ## 15. Хранение
 
@@ -450,7 +458,10 @@ Minimum success:
 - automatic next bidder;
 - IP-based currency conversion.
 
-Fixed-price sale and optional price offers are **in the product contract** (`DEC-072`, §21) and **not in the current runtime**. Do not treat them as rejected scope.
+Fixed-price sale and optional price offers are **in the target product scope**
+(`DEC-075`, §21) and **not in the current runtime**. Exact offer, currency,
+non-payment and contact mechanics remain open; do not implement the superseded
+`DEC-072` defaults.
 
 ## 20. Критерии пересмотра
 
@@ -465,22 +476,32 @@ Fixed-price sale and optional price offers are **in the product contract** (`DEC
 - ads не конвертируются;
 - code не проходит gate.
 
-## 21. Контракт expanded MVP (`DEC-072`)
+## 21. Контракт expanded MVP (`DEC-075`)
 
-Целевой web MVP для пользователей РФ и РБ: аукцион, фиксированная продажа и опциональное предложение цены. Деньги за вещь и доставка — напрямую между сторонами. Старт бесплатный; подписка вне этой волны. Это продуктовый контракт; runtime до P0-E может оставаться `AUCTION` + `BYN`.
+Целевой web MVP для пользователей РФ и РБ: портфолио работ, аукцион,
+фиксированная продажа и опциональное предложение цены. Деньги за вещь и доставка
+идут напрямую между сторонами. Старт бесплатный; подписка вне этой волны.
 
-- **Offer:** accept или reject; counteroffer нет.
-- **Next bidder:** только ручная audited admin replacement (`DEC-054`). Автоматический переход не делать.
-- **Contact:** 48 часов snapshot на каждый новый Order (`DEC-070`). Title, amount, currency и Listing identity замораживаются в том же create (`DEC-074`).
-- **Fixed buy:** уникальная работа имеет не больше одного buyer. Подтверждение покупателя атомарно создаёт Order. Повторное подтверждение продавца не нужно. Снять listing можно только до успешной покупки. Auction Buy Now / buyout нет.
-- **Currency:** Listing хранит `BYN` или `RUB` по рынку продавца; IP-конверсии нет.
-- **Portfolio-only:** волна 2.
-- **Transactional email:** verification, reset, результат сделки, replacement/deadline, security/complaint. Outbid и маркетинг — позже.
-- **Жалобы:** только ограниченные private images.
-- **Публичный запуск:** нужна человеческая юридическая проверка; закрытый локальный тест — отдельный gate.
-- **Pen:** не удалять в обычной работе; cleanup только после полного Figma handoff.
+- **Work first:** автор создаёт Work независимо от продажи. Work может быть
+  portfolio-only, позже получить Listing или быть перевыставлен из архива.
+- **Auction:** текущая server-authoritative механика остаётся рабочей базой.
+- **Fixed:** unique Work нельзя продать дважды; buyer confirmation должно быть
+  атомарным. Точный legal contract moment/copy проверяет юрист.
+- **Offer:** expiry, revoke, counteroffer and competing-buy rules не выбраны.
+- **Next bidder/contact:** manual admin replacement и 48h — текущий runtime, а не
+  финальная marketplace policy. Target выбирается после research + legal review.
+- **Currency:** пока `BYN`; `RUB` и conversion hint не подтверждены.
+- **History:** кабинет называется `Покупки / Продажи`; cancelled/failed outcomes
+  сохраняются в истории.
+- **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без
+  silent `+24h`.
+- **Legal UX:** registration, publish, bid, fixed buy, offer and contact disclosure
+  имеют разные versioned acceptance/confirmation points согласно письменной
+  проверке.
+- **Redesign:** только после стабилизации contract/data/flows; Figma read-only.
 
-P0-E реализует fixed и offers по этому контракту и обязан переиспользовать Order snapshot/handoff. Две сделки на одну unique work недопустимы.
+До новых append-only решений P0-E может проектировать варианты и race matrix, но
+не реализует спорные mechanics. Две сделки на одну unique Work недопустимы.
 
 ## Implementation verification — 2026-07-19
 

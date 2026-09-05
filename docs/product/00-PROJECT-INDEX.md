@@ -1,6 +1,6 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-09-05  
+Последнее обновление: 2026-09-06  
 Статус: Confirmed
 
 Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Юрист: [`../legal/02-LAWYER-ANSWERS-2026-08-24.md`](../legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
@@ -32,7 +32,7 @@
 | `02-PRODUCT-EVOLUTION.md`               | История появления идеи и хронология изменений                                |
 | `03-CUSTDEV-TAISIA.md`                  | Полный разбор первого интервью                                               |
 | `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать                                     |
-| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — expanded sale formats (`DEC-072`) |
+| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — Work-first и expanded sale scope (`DEC-075`) |
 | `06-ROADMAP-24-MONTHS.md`               | Волны развития на два года и переходные критерии                             |
 | `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов                                            |
 | `08-SELLER-AND-ITEM-POLICY.md`          | Кто может продавать и какие предметы допустимы                               |
@@ -55,6 +55,9 @@
 | `../legal/04-DOCUMENT-SET.md`            | Комплект из шести публичных документов, слои сейчас / если включено        |
 | `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
 | `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Письменный пакет BY+RF по контракту `DEC-072`; не публикация drafts     |
+| `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Текущий BY+RF gap pack и legal UX matrix (`DEC-075`)                 |
+| `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
+| `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md` | Текущий приоритетный backlog, зависимости и model routing          |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |

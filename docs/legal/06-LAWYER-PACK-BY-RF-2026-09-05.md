@@ -1,5 +1,9 @@
 # bidplace — пакет юристу BY+RF (2026-09-05)
 
+> **Superseded as active questionnaire on 2026-09-06.** `DEC-072` revised by
+> `DEC-075`. Use [`07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md`](07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md).
+> Keep this file as historical evidence; do not answer it as the current contract.
+
 Это **не** юридическое заключение, **не** оферта и **не** публичные правила.
 AI-черновики и встреча 24 августа **нельзя** выдавать за письменную проверку
 актуального права Беларуси и России.

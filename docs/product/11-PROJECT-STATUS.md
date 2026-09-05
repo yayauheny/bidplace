@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — reconciliation review and product correction
+
+- `Implemented` (docs only): `DEC-075` revises the product assumptions recorded
+  in `DEC-072`. Work-first portfolio is target MVP scope. Offer expiry,
+  counteroffer, next bidder/contact release, contact window policy and currency
+  expansion are explicitly open pending marketplace research and written BY+RF
+  legal review.
+- `Needs verification`: current runtime still implements auction + BYN, manual
+  admin replacement and fixed 48-hour Order contact snapshots. These are truthful
+  code facts, not final target mechanics.
+- `Partial`: seller Orders inbox exists but hides `CANCELLED` history; expired
+  scheduled cancellation exists without author notification/relist; Activity has
+  ambiguous cancelled/replacement projection; Product write locking has an
+  uncovered concurrent write-vs-submit/moderation gap.
+- Full repository verification on `fix/mvp-reconciliation-review` passed:
+  typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
+  7/7. Passing tests do not cover the named concurrency/product gaps.
+- Current audit: `../audits/2026-09-06-IMPLEMENTATION-STACK-REVIEW.md`; backlog:
+  `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`; legal gap pack:
+  `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md`.
+
 ## 2026-09-06 — Seller inbox HTTP 401/403
 
 - `Implemented`: no route or permission change. Guest `GET /api/orders` remains 401 (`BearerAuthGuard`); admin remains 403 (`listForSeller` `role !== 'user'`).

@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-06
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1318,3 +1318,49 @@ Product/Listing fallback and are not rewritten.
 
 P0-E reuses this helper for fixed/offers, or a founder decision requires
 backfilling historical Orders.
+
+## DEC-075 — Work-first MVP and reopened marketplace mechanics
+
+Date: 2026-09-06
+Status: Confirmed scope; mechanics explicitly open
+Revises: `DEC-072`; extends `DEC-073`
+
+### Decision
+
+The public web MVP is built around a **Work** that exists independently from a
+sale. An author creates the Work first and may keep it as a public portfolio item,
+attach a sale later, or relist an archived Work. Portfolio-only is therefore MVP
+scope, not wave 2.
+
+The target MVP still includes auction, fixed-price sale and optional buyer price
+offer. Current runtime remains auction + BYN until the unresolved mechanics below
+are researched and explicitly selected. No implementation may infer those rules
+from the former `DEC-072` defaults.
+
+| Topic | Status after revision |
+| --- | --- |
+| Work / Listing | Confirmed: separate identities and lifecycles; one Work may exist without an active Listing. Historical sale records remain immutable. |
+| Sale formats | Confirmed target: auction + fixed + optional offer. Auction Buy Now is not currently requested. |
+| Offer expiry/revoke/counteroffer | Open: compare current marketplace practice, then obtain the required legal answer. |
+| Fixed-buy contract moment | Product direction is one explicit buyer confirmation for an active unique work; exact legal copy/required terms remain a lawyer gate. Atomicity and double-sale prevention are mandatory. |
+| Next bidder / non-payment | Open: manual admin replacement is current runtime only. Research second-chance offers, ranking, seller choice and contact disclosure before choosing target behavior. |
+| Contact window | Current code stores 48 hours. Product duration, reminders, weekends and enforcement remain open to research/legal review. |
+| Currency | Current MVP stays BYN. RUB or viewer conversion is not confirmed. Research and lawyer review must define contract currency, display hint, rate source and RF implications. |
+| Cabinet | Confirmed IA name: `Покупки / Продажи`; cancelled and failed deals must remain visible as history. |
+| Expired scheduled | Confirmed: cancel with audit, notify the author and offer a simple relist path. No silent +24-hour shift. |
+| Notifications | In-app notifications are required before redesign completion; email is reserved for appropriate transactional/security events after legal/product mapping. |
+| Error complaint | Required before public MVP: explicit report action, privacy-safe technical context and optional private screenshot. |
+| Object storage | S3-compatible media migration and rendition plan occur before final redesign/launch proof, after the current audit tasks. |
+| Redesign | Final implementation layer after product, legal UX and core flows are stable. Original Figma is read-only and must never be modified. |
+
+### Why `DEC-072` changed
+
+The founder had asked the prior work to expose weak points and propose defaults,
+not to silently promote every proposed default to a final product decision. The
+September 6 review explicitly reopened the marketplace-specific choices and
+confirmed portfolio-first behavior.
+
+### Revisit when
+
+The marketplace comparison and written BY+RF legal response are available. Record
+each selected mechanic as a new append-only decision before implementation.
