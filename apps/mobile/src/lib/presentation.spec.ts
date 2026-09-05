@@ -82,6 +82,10 @@ describe('presentation adapters', () => {
     expect(auctionParticipationLabels.AWAITING_SELLER_CONTACT).toBe(
       'Ожидается связь с автором',
     );
+    expect(auctionParticipationLabels.CONTACTED).toBe('Связались');
+    expect(auctionParticipationLabels.HANDOFF_FAILED).toBe(
+      'Сделка не состоялась',
+    );
     expect(auctionParticipationLabels.WIN_CANCELLED).toBe(
       'Покупка отменена',
     );

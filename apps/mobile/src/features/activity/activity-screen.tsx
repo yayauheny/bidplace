@@ -14,33 +14,17 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { formatCurrencyAmount, formatDateTime } from '../../lib/formatters';
+import {
+  auctionParticipationLabels,
+  auctionParticipationTone,
+} from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 
 type ActivityData = Awaited<ReturnType<ApiClient['activity']['get']>>;
 type ActivityItem = ActivityData['activity'][number];
 
-function activityStatusLabel(status: ActivityItem['status']): string {
-  return {
-    LEADING: 'Побеждаете',
-    OUTBID: 'Ставка перебита',
-    WON: 'Выиграли',
-    LOST: 'Торги завершены',
-    AWAITING_SELLER_CONTACT: 'Ожидаем контакта продавца',
-    COMPLETED: 'Передача завершена',
-    WIN_CANCELLED: 'Заказ отменён',
-  }[status];
-}
-
-function activityStatusTone(
-  status: ActivityItem['status'],
-): 'accent' | 'success' | 'secondary' {
-  if (status === 'LEADING' || status === 'WON') return 'success';
-  if (status === 'OUTBID') return 'accent';
-  return 'secondary';
-}
-
 function ActivityRow({ item }: { item: ActivityItem }) {
-  const status = activityStatusLabel(item.status);
+  const status = auctionParticipationLabels[item.status];
   return (
     <View
       style={{
@@ -77,7 +61,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
         </Link>
         <AppText
           role="caption"
-          tone={activityStatusTone(item.status)}
+          tone={auctionParticipationTone(item.status)}
           style={{
             backgroundColor: designTokens.color.chip,
             borderRadius: designTokens.radius.pill,

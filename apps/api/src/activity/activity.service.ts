@@ -1,5 +1,52 @@
+import type { ActivityStatus, OrderStatus } from '@bidplace/contracts';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+
 import { PrismaService } from '../core/database';
+
+export function resolveBuyerActivityStatus(input: {
+  listingStatus: string;
+  leading: boolean;
+  orderStatus: OrderStatus | null;
+}): ActivityStatus {
+  switch (input.orderStatus) {
+    case 'PENDING_CONTACT':
+      return 'AWAITING_SELLER_CONTACT';
+    case 'CONTACTED':
+      return 'CONTACTED';
+    case 'COMPLETED':
+      return 'COMPLETED';
+    case 'HANDOFF_FAILED':
+      return 'HANDOFF_FAILED';
+    case 'CANCELLED':
+      return 'WIN_CANCELLED';
+    case null:
+      break;
+    default: {
+      const unexpected: never = input.orderStatus;
+      throw new InternalServerErrorException(
+        `Unsupported order status: ${String(unexpected)}`,
+      );
+    }
+  }
+
+  if (input.listingStatus === 'LIVE') {
+    return input.leading ? 'LEADING' : 'OUTBID';
+  }
+  if (input.listingStatus === 'ENDED') {
+    return input.leading ? 'WON' : 'LOST';
+  }
+  return 'OUTBID';
+}
+
+export function buyerActivityOrderPublicId(
+  order: { status: OrderStatus; publicId: string } | null,
+): string | null {
+  if (!order || order.status === 'CANCELLED') {
+    return null;
+  }
+  return order.publicId;
+}
+
 @Injectable()
 export class ActivityService {
   constructor(private readonly prisma: PrismaService) {}
@@ -39,22 +86,11 @@ export class ActivityService {
             listing.orders.find((candidate) => candidate.buyerId === userId) ??
             null;
           const leading = listing.bids[0]?.id === bid.id;
-          const status =
-            order?.status === 'PENDING_CONTACT'
-              ? 'AWAITING_SELLER_CONTACT'
-              : order?.status === 'COMPLETED'
-                ? 'COMPLETED'
-                : order?.status === 'CANCELLED'
-                  ? 'WIN_CANCELLED'
-                  : listing.status === 'LIVE'
-                    ? leading
-                      ? 'LEADING'
-                      : 'OUTBID'
-                    : listing.status === 'ENDED'
-                      ? leading
-                        ? 'WON'
-                        : 'LOST'
-                      : 'OUTBID';
+          const status = resolveBuyerActivityStatus({
+            listingStatus: listing.status,
+            leading,
+            orderStatus: order?.status ?? null,
+          });
           if (!listing.auctionRules)
             throw new InternalServerErrorException('Listing rules are missing');
           if (!listing.product.title)
@@ -89,7 +125,7 @@ export class ActivityService {
               publicId: listing.product.publicId,
               title: listing.product.title,
             },
-            orderPublicId: order?.publicId ?? null,
+            orderPublicId: buyerActivityOrderPublicId(order),
           };
         }),
     };

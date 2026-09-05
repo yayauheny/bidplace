@@ -49,6 +49,8 @@ export const auctionParticipationLabels = {
   WON: 'Выиграли',
   LOST: 'Торги завершены',
   AWAITING_SELLER_CONTACT: 'Ожидается связь с автором',
+  CONTACTED: 'Связались',
+  HANDOFF_FAILED: 'Сделка не состоялась',
   WIN_CANCELLED: 'Покупка отменена',
   COMPLETED: 'Покупка завершена',
 } as const satisfies Record<ActivityStatus, string>;
@@ -65,8 +67,13 @@ export function auctionListingStatusTone(
 export function auctionParticipationTone(
   status: ActivityStatus,
 ): 'accent' | 'success' | 'secondary' | 'danger' {
-  if (status === 'LEADING' || status === 'WON') return 'success';
+  if (status === 'LEADING' || status === 'WON' || status === 'CONTACTED') {
+    return 'success';
+  }
   if (status === 'OUTBID') return 'accent';
+  if (status === 'HANDOFF_FAILED' || status === 'WIN_CANCELLED') {
+    return 'danger';
+  }
   return 'secondary';
 }
 

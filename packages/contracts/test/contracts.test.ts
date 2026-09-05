@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activityStatusSchema,
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
-  apiErrorResponseSchema,
   ApiErrorCode,
+  apiErrorResponseSchema,
   bidCreateRequestSchema,
   listingCreateRequestSchema,
   listingStatusSchema,
@@ -11,12 +12,20 @@ import {
   publicDiscoveryQuerySchema,
   publicProductSchema,
   publicSellerQuerySchema,
+  realtimeEventPayloadSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
-  realtimeEventPayloadSchema,
 } from '../src';
 
 describe('shared contracts', () => {
+  it('exposes contacted and failed-handoff buyer activity statuses', () => {
+    expect(activityStatusSchema.safeParse('CONTACTED').success).toBe(true);
+    expect(activityStatusSchema.safeParse('HANDOFF_FAILED').success).toBe(true);
+    expect(activityStatusSchema.safeParse('PENDING_CONTACT').success).toBe(
+      false,
+    );
+  });
+
   it('accepts a draft Product without art-only fields', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,

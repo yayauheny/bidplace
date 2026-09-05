@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Buyer Activity statuses (QW-02)
+
+- `Implemented`: `packages/contracts/src/activity.ts` adds `CONTACTED` and `HANDOFF_FAILED`. `ActivityService` maps every Order status and LIVE/ENDED/SCHEDULED/CANCELLED Listing without Order; cancelled wins return `orderPublicId: null` while keeping the Product publicId.
+- `Implemented`: Activity and product participation copy use `auctionParticipationLabels` (`Связались`, `Сделка не состоялась`, `Покупка отменена`). Order GET privacy for cancelled Orders is unchanged.
+- Coverage: table-driven `activity.service.spec.ts`; cancelled-order navigation omission; `presentation.spec.ts` labels.
+- `Verified`: contracts tests 23/23; API unit 265/265; API typecheck/lint; mobile presentation unit 12/12; mobile typecheck/lint.
+
 ## 2026-09-05 — HTTPS-only public seller links (QW-01)
 
 - `Implemented`: `packages/contracts/src/primitives.ts` `httpsUrlSchema` is the shared HTTPS-only URL contract. Seller public write and response fields `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` in `packages/contracts/src/seller-profile.ts` use it. Mobile profile validation and creator-profile e2e reuse the same schema and HTTPS error copy.

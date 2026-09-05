@@ -71,6 +71,7 @@ SellerProfile
 
 ## Integrity and privacy
 
+- Buyer Activity (`GET /api/me/activity`) is a server-owned exhaustive projection of the latest Bid per Listing plus that buyer's Order. `CONTACTED` and `HANDOFF_FAILED` are first-class activity statuses. Cancelled Orders omit `orderPublicId` so the client cannot open a buyer-forbidden Order; the public Product link remains.
 - Bid placement is server-time, serializable, idempotent by
   `(bidderUserId, idempotencyKey)`, self-bid protected, email/rules verified and
   compare-and-update guarded; admin accounts are explicitly denied by the Bids
