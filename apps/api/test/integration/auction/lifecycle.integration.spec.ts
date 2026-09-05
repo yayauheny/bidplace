@@ -13,7 +13,10 @@ import { Prisma, type PrismaClient } from '@bidplace/database';
 import { BidsService } from '../../../src/bids/bids.service';
 import { AppException } from '../../../src/core/errors';
 import { Clock } from '../../../src/core/time';
-import { ListingLifecycleService } from '../../../src/lifecycle/listing-lifecycle.service';
+import {
+  EXPIRED_SCHEDULED_AUDIT_REASON,
+  ListingLifecycleService,
+} from '../../../src/lifecycle/listing-lifecycle.service';
 import { computeOrderContactDueAt } from '../../../src/orders/order-contact-deadline';
 import { OrdersService } from '../../../src/orders/orders.service';
 import {
@@ -376,6 +379,68 @@ describe('auction lifecycle business guarantees', () => {
       where: { id: fixture.listing.id },
     });
     expect(listing.status).toBe('SCHEDULED');
+  });
+
+  it('cancels SCHEDULED listings whose window already ended without an Order', async () => {
+    const clock = new MutableClock();
+    const endsAt = new Date(auctionNow.getTime() - 60_000);
+    const fixture = await createAuctionFixture(prisma, {
+      status: 'SCHEDULED',
+      startsAt: new Date(auctionNow.getTime() - 120_000),
+      originalEndsAt: endsAt,
+      endsAt,
+    });
+    const { service, emit } = lifecycle(clock);
+
+    await service.run();
+    await service.run();
+
+    const listing = await prisma.listing.findUniqueOrThrow({
+      where: { id: fixture.listing.id },
+    });
+    const audits = await prisma.auditEvent.findMany({
+      where: { targetType: 'LISTING', targetId: fixture.listing.id },
+    });
+    expect(listing.status).toBe('CANCELLED');
+    expect(listing.closedAt).toEqual(auctionNow);
+    expect(
+      await prisma.order.count({ where: { listingId: fixture.listing.id } }),
+    ).toBe(0);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({
+      actorUserId: null,
+      oldStatus: 'SCHEDULED',
+      newStatus: 'CANCELLED',
+      reason: EXPIRED_SCHEDULED_AUDIT_REASON,
+    });
+    expect(emit).toHaveBeenCalledWith(
+      fixture.listing.id,
+      'listing.updated',
+      expect.objectContaining({ status: 'CANCELLED' }),
+    );
+  });
+
+  it('cancels expired SCHEDULED listings even when seller handoff is missing', async () => {
+    const clock = new MutableClock();
+    const endsAt = new Date(auctionNow.getTime() - 60_000);
+    const fixture = await createAuctionFixture(prisma, {
+      status: 'SCHEDULED',
+      startsAt: new Date(auctionNow.getTime() - 120_000),
+      originalEndsAt: endsAt,
+      endsAt,
+      omitHandoff: true,
+    });
+    const { service } = lifecycle(clock);
+
+    await service.run();
+
+    const listing = await prisma.listing.findUniqueOrThrow({
+      where: { id: fixture.listing.id },
+    });
+    expect(listing.status).toBe('CANCELLED');
+    expect(
+      await prisma.order.count({ where: { listingId: fixture.listing.id } }),
+    ).toBe(0);
   });
 
   it('rejects a Bid at the close boundary while close keeps the prior winner', async () => {

@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Expired SCHEDULED listings (P0-D)
+
+- `Implemented`: cron in `listing-lifecycle.service.ts` cancels `SCHEDULED` rows with `endsAt <= now` to `CANCELLED` + `closedAt`, audit reason `EXPIRED_SCHEDULED_WINDOW` (nullable `AuditEvent.actorUserId`), realtime `listing.updated`, no Order. Activation window unchanged. Decision: `DEC-073`.
+- Coverage: `state-machine.spec.ts`; `listing-lifecycle.service.spec.ts`; PostgreSQL `lifecycle.integration.spec.ts` including missing-handoff expired windows and idempotent rerun.
+- `Verified`: API typecheck/lint; lifecycle/state-machine unit; PostgreSQL integration 68/68 including expired SCHEDULED cancel.
+
 ## 2026-09-05 — Mutable image cache (QW-06)
 
 - `Implemented`: `getImageCacheControl({ isPublic, kind })` in `apps/api/src/images/image-policy.ts`. Private remains `private, no-store`. Public Product images by id stay `public, max-age=31536000, immutable` because add/delete allocate a new id and do not replace bytes in place. Public seller photo (`/sellers/:slug/photo`) and creation-step (`/creation-steps/:stepId/image`) use `public, max-age=0, must-revalidate`.

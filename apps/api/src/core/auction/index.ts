@@ -5,4 +5,4 @@ export {
   resolveSoftCloseEndsAt,
   toDecimalAmount,
 } from './pricing-policy';
-export { canActivateListing, canAdminEmergencyCancelListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';
+export { canActivateListing, canAdminEmergencyCancelListing, canCancelExpiredScheduledListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';

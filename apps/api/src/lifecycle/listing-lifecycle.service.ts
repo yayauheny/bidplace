@@ -1,14 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
+import { canCancelExpiredScheduledListing } from '../core/auction';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
+import { Clock } from '../core/time';
 import {
   createWinnerOrder,
   WINNER_BID_ORDER_BY,
 } from '../orders/create-winner-order';
 import { RealtimeService } from '../realtime/realtime.service';
-import { Clock } from '../core/time';
+
+export const EXPIRED_SCHEDULED_AUDIT_REASON = 'EXPIRED_SCHEDULED_WINDOW';
 
 @Injectable()
 export class ListingLifecycleService {
@@ -72,6 +75,26 @@ export class ListingLifecycleService {
       } catch (error) {
         this.logger.error(
           `Failed to activate SCHEDULED Listing ${listing.id}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+    }
+
+    const expiredScheduled = await this.prisma.listing.findMany({
+      where: {
+        status: 'SCHEDULED',
+        endsAt: { lte: now },
+      },
+      select: { id: true },
+      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+    });
+
+    for (const listing of expiredScheduled) {
+      try {
+        await this.cancelExpiredScheduled(listing.id, now);
+      } catch (error) {
+        this.logger.error(
+          `Failed to cancel expired SCHEDULED Listing ${listing.id}`,
           error instanceof Error ? error.stack : undefined,
         );
       }
@@ -147,6 +170,77 @@ export class ListingLifecycleService {
       );
     }
 
+    return true;
+  }
+
+  private async cancelExpiredScheduled(
+    listingId: string,
+    now: Date,
+  ): Promise<boolean> {
+    const cancelled = await runSerializableTransaction(
+      this.prisma,
+      async (tx) => {
+        const listing = await tx.listing.findUnique({
+          where: { id: listingId },
+          select: {
+            id: true,
+            status: true,
+            endsAt: true,
+            currentPrice: true,
+            bidCount: true,
+          },
+        });
+
+        if (
+          !listing ||
+          !canCancelExpiredScheduledListing(
+            listing.status,
+            listing.endsAt,
+            now,
+          )
+        ) {
+          return null;
+        }
+
+        const update = await tx.listing.updateMany({
+          where: {
+            id: listingId,
+            status: 'SCHEDULED',
+            endsAt: { lte: now },
+          },
+          data: { status: 'CANCELLED', closedAt: now },
+        });
+
+        if (update.count !== 1) {
+          return null;
+        }
+
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: null,
+            targetType: 'LISTING',
+            targetId: listing.id,
+            oldStatus: 'SCHEDULED',
+            newStatus: 'CANCELLED',
+            reason: EXPIRED_SCHEDULED_AUDIT_REASON,
+          },
+        });
+
+        return {
+          listingId: listing.id,
+          currentPrice: listing.currentPrice.toNumber(),
+          bidCount: listing.bidCount,
+          status: 'CANCELLED' as const,
+          endsAt: listing.endsAt.toISOString(),
+        };
+      },
+    );
+
+    if (!cancelled) {
+      return false;
+    }
+
+    this.realtime.emit(listingId, 'listing.updated', cancelled);
     return true;
   }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canActivateListing, canAdminEmergencyCancelListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';
+import { canActivateListing, canAdminEmergencyCancelListing, canCancelExpiredScheduledListing, canCancelListing, canEndListing, canScheduleListing } from './state-machine';
 
 const now = new Date('2026-07-18T12:00:00.000Z');
 
@@ -31,6 +31,10 @@ describe('Listing state machine', () => {
   it('activates and ends only at the server-time boundaries', () => {
     expect(canActivateListing('SCHEDULED', now, new Date(now.getTime() + 1), now)).toBe(true);
     expect(canActivateListing('SCHEDULED', new Date(now.getTime() + 1), new Date(now.getTime() + 2), now)).toBe(false);
+    expect(canActivateListing('SCHEDULED', now, now, now)).toBe(false);
+    expect(canCancelExpiredScheduledListing('SCHEDULED', now, now)).toBe(true);
+    expect(canCancelExpiredScheduledListing('SCHEDULED', new Date(now.getTime() + 1), now)).toBe(false);
+    expect(canCancelExpiredScheduledListing('LIVE', now, now)).toBe(false);
     expect(canEndListing('LIVE', now, now)).toBe(true);
     expect(canEndListing('LIVE', new Date(now.getTime() + 1), now)).toBe(false);
   });

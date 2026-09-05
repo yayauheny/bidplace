@@ -3,7 +3,7 @@
 Версия: 1.3
 Последнее обновление: 2026-09-05
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-072`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-073`
 
 ## 1. Цель MVP
 
@@ -125,6 +125,7 @@ SellerProfile: PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | SUSP
 Product:       DRAFT → PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | ARCHIVED
                CHANGES_REQUESTED | REJECTED → PENDING_REVIEW (owner resubmit, same Product)
 Listing:       DRAFT → SCHEDULED → LIVE → ENDED | CANCELLED
+               SCHEDULED → CANCELLED if `endsAt` passes without activation (`DEC-073`)
 Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CANCELLED
 ```
 
@@ -133,6 +134,7 @@ Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CA
 - Approved seller-owner может править Product в `REJECTED` в тех же границах, что `CHANGES_REQUESTED` (поля, изображения, creation story), видеть последнюю причину модерации и отправить тот же Product обратно в `PENDING_REVIEW`. Новый Product не создаётся. AuditEvent остаётся append-only. См. `DEC-071`.
 - Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED`, `LIVE` либо `ENDED` Listing. Фильтр только открытых торгов остаётся будущим default-фильтром; завершённый Product сохраняет public URL и историю, если его не скрыл admin.
 - до `startsAt` bid недоступен; backend переводит Listing в `LIVE`; client timer не источник истины.
+- Если `SCHEDULED` Listing так и не активировался до `endsAt`, cron переводит его в `CANCELLED` с append-only audit, без Order и без тихого +24h. См. `DEC-073`.
 
 ## 7. Правила ставок
 

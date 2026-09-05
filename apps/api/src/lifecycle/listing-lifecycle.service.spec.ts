@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { ListingLifecycleService } from './listing-lifecycle.service';
+import {
+  EXPIRED_SCHEDULED_AUDIT_REASON,
+  ListingLifecycleService,
+} from './listing-lifecycle.service';
 
 describe('ListingLifecycleService', () => {
   it('only activates scheduled listings with approved product/seller and handoff', async () => {
@@ -16,6 +19,7 @@ describe('ListingLifecycleService', () => {
         findMany: vi
           .fn()
           .mockResolvedValueOnce([scheduled])
+          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([]),
         updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
@@ -70,6 +74,7 @@ describe('ListingLifecycleService', () => {
         findMany: vi
           .fn()
           .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([{ id: 'listing-a' }, { id: 'listing-b' }]),
       },
     };
@@ -88,5 +93,77 @@ describe('ListingLifecycleService', () => {
 
     expect(close).toHaveBeenNthCalledWith(1, 'listing-a', now);
     expect(close).toHaveBeenNthCalledWith(2, 'listing-b', now);
+  });
+
+  it('cancels expired SCHEDULED listings without creating an Order', async () => {
+    const now = new Date('2026-07-31T12:00:00.000Z');
+    const endsAt = new Date('2026-07-31T11:00:00.000Z');
+    const tx = {
+      listing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'expired-scheduled',
+          status: 'SCHEDULED',
+          endsAt,
+          currentPrice: { toNumber: () => 10 },
+          bidCount: 0,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      auditEvent: { create: vi.fn() },
+    };
+    const emit = vi.fn();
+    const prisma = {
+      listing: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([{ id: 'expired-scheduled' }])
+          .mockResolvedValueOnce([]),
+        updateMany: vi.fn(),
+      },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) =>
+        callback(tx),
+      ),
+      order: { create: vi.fn() },
+    };
+    const service = new ListingLifecycleService(
+      prisma as never,
+      { now: () => now } as never,
+      {} as never,
+      { emit } as never,
+    );
+
+    await service.run();
+
+    expect(prisma.listing.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { status: 'SCHEDULED', endsAt: { lte: now } },
+      }),
+    );
+    expect(tx.listing.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'expired-scheduled',
+        status: 'SCHEDULED',
+        endsAt: { lte: now },
+      },
+      data: { status: 'CANCELLED', closedAt: now },
+    });
+    expect(tx.auditEvent.create).toHaveBeenCalledWith({
+      data: {
+        actorUserId: null,
+        targetType: 'LISTING',
+        targetId: 'expired-scheduled',
+        oldStatus: 'SCHEDULED',
+        newStatus: 'CANCELLED',
+        reason: EXPIRED_SCHEDULED_AUDIT_REASON,
+      },
+    });
+    expect(emit).toHaveBeenCalledWith(
+      'expired-scheduled',
+      'listing.updated',
+      expect.objectContaining({ status: 'CANCELLED' }),
+    );
+    expect(prisma.order.create).not.toHaveBeenCalled();
   });
 });

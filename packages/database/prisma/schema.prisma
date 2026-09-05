@@ -345,7 +345,7 @@ model TermsAcceptance {
 
 model AuditEvent {
   id          String          @id @default(uuid()) @db.Uuid
-  actorUserId String          @map("actor_user_id") @db.Uuid
+  actorUserId String?         @map("actor_user_id") @db.Uuid
   targetType  AuditTargetType @map("target_type")
   targetId    String          @map("target_id") @db.Uuid
   oldStatus   String?         @map("old_status") @db.VarChar(64)
@@ -353,7 +353,7 @@ model AuditEvent {
   reason      String?         @db.Text
   createdAt   DateTime        @default(now()) @map("created_at")
 
-  actor User @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([targetType, targetId, createdAt])
   @@map("audit_events")

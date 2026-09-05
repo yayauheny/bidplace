@@ -1264,3 +1264,28 @@ Code status lives in `11-PROJECT-STATUS.md`.
 P0-E implementation starts, a lawyer requires a different contract moment for
 fixed vs auction, or an explicit founder decision adds counteroffer or
 automatic replacement.
+
+## DEC-073 — Expired SCHEDULED listings are cancelled
+
+Date: 2026-09-05
+Status: Confirmed
+
+### Decision
+
+A Listing that remains `SCHEDULED` after `endsAt` is **cancelled**, not left
+stuck in the catalog, not silently extended +24h, and not closed as `ENDED`
+without bids. The scheduler writes `CANCELLED`, `closedAt = now`, an append-only
+`AuditEvent` (`EXPIRED_SCHEDULED_WINDOW`, no user actor) and emits
+`listing.updated`. No Order is created. Activation still requires
+`startsAt <= now AND endsAt > now` plus approved product/seller handoff.
+
+### Alternatives considered
+
+- Silent +24h reschedule — rejected; hides scheduler failure.
+- `ENDED` without bids — rejected; looks like a completed auction.
+- Leave `SCHEDULED` forever — rejected; catalog and bid path stay broken.
+
+### Revisit when
+
+A founder decision restores a published recovery window or a different missed-
+schedule outcome.
