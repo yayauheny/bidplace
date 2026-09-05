@@ -1,7 +1,21 @@
 import { z } from 'zod';
 
-import { productStatusSchema } from './enums';
+import { type ProductStatus, productStatusSchema } from './enums';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
+
+export const EDITABLE_PRODUCT_STATUSES = [
+  'DRAFT',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+] as const satisfies readonly ProductStatus[];
+
+export function isEditableProductStatus(
+  status: ProductStatus,
+): status is (typeof EDITABLE_PRODUCT_STATUSES)[number] {
+  return (EDITABLE_PRODUCT_STATUSES as readonly ProductStatus[]).includes(
+    status,
+  );
+}
 
 const optionalText = z.string().trim().min(1).nullable();
 

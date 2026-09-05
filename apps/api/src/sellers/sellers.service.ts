@@ -334,10 +334,21 @@ export class SellersService {
 
     if (!product) throw new NotFoundException('Product not found');
 
+    const latestReason = await this.prisma.auditEvent.findFirst({
+      where: {
+        targetType: 'PRODUCT',
+        targetId: product.id,
+        reason: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { reason: true },
+    });
+
     return sellerProductDetailResponseSchema.parse({
       product: toContractProduct(product),
       creationIntro: product.creationIntro ?? null,
       creationSteps: product.creationSteps.map(toCreationStepContract),
+      lastModerationReason: latestReason?.reason ?? null,
     });
   }
 

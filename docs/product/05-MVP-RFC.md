@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
-Версия: 1.1
-Последнее обновление: 2026-07-23
+Версия: 1.2
+Последнее обновление: 2026-09-05
 Статус: Confirmed  
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070`
 
 ## 1. Цель MVP
 
@@ -123,12 +123,14 @@ MVP не проверяет полноценный marketplace.
 ```text
 SellerProfile: PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | SUSPENDED
 Product:       DRAFT → PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | ARCHIVED
+               CHANGES_REQUESTED | REJECTED → PENDING_REVIEW (owner resubmit, same Product)
 Listing:       DRAFT → SCHEDULED → LIVE → ENDED | CANCELLED
 Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CANCELLED
 ```
 
 - SellerProfile в `PENDING_REVIEW` доступен заявителю только для просмотра статуса; Product и Listing writes открываются только после `APPROVED`.
 - Product в `DRAFT`, `PENDING_REVIEW`, `CHANGES_REQUESTED` или `REJECTED` не виден публично.
+- Approved seller-owner может править Product в `REJECTED` в тех же границах, что `CHANGES_REQUESTED` (поля, изображения, creation story), видеть последнюю причину модерации и отправить тот же Product обратно в `PENDING_REVIEW`. Новый Product не создаётся. AuditEvent остаётся append-only.
 - Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED`, `LIVE` либо `ENDED` Listing. Фильтр только открытых торгов остаётся будущим default-фильтром; завершённый Product сохраняет public URL и историю, если его не скрыл admin.
 - до `startsAt` bid недоступен; backend переводит Listing в `LIVE`; client timer не источник истины.
 

@@ -21,6 +21,7 @@ export const sellerProductDetailResponseSchema = z
     product: productSchema,
     creationIntro: z.string().trim().min(1).nullable(),
     creationSteps: z.array(creationStepSchema),
+    lastModerationReason: z.string().nullable(),
   })
   .strict();
 

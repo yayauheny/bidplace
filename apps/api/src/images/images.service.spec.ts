@@ -46,17 +46,17 @@ function createPrismaForAdd(options: {
     },
     productImage: { create },
   };
-  const prisma = {
-    product: {
-      findUnique: vi.fn().mockResolvedValue(productPayload),
-    },
-    $transaction: vi.fn(
-      async (callback: (client: typeof tx) => Promise<unknown>, config?: unknown) =>
-        callback(tx),
-    ),
-  };
+    const prisma = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue(productPayload),
+      },
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
 
-  return { prisma, tx, create };
+    return { prisma, tx, create };
 }
 
 function createImageStoreMock() {
@@ -133,6 +133,41 @@ describe('ImagesService', () => {
 
     expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('locks image writes when the Product is approved', async () => {
+    const { prisma } = createPrismaForAdd({
+      product: { ...createApprovedProduct([]), status: 'APPROVED' },
+    });
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await expect(
+      service.add('owner-id', 'product-id', [
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
+      ]),
+    ).rejects.toThrow('Product images are locked');
+    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('allows image writes when the Product is rejected', async () => {
+    const { prisma, tx, create } = createPrismaForAdd({
+      product: { ...createApprovedProduct([]), status: 'REJECTED' },
+    });
+    const imageStore = createImageStoreMock();
+    const service = new ImagesService(prisma as never, imageStore as never);
+
+    await service.add('owner-id', 'product-id', [
+      { buffer: Buffer.from([1]), mimetype: 'image/png' },
+    ]);
+
+    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.product.findUnique).toHaveBeenCalled();
+    expect(create).toHaveBeenCalled();
   });
 
   it('normalizes outside the transaction and persists inside a short serializable tx', async () => {

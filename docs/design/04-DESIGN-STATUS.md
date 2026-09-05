@@ -1,8 +1,17 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-08-20
+Последнее обновление: 2026-09-05
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
+
+## 2026-09-05 — Rejected Product recovery
+
+- `Implemented`: `ProductDraftScreen` hydrates a `REJECTED` owner detail into
+  the same create/edit form, shows the latest moderation reason, and reuses the
+  existing `CHANGES_REQUESTED` resubmit action. No new visual system, Pen
+  nodes or listing/public routes.
+- Remaining: matched Pen overlay, device and accessibility acceptance for the
+  Product Creation board are unchanged from the previous Partial/verified split.
 
 ## 2026-08-20 — Admin analytics screen
 

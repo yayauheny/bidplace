@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-08-21
+Последнее обновление: 2026-09-05
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -8,7 +8,7 @@
 - `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating Bid/Order business facts. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`.
 - HTTP requests receive `X-Request-Id` (incoming or generated) for correlation in logs and error responses.
-- `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps and process-photo metadata. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard.
+- `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
 - `apps/api/src/discovery` owns the public Home projection. Discovery delegates to
   Product/Seller services, which select the canonical public Listing before
   server-side filters, sort and pagination; clients do not rank a loaded page.
@@ -44,7 +44,7 @@ SellerProfile
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
-- Product requires a moderation state before public visibility. A Product remains private while it is a draft or under review; `submit` moves it into review, admin moderation records a reasoned audit trail, and the first public Listing transition sets immutable `publishedAt`;
+- Product requires a moderation state before public visibility. A Product remains private while it is a draft, under review or rejected; `isEditableProductStatus` allows owner writes in `DRAFT`, `CHANGES_REQUESTED` and `REJECTED`; `submit` moves those states into `PENDING_REVIEW` on the same Product, admin moderation records a reasoned append-only audit trail, and the first public Listing transition sets immutable `publishedAt`;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a serializable
   transaction, including repeated/concurrent uploads. Condition is not

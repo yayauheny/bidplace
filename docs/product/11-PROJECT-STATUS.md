@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Rejected Product recovery (QW-04)
+
+- `Implemented`: Product `REJECTED` is owner-editable on the same Product ID.
+  `isEditableProductStatus` in `packages/contracts` now includes `REJECTED`
+  alongside `DRAFT` and `CHANGES_REQUESTED`; `ProductsService.update` /
+  `submit`, creation-story writes and `ImagesService` reuse that gate.
+  `submit` moves `REJECTED → PENDING_REVIEW` atomically with an append-only
+  `AuditEvent`; previous rejection reasons are not rewritten.
+- `Implemented`: owner detail `GET /api/seller/products/:id` returns
+  `lastModerationReason`. `ProductDraftScreen` hydrates the same form, shows the
+  reason for `REJECTED`/`CHANGES_REQUESTED`, and resubmits without creating a
+  new Product. Public catalog/direct predicates still require `APPROVED`.
+  Admin cannot reopen `REJECTED` through the seller write path or the admin
+  product status machine.
+- Coverage: `products.service.spec.ts`, `images.service.spec.ts`,
+  `sellers.service.spec.ts`, `admin-moderation.service.spec.ts`,
+  `contracts.test.ts`, `product-draft-state.spec.ts`, PostgreSQL HTTP
+  `rejected-product-recovery.integration.spec.ts`.
+- `Verified`: contracts 15/15; targeted API unit 37/37; API unit 236/236;
+  mobile helper 3/3; API lint; contracts/API typecheck; integration 2/2 plus
+  related seller-permissions/moderation 6/6.
+- Decision: **DEC-070**. RFC §6 records the owner resubmit loop.
+
 ## 2026-08-22 — ImageStore + MailTransport ports (review fixes)
 
 - `Implemented`: `core/image-store/` — `ImageStore` port with `PostgresImageStore`;
@@ -689,7 +712,7 @@ remaining product boundaries still apply.
 | ---------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public seller application and capability | Partial            | `POST/PATCH /seller/profile`, seller status projection and the seller-write capability gate now exist, and the mobile application screen uses multipart photo upload; prior closed-pilot browser/E2E evidence is historical and current rerun remains Needs verification.                          |
 | Seller profile data                      | Partial            | Handoff contact, handoff initiator, immutable public `fullName`, profile photo upload/public URL and `CHANGES_REQUESTED` edit flow for public and handoff fields now exist in schema, API and mobile; prior browser seller-path evidence is historical and current rerun/device QA remain pending. |
-| Product moderation and visibility        | Implemented        | `submit`, admin moderation service, reasoned `CHANGES_REQUESTED` correction flow, LIVE-listing guard, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place.                                                                   |
+| Product moderation and visibility        | Implemented        | `submit`, admin moderation service, reasoned `CHANGES_REQUESTED` correction flow, `REJECTED` owner edit/resubmit on the same Product (`DEC-070`), LIVE-listing guard, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place. |
 | Seller handoff actions                   | Implemented        | Order snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator`; seller actions and admin replacement/cancellation preserve audit and role-scoped projections.                                                                                               |
 | Timestamps                               | Partial            | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented.                                                                                                                                               |
 | Pilot analytics                          | Implemented        | First-party ingest + admin `/admin/analytics` dashboard (`DEC-067`). Canonical events in `analytics-contract.md`; metrics definitions in `analytics-metrics.md`. Remaining RFC §16 names are DB-derived or deferred, not duplicate analytics events. |

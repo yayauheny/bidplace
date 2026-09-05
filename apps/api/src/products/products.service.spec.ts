@@ -134,6 +134,145 @@ describe('ProductsService', () => {
     expect(prisma.product.update).not.toHaveBeenCalled();
   });
 
+  it('allows the approved owner to edit a rejected Product', async () => {
+    const prisma = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue({
+          status: 'REJECTED',
+          sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+          listings: [],
+        }),
+        update: vi.fn().mockResolvedValue({
+          ...approvedProduct,
+          status: 'REJECTED',
+          title: 'Corrected title',
+        }),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const result = await service.update('owner-id', product.id, {
+      title: 'Corrected title',
+    });
+
+    expect(result.product.id).toBe(product.id);
+    expect(prisma.product.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: product.id },
+        data: { title: 'Corrected title' },
+      }),
+    );
+  });
+
+  it('keeps approved and pending-review Products locked for owner edits', async () => {
+    for (const status of ['APPROVED', 'PENDING_REVIEW', 'ARCHIVED'] as const) {
+      const prisma = {
+        product: {
+          findUnique: vi.fn().mockResolvedValue({
+            status,
+            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+            listings: [],
+          }),
+          update: vi.fn(),
+        },
+      };
+      const service = new ProductsService(prisma as never, {} as never);
+
+      await expect(
+        service.update('owner-id', product.id, { title: 'Locked' }),
+      ).rejects.toThrow('Product cannot be edited');
+      expect(prisma.product.update).not.toHaveBeenCalled();
+    }
+  });
+
+  it('resubmits a rejected Product to pending review without creating a duplicate', async () => {
+    const rejected = {
+      ...approvedProduct,
+      status: 'REJECTED' as const,
+      sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+    };
+    const pending = { ...approvedProduct, status: 'PENDING_REVIEW' as const };
+    const tx = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: product.id,
+          status: 'REJECTED',
+        }),
+        update: vi.fn().mockResolvedValue(pending),
+      },
+      auditEvent: { create: vi.fn() },
+    };
+    const prisma = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue(rejected),
+        create: vi.fn(),
+      },
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const result = await service.submit('owner-id', product.id);
+
+    expect(result.product.id).toBe(product.id);
+    expect(result.product.status).toBe('PENDING_REVIEW');
+    expect(prisma.product.create).not.toHaveBeenCalled();
+    expect(tx.product.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: product.id },
+        data: { status: 'PENDING_REVIEW' },
+      }),
+    );
+    expect(tx.auditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          actorUserId: 'owner-id',
+          targetType: 'PRODUCT',
+          targetId: product.id,
+          oldStatus: 'REJECTED',
+          newStatus: 'PENDING_REVIEW',
+          reason: null,
+        }),
+      }),
+    );
+  });
+
+  it('denies submit for approved Products and other owners', async () => {
+    const serviceForApproved = new ProductsService(
+      {
+        product: {
+          findUnique: vi.fn().mockResolvedValue({
+            ...approvedProduct,
+            status: 'APPROVED',
+            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+          }),
+        },
+      } as never,
+      {} as never,
+    );
+    await expect(
+      serviceForApproved.submit('owner-id', product.id),
+    ).rejects.toThrow('Product cannot be submitted for review');
+
+    const serviceForOtherOwner = new ProductsService(
+      {
+        product: {
+          findUnique: vi.fn().mockResolvedValue({
+            ...approvedProduct,
+            status: 'REJECTED',
+            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+          }),
+        },
+      } as never,
+      {} as never,
+    );
+    await expect(
+      serviceForOtherOwner.submit('other-id', product.id),
+    ).rejects.toThrow('Product is not owned by user');
+  });
+
   it('uses a narrow seller select for public Product queries', async () => {
     const publicProduct = {
       ...approvedProduct,
