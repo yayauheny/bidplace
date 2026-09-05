@@ -105,15 +105,10 @@ describe('manual Order replacement against PostgreSQL', () => {
     expect(replacementRow.contactDueAt.getTime()).toBeGreaterThan(
       replacementRow.createdAt.getTime(),
     );
-    const replacementWindowMs =
+    expect(
       replacementRow.contactDueAt.getTime() -
-      replacementRow.createdAt.getTime();
-    expect(replacementWindowMs).toBeGreaterThanOrEqual(
-      ORDER_CONTACT_WINDOW_MS - 5_000,
-    );
-    expect(replacementWindowMs).toBeLessThanOrEqual(
-      ORDER_CONTACT_WINDOW_MS + 5_000,
-    );
+        replacementRow.createdAt.getTime(),
+    ).toBe(ORDER_CONTACT_WINDOW_MS);
     expect(state.listing?.currentPrice.toNumber()).toBe(200);
     expect(state.listing?.bidCount).toBe(2);
     expect(state.audits).toHaveLength(2);

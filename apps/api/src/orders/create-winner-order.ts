@@ -9,6 +9,7 @@ import {
   isPrismaUniqueConstraintError,
   runSerializableTransaction,
 } from '../core/database';
+import { orderContactSchedule } from './order-contact-deadline';
 import { createOrderSnapshot } from './order-snapshot';
 
 export const WINNER_BID_ORDER_BY = [
@@ -34,7 +35,7 @@ export type CreateWinnerOrderInput = {
   buyerId: string;
   sourceBidId: string;
   finalAmount: Prisma.Decimal;
-  contactDueAt: Date;
+  now: Date;
   sellerHandoffType: HandoffContactType;
   sellerHandoffValue: string;
   buyerEmailAtClose: string;
@@ -104,7 +105,7 @@ export async function createWinnerOrder(
             buyerId: input.buyerId,
             sourceBidId: input.sourceBidId,
             finalAmount: input.finalAmount,
-            contactDueAt: input.contactDueAt,
+            ...orderContactSchedule(input.now),
             ...createOrderSnapshot({
               sellerHandoffType: input.sellerHandoffType,
               sellerHandoffValue: input.sellerHandoffValue,

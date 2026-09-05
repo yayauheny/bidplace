@@ -190,14 +190,9 @@ describe('admin Order recovery for ended Listings', () => {
     expect(persisted.sellerHandoffValue).toBe('@recovered_seller');
     expect(persisted.contactDueAt.getTime()).toBeGreaterThan(Date.now());
     expect(persisted.contactDueAt.toISOString()).toBe(first.order.contactDueAt);
-    const recoveredWindowMs =
-      persisted.contactDueAt.getTime() - persisted.createdAt.getTime();
-    expect(recoveredWindowMs).toBeGreaterThanOrEqual(
-      ORDER_CONTACT_WINDOW_MS - 5_000,
-    );
-    expect(recoveredWindowMs).toBeLessThanOrEqual(
-      ORDER_CONTACT_WINDOW_MS + 5_000,
-    );
+    expect(
+      persisted.contactDueAt.getTime() - persisted.createdAt.getTime(),
+    ).toBe(ORDER_CONTACT_WINDOW_MS);
 
     const auditEvents = await prisma.auditEvent.findMany({
       where: {

@@ -1155,8 +1155,12 @@ does not inherit the cancelled Order's deadline. Idempotent retry of an already
 created Order must not extend `contactDueAt`.
 
 The duration lives in one shared server policy
-(`apps/api/src/orders/order-contact-deadline.ts`). It is not a database-configurable
-field in MVP.
+(`apps/api/src/orders/order-contact-deadline.ts`). Lifecycle close and admin
+recovery apply it inside `createWinnerOrder` from an explicit `now`; replacement
+uses the same `orderContactSchedule`. Callers cannot pass a custom
+`contactDueAt`. It is not a database-configurable field in MVP. The snapshot is
+not a server gate for `HANDOFF_FAILED`; seller-driven status changes stay
+independent of the deadline until an explicit SLA decision.
 
 ### Alternatives considered
 

@@ -4,6 +4,7 @@ import {
   ORDER_CONTACT_WINDOW_HOURS,
   ORDER_CONTACT_WINDOW_MS,
   computeOrderContactDueAt,
+  orderContactSchedule,
 } from './order-contact-deadline';
 
 describe('computeOrderContactDueAt', () => {
@@ -26,5 +27,18 @@ describe('computeOrderContactDueAt', () => {
 
     expect(due.getTime() - now.getTime()).toBe(ORDER_CONTACT_WINDOW_MS);
     expect(due.toISOString()).toBe('2026-03-09T23:30:00.000Z');
+  });
+
+  it('pairs createdAt with an exact 48-hour contactDueAt', () => {
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    const schedule = orderContactSchedule(now);
+
+    expect(schedule.createdAt).toBe(now);
+    expect(schedule.contactDueAt.toISOString()).toBe(
+      '2026-01-03T00:00:00.000Z',
+    );
+    expect(
+      schedule.contactDueAt.getTime() - schedule.createdAt.getTime(),
+    ).toBe(ORDER_CONTACT_WINDOW_MS);
   });
 });

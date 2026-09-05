@@ -2,9 +2,9 @@
 
 ## 2026-09-05 — Order contact deadline (QW-05)
 
-- `Implemented`: shared `computeOrderContactDueAt(now)` in `apps/api/src/orders/order-contact-deadline.ts` stores a 48-hour `contactDueAt` snapshot on every new auction Order. Lifecycle close, admin `createOrderForEndedListing` and manual replacement use that policy. Replacement no longer writes `contactDueAt = now`. Idempotent recovery returns the existing Order without extending the deadline. Historical Orders are not migrated. Seller 24/48/72 configuration is not added. Decision: `DEC-070`.
-- Coverage: `order-contact-deadline.spec.ts`; lifecycle close asserts exact `closeAt + 48h`; recovery asserts a live 48h window and unchanged retry deadline; replacement asserts a fresh ~48h window.
-- `Verified`: API typecheck, lint, build; API unit `231/231`; PostgreSQL integration `63/63` including lifecycle close, admin recovery and replacement.
+- `Implemented`: shared `orderContactSchedule(now)` in `apps/api/src/orders/order-contact-deadline.ts` stores matching `createdAt` and 48-hour `contactDueAt` on every new auction Order. Lifecycle close and admin `createOrderForEndedListing` go through `createWinnerOrder`, which computes the schedule internally from `now` and cannot take a custom deadline. Manual replacement uses the same schedule once before publicId retry. Idempotent recovery returns the existing Order without extending the deadline. Historical Orders are not migrated. Seller 24/48/72 configuration is not added. `contactDueAt` remains a snapshot, not a `HANDOFF_FAILED` gate. Decision: `DEC-070`.
+- Coverage: `order-contact-deadline.spec.ts`; `create-winner-order.spec.ts` asserts create payload schedule; lifecycle close asserts exact `closeAt + 48h`; recovery and replacement assert exact `contactDueAt - createdAt === 48h` and unchanged retry deadline.
+- `Verified`: API typecheck, lint, build; API unit `233/233`; PostgreSQL integration `63/63` including lifecycle close, admin recovery and replacement.
 
 ## 2026-08-22 — ImageStore + MailTransport ports (review fixes)
 
