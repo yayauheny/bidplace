@@ -1,10 +1,16 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — Seller inbox HTTP 401/403
+
+- `Implemented`: no route or permission change. Guest `GET /api/orders` remains 401 (`BearerAuthGuard`); admin remains 403 (`listForSeller` `role !== 'user'`).
+- Coverage: HTTP `seller-orders-inbox-http.integration.spec.ts` (guest 401, admin 403). Service-level admin deny remains in `seller-orders-inbox.integration.spec.ts`.
+- `Verified`: PostgreSQL integration 73/73 including the new HTTP file (2/2).
+
 ## 2026-09-06 — Bounded lifecycle tick batch
 
 - `Implemented`: `ListingLifecycleService.run` activate, expired-`SCHEDULED` cancel, and LIVE close `findMany` queries use `take: LIFECYCLE_TICK_BATCH_SIZE` (50) and stable `orderBy`. Activate orders by `startsAt`/`id`; cancel and close keep `endsAt`/`id`. Remainder stays for the next 30s tick. No queue or distributed lock.
 - Coverage: `listing-lifecycle.service.spec.ts` asserts `take`/`orderBy` on all three tick queries.
-- `Verified`: lifecycle unit 5/5; API typecheck; eslint on `src/lifecycle/listing-lifecycle.service.ts`; PostgreSQL `lifecycle.integration.spec.ts`.
+- `Verified`: lifecycle unit 5/5; API typecheck; eslint on `src/lifecycle/listing-lifecycle.service.ts`; PostgreSQL `lifecycle.integration.spec.ts` in the 73/73 suite.
 
 ## 2026-09-06 — Narrow SellerProfile and ProductImage hydration
 
@@ -22,8 +28,8 @@
 
 - `Implemented`: `GET /api/orders` lists the authenticated seller's non-cancelled Orders with `page`/`limit` (max 100). `sellerId` comes from the session, not the query. Admin is denied. Projection is the seller Order contract and reads frozen snapshot title/currency/product public id (`DEC-074`).
 - `Implemented`: Expo `/(seller)/orders` (`/orders`) reuses Activity-style current UI with loading/empty/error/pagination. Linked from seller profile and the account menu. Not a Pen/Figma redesign.
-- Coverage: `orders.service.spec.ts` list bounds and admin deny; `contracts.test.ts` rejects `sellerId` query; PostgreSQL `seller-orders-inbox.integration.spec.ts`.
-- `Verified`: contracts 27/27; API orders unit 22/22; API typecheck/lint on `src/orders`; mobile typecheck; PostgreSQL inbox 2/2.
+- Coverage: `orders.service.spec.ts` list bounds and admin deny; `contracts.test.ts` rejects `sellerId` query; PostgreSQL `seller-orders-inbox.integration.spec.ts`; HTTP `seller-orders-inbox-http.integration.spec.ts` (guest 401, admin 403).
+- `Verified`: contracts 27/27; API orders unit 22/22; API typecheck/lint on `src/orders`; mobile typecheck; PostgreSQL inbox 2/2 plus HTTP 2/2 in the 2026-09-06 73/73 suite.
 
 ## 2026-09-05 — Immutable Order deal snapshot
 
