@@ -25,6 +25,39 @@ const baseOrder = {
   buyer: { phone: '+375290000000' },
 };
 
+const orderProjectionSelect = {
+  id: true,
+  publicId: true,
+  listingId: true,
+  sourceBidId: true,
+  finalAmount: true,
+  contactDueAt: true,
+  status: true,
+  cancellationReason: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerHandoffType: true,
+  sellerHandoffValue: true,
+  buyerEmailAtClose: true,
+  handoffInitiator: true,
+  snapshotTitle: true,
+  snapshotCurrency: true,
+  snapshotProductPublicId: true,
+  sellerId: true,
+  buyerId: true,
+  listing: {
+    select: {
+      currency: true,
+      product: {
+        select: {
+          publicId: true,
+          title: true,
+        },
+      },
+    },
+  },
+} as const;
+
 describe('OrdersService', () => {
   it('allows seller access and includes the buyer email snapshot', async () => {
     const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
@@ -33,6 +66,10 @@ describe('OrdersService', () => {
     const result = await service.get('seller-id', 'user', baseOrder.publicId);
 
     expect(result.buyerEmailAtClose).toBe('buyer@example.com');
+    expect(prisma.order.findUnique).toHaveBeenCalledWith({
+      where: { publicId: baseOrder.publicId },
+      select: orderProjectionSelect,
+    });
   });
 
   it('shows seller contact to buyers in BUYER_CONTACTS_SELLER privacy mode', async () => {
@@ -151,11 +188,17 @@ describe('OrdersService', () => {
     expect(result.pagination).toEqual({ page: 2, limit: 10, total: 1 });
     expect(findMany).toHaveBeenCalledWith({
       where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
-      select: expect.any(Object),
+      select: orderProjectionSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: 10,
       take: 10,
     });
+    expect(orderProjectionSelect).not.toHaveProperty('sellerProfile');
+    expect(orderProjectionSelect).not.toHaveProperty('buyer');
+    expect(orderProjectionSelect).not.toHaveProperty('seller');
+    expect(Object.keys(orderProjectionSelect.listing.select.product.select)).toEqual(
+      ['publicId', 'title'],
+    );
     expect(count).toHaveBeenCalledWith({
       where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
     });

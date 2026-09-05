@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Order projection select without seller photo bytes
+
+- `Implemented`: `orderWithProductSelect` for `GET /api/orders` and `GET /api/orders/:publicId` loads Order snapshot scalars plus `listing.currency` and `product.title`/`publicId` only. `SellerProfile` (including `profilePhotoData`) and live `buyer`/`seller` joins are not selected. Replacement/recovery TX includes are unchanged.
+- Coverage: `orders.service.spec.ts` asserts `get` `findUnique` and list `findMany` use the same projection select (`listing.currency` + `product.publicId`/`title`; no `sellerProfile`, `buyer`, or `seller`).
+- `Verified`: API orders unit 26/26; API typecheck; eslint on `src/orders`; PostgreSQL integration 71/71 including `seller-orders-inbox.integration.spec.ts` (2/2).
+
 ## 2026-09-05 — Seller Orders inbox
 
 - `Implemented`: `GET /api/orders` lists the authenticated seller's non-cancelled Orders with `page`/`limit` (max 100). `sellerId` comes from the session, not the query. Admin is denied. Projection is the seller Order contract and reads frozen snapshot title/currency/product public id (`DEC-074`).

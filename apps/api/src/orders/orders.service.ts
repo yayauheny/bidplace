@@ -53,16 +53,16 @@ const orderWithProductSelect = {
   sellerId: true,
   buyerId: true,
   listing: {
-    include: {
+    select: {
+      currency: true,
       product: {
-        include: {
-          sellerProfile: true,
+        select: {
+          publicId: true,
+          title: true,
         },
       },
     },
   },
-  buyer: { select: { email: true } },
-  seller: { select: { email: true } },
 } satisfies Prisma.OrderSelect;
 
 type OrderRecord = Prisma.OrderGetPayload<{
