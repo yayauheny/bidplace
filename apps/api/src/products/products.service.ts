@@ -19,6 +19,7 @@ import { PrismaService, runSerializableTransaction } from '../core/database';
 import { resolveMinimumBidAmount } from '../core/auction';
 import { PublicIdService } from '../core/public-id';
 import {
+  productImageMetadataSelect,
   productSelect,
   publicCatalogProductSelect,
   toContractProduct,
@@ -377,7 +378,10 @@ export class ProductsService {
         sellerProfile: {
           select: publicSellerProfileSelect,
         },
-        images: { orderBy: { position: 'asc' } },
+        images: {
+          orderBy: { position: 'asc' },
+          select: productImageMetadataSelect,
+        },
         creationSteps: {
           orderBy: { position: 'asc' },
           select: {

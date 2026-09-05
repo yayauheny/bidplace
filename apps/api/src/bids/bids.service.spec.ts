@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AppException } from '../core/errors';
 import { BidsService } from './bids.service';
 import { publicProductContentWhere } from '../products/public-visibility';
+import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 function createLiveListingTx(overrides: {
   sellerUserId?: string;
@@ -111,6 +112,17 @@ describe('BidsService error contract', () => {
         details: { minimumBid: '10.50' },
       });
     }
+    expect(tx.listing.findUnique).toHaveBeenCalledWith({
+      where: { id: 'listing-id' },
+      include: {
+        auctionRules: true,
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileAuthSelect },
+          },
+        },
+      },
+    });
   });
 
   it('rejects seller self-bids with SELF_BID_FORBIDDEN', async () => {

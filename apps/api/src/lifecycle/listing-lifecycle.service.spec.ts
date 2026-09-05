@@ -4,6 +4,7 @@ import {
   EXPIRED_SCHEDULED_AUDIT_REASON,
   ListingLifecycleService,
 } from './listing-lifecycle.service';
+import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
 describe('ListingLifecycleService', () => {
   it('only activates scheduled listings with approved product/seller and handoff', async () => {
@@ -165,5 +166,51 @@ describe('ListingLifecycleService', () => {
       expect.objectContaining({ status: 'CANCELLED' }),
     );
     expect(prisma.order.create).not.toHaveBeenCalled();
+  });
+
+  it('loads seller handoff fields without profile photo bytes after close', async () => {
+    const now = new Date('2026-07-31T12:00:00.000Z');
+    const tx = {
+      listing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'listing-id',
+          status: 'LIVE',
+          endsAt: now,
+          currentPrice: { toNumber: () => 10 },
+          bidCount: 1,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'listing-id',
+      status: 'LIVE',
+      product: { sellerProfile: { userId: 'seller-id', status: 'APPROVED' } },
+    });
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) =>
+        callback(tx),
+      ),
+      listing: { findUnique },
+    };
+    const service = new ListingLifecycleService(
+      prisma as never,
+      { now: () => now } as never,
+      {} as never,
+      { emit: vi.fn() } as never,
+    );
+
+    await service.close('listing-id', now);
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'listing-id' },
+      include: {
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileHandoffSelect },
+          },
+        },
+      },
+    });
   });
 });

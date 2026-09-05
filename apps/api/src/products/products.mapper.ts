@@ -4,6 +4,16 @@ import { type Prisma } from '@bidplace/database';
 import { publicListingStatuses } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
+export const productImageMetadataSelect = {
+  id: true,
+  position: true,
+  mimeType: true,
+  byteLength: true,
+  checksum: true,
+  width: true,
+  height: true,
+} satisfies Prisma.ProductImageSelect;
+
 export const productSelect = {
   id: true,
   publicId: true,
@@ -27,15 +37,7 @@ export const productSelect = {
   createdAt: true,
   updatedAt: true,
   images: {
-    select: {
-      id: true,
-      position: true,
-      mimeType: true,
-      byteLength: true,
-      checksum: true,
-      width: true,
-      height: true,
-    },
+    select: productImageMetadataSelect,
     orderBy: { position: 'asc' },
   },
 } satisfies Prisma.ProductSelect;
@@ -110,15 +112,7 @@ export const publicCatalogProductSelect = {
   sellerProfile: { select: publicSellerProfileSelect },
   images: {
     orderBy: { position: 'asc' as const },
-    select: {
-      id: true,
-      position: true,
-      mimeType: true,
-      byteLength: true,
-      checksum: true,
-      width: true,
-      height: true,
-    },
+    select: productImageMetadataSelect,
   },
   listings: {
     where: { status: { in: publicListingStatuses } },

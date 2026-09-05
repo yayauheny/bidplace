@@ -10,6 +10,10 @@ import { Decimal } from '@bidplace/database';
 import { canCancelListing, canScheduleListing } from '../core/auction';
 import { PrismaService } from '../core/database';
 import { assertApprovedSeller } from '../sellers/seller-capability';
+import {
+  sellerProfileAuthSelect,
+  sellerProfileHandoffSelect,
+} from '../sellers/seller-profile.mapper';
 
 @Injectable()
 export class ListingsService {
@@ -20,7 +24,7 @@ export class ListingsService {
       where: { id: productId },
       select: {
         status: true,
-        sellerProfile: { select: { userId: true, status: true } },
+        sellerProfile: { select: sellerProfileAuthSelect },
       },
     });
 
@@ -60,7 +64,11 @@ export class ListingsService {
       where: { id },
       include: {
         auctionRules: true,
-        product: { include: { sellerProfile: true } },
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileHandoffSelect },
+          },
+        },
       },
     });
 
@@ -84,7 +92,11 @@ export class ListingsService {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
       include: {
-        product: { include: { sellerProfile: true } },
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileHandoffSelect },
+          },
+        },
         auctionRules: true,
       },
     });
@@ -183,12 +195,14 @@ export class ListingsService {
       softCloseExtensionSeconds: number;
       softCloseMaxTotalSeconds: number;
     } | null;
+    product?: unknown;
   }) {
     if (!listing.auctionRules) {
       throw new ConflictException('Auction rules are missing');
     }
 
-    const { auctionRules, ...record } = listing;
+    const { auctionRules, product: _product, ...record } = listing;
+    void _product;
     const {
       id: _auctionRulesId,
       listingId: _auctionRulesListingId,

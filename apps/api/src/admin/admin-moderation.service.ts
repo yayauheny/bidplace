@@ -11,6 +11,7 @@ import {
 
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { missingProductApprovalFields } from '../products/product-requirements';
+import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 @Injectable()
 export class AdminModerationService {
@@ -91,7 +92,7 @@ export class AdminModerationService {
       const product = await tx.product.findUnique({
         where: { id: productId },
         include: {
-          sellerProfile: true,
+          sellerProfile: { select: sellerProfileAuthSelect },
           images: { select: { id: true } },
           listings: {
             where: { status: { in: ['SCHEDULED', 'LIVE'] } },

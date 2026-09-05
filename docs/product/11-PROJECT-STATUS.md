@@ -1,8 +1,14 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — Narrow SellerProfile and ProductImage hydration
+
+- `Implemented`: `placeBid`, public Product GET, listing get/transition/create, lifecycle `ensureWinnerOrder`, admin Order replace/recovery and product moderation no longer `include` full `SellerProfile`. Shared `sellerProfileAuthSelect` / `sellerProfileHandoffSelect` omit `profilePhotoData`. `getPublic` reuses `productImageMetadataSelect` so `ProductImage.data` is not copied into the product page. Image-store byte GET paths unchanged. Listing owner responses omit nested `product`.
+- Coverage: `bids.service.spec.ts`, `products.service.spec.ts`, `listings.service.spec.ts`, `listing-lifecycle.service.spec.ts`, `orders.service.spec.ts`, `admin-moderation.service.spec.ts`.
+- `Verified`: targeted API unit 43/43; API typecheck; eslint on changed `src/{bids,products,listings,lifecycle,orders,admin,sellers}` files.
+
 ## 2026-09-05 — Order projection select without seller photo bytes
 
-- `Implemented`: `orderWithProductSelect` for `GET /api/orders` and `GET /api/orders/:publicId` loads Order snapshot scalars plus `listing.currency` and `product.title`/`publicId` only. `SellerProfile` (including `profilePhotoData`) and live `buyer`/`seller` joins are not selected. Replacement/recovery TX includes are unchanged.
+- `Implemented`: `orderWithProductSelect` for `GET /api/orders` and `GET /api/orders/:publicId` loads Order snapshot scalars plus `listing.currency` and `product.title`/`publicId` only. `SellerProfile` (including `profilePhotoData`) and live `buyer`/`seller` joins are not selected. Replacement/recovery create TXs now use `sellerProfileHandoffSelect` (no photo bytes); see 2026-09-06 hydration note.
 - Coverage: `orders.service.spec.ts` asserts `get` `findUnique` and list `findMany` use the same projection select (`listing.currency` + `product.publicId`/`title`; no `sellerProfile`, `buyer`, or `seller`).
 - `Verified`: API orders unit 26/26; API typecheck; eslint on `src/orders`; PostgreSQL integration 71/71 including `seller-orders-inbox.integration.spec.ts` (2/2).
 

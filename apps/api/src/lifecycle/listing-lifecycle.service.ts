@@ -10,6 +10,7 @@ import {
   WINNER_BID_ORDER_BY,
 } from '../orders/create-winner-order';
 import { RealtimeService } from '../realtime/realtime.service';
+import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
 export const EXPIRED_SCHEDULED_AUDIT_REASON = 'EXPIRED_SCHEDULED_WINDOW';
 
@@ -253,7 +254,7 @@ export class ListingLifecycleService {
       include: {
         product: {
           include: {
-            sellerProfile: true,
+            sellerProfile: { select: sellerProfileHandoffSelect },
           },
         },
       },

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { OrdersService } from './orders.service';
+import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
 const baseOrder = {
   id: '7a728f95-6c4d-4f35-a3fd-a7b9903a3182',
@@ -212,5 +213,83 @@ describe('OrdersService', () => {
       service.listForSeller('admin-id', 'admin', { page: 1, limit: 20 }),
     ).rejects.toThrow('Seller access required');
     expect(prisma.order.findMany).not.toHaveBeenCalled();
+  });
+
+  it('loads seller handoff fields without profile photo bytes on recovery', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      status: 'LIVE',
+      product: {
+        sellerProfile: {
+          userId: 'seller-id',
+          status: 'APPROVED',
+          handoffContactType: 'PHONE',
+          handoffContactValue: '+375291234567',
+          handoffInitiator: 'BUYER_CONTACTS_SELLER',
+        },
+      },
+    });
+    const prisma = {
+      $transaction: vi.fn(async (callback: (tx: object) => Promise<unknown>) =>
+        callback({ listing: { findUnique } }),
+      ),
+    };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(
+      service.createOrderForEndedListing('admin-id', 'admin', 'listing-id'),
+    ).rejects.toThrow('Listing is not ended');
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'listing-id' },
+      include: {
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileHandoffSelect },
+          },
+        },
+      },
+    });
+  });
+
+  it('loads seller handoff fields without profile photo bytes on replacement', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      status: 'PENDING_CONTACT',
+      listing: {
+        product: {
+          sellerProfile: {
+            userId: 'seller-id',
+            status: 'APPROVED',
+            handoffContactType: 'PHONE',
+            handoffContactValue: '+375291234567',
+            handoffInitiator: 'BUYER_CONTACTS_SELLER',
+          },
+        },
+      },
+    });
+    const prisma = {
+      $transaction: vi.fn(async (callback: (tx: object) => Promise<unknown>) =>
+        callback({ order: { findUnique } }),
+      ),
+    };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(
+      service.replace('admin-id', 'admin', 'orderPub001', {
+        bidId: '00000000-0000-4000-8000-000000000001',
+      }),
+    ).rejects.toThrow('Order is not eligible for replacement');
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { publicId: 'orderPub001' },
+      include: {
+        listing: {
+          include: {
+            product: {
+              include: {
+                sellerProfile: { select: sellerProfileHandoffSelect },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });

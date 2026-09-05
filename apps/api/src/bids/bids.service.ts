@@ -21,6 +21,7 @@ import {
   bidEligibilityUserSelect,
 } from './bid-eligibility';
 import { createBidderAlias } from './bid-alias';
+import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 const PLACE_CAS_ATTEMPTS = 3;
 
@@ -199,7 +200,11 @@ export class BidsService {
       where: { id: listingId },
       include: {
         auctionRules: true,
-        product: { include: { sellerProfile: true } },
+        product: {
+          include: {
+            sellerProfile: { select: sellerProfileAuthSelect },
+          },
+        },
       },
     });
 

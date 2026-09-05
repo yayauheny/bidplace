@@ -8,6 +8,7 @@ import {
   selectPublicListing,
 } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
+import { productImageMetadataSelect } from './products.mapper';
 
 const product = {
   id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -308,9 +309,14 @@ describe('ProductsService', () => {
           sellerProfile: {
             select: publicSellerProfileSelect,
           },
+          images: {
+            orderBy: { position: 'asc' },
+            select: productImageMetadataSelect,
+          },
         }),
       }),
     );
+    expect(productImageMetadataSelect).not.toHaveProperty('data');
   });
 
   it('paginates public catalog rows before hydrating narrow image metadata', async () => {

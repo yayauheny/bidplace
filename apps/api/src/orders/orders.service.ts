@@ -31,6 +31,7 @@ import {
   resolveOrderDealFields,
 } from './order-snapshot';
 import { createBidderAlias } from '../bids/bid-alias';
+import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
 const orderWithProductSelect = {
   id: true,
@@ -254,7 +255,7 @@ export class OrdersService {
           include: {
             product: {
               include: {
-                sellerProfile: true,
+                sellerProfile: { select: sellerProfileHandoffSelect },
               },
             },
           },
@@ -460,7 +461,7 @@ export class OrdersService {
               include: {
                 product: {
                   include: {
-                    sellerProfile: true,
+                    sellerProfile: { select: sellerProfileHandoffSelect },
                   },
                 },
               },

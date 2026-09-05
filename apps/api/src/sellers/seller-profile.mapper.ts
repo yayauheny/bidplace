@@ -44,6 +44,19 @@ export type SellerProfileResponseRecord = Prisma.SellerProfileGetPayload<{
   select: typeof sellerProfileResponseSelect;
 }>;
 
+export const sellerProfileAuthSelect = {
+  userId: true,
+  status: true,
+} satisfies Prisma.SellerProfileSelect;
+
+export const sellerProfileHandoffSelect = {
+  userId: true,
+  status: true,
+  handoffContactType: true,
+  handoffContactValue: true,
+  handoffInitiator: true,
+} satisfies Prisma.SellerProfileSelect;
+
 export const sellerProfilePhotoSelect = {
   id: true,
   slug: true,

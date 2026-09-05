@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ConflictException } from '@nestjs/common';
 
 import { AdminModerationService } from './admin-moderation.service';
+import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 function transactionPrisma(tx: object) {
   return {
@@ -38,6 +39,17 @@ describe('AdminModerationService', () => {
     expect(tx.product.update).toHaveBeenCalledWith({
       where: { id: 'product-id' },
       data: { status: 'CHANGES_REQUESTED' },
+    });
+    expect(tx.product.findUnique).toHaveBeenCalledWith({
+      where: { id: 'product-id' },
+      include: {
+        sellerProfile: { select: sellerProfileAuthSelect },
+        images: { select: { id: true } },
+        listings: {
+          where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+          select: { id: true },
+        },
+      },
     });
     expect(tx.auditEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
