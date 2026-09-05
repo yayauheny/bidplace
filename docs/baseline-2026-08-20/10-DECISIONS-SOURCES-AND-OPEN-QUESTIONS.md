@@ -233,7 +233,7 @@ Hugeicons free/license/package source: https://github.com/hugeicons/hugeicons
 
 ## 7. Юридические вопросы
 
-Не дублируются здесь. Единственный owner — `06-IT-LAWYER-BRIEF-AND-DECISION-TABLE.md`.
+Не дублируются здесь. Актуальный бриф на консультацию — `docs/legal/01-LAWYER-CONSULTATION-PACK.md`. История вопросов и таблица L-01…L-24 — `06-IT-LAWYER-BRIEF-AND-DECISION-TABLE.md`.
 
 ## 8. Правила обновления baseline
 

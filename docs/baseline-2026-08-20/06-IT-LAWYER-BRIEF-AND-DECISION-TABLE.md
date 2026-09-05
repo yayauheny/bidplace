@@ -1,5 +1,7 @@
 # bidplace — задание IT-юристу и таблица решений
 
+> Актуальный пакет на консультацию: [`../legal/01-LAWYER-CONSULTATION-PACK.md`](../legal/01-LAWYER-CONSULTATION-PACK.md). Этот файл не удалён: здесь история вопросов от 20 августа и таблица L-01…L-24.
+
 > **Актуализация 1.1 для консультации.** Первый MVP — только `TIMED_AUCTION`. Просим считать вопросы по Auction/Bid/result/ranking/direct payment/handoff/documents/privacy основным оплачиваемым объёмом. Fixed Price, Offer/Counteroffer, editions, preorder, made to order, commission и integrated payments — будущие механизмы; по ним сейчас нужен лишь короткий список красных флагов и указание, когда потребуется отдельная консультация. Старые формулировки ниже не удалены, чтобы сохранить историю пакета, но не определяют текущий launch scope.
 
 Дата baseline: 20 августа 2026.
