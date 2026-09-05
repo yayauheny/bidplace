@@ -42,4 +42,5 @@ Raw используется, если:
 
 - `2026-07-partial-market-research.md`
 - `2026-07-deep-research-methodology.txt`
-- `2026-07-market-research-chatgpt-google.txt`
+- `2026-08-25-bidbaits-legal-documents.md`
+- фиксация встречи с юристом: `docs/legal/02-LAWYER-ANSWERS-2026-08-24.md` (26 августа наложена расшифровка созвона)
