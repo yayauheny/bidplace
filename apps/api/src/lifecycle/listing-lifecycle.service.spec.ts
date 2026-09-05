@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   EXPIRED_SCHEDULED_AUDIT_REASON,
+  LIFECYCLE_TICK_BATCH_SIZE,
   ListingLifecycleService,
 } from './listing-lifecycle.service';
 import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
@@ -50,6 +51,8 @@ describe('ListingLifecycleService', () => {
         },
       },
       select: { id: true, currentPrice: true, bidCount: true, endsAt: true },
+      orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+      take: LIFECYCLE_TICK_BATCH_SIZE,
     });
     expect(prisma.listing.updateMany).toHaveBeenCalledWith({
       where: {
@@ -94,6 +97,51 @@ describe('ListingLifecycleService', () => {
 
     expect(close).toHaveBeenNthCalledWith(1, 'listing-a', now);
     expect(close).toHaveBeenNthCalledWith(2, 'listing-b', now);
+    expect(prisma.listing.findMany).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        where: { status: 'LIVE', endsAt: { lte: now } },
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+        take: LIFECYCLE_TICK_BATCH_SIZE,
+      }),
+    );
+  });
+
+  it('bounds each lifecycle tick query to 50 listings with stable order', async () => {
+    const now = new Date('2026-07-31T12:00:00.000Z');
+    const prisma = {
+      listing: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+      },
+    };
+    const service = new ListingLifecycleService(
+      prisma as never,
+      { now: () => now } as never,
+      {} as never,
+      { emit: vi.fn() } as never,
+    );
+
+    await service.run();
+
+    expect(prisma.listing.findMany).toHaveBeenCalledTimes(3);
+    expect(prisma.listing.findMany.mock.calls.map((call) => call[0])).toEqual([
+      expect.objectContaining({
+        orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+        take: LIFECYCLE_TICK_BATCH_SIZE,
+      }),
+      expect.objectContaining({
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+        take: LIFECYCLE_TICK_BATCH_SIZE,
+      }),
+      expect.objectContaining({
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+        take: LIFECYCLE_TICK_BATCH_SIZE,
+      }),
+    ]);
   });
 
   it('cancels expired SCHEDULED listings without creating an Order', async () => {
@@ -140,6 +188,8 @@ describe('ListingLifecycleService', () => {
       2,
       expect.objectContaining({
         where: { status: 'SCHEDULED', endsAt: { lte: now } },
+        orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+        take: LIFECYCLE_TICK_BATCH_SIZE,
       }),
     );
     expect(tx.listing.updateMany).toHaveBeenCalledWith({

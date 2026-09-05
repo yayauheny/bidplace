@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — Bounded lifecycle tick batch
+
+- `Implemented`: `ListingLifecycleService.run` activate, expired-`SCHEDULED` cancel, and LIVE close `findMany` queries use `take: LIFECYCLE_TICK_BATCH_SIZE` (50) and stable `orderBy`. Activate orders by `startsAt`/`id`; cancel and close keep `endsAt`/`id`. Remainder stays for the next 30s tick. No queue or distributed lock.
+- Coverage: `listing-lifecycle.service.spec.ts` asserts `take`/`orderBy` on all three tick queries.
+- `Verified`: lifecycle unit 5/5; API typecheck; eslint on `src/lifecycle/listing-lifecycle.service.ts`; PostgreSQL `lifecycle.integration.spec.ts`.
+
 ## 2026-09-06 — Narrow SellerProfile and ProductImage hydration
 
 - `Implemented`: `placeBid`, public Product GET, listing get/transition/create, lifecycle `ensureWinnerOrder`, admin Order replace/recovery and product moderation no longer `include` full `SellerProfile`. Shared `sellerProfileAuthSelect` / `sellerProfileHandoffSelect` omit `profilePhotoData`. `getPublic` reuses `productImageMetadataSelect` so `ProductImage.data` is not copied into the product page. Image-store byte GET paths unchanged. Listing owner responses omit nested `product`.

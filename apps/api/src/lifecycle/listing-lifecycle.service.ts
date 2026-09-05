@@ -13,6 +13,12 @@ import { RealtimeService } from '../realtime/realtime.service';
 import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
 export const EXPIRED_SCHEDULED_AUDIT_REASON = 'EXPIRED_SCHEDULED_WINDOW';
+export const LIFECYCLE_TICK_BATCH_SIZE = 50;
+
+const lifecycleTickOrderBy = [
+  { endsAt: 'asc' as const },
+  { id: 'asc' as const },
+];
 
 @Injectable()
 export class ListingLifecycleService {
@@ -44,6 +50,8 @@ export class ListingLifecycleService {
         },
       },
       select: { id: true, currentPrice: true, bidCount: true, endsAt: true },
+      orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+      take: LIFECYCLE_TICK_BATCH_SIZE,
     });
 
     for (const listing of scheduled) {
@@ -87,7 +95,8 @@ export class ListingLifecycleService {
         endsAt: { lte: now },
       },
       select: { id: true },
-      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+      orderBy: lifecycleTickOrderBy,
+      take: LIFECYCLE_TICK_BATCH_SIZE,
     });
 
     for (const listing of expiredScheduled) {
@@ -104,7 +113,8 @@ export class ListingLifecycleService {
     const expired = await this.prisma.listing.findMany({
       where: { status: 'LIVE', endsAt: { lte: now } },
       select: { id: true },
-      orderBy: [{ endsAt: 'asc' }, { id: 'asc' }],
+      orderBy: lifecycleTickOrderBy,
+      take: LIFECYCLE_TICK_BATCH_SIZE,
     });
 
     for (const listing of expired) {
