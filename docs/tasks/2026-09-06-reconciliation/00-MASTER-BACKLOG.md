@@ -37,14 +37,14 @@ Owner: founder
 
 | ID | Priority | Задача | Исполнитель | Review | Зависимости | Готово когда |
 |---|---|---|---|---|---|---|
-| T03 | P0 | Product write atomicity: закрыть race update/media/creation story vs submit/moderation/listing lock | Grok 4.6 High | GPT-5.6 Sol + security | нет | Guards и mutation в одной transaction; race integration proof; no `.pen` |
-| T04 | P1 | Seller sales history: вернуть cancelled/failed rows read-only, capability gate, HTTP seller 200 | Terra | GPT-5.6 Sol | не добавлять next-bidder action | `Продажи` имеет active/history/problem truth и privacy tests |
-| T05 | P1 | Activity projection: auction cancelled status и deterministic Order selection | Terra | Sol | текущая auction model | Нет случайного `.find`; replacement cases и cancelled Listing truthful |
-| T06 | P1 | HTTPS legacy-data preflight и безопасная migration policy | Luna/Terra | Sol security | доступ к disposable DB | До strict response deploy найдено/обработано legacy `http:`; no silent unsafe coercion |
-| T07 | P2 | Убрать последний admin profile-photo blob hydration | Luna | Terra review | object store остаётся текущим | Approval использует metadata/length, blob не select; behavior unchanged |
-| T08 | P2 | Docs hygiene: trailing whitespace, stale dates/links, superseded banners | Composer 2.5 | Luna | текущий audit | `diff --check` clean; claims не переписаны; один owner per claim |
-| T09 | P2 | Lifecycle bounded-progress proof | Terra | Sol | не выбирать новую queue topology | Test `51 → 50 + 1`; измерение tick; poison starvation задокументирован |
-| T10 | P1 | Read-only Figma inventory and gap map | Grok 4.6 High | Sol/UI reviewer | доступ к Figma | Все screens/states/components/icons mapped; original unchanged; no implementation |
+| T03 | P0 | [Product write atomicity](03-PRODUCT-WRITE-ATOMICITY.md): закрыть race update/media/creation story vs submit/moderation/listing lock | Grok 4.6 High | GPT-5.6 Sol + security | нет | Guards и mutation в одной transaction; race integration proof; no `.pen` |
+| T04 | P1 | [Seller sales history](04-SELLER-SALES-HISTORY.md): вернуть cancelled/failed rows read-only, capability gate, HTTP seller 200 | Terra | GPT-5.6 Sol | не добавлять next-bidder action | `Продажи` имеет active/history/problem truth и privacy tests |
+| T05 | P1 | [Activity projection](05-ACTIVITY-PROJECTION.md): auction cancelled status и deterministic Order selection | Terra | Sol | текущая auction model | Нет случайного `.find`; replacement cases и cancelled Listing truthful |
+| T06 | P1 | [HTTPS legacy-data preflight](06-HTTPS-LEGACY-PREFLIGHT.md) и безопасная migration policy | Luna/Terra | Sol security | доступ к disposable DB | До strict response deploy найдено/обработано legacy `http:`; no silent unsafe coercion |
+| T07 | P2 | [Убрать admin profile-photo blob hydration](07-ADMIN-PHOTO-METADATA.md) | Luna | Terra review | object store остаётся текущим | Approval использует metadata/length, blob не select; behavior unchanged |
+| T08 | P2 | [Docs hygiene](08-DOCS-HYGIENE.md): trailing whitespace, stale dates/links, superseded banners | Composer 2.5 | Luna | текущий audit | `diff --check` clean; claims не переписаны; один owner per claim |
+| T09 | P2 | [Lifecycle bounded-progress proof](09-LIFECYCLE-BOUNDED-PROGRESS.md) | Terra | Sol | не выбирать новую queue topology | Test `51 → 50 + 1`; измерение tick; poison starvation задокументирован |
+| T10 | P1 | [Read-only Figma inventory and gap map](10-FIGMA-READONLY-INVENTORY.md) | Grok 4.6 High | Sol/UI reviewer | доступ к Figma | Все screens/states/components/icons mapped; original unchanged; no implementation |
 
 Порядок: **T03 → T04/T05/T06/T07 параллельно → T08/T09/T10**.
 
@@ -54,7 +54,7 @@ Owner: founder
 |---|---|---|---|---|
 | T01 | P0 | Marketplace mechanics research | Grok 4.6 High | [`01-MARKETPLACE-MECHANICS-RESEARCH.md`](01-MARKETPLACE-MECHANICS-RESEARCH.md) |
 | T02 | P0 | Written BY+RF legal validation | Профильный юрист; Sol проверяет полноту | [`02-LAWYER-BY-RF-VALIDATION.md`](02-LAWYER-BY-RF-VALIDATION.md) |
-| T11 | P1 | Abuse research: shill bidding, friend bids, duplicate/resale works, evidence and sanctions | Grok 4.6 High | Primary-source matrix; no code |
+| T11 | P1 | [Abuse research](11-AUCTION-ABUSE-RESEARCH.md): shill bidding, friend bids, duplicate/resale works, evidence and sanctions | Grok 4.6 High | Primary-source matrix; no code |
 
 T01 и подготовку T02 можно запускать параллельно. Финальный legal answer T02 должен
 получить фактическую infrastructure/data map до публикации документов.
@@ -160,4 +160,3 @@ Closed local testing is possible now. A public audience is blocked by:
 5. T22 media/backup plan selected for expected pilot volume;
 6. T32–T37 Figma adaptation and acceptance;
 7. T39–T44 release proof.
-
