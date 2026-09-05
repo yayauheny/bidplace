@@ -166,6 +166,59 @@ describe('shared contracts', () => {
     ).toBe(false);
   });
 
+  it.each([
+    ['https://example.com/creator', true],
+    ['https://t.me/creator_name', true],
+    ['http://example.com/creator', false],
+    ['javascript:alert(1)', false],
+    ['data:text/html,hi', false],
+    ['file:///etc/passwd', false],
+    ['/relative/path', false],
+    ['ftp://example.com/file', false],
+  ])('accepts only HTTPS public seller URLs: %s', (socialLink, expected) => {
+    const parsed = sellerProfileCreateRequestSchema.safeParse({
+      slug: 'creator',
+      sellerType: 'creator',
+      discipline: 'Керамика',
+      fullName: 'Creator',
+      country: 'BY',
+      socialLink,
+      shortDescription: 'About creator',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@creator_name',
+    });
+    expect(parsed.success).toBe(expected);
+  });
+
+  it('still accepts Telegram and Instagram handle forms on private handoff', () => {
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        slug: 'creator',
+        sellerType: 'creator',
+        discipline: 'Керамика',
+        fullName: 'Creator',
+        country: 'BY',
+        socialLink: 'https://example.com/creator',
+        shortDescription: 'About creator',
+        handoffContactType: 'TELEGRAM',
+        handoffContactValue: '@creator_name',
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        slug: 'creator',
+        sellerType: 'creator',
+        discipline: 'Керамика',
+        fullName: 'Creator',
+        country: 'BY',
+        socialLink: 'https://example.com/creator',
+        shortDescription: 'About creator',
+        handoffContactType: 'INSTAGRAM',
+        handoffContactValue: '@creator.name',
+      }).success,
+    ).toBe(true);
+  });
+
   it('accepts unified API errors with business codes and optional details', () => {
     expect(
       apiErrorResponseSchema.safeParse({

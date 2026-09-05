@@ -25,3 +25,18 @@ export const moneyAmountSchema = z
   .refine(hasMoneyPrecision, {
     message: 'amount must have at most two decimal places',
   });
+
+export const httpsUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .refine(
+    (value) => {
+      try {
+        return new URL(value).protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    { message: 'URL must use https://' },
+  );

@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — HTTPS-only public seller links (QW-01)
+
+- `Implemented`: `packages/contracts/src/primitives.ts` `httpsUrlSchema` is the shared HTTPS-only URL contract. Seller public write and response fields `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` in `packages/contracts/src/seller-profile.ts` use it. Mobile profile validation and creator-profile e2e reuse the same schema and HTTPS error copy.
+- `Implemented`: Telegram/Instagram `@handle` and private PHONE handoff schemas are unchanged. Media URL resolution is unchanged.
+- Coverage: parameterized contract tests for https vs `http`/`javascript`/`data`/`file`/relative/`ftp`; existing handle cases; `profile-validation.spec.ts`.
+- `Needs verification`: Playwright `creator-profile.spec.ts` copy update is in tree; run against a live app when e2e is next executed.
+
 ## 2026-09-05 — Fail-closed environment matrix (QW-03)
 
 - `Implemented`: `apps/api/src/core/config/env-profile.ts` centralizes production-like predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. SMTP, service rules, `PASSWORD_RESET_URL_BASE`, 32-character `JWT_SECRET`, test-bypass prohibition, SMTP mail transport, secure session cookies and production service-rules text follow that profile.

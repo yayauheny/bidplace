@@ -6,7 +6,7 @@ import {
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
-import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import { httpsUrlSchema, isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
 export const sellerTelegramHandleSchema = z
   .string()
@@ -31,7 +31,7 @@ const sellerProfilePhotoUrlSchema = z
   .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/);
 
 export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
-export const sellerPublicUrlSchema = z.string().trim().url();
+export const sellerPublicUrlSchema = httpsUrlSchema;
 
 export const sellerProfileSchema = z
   .object({
@@ -43,10 +43,10 @@ export const sellerProfileSchema = z
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
-    socialLink: z.string().url(),
-    telegramUrl: z.string().url().nullable(),
-    instagramUrl: z.string().url().nullable(),
-    websiteUrl: z.string().url().nullable(),
+    socialLink: sellerPublicUrlSchema,
+    telegramUrl: sellerPublicUrlSchema.nullable(),
+    instagramUrl: sellerPublicUrlSchema.nullable(),
+    websiteUrl: sellerPublicUrlSchema.nullable(),
     shortDescription: z.string().trim().min(1),
     handoffContactType: handoffContactTypeSchema,
     handoffContactValue: z.string().trim().min(1),
@@ -79,10 +79,10 @@ const sellerProfileBaseWriteSchema = z
     discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
-    socialLink: z.string().url(),
-    telegramUrl: z.string().url().nullable().optional(),
-    instagramUrl: z.string().url().nullable().optional(),
-    websiteUrl: z.string().url().nullable().optional(),
+    socialLink: sellerPublicUrlSchema,
+    telegramUrl: sellerPublicUrlSchema.nullable().optional(),
+    instagramUrl: sellerPublicUrlSchema.nullable().optional(),
+    websiteUrl: sellerPublicUrlSchema.nullable().optional(),
     shortDescription: z.string().trim().min(1),
     handoffContactType: handoffContactTypeSchema,
     handoffContactValue: z.string().trim().min(1),
@@ -136,10 +136,10 @@ export const sellerProfileUpdateRequestSchema = z
     discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1).optional(),
     country: z.string().trim().min(1).optional(),
-    socialLink: z.string().url().optional(),
-    telegramUrl: z.string().url().nullable().optional(),
-    instagramUrl: z.string().url().nullable().optional(),
-    websiteUrl: z.string().url().nullable().optional(),
+    socialLink: sellerPublicUrlSchema.optional(),
+    telegramUrl: sellerPublicUrlSchema.nullable().optional(),
+    instagramUrl: sellerPublicUrlSchema.nullable().optional(),
+    websiteUrl: sellerPublicUrlSchema.nullable().optional(),
     shortDescription: z.string().trim().min(1).optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),

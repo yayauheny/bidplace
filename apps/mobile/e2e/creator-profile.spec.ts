@@ -33,7 +33,9 @@ test('creator profile creation stages public identity, links and private handoff
     await page.getByLabel('Instagram').fill('not-a-url');
     await page.getByLabel('Сайт').fill('not-a-url');
     await page.getByLabel('Основная публичная ссылка').fill('not-a-url');
-    await expect(page.getByText('Введите корректный URL')).toHaveCount(4);
+    await expect(
+      page.getByText('Введите HTTPS-ссылку, начиная с https://'),
+    ).toHaveCount(4);
     await expect(
       page.getByRole('button', { name: 'Продолжить' }),
     ).toBeDisabled();

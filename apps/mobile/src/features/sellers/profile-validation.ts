@@ -20,7 +20,7 @@ export function getPublicLinkError(value: string): string | undefined {
   if (!value.trim()) return undefined;
   return sellerPublicUrlSchema.safeParse(value.trim()).success
     ? undefined
-    : 'Введите корректный URL';
+    : 'Введите HTTPS-ссылку, начиная с https://';
 }
 
 export function getHandoffContactError(
