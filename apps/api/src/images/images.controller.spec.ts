@@ -67,6 +67,44 @@ describe('ImagesController binary response', () => {
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   });
 
+  it('uses revalidation caching for public creation-step images', async () => {
+    const images = {
+      getCreationStepImage: vi.fn().mockResolvedValue({
+        data: new Uint8Array(png),
+        mimeType: 'image/png',
+        isPublic: true,
+      }),
+    };
+    const controller = new ImagesController(images as never);
+    const response = responseMock();
+
+    await controller.getCreationStepImage('step-id', undefined, response);
+
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, must-revalidate',
+    );
+  });
+
+  it('uses private caching for owner-visible creation-step media', async () => {
+    const images = {
+      getCreationStepImage: vi.fn().mockResolvedValue({
+        data: new Uint8Array(png),
+        mimeType: 'image/png',
+        isPublic: false,
+      }),
+    };
+    const controller = new ImagesController(images as never);
+    const response = responseMock();
+
+    await controller.getCreationStepImage(
+      'step-id',
+      { sub: 'owner-id', role: 'user' },
+      response,
+    );
+
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
   it('does not expose private media to an anonymous request', async () => {
     const images = { get: vi.fn().mockRejectedValue(new NotFoundException()) };
     const controller = new ImagesController(images as never);

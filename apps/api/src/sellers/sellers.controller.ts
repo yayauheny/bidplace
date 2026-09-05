@@ -136,7 +136,10 @@ export class SellersController {
     const photo = await this.sellers.getPhoto(slug, auth?.sub, auth?.role);
     response.setHeader(
       'Cache-Control',
-      getImageCacheControl(photo.status === 'APPROVED'),
+      getImageCacheControl({
+        isPublic: photo.status === 'APPROVED',
+        kind: 'seller-photo',
+      }),
     );
     response.type(photo.profilePhotoMimeType);
     response.send(Buffer.from(photo.profilePhotoData));

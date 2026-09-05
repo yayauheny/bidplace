@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   assertProductImageCapacity,
   detectImageMimeType,
+  getImageCacheControl,
   productImagePixelBudgets,
   productImageUploadLimits,
   validateAndNormalizeProductImageUploads,
@@ -192,5 +193,34 @@ describe('image policy', () => {
         },
       ]),
     ).rejects.toThrow('image/png payload is corrupted or not decodable');
+  });
+
+  it.each([
+    [
+      { isPublic: false, kind: 'product' as const },
+      'private, no-store',
+    ],
+    [
+      { isPublic: false, kind: 'seller-photo' as const },
+      'private, no-store',
+    ],
+    [
+      { isPublic: false, kind: 'creation-step' as const },
+      'private, no-store',
+    ],
+    [
+      { isPublic: true, kind: 'product' as const },
+      'public, max-age=31536000, immutable',
+    ],
+    [
+      { isPublic: true, kind: 'seller-photo' as const },
+      'public, max-age=0, must-revalidate',
+    ],
+    [
+      { isPublic: true, kind: 'creation-step' as const },
+      'public, max-age=0, must-revalidate',
+    ],
+  ])('selects cache control for %j', (input, expected) => {
+    expect(getImageCacheControl(input)).toBe(expected);
   });
 });

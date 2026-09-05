@@ -113,7 +113,11 @@ describe('public media transport over HTTP and PostgreSQL', () => {
       200,
     );
 
-    await expectImageResponse(await guest.get(`/sellers/${seller.slug}/photo`));
+    const photoResponse = await guest.get(`/sellers/${seller.slug}/photo`);
+    await expectImageResponse(photoResponse);
+    expect(photoResponse.headers.get('cache-control')).toBe(
+      'public, max-age=0, must-revalidate',
+    );
     expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
       200,
     );

@@ -141,7 +141,10 @@ export class ImagesController {
     },
   ) {
     const image = await this.images.get(id, auth?.sub, auth?.role);
-    response.setHeader('Cache-Control', getImageCacheControl(image.isPublic));
+    response.setHeader(
+      'Cache-Control',
+      getImageCacheControl({ isPublic: image.isPublic, kind: 'product' }),
+    );
     response.type(image.mimeType);
     response.send(Buffer.from(image.data));
   }
@@ -163,7 +166,13 @@ export class ImagesController {
       auth?.sub,
       auth?.role,
     );
-    response.setHeader('Cache-Control', getImageCacheControl(image.isPublic));
+    response.setHeader(
+      'Cache-Control',
+      getImageCacheControl({
+        isPublic: image.isPublic,
+        kind: 'creation-step',
+      }),
+    );
     response.type(image.mimeType!);
     response.send(Buffer.from(image.data!));
   }

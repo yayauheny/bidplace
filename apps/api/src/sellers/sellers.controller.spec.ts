@@ -41,6 +41,9 @@ describe('SellersController photo binary response', () => {
     expect(response.body).toEqual(png);
     expect(response.body?.subarray(0, 8)).toEqual(png);
     expect(response.body?.toString('utf8').startsWith('{')).toBe(false);
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=0, must-revalidate',
+    );
   });
 
   it('does not expose a private profile photo to an anonymous request', async () => {

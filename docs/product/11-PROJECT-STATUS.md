@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Mutable image cache (QW-06)
+
+- `Implemented`: `getImageCacheControl({ isPublic, kind })` in `apps/api/src/images/image-policy.ts`. Private remains `private, no-store`. Public Product images by id stay `public, max-age=31536000, immutable` because add/delete allocate a new id and do not replace bytes in place. Public seller photo (`/sellers/:slug/photo`) and creation-step (`/creation-steps/:stepId/image`) use `public, max-age=0, must-revalidate`.
+- Coverage: parameterized `image-policy.spec.ts`; `images.controller.spec.ts` product + creation-step; `sellers.controller.spec.ts` photo; `media-transport.integration.spec.ts` product vs seller headers.
+- `Verified`: API typecheck/lint; image/seller unit 35/35; PostgreSQL integration 66/66 including `media-transport`.
+
 ## 2026-09-05 — BY+RF lawyer pack (P0-B)
 
 - `Implemented` (docs only): `docs/legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` is the send pack for written BY+RF review against `DEC-072`. It records known processors, open hosting, and launch gates. Drafts in `docs/legal/drafts/` were not published or rewritten as public law.
