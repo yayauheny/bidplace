@@ -6,6 +6,7 @@ import {
   ApiErrorCode,
   apiErrorResponseSchema,
   bidCreateRequestSchema,
+  isEditableProductStatus,
   listingCreateRequestSchema,
   listingStatusSchema,
   productWriteRequestSchema,
@@ -13,6 +14,7 @@ import {
   publicProductSchema,
   publicSellerQuerySchema,
   realtimeEventPayloadSchema,
+  sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '../src';
@@ -260,6 +262,33 @@ describe('shared contracts', () => {
         status: 400,
         code: 'UNKNOWN_CODE',
         message: 'nope',
+      }).success,
+    ).toBe(false);
+  });
+  it('treats rejected products as owner-editable without opening approved or live states', () => {
+    expect(isEditableProductStatus('DRAFT')).toBe(true);
+    expect(isEditableProductStatus('CHANGES_REQUESTED')).toBe(true);
+    expect(isEditableProductStatus('REJECTED')).toBe(true);
+    expect(isEditableProductStatus('PENDING_REVIEW')).toBe(false);
+    expect(isEditableProductStatus('APPROVED')).toBe(false);
+    expect(isEditableProductStatus('ARCHIVED')).toBe(false);
+  });
+  it('requires lastModerationReason on owner product detail', () => {
+    expect(
+      sellerProductDetailResponseSchema.shape.lastModerationReason.safeParse(
+        null,
+      ).success,
+    ).toBe(true);
+    expect(
+      sellerProductDetailResponseSchema.shape.lastModerationReason.safeParse(
+        'Добавьте подтверждение происхождения',
+      ).success,
+    ).toBe(true);
+    expect(
+      sellerProductDetailResponseSchema.safeParse({
+        product: {},
+        creationIntro: null,
+        creationSteps: [],
       }).success,
     ).toBe(false);
   });

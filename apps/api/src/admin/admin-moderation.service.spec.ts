@@ -49,6 +49,31 @@ describe('AdminModerationService', () => {
     );
   });
 
+  it('blocks admin from reopening a REJECTED product', async () => {
+    const tx = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'product-id',
+          status: 'REJECTED',
+          sellerProfile: { status: 'APPROVED' },
+          images: [{ id: 'image-id' }],
+          listings: [],
+        }),
+        update: vi.fn(),
+      },
+      auditEvent: { create: vi.fn() },
+    };
+    const service = new AdminModerationService(transactionPrisma(tx) as never);
+
+    await expect(
+      service.updateProductStatus('admin-id', 'product-id', {
+        status: 'APPROVED',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.product.update).not.toHaveBeenCalled();
+    expect(tx.auditEvent.create).not.toHaveBeenCalled();
+  });
+
   it('blocks a limiting product action while its listing is scheduled or LIVE', async () => {
     const tx = {
       product: {

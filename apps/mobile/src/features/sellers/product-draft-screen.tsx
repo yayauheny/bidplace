@@ -32,6 +32,11 @@ import { ProductDraftAboutStep } from './product-draft-about';
 import { ProductDraftCreationStep } from './product-draft-creation';
 import { ProductDraftImagesStep } from './product-draft-images';
 import { ProductDraftReviewStep } from './product-draft-review';
+import {
+  canOwnerEditProduct,
+  ownerModerationReasonNotice,
+  ownerProductSubmitLabel,
+} from './product-draft-state';
 
 type DraftCreationStep = {
   id?: string;
@@ -314,11 +319,13 @@ export function ProductDraftScreen({
       </FormPageShell>
     );
 
-  const editable =
-    !existingProduct ||
-    existingProduct.status === 'DRAFT' ||
-    existingProduct.status === 'CHANGES_REQUESTED';
+  const editable = canOwnerEditProduct(existingProduct?.status);
   const productStatus = existingProduct?.status;
+  const moderationNotice = ownerModerationReasonNotice(
+    productStatus,
+    productDetail.data?.lastModerationReason,
+  );
+  const submitLabel = ownerProductSubmitLabel(productStatus);
   const reorder = (imageId: string, direction: -1 | 1) => {
     if (!existingProduct) return;
     const ids = existingProduct.images.map((image) => image.id);
@@ -447,6 +454,14 @@ export function ProductDraftScreen({
         </AppText>
       </View>
 
+      {moderationNotice ? (
+        <FormSection title={moderationNotice.title}>
+          <AppText role="bodySmall" tone="danger">
+            {moderationNotice.body}
+          </AppText>
+        </FormSection>
+      ) : null}
+
       {existingProduct && !isCreationFlow ? (
         <FormSection title="Статус предмета">
           <AppText
@@ -454,7 +469,8 @@ export function ProductDraftScreen({
             tone={
               productStatus === 'APPROVED'
                 ? 'success'
-                : productStatus === 'CHANGES_REQUESTED'
+                : productStatus === 'CHANGES_REQUESTED' ||
+                    productStatus === 'REJECTED'
                   ? 'danger'
                   : 'secondary'
             }
@@ -484,11 +500,7 @@ export function ProductDraftScreen({
           ) : null}
           {productStatus !== 'APPROVED' && editable ? (
             <PrimaryButton
-              label={
-                productStatus === 'CHANGES_REQUESTED'
-                  ? 'Повторно отправить на модерацию'
-                  : 'Отправить на модерацию'
-              }
+              label={submitLabel}
               loading={submit.isPending}
               disabled={existingProduct.images.length < 1}
               onPress={() => submit.mutate(existingProduct.id)}
@@ -642,6 +654,7 @@ export function ProductDraftScreen({
           existingProductTitle={existingProduct.title}
           existingProductImagesLength={existingProduct.images.length}
           creationSteps={creationSteps}
+          submitLabel={submitLabel}
           wizardSubmitted={wizardSubmitted}
           submitPending={submit.isPending}
           onSubmitPress={() => submit.mutate(existingProduct.id)}

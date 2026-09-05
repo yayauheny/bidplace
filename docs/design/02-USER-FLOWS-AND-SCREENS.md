@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-05
 
 Статус: **Runtime scope implemented; matched Pen overlay and founder/device acceptance pending**
 
@@ -127,6 +127,14 @@ Authors/Works/Orders plus **Пользователи** (ban/revoke) and **Вос
 (needs-order queue, emergency cancel). Смена Global Header или
 tokens не должна делать их недоступными. Их визуальная миграция требует
 отдельных Pen targets или явного правила наследования новой системы.
+
+### Seller product draft
+
+`/products/new` and `/products/[id]` hydrate from owner detail.
+`REJECTED` and `CHANGES_REQUESTED` reopen the same form with the latest
+moderation reason and resubmit the same Product. `PENDING_REVIEW` and
+`APPROVED` stay locked. Public visibility remains false until a later
+`APPROVED`.
 
 ### Auth (mobile)
 

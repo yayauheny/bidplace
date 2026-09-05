@@ -1173,3 +1173,39 @@ independent of the deadline until an explicit SLA decision.
 
 Seller-configurable contact windows, automatic replacement, or a different
 handoff SLA is an explicit product decision.
+
+## DEC-071 — REJECTED Product is recovered on the same Product
+
+Date: 2026-09-05
+Status: Confirmed
+
+Numbered DEC-071 on land because DEC-070 was already assigned to the 48-hour
+Order contact window.
+
+### Decision
+
+Product `REJECTED` is not a seller dead-end. An approved seller-owner may open the
+same Product, see the latest moderation reason, edit the same fields, images and
+creation story allowed in `CHANGES_REQUESTED`, and submit that same Product back
+to `PENDING_REVIEW`. A new Product or Listing is not created. Previous
+`AuditEvent` rows remain append-only. The Product stays non-public until a later
+`APPROVED`. Admin role does not grant seller write. `APPROVED` Products and
+scheduled/live Listings stay locked.
+
+### Revises
+
+`DEC-044` only where the previous implementation treated Product `REJECTED` as
+terminal with no owner recovery. `DEC-044` still requires moderation before
+public publication.
+
+### Alternatives considered
+
+- Clone a rejected Product into a new draft — rejected: duplicates identity and
+  splits the audit trail.
+- A dedicated reset endpoint that rewrites status or history — rejected: mutates
+  audit and adds a second write path.
+
+### Revisit when
+
+A later item class needs a different post-rejection workflow, or legal process
+requires a distinct appeal record separate from Product identity.

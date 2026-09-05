@@ -398,6 +398,7 @@ describe('SellersService', () => {
           ],
         }),
       },
+      auditEvent: { findFirst: vi.fn().mockResolvedValue(null) },
     };
     const service = new SellersService(prisma as never, {} as never, imageStore as never);
 
@@ -407,6 +408,7 @@ describe('SellersService', () => {
     );
 
     expect(result.creationIntro).toBe('Persisted intro');
+    expect(result.lastModerationReason).toBeNull();
     expect(result.creationSteps[0]?.image?.url).toBe(
       '/api/creation-steps/2f8fc6d7-4c7a-4f9e-9f75-b8eafed0c2b1/image',
     );
@@ -418,5 +420,67 @@ describe('SellersService', () => {
         },
       }),
     );
+    expect(prisma.auditEvent.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          targetType: 'PRODUCT',
+          targetId: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          reason: { not: null },
+        },
+      }),
+    );
+  });
+
+  it('exposes the latest rejection reason without rewriting audit history', async () => {
+    const prisma = {
+      product: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          publicId: 'publicId001',
+          sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          categoryId: null,
+          title: 'Work',
+          story: 'Story',
+          technique: null,
+          materials: null,
+          dimensions: null,
+          weight: null,
+          year: null,
+          condition: 'New',
+          uniqueness: 'One',
+          provenance: 'Studio',
+          city: 'Minsk',
+          packaging: 'Protective box',
+          deliveryInfo: 'Pickup',
+          publishedAt: null,
+          status: 'REJECTED',
+          createdAt: new Date('2026-07-18T00:00:00.000Z'),
+          updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+          images: [],
+          creationIntro: null,
+          creationSteps: [],
+        }),
+      },
+      auditEvent: {
+        findFirst: vi.fn().mockResolvedValue({
+          reason: 'Provenance could not be confirmed',
+        }),
+        update: vi.fn(),
+        delete: vi.fn(),
+      },
+    };
+    const service = new SellersService(prisma as never, {} as never, imageStore as never);
+
+    const result = await service.getProduct(
+      'owner-id',
+      'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+    );
+
+    expect(result.product.status).toBe('REJECTED');
+    expect(result.lastModerationReason).toBe(
+      'Provenance could not be confirmed',
+    );
+    expect(prisma.auditEvent.update).not.toHaveBeenCalled();
+    expect(prisma.auditEvent.delete).not.toHaveBeenCalled();
   });
 });

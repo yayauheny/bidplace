@@ -12,6 +12,7 @@ export type ProductDraftReviewStepProps = {
   existingProductTitle: string | null | undefined;
   existingProductImagesLength: number;
   creationSteps: DraftCreationStep[];
+  submitLabel: string;
 
   wizardSubmitted: boolean;
   submitPending: boolean;
@@ -24,6 +25,7 @@ export function ProductDraftReviewStep({
   existingProductTitle,
   existingProductImagesLength,
   creationSteps,
+  submitLabel,
   wizardSubmitted,
   submitPending,
   onSubmitPress,
@@ -51,7 +53,7 @@ export function ProductDraftReviewStep({
         </AppText>
       ) : (
         <PrimaryButton
-          label="Отправить на модерацию"
+          label={submitLabel}
           loading={submitPending}
           disabled={!editable || existingProductImagesLength < 1}
           onPress={() => onSubmitPress()}
