@@ -1,5 +1,10 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — BY+RF lawyer pack (P0-B)
+
+- `Implemented` (docs only): `docs/legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` is the send pack for written BY+RF review against `DEC-072`. It records known processors, open hosting, and launch gates. Drafts in `docs/legal/drafts/` were not published or rewritten as public law.
+- `Not implemented`: lawyer reply, mapping table, P0-C cookies/consent. Oral 24 Aug answers are not treated as a 2026 written opinion.
+
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 
 - `Confirmed` (product): `DEC-072` and RFC §21 record founder defaults: no counteroffer; manual next bidder; 48h contact (`DEC-070`); atomic fixed buy; Listing `BYN|RUB` by seller market; portfolio-only in wave 2; transactional email set; complaint images only; human legal review before a public audience.

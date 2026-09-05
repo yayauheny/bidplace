@@ -4,7 +4,7 @@
 Это не оферта и не заключение юриста.
 
 Комплект и слои: [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md).  
-Черновики: [`drafts/`](drafts/).  
+Письменный пакет BY+RF (не публикация): [`06-LAWYER-PACK-BY-RF-2026-09-05.md`](06-LAWYER-PACK-BY-RF-2026-09-05.md).  
 Смысл с юриста: [`02-LAWYER-ANSWERS-2026-08-24.md`](02-LAWYER-ANSWERS-2026-08-24.md).  
 Галочки в интерфейсе: [`../design-handoff/13-FOOTER-AND-COMPLAINT.md`](../design-handoff/13-FOOTER-AND-COMPLAINT.md).
 
