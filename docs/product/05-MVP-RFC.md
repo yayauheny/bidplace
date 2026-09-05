@@ -3,7 +3,7 @@
 Версия: 1.3
 Последнее обновление: 2026-09-05
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-073`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-074`
 
 ## 1. Цель MVP
 
@@ -311,6 +311,8 @@ Privacy mode seller:
 
 Каждый новый Order (lifecycle close, admin recovery и manual replacement) сохраняет `contactDueAt` как 48-часовой snapshot от фактического момента создания этой сделки. Настройка seller 24/48/72 отложена. См. `DEC-070`.
 
+Тот же create-path замораживает title, final amount, currency и Listing identity (`listingId` + product public id). Карточка сделки и будущий seller inbox читают эти поля, а не живой Product. Исторические ряды без snapshot-колонок читают live Product/Listing до отдельного backfill. См. `DEC-074`.
+
 SLA 24 часа и штрафы — Hypothesis, не MVP.
 
 ## 14. Отказ победителя
@@ -467,7 +469,7 @@ Fixed-price sale and optional price offers are **in the product contract** (`DEC
 
 - **Offer:** accept или reject; counteroffer нет.
 - **Next bidder:** только ручная audited admin replacement (`DEC-054`). Автоматический переход не делать.
-- **Contact:** 48 часов snapshot на каждый новый Order (`DEC-070`).
+- **Contact:** 48 часов snapshot на каждый новый Order (`DEC-070`). Title, amount, currency и Listing identity замораживаются в том же create (`DEC-074`).
 - **Fixed buy:** уникальная работа имеет не больше одного buyer. Подтверждение покупателя атомарно создаёт Order. Повторное подтверждение продавца не нужно. Снять listing можно только до успешной покупки. Auction Buy Now / buyout нет.
 - **Currency:** Listing хранит `BYN` или `RUB` по рынку продавца; IP-конверсии нет.
 - **Portfolio-only:** волна 2.

@@ -18,7 +18,10 @@ const baseOrder = {
   cancellationReason: null,
   createdAt: new Date('2026-07-18T00:00:00.000Z'),
   updatedAt: new Date('2026-07-18T00:00:00.000Z'),
-  listing: { product: { publicId: 'product0011', title: 'Product' } },
+  listing: {
+    currency: 'BYN',
+    product: { publicId: 'product0011', title: 'Product' },
+  },
   buyer: { phone: '+375290000000' },
 };
 
@@ -83,5 +86,42 @@ describe('OrdersService', () => {
     const adminResult = await service.get('admin-id', 'admin', cancelledOrder.publicId);
     expect(adminResult.order.status).toBe('CANCELLED');
     expect(adminResult.buyerEmailAtClose).toBe('buyer@example.com');
+    expect(adminResult.order.currency).toBe('BYN');
+  });
+
+  it('returns the frozen product summary even if the live Product title changed', async () => {
+    const order = {
+      ...baseOrder,
+      snapshotTitle: 'Frozen title',
+      snapshotCurrency: 'BYN',
+      snapshotProductPublicId: 'product0011',
+      listing: {
+        currency: 'RUB',
+        product: { publicId: 'changed0001', title: 'Changed title' },
+      },
+    };
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(order) } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    const result = await service.get('seller-id', 'user', order.publicId);
+
+    expect(result.productSummary).toEqual({
+      publicId: 'product0011',
+      title: 'Frozen title',
+    });
+    expect(result.order.currency).toBe('BYN');
+  });
+
+  it('falls back to live Product fields for historical Orders without a snapshot', async () => {
+    const prisma = { order: { findUnique: vi.fn().mockResolvedValue(baseOrder) } };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    const result = await service.get('seller-id', 'user', baseOrder.publicId);
+
+    expect(result.productSummary).toEqual({
+      publicId: 'product0011',
+      title: 'Product',
+    });
+    expect(result.order.currency).toBe('BYN');
   });
 });

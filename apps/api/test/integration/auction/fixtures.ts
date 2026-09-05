@@ -9,7 +9,7 @@ export type AuctionFixture = {
   buyerA: { id: string; email: string };
   buyerB: { id: string; email: string };
   buyerC?: { id: string; email: string };
-  product: { id: string; sellerProfileId: string };
+  product: { id: string; sellerProfileId: string; publicId: string; title: string };
   listing: {
     id: string;
     startsAt: Date;
@@ -117,7 +117,7 @@ export async function createAuctionFixture(
       story: 'Authored auction fixture item.',
       status: 'APPROVED',
     },
-    select: { id: true, sellerProfileId: true },
+    select: { id: true, sellerProfileId: true, publicId: true, title: true },
   });
   const startsAt =
     options.startsAt ?? new Date(auctionNow.getTime() - 3_600_000);

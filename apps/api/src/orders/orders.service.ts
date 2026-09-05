@@ -22,7 +22,12 @@ import {
   WinnerOrderPublicIdExhaustedError,
 } from './create-winner-order';
 import { orderContactSchedule } from './order-contact-deadline';
-import { createOrderSnapshot } from './order-snapshot';
+import {
+  createOrderSnapshot,
+  IncompleteOrderSnapshotError,
+  loadOrderDealSnapshot,
+  resolveOrderDealFields,
+} from './order-snapshot';
 import { createBidderAlias } from '../bids/bid-alias';
 
 const orderWithProductSelect = {
@@ -40,6 +45,9 @@ const orderWithProductSelect = {
   sellerHandoffValue: true,
   buyerEmailAtClose: true,
   handoffInitiator: true,
+  snapshotTitle: true,
+  snapshotCurrency: true,
+  snapshotProductPublicId: true,
   sellerId: true,
   buyerId: true,
   listing: {
@@ -476,6 +484,7 @@ export class OrdersService {
         }
 
         const schedule = orderContactSchedule(new Date());
+        const deal = await loadOrderDealSnapshot(tx, original.listingId);
 
         for (let attempt = 0; attempt < 5; attempt += 1) {
           try {
@@ -493,6 +502,7 @@ export class OrdersService {
                   sellerHandoffValue: sellerProfile.handoffContactValue,
                   buyerEmailAtClose: buyer.email,
                   handoffInitiator: sellerProfile.handoffInitiator,
+                  ...deal,
                 }),
               },
             });
@@ -620,10 +630,14 @@ export class OrdersService {
   }
 
   private toResponse(order: NonNullable<OrderRecord>, audience: OrderAudience) {
-    if (!order.listing.product.title) {
-      throw new InternalServerErrorException(
-        'Approved Order product is missing a title',
-      );
+    let deal: ReturnType<typeof resolveOrderDealFields>;
+    try {
+      deal = resolveOrderDealFields(order);
+    } catch (error) {
+      if (error instanceof IncompleteOrderSnapshotError) {
+        throw new InternalServerErrorException(error.message);
+      }
+      throw error;
     }
 
     const base = {
@@ -632,6 +646,7 @@ export class OrdersService {
         publicId: order.publicId,
         listingId: order.listingId,
         finalAmount: order.finalAmount.toNumber(),
+        currency: deal.currency,
         contactDueAt: order.contactDueAt.toISOString(),
         status: order.status,
         cancellationReason: order.cancellationReason,
@@ -639,8 +654,8 @@ export class OrdersService {
         updatedAt: order.updatedAt.toISOString(),
       },
       productSummary: {
-        publicId: order.listing.product.publicId,
-        title: order.listing.product.title,
+        publicId: deal.productPublicId,
+        title: deal.title,
       },
     };
 

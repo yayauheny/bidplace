@@ -187,6 +187,9 @@ describe('admin Order recovery for ended Listings', () => {
     });
     expect(persisted.sourceBidId).toBe(winner.id);
     expect(persisted.buyerId).toBe(fixture.buyerA.id);
+    expect(persisted.snapshotTitle).toBe('Auction product');
+    expect(persisted.snapshotCurrency).toBe('BYN');
+    expect(persisted.snapshotProductPublicId).toBe(fixture.product.publicId);
     expect(persisted.sellerHandoffValue).toBe('@recovered_seller');
     expect(persisted.contactDueAt.getTime()).toBeGreaterThan(Date.now());
     expect(persisted.contactDueAt.toISOString()).toBe(first.order.contactDueAt);

@@ -10,7 +10,7 @@ import {
   runSerializableTransaction,
 } from '../core/database';
 import { orderContactSchedule } from './order-contact-deadline';
-import { createOrderSnapshot } from './order-snapshot';
+import { createOrderSnapshot, loadOrderDealSnapshot } from './order-snapshot';
 
 export const WINNER_BID_ORDER_BY = [
   { amount: 'desc' as const },
@@ -97,6 +97,7 @@ export async function createWinnerOrder(
           return { status: 'already_exists' as const, order: existing };
         }
 
+        const deal = await loadOrderDealSnapshot(tx, input.listingId);
         const order = await tx.order.create({
           data: {
             publicId: input.generatePublicId(),
@@ -111,6 +112,7 @@ export async function createWinnerOrder(
               sellerHandoffValue: input.sellerHandoffValue,
               buyerEmailAtClose: input.buyerEmailAtClose,
               handoffInitiator: input.handoffInitiator,
+              ...deal,
             }),
           },
         });

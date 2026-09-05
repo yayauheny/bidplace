@@ -1289,3 +1289,32 @@ without bids. The scheduler writes `CANCELLED`, `closedAt = now`, an append-only
 
 A founder decision restores a published recovery window or a different missed-
 schedule outcome.
+
+## DEC-074 — Immutable Order deal snapshot
+
+Date: 2026-09-05
+Status: Confirmed
+
+### Decision
+
+Every new Order freezes the deal surface at create: Product title, Listing
+currency, Product public id, Listing identity (`listingId`) and `finalAmount`,
+together with the existing handoff contact snapshot. Lifecycle close, admin
+recovery and manual replacement load those fields inside the create
+transaction through the shared snapshot helper. Order projections prefer the
+frozen fields. Historical rows without snapshot columns keep the live
+Product/Listing fallback and are not rewritten.
+
+### Alternatives considered
+
+- Snapshot only contacts — rejected; seller inbox and P0-E would keep reading a
+  mutable title.
+- Backfill old Orders — rejected for this change; additive nullable columns
+  avoid a data rewrite.
+- Duplicate `snapshotListingId` — rejected; `listingId` is already the frozen
+  Listing identity.
+
+### Revisit when
+
+P0-E reuses this helper for fixed/offers, or a founder decision requires
+backfilling historical Orders.

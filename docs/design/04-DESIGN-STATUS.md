@@ -4,6 +4,10 @@
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
+## 2026-09-05 — Order frozen currency display
+
+- `Implemented`: Order detail formats `finalAmount` with the frozen `order.currency` from the deal snapshot. No new layout, Pen node or visual system.
+
 ## 2026-09-05 — Rejected Product recovery
 
 - `Implemented`: `ProductDraftScreen` hydrates a `REJECTED` owner detail into

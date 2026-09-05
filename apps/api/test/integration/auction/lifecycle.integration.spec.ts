@@ -126,6 +126,10 @@ describe('auction lifecycle business guarantees', () => {
     });
     expect(order?.sourceBidId).toBe(winner.bid.id);
     expect(order?.buyerId).toBe(fixture.buyerB.id);
+    expect(order?.snapshotTitle).toBe('Auction product');
+    expect(order?.snapshotCurrency).toBe('BYN');
+    expect(order?.snapshotProductPublicId).toBe(fixture.product.publicId);
+    expect(order?.finalAmount.toNumber()).toBe(11);
     expect(order?.contactDueAt.getTime()).toBe(
       computeOrderContactDueAt(closeAt).getTime(),
     );

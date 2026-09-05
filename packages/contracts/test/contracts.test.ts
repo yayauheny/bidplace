@@ -14,6 +14,7 @@ import {
   publicProductSchema,
   publicSellerQuerySchema,
   realtimeEventPayloadSchema,
+  sellerOrderResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
@@ -291,5 +292,30 @@ describe('shared contracts', () => {
         creationSteps: [],
       }).success,
     ).toBe(false);
+  });
+
+  it('requires frozen currency on Order projections', () => {
+    const base = {
+      order: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        publicId: 'orderPub001',
+        listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        finalAmount: 120,
+        contactDueAt: '2026-07-19T00:00:00.000Z',
+        status: 'PENDING_CONTACT' as const,
+        cancellationReason: null,
+        createdAt: '2026-07-18T00:00:00.000Z',
+        updatedAt: '2026-07-18T00:00:00.000Z',
+      },
+      productSummary: { publicId: 'product0011', title: 'Work' },
+      buyerEmailAtClose: 'buyer@example.com',
+    };
+    expect(sellerOrderResponseSchema.safeParse(base).success).toBe(false);
+    expect(
+      sellerOrderResponseSchema.safeParse({
+        ...base,
+        order: { ...base.order, currency: 'BYN' },
+      }).success,
+    ).toBe(true);
   });
 });

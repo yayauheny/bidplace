@@ -6,7 +6,12 @@ import {
   orderCancellationReasonSchema,
   orderStatusSchema,
 } from './enums';
-import { isoDateTimeSchema, moneyAmountSchema, uuidSchema } from './primitives';
+import {
+  currencyCodeSchema,
+  isoDateTimeSchema,
+  moneyAmountSchema,
+  uuidSchema,
+} from './primitives';
 
 export const orderSchema = z
   .object({
@@ -17,6 +22,7 @@ export const orderSchema = z
     buyerId: uuidSchema,
     sourceBidId: uuidSchema,
     finalAmount: moneyAmountSchema,
+    currency: currencyCodeSchema,
     contactDueAt: isoDateTimeSchema,
     sellerHandoffType: handoffContactTypeSchema,
     sellerHandoffValue: z.string().trim().min(1),
@@ -36,6 +42,7 @@ const orderResponseBaseSchema = z
       publicId: true,
       listingId: true,
       finalAmount: true,
+      currency: true,
       contactDueAt: true,
       status: true,
       cancellationReason: true,

@@ -102,6 +102,10 @@ describe('manual Order replacement against PostgreSQL', () => {
     if (!replacementRow) {
       throw new Error('replacement Order was not created');
     }
+    expect(replacementRow.snapshotTitle).toBe('Order integration product');
+    expect(replacementRow.snapshotCurrency).toBe('BYN');
+    expect(replacement.productSummary.title).toBe('Order integration product');
+    expect(replacement.order.currency).toBe('BYN');
     expect(replacementRow.contactDueAt.getTime()).toBeGreaterThan(
       replacementRow.createdAt.getTime(),
     );
@@ -215,5 +219,45 @@ describe('manual Order replacement against PostgreSQL', () => {
     const state = await orderState(fixture);
     expect(state.orders).toHaveLength(1);
     expect(state.audits).toHaveLength(0);
+  });
+
+  it('freezes replacement title and currency after the live Product changes', async () => {
+    const fixture = await createOrderFixture(prisma);
+    const orders = createOrdersService();
+    const listing = await prisma.listing.findUniqueOrThrow({
+      where: { id: fixture.listing.id },
+      select: { productId: true, product: { select: { publicId: true } } },
+    });
+
+    await prisma.product.update({
+      where: { id: listing.productId },
+      data: { title: 'Changed after original close' },
+    });
+    await orders.cancel(fixture.admin.id, 'admin', fixture.order.publicId, {
+      reason: 'BUYER_DECLINED',
+    });
+    const replacement = await orders.replace(
+      fixture.admin.id,
+      'admin',
+      fixture.order.publicId,
+      { bidId: fixture.nextRankedBid.id },
+    );
+
+    expect(replacement.productSummary).toEqual({
+      publicId: listing.product.publicId,
+      title: 'Changed after original close',
+    });
+
+    await prisma.product.update({
+      where: { id: listing.productId },
+      data: { title: 'Changed after replacement' },
+    });
+    const frozen = await orders.get(
+      fixture.seller.id,
+      'user',
+      replacement.order.publicId,
+    );
+    expect(frozen.productSummary.title).toBe('Changed after original close');
+    expect(frozen.order.currency).toBe('BYN');
   });
 });

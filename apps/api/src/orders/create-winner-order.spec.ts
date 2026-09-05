@@ -6,6 +6,7 @@ import {
   WinnerOrderPublicIdExhaustedError,
 } from './create-winner-order';
 import { orderContactSchedule } from './order-contact-deadline';
+import { IncompleteOrderSnapshotError } from './order-snapshot';
 
 const baseInput = {
   listingId: 'listing-1',
@@ -20,19 +21,36 @@ const baseInput = {
   handoffInitiator: 'BUYER_CONTACTS_SELLER' as const,
 };
 
+const dealListing = {
+  currency: 'BYN',
+  product: { title: 'Closed work', publicId: 'product0001' },
+};
+
+function winnerTx(options: {
+  existing?: unknown;
+  create?: ReturnType<typeof vi.fn>;
+  listing?: unknown;
+}) {
+  return {
+    listing: {
+      findUnique: vi.fn().mockResolvedValue(options.listing ?? dealListing),
+    },
+    order: {
+      findUnique: vi.fn().mockResolvedValue(options.existing ?? null),
+      create: options.create ?? vi.fn(),
+    },
+  };
+}
+
 describe('createWinnerOrder', () => {
   it('returns already_exists when sourceBid Order is present in a fresh TX', async () => {
     const existing = { id: 'order-1', sourceBidId: 'bid-1' };
     const create = vi.fn();
+    const tx = winnerTx({ existing, create });
     const prisma = {
       order: { findUnique: vi.fn() },
-      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(existing),
-            create,
-          },
-        }),
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
       ),
     };
 
@@ -43,6 +61,7 @@ describe('createWinnerOrder', () => {
 
     expect(result).toEqual({ status: 'already_exists', order: existing });
     expect(create).not.toHaveBeenCalled();
+    expect(tx.listing.findUnique).not.toHaveBeenCalled();
   });
 
   it('retries publicId collisions in a new transaction then creates', async () => {
@@ -58,19 +77,17 @@ describe('createWinnerOrder', () => {
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
         attempt += 1;
         if (attempt === 1) {
-          return callback({
-            order: {
-              findUnique: vi.fn().mockResolvedValue(null),
+          return callback(
+            winnerTx({
               create: create.mockRejectedValueOnce(publicIdError),
-            },
-          });
+            }),
+          );
         }
-        return callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
+        return callback(
+          winnerTx({
             create: create.mockResolvedValueOnce(created),
-          },
-        });
+          }),
+        );
       }),
     };
 
@@ -98,12 +115,11 @@ describe('createWinnerOrder', () => {
         findUnique: vi.fn().mockResolvedValue(existing),
       },
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
+        callback(
+          winnerTx({
             create: vi.fn().mockRejectedValue(sourceBidError),
-          },
-        }),
+          }),
+        ),
       ),
     };
 
@@ -127,12 +143,7 @@ describe('createWinnerOrder', () => {
     const prisma = {
       order: { findUnique: vi.fn() },
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            create,
-          },
-        }),
+        callback(winnerTx({ create })),
       ),
     };
 
@@ -150,12 +161,11 @@ describe('createWinnerOrder', () => {
     const prisma = {
       order: { findUnique: vi.fn() },
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
+        callback(
+          winnerTx({
             create: vi.fn().mockRejectedValue(new Error('db down')),
-          },
-        }),
+          }),
+        ),
       ),
     };
 
@@ -174,12 +184,11 @@ describe('createWinnerOrder', () => {
     const prisma = {
       order: { findUnique: vi.fn() },
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
+        callback(
+          winnerTx({
             create: vi.fn().mockResolvedValue(created),
-          },
-        }),
+          }),
+        ),
       ),
     };
 
@@ -197,12 +206,7 @@ describe('createWinnerOrder', () => {
 
     onCreated.mockClear();
     prisma.$transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-      callback({
-        order: {
-          findUnique: vi.fn().mockResolvedValue(existing),
-          create: vi.fn(),
-        },
-      }),
+      callback(winnerTx({ existing })),
     );
 
     await createWinnerOrder(
@@ -214,17 +218,12 @@ describe('createWinnerOrder', () => {
     expect(onCreated).not.toHaveBeenCalled();
   });
 
-  it('writes createdAt and contactDueAt from the shared 48h schedule', async () => {
+  it('writes createdAt, contactDueAt and frozen deal snapshot from the Listing', async () => {
     const create = vi.fn().mockResolvedValue({ id: 'order-6' });
     const prisma = {
       order: { findUnique: vi.fn() },
       $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-        callback({
-          order: {
-            findUnique: vi.fn().mockResolvedValue(null),
-            create,
-          },
-        }),
+        callback(winnerTx({ create })),
       ),
     };
 
@@ -234,7 +233,40 @@ describe('createWinnerOrder', () => {
     });
 
     expect(create).toHaveBeenCalledWith({
-      data: expect.objectContaining(orderContactSchedule(baseInput.now)),
+      data: expect.objectContaining({
+        ...orderContactSchedule(baseInput.now),
+        snapshotTitle: 'Closed work',
+        snapshotCurrency: 'BYN',
+        snapshotProductPublicId: 'product0001',
+        listingId: 'listing-1',
+        finalAmount: baseInput.finalAmount,
+      }),
     });
+  });
+
+  it('fails closed when the Listing product cannot be snapshotted', async () => {
+    const create = vi.fn();
+    const prisma = {
+      order: { findUnique: vi.fn() },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback(
+          winnerTx({
+            create,
+            listing: {
+              currency: 'BYN',
+              product: { title: null, publicId: 'product0001' },
+            },
+          }),
+        ),
+      ),
+    };
+
+    await expect(
+      createWinnerOrder(prisma as never, {
+        ...baseInput,
+        generatePublicId: () => 'publicIdOk7',
+      }),
+    ).rejects.toBeInstanceOf(IncompleteOrderSnapshotError);
+    expect(create).not.toHaveBeenCalled();
   });
 });

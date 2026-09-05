@@ -173,7 +173,7 @@ export function OrderScreen({ publicId }: { publicId: string }) {
             items={[
               {
                 label: 'Итоговая сумма',
-                value: formatCurrencyAmount(order.finalAmount),
+                value: formatCurrencyAmount(order.finalAmount, order.currency),
               },
               {
                 label: 'Связаться до',

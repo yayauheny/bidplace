@@ -1,5 +1,11 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Immutable Order deal snapshot
+
+- `Implemented`: new Orders freeze `snapshotTitle`, `snapshotCurrency` and `snapshotProductPublicId` at create. `listingId` and `finalAmount` remain the Listing identity and price snapshot. `createWinnerOrder` and admin replacement load Listing/Product inside the create TX via `loadOrderDealSnapshot` / `createOrderSnapshot`. GET projections prefer frozen fields; historical null columns fall back to live Product/Listing. Additive Prisma only; old rows are not rewritten. Decision: `DEC-074`.
+- Coverage: `order-snapshot.spec.ts`; `create-winner-order.spec.ts` create payload and fail-closed missing title; `orders.service.spec.ts` frozen vs live title; PostgreSQL lifecycle close, recovery and replacement including post-create Product title change.
+- `Verified`: contracts 26/26; targeted API unit 20/20; API typecheck/lint on `src/orders`; mobile typecheck after api-client rebuild; PostgreSQL integration 19/19 (lifecycle, recovery, replacement).
+
 ## 2026-09-05 — Expired SCHEDULED listings (P0-D)
 
 - `Implemented`: cron in `listing-lifecycle.service.ts` cancels `SCHEDULED` rows with `endsAt <= now` to `CANCELLED` + `closedAt`, audit reason `EXPIRED_SCHEDULED_WINDOW` (nullable `AuditEvent.actorUserId`), realtime `listing.updated`, no Order. Activation window unchanged. Decision: `DEC-073`.
@@ -20,7 +26,7 @@
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 
 - `Confirmed` (product): `DEC-072` and RFC §21 record founder defaults: no counteroffer; manual next bidder; 48h contact (`DEC-070`); atomic fixed buy; Listing `BYN|RUB` by seller market; portfolio-only in wave 2; transactional email set; complaint images only; human legal review before a public audience.
-- `Not implemented` (code): fixed-price Listing, optional offers, and `RUB` runtime. Current runtime remains `AUCTION` + `BYN`. P0-E must not start until Order snapshot exists.
+- `Not implemented` (code): fixed-price Listing, optional offers, and `RUB` runtime. Current runtime remains `AUCTION` + `BYN`. P0-E may start after this snapshot (`DEC-074`); seller Orders inbox is the remaining P0-D list gap.
 - Protected `01` / `08` / `09` were not rewritten. RFC §3, §9, §12, §14, §19 and §21 were updated to match `DEC-072`.
 
 ## 2026-09-05 — Rejected Product recovery (QW-04)
@@ -763,7 +769,7 @@ remaining product boundaries still apply.
 | Public seller application and capability | Partial            | `POST/PATCH /seller/profile`, seller status projection and the seller-write capability gate now exist, and the mobile application screen uses multipart photo upload; prior closed-pilot browser/E2E evidence is historical and current rerun remains Needs verification.                          |
 | Seller profile data                      | Partial            | Handoff contact, handoff initiator, immutable public `fullName`, profile photo upload/public URL and `CHANGES_REQUESTED` edit flow for public and handoff fields now exist in schema, API and mobile; prior browser seller-path evidence is historical and current rerun/device QA remain pending. |
 | Product moderation and visibility        | Implemented        | `submit`, admin moderation service, reasoned `CHANGES_REQUESTED` correction flow, `REJECTED` owner edit/resubmit on the same Product (`DEC-071`), LIVE-listing guard, audit records, `publishedAt`, one-image approval gate and shared public catalog/direct visibility predicates are in place. |
-| Seller handoff actions                   | Implemented        | Order snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator`; seller actions and admin replacement/cancellation preserve audit and role-scoped projections.                                                                                               |
+| Seller handoff actions                   | Implemented        | Order snapshots contacts plus frozen `snapshotTitle` / `snapshotCurrency` / `snapshotProductPublicId` (`DEC-074`); seller actions and admin replacement/cancellation preserve audit and role-scoped projections.                                                                               |
 | Timestamps                               | Partial            | Most mutable records have timestamps; the confirmed all-entity `createdAt`/`updatedAt` and Product `publishedAt` requirement is not yet implemented.                                                                                                                                               |
 | Pilot analytics                          | Implemented        | First-party ingest + admin `/admin/analytics` dashboard (`DEC-067`). Canonical events in `analytics-contract.md`; metrics definitions in `analytics-metrics.md`. Remaining RFC §16 names are DB-derived or deferred, not duplicate analytics events. |
 | Production email verification            | Implemented        | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/bids/bid-eligibility.ts` now enforce SMTP-backed email verification, versioned rules acceptance and a test-only bypass that stays disabled in production.                                                                                   |
