@@ -11,6 +11,7 @@
 - `Implemented`: `ListingLifecycleService.run` activate, expired-`SCHEDULED` cancel, and LIVE close `findMany` queries use `take: LIFECYCLE_TICK_BATCH_SIZE` (50) and stable `orderBy`. Activate orders by `startsAt`/`id`; cancel and close keep `endsAt`/`id`. Remainder stays for the next 30s tick. No queue or distributed lock.
 - Coverage: `listing-lifecycle.service.spec.ts` asserts `take`/`orderBy` on all three tick queries.
 - `Verified`: lifecycle unit 5/5; API typecheck; eslint on `src/lifecycle/listing-lifecycle.service.ts`; PostgreSQL `lifecycle.integration.spec.ts` in the 73/73 suite.
+- Review residuals (tick stretch, remainder proof, poison-prefix starvation, admin photo bytes): [`../audits/2026-09-05-MVP-RECONCILIATION-AND-TASKS.md`](../audits/2026-09-05-MVP-RECONCILIATION-AND-TASKS.md) §15. Не блокер merge.
 
 ## 2026-09-06 — Narrow SellerProfile and ProductImage hydration
 

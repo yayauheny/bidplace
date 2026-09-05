@@ -3,6 +3,7 @@
 Дата: 2026-09-05.
 Проверенная база: `2d3326f`, ветка источника `fix/final-pen-v2-rework`.
 Назначение: единая точка сверки и очередь заданий. Это не юридическое заключение.
+Дополнение: §15 — риски и потенциальные проблемы ревью 2026-09-06 (`fix/seller-orders-inbox`, `fae11b7..1a65a10`). Исходный снимок §1–§14 не переписывался.
 
 ## 1. Итог
 
@@ -341,3 +342,28 @@ DoD: matched screenshots 390/1024/1440 per route; all states; keyboard/zoom/scre
 | Operations | Не блокировать quick wins | staging email; 10-user auction/fixed races; backup/restore/rollback; one scheduler | scale/object storage/advanced monitoring |
 
 QW-01–QW-04 имеют согласованные founder defaults и не требуют сильного дополнительного анализа. Каждая выполняется и проверяется отдельно; merge order определяется после независимого review.
+
+## 15. 2026-09-06 — риски ревью P0-D follow-up
+
+Ветка: `fix/seller-orders-inbox`.  
+Код: `ca8c681` (lifecycle `take` 50), `1a65a10` (HTTP 401/403 inbox). Предшествующий blob-select: `fae11b7`.  
+Ревью: `fae11b7..HEAD` по `code-review-best-practices` / nest / security. Блокирующих дефектов нет; merge follow-up не удерживать из‑за пунктов ниже.
+
+Контекст закрытия P0-D DoD (snapshot, 48h, Activity, inbox, HTTPS, env, expired SCHEDULED) — в `11-PROJECT-STATUS.md` (2026-09-05/06). Это ops-хвост и тестовые дыры, не новый продуктовый контракт. Очередь и distributed lock по плану не делались.
+
+| ID | Серьёзность | Где | Риск / потенциальная проблема | Почему не блокер | Что осталось |
+|---|---|---|---|---|---|
+| R1 | Ops / latency | `listing-lifecycle.service.ts` `run()` → `close()` | Тик по-прежнему серийный: до 50 `close` с `createWinnerOrder`. Батч может длиться дольше 30s. | Bounded `findMany` лучше unbounded; `waitForCompletion: true` уже был. | Следующий тик ждёт окончания текущего; хвост откладывается. Не очередь и не lock. |
+| R2 | Ops / latency | Тот же `run()`, `const now = this.clock.now()` один раз | Listing, у которого `endsAt` наступает *во время* длинного тика, не попадает в текущий cancel/close. | `now` и раньше снимался один раз за проход. | Ждёт следующий тик. Батч 50 делает тик длиннее, окно чуть шире. |
+| R3 | Ops / starvation | `orderBy` + `take: 50` | Если ≥50 строк вечно падают *до* смены статуса, стабильный порядок снова выбирает их, хвост не обрабатывается. | Isolation per Listing уже ловит throw; после `ENDED`/`CANCELLED` строка выпадает из выборки. Нужен устойчивый префикс из 50 «ядовитых» LIVE/SCHEDULED. | Для пилота маловероятно. Лечение — не enlarge `take`, а выкидывать/алертить повторный fail. |
+| R4 | Test gap | `listing-lifecycle.service.spec.ts` | Юниты проверяют `take`/`orderBy`, не сценарий «51 listing → 50 сейчас, 1 на следующий `run()`». | Поведение следует из Prisma `take`; lifecycle integration 73/73 не создаёт 51 due row. | Proof остатка — отдельный unit/integration с двумя `run()`, не продукт. |
+| R5 | Test gap | `seller-orders-inbox-http.integration.spec.ts` | HTTP покрывает guest 401 и admin 403. Seller `200` по транспорту нет. | `listForSeller` и `seller-orders-inbox.integration.spec.ts` уже проверяют список продавца. Семантика маршрута не менялась. | По желанию один HTTP `200` для approved seller. |
+| R6 | Perf / bytes | `admin-moderation.service.ts` `updateSellerStatus` | Редкий admin path всё ещё грузит `profilePhotoData` ради `byteLength`. | План: optional, не DoD 0–2. HTTP bytes и bid/product/Order selects сужены в `fae11b7` / `ac9179e`. | Заменить на `profilePhotoByteLength`, когда будет узкий PR того же класса. |
+| R7 | Auth (pre-existing) | `OrdersController.list` + JWT `role` | `listForSeller` смотрит `auth.role` из токена, guard не перечитывает `User.role`. Смена роли без `sessionVersion++` оставит старый role в cookie. | Не регрессия follow-up; HTTP-тест admin 403 это не ломает. | Уже покрыто emergency ban (`sessionVersion++`). Смена admin↔user без invalidate — отдельный auth gap, не inbox. |
+| R8 | Topology | scheduler | `take` 50 не заменяет one-replica. Два API-процесса обработают пересекающиеся батчи. | Architecture уже требует Compose one replica до lock/queue. Idempotent activate/cancel/close. | Multi-instance по-прежнему P1-F / ops, не этот PR. |
+| R9 | Product history | Order snapshot `DEC-074` | Старые Orders с null snapshot-полями читают live Product/Listing. | Явно не backfill (план «Не делать»). | Исторические сделки могут сменить title после edit. |
+| R10 | Docs nit | `10-CODE-ARCHITECTURE.md` шапка | Дата файла 2026-09-05 при дописке батча 50 2026-09-06. | Факт в абзаце scheduler верный. | Поправить дату при следующем architecture edit. |
+
+Не дефекты этого среза (явно не делать по плану / ревью): виртуализация `/orders`; auto next bidder; Pen/Figma; публикация legal drafts; P0-C cookies до письменного ответа юриста; P0-E fixed/offers.
+
+Открытый внешний хвост аудита (не из этого ревью, §5 / §10): P0-B нет письменного ответа; P0-C нельзя начинать; merge стека — процесс. P0-E — следующий продуктовый слой.
