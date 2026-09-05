@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthController } from './auth.controller';
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('AuthController logout', () => {
   it('clears the cookie without invalidating a server session when auth is absent', async () => {
@@ -50,5 +54,27 @@ describe('AuthController logout', () => {
       '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
     );
     expect(response.clearCookie).toHaveBeenCalledOnce();
+  });
+
+  it('sets the secure cookie flag on the production profile', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('APP_ENV', 'production');
+
+    const authService = {
+      logout: vi.fn(),
+    };
+    const controller = new AuthController(authService as never);
+    const response = {
+      clearCookie: vi.fn(),
+    };
+
+    await controller.logout(undefined, response);
+
+    expect(response.clearCookie).toHaveBeenCalledWith('bidplace_session', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: true,
+      path: '/',
+    });
   });
 });

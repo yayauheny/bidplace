@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-05 — Fail-closed environment matrix (QW-03)
+
+- `Implemented`: `apps/api/src/core/config/env-profile.ts` centralizes production-like predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. SMTP, service rules, `PASSWORD_RESET_URL_BASE`, 32-character `JWT_SECRET`, test-bypass prohibition, SMTP mail transport, secure session cookies and production service-rules text follow that profile.
+- `Implemented`: `TEST_EMAIL_BYPASS` parses only for `NODE_ENV=test` and `APP_ENV=local`. Destructive demo seed still fails closed outside `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`. Compose `app` profile now sets `APP_ENV=production`. Staging combinations are unchanged except that `NODE_ENV=production` plus `APP_ENV=staging` continues to require production security.
+- Coverage: parameterized `env.spec.ts` matrix; `env-profile.spec.ts`; `rules.spec.ts`; `local-mail-transport.spec.ts`; cookie `secure` in `auth.controller.spec.ts`; seed denial includes `development`/`production` in `seed-contract.integration.spec.ts`.
+- `Verified`: API typecheck, lint, build; API unit `260/260`; seed-contract PostgreSQL integration `5/5`.
+
 ## 2026-08-22 — ImageStore + MailTransport ports (review fixes)
 
 - `Implemented`: `core/image-store/` — `ImageStore` port with `PostgresImageStore`;

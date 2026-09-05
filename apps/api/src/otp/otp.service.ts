@@ -1,4 +1,4 @@
-import { type ServerEnv, loadServerEnv } from '../core/config';
+import { isTestEmailBypassEnabled, loadServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
 import { MailTransport } from '../core/mail';
 import { RateLimitService } from '../core/rate-limit';
@@ -18,10 +18,6 @@ export type OtpRequestContext = {
 };
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
-
-function isTestEmailBypassEnabled(env: ServerEnv): boolean {
-  return env.NODE_ENV === 'test' && env.TEST_EMAIL_BYPASS === true;
-}
 
 function resolveIp(context?: OtpRequestContext): string {
   return context?.ip ?? context?.socket?.remoteAddress ?? 'unknown';

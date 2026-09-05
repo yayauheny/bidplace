@@ -43,9 +43,10 @@ GitHub Actions runs the same gate on push and pull requests via [`.github/workfl
 ### Deploy steps
 
 Ensure root `.env` includes the production keys the API container validates when
-`NODE_ENV=production` (copy from [`.env.example`](../../.env.example) if needed):
+`NODE_ENV=production` and `APP_ENV=production` (copy from [`.env.example`](../../.env.example) if needed):
 
-- `JWT_SECRET`
+- `APP_ENV=production` (Compose `app` profile sets this; `APP_ENV=local` is rejected)
+- `JWT_SECRET` (at least 32 characters; the value is never logged)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`
 - `PASSWORD_RESET_URL_BASE`
 - `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`

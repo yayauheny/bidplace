@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
-import { loadServerEnv } from '../config';
+import { loadServerEnv, requiresProductionSecurity } from '../config';
 import { LocalMailTransport } from './local-mail-transport';
 import { MailTransport } from './mail-transport';
 import { SmtpMailTransport } from './smtp-mail-transport';
@@ -13,7 +13,7 @@ import { SmtpMailTransport } from './smtp-mail-transport';
       useFactory: () => {
         const env = loadServerEnv();
 
-        if (env.NODE_ENV === 'production') {
+        if (requiresProductionSecurity(env)) {
           return SmtpMailTransport.create(env);
         }
 

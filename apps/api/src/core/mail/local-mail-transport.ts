@@ -1,6 +1,6 @@
 import { appendFile } from 'node:fs/promises';
 
-import { loadServerEnv } from '../config';
+import { loadServerEnv, requiresProductionSecurity } from '../config';
 import type { MailMessage } from './mail-message';
 import { MailTransport } from './mail-transport';
 
@@ -26,7 +26,7 @@ export class LocalMailTransport extends MailTransport {
   async send(message: MailMessage): Promise<void> {
     const env = loadServerEnv();
 
-    if (env.NODE_ENV === 'production') {
+    if (requiresProductionSecurity(env)) {
       throw new Error('Local mail transport cannot run in production');
     }
 

@@ -25,6 +25,7 @@ import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
 import { CurrentUser } from './current-user.decorator';
+import { requiresProductionSecurity } from '../core/config';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
@@ -155,7 +156,7 @@ export class AuthController {
     response.cookie(AUTH_TOKEN_COOKIE_NAME, accessToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: requiresProductionSecurity(process.env),
       path: '/',
       maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
     });
@@ -165,7 +166,7 @@ export class AuthController {
     response.clearCookie(AUTH_TOKEN_COOKIE_NAME, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: requiresProductionSecurity(process.env),
       path: '/',
     });
   }

@@ -31,7 +31,7 @@ services:
       - '3001:3001'
     environment:
       NODE_ENV: production
-      APP_ENV: local
+      APP_ENV: production
       API_PORT: '3001'
       DATABASE_URL: postgresql://auction:auction@postgres:5432/bidplace?schema=public
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env for the API container}

@@ -83,6 +83,7 @@ describe('demo seed executable contract', () => {
   it.each([
     { nodeEnv: 'production', appEnv: 'production' },
     { nodeEnv: 'test', appEnv: 'production' },
+    { nodeEnv: 'development', appEnv: 'production' },
   ])(
     'denies demo bids for production-like profile $nodeEnv/$appEnv before any write',
     ({ nodeEnv, appEnv }) => {

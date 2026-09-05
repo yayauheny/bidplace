@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-08-21  
+Последнее обновление: 2026-09-05
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -98,7 +98,34 @@ Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `selle
 
 See [`12-DECISION-LOG.md`](12-DECISION-LOG.md) **DEC-068** for the static-only image decision record.
 
-## 7. Deferred ops/security (post-pilot)
+## 7. Environment profiles (fail closed)
+
+Status: Implemented
+
+`apps/api/src/core/config/env-profile.ts` is the single production-like predicate.
+Env parsing rejects inconsistent pairs before bootstrap:
+
+| `NODE_ENV` | `APP_ENV` | Result |
+| --- | --- | --- |
+| `development` | `local` | Allowed local development |
+| `test` | `local` | Allowed tests; `TEST_EMAIL_BYPASS` may be enabled |
+| `production` | `production` | Production security required |
+| `production` | `staging` | Production security required (staging unchanged) |
+| `development` or `test` | `staging` | Allowed; no production SMTP/rules requirement |
+| `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
+| `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
+
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+
+Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
+
+Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-mail-transport.spec.ts`, `auth.controller.spec.ts`, `seed-contract.integration.spec.ts`.
+
+**Pros:** `APP_ENV=production` cannot boot with a development/test Node profile; bypass/seed stay local-test-only.
+**Cons:** Compose `app` profile must set `APP_ENV=production`; short JWT secrets fail production parse.
+**Revisit when:** staging gets its own owner rule (SMTP/JWT policy distinct from production).
+
+## 8. Deferred ops/security (post-pilot)
 
 - **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
 - **Multi-instance rate limits:** in-memory upload/auth limits remain single-replica until a shared store is chosen (**DEC-069**).

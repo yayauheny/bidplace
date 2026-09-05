@@ -3,6 +3,14 @@ import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { z } from 'zod';
 
+import {
+  ENV_PROFILE_ERROR,
+  PRODUCTION_JWT_SECRET_MIN_LENGTH,
+  isExplicitLocalDevelopmentProfile,
+  isExplicitLocalTestProfile,
+  requiresProductionSecurity,
+} from './env-profile';
+
 const booleanEnvSchema = z
   .enum(['true', 'false'])
   .optional()
@@ -98,7 +106,23 @@ const serverEnvSchema = z
       });
     }
 
-    if (env.NODE_ENV === 'production') {
+    if (env.APP_ENV === 'production' && env.NODE_ENV !== 'production') {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APP_ENV'],
+        message: ENV_PROFILE_ERROR.productionAppRequiresProductionNode,
+      });
+    }
+
+    if (env.NODE_ENV === 'production' && env.APP_ENV === 'local') {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['APP_ENV'],
+        message: ENV_PROFILE_ERROR.productionNodeForbidsLocalApp,
+      });
+    }
+
+    if (requiresProductionSecurity(env)) {
       const requiredKeys: Array<keyof ServerEnv> = [
         'SMTP_HOST',
         'SMTP_PORT',
@@ -121,13 +145,27 @@ const serverEnvSchema = z
         }
       }
 
+      if (env.JWT_SECRET.length < PRODUCTION_JWT_SECRET_MIN_LENGTH) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['JWT_SECRET'],
+          message: ENV_PROFILE_ERROR.jwtSecretTooShortInProduction,
+        });
+      }
+
       if (env.TEST_EMAIL_BYPASS) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['TEST_EMAIL_BYPASS'],
-          message: 'TEST_EMAIL_BYPASS cannot be enabled in production',
+          message: ENV_PROFILE_ERROR.testEmailBypassForbiddenInProduction,
         });
       }
+    } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['TEST_EMAIL_BYPASS'],
+        message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
+      });
     }
   })
   .transform((env) => ({
@@ -145,7 +183,7 @@ export function resolveCorsOrigin(
 ): string | undefined {
   if (env.CORS_ORIGIN) return env.CORS_ORIGIN;
 
-  return env.NODE_ENV === 'development' && env.APP_ENV === 'local'
+  return isExplicitLocalDevelopmentProfile(env)
     ? 'http://localhost:8081'
     : undefined;
 }
