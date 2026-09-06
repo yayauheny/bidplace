@@ -25,6 +25,9 @@ describe('shared contracts', () => {
   it('exposes contacted and failed-handoff buyer activity statuses', () => {
     expect(activityStatusSchema.safeParse('CONTACTED').success).toBe(true);
     expect(activityStatusSchema.safeParse('HANDOFF_FAILED').success).toBe(true);
+    expect(activityStatusSchema.safeParse('AUCTION_CANCELLED').success).toBe(
+      true,
+    );
     expect(activityStatusSchema.safeParse('PENDING_CONTACT').success).toBe(
       false,
     );

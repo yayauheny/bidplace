@@ -79,6 +79,7 @@ describe('presentation adapters', () => {
     expect(auctionParticipationLabels.OUTBID).toBe('Ставка перебита');
     expect(auctionParticipationLabels.WON).toBe('Выиграли');
     expect(auctionParticipationLabels.LOST).toBe('Торги завершены');
+    expect(auctionParticipationLabels.AUCTION_CANCELLED).toBe('Торги отменены');
     expect(auctionParticipationLabels.AWAITING_SELLER_CONTACT).toBe(
       'Ожидается связь с автором',
     );

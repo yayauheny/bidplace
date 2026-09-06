@@ -7,6 +7,7 @@ export const activityStatusSchema = z.enum([
   'OUTBID',
   'WON',
   'LOST',
+  'AUCTION_CANCELLED',
   'AWAITING_SELLER_CONTACT',
   'CONTACTED',
   'HANDOFF_FAILED',

@@ -35,7 +35,40 @@ export function resolveBuyerActivityStatus(input: {
   if (input.listingStatus === 'ENDED') {
     return input.leading ? 'WON' : 'LOST';
   }
+  if (input.listingStatus === 'CANCELLED') {
+    return 'AUCTION_CANCELLED';
+  }
   return 'OUTBID';
+}
+
+type BuyerOrderCandidate = {
+  id: string;
+  buyerId: string;
+  status: OrderStatus;
+  publicId: string;
+  createdAt: Date;
+};
+
+export function selectRelevantBuyerOrder(
+  orders: BuyerOrderCandidate[],
+  userId: string,
+): BuyerOrderCandidate | null {
+  return (
+    orders
+      .filter((order) => order.buyerId === userId)
+      .sort((left, right) => {
+        const statusPriority = Number(left.status === 'CANCELLED') - Number(
+          right.status === 'CANCELLED',
+        );
+        if (statusPriority !== 0) return statusPriority;
+
+        const createdAtPriority =
+          right.createdAt.getTime() - left.createdAt.getTime();
+        if (createdAtPriority !== 0) return createdAtPriority;
+
+        return right.id.localeCompare(left.id);
+      })[0] ?? null
+  );
 }
 
 export function buyerActivityOrderPublicId(
@@ -59,7 +92,17 @@ export class ActivityService {
           include: {
             auctionRules: true,
             product: true,
-            orders: true,
+            orders: {
+              where: { buyerId: userId },
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              select: {
+                id: true,
+                buyerId: true,
+                status: true,
+                publicId: true,
+                createdAt: true,
+              },
+            },
             bids: {
               orderBy: [
                 { amount: 'desc' },
@@ -82,9 +125,7 @@ export class ActivityService {
         })
         .map((bid) => {
           const { listing } = bid;
-          const order =
-            listing.orders.find((candidate) => candidate.buyerId === userId) ??
-            null;
+          const order = selectRelevantBuyerOrder(listing.orders, userId);
           const leading = listing.bids[0]?.id === bid.id;
           const status = resolveBuyerActivityStatus({
             listingStatus: listing.status,

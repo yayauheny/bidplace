@@ -4,6 +4,12 @@
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
+## 2026-09-06 — Activity cancellation truthfulness
+
+- `Implemented`: existing Activity and Product participation status surfaces
+  render `Торги отменены` for a cancelled auction without an Order. A
+  cancelled-only Order remains non-navigable. No Pen/Figma redesign.
+
 ## 2026-09-05 — Seller Orders inbox
 
 - `Implemented`: current-style `/orders` seller inbox with Activity-like rows,

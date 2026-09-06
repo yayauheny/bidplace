@@ -18,8 +18,9 @@
   admin replacement and fixed 48-hour Order contact snapshots. These are truthful
   code facts, not final target mechanics.
 - `Partial`: seller Orders inbox exists but hides `CANCELLED` history; expired
-  scheduled cancellation exists without author notification/relist; Activity has
-  ambiguous cancelled/replacement projection.
+  scheduled cancellation exists without author notification/relist. Activity
+  distinguishes a cancelled auction from an outbid state and selects a relevant
+  Order deterministically.
 - Full repository verification on `fix/mvp-reconciliation-review` passed:
   typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
   7/7. Passing tests do not cover the named concurrency/product gaps.
@@ -32,6 +33,21 @@
 - `Implemented`: no route or permission change. Guest `GET /api/orders` remains 401 (`BearerAuthGuard`); admin remains 403 (`listForSeller` `role !== 'user'`).
 - Coverage: HTTP `seller-orders-inbox-http.integration.spec.ts` (guest 401, admin 403). Service-level admin deny remains in `seller-orders-inbox.integration.spec.ts`.
 - `Verified`: PostgreSQL integration 73/73 including the new HTTP file (2/2).
+
+## 2026-09-06 — Deterministic buyer Activity projection
+
+- `Implemented`: `ActivityService` requests only the current buyer's Orders
+  with explicit `createdAt DESC, id DESC` order and then deterministically
+  selects a non-cancelled Order before a cancelled historical row. Equal-class
+  ties use the same `createdAt`/`id` ordering. A cancelled Listing with no
+  Order now returns shared status `AUCTION_CANCELLED` (`Торги отменены`) rather
+  than `OUTBID`; cancelled-only Orders remain `WIN_CANCELLED` with no order
+  detail link.
+- Scope preserved: no pagination, next-bidder, payment or contact-release
+  behavior was added.
+- `Verified`: API unit 319/319; contracts 27/27; mobile presentation 12/12;
+  contracts/API/mobile typecheck; filtered API/mobile/contracts lint; API and
+  Expo builds.
 
 ## 2026-09-06 — Bounded lifecycle tick batch
 

@@ -48,6 +48,7 @@ export const auctionParticipationLabels = {
   OUTBID: 'Ставка перебита',
   WON: 'Выиграли',
   LOST: 'Торги завершены',
+  AUCTION_CANCELLED: 'Торги отменены',
   AWAITING_SELLER_CONTACT: 'Ожидается связь с автором',
   CONTACTED: 'Связались',
   HANDOFF_FAILED: 'Сделка не состоялась',
@@ -71,7 +72,11 @@ export function auctionParticipationTone(
     return 'success';
   }
   if (status === 'OUTBID') return 'accent';
-  if (status === 'HANDOFF_FAILED' || status === 'WIN_CANCELLED') {
+  if (
+    status === 'HANDOFF_FAILED' ||
+    status === 'WIN_CANCELLED' ||
+    status === 'AUCTION_CANCELLED'
+  ) {
     return 'danger';
   }
   return 'secondary';
