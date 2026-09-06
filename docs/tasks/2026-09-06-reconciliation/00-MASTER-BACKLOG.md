@@ -55,9 +55,13 @@ Owner: founder
 | T01 | P0 | Marketplace mechanics research | Grok 4.6 High | [`01-MARKETPLACE-MECHANICS-RESEARCH.md`](01-MARKETPLACE-MECHANICS-RESEARCH.md) |
 | T02 | P0 | Written BY+RF legal validation | Профильный юрист; Sol проверяет полноту | [`02-LAWYER-BY-RF-VALIDATION.md`](02-LAWYER-BY-RF-VALIDATION.md) |
 | T11 | P1 | [Abuse research](11-AUCTION-ABUSE-RESEARCH.md): shill bidding, friend bids, duplicate/resale works, evidence and sanctions | Grok 4.6 High | Primary-source matrix; no code |
+| T12R | P0 | [BY legal primary-source research](12-BY-LEGAL-PRIMARY-SOURCE-RESEARCH.md) | Grok 4.6 High | Returned partial; privacy evidence useful, commerce/ОКЭД incomplete |
+| T13R | P0 | [Research correction pass](13-RESEARCH-CORRECTION-PROMPT.md) | Grok 4.6 High | Stable citations, three outputs and corrected № 457/ОКЭД mapping |
 
-T01 и подготовку T02 можно запускать параллельно. Финальный legal answer T02 должен
-получить фактическую infrastructure/data map до публикации документов.
+Первый research pass сохранён как raw и оценён в
+[`2026-09-06-RESEARCH-PACK-REVIEW.md`](../../audits/2026-09-06-RESEARCH-PACK-REVIEW.md):
+T01/T11/T12R остаются partial до T13R. Финальный legal answer T02 должен получить
+corrected evidence и фактическую infrastructure/data map до публикации документов.
 
 ## 5. WAITING DECISION
 
