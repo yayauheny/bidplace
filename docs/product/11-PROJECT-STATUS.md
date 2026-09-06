@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — Belarus legal scope and sale-mode boundary
+
+- `Implemented` (docs only): `DEC-076` separates auction from direct fixed-price
+  sale. Buyer price offers are optional only for fixed sale; payment and delivery
+  always stay outside bidplace.
+- `Implemented` (docs only): `DEC-077` makes Belarus law the current operator,
+  public-document and legal-review workstream. Earlier BY+RF packs are historical.
+- `Needs verification`: eight remaining Belarus-law questions and the proposed
+  legal UX/button matrix are in `../legal/bidplace-voprosy-yuristu-by-final.txt`.
+  The adapted final document set still requires lawyer review before public launch.
+- Code behavior is unchanged by this documentation update.
+
 ## 2026-09-06 — Product write atomicity
 
 - `Implemented`: owner Product field, submit, creation-story, ProductImage add/remove/reorder and creation-step image writes take the Product row lock (`SELECT … FOR UPDATE`) inside a Read Committed transaction and re-check owner, approved seller, editable status (`DRAFT`/`CHANGES_REQUESTED`/`REJECTED`) and the absence of a `SCHEDULED`/`LIVE` Listing before mutating. Conditional `updateMany` predicates back Product row writes. Listing `SCHEDULE` and admin Product moderation take the same row lock. Image decode stays outside the TX; a lost race rolls back with the TX so Postgres image bytes are not left behind. `remove`/`reorder` re-read the image set under the row lock (`temporaryBase` from locked rows). `SCHEDULE` repeats handoff and `startsAt > now` after the lock and writes `publishedAt` from that post-lock clock.
@@ -12,7 +24,7 @@
 - `Implemented` (docs only): `DEC-075` revises the product assumptions recorded
   in `DEC-072`. Work-first portfolio is target MVP scope. Offer expiry,
   counteroffer, next bidder/contact release, contact window policy and currency
-  expansion are explicitly open pending marketplace research and written BY+RF
+  expansion are explicitly open pending marketplace research and written Belarus
   legal review.
 - `Needs verification`: current runtime still implements auction + BYN, manual
   admin replacement and fixed 48-hour Order contact snapshots. These are truthful
@@ -26,7 +38,7 @@
   7/7. Passing tests do not cover the named concurrency/product gaps.
 - Current audit: `../audits/2026-09-06-IMPLEMENTATION-STACK-REVIEW.md`; backlog:
   `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`; legal gap pack:
-  `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md`.
+  `../legal/bidplace-voprosy-yuristu-by-final.txt`.
 
 ## 2026-09-06 — Seller inbox HTTP 401/403
 
@@ -100,7 +112,8 @@
 
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 
-- `Confirmed` (product): `DEC-072` and RFC §21 record founder defaults: no counteroffer; manual next bidder; 48h contact (`DEC-070`); atomic fixed buy; Listing `BYN|RUB` by seller market; portfolio-only in wave 2; transactional email set; complaint images only; human legal review before a public audience.
+- `Superseded` (product): the former `DEC-072` defaults were revised by
+  `DEC-075`–`DEC-077`; they are not current implementation instructions.
 - `Not implemented` (code): fixed-price Listing, optional offers, and `RUB` runtime. Current runtime remains `AUCTION` + `BYN`. Order snapshot (`DEC-074`) and seller inbox are in place; P0-E remains unstarted.
 - Protected `01` / `08` / `09` were not rewritten. RFC §3, §9, §12, §14, §19 and §21 were updated to match `DEC-072`.
 

@@ -1364,3 +1364,67 @@ confirmed portfolio-first behavior.
 
 The marketplace comparison and written BY+RF legal response are available. Record
 each selected mechanic as a new append-only decision before implementation.
+
+## DEC-076 — Sale mode boundaries for the public MVP
+
+Date: 2026-09-06
+Status: Confirmed
+Source: explicit founder decision in the legal reconciliation session
+
+### Decision
+
+The public MVP has two separate sale modes attached to a Work:
+
+1. **Auction:** start price, bid increment, start/end time and server-authoritative
+   bids. It has no fixed-price buy action and no buyer price offer.
+2. **Direct fixed-price sale:** the author sets a fixed price and may optionally
+   allow buyers to propose another price.
+
+Payment for the Work and delivery always occur directly between seller and buyer.
+bidplace does not accept, hold or transfer item money and does not arrange delivery.
+
+The exact contract moment and required confirmation copy for fixed buy and an
+accepted offer remain gates for the written Belarus legal answer. Offer
+expiry/revocation and competing-action rules remain separate product decisions.
+This decision fixes the product boundary without inventing those rules.
+
+### Revises
+
+`DEC-075` where “auction + fixed + optional offer” could be read as allowing an
+offer inside an auction. It does not revise Work-first portfolio behavior.
+
+### Revisit when
+
+A written legal answer requires a different transaction flow or the founder adds
+another sale format.
+
+## DEC-077 — Belarus-only current legal workstream
+
+Date: 2026-09-06
+Status: Confirmed project scope
+Source: explicit founder decision in the legal reconciliation session
+
+### Decision
+
+The first operator is an individual entrepreneur registered in Belarus. Current
+public-document drafting and the launch legal gate are limited to Belarus law.
+The active lawyer questionnaire therefore excludes Russian registration,
+Roskomnadzor, Russian data localization and other RF-specific questions.
+
+Belarus-law questions about processors, hosting outside Belarus and cross-border
+personal-data transfer remain in scope. Earlier BY+RF packs stay as historical
+audit material and are not current implementation instructions.
+
+This is a project-scope decision about the legal workstream. It does not turn an
+unverified legal proposition into a repository fact.
+
+### Revises
+
+`DEC-075` and RFC references that made a written BY+RF answer the active launch
+gate. Product language and public accessibility do not add a second active legal
+workstream without a new founder decision.
+
+### Revisit when
+
+The founder deliberately opens a separate country launch, changes the operator
+jurisdiction or receives legal advice that requires a broader review.

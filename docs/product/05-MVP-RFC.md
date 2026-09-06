@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
-Версия: 1.4
+Версия: 1.5
 Последнее обновление: 2026-09-06
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-075`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-077`
 
 ## 1. Цель MVP
 
@@ -26,12 +26,14 @@ MVP не проверяет полноценный marketplace.
 
 > Creator с небольшой активной аудиторией способен через хорошо оформленный scheduled auction получить минимум две реальные ставки от разных людей и завершить продажу без встроенных платежей.
 
-## 3. Первый рынок
+## 3. Первый запуск
 
-- Беларусь и Россия как рынки пользователей;
-- русский язык;
-- валюта MVP пока `BYN`; `RUB` и viewer conversion hint открыты до research и
-  письменной BY+RF проверки (`DEC-075`);
+- оператор — ИП Беларуси;
+- актуальный legal launch gate и публичные документы проверяются по
+  законодательству Беларуси (`DEC-077`);
+- русский язык интерфейса;
+- валюта MVP пока `BYN`; показ других валют или подсказки конвертации
+  остаётся открытым до письменной проверки юристом;
 - закрытый pilot: публичная заявка seller доступна, но продавать можно только после ручного admin approval;
 - вероятный первый продавец — Таисия Борисова;
 - оригинальная физическая работа;
@@ -458,8 +460,9 @@ Minimum success:
 - automatic next bidder;
 - IP-based currency conversion.
 
-Fixed-price sale and optional price offers are **in the target product scope**
-(`DEC-075`, §21) and **not in the current runtime**. Exact offer, currency,
+Fixed-price sale and optional buyer price offers for that sale are **in the target
+product scope** (`DEC-075`, `DEC-076`, §21) and **not in the current runtime**.
+Price offers and Buy Now are not auction mechanics. Exact offer, currency,
 non-payment and contact mechanics remain open; do not implement the superseded
 `DEC-072` defaults.
 
@@ -476,21 +479,25 @@ non-payment and contact mechanics remain open; do not implement the superseded
 - ads не конвертируются;
 - code не проходит gate.
 
-## 21. Контракт expanded MVP (`DEC-075`)
+## 21. Контракт expanded MVP (`DEC-075` — `DEC-077`)
 
-Целевой web MVP для пользователей РФ и РБ: портфолио работ, аукцион,
-фиксированная продажа и опциональное предложение цены. Деньги за вещь и доставка
-идут напрямую между сторонами. Старт бесплатный; подписка вне этой волны.
+Целевой web MVP: портфолио работ и два раздельных формата продажи:
+аукцион и прямая продажа по фиксированной цене. В фиксированной продаже автор
+может разрешить покупателю предложить свою цену. На аукционе этой функции нет.
+Деньги за работу и доставка всегда идут напрямую между продавцом и покупателем.
+bidplace не принимает оплату и не оформляет доставку. Старт бесплатный; подписка вне этой волны.
 
 - **Work first:** автор создаёт Work независимо от продажи. Work может быть
   portfolio-only, позже получить Listing или быть перевыставлен из архива.
-- **Auction:** текущая server-authoritative механика остаётся рабочей базой.
+- **Auction:** стартовая цена, шаг, время старта/окончания и server-authoritative
+  ставки. Нет «Купить» и «Предложить цену».
 - **Fixed:** unique Work нельзя продать дважды; buyer confirmation должно быть
   атомарным. Точный legal contract moment/copy проверяет юрист.
-- **Offer:** expiry, revoke, counteroffer and competing-buy rules не выбраны.
+- **Offer:** только опция fixed Listing, которую включает автор; expiry, revoke,
+  counteroffer and competing-buy rules не выбраны.
 - **Next bidder/contact:** manual admin replacement и 48h — текущий runtime, а не
   финальная marketplace policy. Target выбирается после research + legal review.
-- **Currency:** пока `BYN`; `RUB` и conversion hint не подтверждены.
+- **Currency:** пока `BYN`; другие валюты и conversion hint не подтверждены.
 - **History:** кабинет называется `Покупки / Продажи`; cancelled/failed outcomes
   сохраняются в истории.
 - **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без

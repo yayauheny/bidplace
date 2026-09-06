@@ -3,7 +3,7 @@
 Последнее обновление: 2026-09-06  
 Статус: Confirmed
 
-Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Юрист: [`../legal/02-LAWYER-ANSWERS-2026-08-24.md`](../legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
+Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Актуальные вопросы юристу: [`../legal/bidplace-voprosy-yuristu-by-final.txt`](../legal/bidplace-voprosy-yuristu-by-final.txt). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
 
 ## 1. Назначение набора
 
@@ -54,8 +54,9 @@
 | `../legal/03-BIDBAITS-MAPPING.md`        | Что брать со структуры bidbaits, что нельзя копировать                     |
 | `../legal/04-DOCUMENT-SET.md`            | Комплект из шести публичных документов, слои сейчас / если включено        |
 | `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
-| `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Письменный пакет BY+RF по контракту `DEC-072`; не публикация drafts     |
-| `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Текущий BY+RF gap pack и legal UX matrix (`DEC-075`)                 |
+| `../legal/bidplace-voprosy-yuristu-by-final.txt` | Актуальный BY-only пакет вопросов юристу и точки legal UX (`DEC-076`, `DEC-077`) |
+| `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Исторический пакет BY+RF по `DEC-072`; не текущая инструкция     |
+| `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Исторический широкий аудит BY+RF; не текущий lawyer pack                 |
 | `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
 | `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md` | Текущий приоритетный backlog, зависимости и model routing          |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
@@ -111,7 +112,8 @@
 - `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
 - `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
 - `../legal/05-REVIEW-PROMPT.md` — промпт на ревью этого пакета;
-- `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` — пакет на письменную проверку BY+RF по актуальному контракту; не публикация drafts;
+- `../legal/bidplace-voprosy-yuristu-by-final.txt` — актуальный пакет на письменную проверку по законодательству Беларуси;
+- `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` и `07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` — исторические широкие пакеты; не текущая инструкция;
 
 Эти файлы не являются юридической консультацией или подтверждением compliance.
 

@@ -53,7 +53,7 @@ Owner: founder
 | ID | Priority | Задача | Исполнитель | Выход |
 |---|---|---|---|---|
 | T01 | P0 | Marketplace mechanics research | Grok 4.6 High | [`01-MARKETPLACE-MECHANICS-RESEARCH.md`](01-MARKETPLACE-MECHANICS-RESEARCH.md) |
-| T02 | P0 | Written BY+RF legal validation | Профильный юрист; Sol проверяет полноту | [`02-LAWYER-BY-RF-VALIDATION.md`](02-LAWYER-BY-RF-VALIDATION.md) |
+| T02 | P0 | Written Belarus legal validation | Профильный юрист; Sol проверяет полноту | [`../../legal/bidplace-voprosy-yuristu-by-final.txt`](../../legal/bidplace-voprosy-yuristu-by-final.txt) |
 | T11 | P1 | [Abuse research](11-AUCTION-ABUSE-RESEARCH.md): shill bidding, friend bids, duplicate/resale works, evidence and sanctions | Grok 4.6 High | Primary-source matrix; no code |
 | T12R | P0 | [BY legal primary-source research](12-BY-LEGAL-PRIMARY-SOURCE-RESEARCH.md) | Grok 4.6 High | Returned partial; privacy evidence useful, commerce/ОКЭД incomplete |
 | T13R | P0 | [Research correction pass](13-RESEARCH-CORRECTION-PROMPT.md) | Grok 4.6 High | Stable citations, three outputs and corrected № 457/ОКЭД mapping |
@@ -72,7 +72,7 @@ corrected evidence и фактическую infrastructure/data map до пуб
 | D01 | Offer expiry, revoke, counteroffer, competing fixed buy | Определяет states, unique constraints, copy and notifications |
 | D02 | Non-payment/second chance/rank/contact release | Определяет privacy, Order history и cabinet actions |
 | D03 | Contact/payment window and reminders | Текущие 48h временные |
-| D04 | BYN only vs RUB/listing currency vs conversion hint | Определяет money contract and RF copy |
+| D04 | BYN only vs another listing currency vs conversion hint | Определяет money contract and display copy |
 | D05 | Legal contract moment and required nearby terms per action | Блокирует public fixed/offer UX |
 | D06 | Cookie/analytics basis and controls | Блокирует consent implementation |
 | D07 | Legacy Order snapshot backfill | Нужен до появления real mutable history |
