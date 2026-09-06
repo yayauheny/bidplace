@@ -36,20 +36,6 @@
   growth bars, recent activity and needs-attention drilldowns. Linked from
   account menu and moderation. Not a Pen v2 public surface; operational admin UI.
 
-## Creator-first exploration (not production canon)
-
-- `Partial`: пакет направления лежит в репозитории: `design/creator-first/spec/`
-  плюс `design/pen/bidplace-creator-first-v1.pen`. Это рабочий контракт и
-  canvas, не замена `bidplace-web-v2.pen`.
-- `Partial`: V2 art-direction correction лежит в `design/creator-first-v2/`
-  (копия пакета с переписанным визуальным направлением). Pen V2 не начат;
-  три golden-экрана ждут визуального утверждения. Канон production не менялся.
-- `Confirmed`: production UI по-прежнему читает канон из
-  `design/pen/bidplace-web-v2.pen`.
-- Вход: `design/creator-first/README.md` (V1) и
-  `design/creator-first-v2/README.md` (V2). Аудит/runbook:
-  `docs/audits/creator-first-redesign/`.
-
 ## Текущий результат
 
 - `Implemented`: final Pen v2 review blockers for the shared atmosphere,

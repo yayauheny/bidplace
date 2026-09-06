@@ -7,7 +7,8 @@
 уведомления. Спорные mechanics фиксируются только после research и проверки
 юристом (`DEC-075`).
 
-Волна 2 — `12-FUTURE.md`: оплата сервиса/подписка и остальные future functions.
+Волна 2 — полный [`product/15-POST-MVP-BACKLOG.md`](product/15-POST-MVP-BACKLOG.md).
+Короткий дизайнерский указатель остаётся в [`design-handoff/12-FUTURE.md`](design-handoff/12-FUTURE.md).
 Финальная адаптация production UI к Figma начинается после стабилизации волны 1.
 
 Юрист: [`legal/02-LAWYER-ANSWERS-2026-08-24.md`](legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы (черновики, не закон): [`legal/04-DOCUMENT-SET.md`](legal/04-DOCUMENT-SET.md).

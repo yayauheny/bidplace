@@ -1,21 +1,32 @@
 # bidplace — текущий статус проекта
 
-## 2026-09-06 — Belarus launch documents and legal UX defaults
+## 2026-09-06 — current documentation and legal UX research
+
+- `Implemented` (docs only): выполненные task-prompts и закрытые legal-вопросники
+  удалены из активной структуры; текущие blockers сведены в
+  [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md),
+  активные задачи — в
+  [`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md).
+- `Implemented` (research): Belarus legal UX findings перенесены в
+  [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
+  Research определяет понятные места controls, но не заменяет заключение юриста.
+- `Needs verification`: отдельный обязательный PD consent из `DEC-078` требует
+  purpose-by-purpose legal basis check. Это не отменяет решение основателя молча;
+  финальный registration contract остаётся заблокирован вопросом 1 из
+  [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+- Code behavior is unchanged by this documentation update. Tests were not rerun.
+
+## 2026-09-06 — Belarus launch scope
 
 - `Implemented` (docs only): `DEC-076` separates auction from direct fixed-price
   sale. Buyer price offers are optional only for fixed sale; payment and delivery
   always stay outside bidplace.
 - `Implemented` (docs only): `DEC-077` makes Belarus law the current operator,
   public-document and legal-review workstream. Earlier BY+RF packs are historical.
-- `Implemented` (docs only): `DEC-078` fixes the launch document set, three mandatory
-  registration items, separate 18+ confirmation, required cookie banner, BYN,
-  fixed-buy and accepted-offer deal moments, and text-only V1 error reports.
-- `Needs verification`: Task
-  [`14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md`](../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md)
-  must establish the exact Belarus-facing placement and short UI text. After the
-  drafts are adapted to the actual infrastructure and flows, the complete set still
-  requires final review by a Belarus lawyer before public launch.
-- Code behavior is unchanged by this documentation update.
+- `Implemented` (docs only): `DEC-078` records the founder-selected document set,
+  registration layout, separate 18+, cookie banner, BYN, fixed-buy/accepted-offer
+  outcomes and text-only V1 error report. Exact legal basis and wording remain
+  subject to the focused Belarus questions and final review of adapted drafts.
 
 ## 2026-09-06 — Product write atomicity
 
@@ -41,9 +52,9 @@
 - Full repository verification on `fix/mvp-reconciliation-review` passed:
   typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
   7/7. Passing tests do not cover the named concurrency/product gaps.
-- Current audit: `../audits/2026-09-06-IMPLEMENTATION-STACK-REVIEW.md`; backlog:
-  `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`; legal gap pack:
-  `../legal/bidplace-voprosy-yuristu-by-final.txt`.
+- Current audit: `../audits/00-CURRENT-MVP-READINESS.md`; backlog:
+  `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`; legal questions:
+  `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
 
 ## 2026-09-06 — Seller inbox HTTP 401/403
 
@@ -71,7 +82,9 @@
 - `Implemented`: `ListingLifecycleService.run` activate, expired-`SCHEDULED` cancel, and LIVE close `findMany` queries use `take: LIFECYCLE_TICK_BATCH_SIZE` (50) and stable `orderBy`. Activate orders by `startsAt`/`id`; cancel and close keep `endsAt`/`id`. Remainder stays for the next 30s tick. No queue or distributed lock.
 - Coverage: `listing-lifecycle.service.spec.ts` asserts `take`/`orderBy` on all three tick queries.
 - `Verified`: lifecycle unit 5/5; API typecheck; eslint on `src/lifecycle/listing-lifecycle.service.ts`; PostgreSQL `lifecycle.integration.spec.ts` in the 73/73 suite.
-- Review residuals (tick stretch, remainder proof, poison-prefix starvation, admin photo bytes): [`../audits/2026-09-05-MVP-RECONCILIATION-AND-TASKS.md`](../audits/2026-09-05-MVP-RECONCILIATION-AND-TASKS.md) §15. Не блокер merge.
+- Remaining: prove `51 → 50 + 1`, prevent poison-prefix starvation and record the
+  single/multi-instance scheduler policy. Active task:
+  [`../tasks/2026-09-06-reconciliation/03-LIFECYCLE-BOUNDED-PROGRESS.md`](../tasks/2026-09-06-reconciliation/03-LIFECYCLE-BOUNDED-PROGRESS.md).
 
 ## 2026-09-06 — Narrow SellerProfile and ProductImage hydration
 
@@ -112,8 +125,9 @@
 
 ## 2026-09-05 — BY+RF lawyer pack (P0-B)
 
-- `Implemented` (docs only): `docs/legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` is the send pack for written BY+RF review against `DEC-072`. It records known processors, open hosting, and launch gates. Drafts in `docs/legal/drafts/` were not published or rewritten as public law.
-- `Not implemented`: lawyer reply, mapping table, P0-C cookies/consent. Oral 24 Aug answers are not treated as a 2026 written opinion.
+- `Superseded`: этот исторический BY+RF пакет удалён из рабочего дерева после
+  `DEC-077`. Текущая юридическая работа ограничена Беларусью; исходная версия остаётся
+  в Git. Актуальный список — `docs/legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
 
 ## 2026-09-05 — Expanded MVP product contract (P0-A)
 

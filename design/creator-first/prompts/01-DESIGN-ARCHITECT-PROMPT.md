@@ -1,3 +1,5 @@
+> Archived prompt: do not execute for the current redesign. Use `docs/design/` and `docs/audits/00-CURRENT-MVP-READINESS.md`.
+
 # Prompt — strongest model / design architect
 
 Use the strongest available reasoning model. Recommended reasoning effort: high or xhigh. Do not use a maximum/pro mode unless this pass fails an explicit quality gate.
@@ -27,9 +29,9 @@ Produce one recommended creator-first visual system that:
 Read only these files and directories:
 
 ```text
-docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md
-docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
-docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md
+docs/audits/00-CURRENT-MVP-READINESS.md
+docs/design/01-DESIGN-FOUNDATION.md
+docs/design/03-DESIGN-SYSTEM.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
 design/creator-first/REFERENCE-ANALYSIS.md

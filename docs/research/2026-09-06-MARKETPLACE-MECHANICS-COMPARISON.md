@@ -75,7 +75,7 @@ help/policy/terms pages. Если механизм не удалось подт�
 | 8. Cabinet | E1/E4, W4, C2–C3 | Use separate Purchases/Sales information architecture with active/history/problem states; cancelled rows remain visible. | Exact bidplace roles/actions are product contract work, not visual inference. |
 | 9. Complaints/disputes | T4, C7, W6 | Report form should capture subject, reason and optional evidence; outcome/reason/audit should be traceable. | SLA, evidence retention and BY/RF legal notice need lawyer. |
 | 10. Notifications | E4–E5, C2–C3, W2–W5 | Action/deadline/cancellation notices should correspond to a persisted event and a user-visible activity state. | Channel consent/marketing classification needs legal review. |
-| 11. Abuse | E6, C4, C7, W1, W6 | Human-reviewed, reversible controls and evidence are recurring patterns; do not equate relationship/network signal with proof. | Technical detection signals beyond published policy belong to T11. |
+| 11. Abuse | E6, C4, C7, W1, W6 | Human-reviewed, reversible controls and evidence are recurring patterns; do not equate relationship/network signal with proof. | Technical controls and evidence policy are summarized in `2026-09-06-AUCTION-ABUSE-CONTROLS.md`. |
 | 12. Legal UX observed only | E1/E4, C1/C4, W1/W2 | Short action-specific consequence plus linked full terms is a reusable UX pattern. | It is not proof that text/placement is legally sufficient in BY/RF. |
 
 ## Lifecycle sketches

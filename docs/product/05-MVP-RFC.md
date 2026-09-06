@@ -502,11 +502,12 @@ bidplace не принимает оплату и не оформляет дос�
   сохраняются в истории.
 - **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без
   silent `+24h`.
-- **Legal UX:** registration имеет три отдельных обязательных пункта
-  (соглашение, политика, согласие на ПДн) и отдельное 18+. Cookie banner
-  обязателен. Отдельное marketing consent не блокирует регистрацию и используется
-  только при добровольной подписке. Точное размещение и microcopy для publish, bid,
-  fixed buy, offer и contact disclosure выбираются после BY legal UX research.
+- **Legal UX:** `DEC-078` выбрал layout из отдельных строк соглашения, политики,
+  согласия на ПДн и отдельного 18+. До implementation юрист должен подтвердить,
+  является ли отдельное PD consent обязательным для регистрации после разделения
+  целей и правовых оснований. Cookie banner обязателен. Marketing consent не блокирует
+  регистрацию и используется только при добровольной подписке. Места controls и
+  draft microcopy находятся в BY legal UX research; финальный текст проверяет юрист.
 - **Error report:** V1 передаёт только текст пользователя. Технический
   context preview и optional screenshot отложены.
 - **Redesign:** только после стабилизации contract/data/flows; Figma read-only.

@@ -1,3 +1,5 @@
+> Historical exploration, not an active design instruction. Current work starts from `docs/design/00-DESIGN-INDEX.md`.
+
 # bidplace creator-first V2 — art-direction packet
 
 Working copy of the creator-first design contract. Visual direction is rewritten. Product/UX contracts, fixtures, states, and MVP constraints are preserved from V1.

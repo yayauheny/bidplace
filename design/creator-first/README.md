@@ -1,14 +1,16 @@
+> Historical exploration, not an active design instruction. Current work starts from `docs/design/00-DESIGN-INDEX.md`.
+
 # bidplace creator-first redesign packet
 
 This directory is the isolated input/output boundary for the new design exploration. It intentionally does not inherit the existing Pen v2 visual system.
 
 ## Start here
 
-1. Read `../../docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md`.
-2. Read `../../docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md`.
+1. Read `../../docs/audits/00-CURRENT-MVP-READINESS.md`.
+2. Read `../../docs/design/01-DESIGN-FOUNDATION.md`.
 3. Read `FOUNDER-DECISIONS.md` and `REFERENCE-MANIFEST.yaml`.
 4. Read the screenshot-by-screenshot interpretation in `REFERENCE-ANALYSIS.md`.
-5. Use the operational constraints in `../../docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md`.
+5. Use the operational constraints in `../../docs/design/03-DESIGN-SYSTEM.md`.
 6. Run the prompt in `prompts/01-DESIGN-ARCHITECT-PROMPT.md`.
 7. After founder approval, run `prompts/02-PEN-BUILDER-PROMPT.md`.
 8. Review exports with `prompts/03-VISUAL-QA-PROMPT.md`.

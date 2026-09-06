@@ -1,3 +1,5 @@
+> Archived prompt: do not execute for the current redesign. Use `docs/design/` and `docs/audits/00-CURRENT-MVP-READINESS.md`.
+
 # Prompt — lower-cost model / Pen builder
 
 Use an efficient implementation model. It must have access to the repository `pen` skill and Pen tooling.
@@ -19,9 +21,9 @@ Read and use the repository `pen` skill before any Pen action. Follow its comple
 Read only:
 
 ```text
-docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md
-docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
-docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md
+docs/audits/00-CURRENT-MVP-READINESS.md
+docs/design/01-DESIGN-FOUNDATION.md
+docs/design/03-DESIGN-SYSTEM.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
 design/creator-first/REFERENCE-ANALYSIS.md

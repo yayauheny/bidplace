@@ -1,6 +1,13 @@
 # Черновики публичных документов
 
-Не оферта и не готовый закон. Канон смысла: [`../02-LAWYER-ANSWERS-2026-08-24.md`](../02-LAWYER-ANSWERS-2026-08-24.md). Карта комплекта: [`../04-DOCUMENT-SET.md`](../04-DOCUMENT-SET.md).
+Не оферта и не готовый закон. Исторический источник встречи:
+[`../02-LAWYER-ANSWERS-2026-08-24.md`](../02-LAWYER-ANSWERS-2026-08-24.md).
+Текущий состав: [`../04-DOCUMENT-SET.md`](../04-DOCUMENT-SET.md). Открытые проверки:
+[`../06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+
+Drafts описывают только целевой MVP. Будущие функции хранятся в
+[`../../product/15-POST-MVP-BACKLOG.md`](../../product/15-POST-MVP-BACKLOG.md) и
+переносятся сюда только перед реальным включением.
 
 | Файл | Документ |
 |---|---|

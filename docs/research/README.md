@@ -40,6 +40,9 @@ Raw используется, если:
 
 ## Файлы
 
+- `2026-09-06-MARKETPLACE-MECHANICS-COMPARISON.md` — актуальные варианты механик;
+- `2026-09-06-AUCTION-ABUSE-CONTROLS.md` — актуальная threat/control map;
+- `2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` — актуальные официальные опоры и UX matrix;
 - `2026-07-partial-market-research.md`
 - `2026-07-deep-research-methodology.txt`
 - `2026-08-25-bidbaits-legal-documents.md`

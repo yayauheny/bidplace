@@ -3,7 +3,7 @@
 Последнее обновление: 2026-09-06  
 Статус: Confirmed
 
-Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Legal UX research: [`../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md`](../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
+Текущее состояние: [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md). Активные задачи: [`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md). Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md). Юридический вход: [`../legal/README.md`](../legal/README.md).
 
 ## 1. Назначение набора
 
@@ -41,6 +41,8 @@
 | `11-PROJECT-STATUS.md`                  | Часто меняющийся фактический статус кода                                     |
 | `12-DECISION-LOG.md`                    | Реестр решений, альтернатив, причин и условий пересмотра                     |
 | `13-APPLICATION-SECURITY.md`            | Инженерная application security: auth, admin emergency, uploads, rate limits |
+| `14-OPEN-MVP-DECISIONS.md`              | Только решения основателя, без которых нельзя фиксировать следующие contracts |
+| `15-POST-MVP-BACKLOG.md`                | Сохранённые будущие функции и условия возврата в работу                        |
 | `analytics-contract.md`                 | Identity, attribution, event naming and current product analytics events     |
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
@@ -49,20 +51,15 @@
 | `../design-handoff/14-CABINET-LOGIC.md`  | Статусы кабинета, правка работы, блок после продажи                          |
 | `../00-WAVES.md`                        | Две волны: сначала MVP, потом оплата сервиса и остальное                     |
 | `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Когда публиковать документы; не бриф дизайнеру                              |
-| `../legal/01-LAWYER-CONSULTATION-PACK.md` | Пакет вопросов юристу: оформление, автор, заработок, механики              |
 | `../legal/02-LAWYER-ANSWERS-2026-08-24.md` | Фиксация встречи 24 августа (с наложением расшифровки 26 августа)         |
-| `../legal/03-BIDBAITS-MAPPING.md`        | Что брать со структуры bidbaits, что нельзя копировать                     |
 | `../legal/04-DOCUMENT-SET.md`            | Комплект из семи стартовых документов, слои сейчас / если включено         |
-| `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
-| `../legal/bidplace-voprosy-yuristu-by-final.txt` | Исторический BY-only опросник; закрыт уточнениями основателя (`DEC-078`) |
-| `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Исторический пакет BY+RF по `DEC-072`; не текущая инструкция     |
-| `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Исторический широкий аудит BY+RF; не текущий lawyer pack                 |
+| `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md` | Нерешённые вопросы финальной проверки юристом Беларуси        |
 | `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
 | `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md` | Текущий приоритетный backlog, зависимости и model routing          |
-| `../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md` | Актуальный research prompt по белорусским legal UX patterns |
+| `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` | Проверенные правовые опоры, рыночные patterns и legal UX matrix |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
-| `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
+| `../audits/00-CURRENT-MVP-READINESS.md` | Единственный текущий аудит готовности и блокеров                              |
 | `../research/README.md`                 | Правила хранения сырого исследования                                         |
 | `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |
 
@@ -103,19 +100,16 @@
 - `13-APPLICATION-SECURITY.md` — auth, admin emergency, upload hardening, rate limits
 - `08-SELLER-AND-ITEM-POLICY.md`
 
-### Real pilot и юридические материалы
+### Public pilot и юридические материалы
 
 Дополнительно:
 
-- `../legal/01-LAWYER-CONSULTATION-PACK.md` — исторический бриф на консультацию 24 августа;
 - `../legal/02-LAWYER-ANSWERS-2026-08-24.md` — фиксация решений встречи 24 августа;
 - `../legal/04-DOCUMENT-SET.md` — какие семь файлов, слои, галочки;
 - `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
 - `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
-- `../legal/05-REVIEW-PROMPT.md` — промпт на ревью этого пакета;
-- `../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md` — актуальная задача по размещению галочек, правил и legal microcopy;
-- `../legal/bidplace-voprosy-yuristu-by-final.txt` — закрытый исторический опросник;
-- `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` и `07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` — исторические широкие пакеты; не текущая инструкция;
+- `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md` — только оставшиеся вопросы;
+- `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` — размещение controls и граница между законом и рыночным pattern.
 
 Эти файлы не являются юридической консультацией или подтверждением compliance.
 
@@ -258,7 +252,10 @@ Decision: DEC-XXX
     │   ├── 09-TRUST-AND-AUCTION-INTEGRITY.md
     │   ├── 10-CODE-ARCHITECTURE.md
     │   ├── 11-PROJECT-STATUS.md
-    │   └── 12-DECISION-LOG.md
+    │   ├── 12-DECISION-LOG.md
+    │   ├── 13-APPLICATION-SECURITY.md
+    │   ├── 14-OPEN-MVP-DECISIONS.md
+    │   └── 15-POST-MVP-BACKLOG.md
     ├── design/
     │   ├── 00-DESIGN-INDEX.md
     │   ├── 01-DESIGN-FOUNDATION.md
@@ -267,6 +264,7 @@ Decision: DEC-XXX
     │   ├── 04-DESIGN-STATUS.md
     │   └── 05-DESIGN-HANDOFF.md
     ├── audits/
+    │   └── 00-CURRENT-MVP-READINESS.md
     └── research/
         ├── README.md
         └── raw/

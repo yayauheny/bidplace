@@ -1,3 +1,5 @@
+> Archived prompt: do not execute for the current redesign. Use `docs/design/` and `docs/audits/00-CURRENT-MVP-READINESS.md`.
+
 # Prompt — strongest model / fresh visual QA
 
 Use a fresh task and a strong visual-reasoning model after the Pen builder exports the vertical slice.
@@ -13,8 +15,8 @@ Do not redesign the system. Compare the Pen exports against the approved product
 Read only:
 
 ```text
-docs/audits/creator-first-redesign/00-PRODUCT-MVP-DESIGN-AUDIT.md
-docs/audits/creator-first-redesign/01-CREATOR-FIRST-DESIGN-BRIEF.md
+docs/audits/00-CURRENT-MVP-READINESS.md
+docs/design/01-DESIGN-FOUNDATION.md
 design/creator-first/FOUNDER-DECISIONS.md
 design/creator-first/REFERENCE-MANIFEST.yaml
 design/creator-first/REFERENCE-ANALYSIS.md

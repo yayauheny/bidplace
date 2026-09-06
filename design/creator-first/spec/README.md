@@ -15,4 +15,4 @@ pen-build-plan.md
 
 Next: Pen Stage 1A, frames F001–F007 only. A full F001–F118 build in one pass is forbidden.
 
-Schemas and completeness rules are defined in `docs/audits/creator-first-redesign/02-DESIGN-AGENT-RUNBOOK.md`.
+Schemas and completeness rules are defined in `docs/design/03-DESIGN-SYSTEM.md`.
