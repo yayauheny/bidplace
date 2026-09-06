@@ -3,7 +3,7 @@
 Версия: 1.5
 Последнее обновление: 2026-09-06
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-077`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-078`
 
 ## 1. Цель MVP
 
@@ -32,8 +32,7 @@ MVP не проверяет полноценный marketplace.
 - актуальный legal launch gate и публичные документы проверяются по
   законодательству Беларуси (`DEC-077`);
 - русский язык интерфейса;
-- валюта MVP пока `BYN`; показ других валют или подсказки конвертации
-  остаётся открытым до письменной проверки юристом;
+- валюта MVP — `BYN`; другие валюты и подсказки конвертации остаются после MVP;
 - закрытый pilot: публичная заявка seller доступна, но продавать можно только после ручного admin approval;
 - вероятный первый продавец — Таисия Борисова;
 - оригинальная физическая работа;
@@ -461,9 +460,9 @@ Minimum success:
 - IP-based currency conversion.
 
 Fixed-price sale and optional buyer price offers for that sale are **in the target
-product scope** (`DEC-075`, `DEC-076`, §21) and **not in the current runtime**.
-Price offers and Buy Now are not auction mechanics. Exact offer, currency,
-non-payment and contact mechanics remain open; do not implement the superseded
+product scope** (`DEC-075`, `DEC-076`, `DEC-078`, §21) and **not in the current runtime**.
+Price offers and Buy Now are not auction mechanics. Offer expiry/revocation,
+counteroffer, competing-buy, non-payment and contact mechanics remain open; do not implement the superseded
 `DEC-072` defaults.
 
 ## 20. Критерии пересмотра
@@ -479,7 +478,7 @@ non-payment and contact mechanics remain open; do not implement the superseded
 - ads не конвертируются;
 - code не проходит gate.
 
-## 21. Контракт expanded MVP (`DEC-075` — `DEC-077`)
+## 21. Контракт expanded MVP (`DEC-075` — `DEC-078`)
 
 Целевой web MVP: портфолио работ и два раздельных формата продажи:
 аукцион и прямая продажа по фиксированной цене. В фиксированной продаже автор
@@ -491,20 +490,25 @@ bidplace не принимает оплату и не оформляет дос�
   portfolio-only, позже получить Listing или быть перевыставлен из архива.
 - **Auction:** стартовая цена, шаг, время старта/окончания и server-authoritative
   ставки. Нет «Купить» и «Предложить цену».
-- **Fixed:** unique Work нельзя продать дважды; buyer confirmation должно быть
-  атомарным. Точный legal contract moment/copy проверяет юрист.
-- **Offer:** только опция fixed Listing, которую включает автор; expiry, revoke,
+- **Fixed:** unique Work нельзя продать дважды. Отдельное buyer confirmation
+  атомарно создаёт сделку и снимает Work с продажи.
+- **Offer:** только опция fixed Listing, которую включает автор. Явное seller
+  acceptance сразу создаёт сделку по принятой цене. Expiry, revoke,
   counteroffer and competing-buy rules не выбраны.
 - **Next bidder/contact:** manual admin replacement и 48h — текущий runtime, а не
   финальная marketplace policy. Target выбирается после research + legal review.
-- **Currency:** пока `BYN`; другие валюты и conversion hint не подтверждены.
+- **Currency:** MVP использует `BYN`; другие валюты и conversion hint — после MVP.
 - **History:** кабинет называется `Покупки / Продажи`; cancelled/failed outcomes
   сохраняются в истории.
 - **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без
   silent `+24h`.
-- **Legal UX:** registration, publish, bid, fixed buy, offer and contact disclosure
-  имеют разные versioned acceptance/confirmation points согласно письменной
-  проверке.
+- **Legal UX:** registration имеет три отдельных обязательных пункта
+  (соглашение, политика, согласие на ПДн) и отдельное 18+. Cookie banner
+  обязателен. Отдельное marketing consent не блокирует регистрацию и используется
+  только при добровольной подписке. Точное размещение и microcopy для publish, bid,
+  fixed buy, offer и contact disclosure выбираются после BY legal UX research.
+- **Error report:** V1 передаёт только текст пользователя. Технический
+  context preview и optional screenshot отложены.
 - **Redesign:** только после стабилизации contract/data/flows; Figma read-only.
 
 До новых append-only решений P0-E может проектировать варианты и race matrix, но

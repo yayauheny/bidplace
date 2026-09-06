@@ -1,8 +1,9 @@
 # Task 02 — письменная проверка юристом по Беларуси
 
-> Старый prompt BY+RF ниже заменён решением `DEC-077`.
-> Для пересылки юристу использовать только
-> [`../../legal/bidplace-voprosy-yuristu-by-final.txt`](../../legal/bidplace-voprosy-yuristu-by-final.txt).
+> Задача закрыта решением `DEC-078` и не должна исполняться.
+> Вместо нового широкого опроса юриста выполнить
+> [`14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md`](14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md),
+> затем адаптировать черновики и дать юристу на финальную проверку.
 
 ## Prompt исполнителю
 

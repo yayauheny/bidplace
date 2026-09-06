@@ -3,7 +3,7 @@
 Последнее обновление: 2026-09-06  
 Статус: Confirmed
 
-Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Актуальные вопросы юристу: [`../legal/bidplace-voprosy-yuristu-by-final.txt`](../legal/bidplace-voprosy-yuristu-by-final.txt). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
+Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Legal UX research: [`../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md`](../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
 
 ## 1. Назначение набора
 
@@ -32,7 +32,7 @@
 | `02-PRODUCT-EVOLUTION.md`               | История появления идеи и хронология изменений                                |
 | `03-CUSTDEV-TAISIA.md`                  | Полный разбор первого интервью                                               |
 | `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать                                     |
-| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — Work-first и expanded sale scope (`DEC-075`) |
+| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — Work-first и expanded sale scope (`DEC-075`–`DEC-078`) |
 | `06-ROADMAP-24-MONTHS.md`               | Волны развития на два года и переходные критерии                             |
 | `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов                                            |
 | `08-SELLER-AND-ITEM-POLICY.md`          | Кто может продавать и какие предметы допустимы                               |
@@ -52,13 +52,14 @@
 | `../legal/01-LAWYER-CONSULTATION-PACK.md` | Пакет вопросов юристу: оформление, автор, заработок, механики              |
 | `../legal/02-LAWYER-ANSWERS-2026-08-24.md` | Фиксация встречи 24 августа (с наложением расшифровки 26 августа)         |
 | `../legal/03-BIDBAITS-MAPPING.md`        | Что брать со структуры bidbaits, что нельзя копировать                     |
-| `../legal/04-DOCUMENT-SET.md`            | Комплект из шести публичных документов, слои сейчас / если включено        |
+| `../legal/04-DOCUMENT-SET.md`            | Комплект из семи стартовых документов, слои сейчас / если включено         |
 | `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
-| `../legal/bidplace-voprosy-yuristu-by-final.txt` | Актуальный BY-only пакет вопросов юристу и точки legal UX (`DEC-076`, `DEC-077`) |
+| `../legal/bidplace-voprosy-yuristu-by-final.txt` | Исторический BY-only опросник; закрыт уточнениями основателя (`DEC-078`) |
 | `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Исторический пакет BY+RF по `DEC-072`; не текущая инструкция     |
 | `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Исторический широкий аудит BY+RF; не текущий lawyer pack                 |
 | `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
 | `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md` | Текущий приоритетный backlog, зависимости и model routing          |
+| `../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md` | Актуальный research prompt по белорусским legal UX patterns |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
@@ -108,11 +109,12 @@
 
 - `../legal/01-LAWYER-CONSULTATION-PACK.md` — исторический бриф на консультацию 24 августа;
 - `../legal/02-LAWYER-ANSWERS-2026-08-24.md` — фиксация решений встречи 24 августа;
-- `../legal/04-DOCUMENT-SET.md` — какие шесть файлов, слои, галочки;
+- `../legal/04-DOCUMENT-SET.md` — какие семь файлов, слои, галочки;
 - `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
 - `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
 - `../legal/05-REVIEW-PROMPT.md` — промпт на ревью этого пакета;
-- `../legal/bidplace-voprosy-yuristu-by-final.txt` — актуальный пакет на письменную проверку по законодательству Беларуси;
+- `../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md` — актуальная задача по размещению галочек, правил и legal microcopy;
+- `../legal/bidplace-voprosy-yuristu-by-final.txt` — закрытый исторический опросник;
 - `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` и `07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` — исторические широкие пакеты; не текущая инструкция;
 
 Эти файлы не являются юридической консультацией или подтверждением compliance.

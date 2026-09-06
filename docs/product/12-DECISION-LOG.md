@@ -1428,3 +1428,49 @@ workstream without a new founder decision.
 
 The founder deliberately opens a separate country launch, changes the operator
 jurisdiction or receives legal advice that requires a broader review.
+
+## DEC-078 — Belarus launch documents and legal UX defaults
+
+Date: 2026-09-06
+Status: Confirmed
+Source: founder clarification based on the 2026-08-24 lawyer consultation and
+follow-up messages
+
+### Decision
+
+- The selected activity codes are `63.12` (main), `62.01` and `73.11`
+  (additional), based on the lawyer's recheck that all three remain available.
+  Their spelling and applicability are rechecked when the IP is registered.
+- The seven-file launch document set contains the user agreement/offer, personal-data
+  policy, author rules, auction and sale rules, prohibited items and behavior,
+  a separate personal-data consent and a separate email-marketing consent. Cookie
+  information is a section of the personal-data policy and is linked from a required
+  cookie banner. Email-marketing consent is never required for registration and is
+  used only where the user voluntarily subscribes.
+- Author rules cover contact transfer. The same data-processing meaning appears
+  in the personal-data policy and consent.
+- Registration exposes the user agreement, policy and personal-data consent as
+  three separate mandatory items. Registration is unavailable until they are
+  accepted. The 18+ affirmation is separate.
+- Direct fixed purchase creates the deal after explicit buyer confirmation.
+  When an author explicitly accepts a buyer's price offer, that acceptance
+  immediately creates the deal at the accepted price.
+- The first error-report version sends only the user's text. Automatic technical
+  context preview and optional screenshot are deferred.
+- Exact placement and concise copy for the legal controls are selected after a
+  read-only comparison of Belarus-facing services and Belarus primary sources.
+  Competitor behavior is evidence of a market pattern, not evidence of law.
+
+### Revises
+
+- `DEC-075` and `DEC-076`: accepted-offer contract outcome is no longer open.
+- `DEC-076`: exact fixed-buy contract outcome is no longer open; microcopy remains
+  subject to the legal UX research.
+- `DEC-077`: the broad lawyer questionnaire is replaced by focused Belarus legal
+  UX research and final review of the adapted documents.
+
+### Revisit when
+
+The Belarus research finds a primary-source conflict, the final lawyer review
+requires a change, marketing email is enabled, or technical diagnostics are added
+to error reports.

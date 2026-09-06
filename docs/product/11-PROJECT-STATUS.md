@@ -1,15 +1,20 @@
 # bidplace — текущий статус проекта
 
-## 2026-09-06 — Belarus legal scope and sale-mode boundary
+## 2026-09-06 — Belarus launch documents and legal UX defaults
 
 - `Implemented` (docs only): `DEC-076` separates auction from direct fixed-price
   sale. Buyer price offers are optional only for fixed sale; payment and delivery
   always stay outside bidplace.
 - `Implemented` (docs only): `DEC-077` makes Belarus law the current operator,
   public-document and legal-review workstream. Earlier BY+RF packs are historical.
-- `Needs verification`: eight remaining Belarus-law questions and the proposed
-  legal UX/button matrix are in `../legal/bidplace-voprosy-yuristu-by-final.txt`.
-  The adapted final document set still requires lawyer review before public launch.
+- `Implemented` (docs only): `DEC-078` fixes the launch document set, three mandatory
+  registration items, separate 18+ confirmation, required cookie banner, BYN,
+  fixed-buy and accepted-offer deal moments, and text-only V1 error reports.
+- `Needs verification`: Task
+  [`14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md`](../tasks/2026-09-06-reconciliation/14-BELARUS-LEGAL-UX-MARKET-RESEARCH.md)
+  must establish the exact Belarus-facing placement and short UI text. After the
+  drafts are adapted to the actual infrastructure and flows, the complete set still
+  requires final review by a Belarus lawyer before public launch.
 - Code behavior is unchanged by this documentation update.
 
 ## 2026-09-06 — Product write atomicity

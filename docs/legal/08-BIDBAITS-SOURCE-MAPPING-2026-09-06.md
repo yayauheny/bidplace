@@ -15,11 +15,11 @@ Consent, Privacy Policy, Cookies, buyer/seller advice, FAQ и rights-holder page
 
 | Материал/pattern | Использовать как | Не переносить | Статус bidplace |
 |---|---|---|---|
-| User agreement structure | Checklist ролей, карточки, Order, delivery, liability, claims | ФИО/ИНН оператора РФ, ссылки, право РФ, собственные названия/сроки | Переписать после BY+RF ответа |
+| User agreement structure | Checklist ролей, карточки, Order, delivery, liability, claims | ФИО/ИНН оператора РФ, ссылки, право РФ, собственные названия/сроки | Адаптировать под право Беларуси и фактический MVP; затем проверить у юриста |
 | Privacy policy | Checklist data categories, purposes, processors, rights, contacts | Russia-only operator/localization assumptions и blanket consent | Нужен code-derived data map и provider countries |
 | PD consent | Checklist identity, purposes, operations, withdrawal | Consent «на всё и навсегда», если обработка идёт по договору/закону | Юрист определяет legal basis по каждой цели |
-| Cookies | Перечень технических и analytics data | «Продолжая использовать» как универсальный consent | Essential/optional split открыт |
-| Fixed order | Карточка → confirmation → кабинет → contact exchange | Их public-offer wording и отказ seller без BY+RF проверки | Contract moment открыт юристу |
+| Cookies | Перечень технических и analytics data | «Продолжая использовать» как универсальный consent | Cookie-баннер обязателен; exact controls и текст уточняет T14R |
+| Fixed order | Карточка → confirmation → кабинет → contact exchange | Их public-offer wording и отказ seller без проверки по праву Беларуси | Отдельное buyer confirmation создаёт сделку (`DEC-078`) |
 | 48h contact | Candidate SLA и reminder pattern | Считать 48h отраслевым законом | Research + lawyer question |
 | Non-payment/relist | Cancelled history, reminders, relist from original work | Automatic relist без product/audit decision | Portfolio-first model подходит как основа |
 | Seller/buyer advice | Help-center checklist fraud/delivery safety | Гарантии, рейтинг и onsite chat, которых нет | После core MVP как safety content |
@@ -35,9 +35,10 @@ Consent, Privacy Policy, Cookies, buyer/seller advice, FAQ и rights-holder page
 Bidbaits хорошо показывает, какие реальные сценарии появятся: невыход на связь,
 отмена, повторная публикация, повреждение доставки, IP complaint, negative review
 dispute. Для bidplace это backlog и research evidence. Ни один их текст не закрывает
-вопрос применимого права, consent, currency, next bidder или ответственности.
+вопрос применимого права, next bidder или ответственности. Регистрация, cookie,
+валюта и моменты fixed/offer зафиксированы в `DEC-078`; точное размещение и короткий
+текст проверяются задачей T14R.
 
 Старая карта [`03-BIDBAITS-MAPPING.md`](03-BIDBAITS-MAPPING.md) содержит
 устаревший `+24 часа` при missed scheduled start и должна стать исторической после
 переноса действующих выводов в owner docs.
-
