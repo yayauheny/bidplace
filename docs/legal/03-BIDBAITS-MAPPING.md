@@ -1,7 +1,12 @@
 # bidplace — что брать с bidbaits, что нет
 
-Дата: 2026-08-25  
-Чужие тексты: [`docs/research/raw/2026-08-25-bidbaits-legal-documents.md`](../research/raw/2026-08-25-bidbaits-legal-documents.md)  
+> **Historical mapping (2026-08-25).** Current owner:
+> [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md).
+> Keep this file as evidence; do not treat stale rows (for example `+24 часа` on
+> missed scheduled start) as current product truth.
+
+Дата: 2026-08-25
+Чужие тексты: [`docs/research/raw/2026-08-25-bidbaits-legal-documents.md`](../research/raw/2026-08-25-bidbaits-legal-documents.md)
 Наши решения: [`02-LAWYER-ANSWERS-2026-08-24.md`](02-LAWYER-ANSWERS-2026-08-24.md)
 
 Это не наша оферта. Это карта: структура как у них, смысл — как решили на встрече 24 августа.

@@ -1,6 +1,6 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-09-06  
+Последнее обновление: 2026-09-06
 Статус: Confirmed
 
 Текущая работа (волна 1, бриф дизайнеру): [`../00-WAVES.md`](../00-WAVES.md) и [`../design-handoff/00-BRIEF.md`](../design-handoff/00-BRIEF.md). Юрист: [`../legal/02-LAWYER-ANSWERS-2026-08-24.md`](../legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы: [`../legal/04-DOCUMENT-SET.md`](../legal/04-DOCUMENT-SET.md) и [`../legal/drafts/`](../legal/drafts/).
@@ -51,15 +51,16 @@
 | `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Когда публиковать документы; не бриф дизайнеру                              |
 | `../legal/01-LAWYER-CONSULTATION-PACK.md` | Пакет вопросов юристу: оформление, автор, заработок, механики              |
 | `../legal/02-LAWYER-ANSWERS-2026-08-24.md` | Фиксация встречи 24 августа (с наложением расшифровки 26 августа)         |
-| `../legal/03-BIDBAITS-MAPPING.md`        | Что брать со структуры bidbaits, что нельзя копировать                     |
+| `../legal/03-BIDBAITS-MAPPING.md`        | Historical bidbaits mapping (2026-08-25); current owner: `08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` |
 | `../legal/04-DOCUMENT-SET.md`            | Комплект из шести публичных документов, слои сейчас / если включено        |
 | `../legal/05-REVIEW-PROMPT.md`          | Промпт агенту на ревью юридического пакета и брифа волны 1                 |
-| `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Письменный пакет BY+RF по контракту `DEC-072`; не публикация drafts     |
+| `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` | Historical BY+RF send pack (`DEC-072` era); current owner: `07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` |
 | `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` | Текущий BY+RF gap pack и legal UX matrix (`DEC-075`)                 |
 | `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
 | `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md` | Текущий приоритетный backlog, зависимости и model routing          |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
+| `../audits/2026-09-06-IMPLEMENTATION-STACK-REVIEW.md` | Текущий implementation stack review (2026-09-06)                         |
 | `../audits/*`                           | Датированные исторические снимки аудитов; не текущий источник истины         |
 | `../research/README.md`                 | Правила хранения сырого исследования                                         |
 | `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |
@@ -111,7 +112,9 @@
 - `../legal/drafts/` — рабочие черновики; канон смысла остаётся в `02`;
 - `../legal/00-MVP-LAUNCH-CHECKLIST.md` — когда выкладывать на сайт;
 - `../legal/05-REVIEW-PROMPT.md` — промпт на ревью этого пакета;
-- `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` — пакет на письменную проверку BY+RF по актуальному контракту; не публикация drafts;
+- `../legal/06-LAWYER-PACK-BY-RF-2026-09-05.md` — historical send pack; current owner `07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md`;
+- `../legal/07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md` — текущий BY+RF gap pack и legal UX matrix;
+- `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` — текущая карта Bidbaits; historical `03-BIDBAITS-MAPPING.md`;
 
 Эти файлы не являются юридической консультацией или подтверждением compliance.
 

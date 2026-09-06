@@ -1,12 +1,12 @@
 # bidplace — комплект публичных документов
 
-Дата черновика: 2026-08-30  
+Дата черновика: 2026-08-30
 Статус: рабочий черновик, не оферта, не заключение юриста, на прод как закон не выкладывать.
 
-Следующая письменная проверка BY+RF: [`06-LAWYER-PACK-BY-RF-2026-09-05.md`](06-LAWYER-PACK-BY-RF-2026-09-05.md). Этот комплект по-прежнему **не выкладывать**.  
-Что не копировать с конкурента: [`03-BIDBAITS-MAPPING.md`](03-BIDBAITS-MAPPING.md).  
-Тексты: [`drafts/`](drafts/).  
-Когда публиковать: [`00-MVP-LAUNCH-CHECKLIST.md`](00-MVP-LAUNCH-CHECKLIST.md).  
+Текущий BY+RF gap pack: [`07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md`](07-OPEN-LEGAL-QUESTIONS-BY-RF-2026-09-06.md). Исторический send pack: [`06-LAWYER-PACK-BY-RF-2026-09-05.md`](06-LAWYER-PACK-BY-RF-2026-09-05.md). Этот комплект по-прежнему **не выкладывать**.
+Что не копировать с конкурента: current owner [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md); historical [`03-BIDBAITS-MAPPING.md`](03-BIDBAITS-MAPPING.md).
+Тексты: [`drafts/`](drafts/).
+Когда публиковать: [`00-MVP-LAUNCH-CHECKLIST.md`](00-MVP-LAUNCH-CHECKLIST.md).
 Галочки и подвал в интерфейсе: [`../design-handoff/13-FOOTER-AND-COMPLAINT.md`](../design-handoff/13-FOOTER-AND-COMPLAINT.md).
 
 Комплект всегда **шесть файлов**. Седьмое «соглашение о чате» не заводим. Чат, подписка, отзывы, выкуп, дропы входят разделами с пометкой: применяется, когда функция доступна в сервисе.

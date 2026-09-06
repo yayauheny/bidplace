@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-06
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries

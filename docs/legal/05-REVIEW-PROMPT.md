@@ -2,7 +2,7 @@
 
 Скопировать целиком во второе окно / другому агенту. Это не оферта и не заключение юриста.
 
-Чат, в котором собрали пакет: [юрист и бриф волны 1](65d67862-cbee-4adc-b29e-708fde48e801).
+Чат, в котором собрали пакет: «юрист и бриф волны 1» (Cursor chat id `65d67862-cbee-4adc-b29e-708fde48e801`; не repo path).
 
 ---
 
@@ -30,7 +30,7 @@
 
 1. Встреча с юристом: `docs/legal/02-LAWYER-ANSWERS-2026-08-24.md`.
 2. Явные решения основателя в том чате (волна 1: аукцион **и** фикс **и** предложение цены; кабинет; код сделки).
-3. Карта bidbaits: `docs/legal/03-BIDBAITS-MAPPING.md`.
+3. Карта bidbaits: current owner `docs/legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`; historical `docs/legal/03-BIDBAITS-MAPPING.md`.
 4. Комплект: `docs/legal/04-DOCUMENT-SET.md` и `drafts/`.
 5. Бриф дизайнеру: `docs/design-handoff/`.
 6. Код и Prisma — только чтобы сказать «сейчас в рантайме иначе».
@@ -102,7 +102,8 @@
 - `docs/legal/01-LAWYER-CONSULTATION-PACK.md` — вопросы на встречу
 - `docs/legal/bidplace-voprosy.txt` — шпаргалка, которую отправили юристу
 - `docs/legal/02-LAWYER-ANSWERS-2026-08-24.md` — канон смысла встречи
-- `docs/legal/03-BIDBAITS-MAPPING.md` — что брать / не брать
+- `docs/legal/03-BIDBAITS-MAPPING.md` — historical bidbaits mapping
+- `docs/legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` — current bidbaits mapping owner
 - `docs/legal/04-DOCUMENT-SET.md` — шесть файлов, слои, галочки, плейсхолдеры
 - `docs/legal/00-MVP-LAUNCH-CHECKLIST.md` — когда публиковать (старый июльский текст выкинут)
 - `docs/legal/drafts/README.md`

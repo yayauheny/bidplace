@@ -451,7 +451,7 @@
 - `Partial`: final Pen v2 Creator Profile Creation now stages public identity, structured public links, profile photo, private handoff data and a public-only review before submit in `apps/mobile/src/features/sellers/seller-profile-screen.tsx`. Telegram, Instagram, website and handoff validation reuse shared contract schemas, show field-local errors and block progression while the server remains authoritative. Targeted creator profile Playwright coverage passes; visual/device/accessibility acceptance remains pending.
 - `Partial`: final Pen v2 Admin Moderation now separates Authors and Works queues with search/status filters, filtered empty states, existing reasoned confirmations and server-owned status decisions in `apps/mobile/src/features/admin/admin-moderation-screen.tsx`. Targeted admin Playwright `1/1` passes; full responsive state screenshots and device/accessibility acceptance remain pending.
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-06
 Статус: Public discovery completion is Partial; trust-critical backend
 boundaries remain Implemented; founder visual/device/screen-reader acceptance,
 full metadata migration and isolated 10-user rehearsal remain Needs

@@ -1,5 +1,9 @@
 # bidplace — сверка MVP, юридических материалов, дизайна и кода
 
+> **Historical reconciliation snapshot (2026-09-05).** Current implementation review:
+> [`2026-09-06-IMPLEMENTATION-STACK-REVIEW.md`](2026-09-06-IMPLEMENTATION-STACK-REVIEW.md).
+> Current backlog owner: [`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md).
+
 Дата: 2026-09-05.
 Проверенная база: `2d3326f`, ветка источника `fix/final-pen-v2-rework`.
 Назначение: единая точка сверки и очередь заданий. Это не юридическое заключение.
@@ -345,8 +349,8 @@ QW-01–QW-04 имеют согласованные founder defaults и не т�
 
 ## 15. 2026-09-06 — риски ревью P0-D follow-up
 
-Ветка: `fix/seller-orders-inbox`.  
-Код: `ca8c681` (lifecycle `take` 50), `1a65a10` (HTTP 401/403 inbox). Предшествующий blob-select: `fae11b7`.  
+Ветка: `fix/seller-orders-inbox`.
+Код: `ca8c681` (lifecycle `take` 50), `1a65a10` (HTTP 401/403 inbox). Предшествующий blob-select: `fae11b7`.
 Ревью: `fae11b7..HEAD` по `code-review-best-practices` / nest / security. Блокирующих дефектов нет; merge follow-up не удерживать из‑за пунктов ниже.
 
 Контекст закрытия P0-D DoD (snapshot, 48h, Activity, inbox, HTTPS, env, expired SCHEDULED) — в `11-PROJECT-STATUS.md` (2026-09-05/06). Это ops-хвост и тестовые дыры, не новый продуктовый контракт. Очередь и distributed lock по плану не делались.
