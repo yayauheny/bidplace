@@ -1,5 +1,19 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — MVP deal decision stress-test
+
+- `Implemented` (research/docs only): D01–D04 проверены как единая модель
+  `Work → Listing → Bid/offer → Order → handoff`. Рекомендации, rejected alternatives,
+  race/abuse invariants и вопросы юристу находятся в
+  [`../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
+- `Needs founder decision`: memo не меняет RFC или decision log. D01–D04 остаются
+  открыты в [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+- `Needs future implementation`: текущая БД ограничивает активный Order только на
+  уровне Listing, а seller единолично меняет `CONTACTED`, `COMPLETED` и
+  `HANDOFF_FAILED`. Для Work-first/fixed/offer нужен Work-level deal invariant и
+  раздельные pending/confirmed outcomes.
+- Code behavior is unchanged. Tests were not rerun for this docs-only task.
+
 ## 2026-09-06 — current documentation and legal UX research
 
 - `Implemented` (docs only): выполненные task-prompts и закрытые legal-вопросники
@@ -15,9 +29,9 @@
   финальный registration contract остаётся заблокирован вопросом 1 из
   [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
 - Code behavior is unchanged by this documentation update. Tests were not rerun.
-- `Planned` (docs only): backlog дополнен тремя независимыми smart-model reviews:
-  stress-test D01–D04, security/dependency evidence review и public-pilot operations
-  readiness. Они не разрешают открытые вопросы автоматически и не меняют runtime.
+- `Planned` (docs only): backlog содержит независимые security/dependency evidence и
+  public-pilot operations reviews. Они не разрешают открытые вопросы автоматически и
+  не меняют runtime.
 
 ## 2026-09-06 — Belarus launch scope
 

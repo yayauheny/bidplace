@@ -2,7 +2,7 @@
 
 Дата среза: 2026-09-06
 Проверенный code baseline: `fix/figma-readonly-audit`, HEAD `beed3a0`
-Текущая документация: `fix/docs-current-state`
+Текущая документация: `feature/mvp-decision-review`
 Статус: текущий аудит; прежние датированные аудиты удалены из рабочего дерева и остаются в Git
 
 ## Итог
@@ -22,6 +22,7 @@
 | Binary hydration | Из известных list/moderation paths убрана загрузка полного photo blob; статус отражён в `11-PROJECT-STATUS.md`. |
 | Figma inventory | Read-only аудит выполнен; оригинальный Figma не менялся. По статусу основателя основные прототипы готовы, кроме окончательной логики `Покупки / Продажи`. Визуальная готовность не заменяет отсутствующие fixed/offer contracts. |
 | Marketplace и abuse research | Достаточно для выбора продуктовых вариантов: Work/Listing разделены, second chance является отдельным действием, self-bid блокируется, сетевые признаки не считаются доказательством, история остаётся неизменяемой. |
+| Stress-test D01–D04 | Варианты проверены как одна модель сделки. Зафиксированы Work-level deal invariant, защита fixed/offer races, two-party/admin resolution и безопасный second chance. Это рекомендация, а не решение основателя. |
 | Belarus legal UX research | Достаточно для проектирования мест controls, cookies, action confirmations, footer и audit evidence. Оно не заменяет финальную проверку юриста. |
 | Решения основателя | Оператор и юридическая рамка — Беларусь, первая аудитория — Беларусь и Россия; BYN; Work-first; аукцион отдельно от fixed; offer только для fixed; деньги и доставка вне платформы; fixed подтверждает покупатель; принятый offer создаёт сделку. |
 
@@ -35,7 +36,6 @@
 | P1 | Legacy HTTPS preflight | Strict schema существует, старые `http:` значения не проверены | Grok 4.6 High, review Sol |
 | P1 | JWT role freshness | Guards могут доверять роли из ранее выданного токена | Grok 4.6 High, security review Sol |
 | P2 | Lifecycle bounded progress | Batch 50 есть; нет доказательства `51 → 50 + 1`, решения poison-prefix и multi-instance policy | Grok 4.6 High, review Sol |
-| P0 | Stress-test D01–D04 | Рекомендации есть, но ещё не проверены общей race/UX/abuse-моделью | GPT-5.6 Sol |
 | P1 | Security/dependency evidence review | Самописный JWT и другие security-critical utilities не получили отдельного evidence review; запрос на сравнение с поддерживаемыми библиотеками не был оформлен задачей | Grok 4.6 High, security review Sol |
 | P1 | Public-pilot operations readiness | Runbook существует, но его утверждения и реальные deploy/backup/email/TLS gaps не сверены заново | Grok 4.6 High, review Sol |
 
@@ -54,8 +54,10 @@
 4. Статусы передачи: кто может отметить `Связались` и `Передача завершена`, требуется
    ли подтверждение второй стороны.
 
-Актуальные варианты и последствия находятся в
-[`docs/product/14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md).
+Актуальные варианты находятся в
+[`docs/product/14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md), а
+совместимая рекомендация и последствия — в
+[`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
 
 ## Последовательность реализации
 

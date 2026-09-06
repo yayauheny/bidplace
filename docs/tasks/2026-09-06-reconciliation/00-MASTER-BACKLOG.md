@@ -28,18 +28,18 @@ Owner: founder
 | 04 | P0 | [Work-first domain contract](04-WORK-FIRST-DOMAIN-CONTRACT.md) | GPT-5.6 Sol | Открытые варианты сохраняются явно |
 | 05 | P0 | [Фактическая data/legal map](05-DATA-AND-LEGAL-INVENTORY.md) | Grok 4.6 High; review Sol | Не читать secrets |
 | 06 | P1 | [JWT role freshness](06-AUTH-ROLE-FRESHNESS.md) | Grok 4.6 High; security review Sol | Нет |
-| 07 | P0 | [Stress-test решений D01–D04](07-MVP-DECISION-CLOSURE.md) | GPT-5.6 Sol | Не подменяет решение основателя и ответ юриста |
 | 08 | P1 | [Security и dependency evidence review](08-SECURITY-DEPENDENCY-REVIEW.md) | Grok 4.6 High; security review Sol | Интернет только для первичных advisories |
 | 09 | P1 | [Public-pilot operations readiness](09-PUBLIC-PILOT-OPERATIONS-READINESS.md) | Grok 4.6 High; review Sol | Без deploy и чтения secrets |
 
 ## Если модели выполняют задачи последовательно
 
-- **GPT-5.6 Sol:** `07 → решение основателя → 04 → 01 → review результатов Grok`.
+- **GPT-5.6 Sol:** `решение основателя по D01–D04 → 04 → 01 → review результатов Grok`.
 - **Grok 4.6 High:** `05 → 08 → 06 → 02 → 09 → 03`.
 
-T07 идёт перед финальной версией T04, чтобы domain contract не пришлось переписывать
-после выбора offer/non-payment rules. T05 идёт первым у Grok, потому что его data map
-нужна legal drafts, complaints, cookies и operations review.
+Stress-test T07 завершён; рекомендация находится в
+[`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
+T04 ждёт решения основателя по D01–D04. T05 идёт первым у Grok, потому что его data
+map нужна legal drafts, complaints, cookies и operations review.
 
 ## Нужно решение основателя
 
