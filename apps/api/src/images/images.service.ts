@@ -118,10 +118,13 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      await this.requireWritableOwnerInTx(tx, userId, productId, {
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
         id: true,
         position: true,
       });
+      if (!locked.images.some((image) => image.id === imageId)) {
+        throw new NotFoundException('Image not found');
+      }
       const remaining = await tx.productImage.findMany({
         where: { productId, id: { not: imageId } },
         select: { id: true },
@@ -131,7 +134,7 @@ export class ImagesService {
       await this.imageStore.delete(imageKey.productImage(imageId), tx);
       await tx.productImage.delete({ where: { id: imageId } });
 
-      const temporaryBase = product.images.length;
+      const temporaryBase = remaining.length + 1;
 
       await Promise.all(
         remaining.map((image, index) =>
@@ -175,8 +178,20 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      await this.requireWritableOwnerInTx(tx, userId, productId, { id: true });
-      const temporaryBase = product.images.length;
+      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
+        id: true,
+      });
+      const knownLockedIds = new Set(locked.images.map((image) => image.id));
+      if (
+        imageIds.length !== knownLockedIds.size ||
+        new Set(imageIds).size !== imageIds.length ||
+        imageIds.some((id) => !knownLockedIds.has(id))
+      ) {
+        throw new BadRequestException(
+          'Image order must include every Product image exactly once',
+        );
+      }
+      const temporaryBase = locked.images.length;
 
       await Promise.all(
         imageIds.map((id, index) =>

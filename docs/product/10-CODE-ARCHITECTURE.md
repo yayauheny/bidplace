@@ -48,8 +48,8 @@ SellerProfile
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
 - Product requires a moderation state before public visibility. A Product remains private while it is a draft, under review or rejected; `isEditableProductStatus` allows owner writes in `DRAFT`, `CHANGES_REQUESTED` and `REJECTED`; `submit` moves those states into `PENDING_REVIEW` on the same Product, admin moderation records a reasoned append-only audit trail, and the first public Listing transition sets immutable `publishedAt`. Owner Product, media and creation-story writes lock the Product row (`SELECT … FOR UPDATE`) in a Read Committed transaction and re-check owner, approved seller, editable status and the absence of a `SCHEDULED`/`LIVE` Listing before mutating, so submit, moderation and Listing schedule cannot be bypassed by a concurrent write;
 - one own Product image is the MVP technical minimum. Maximum file count and
-  aggregate bytes are enforced for the whole Product inside a serializable
-  transaction, including repeated/concurrent uploads. Condition is not
+  aggregate bytes are enforced for the whole Product inside a Read Committed
+  transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
   mandatory for creator-made Product; the current optional field is preserved
   until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;

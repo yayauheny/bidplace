@@ -139,4 +139,141 @@ describe('ListingsService', () => {
 
     expect(result.listing).not.toHaveProperty('product');
   });
+
+  it('rejects schedule after lock when handoff contact was cleared', async () => {
+    const { service, tx } = createSchedulePrisma({
+      lockedHandoff: { handoffContactType: null, handoffContactValue: null },
+    });
+
+    await expect(
+      service.transition(
+        'seller-id',
+        'listing-id',
+        'SCHEDULE',
+        new Date('2026-09-01T00:00:00.000Z'),
+      ),
+    ).rejects.toThrow('Seller handoff contact is required before scheduling');
+    expect(tx.listing.update).not.toHaveBeenCalled();
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects schedule after lock when startsAt is already in the past', async () => {
+    const { service, tx } = createSchedulePrisma({
+      lockedStartsAt: new Date('2000-01-01T10:00:00.000Z'),
+      lockedOriginalEndsAt: new Date('2000-01-01T12:00:00.000Z'),
+    });
+
+    await expect(
+      service.transition(
+        'seller-id',
+        'listing-id',
+        'SCHEDULE',
+        new Date('2026-09-01T00:00:00.000Z'),
+      ),
+    ).rejects.toThrow('Listing dates are invalid');
+    expect(tx.listing.update).not.toHaveBeenCalled();
+  });
+
+  it('writes publishedAt from the post-lock clock', async () => {
+    const { service, tx } = createSchedulePrisma({});
+    const before = Date.now();
+
+    await service.transition(
+      'seller-id',
+      'listing-id',
+      'SCHEDULE',
+      new Date('2020-01-01T00:00:00.000Z'),
+    );
+
+    const publishedAt = tx.product.update.mock.calls[0]?.[0]?.data?.publishedAt as Date;
+    expect(publishedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(publishedAt.toISOString()).not.toBe('2020-01-01T00:00:00.000Z');
+    expect(tx.listing.update).toHaveBeenCalled();
+    expect(
+      String(tx.$queryRaw.mock.calls[0]?.[0]?.strings?.join(' ') ?? ''),
+    ).toContain('FOR UPDATE');
+  });
 });
+
+function createSchedulePrisma(options: {
+  lockedHandoff?: {
+    handoffContactType: string | null;
+    handoffContactValue: string | null;
+  };
+  lockedStartsAt?: Date;
+  lockedOriginalEndsAt?: Date;
+}) {
+  const now = new Date('2026-12-01T10:00:00.000Z');
+  const ends = new Date('2026-12-01T12:00:00.000Z');
+  const sellerProfile = {
+    userId: 'seller-id',
+    status: 'APPROVED',
+    handoffContactType: 'TELEGRAM',
+    handoffContactValue: '@owner',
+    handoffInitiator: 'BUYER_CONTACTS_SELLER',
+  };
+  const listing = {
+    id: 'listing-id',
+    productId: 'product-id',
+    type: 'AUCTION' as const,
+    status: 'DRAFT' as const,
+    currency: 'BYN',
+    startsAt: now,
+    originalEndsAt: ends,
+    endsAt: ends,
+    currentPrice: { toNumber: () => 10 },
+    bidCount: 0,
+    closedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    auctionRules: {
+      startPrice: { toNumber: () => 10 },
+      incrementPolicyCode: 'MVP_BYN_V1',
+      softCloseWindowSeconds: 60,
+      softCloseExtensionSeconds: 60,
+      softCloseMaxTotalSeconds: 600,
+    },
+    product: {
+      status: 'APPROVED',
+      publishedAt: null,
+      sellerProfile,
+    },
+  };
+  const lockedListing = {
+    ...listing,
+    startsAt: options.lockedStartsAt ?? listing.startsAt,
+    originalEndsAt: options.lockedOriginalEndsAt ?? listing.originalEndsAt,
+    product: {
+      ...listing.product,
+      sellerProfile: {
+        ...sellerProfile,
+        ...options.lockedHandoff,
+      },
+    },
+  };
+  const tx = {
+    $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+    listing: {
+      findUnique: vi.fn().mockResolvedValue(lockedListing),
+      findFirst: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue({
+        ...lockedListing,
+        status: 'SCHEDULED',
+        product: undefined,
+      }),
+    },
+    product: {
+      update: vi.fn().mockResolvedValue({}),
+    },
+  };
+  const prisma = {
+    listing: {
+      findUnique: vi.fn().mockResolvedValue(listing),
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    ),
+  };
+  return { service: new ListingsService(prisma as never), tx };
+}

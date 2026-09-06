@@ -5,7 +5,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { PostgresImageStore } from '../../src/core/image-store';
 import { PublicIdService } from '../../src/core/public-id';
+import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { ImagesService } from '../../src/images/images.service';
+import { ListingsService } from '../../src/listings/listings.service';
 import { ProductsService } from '../../src/products/products.service';
 import {
   createIntegrationDatabaseContext,
@@ -52,22 +54,31 @@ function deferred<T = void>() {
 }
 
 async function waitForProductsRowWait() {
-  const deadline = Date.now() + 2_000;
+  const deadline = Date.now() + 3_000;
   while (Date.now() < deadline) {
     const waits = await prisma.$queryRaw<Array<{ pid: number }>>`
-      SELECT l.pid
-      FROM pg_locks l
-      JOIN pg_class c ON c.oid = l.relation
-      WHERE c.relname = 'products'
-        AND l.granted = false
+      SELECT pid
+      FROM pg_stat_activity
+      WHERE cardinality(pg_blocking_pids(pid)) > 0
       LIMIT 1
     `;
     if (waits.length > 0) return;
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
+  throw new Error('Product row lock wait did not appear within 3000ms');
 }
 
-async function createSubmitReadyProduct(status: 'DRAFT' | 'REJECTED' = 'DRAFT') {
+async function waitThenRelease(release: { resolve: () => void }) {
+  try {
+    await waitForProductsRowWait();
+  } finally {
+    release.resolve();
+  }
+}
+
+async function createSubmitReadyProduct(
+  status: 'DRAFT' | 'REJECTED' | 'APPROVED' = 'DRAFT',
+) {
   const suffix = randomUUID().replace(/-/g, '').slice(0, 8);
   const owner = await prisma.user.create({
     data: {
@@ -143,6 +154,8 @@ function createServices() {
   return {
     products: new ProductsService(prisma as never, new PublicIdService()),
     images: new ImagesService(prisma as never, imageStore),
+    listings: new ListingsService(prisma as never),
+    admin: new AdminModerationService(prisma as never),
   };
 }
 
@@ -184,8 +197,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     const updatePromise = products.update(owner.id, product.id, {
       title: 'Late write after lock',
     });
-    await waitForProductsRowWait();
-    release.resolve();
+    await waitThenRelease(release);
 
     await expect(updatePromise).rejects.toThrow('Product cannot be edited');
     await finished;
@@ -213,8 +225,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     );
 
     const removePromise = images.remove(owner.id, product.id, imageId);
-    await waitForProductsRowWait();
-    release.resolve();
+    await waitThenRelease(release);
 
     await expect(removePromise).rejects.toThrow('Product images are locked');
     await finished;
@@ -248,8 +259,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     const addPromise = images.add(owner.id, product.id, [
       { buffer: png, mimetype: 'image/png' },
     ]);
-    await waitForProductsRowWait();
-    release.resolve();
+    await waitThenRelease(release);
 
     await expect(addPromise).rejects.toThrow('Product images are locked');
     await finished;
@@ -295,8 +305,7 @@ describe('Product write atomicity against PostgreSQL', () => {
         },
       ],
     });
-    await waitForProductsRowWait();
-    release.resolve();
+    await waitThenRelease(release);
 
     await expect(storyPromise).rejects.toThrow(
       'Product is locked by an active Listing',
@@ -385,8 +394,7 @@ describe('Product write atomicity against PostgreSQL', () => {
       product.id,
       product.images.map((image) => image.id),
     );
-    await waitForProductsRowWait();
-    release.resolve();
+    await waitThenRelease(release);
 
     await expect(reorderPromise).rejects.toThrow('Product images are locked');
     await finished;
@@ -398,5 +406,198 @@ describe('Product write atomicity against PostgreSQL', () => {
         })
       ).status,
     ).toBe('PENDING_REVIEW');
+  });
+
+  it('keeps concurrent add and remove from violating unique image positions', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const second = await prisma.productImage.create({
+      data: {
+        productId: product.id,
+        position: 1,
+        mimeType: 'image/png',
+        byteLength: png.byteLength,
+        data: png,
+        checksum: 'b'.repeat(64),
+      },
+    });
+    const { images } = createServices();
+    const { release, finished } = await holdProductAndMutate(
+      product.id,
+      async (tx) => {
+        await tx.productImage.create({
+          data: {
+            productId: product.id,
+            position: 2,
+            mimeType: 'image/png',
+            byteLength: png.byteLength,
+            data: png,
+            checksum: 'c'.repeat(64),
+          },
+        });
+      },
+    );
+
+    const removePromise = images.remove(
+      owner.id,
+      product.id,
+      product.images[0]!.id,
+    );
+    await waitThenRelease(release);
+
+    await expect(removePromise).resolves.toEqual({ ok: true });
+    await finished;
+
+    const remaining = await prisma.productImage.findMany({
+      where: { productId: product.id },
+      orderBy: { position: 'asc' },
+      select: { id: true, position: true },
+    });
+    expect(remaining.map((row) => row.position)).toEqual([0, 1]);
+    expect(remaining.map((row) => row.id)).not.toContain(product.images[0]!.id);
+    expect(remaining.some((row) => row.id === second.id)).toBe(true);
+  });
+
+  it('rejects reorder after a concurrent add changes the locked image set', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const { images } = createServices();
+    const { release, finished } = await holdProductAndMutate(
+      product.id,
+      async (tx) => {
+        await tx.productImage.create({
+          data: {
+            productId: product.id,
+            position: 1,
+            mimeType: 'image/png',
+            byteLength: png.byteLength,
+            data: png,
+            checksum: 'd'.repeat(64),
+          },
+        });
+      },
+    );
+
+    const reorderPromise = images.reorder(
+      owner.id,
+      product.id,
+      product.images.map((image) => image.id),
+    );
+    await waitThenRelease(release);
+
+    await expect(reorderPromise).rejects.toThrow(
+      'Image order must include every Product image exactly once',
+    );
+    await finished;
+
+    const remaining = await prisma.productImage.findMany({
+      where: { productId: product.id },
+      orderBy: { position: 'asc' },
+      select: { id: true, position: true },
+    });
+    expect(remaining.map((row) => row.position)).toEqual([0, 1]);
+    expect(remaining.some((row) => row.id === product.images[0]!.id)).toBe(
+      true,
+    );
+  });
+
+  it('keeps ListingsService schedule from winning after the Product leaves APPROVED under the row lock', async () => {
+    const { owner, product } = await createSubmitReadyProduct('APPROVED');
+    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
+    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const listing = await prisma.listing.create({
+      data: {
+        productId: product.id,
+        startsAt,
+        originalEndsAt: endsAt,
+        endsAt,
+        currentPrice: new Prisma.Decimal(10),
+        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+      },
+    });
+    const { listings } = createServices();
+    const { release, finished } = await holdProductAndMutate(
+      product.id,
+      async (tx) => {
+        await tx.product.update({
+          where: { id: product.id },
+          data: { status: 'CHANGES_REQUESTED' },
+        });
+      },
+    );
+
+    const schedulePromise = listings.transition(
+      owner.id,
+      listing.id,
+      'SCHEDULE',
+    );
+    await waitThenRelease(release);
+
+    await expect(schedulePromise).rejects.toThrow('Product must be approved');
+    await finished;
+
+    expect(
+      (
+        await prisma.listing.findUniqueOrThrow({
+          where: { id: listing.id },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe('DRAFT');
+  });
+
+  it('serializes listing schedule against admin changes-requested on the Product row', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { status: 'APPROVED' },
+    });
+    const admin = await prisma.user.create({
+      data: {
+        email: `admin.${randomUUID().replace(/-/g, '').slice(0, 8)}@write-race.test`,
+        passwordHash: 'test',
+        displayName: 'Admin',
+        role: 'admin',
+      },
+    });
+    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
+    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const listing = await prisma.listing.create({
+      data: {
+        productId: product.id,
+        startsAt,
+        originalEndsAt: endsAt,
+        endsAt,
+        currentPrice: new Prisma.Decimal(10),
+        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
+      },
+    });
+    const { listings, admin: adminModeration } = createServices();
+
+    const results = await Promise.allSettled([
+      listings.transition(owner.id, listing.id, 'SCHEDULE'),
+      adminModeration.updateProductStatus(admin.id, product.id, {
+        status: 'CHANGES_REQUESTED',
+        reason: 'Need edits',
+      }),
+    ]);
+
+    const persisted = await prisma.product.findUniqueOrThrow({
+      where: { id: product.id },
+      select: {
+        status: true,
+        listings: { select: { id: true, status: true } },
+      },
+    });
+    const scheduled = persisted.listings.filter(
+      (row) => row.status === 'SCHEDULED' || row.status === 'LIVE',
+    );
+
+    if (persisted.status === 'APPROVED') {
+      expect(results[0]?.status).toBe('fulfilled');
+      expect(scheduled).toHaveLength(1);
+    } else {
+      expect(persisted.status).toBe('CHANGES_REQUESTED');
+      expect(scheduled).toHaveLength(0);
+      expect(results[0]?.status).toBe('rejected');
+    }
   });
 });

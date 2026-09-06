@@ -158,6 +158,7 @@ export class ListingsService {
 
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, listing.productId);
+      const scheduledAt = new Date();
       const current = await tx.listing.findUnique({
         where: { id: listingId },
         include: {
@@ -182,6 +183,22 @@ export class ListingsService {
         throw new ConflictException('Product must be approved');
       }
 
+      if (
+        !current.product.sellerProfile.handoffContactType ||
+        !current.product.sellerProfile.handoffContactValue
+      ) {
+        throw new ConflictException(
+          'Seller handoff contact is required before scheduling',
+        );
+      }
+
+      if (
+        current.startsAt <= scheduledAt ||
+        current.originalEndsAt <= current.startsAt
+      ) {
+        throw new ConflictException('Listing dates are invalid');
+      }
+
       const blocking = await tx.listing.findFirst({
         where: {
           productId: current.productId,
@@ -202,7 +219,7 @@ export class ListingsService {
       if (!current.product.publishedAt) {
         await tx.product.update({
           where: { id: current.productId },
-          data: { publishedAt: now },
+          data: { publishedAt: scheduledAt },
         });
       }
 
