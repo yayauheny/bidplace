@@ -6,3 +6,9 @@ export function assertApprovedSeller(status: SellerStatus): void {
     throw new ForbiddenException('Approved SellerProfile is required');
   }
 }
+
+export function assertSellerHistoryAccess(status: SellerStatus | undefined): void {
+  if (status !== 'APPROVED' && status !== 'SUSPENDED') {
+    throw new ForbiddenException('Seller history access required');
+  }
+}

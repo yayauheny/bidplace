@@ -163,7 +163,13 @@ describe('Order mutations against PostgreSQL', () => {
 
     await expect(
       orders.get(fixture.seller.id, 'user', fixture.order.publicId),
-    ).rejects.toThrow('Order is not available');
+    ).resolves.toMatchObject({
+      order: {
+        status: 'CANCELLED',
+        cancellationReason: 'BUYER_UNREACHABLE',
+      },
+      buyerEmailAtClose: fixture.winner.email,
+    });
     await expect(
       orders.get(fixture.winner.id, 'user', fixture.order.publicId),
     ).rejects.toThrow('Order is not available');

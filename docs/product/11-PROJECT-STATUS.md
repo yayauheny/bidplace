@@ -17,9 +17,12 @@
 - `Needs verification`: current runtime still implements auction + BYN, manual
   admin replacement and fixed 48-hour Order contact snapshots. These are truthful
   code facts, not final target mechanics.
-- `Partial`: seller Orders inbox exists but hides `CANCELLED` history; expired
-  scheduled cancellation exists without author notification/relist; Activity has
-  ambiguous cancelled/replacement projection.
+- `Implemented`: seller **Продажи** history includes active, completed, failed
+  and cancelled own Orders; `APPROVED` and `SUSPENDED` SellerProfiles retain
+  read-only access, while administrators and users without a SellerProfile are
+  denied. Cancelled seller-owned detail is read-only and retains the existing
+  seller contact boundary. Expired scheduled cancellation still has no author
+  notification/relist; Activity has ambiguous cancelled/replacement projection.
 - Full repository verification on `fix/mvp-reconciliation-review` passed:
   typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
   7/7. Passing tests do not cover the named concurrency/product gaps.
@@ -52,9 +55,24 @@
 - Coverage: `orders.service.spec.ts` asserts `get` `findUnique` and list `findMany` use the same projection select (`listing.currency` + `product.publicId`/`title`; no `sellerProfile`, `buyer`, or `seller`).
 - `Verified`: API orders unit 26/26; API typecheck; eslint on `src/orders`; PostgreSQL integration 71/71 including `seller-orders-inbox.integration.spec.ts` (2/2).
 
+## 2026-09-06 — Seller sales history
+
+- `Implemented`: `GET /api/orders` now requires an authenticated `APPROVED` or
+  `SUSPENDED` SellerProfile and returns all seller-owned Order statuses in
+  deterministic `createdAt DESC, id DESC` order. A seller can read a cancelled
+  own Order, including its status/reason, but cannot mutate it; buyer access to
+  cancelled Order detail remains denied. The list still uses frozen order
+  snapshots and does not disclose contact data outside the existing seller
+  contract.
+- Coverage: `orders.service.spec.ts`; PostgreSQL seller-history pagination and
+  ownership coverage; HTTP seller/admin/no-SellerProfile checks.
+- `Verified`: API unit 318/318; PostgreSQL integration 81/81; API/mobile
+  typecheck and lint; API and Expo builds.
+- Deferred: no next-bidder, relist or extra contact-release flow was added.
+
 ## 2026-09-05 — Seller Orders inbox
 
-- `Implemented`: `GET /api/orders` lists the authenticated seller's non-cancelled Orders with `page`/`limit` (max 100). `sellerId` comes from the session, not the query. Admin is denied. Projection is the seller Order contract and reads frozen snapshot title/currency/product public id (`DEC-074`).
+- `Implemented` (superseded 2026-09-06): `GET /api/orders` initially listed only non-cancelled Orders. Its pagination, session-derived seller identity, admin denial and frozen snapshot projection remain; the current complete-history/capability contract is recorded above.
 - `Implemented`: Expo `/(seller)/orders` (`/orders`) reuses Activity-style current UI with loading/empty/error/pagination. Linked from seller profile and the account menu. Not a Pen/Figma redesign.
 - Coverage: `orders.service.spec.ts` list bounds and admin deny; `contracts.test.ts` rejects `sellerId` query; PostgreSQL `seller-orders-inbox.integration.spec.ts`; HTTP `seller-orders-inbox-http.integration.spec.ts` (guest 401, admin 403).
 - `Verified`: contracts 27/27; API orders unit 22/22; API typecheck/lint on `src/orders`; mobile typecheck; PostgreSQL inbox 2/2 plus HTTP 2/2 in the 2026-09-06 73/73 suite.

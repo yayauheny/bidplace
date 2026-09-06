@@ -28,6 +28,7 @@ function orderStatusTone(
   if (status === 'COMPLETED' || status === 'CONTACTED') return 'success';
   if (status === 'HANDOFF_FAILED') return 'danger';
   if (status === 'PENDING_CONTACT') return 'accent';
+  if (status === 'CANCELLED') return 'danger';
   return 'secondary';
 }
 
@@ -173,8 +174,8 @@ export function SellerOrdersScreen() {
   return (
     <FormPageShell maxWidth={760}>
       <PageHeader
-        title="Сделки"
-        description="Заказы по вашим завершённым торгам."
+        title="Продажи"
+        description="История продаж по вашим завершённым торгам."
       />
       {content}
     </FormPageShell>

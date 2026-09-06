@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Prisma, type PrismaClient } from '@bidplace/database';
 
+import { fixturePasswordHash } from './permission-fixtures';
+
 export type OrderFixture = {
   admin: { id: string; email: string };
   seller: { id: string; email: string };
@@ -31,7 +33,7 @@ async function createUser(
   return prisma.user.create({
     data: {
       email,
-      passwordHash: 'integration-fixture',
+      passwordHash: fixturePasswordHash,
       displayName: role,
       role: userRole,
       emailVerifiedAt: fixtureDate,

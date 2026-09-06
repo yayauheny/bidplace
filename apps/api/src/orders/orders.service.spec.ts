@@ -106,7 +106,7 @@ describe('OrdersService', () => {
     );
   });
 
-  it('hides cancelled orders from buyer and seller while keeping them visible to admin', async () => {
+  it('keeps a cancelled Order readable by its seller and admin, but not buyer', async () => {
     const cancelledOrder = {
       ...baseOrder,
       status: 'CANCELLED' as const,
@@ -114,9 +114,13 @@ describe('OrdersService', () => {
     const prisma = { order: { findUnique: vi.fn().mockResolvedValue(cancelledOrder) } };
     const service = new OrdersService(prisma as never, {} as never);
 
-    await expect(service.get('seller-id', 'user', cancelledOrder.publicId)).rejects.toThrow(
-      'Order is not available',
+    const sellerResult = await service.get(
+      'seller-id',
+      'user',
+      cancelledOrder.publicId,
     );
+    expect(sellerResult.order.status).toBe('CANCELLED');
+    expect(sellerResult.buyerEmailAtClose).toBe('buyer@example.com');
     await expect(service.get('buyer-id', 'user', cancelledOrder.publicId)).rejects.toThrow(
       'Order is not available',
     );
@@ -163,7 +167,7 @@ describe('OrdersService', () => {
     expect(result.order.currency).toBe('BYN');
   });
 
-  it('lists the current seller Orders with frozen titles and hides cancelled rows', async () => {
+  it('lists the current seller Orders with frozen titles including cancelled rows', async () => {
     const visible = {
       ...baseOrder,
       snapshotTitle: 'Frozen inbox title',
@@ -174,9 +178,21 @@ describe('OrdersService', () => {
         product: { publicId: 'changed0001', title: 'Changed title' },
       },
     };
-    const findMany = vi.fn().mockResolvedValue([visible]);
+    const cancelled = {
+      ...visible,
+      publicId: 'cancelled01',
+      status: 'CANCELLED' as const,
+      cancellationReason: 'ADMIN_CANCELLED' as const,
+    };
+    const findMany = vi.fn().mockResolvedValue([visible, cancelled]);
     const count = vi.fn().mockResolvedValue(1);
-    const prisma = { order: { findMany, count } };
+    const sellerProfile = {
+      findUnique: vi.fn().mockResolvedValue({
+        userId: 'seller-id',
+        status: 'APPROVED',
+      }),
+    };
+    const prisma = { order: { findMany, count }, sellerProfile };
     const service = new OrdersService(prisma as never, {} as never);
 
     const result = await service.listForSeller('seller-id', 'user', {
@@ -184,11 +200,15 @@ describe('OrdersService', () => {
       limit: 10,
     });
 
-    expect(result.orders).toHaveLength(1);
+    expect(result.orders).toHaveLength(2);
     expect(result.orders[0]?.productSummary.title).toBe('Frozen inbox title');
+    expect(result.orders[1]?.order).toMatchObject({
+      status: 'CANCELLED',
+      cancellationReason: 'ADMIN_CANCELLED',
+    });
     expect(result.pagination).toEqual({ page: 2, limit: 10, total: 1 });
     expect(findMany).toHaveBeenCalledWith({
-      where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
+      where: { sellerId: 'seller-id' },
       select: orderProjectionSelect,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: 10,
@@ -201,12 +221,53 @@ describe('OrdersService', () => {
       ['publicId', 'title'],
     );
     expect(count).toHaveBeenCalledWith({
-      where: { sellerId: 'seller-id', status: { not: 'CANCELLED' } },
+      where: { sellerId: 'seller-id' },
+    });
+    expect(sellerProfile.findUnique).toHaveBeenCalledWith({
+      where: { userId: 'seller-id' },
+      select: { userId: true, status: true },
     });
   });
 
+  it('allows a suspended seller to read their own sales history', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const count = vi.fn().mockResolvedValue(0);
+    const prisma = {
+      order: { findMany, count },
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          userId: 'seller-id',
+          status: 'SUSPENDED',
+        }),
+      },
+    };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(
+      service.listForSeller('seller-id', 'user', { page: 1, limit: 20 }),
+    ).resolves.toMatchObject({ pagination: { total: 0 } });
+    expect(findMany).toHaveBeenCalled();
+  });
+
+  it('rejects a user without SellerProfile before reading Order history', async () => {
+    const findMany = vi.fn();
+    const prisma = {
+      order: { findMany, count: vi.fn() },
+      sellerProfile: { findUnique: vi.fn().mockResolvedValue(null) },
+    };
+    const service = new OrdersService(prisma as never, {} as never);
+
+    await expect(
+      service.listForSeller('buyer-id', 'user', { page: 1, limit: 20 }),
+    ).rejects.toThrow('Seller history access required');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('rejects admin listing through the seller inbox', async () => {
-    const prisma = { order: { findMany: vi.fn(), count: vi.fn() } };
+    const prisma = {
+      order: { findMany: vi.fn(), count: vi.fn() },
+      sellerProfile: { findUnique: vi.fn() },
+    };
     const service = new OrdersService(prisma as never, {} as never);
 
     await expect(

@@ -27,7 +27,7 @@ afterEach(async () => resetOrderFixture(prisma));
 afterAll(async () => context?.cleanup());
 
 describe('seller Order inbox against PostgreSQL', () => {
-  it('lists the seller Orders from frozen snapshot fields and hides cancelled rows', async () => {
+  it('keeps active and cancelled seller Orders in the frozen-snapshot history', async () => {
     const fixture = await createOrderFixture(prisma);
     const listing = await prisma.listing.findUniqueOrThrow({
       where: { id: fixture.listing.id },
@@ -60,12 +60,12 @@ describe('seller Order inbox against PostgreSQL', () => {
     expect(page.orders[0]?.order.currency).toBe('BYN');
     expect(page.orders[0]?.buyerEmailAtClose).toBe(fixture.winner.email);
 
-    const outsider = await orders.listForSeller(fixture.outsider.id, 'user', {
-      page: 1,
-      limit: 20,
-    });
-    expect(outsider.orders).toHaveLength(0);
-    expect(outsider.pagination.total).toBe(0);
+    await expect(
+      orders.listForSeller(fixture.outsider.id, 'user', {
+        page: 1,
+        limit: 20,
+      }),
+    ).rejects.toThrow('Seller history access required');
 
     await expect(
       orders.listForSeller(fixture.admin.id, 'admin', { page: 1, limit: 20 }),
@@ -78,8 +78,33 @@ describe('seller Order inbox against PostgreSQL', () => {
       page: 1,
       limit: 20,
     });
-    expect(afterCancel.orders).toHaveLength(0);
-    expect(afterCancel.pagination.total).toBe(0);
+    expect(afterCancel.orders).toHaveLength(1);
+    expect(afterCancel.pagination.total).toBe(1);
+    expect(afterCancel.orders[0]).toMatchObject({
+      order: {
+        publicId: fixture.order.publicId,
+        status: 'CANCELLED',
+        cancellationReason: 'ADMIN_CANCELLED',
+      },
+      buyerEmailAtClose: fixture.winner.email,
+    });
+    await expect(
+      orders.get(fixture.seller.id, 'user', fixture.order.publicId),
+    ).resolves.toMatchObject({
+      order: { status: 'CANCELLED' },
+      buyerEmailAtClose: fixture.winner.email,
+    });
+    await expect(
+      orders.get(fixture.winner.id, 'user', fixture.order.publicId),
+    ).rejects.toThrow('Order is not available');
+
+    await prisma.sellerProfile.update({
+      where: { userId: fixture.seller.id },
+      data: { status: 'SUSPENDED' },
+    });
+    await expect(
+      orders.listForSeller(fixture.seller.id, 'user', { page: 1, limit: 20 }),
+    ).resolves.toMatchObject({ pagination: { total: 1 } });
   });
 
   it('pages seller Orders with a bounded skip/take window', async () => {

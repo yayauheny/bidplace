@@ -130,9 +130,11 @@ tokens не должна делать их недоступными. Их виз
 
 ### Seller Orders inbox
 
-`/orders` lists the current seller's non-cancelled deals from `GET /api/orders`.
-Cards show frozen snapshot title, amount/currency, contact deadline and buyer
-email, then open `/order/[publicId]`. Loading, empty, error/retry and
+`/orders` is the seller's **Продажи** history from `GET /api/orders`: active,
+completed, cancelled and failed deals. Cards show frozen snapshot title,
+amount/currency, contact deadline and buyer email, then open the seller-owned
+`/order/[publicId]` detail. Cancelled details are read-only and keep the
+existing seller-only contact boundary. Loading, empty, error/retry and
 "Загрузить ещё" pagination are required. Current-style UI, not a Pen target.
 
 ### Seller product draft

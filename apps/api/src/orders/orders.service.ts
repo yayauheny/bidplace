@@ -31,7 +31,11 @@ import {
   resolveOrderDealFields,
 } from './order-snapshot';
 import { createBidderAlias } from '../bids/bid-alias';
-import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
+import {
+  sellerProfileAuthSelect,
+  sellerProfileHandoffSelect,
+} from '../sellers/seller-profile.mapper';
+import { assertSellerHistoryAccess } from '../sellers/seller-capability';
 
 const orderWithProductSelect = {
   id: true,
@@ -88,7 +92,7 @@ export class OrdersService {
 
     const audience = this.resolveAudience(userId, role, order);
 
-    if (order.status === 'CANCELLED' && audience !== 'admin') {
+    if (order.status === 'CANCELLED' && audience === 'buyer') {
       throw new ForbiddenException('Order is not available');
     }
 
@@ -100,10 +104,13 @@ export class OrdersService {
       throw new ForbiddenException('Seller access required');
     }
 
-    const where = {
-      sellerId: userId,
-      status: { not: 'CANCELLED' as const },
-    };
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: sellerProfileAuthSelect,
+    });
+    assertSellerHistoryAccess(sellerProfile?.status);
+
+    const where = { sellerId: userId };
     const [total, rows] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.findMany({

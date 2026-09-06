@@ -4,6 +4,14 @@
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
 
+## 2026-09-06 — Seller sales history
+
+- `Implemented`: the current-style `/orders` route is labelled **Продажи** and
+  presents active, completed, failed and cancelled seller-owned deals. A
+  cancelled row opens the now permitted read-only seller-owned detail, which
+  shows the existing cancellation reason without adding actions or expanding
+  contact visibility. No Pen/Figma redesign.
+
 ## 2026-09-05 — Seller Orders inbox
 
 - `Implemented`: current-style `/orders` seller inbox with Activity-like rows,
