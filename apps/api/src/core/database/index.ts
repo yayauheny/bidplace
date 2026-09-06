@@ -5,4 +5,4 @@ export {
   isPrismaSerializableConflictError,
   isPrismaUniqueConstraintError,
 } from './prisma-error';
-export { runSerializableTransaction } from './transaction';
+export { runReadCommittedTransaction, runSerializableTransaction } from './transaction';

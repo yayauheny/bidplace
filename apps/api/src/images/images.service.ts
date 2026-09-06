@@ -2,23 +2,25 @@ import { createHash } from 'node:crypto';
 
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { type SellerStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-import { PrismaService, runSerializableTransaction } from '../core/database';
+import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import {
   assertProductImageCapacity,
   type RawImageUpload,
   validateAndNormalizeProductImageUploads,
 } from './image-policy';
-import { assertApprovedSeller } from '../sellers/seller-capability';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
-import { isEditableProductStatus } from '../products/product-state';
+import {
+  assertProductWritable,
+  lockProductRowForUpdate,
+  productWriteGuardSelect,
+  type ProductWriteGuardKind,
+} from '../products/product-write-guard';
 
 @Injectable()
 export class ImagesService {
@@ -42,8 +44,6 @@ export class ImagesService {
       },
     );
 
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
     assertProductImageCapacity(
       product.images,
       files.map((file) => ({ byteLength: file.buffer.byteLength })),
@@ -56,8 +56,8 @@ export class ImagesService {
       validated.map((file) => ({ byteLength: file.buffer.byteLength })),
     );
 
-    await runSerializableTransaction(this.prisma, async (tx) => {
-      const freshProduct = await this.requireEditableOwner(
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      const freshProduct = await this.requireWritableOwnerInTx(
         tx,
         userId,
         productId,
@@ -66,8 +66,6 @@ export class ImagesService {
           byteLength: true,
         },
       );
-
-      assertApprovedSeller(freshProduct.sellerProfile.status as SellerStatus);
 
       assertProductImageCapacity(
         freshProduct.images,
@@ -115,13 +113,15 @@ export class ImagesService {
       },
     );
 
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
     if (!product.images.some((image) => image.id === imageId)) {
       throw new NotFoundException('Image not found');
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      await this.requireWritableOwnerInTx(tx, userId, productId, {
+        id: true,
+        position: true,
+      });
       const remaining = await tx.productImage.findMany({
         where: { productId, id: { not: imageId } },
         select: { id: true },
@@ -163,8 +163,6 @@ export class ImagesService {
       { id: true },
     );
 
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
     const knownIds = new Set(product.images.map((image) => image.id));
     if (
       imageIds.length !== knownIds.size ||
@@ -176,7 +174,8 @@ export class ImagesService {
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      await this.requireWritableOwnerInTx(tx, userId, productId, { id: true });
       const temporaryBase = product.images.length;
 
       await Promise.all(
@@ -207,15 +206,9 @@ export class ImagesService {
     stepId: string,
     file: RawImageUpload,
   ) {
-    const product = await this.requireEditableOwner(
-      this.prisma,
-      userId,
-      productId,
-      {
-        id: true,
-      },
-    );
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+    await this.requireEditableOwner(this.prisma, userId, productId, {
+      id: true,
+    });
     const step = await this.prisma.productCreationStep.findFirst({
       where: { id: stepId, productId },
       select: { id: true },
@@ -228,9 +221,16 @@ export class ImagesService {
       throw new BadRequestException('An image is required');
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await runReadCommittedTransaction(this.prisma, async (tx) => {
+      await this.requireWritableOwnerInTx(tx, userId, productId, { id: true });
+      const currentStep = await tx.productCreationStep.findFirst({
+        where: { id: stepId, productId },
+        select: { id: true },
+      });
+      if (!currentStep) throw new NotFoundException('Creation step not found');
+
       await tx.productCreationStep.update({
-        where: { id: step.id },
+        where: { id: currentStep.id },
         data: {
           mimeType: validated.mimeType,
           byteLength: validated.buffer.byteLength,
@@ -241,7 +241,7 @@ export class ImagesService {
       });
 
       await this.imageStore.put(
-        imageKey.creationStep(step.id),
+        imageKey.creationStep(currentStep.id),
         {
           bytes: validated.buffer,
           mimeType: validated.mimeType,
@@ -358,37 +358,32 @@ export class ImagesService {
     };
   }
 
+  private async requireWritableOwnerInTx(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    productId: string,
+    imageSelect: { id?: true; position?: true; byteLength?: true },
+  ) {
+    await lockProductRowForUpdate(tx, productId);
+    return this.requireEditableOwner(tx, userId, productId, imageSelect);
+  }
+
   private async requireEditableOwner(
     client: Pick<Prisma.TransactionClient, 'product'>,
     userId: string,
     productId: string,
     imageSelect: { id?: true; position?: true; byteLength?: true },
+    kind: ProductWriteGuardKind = 'images',
   ) {
     const product = await client.product.findUnique({
       where: { id: productId },
-      include: {
-        sellerProfile: {
-          select: {
-            userId: true,
-            status: true,
-          },
-        },
+      select: {
+        ...productWriteGuardSelect,
         images: { select: imageSelect },
       },
     });
 
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    if (product.sellerProfile.userId !== userId) {
-      throw new ForbiddenException('Product is not owned by user');
-    }
-
-    if (!isEditableProductStatus(product.status)) {
-      throw new ForbiddenException('Product images are locked');
-    }
-
+    assertProductWritable(product, userId, kind);
     return product;
   }
 }

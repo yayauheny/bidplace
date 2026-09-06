@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-06
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -55,11 +55,11 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 
 | Control | Status | Detail |
 | --- | --- | --- |
-| Authz before decode | Implemented | `ImagesService` runs owner + editable product + `assertApprovedSeller` before Sharp |
+| Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
 | Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
-| Decode outside TX | Implemented | Normalize outside `runSerializableTransaction`; short TX for capacity check + insert |
+| Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
 | Canonical storage | Implemented | Normalized bytes persisted to PostgreSQL |

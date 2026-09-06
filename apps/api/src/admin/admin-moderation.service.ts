@@ -9,8 +9,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { PrismaService, runSerializableTransaction } from '../core/database';
+import {
+  PrismaService,
+  runReadCommittedTransaction,
+  runSerializableTransaction,
+} from '../core/database';
 import { missingProductApprovalFields } from '../products/product-requirements';
+import { lockProductRowForUpdate } from '../products/product-write-guard';
 import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 @Injectable()
@@ -88,7 +93,8 @@ export class AdminModerationService {
     productId: string,
     input: AdminProductStatusUpdateRequest,
   ) {
-    return runSerializableTransaction(this.prisma, async (tx) => {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, productId);
       const product = await tx.product.findUnique({
         where: { id: productId },
         include: {

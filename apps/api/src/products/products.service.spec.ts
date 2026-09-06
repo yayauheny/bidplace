@@ -58,6 +58,67 @@ const approvedProduct = {
   ],
 };
 
+function createWritePrisma(options: {
+  product: Record<string, unknown> | null;
+  responseProduct?: Record<string, unknown>;
+  updateManyCount?: number;
+  extraTx?: Record<string, unknown>;
+}) {
+  const tx = {
+    $queryRaw: vi
+      .fn()
+      .mockResolvedValue(options.product ? [{ id: product.id }] : []),
+    product: {
+      findUnique: vi.fn().mockResolvedValue(options.product),
+      findUniqueOrThrow: vi
+        .fn()
+        .mockResolvedValue(options.responseProduct ?? options.product),
+      updateMany: vi.fn().mockResolvedValue({
+        count: options.updateManyCount ?? 1,
+      }),
+      create: vi.fn(),
+    },
+    auditEvent: { create: vi.fn() },
+    productCreationStep: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
+      create: vi.fn(),
+    },
+    ...options.extraTx,
+  };
+  const prisma = {
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+    ),
+  };
+  return { prisma, tx };
+}
+
+function ownerProduct(
+  status: 'DRAFT' | 'REJECTED' | 'PENDING_REVIEW' | 'APPROVED' | 'ARCHIVED',
+  listings: Array<{ id: string }> = [],
+) {
+  return {
+    id: product.id,
+    status,
+    sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+    listings,
+    title: approvedProduct.title,
+    story: approvedProduct.story,
+    categoryId: approvedProduct.categoryId,
+    condition: approvedProduct.condition,
+    uniqueness: approvedProduct.uniqueness,
+    provenance: approvedProduct.provenance,
+    city: approvedProduct.city,
+    packaging: approvedProduct.packaging,
+    deliveryInfo: approvedProduct.deliveryInfo,
+    images: approvedProduct.images.map((image) => ({ id: image.id })),
+  };
+}
+
 describe('ProductsService', () => {
   it('keeps ended listings in the public catalog predicate', () => {
     expect(publicCatalogProductWhere.sellerProfile).toEqual({
@@ -117,39 +178,30 @@ describe('ProductsService', () => {
   });
 
   it('rejects owner edits when a Product has a scheduled or live Listing', async () => {
-    const prisma = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue({
-          status: 'DRAFT',
-          sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-          listings: [{ id: 'listing-id' }],
-        }),
-        update: vi.fn(),
-      },
-    };
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
+    });
     const service = new ProductsService(prisma as never, {} as never);
 
     await expect(
       service.update('owner-id', product.id, { title: 'Locked' }),
     ).rejects.toThrow('Product is locked by an active Listing');
-    expect(prisma.product.update).not.toHaveBeenCalled();
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
+    );
   });
 
   it('allows the approved owner to edit a rejected Product', async () => {
-    const prisma = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue({
-          status: 'REJECTED',
-          sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-          listings: [],
-        }),
-        update: vi.fn().mockResolvedValue({
-          ...approvedProduct,
-          status: 'REJECTED',
-          title: 'Corrected title',
-        }),
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('REJECTED'),
+      responseProduct: {
+        ...approvedProduct,
+        status: 'REJECTED',
+        title: 'Corrected title',
       },
-    };
+    });
     const service = new ProductsService(prisma as never, {} as never);
 
     const result = await service.update('owner-id', product.id, {
@@ -157,9 +209,12 @@ describe('ProductsService', () => {
     });
 
     expect(result.product.id).toBe(product.id);
-    expect(prisma.product.update).toHaveBeenCalledWith(
+    expect(tx.product.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: product.id },
+        where: expect.objectContaining({
+          id: product.id,
+          status: { in: ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'] },
+        }),
         data: { title: 'Corrected title' },
       }),
     );
@@ -167,62 +222,34 @@ describe('ProductsService', () => {
 
   it('keeps approved and pending-review Products locked for owner edits', async () => {
     for (const status of ['APPROVED', 'PENDING_REVIEW', 'ARCHIVED'] as const) {
-      const prisma = {
-        product: {
-          findUnique: vi.fn().mockResolvedValue({
-            status,
-            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-            listings: [],
-          }),
-          update: vi.fn(),
-        },
-      };
+      const { prisma, tx } = createWritePrisma({
+        product: ownerProduct(status),
+      });
       const service = new ProductsService(prisma as never, {} as never);
 
       await expect(
         service.update('owner-id', product.id, { title: 'Locked' }),
       ).rejects.toThrow('Product cannot be edited');
-      expect(prisma.product.update).not.toHaveBeenCalled();
+      expect(tx.product.updateMany).not.toHaveBeenCalled();
     }
   });
 
   it('resubmits a rejected Product to pending review without creating a duplicate', async () => {
-    const rejected = {
-      ...approvedProduct,
-      status: 'REJECTED' as const,
-      sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-    };
     const pending = { ...approvedProduct, status: 'PENDING_REVIEW' as const };
-    const tx = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: product.id,
-          status: 'REJECTED',
-        }),
-        update: vi.fn().mockResolvedValue(pending),
-      },
-      auditEvent: { create: vi.fn() },
-    };
-    const prisma = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue(rejected),
-        create: vi.fn(),
-      },
-      $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) =>
-          callback(tx),
-      ),
-    };
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('REJECTED'),
+      responseProduct: pending,
+    });
     const service = new ProductsService(prisma as never, {} as never);
 
     const result = await service.submit('owner-id', product.id);
 
     expect(result.product.id).toBe(product.id);
     expect(result.product.status).toBe('PENDING_REVIEW');
-    expect(prisma.product.create).not.toHaveBeenCalled();
-    expect(tx.product.update).toHaveBeenCalledWith(
+    expect(tx.product.create).not.toHaveBeenCalled();
+    expect(tx.product.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: product.id },
+        where: expect.objectContaining({ id: product.id }),
         data: { status: 'PENDING_REVIEW' },
       }),
     );
@@ -241,37 +268,75 @@ describe('ProductsService', () => {
   });
 
   it('denies submit for approved Products and other owners', async () => {
-    const serviceForApproved = new ProductsService(
-      {
-        product: {
-          findUnique: vi.fn().mockResolvedValue({
-            ...approvedProduct,
-            status: 'APPROVED',
-            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-          }),
-        },
-      } as never,
-      {} as never,
-    );
+    const approved = createWritePrisma({
+      product: ownerProduct('APPROVED'),
+    });
     await expect(
-      serviceForApproved.submit('owner-id', product.id),
+      new ProductsService(approved.prisma as never, {} as never).submit(
+        'owner-id',
+        product.id,
+      ),
     ).rejects.toThrow('Product cannot be submitted for review');
 
-    const serviceForOtherOwner = new ProductsService(
-      {
-        product: {
-          findUnique: vi.fn().mockResolvedValue({
-            ...approvedProduct,
-            status: 'REJECTED',
-            sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
-          }),
-        },
-      } as never,
-      {} as never,
-    );
+    const otherOwner = createWritePrisma({
+      product: {
+        ...ownerProduct('REJECTED'),
+        sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+      },
+    });
     await expect(
-      serviceForOtherOwner.submit('other-id', product.id),
+      new ProductsService(otherOwner.prisma as never, {} as never).submit(
+        'other-id',
+        product.id,
+      ),
     ).rejects.toThrow('Product is not owned by user');
+  });
+
+  it('locks creation-story writes after submit and when a Listing is live', async () => {
+    const pending = createWritePrisma({
+      product: ownerProduct('PENDING_REVIEW'),
+    });
+    await expect(
+      new ProductsService(pending.prisma as never, {} as never).replaceCreationStory(
+        'owner-id',
+        product.id,
+        { intro: 'Intro', steps: [] },
+      ),
+    ).rejects.toThrow('Product creation story is locked');
+    expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
+
+    const listed = createWritePrisma({
+      product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
+    });
+    await expect(
+      new ProductsService(listed.prisma as never, {} as never).reorderCreationSteps(
+        'owner-id',
+        product.id,
+        [],
+      ),
+    ).rejects.toThrow('Product is locked by an active Listing');
+  });
+
+  it('replaces creation story only after the in-transaction writable guard', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('REJECTED'),
+    });
+    tx.productCreationStep.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.replaceCreationStory('owner-id', product.id, {
+      intro: 'How it was made',
+      steps: [],
+    });
+
+    expect(tx.$queryRaw).toHaveBeenCalled();
+    expect(tx.product.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { creationIntro: 'How it was made' },
+      }),
+    );
   });
 
   it('uses a narrow seller select for public Product queries', async () => {

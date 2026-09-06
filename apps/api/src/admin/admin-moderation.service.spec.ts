@@ -23,6 +23,7 @@ describe('AdminModerationService', () => {
       listings: [],
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue(product),
         update: vi.fn().mockResolvedValue(product),
@@ -63,6 +64,7 @@ describe('AdminModerationService', () => {
 
   it('blocks admin from reopening a REJECTED product', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'product-id',
@@ -88,6 +90,7 @@ describe('AdminModerationService', () => {
 
   it('blocks a limiting product action while its listing is scheduled or LIVE', async () => {
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'product-id',

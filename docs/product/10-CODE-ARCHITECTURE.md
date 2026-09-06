@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-06
 Статус: Confirmed technical boundaries for the current Product / Listing MVP.
 
 ## Applications and shared boundaries
@@ -46,7 +46,7 @@ SellerProfile
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
-- Product requires a moderation state before public visibility. A Product remains private while it is a draft, under review or rejected; `isEditableProductStatus` allows owner writes in `DRAFT`, `CHANGES_REQUESTED` and `REJECTED`; `submit` moves those states into `PENDING_REVIEW` on the same Product, admin moderation records a reasoned append-only audit trail, and the first public Listing transition sets immutable `publishedAt`;
+- Product requires a moderation state before public visibility. A Product remains private while it is a draft, under review or rejected; `isEditableProductStatus` allows owner writes in `DRAFT`, `CHANGES_REQUESTED` and `REJECTED`; `submit` moves those states into `PENDING_REVIEW` on the same Product, admin moderation records a reasoned append-only audit trail, and the first public Listing transition sets immutable `publishedAt`. Owner Product, media and creation-story writes lock the Product row (`SELECT … FOR UPDATE`) in a Read Committed transaction and re-check owner, approved seller, editable status and the absence of a `SCHEDULED`/`LIVE` Listing before mutating, so submit, moderation and Listing schedule cannot be bypassed by a concurrent write;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a serializable
   transaction, including repeated/concurrent uploads. Condition is not
@@ -95,13 +95,14 @@ SellerProfile
 - Buyer-facing Order privacy mode can hide seller contacts entirely when the seller chooses `SELLER_CONTACTS_BUYER`; the buyer projection returns `null` contact fields in that mode.
 - Product image reorder uses a two-phase temporary offset inside a transaction
   so the unique `(productId, position)` constraint never collides during swaps;
-  count/byte capacity is checked transactionally before insert.
+  count/byte capacity is checked transactionally before insert. Listing `SCHEDULE`
+  locks the same Product row before `DRAFT → SCHEDULED`, which is the owner edit lock.
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
   sequential bounded normalize to canonical bytes outside the DB transaction, and
-  a short SERIALIZABLE transaction that re-checks owner/capacity then persists via
-  `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
+  a short Read Committed transaction that locks the Product row, re-checks owner, editable status, blocking
+  Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
   then `ImageStore.get`. Per-user upload rate limits apply. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - Product images remain binary PostgreSQL storage for the pilot; swapping to object

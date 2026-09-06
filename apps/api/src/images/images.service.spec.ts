@@ -21,11 +21,13 @@ function createApprovedProduct(
   sellerStatus: 'APPROVED' | 'PENDING' | 'SUSPENDED' = 'APPROVED',
 ) {
   return {
+    id: 'product-id',
     status: 'DRAFT',
     sellerProfile: {
       userId: 'owner-id',
       status: sellerStatus,
     },
+    listings: [] as Array<{ id: string }>,
     images,
   };
 }
@@ -41,6 +43,9 @@ function createPrismaForAdd(options: {
       : (options.product ?? createApprovedProduct([]));
 
   const tx = {
+    $queryRaw: vi.fn().mockResolvedValue(
+      productPayload ? [{ id: 'product-id' }] : [],
+    ),
     product: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
@@ -237,22 +242,27 @@ describe('ImagesService', () => {
 
   it('reorders images through temporary positions before final positions', async () => {
     const update = vi.fn().mockResolvedValue({});
+    const productRow = {
+      id: 'product-id',
+      status: 'DRAFT',
+      sellerProfile: {
+        userId: 'owner-id',
+        status: 'APPROVED',
+      },
+      listings: [],
+      images: [
+        { id: 'image-a', position: 0 },
+        { id: 'image-b', position: 1 },
+      ],
+    };
     const prisma = {
       product: {
-        findUnique: vi.fn().mockResolvedValue({
-          status: 'DRAFT',
-          sellerProfile: {
-            userId: 'owner-id',
-            status: 'APPROVED',
-          },
-          images: [
-            { id: 'image-a', position: 0 },
-            { id: 'image-b', position: 1 },
-          ],
-        }),
+        findUnique: vi.fn().mockResolvedValue(productRow),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
+          $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+          product: { findUnique: vi.fn().mockResolvedValue(productRow) },
           productImage: {
             update,
           },
@@ -274,23 +284,28 @@ describe('ImagesService', () => {
     const findMany = vi
       .fn()
       .mockResolvedValue([{ id: 'image-b' }, { id: 'image-c' }]);
+    const productRow = {
+      id: 'product-id',
+      status: 'DRAFT',
+      sellerProfile: {
+        userId: 'owner-id',
+        status: 'APPROVED',
+      },
+      listings: [],
+      images: [
+        { id: 'image-a', position: 0 },
+        { id: 'image-b', position: 1 },
+        { id: 'image-c', position: 2 },
+      ],
+    };
     const prisma = {
       product: {
-        findUnique: vi.fn().mockResolvedValue({
-          status: 'DRAFT',
-          sellerProfile: {
-            userId: 'owner-id',
-            status: 'APPROVED',
-          },
-          images: [
-            { id: 'image-a', position: 0 },
-            { id: 'image-b', position: 1 },
-            { id: 'image-c', position: 2 },
-          ],
-        }),
+        findUnique: vi.fn().mockResolvedValue(productRow),
       },
       $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
         callback({
+          $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+          product: { findUnique: vi.fn().mockResolvedValue(productRow) },
           productImage: {
             findMany,
             delete: deleteImage,
@@ -316,21 +331,37 @@ describe('ImagesService', () => {
     const stepId = 'step-id';
     const order: string[] = [];
     const tx = {
-      productCreationStep: {
-        update: vi.fn().mockImplementation(async () => {
-          order.push('update');
-          return { id: stepId };
-        }),
-      },
-    };
-    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
       product: {
         findUnique: vi.fn().mockResolvedValue({
+          id: 'product-id',
           status: 'DRAFT',
           sellerProfile: {
             userId: 'owner-id',
             status: 'APPROVED',
           },
+          listings: [],
+          images: [],
+        }),
+      },
+      productCreationStep: {
+        update: vi.fn().mockImplementation(async () => {
+          order.push('update');
+          return { id: stepId };
+        }),
+        findFirst: vi.fn().mockResolvedValue({ id: stepId }),
+      },
+    };
+    const prisma = {
+      product: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'product-id',
+          status: 'DRAFT',
+          sellerProfile: {
+            userId: 'owner-id',
+            status: 'APPROVED',
+          },
+          listings: [],
           images: [],
         }),
       },
@@ -373,6 +404,48 @@ describe('ImagesService', () => {
       },
       tx,
     );
+  });
+
+  it('locks image writes when a scheduled or live Listing exists', async () => {
+    const { prisma } = createPrismaForAdd({
+      product: {
+        ...createApprovedProduct([]),
+        listings: [{ id: 'listing-id' }],
+      },
+    });
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await expect(
+      service.add('owner-id', 'product-id', [
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
+      ]),
+    ).rejects.toThrow('Product is locked by an active Listing');
+    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('repeats the writable guard inside the persistence transaction', async () => {
+    const { prisma, tx, create } = createPrismaForAdd({
+      product: createApprovedProduct([]),
+    });
+    tx.product.findUnique.mockResolvedValue({
+      ...createApprovedProduct([]),
+      status: 'PENDING_REVIEW',
+    });
+    const imageStore = createImageStoreMock();
+    const service = new ImagesService(prisma as never, imageStore as never);
+
+    await expect(
+      service.add('owner-id', 'product-id', [
+        { buffer: Buffer.from([1]), mimetype: 'image/png' },
+      ]),
+    ).rejects.toThrow('Product images are locked');
+    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
+    expect(imageStore.put).not.toHaveBeenCalled();
   });
 });
 

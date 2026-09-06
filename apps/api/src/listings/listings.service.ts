@@ -8,7 +8,8 @@ import {
 import { Decimal } from '@bidplace/database';
 
 import { canCancelListing, canScheduleListing } from '../core/auction';
-import { PrismaService } from '../core/database';
+import { PrismaService, runReadCommittedTransaction } from '../core/database';
+import { lockProductRowForUpdate } from '../products/product-write-guard';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
   sellerProfileAuthSelect,
@@ -155,23 +156,58 @@ export class ListingsService {
       throw new ConflictException('Product already has an active Listing');
     }
 
-    const [updatedListing] = await this.prisma.$transaction([
-      this.prisma.listing.update({
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, listing.productId);
+      const current = await tx.listing.findUnique({
         where: { id: listingId },
-        data: { status: 'SCHEDULED', endsAt: listing.originalEndsAt },
-        include: { auctionRules: true },
-      }),
-      ...(listing.product.publishedAt
-        ? []
-        : [
-            this.prisma.product.update({
-              where: { id: listing.productId },
-              data: { publishedAt: now },
-            }),
-          ]),
-    ]);
+        include: {
+          auctionRules: true,
+          product: {
+            include: {
+              sellerProfile: { select: sellerProfileHandoffSelect },
+            },
+          },
+        },
+      });
 
-    return this.response(updatedListing);
+      if (!current || !current.auctionRules) {
+        throw new NotFoundException('Listing not found');
+      }
+
+      if (!canScheduleListing(current.status)) {
+        throw new ConflictException('Listing cannot be scheduled');
+      }
+
+      if (current.product.status !== 'APPROVED') {
+        throw new ConflictException('Product must be approved');
+      }
+
+      const blocking = await tx.listing.findFirst({
+        where: {
+          productId: current.productId,
+          status: { in: ['SCHEDULED', 'LIVE'] },
+        },
+        select: { id: true },
+      });
+      if (blocking) {
+        throw new ConflictException('Product already has an active Listing');
+      }
+
+      const updatedListing = await tx.listing.update({
+        where: { id: listingId },
+        data: { status: 'SCHEDULED', endsAt: current.originalEndsAt },
+        include: { auctionRules: true },
+      });
+
+      if (!current.product.publishedAt) {
+        await tx.product.update({
+          where: { id: current.productId },
+          data: { publishedAt: now },
+        });
+      }
+
+      return this.response(updatedListing);
+    });
   }
 
   private response(listing: {

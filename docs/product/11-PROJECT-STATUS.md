@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-06 — Product write atomicity
+
+- `Implemented`: owner Product field, submit, creation-story, ProductImage add/remove/reorder and creation-step image writes take the Product row lock (`SELECT … FOR UPDATE`) inside a Read Committed transaction and re-check owner, approved seller, editable status (`DRAFT`/`CHANGES_REQUESTED`/`REJECTED`) and the absence of a `SCHEDULED`/`LIVE` Listing before mutating. Conditional `updateMany` predicates back Product row writes. Listing `SCHEDULE` and admin Product moderation take the same row lock. Image decode stays outside the TX; a lost race rolls back with the TX so Postgres image bytes are not left behind.
+- Coverage: unit `product-write-guard.spec.ts`, `products.service.spec.ts`, `images.service.spec.ts`; PostgreSQL `product-write-atomicity.integration.spec.ts` (forced update↔submit, media↔moderation, story↔Listing lock, concurrent update/submit, REJECTED resubmit).
+- `Verified`: API unit 316/316; PostgreSQL integration 80/80 including 7/7 write-race tests; API typecheck; eslint on changed product/image/admin/listing/transaction files.
+- Decision unchanged: `DEC-071`. RFC §6 owner edit/resubmit loop is preserved.
+
 ## 2026-09-06 — reconciliation review and product correction
 
 - `Implemented` (docs only): `DEC-075` revises the product assumptions recorded
@@ -12,8 +19,7 @@
   code facts, not final target mechanics.
 - `Partial`: seller Orders inbox exists but hides `CANCELLED` history; expired
   scheduled cancellation exists without author notification/relist; Activity has
-  ambiguous cancelled/replacement projection; Product write locking has an
-  uncovered concurrent write-vs-submit/moderation gap.
+  ambiguous cancelled/replacement projection.
 - Full repository verification on `fix/mvp-reconciliation-review` passed:
   typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
   7/7. Passing tests do not cover the named concurrency/product gaps.

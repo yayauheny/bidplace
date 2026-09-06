@@ -15,7 +15,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { PrismaService, runSerializableTransaction } from '../core/database';
+import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { resolveMinimumBidAmount } from '../core/auction';
 import { PublicIdService } from '../core/public-id';
 import {
@@ -31,8 +31,13 @@ import {
   publicCatalogOrderBy,
   type PublicCatalogPageRow,
 } from './products-catalog.query';
-import { isEditableProductStatus } from './product-state';
 import { missingProductApprovalFields } from './product-requirements';
+import {
+  assertProductWritable,
+  lockProductRowForUpdate,
+  productWriteGuardSelect,
+  writableProductWhere,
+} from './product-write-guard';
 import {
   publicDirectProductWhere,
   publicListingStatuses,
@@ -43,8 +48,6 @@ import {
   publicSellerProfileSelect,
   toPublicSellerProfile,
 } from '../sellers/seller-profile.mapper';
-
-const lockedStatuses = ['SCHEDULED', 'LIVE'] as const;
 
 @Injectable()
 export class ProductsService {
@@ -118,37 +121,6 @@ export class ProductsService {
   }
 
   async update(userId: string, id: string, input: ProductWriteRequest) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      select: {
-        status: true,
-        sellerProfile: { select: { userId: true, status: true } },
-        listings: {
-          where: { status: { in: [...lockedStatuses] } },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    if (product.sellerProfile.userId !== userId) {
-      throw new ForbiddenException('Product is not owned by user');
-    }
-
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
-    if (!isEditableProductStatus(product.status)) {
-      throw new ForbiddenException('Product cannot be edited');
-    }
-
-    if (product.listings.length) {
-      throw new ConflictException('Product is locked by an active Listing');
-    }
-
     const data: Prisma.ProductUncheckedUpdateInput = {};
 
     if (input.categoryId !== undefined) data.categoryId = input.categoryId;
@@ -169,62 +141,76 @@ export class ProductsService {
     if (input.creationIntro !== undefined)
       data.creationIntro = input.creationIntro;
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data,
-      select: productSelect,
-    });
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, id);
+      const product = await tx.product.findUnique({
+        where: { id },
+        select: productWriteGuardSelect,
+      });
+      assertProductWritable(product, userId, 'edit');
 
-    return toProductResponse(updated);
+      const written = await tx.product.updateMany({
+        where: { id, ...writableProductWhere },
+        data,
+      });
+      if (written.count !== 1) {
+        assertProductWritable(
+          await tx.product.findUnique({
+            where: { id },
+            select: productWriteGuardSelect,
+          }),
+          userId,
+          'edit',
+        );
+        throw new ConflictException('Product cannot be edited');
+      }
+
+      const updated = await tx.product.findUniqueOrThrow({
+        where: { id },
+        select: productSelect,
+      });
+      return toProductResponse(updated);
+    });
   }
 
   async submit(userId: string, id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: {
-        sellerProfile: { select: { userId: true, status: true } },
-        images: { select: { id: true }, take: 1 },
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    if (product.sellerProfile.userId !== userId) {
-      throw new ForbiddenException('Product is not owned by user');
-    }
-
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-
-    if (!isEditableProductStatus(product.status)) {
-      throw new ConflictException('Product cannot be submitted for review');
-    }
-
-    const missingFields = missingProductApprovalFields(product);
-    if (missingFields.length > 0) {
-      throw new ConflictException(
-        `Product is missing required fields: ${missingFields.join(', ')}`,
-      );
-    }
-
-    return runSerializableTransaction(this.prisma, async (tx) => {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, id);
       const current = await tx.product.findUnique({
         where: { id },
-        select: { id: true, status: true },
+        select: {
+          ...productWriteGuardSelect,
+          title: true,
+          story: true,
+          categoryId: true,
+          condition: true,
+          uniqueness: true,
+          provenance: true,
+          city: true,
+          packaging: true,
+          deliveryInfo: true,
+          images: { select: { id: true }, take: 1 },
+        },
       });
+      assertProductWritable(current, userId, 'submit');
 
-      if (!current) {
-        throw new NotFoundException('Product not found');
+      const missingFields = missingProductApprovalFields(current);
+      if (missingFields.length > 0) {
+        throw new ConflictException(
+          `Product is missing required fields: ${missingFields.join(', ')}`,
+        );
       }
 
-      if (!isEditableProductStatus(current.status)) {
+      const moved = await tx.product.updateMany({
+        where: { id, ...writableProductWhere },
+        data: { status: 'PENDING_REVIEW' },
+      });
+      if (moved.count !== 1) {
         throw new ConflictException('Product cannot be submitted for review');
       }
 
-      const updated = await tx.product.update({
+      const updated = await tx.product.findUniqueOrThrow({
         where: { id },
-        data: { status: 'PENDING_REVIEW' },
         select: productSelect,
       });
 
@@ -248,7 +234,6 @@ export class ProductsService {
     productId: string,
     input: CreationStoryWriteRequest,
   ) {
-    const product = await this.requireEditableOwner(userId, productId);
     const incomingIds = input.steps.flatMap((step) =>
       step.id ? [step.id] : [],
     );
@@ -256,7 +241,14 @@ export class ProductsService {
       throw new ConflictException('Creation steps must be unique');
     }
 
-    return runSerializableTransaction(this.prisma, async (tx) => {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, productId);
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        select: productWriteGuardSelect,
+      });
+      assertProductWritable(product, userId, 'creation-story');
+
       const existing = await tx.productCreationStep.findMany({
         where: { productId },
         select: { id: true },
@@ -266,10 +258,13 @@ export class ProductsService {
         throw new NotFoundException('Creation step not found');
       }
 
-      await tx.product.update({
-        where: { id: product.id },
+      const introWritten = await tx.product.updateMany({
+        where: { id: product.id, ...writableProductWhere },
         data: { creationIntro: input.intro },
       });
+      if (introWritten.count !== 1) {
+        throw new ForbiddenException('Product creation story is locked');
+      }
       await tx.productCreationStep.deleteMany({
         where: { productId, id: { notIn: incomingIds } },
       });
@@ -319,8 +314,14 @@ export class ProductsService {
     productId: string,
     stepIds: string[],
   ) {
-    await this.requireEditableOwner(userId, productId);
-    return runSerializableTransaction(this.prisma, async (tx) => {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, productId);
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        select: productWriteGuardSelect,
+      });
+      assertProductWritable(product, userId, 'creation-story');
+
       const steps = await tx.productCreationStep.findMany({
         where: { productId },
         select: { id: true },
@@ -346,26 +347,6 @@ export class ProductsService {
       );
       return { ok: true as const };
     });
-  }
-
-  private async requireEditableOwner(userId: string, productId: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-      select: {
-        id: true,
-        status: true,
-        sellerProfile: { select: { userId: true, status: true } },
-      },
-    });
-    if (!product) throw new NotFoundException('Product not found');
-    if (product.sellerProfile.userId !== userId) {
-      throw new ForbiddenException('Product is not owned by user');
-    }
-    assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-    if (!isEditableProductStatus(product.status)) {
-      throw new ForbiddenException('Product creation story is locked');
-    }
-    return product;
   }
 
   async getPublic(publicId: string) {
