@@ -1,7 +1,8 @@
 # bidplace — текущее состояние public MVP
 
 Дата среза: 2026-09-06
-Проверенная ветка: `fix/figma-readonly-audit`, HEAD `beed3a0`
+Проверенный code baseline: `fix/figma-readonly-audit`, HEAD `beed3a0`
+Текущая документация: `fix/docs-current-state`
 Статус: текущий аудит; прежние датированные аудиты удалены из рабочего дерева и остаются в Git
 
 ## Итог
@@ -34,6 +35,9 @@
 | P1 | Legacy HTTPS preflight | Strict schema существует, старые `http:` значения не проверены | Grok 4.6 High, review Sol |
 | P1 | JWT role freshness | Guards могут доверять роли из ранее выданного токена | Grok 4.6 High, security review Sol |
 | P2 | Lifecycle bounded progress | Batch 50 есть; нет доказательства `51 → 50 + 1`, решения poison-prefix и multi-instance policy | Grok 4.6 High, review Sol |
+| P0 | Stress-test D01–D04 | Рекомендации есть, но ещё не проверены общей race/UX/abuse-моделью | GPT-5.6 Sol |
+| P1 | Security/dependency evidence review | Самописный JWT и другие security-critical utilities не получили отдельного evidence review; запрос на сравнение с поддерживаемыми библиотеками не был оформлен задачей | Grok 4.6 High, security review Sol |
+| P1 | Public-pilot operations readiness | Runbook существует, но его утверждения и реальные deploy/backup/email/TLS gaps не сверены заново | Grok 4.6 High, review Sol |
 
 ## Решения основателя, нужные до реализации сделок
 

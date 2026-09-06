@@ -15,6 +15,9 @@
   финальный registration contract остаётся заблокирован вопросом 1 из
   [`../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
 - Code behavior is unchanged by this documentation update. Tests were not rerun.
+- `Planned` (docs only): backlog дополнен тремя независимыми smart-model reviews:
+  stress-test D01–D04, security/dependency evidence review и public-pilot operations
+  readiness. Они не разрешают открытые вопросы автоматически и не меняют runtime.
 
 ## 2026-09-06 — Belarus launch scope
 

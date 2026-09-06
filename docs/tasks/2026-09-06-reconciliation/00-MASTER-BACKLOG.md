@@ -28,6 +28,18 @@ Owner: founder
 | 04 | P0 | [Work-first domain contract](04-WORK-FIRST-DOMAIN-CONTRACT.md) | GPT-5.6 Sol | Открытые варианты сохраняются явно |
 | 05 | P0 | [Фактическая data/legal map](05-DATA-AND-LEGAL-INVENTORY.md) | Grok 4.6 High; review Sol | Не читать secrets |
 | 06 | P1 | [JWT role freshness](06-AUTH-ROLE-FRESHNESS.md) | Grok 4.6 High; security review Sol | Нет |
+| 07 | P0 | [Stress-test решений D01–D04](07-MVP-DECISION-CLOSURE.md) | GPT-5.6 Sol | Не подменяет решение основателя и ответ юриста |
+| 08 | P1 | [Security и dependency evidence review](08-SECURITY-DEPENDENCY-REVIEW.md) | Grok 4.6 High; security review Sol | Интернет только для первичных advisories |
+| 09 | P1 | [Public-pilot operations readiness](09-PUBLIC-PILOT-OPERATIONS-READINESS.md) | Grok 4.6 High; review Sol | Без deploy и чтения secrets |
+
+## Если модели выполняют задачи последовательно
+
+- **GPT-5.6 Sol:** `07 → решение основателя → 04 → 01 → review результатов Grok`.
+- **Grok 4.6 High:** `05 → 08 → 06 → 02 → 09 → 03`.
+
+T07 идёт перед финальной версией T04, чтобы domain contract не пришлось переписывать
+после выбора offer/non-payment rules. T05 идёт первым у Grok, потому что его data map
+нужна legal drafts, complaints, cookies и operations review.
 
 ## Нужно решение основателя
 
@@ -56,6 +68,11 @@ Owner: founder
 Для этих блоков отдельные промты создаются после стабилизации входного контракта. Это
 не позволяет исполнителю реализовать спорную механику по догадке и не засоряет проект
 заведомо устаревающими заданиями.
+
+После Work-first contract и решения D01–D04 сильной модели отдельно передаётся
+contract matrix `Work → Listing → Offer/Bid → Order → handoff` для API, кабинета и
+дизайна. До этого такой промт преждевременен: он неизбежно закрепит неподтверждённые
+states и actions.
 
 ## Перед публичным запуском
 
