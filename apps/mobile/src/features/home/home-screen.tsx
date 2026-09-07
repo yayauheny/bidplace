@@ -98,7 +98,7 @@ export function HomeScreen() {
                   gap: designTokens.space.x4,
                 }}
               >
-                <AppText role="sectionTitle">Аукционы</AppText>
+                <AppText role="sectionTitle">Работы</AppText>
                 <SectionLink href="/works" label="Смотреть все работы" />
               </View>
               <AuctionCardGrid

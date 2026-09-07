@@ -39,17 +39,18 @@ describe('auction card content contract', () => {
     );
   });
 
-  it('keeps the full four-digit BYN amount as one value', () => {
+  it('does not expose a commerce price in a portfolio card', () => {
     expect(
       getAuctionCardContent(itemWith({ price: 1200, status: 'LIVE' })).price,
-    ).toBe('1200 BYN');
+    ).toBe('Работа автора');
   });
 
-  it.each([
-    ['LIVE', 'Торги идут'],
-    ['SCHEDULED', 'Скоро'],
-    ['ENDED', 'Завершено'],
-  ] as const)('uses truthful %s status text', (status, label) => {
-    expect(getAuctionCardContent(itemWith({ status })).status).toBe(label);
-  });
+  it.each(['LIVE', 'SCHEDULED', 'ENDED'] as const)(
+    'does not expose %s auction state text',
+    (status) => {
+      expect(getAuctionCardContent(itemWith({ status })).status).toBe(
+        'Портфолио',
+      );
+    },
+  );
 });

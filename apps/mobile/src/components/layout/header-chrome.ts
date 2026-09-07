@@ -7,8 +7,8 @@ export function isAuthorsRoute(pathname: string): boolean {
 
 export function getDiscoveryLabel(
   pathname: string,
-): 'Авторы' | 'Аукционы' {
-  return isAuthorsRoute(pathname) ? 'Авторы' : 'Аукционы';
+): 'Авторы' | 'Работы' {
+  return isAuthorsRoute(pathname) ? 'Авторы' : 'Работы';
 }
 
 export function getHeaderSearchPlaceholder(pathname: string): string {
@@ -68,4 +68,3 @@ export function logoutAndGoHome(
 ) {
   return auth.logout().then(() => router.replace('/'));
 }
-

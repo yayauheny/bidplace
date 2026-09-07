@@ -1,7 +1,5 @@
-import { useLocalSearchParams } from 'expo-router';
-import { ListingDraftScreen } from '../../../features/sellers/listing-draft-screen';
+import { CommerceUnavailableScreen } from '../../../features/commerce/commerce-unavailable-screen';
 
 export default function NewListingRoute() {
-  const { productId } = useLocalSearchParams<{ productId?: string }>();
-  return <ListingDraftScreen initialProductId={productId} />;
+  return <CommerceUnavailableScreen />;
 }

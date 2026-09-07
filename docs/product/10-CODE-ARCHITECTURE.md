@@ -9,9 +9,11 @@
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating Bid/Order business facts. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`.
 - HTTP requests receive `X-Request-Id` (incoming or generated) for correlation in logs and error responses.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
-- `apps/api/src/discovery` owns the public Home projection. Discovery delegates to
-  Product/Seller services, which select the canonical public Listing before
-  server-side filters, sort and pagination; clients do not rank a loaded page.
+- `apps/api/src/core/commerce` owns the fail-closed commerce capability. Its typed
+  `COMMERCE_ENABLED` configuration defaults to `false`; commerce HTTP controllers,
+  commerce admin actions, lifecycle and Socket.IO consume the same boundary.
+  `apps/api/src/discovery` delegates to Product/Seller services and portfolio
+  discovery no longer requires a `Listing` to make an approved Work public.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.

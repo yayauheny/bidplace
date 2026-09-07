@@ -125,7 +125,7 @@ export function MobileNavigationMenu({
     >
       <MobileMenuItem
         icon="catalog"
-        label="Аукционы"
+        label="Работы"
         href="/works"
         selected={!isAuthors}
         onPress={onClose}
@@ -177,4 +177,3 @@ export function MobileNavigationMenu({
     </View>
   );
 }
-

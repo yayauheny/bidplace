@@ -4,9 +4,12 @@
 
 - `Confirmed product`: `DEC-082`–`DEC-084` replace the first public release target
   with creator profiles and portfolio Work; commerce moves to the post-MVP backlog.
-- `Not implemented`: current runtime remains Pen-based and commerce-oriented. Auction,
-  Bid, Order and handoff code still exists and does not yet have the required
-  server-authoritative default-off capability.
+- `Partial`: `apps/api/src/core/commerce` now provides a typed
+  `COMMERCE_ENABLED=false` capability gate. Listing, Bid, Order and commerce-admin
+  HTTP paths return unavailable while disabled; the Listing lifecycle and realtime
+  gateway no-op/disconnect; public Work discovery no longer joins `Listing`.
+  Commerce persistence and explicit-enabled service code remain preserved. Mobile
+  route and contract cutover is in progress in package 01.
 - `Planned`: portfolio Work revisions, object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).

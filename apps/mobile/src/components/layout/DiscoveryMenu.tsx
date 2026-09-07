@@ -16,7 +16,6 @@ import { discoveryTriggerInteractionStyle, discoveryTriggerStyle } from './heade
 
 type DiscoveryDropdownProps = {
   desktop: boolean;
-  label: 'Аукционы' | 'Авторы';
   onNavigate: () => void;
 };
 
@@ -25,7 +24,7 @@ export function DiscoveryMenu({
   label,
 }: {
   desktop: boolean;
-  label: 'Аукционы' | 'Авторы';
+  label: 'Работы' | 'Авторы';
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -53,7 +52,6 @@ export function DiscoveryMenu({
   const dropdown = (
     <DiscoveryDropdown
       desktop={Platform.OS === 'web'}
-      label={label}
       onNavigate={() => setOpen(false)}
     />
   );
@@ -98,7 +96,6 @@ export function DiscoveryMenu({
 
 function DiscoveryDropdown({
   desktop,
-  label,
   onNavigate,
 }: DiscoveryDropdownProps) {
   const items: Array<{
@@ -107,7 +104,7 @@ function DiscoveryDropdown({
     icon: 'catalog' | 'user';
   }> = [
     {
-      label: label === 'Авторы' ? 'Работы' : 'Аукционы',
+      label: 'Работы',
       href: '/works',
       icon: 'catalog',
     },
@@ -156,4 +153,3 @@ function DiscoveryDropdown({
     </View>
   );
 }
-

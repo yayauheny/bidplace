@@ -7,13 +7,13 @@
 | Current package | 01 — Commerce capability gate |
 | Base main SHA | `23fea271c46a8186482341203acfb4b487ffbf17` |
 | Working branch | `feature/commerce-capability-gate` |
-| Completed behavior | Execution ledger created; implementation has not started. |
-| Commit SHA | Pending first checkpoint commit |
-| Checks passed | Clean `main` before branching; Nest and security implementation guidance read. |
+| Completed behavior | Added a typed default-off gate to commerce HTTP controllers and admin actions; disabled commerce lifecycle and realtime; public Work discovery no longer requires a Listing. |
+| Commit SHA | `e7b98131173f68fa913cecd67f7540589edf9a3f` |
+| Checks passed | API typecheck and lint; targeted API unit tests (56/56). |
 | Checks failed | None. |
-| Remaining work | Implement the typed fail-closed capability, isolate API/jobs/realtime/discovery/mobile commerce surfaces, test, document, and fast-forward into `main`. |
+| Remaining work | Isolate remaining mobile commerce routes/navigation, complete capability coverage and documentation, then fast-forward into `main`. |
 | Known blockers | None. |
-| Next exact action | Inventory every commerce controller, scheduled job, realtime event, discovery dependency, and mobile route/control before selecting the smallest central gate. |
+| Next exact action | Commit the mobile route/navigation isolation, add the final package status documentation, then run package checks and fast-forward into `main`. |
 
 ## Recovery procedure
 

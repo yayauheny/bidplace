@@ -282,8 +282,8 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
           >
             <AccountDropdown
               profileLabel={profileLabel}
-              showPurchases={!auth.isAdmin}
-              showOrders={Boolean(capability.profile) && !auth.isAdmin}
+              showPurchases={false}
+              showOrders={false}
               showModeration={auth.isAdmin}
               loggingOut={loggingOut}
               onLogout={() => void logout()}
@@ -294,8 +294,8 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
         ) : (
           <AccountDropdown
             profileLabel={profileLabel}
-            showPurchases={!auth.isAdmin}
-            showOrders={Boolean(capability.profile) && !auth.isAdmin}
+            showPurchases={false}
+            showOrders={false}
             showModeration={auth.isAdmin}
             loggingOut={loggingOut}
             onLogout={() => void logout()}

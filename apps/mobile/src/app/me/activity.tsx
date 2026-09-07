@@ -1,1 +1,1 @@
-export { ActivityScreen as default } from '../../features/activity/activity-screen';
+export { CommerceUnavailableScreen as default } from '../../features/commerce/commerce-unavailable-screen';

@@ -1,5 +1,5 @@
-import { SellerOrdersScreen } from '../../features/orders/seller-orders-screen';
+import { CommerceUnavailableScreen } from '../../features/commerce/commerce-unavailable-screen';
 
 export default function SellerOrdersRoute() {
-  return <SellerOrdersScreen />;
+  return <CommerceUnavailableScreen />;
 }
