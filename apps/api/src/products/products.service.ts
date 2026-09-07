@@ -40,6 +40,7 @@ import {
 import {
   publicDirectProductWhere,
 } from './public-visibility';
+import { assertProductRevisionTransition } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
   publicSellerProfileSelect,
@@ -316,6 +317,7 @@ export class ProductsService {
         select: {
           ...productWriteGuardSelect,
           editingRevisionId: true,
+          publishedRevisionId: true,
           title: true,
           story: true,
           categoryId: true,
@@ -328,6 +330,71 @@ export class ProductsService {
           images: { select: { id: true }, take: 1 },
         },
       });
+
+      if (
+        current &&
+        (current.status === 'APPROVED' || current.status === 'ARCHIVED') &&
+        current.publishedRevisionId &&
+        current.editingRevisionId &&
+        current.editingRevisionId !== current.publishedRevisionId
+      ) {
+        if (current.sellerProfile.userId !== userId) {
+          throw new ForbiddenException('Product is not owned by user');
+        }
+        assertApprovedSeller(current.sellerProfile.status as SellerStatus);
+
+        const editingRevision = await tx.productRevision.findUniqueOrThrow({
+          where: { id: current.editingRevisionId },
+          select: {
+            status: true,
+            title: true,
+            story: true,
+            categoryId: true,
+            condition: true,
+            uniqueness: true,
+            provenance: true,
+            city: true,
+            packaging: true,
+            deliveryInfo: true,
+            images: { select: { imageId: true }, take: 1 },
+          },
+        });
+        assertProductRevisionTransition(
+          'author',
+          editingRevision.status,
+          'PENDING_REVIEW',
+        );
+        const missingFields = missingProductApprovalFields({
+          ...editingRevision,
+          images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+        });
+        if (missingFields.length > 0) {
+          throw new ConflictException(
+            `Product is missing required fields: ${missingFields.join(', ')}`,
+          );
+        }
+
+        await tx.productRevision.update({
+          where: { id: current.editingRevisionId },
+          data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
+        });
+        const updated = await tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: userId,
+            targetType: 'PRODUCT',
+            targetId: updated.id,
+            oldStatus: editingRevision.status,
+            newStatus: 'PENDING_REVIEW',
+            reason: null,
+          },
+        });
+        return toProductResponse(updated);
+      }
+
       assertProductWritable(current, userId, 'submit');
 
       const missingFields = missingProductApprovalFields(current);

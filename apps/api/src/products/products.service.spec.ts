@@ -359,6 +359,64 @@ describe('ProductsService', () => {
     );
   });
 
+  it('submits an editing revision without changing an approved public Product', async () => {
+    const current = {
+      ...ownerProduct('APPROVED'),
+      editingRevisionId: 'revision-editing',
+      publishedRevisionId: 'revision-published',
+    };
+    const editingRevision = {
+      status: 'DRAFT' as const,
+      title: approvedProduct.title,
+      story: approvedProduct.story,
+      categoryId: approvedProduct.categoryId,
+      condition: approvedProduct.condition,
+      uniqueness: approvedProduct.uniqueness,
+      provenance: approvedProduct.provenance,
+      city: approvedProduct.city,
+      packaging: approvedProduct.packaging,
+      deliveryInfo: approvedProduct.deliveryInfo,
+      images: [{ imageId: approvedProduct.images[0]!.id }],
+    };
+    const response = { ...approvedProduct, status: 'APPROVED' as const };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
+      product: {
+        findUnique: vi.fn().mockResolvedValue(current),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(response),
+        updateMany: vi.fn(),
+      },
+      productRevision: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(editingRevision),
+        update: vi.fn(),
+      },
+      auditEvent: { create: vi.fn() },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+      ),
+    };
+
+    const result = await new ProductsService(
+      prisma as never,
+      {} as never,
+    ).submit('owner-id', product.id);
+
+    expect(result.product.status).toBe('APPROVED');
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-editing' },
+      data: expect.objectContaining({ status: 'PENDING_REVIEW' }),
+    });
+    expect(tx.auditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        oldStatus: 'DRAFT',
+        newStatus: 'PENDING_REVIEW',
+      }),
+    });
+  });
+
   it('denies submit for approved Products and other owners', async () => {
     const approved = createWritePrisma({
       product: ownerProduct('APPROVED'),
