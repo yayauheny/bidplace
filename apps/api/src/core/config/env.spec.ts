@@ -87,6 +87,20 @@ describe('NODE_ENV × APP_ENV matrix', () => {
     ).toBe(true);
   });
 
+  it('defaults media storage to the legacy provider outside production', () => {
+    stubMissingEnvFile();
+
+    expect(loadServerEnv(localEnv).MEDIA_STORAGE_PROVIDER).toBe('postgres');
+  });
+
+  it('requires complete S3 configuration when the S3 provider is selected', () => {
+    stubMissingEnvFile();
+
+    expect(() =>
+      loadServerEnv({ ...localEnv, MEDIA_STORAGE_PROVIDER: 's3' }),
+    ).toThrow('S3_ENDPOINT is required when MEDIA_STORAGE_PROVIDER=s3');
+  });
+
   it.each([
     { NODE_ENV: 'development', APP_ENV: 'local' },
     { NODE_ENV: 'test', APP_ENV: 'local' },

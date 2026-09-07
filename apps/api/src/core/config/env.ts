@@ -75,6 +75,12 @@ const serverEnvSchema = z
       z.enum(['true', 'false']).optional(),
     ),
     COMMERCE_ENABLED: booleanEnvDefaultFalseSchema,
+    MEDIA_STORAGE_PROVIDER: z.enum(['postgres', 's3']).default('postgres'),
+    S3_ENDPOINT: z.string().url().optional(),
+    S3_REGION: z.string().min(1).optional(),
+    S3_BUCKET: z.string().min(1).optional(),
+    S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+    S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   })
   .passthrough()
   .refine(
@@ -166,12 +172,31 @@ const serverEnvSchema = z
           message: ENV_PROFILE_ERROR.testEmailBypassForbiddenInProduction,
         });
       }
+
     } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['TEST_EMAIL_BYPASS'],
         message: ENV_PROFILE_ERROR.testEmailBypassRequiresLocalTest,
       });
+    }
+
+    if (env.MEDIA_STORAGE_PROVIDER === 's3') {
+      for (const key of [
+        'S3_ENDPOINT',
+        'S3_REGION',
+        'S3_BUCKET',
+        'S3_ACCESS_KEY_ID',
+        'S3_SECRET_ACCESS_KEY',
+      ] as const) {
+        if (!env[key]) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required when MEDIA_STORAGE_PROVIDER=s3`,
+          });
+        }
+      }
     }
   })
   .transform((env) => ({
