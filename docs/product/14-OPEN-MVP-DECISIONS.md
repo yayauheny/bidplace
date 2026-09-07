@@ -11,6 +11,8 @@
 Совместимость вариантов, гонки и риски проверены в
 [`2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
 Memo даёт рекомендацию, но не закрывает D01–D04 без решения основателя.
+Технические варианты, которые зависят от этих ответов, собраны в
+[`01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
 
 ## D01 — предложение своей цены
 

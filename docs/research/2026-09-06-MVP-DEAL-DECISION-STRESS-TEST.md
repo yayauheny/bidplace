@@ -16,6 +16,8 @@ abuse-модель и белорусский legal UX research. Они не ме
 становятся обязательными до отдельного решения основателя. Юридические вопросы
 остаются в
 [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
+Развёрнутые технические альтернативы сохранены отдельно в
+[`01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
 
 ## Рекомендуемый выбор
 

@@ -1,6 +1,6 @@
 # bidplace — текущее состояние public MVP
 
-Дата среза: 2026-09-06
+Дата среза: 2026-09-07
 Проверенный code baseline: `fix/figma-readonly-audit`, HEAD `beed3a0`
 Текущая документация: `feature/mvp-decision-review`
 Статус: текущий аудит; прежние датированные аудиты удалены из рабочего дерева и остаются в Git
@@ -58,6 +58,26 @@
 [`docs/product/14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md), а
 совместимая рекомендация и последствия — в
 [`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
+
+## Открытые архитектурные пробелы
+
+Полная карта вариантов хранится в
+[`01-OPEN-ARCHITECTURE-GAPS.md`](01-OPEN-ARCHITECTURE-GAPS.md). До решения D01–D04 и
+Work-first contract открыты девять связанных областей: Work-level защита от двойной
+продажи, источники Order, двусторонний handoff outcome, second chance, immutable
+history, evidence раскрытия контактов, durable notifications, граница Work/Listing и
+отдельный complaint domain.
+
+Самые опасные текущие расхождения:
+
+- DB гарантирует один активный Order на Listing, но не на Work;
+- fixed и accepted offer нельзя представить без обязательного `sourceBidId`;
+- seller единолично ставит terminal handoff statuses;
+- admin replacement создаёт новый Order до согласия runner-up;
+- production-like чтение старых Orders может подменять snapshot живой карточкой.
+
+Это зафиксированные пробелы, а не разрешение менять schema. Варианты и рекомендуемые
+направления должны быть утверждены перед техническими задачами.
 
 ## Последовательность реализации
 

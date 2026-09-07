@@ -1,9 +1,15 @@
 # bidplace — индекс канонической документации
 
-Последнее обновление: 2026-09-06  
+Последнее обновление: 2026-09-07
 Статус: Confirmed
 
-Текущее состояние: [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md). Активные задачи: [`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md). Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md). Юридический вход: [`../legal/README.md`](../legal/README.md).
+Текущее состояние: [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
+Открытые архитектурные варианты:
+[`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
+Активные задачи:
+[`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md).
+Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+Юридический вход: [`../legal/README.md`](../legal/README.md).
 
 ## 1. Назначение набора
 
@@ -59,7 +65,8 @@
 | `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` | Проверенные правовые опоры, рыночные patterns и legal UX matrix |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |
-| `../audits/00-CURRENT-MVP-READINESS.md` | Единственный текущий аудит готовности и блокеров                              |
+| `../audits/00-CURRENT-MVP-READINESS.md` | Главный текущий аудит готовности и блокеров                                   |
+| `../audits/01-OPEN-ARCHITECTURE-GAPS.md` | Нерешённые архитектурные пробелы, варианты и зависимости от решений          |
 | `../research/README.md`                 | Правила хранения сырого исследования                                         |
 | `../research/raw/*`                     | Архив исходных отчётов; не каноническое решение                              |
 

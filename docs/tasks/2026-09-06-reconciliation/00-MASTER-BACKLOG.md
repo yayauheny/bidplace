@@ -74,6 +74,11 @@ contract matrix `Work → Listing → Offer/Bid → Order → handoff` для AP
 дизайна. До этого такой промт преждевременен: он неизбежно закрепит неподтверждённые
 states и actions.
 
+Перед составлением этих prompts обязательно пройти варианты A01–A09 из
+[`docs/audits/01-OPEN-ARCHITECTURE-GAPS.md`](../../audits/01-OPEN-ARCHITECTURE-GAPS.md).
+Файл фиксирует обнаруженные риски и альтернативы, но не даёт исполнителю права выбрать
+schema или state machine вместо основателя.
+
 ## Перед публичным запуском
 
 - адаптировать семь документов по фактическим flows и data map;

@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-07 — open architecture gaps retained
+
+- `Implemented` (docs only): обнаруженные в T07 технические пробелы и варианты их
+  решения сохранены в
+  [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
+  Карта покрывает Work-level deal uniqueness, Order sources, handoff outcomes,
+  second chance, snapshots, contact disclosure, notifications, Work/Listing boundary
+  и complaints.
+- `Needs founder decision`: рекомендуемые направления не являются утверждённой
+  архитектурой и не меняют RFC, decision log, schema или runtime.
+- Code behavior is unchanged. Tests were not rerun for this docs-only task.
+
 ## 2026-09-06 — MVP deal decision stress-test
 
 - `Implemented` (research/docs only): D01–D04 проверены как единая модель
