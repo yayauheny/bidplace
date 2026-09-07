@@ -26,6 +26,12 @@ describe('LocalMailTransport', () => {
     vi.stubEnv('SERVICE_RULES_CONTACT', 'support@example.com');
     vi.stubEnv('SERVICE_RULES_TEXT', 'Rules text');
     vi.stubEnv('TEST_EMAIL_BYPASS', 'false');
+    vi.stubEnv('MEDIA_STORAGE_PROVIDER', 's3');
+    vi.stubEnv('S3_ENDPOINT', 'http://minio.local');
+    vi.stubEnv('S3_REGION', 'us-east-1');
+    vi.stubEnv('S3_BUCKET', 'bidplace-media');
+    vi.stubEnv('S3_ACCESS_KEY_ID', 'test-access-key');
+    vi.stubEnv('S3_SECRET_ACCESS_KEY', 'test-secret-key');
 
     const transport = new LocalMailTransport();
 

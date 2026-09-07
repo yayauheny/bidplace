@@ -33,6 +33,12 @@ const productionSecurityEnv = {
   SERVICE_RULES_CONTACT: 'support@example.com',
   SERVICE_RULES_TEXT: 'Rules text',
   TEST_EMAIL_BYPASS: 'false',
+  MEDIA_STORAGE_PROVIDER: 's3',
+  S3_ENDPOINT: 'http://minio.local',
+  S3_REGION: 'us-east-1',
+  S3_BUCKET: 'bidplace-media',
+  S3_ACCESS_KEY_ID: 'test-access-key',
+  S3_SECRET_ACCESS_KEY: 'test-secret-key',
 } as const;
 
 function stubMissingEnvFile(): void {
@@ -191,6 +197,19 @@ describe('NODE_ENV × APP_ENV matrix', () => {
         APP_ENV: 'production',
       }),
     ).not.toThrow();
+  });
+
+  it('rejects the PostgreSQL binary store in production', () => {
+    stubMissingEnvFile();
+
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        MEDIA_STORAGE_PROVIDER: 'postgres',
+      }),
+    ).toThrow('MEDIA_STORAGE_PROVIDER=s3 is required in production');
   });
 
   it('rejects production builds without required SMTP config', () => {

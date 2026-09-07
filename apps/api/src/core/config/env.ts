@@ -173,6 +173,14 @@ const serverEnvSchema = z
         });
       }
 
+      if (env.MEDIA_STORAGE_PROVIDER !== 's3') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['MEDIA_STORAGE_PROVIDER'],
+          message: 'MEDIA_STORAGE_PROVIDER=s3 is required in production',
+        });
+      }
+
     } else if (env.TEST_EMAIL_BYPASS && !isExplicitLocalTestProfile(env)) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
