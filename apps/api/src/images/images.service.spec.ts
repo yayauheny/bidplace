@@ -22,6 +22,7 @@ function createApprovedProduct(
 ) {
   return {
     id: 'product-id',
+    editingRevisionId: 'revision-id',
     status: 'DRAFT',
     sellerProfile: {
       userId: 'owner-id',
@@ -50,6 +51,7 @@ function createPrismaForAdd(options: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
     productImage: { create },
+    productRevisionImage: { create: vi.fn() },
   };
     const prisma = {
       product: {
@@ -194,6 +196,13 @@ describe('ImagesService', () => {
         mimeType: 'image/png',
         byteLength: Buffer.from('normalized').byteLength,
       }),
+    });
+    expect(tx.productRevisionImage.create).toHaveBeenCalledWith({
+      data: {
+        revisionId: 'revision-id',
+        imageId: 'image-id',
+        position: 0,
+      },
     });
     expect(imageStore.put).toHaveBeenCalledWith(
       'product-image:image-id',

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import {
+  ConflictException,
   BadRequestException,
   Injectable,
   NotFoundException,
@@ -96,6 +97,16 @@ export class ImagesService {
           },
           tx,
         );
+        if (!freshProduct.editingRevisionId) {
+          throw new ConflictException('Product editing revision is missing');
+        }
+        await tx.productRevisionImage.create({
+          data: {
+            revisionId: freshProduct.editingRevisionId,
+            imageId: row.id,
+            position: start + index,
+          },
+        });
       }
     });
 
@@ -280,11 +291,6 @@ export class ImagesService {
           select: {
             status: true,
             sellerProfile: { select: { userId: true, status: true } },
-            listings: {
-              where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
-              select: { id: true },
-              take: 1,
-            },
           },
         },
       },
@@ -302,8 +308,7 @@ export class ImagesService {
     const isAdmin = role === 'admin';
     const isPublic =
       step.product.status === 'APPROVED' &&
-      step.product.sellerProfile.status === 'APPROVED' &&
-      step.product.listings.length > 0;
+      step.product.sellerProfile.status === 'APPROVED';
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Creation step image not found');
     }
@@ -336,11 +341,6 @@ export class ImagesService {
                 ...publicSellerProfileSelect,
               },
             },
-            listings: {
-              where: { status: { in: ['SCHEDULED', 'LIVE', 'ENDED'] } },
-              select: { id: true, status: true },
-              take: 1,
-            },
           },
         },
       },
@@ -354,8 +354,7 @@ export class ImagesService {
     const isAdmin = role === 'admin';
     const isPublic =
       image.product.status === 'APPROVED' &&
-      image.product.sellerProfile.status === 'APPROVED' &&
-      image.product.listings.length > 0;
+      image.product.sellerProfile.status === 'APPROVED';
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Image not found');
@@ -394,6 +393,7 @@ export class ImagesService {
       where: { id: productId },
       select: {
         ...productWriteGuardSelect,
+        editingRevisionId: true,
         images: { select: imageSelect },
       },
     });
