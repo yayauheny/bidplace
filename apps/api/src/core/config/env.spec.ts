@@ -72,6 +72,21 @@ describe('resolveServerEnvFilePath', () => {
 });
 
 describe('NODE_ENV × APP_ENV matrix', () => {
+  it('defaults COMMERCE_ENABLED to false', () => {
+    stubMissingEnvFile();
+
+    expect(loadServerEnv(localEnv).COMMERCE_ENABLED).toBe(false);
+  });
+
+  it('accepts an explicit COMMERCE_ENABLED opt-in', () => {
+    stubMissingEnvFile();
+
+    expect(
+      loadServerEnv({ ...localEnv, COMMERCE_ENABLED: 'true' })
+        .COMMERCE_ENABLED,
+    ).toBe(true);
+  });
+
   it.each([
     { NODE_ENV: 'development', APP_ENV: 'local' },
     { NODE_ENV: 'test', APP_ENV: 'local' },

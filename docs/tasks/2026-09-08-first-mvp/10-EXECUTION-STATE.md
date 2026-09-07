@@ -7,13 +7,13 @@
 | Current package | 01 — Commerce capability gate |
 | Base main SHA | `23fea271c46a8186482341203acfb4b487ffbf17` |
 | Working branch | `feature/commerce-capability-gate` |
-| Completed behavior | Added a typed default-off gate to commerce HTTP controllers and admin actions; disabled commerce lifecycle and realtime; public Work discovery no longer requires a Listing. |
-| Commit SHA | `e7b98131173f68fa913cecd67f7540589edf9a3f` |
-| Checks passed | API typecheck and lint; targeted API unit tests (56/56). |
-| Checks failed | None. |
-| Remaining work | Isolate remaining mobile commerce routes/navigation, complete capability coverage and documentation, then fast-forward into `main`. |
-| Known blockers | None. |
-| Next exact action | Commit the mobile route/navigation isolation, add the final package status documentation, then run package checks and fast-forward into `main`. |
+| Completed behavior | Added the mobile capability surface: commerce navigation is hidden, legacy commerce routes show unavailable, and default portfolio cards do not show a price, timer, bid or sale state. |
+| Commit SHA | `58387e1` |
+| Checks passed | API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). |
+| Checks failed | API PostgreSQL integration suite cannot start because PostgreSQL is unavailable at `127.0.0.1:5432`; all 21 affected suites fail before test execution. |
+| Remaining work | Commit the package 01 final checkpoint, fast-forward into `main`, and begin package 02. |
+| Known blockers | Local PostgreSQL is not running; rerun package integration verification when the service is available. |
+| Next exact action | Commit the explicit test opt-in and final package 01 checkpoint, verify the diff, then fast-forward into `main` without deleting this branch. |
 
 ## Recovery procedure
 

@@ -9,7 +9,10 @@
   HTTP paths return unavailable while disabled; the Listing lifecycle and realtime
   gateway no-op/disconnect; public Work discovery no longer joins `Listing`.
   Commerce persistence and explicit-enabled service code remain preserved. Mobile
-  route and contract cutover is in progress in package 01.
+  navigation hides commerce controls and legacy commerce routes render an
+  unavailable state; public portfolio cards omit commerce text. API unit,
+  contracts and mobile checks pass; PostgreSQL integration verification remains
+  blocked locally because no database is listening on `127.0.0.1:5432`.
 - `Planned`: portfolio Work revisions, object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
