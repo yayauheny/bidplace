@@ -146,6 +146,10 @@ describe('ProductsService', () => {
   });
 
   it('retries a Product public ID collision without exposing the database error', async () => {
+    const productCreate = vi
+      .fn()
+      .mockRejectedValueOnce({ code: 'P2002' })
+      .mockResolvedValue(product);
     const prisma = {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
@@ -154,11 +158,19 @@ describe('ProductsService', () => {
         }),
       },
       product: {
-        create: vi
-          .fn()
-          .mockRejectedValueOnce({ code: 'P2002' })
-          .mockResolvedValue(product),
+        create: productCreate,
+        update: vi.fn().mockResolvedValue(product),
       },
+      productRevision: { create: vi.fn().mockResolvedValue({ id: 'revision-id' }) },
+      $transaction: vi.fn(async (callback: (tx: unknown) => unknown) =>
+        callback({
+          product: {
+            create: productCreate,
+            update: prisma.product.update,
+          },
+          productRevision: prisma.productRevision,
+        }),
+      ),
     };
     const publicIds = {
       generate: vi
@@ -172,7 +184,7 @@ describe('ProductsService', () => {
 
     expect(result.product.publicId).toBe('publicId001');
     expect(publicIds.generate).toHaveBeenCalledTimes(2);
-    expect(prisma.product.create).toHaveBeenCalledTimes(2);
+    expect(productCreate).toHaveBeenCalledTimes(2);
   });
 
   it('rejects owner edits when a Product has a scheduled or live Listing', async () => {

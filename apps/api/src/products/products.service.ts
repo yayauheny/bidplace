@@ -94,9 +94,36 @@ export class ProductsService {
           status: 'DRAFT',
         };
 
-        const product = await this.prisma.product.create({
-          data,
-          select: productSelect,
+        const product = await this.prisma.$transaction(async (tx) => {
+          const created = await tx.product.create({ data });
+          const revision = await tx.productRevision.create({
+            data: {
+              productId: created.id,
+              version: 1,
+              status: 'DRAFT',
+              categoryId: data.categoryId ?? null,
+              title: data.title ?? null,
+              story: data.story ?? null,
+              technique: data.technique ?? null,
+              materials: data.materials ?? null,
+              dimensions: data.dimensions ?? null,
+              weight: data.weight ?? null,
+              year: data.year ?? null,
+              condition: data.condition ?? null,
+              uniqueness: data.uniqueness ?? null,
+              provenance: data.provenance ?? null,
+              city: data.city ?? null,
+              packaging: data.packaging ?? null,
+              deliveryInfo: data.deliveryInfo ?? null,
+              creationIntro: data.creationIntro ?? null,
+            },
+          });
+
+          return tx.product.update({
+            where: { id: created.id },
+            data: { editingRevisionId: revision.id },
+            select: productSelect,
+          });
         });
 
         return toProductResponse(product);
