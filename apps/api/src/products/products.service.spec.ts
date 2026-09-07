@@ -86,6 +86,7 @@ function createWritePrisma(options: {
       update: vi.fn(),
       create: vi.fn(),
     },
+    productRevision: { update: vi.fn() },
     ...options.extraTx,
   };
   const prisma = {
@@ -103,6 +104,7 @@ function ownerProduct(
 ) {
   return {
     id: product.id,
+    editingRevisionId: 'revision-id',
     status,
     sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
     listings,

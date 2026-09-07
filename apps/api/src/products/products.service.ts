@@ -204,6 +204,7 @@ export class ProductsService {
         where: { id },
         select: {
           ...productWriteGuardSelect,
+          editingRevisionId: true,
           title: true,
           story: true,
           categoryId: true,
@@ -232,6 +233,13 @@ export class ProductsService {
       if (moved.count !== 1) {
         throw new ConflictException('Product cannot be submitted for review');
       }
+      if (!current.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      await tx.productRevision.update({
+        where: { id: current.editingRevisionId },
+        data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
+      });
 
       const updated = await tx.product.findUniqueOrThrow({
         where: { id },
