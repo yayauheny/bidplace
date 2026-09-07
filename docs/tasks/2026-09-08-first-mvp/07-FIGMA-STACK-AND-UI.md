@@ -118,6 +118,7 @@ dependencies и Figma не менять.
 Ты работаешь в /Users/yayauheny/projects/bidplace. До любого redesign проведи
 evidence-based аудит пригодности текущего стека для полного read-only Figma handoff.
 Не реализуй UI и не меняй dependencies.
+Начни с clean актуальной main, запиши её SHA и создай указанную feature branch.
 
 Hard prerequisites:
 - пакеты 01–06 приняты и находятся в base branch;
@@ -196,6 +197,7 @@ primary sources, changed files, checks, diff summary и git status --short.
 Ты работаешь в /Users/yayauheny/projects/bidplace. Реализуй F12–F13 по live read-only
 Figma handoff, browser inventory, local Figma to Prompt export и принятому stack verdict.
 Не меняй Figma и ни один .pen файл. Не merge и не создавай PR.
+Начни с clean актуальной main, запиши её SHA и создай указанную feature branch.
 
 Перед кодом прочитай AGENTS, apps/mobile/AGENTS.md, product/design docs, RFC, результат
 пакетов 01–06, BROWSER-INVENTORY.md, EXPORT-MANIFEST.md и

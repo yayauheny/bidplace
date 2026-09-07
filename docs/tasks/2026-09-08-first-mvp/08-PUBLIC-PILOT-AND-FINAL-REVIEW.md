@@ -12,6 +12,7 @@ operations, product, security, legal и design review первого portfolio M
 последний go/no-go gate. Не deploy, не merge, не менять production/external services и
 не использовать destructive commands. Сначала review; исправлять можно только малые,
 очевидные launch blockers отдельными commits. Большие fixes верни отдельными prompts.
+Начни с clean актуальной `main`, запиши её SHA и создай fix branch только при docs/fix.
 
 ### Входной gate
 

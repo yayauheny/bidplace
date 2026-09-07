@@ -10,6 +10,7 @@
 server-authoritative capability gate, который по умолчанию полностью выключает
 commerce первого public MVP, сохраняя весь auction/bid/order/handoff код и тесты для
 будущей ветки продукта. Не merge ветку и не создавай PR.
+Начни с clean актуальной `main`, запиши её SHA и создай указанную feature branch.
 
 ### Цель и критерии успеха до реализации
 

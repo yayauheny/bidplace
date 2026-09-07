@@ -10,6 +10,7 @@
 Work gallery и optional achievement images из PostgreSQL binary columns в надёжный
 S3-compatible media boundary. Сохрани Work/revision ownership, authorization, cleanup,
 backup и restore. Не merge и не создавай PR.
+Начни с clean актуальной `main`, запиши её SHA и создай указанную feature branch.
 
 ### Критерии успеха до реализации
 

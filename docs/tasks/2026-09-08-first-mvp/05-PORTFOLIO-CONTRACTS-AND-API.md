@@ -10,6 +10,7 @@
 реализуй F08, F09 и F10: portfolio-only server contracts и API для author application/profile,
 Work creation/cabinet и public discovery. В этой задаче не делай финальный Figma UI.
 Не merge и не создавай PR.
+Начни с clean актуальной `main`, запиши её SHA и создай указанную feature branch.
 
 ### Цель и критерии успеха до реализации
 

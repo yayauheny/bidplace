@@ -11,6 +11,7 @@
 legacy HTTPS preflight; evidence-based dependency/application security review. Не
 merge и не создавай PR. Не смешивай найденный, но не исправленный риск со статусом
 `Implemented`.
+Начни с clean актуальной `main`, запиши её SHA и создай указанную fix branch.
 
 ### Общая цель и критерии успеха
 
