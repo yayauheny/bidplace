@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { RealtimeGateway } from './realtime.gateway';
 import { publicProductContentWhere } from '../products/public-visibility';
 
+const commerceEnabled = { isEnabled: () => true, assertEnabled: () => {} };
+
 function createSocket(id = 'socket-1') {
   return {
     id,
@@ -22,6 +24,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       { listing: { findFirst: vi.fn() } } as never,
       { consume: vi.fn().mockReturnValue(true) } as never,
+      commerceEnabled as never,
       false,
     );
 
@@ -39,6 +42,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       prisma as never,
       { consume: vi.fn().mockReturnValue(true) } as never,
+      commerceEnabled as never,
       false,
     );
 
@@ -83,6 +87,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       prisma as never,
       rateLimits as never,
+      commerceEnabled as never,
       false,
     );
     const socket = createSocket();
@@ -118,6 +123,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       prisma as never,
       rateLimits as never,
+      commerceEnabled as never,
       false,
     );
     const socket = createSocket('socket-2');
@@ -152,6 +158,7 @@ describe('RealtimeGateway', () => {
     const gateway = new RealtimeGateway(
       prisma as never,
       rateLimits as never,
+      commerceEnabled as never,
       false,
     );
     const socket = {

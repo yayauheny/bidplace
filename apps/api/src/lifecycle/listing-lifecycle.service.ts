@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 
 import { canCancelExpiredScheduledListing } from '../core/auction';
+import { CommerceCapability } from '../core/commerce';
 import { PrismaService, runSerializableTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import { Clock } from '../core/time';
@@ -29,10 +30,15 @@ export class ListingLifecycleService {
     private readonly clock: Clock,
     private readonly publicIds: PublicIdService,
     private readonly realtime: RealtimeService,
+    private readonly commerce: CommerceCapability,
   ) {}
 
   @Cron('*/30 * * * * *', { waitForCompletion: true })
   async run(): Promise<void> {
+    if (!this.commerce.isEnabled()) {
+      return;
+    }
+
     const now = this.clock.now();
 
     const scheduled = await this.prisma.listing.findMany({
@@ -130,6 +136,10 @@ export class ListingLifecycleService {
   }
 
   async close(listingId: string, now = this.clock.now()): Promise<boolean> {
+    if (!this.commerce.isEnabled()) {
+      return false;
+    }
+
     const closed = await runSerializableTransaction(this.prisma, async (tx) => {
       const listing = await tx.listing.findUnique({
         where: { id: listingId },

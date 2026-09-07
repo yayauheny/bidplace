@@ -1,7 +1,6 @@
 import { productResponseSchema, type Product } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
-import { publicListingStatuses } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
 export const productImageMetadataSelect = {
@@ -113,24 +112,6 @@ export const publicCatalogProductSelect = {
   images: {
     orderBy: { position: 'asc' as const },
     select: productImageMetadataSelect,
-  },
-  listings: {
-    where: { status: { in: publicListingStatuses } },
-    orderBy: { createdAt: 'desc' as const },
-    select: {
-      id: true,
-      productId: true,
-      status: true,
-      startsAt: true,
-      originalEndsAt: true,
-      endsAt: true,
-      currentPrice: true,
-      bidCount: true,
-      closedAt: true,
-      createdAt: true,
-      updatedAt: true,
-      auctionRules: { select: { startPrice: true } },
-    },
   },
 } satisfies Prisma.ProductSelect;
 

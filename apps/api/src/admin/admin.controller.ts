@@ -29,6 +29,7 @@ import { type Prisma } from '@bidplace/database';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { PrismaService } from '../core/database';
+import { CommerceEnabledGuard } from '../core/commerce';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
 import { OrdersService } from '../orders/orders.service';
@@ -269,6 +270,7 @@ export class AdminController {
   }
 
   @Get('listings/needs-order')
+  @UseGuards(CommerceEnabledGuard)
   async listListingsNeedingOrder(@CurrentUser() auth: { role: string }) {
     return adminListingsNeedingOrderResponseSchema.parse(
       await this.orders.listEndedWithoutOrder(auth.role),
@@ -276,6 +278,7 @@ export class AdminController {
   }
 
   @Get('listings/:listingId/bids')
+  @UseGuards(CommerceEnabledGuard)
   listRankedBids(
     @CurrentUser() auth: { sub: string; role: string },
     @Param('listingId') listingId: string,
@@ -284,6 +287,7 @@ export class AdminController {
   }
 
   @Post('listings/:listingId/emergency-cancel')
+  @UseGuards(CommerceEnabledGuard)
   async emergencyCancelListing(
     @CurrentUser() auth: { sub: string },
     @Param('listingId') listingId: string,
@@ -299,6 +303,7 @@ export class AdminController {
   }
 
   @Post('listings/:listingId/create-order')
+  @UseGuards(CommerceEnabledGuard)
   createOrderForEndedListing(
     @CurrentUser() auth: { sub: string; role: string },
     @Param('listingId') listingId: string,
@@ -311,6 +316,7 @@ export class AdminController {
   }
 
   @Post('orders/:publicId/cancel')
+  @UseGuards(CommerceEnabledGuard)
   cancelOrder(
     @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,
@@ -325,6 +331,7 @@ export class AdminController {
   }
 
   @Post('orders/:publicId/replacement')
+  @UseGuards(CommerceEnabledGuard)
   replaceOrder(
     @CurrentUser() auth: { sub: string; role: string },
     @Param('publicId') publicId: string,

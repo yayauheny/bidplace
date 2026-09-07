@@ -16,6 +16,11 @@ const booleanEnvSchema = z
   .optional()
   .transform((value) => value === 'true');
 
+const booleanEnvDefaultFalseSchema = z
+  .enum(['true', 'false'])
+  .default('false')
+  .transform((value) => value === 'true');
+
 const optionalNonEmptyStringEnvSchema = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.string().min(1).optional(),
@@ -69,6 +74,7 @@ const serverEnvSchema = z
       (value) => (value === '' ? undefined : value),
       z.enum(['true', 'false']).optional(),
     ),
+    COMMERCE_ENABLED: booleanEnvDefaultFalseSchema,
   })
   .passthrough()
   .refine(

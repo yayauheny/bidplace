@@ -9,11 +9,12 @@ import {
 import { paginationQuerySchema } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
+import { CommerceEnabledGuard } from '../core/commerce';
 import { parseQuery } from '../core/validation';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
-@UseGuards(BearerAuthGuard)
+@UseGuards(CommerceEnabledGuard, BearerAuthGuard)
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 

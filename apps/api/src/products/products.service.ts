@@ -16,7 +16,6 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
-import { resolveMinimumBidAmount } from '../core/auction';
 import { PublicIdService } from '../core/public-id';
 import {
   productImageMetadataSelect,
@@ -40,8 +39,6 @@ import {
 } from './product-write-guard';
 import {
   publicDirectProductWhere,
-  publicListingStatuses,
-  selectPublicListing,
 } from './public-visibility';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
@@ -377,11 +374,6 @@ export class ProductsService {
             height: true,
           },
         },
-        listings: {
-          where: { status: { in: publicListingStatuses } },
-          include: { auctionRules: true },
-          orderBy: { createdAt: 'desc' },
-        },
       },
     });
 
@@ -390,8 +382,6 @@ export class ProductsService {
     }
 
     const projection = this.toPublicProduct(product);
-    const currentListing = selectPublicListing(product.listings);
-
     return publicProductDetailResponseSchema.parse({
       ...projection,
       creationIntro: product.creationIntro ?? null,
@@ -412,16 +402,7 @@ export class ProductsService {
               }
             : null,
       })),
-      minimumNextBid:
-        projection.listing?.status === 'LIVE' &&
-        currentListing &&
-        currentListing.auctionRules
-          ? resolveMinimumBidAmount({
-              currentPrice: currentListing.currentPrice,
-              startPrice: currentListing.auctionRules.startPrice,
-              bidCount: currentListing.bidCount,
-            }).toNumber()
-          : null,
+      minimumNextBid: null,
     });
   }
 
@@ -480,16 +461,8 @@ export class ProductsService {
   private async discoveryFacets(query: PublicDiscoveryQuery) {
     const facetQuery = { ...query, status: undefined };
     const cte = publicCatalogCte(facetQuery);
-    const [statusRows, categoryRows, authorRows, materialRows, uniquenessRows] =
+    const [categoryRows, authorRows, materialRows, uniquenessRows] =
       await Promise.all([
-        this.prisma.$queryRaw<
-          Array<{
-            status: 'SCHEDULED' | 'LIVE' | 'ENDED';
-            count: number | bigint;
-          }>
-        >(
-          Prisma.sql`${cte} SELECT "status", COUNT(*)::int AS "count" FROM filtered GROUP BY "status"`,
-        ),
         this.prisma.$queryRaw<
           Array<{ id: string; name: string; count: number | bigint }>
         >(
@@ -525,10 +498,8 @@ export class ProductsService {
           ORDER BY f."uniqueness" ASC`,
         ),
       ]);
-    const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
-    for (const row of statusRows) statusCounts[row.status] = Number(row.count);
     return {
-      statusCounts,
+      statusCounts: { SCHEDULED: 0, LIVE: 0, ENDED: 0 },
       categories: categoryRows.map((row) => ({
         ...row,
         count: Number(row.count),
@@ -569,23 +540,7 @@ export class ProductsService {
         width: number | null;
         height: number | null;
       }>;
-      listings: Array<{
-        id: string;
-        productId: string;
-        status: 'SCHEDULED' | 'LIVE' | 'ENDED';
-        startsAt: Date;
-        originalEndsAt: Date;
-        endsAt: Date;
-        currentPrice: { toNumber(): number };
-        bidCount: number;
-        closedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-        auctionRules: { startPrice: { toNumber(): number } } | null;
-      }>;
     };
-
-    const listing = selectPublicListing(record.listings);
     const publicProduct = toContractProduct({
       id: record.id,
       publicId: record.publicId,
@@ -614,31 +569,7 @@ export class ProductsService {
     return {
       product: publicProduct,
       sellerProfile: toPublicSellerProfile(record.sellerProfile),
-      listing:
-        listing && listing.auctionRules
-          ? {
-              id: listing.id,
-              productId: listing.productId,
-              type: 'AUCTION' as const,
-              status: listing.status,
-              currency: 'BYN' as const,
-              startsAt: listing.startsAt.toISOString(),
-              originalEndsAt: listing.originalEndsAt.toISOString(),
-              endsAt: listing.endsAt.toISOString(),
-              currentPrice: listing.currentPrice.toNumber(),
-              bidCount: listing.bidCount,
-              closedAt: listing.closedAt?.toISOString() ?? null,
-              createdAt: listing.createdAt.toISOString(),
-              updatedAt: listing.updatedAt.toISOString(),
-              auctionRules: {
-                startPrice: listing.auctionRules.startPrice.toNumber(),
-                incrementPolicyCode: 'MVP_BYN_V1' as const,
-                softCloseWindowSeconds: 60 as const,
-                softCloseExtensionSeconds: 60 as const,
-                softCloseMaxTotalSeconds: 600 as const,
-              },
-            }
-          : null,
+      listing: null,
     };
   }
 }

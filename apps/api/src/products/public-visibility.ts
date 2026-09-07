@@ -72,24 +72,10 @@ export const publicCatalogProductWhere = {
   status: 'APPROVED',
   sellerProfile: { status: 'APPROVED' },
   ...publicProductContentWhere,
-  listings: {
-    some: {
-      status: {
-        in: publicListingStatuses,
-      },
-    },
-  },
 } satisfies Prisma.ProductWhereInput;
 
 export const publicDirectProductWhere = {
   status: 'APPROVED',
   sellerProfile: { status: 'APPROVED' },
   ...publicProductContentWhere,
-  listings: {
-    some: {
-      status: {
-        in: publicListingStatuses,
-      },
-    },
-  },
 } satisfies Prisma.ProductWhereInput;

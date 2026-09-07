@@ -120,13 +120,11 @@ function ownerProduct(
 }
 
 describe('ProductsService', () => {
-  it('keeps ended listings in the public catalog predicate', () => {
+  it('keeps public portfolio visibility independent from listings', () => {
     expect(publicCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
     });
-    expect(publicCatalogProductWhere.listings?.some?.status).toEqual({
-      in: ['LIVE', 'SCHEDULED', 'ENDED'],
-    });
+    expect(publicCatalogProductWhere).not.toHaveProperty('listings');
     expect(publicCatalogProductWhere).toEqual(
       expect.objectContaining(publicProductContentWhere),
     );
@@ -421,7 +419,6 @@ describe('ProductsService', () => {
         .fn()
         .mockResolvedValue([])
         .mockResolvedValueOnce([{ id: product.id, total: 2 }])
-        .mockResolvedValueOnce([{ status: 'LIVE', count: 1 }])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
@@ -439,8 +436,8 @@ describe('ProductsService', () => {
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('LIMIT');
-    expect(pageQueryText).toContain('p.status_rank ASC');
-    expect(pageQueryText).toContain('status_rank');
+    expect(pageQueryText).not.toContain('status_rank');
+    expect(pageQueryText).not.toContain('"listings"');
     expect(pageQueryText).toContain('NULLIF(BTRIM(p."title"), \'\')');
     expect(pageQueryText).toContain('FROM "product_images"');
     expect(prisma.product.findMany).toHaveBeenCalledWith(
@@ -467,7 +464,7 @@ describe('ProductsService', () => {
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
-    expect(String(pageQuery.sql)).toContain('p.published_at DESC NULLS LAST');
+    expect(String(pageQuery.sql)).toContain('p."published_at" DESC NULLS LAST');
     expect(prisma.product.findMany).not.toHaveBeenCalled();
   });
 

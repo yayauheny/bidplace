@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { uuidSchema } from '@bidplace/contracts';
 
 import { PrismaService } from '../core/database';
+import { CommerceCapability } from '../core/commerce';
 import { RateLimitService } from '../core/rate-limit';
 import { publicListingWhere } from '../products/public-visibility';
 import { resolveSocketIp } from './realtime.options';
@@ -31,10 +32,16 @@ export class RealtimeGateway {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rateLimits: RateLimitService,
+    private readonly commerce: CommerceCapability,
     @Inject('REALTIME_TRUST_PROXY') private readonly trustProxy: boolean,
   ) {}
 
   handleConnection(socket: Socket): void {
+    if (!this.commerce.isEnabled()) {
+      socket.disconnect(true);
+      return;
+    }
+
     const ip = resolveSocketIp(socket, this.trustProxy);
     const bucket = ip === 'unknown' ? 'unknown' : ip;
     const limit = ip === 'unknown' ? anonymousConnectionLimit : 30;
@@ -58,6 +65,8 @@ export class RealtimeGateway {
     @ConnectedSocket() socket: Socket,
     @MessageBody() payload: unknown,
   ): Promise<{ ok: true }> {
+    this.commerce.assertEnabled();
+
     const parsed = uuidSchema.safeParse(
       typeof payload === 'string'
         ? payload
@@ -106,6 +115,10 @@ export class RealtimeGateway {
     event: 'listing.updated' | 'bid.placed' | 'listing.ended',
     payload: object,
   ): void {
+    if (!this.commerce.isEnabled()) {
+      return;
+    }
+
     this.server.to(`listing:${listingId}`).emit(event, payload);
   }
 }

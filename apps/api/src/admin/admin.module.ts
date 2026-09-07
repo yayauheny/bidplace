@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth';
+import { CommerceCapabilityModule } from '../core/commerce';
 import { DatabaseModule } from '../core/database';
 import { OrdersModule } from '../orders/orders.module';
 import { RealtimeModule } from '../realtime/realtime.module';
@@ -12,7 +13,7 @@ import { AdminModerationService } from './admin-moderation.service';
 import { AdminUserService } from './admin-user.service';
 
 @Module({
-  imports: [AuthModule, DatabaseModule, OrdersModule, RealtimeModule],
+  imports: [AuthModule, CommerceCapabilityModule, DatabaseModule, OrdersModule, RealtimeModule],
   controllers: [AdminController],
   providers: [
     AdminGuard,

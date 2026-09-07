@@ -7,7 +7,24 @@ import {
 } from './listing-lifecycle.service';
 import { sellerProfileHandoffSelect } from '../sellers/seller-profile.mapper';
 
+const commerceEnabled = { isEnabled: () => true };
+
 describe('ListingLifecycleService', () => {
+  it('does not mutate listings when commerce is disabled', async () => {
+    const findMany = vi.fn();
+    const service = new ListingLifecycleService(
+      { listing: { findMany } } as never,
+      { now: () => new Date() } as never,
+      {} as never,
+      { emit: vi.fn() } as never,
+      { isEnabled: () => false } as never,
+    );
+
+    await service.run();
+
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('only activates scheduled listings with approved product/seller and handoff', async () => {
     const now = new Date('2026-07-31T12:00:00.000Z');
     const scheduled = {
@@ -32,6 +49,7 @@ describe('ListingLifecycleService', () => {
       { now: () => now } as never,
       {} as never,
       { emit: vi.fn() } as never,
+      commerceEnabled as never,
     );
 
     await service.run();
@@ -87,6 +105,7 @@ describe('ListingLifecycleService', () => {
       { now: () => now } as never,
       {} as never,
       { emit: vi.fn() } as never,
+      commerceEnabled as never,
     );
     const close = vi
       .spyOn(service, 'close')
@@ -123,6 +142,7 @@ describe('ListingLifecycleService', () => {
       { now: () => now } as never,
       {} as never,
       { emit: vi.fn() } as never,
+      commerceEnabled as never,
     );
 
     await service.run();
@@ -180,6 +200,7 @@ describe('ListingLifecycleService', () => {
       { now: () => now } as never,
       {} as never,
       { emit } as never,
+      commerceEnabled as never,
     );
 
     await service.run();
@@ -248,6 +269,7 @@ describe('ListingLifecycleService', () => {
       { now: () => now } as never,
       {} as never,
       { emit: vi.fn() } as never,
+      commerceEnabled as never,
     );
 
     await service.close('listing-id', now);
