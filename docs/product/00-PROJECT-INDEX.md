@@ -8,6 +8,8 @@
 [`../audits/01-OPEN-ARCHITECTURE-GAPS.md`](../audits/01-OPEN-ARCHITECTURE-GAPS.md).
 Активные задачи:
 [`../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
+Готовые execution-промты для восьми пакетов:
+[`../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md`](../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md).
 Отложенные задачи:
 [`../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
 Открытые решения: [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
@@ -65,6 +67,7 @@
 | `../legal/08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md` | Текущая карта использования материалов Bidbaits без копирования      |
 | `../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md` | Активный execution backlog первого portfolio MVP                    |
 | `../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md` | Сохранённые execution-задачи после MVP и commerce wave              |
+| `../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md` | Восемь готовых к передаче implementation/review пакетов First MVP |
 | `../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md` | Проверенные правовые опоры, рыночные patterns и legal UX matrix |
 | `../legal/drafts/*`                     | Рабочие черновики оферты и правил; не выкладка на прод                     |
 | `../ops/00-RELEASE-AND-BACKUP.md`       | Deploy, backup, restore drill и `pnpm verify` gate для пилота              |

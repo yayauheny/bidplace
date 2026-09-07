@@ -10,6 +10,9 @@
 - `Planned`: portfolio Work revisions, object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
+- `Prepared, not implemented`: эти launch gaps собраны в восемь self-contained
+  implementation/review prompts с dependencies, success criteria и checks в
+  [`00-EXECUTION-ORDER.md`](../tasks/2026-09-08-first-mvp/00-EXECUTION-ORDER.md).
 - `Deferred`: seller history, auction lifecycle residuals, fixed/offer, handoff and the
   completed creator-commerce research are preserved in
   [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
