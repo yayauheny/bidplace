@@ -13,7 +13,15 @@
   unavailable state; public portfolio cards omit commerce text. API unit,
   contracts and mobile checks pass; PostgreSQL integration verification remains
   blocked locally because no database is listening on `127.0.0.1:5432`.
-- `Planned`: portfolio Work revisions, object storage, creator onboarding, simplified
+- `Partial`: Portfolio Work revisions are persisted in
+  `ProductRevision` with additive migration
+  `20260908000000_add_product_revisions`. New Works create an editing revision;
+  edits to an approved Work copy it first, moderation promotes only an approved
+  revision, and change requests leave the prior published projection public.
+  Work media is attached to the editing revision. API typecheck, lint and 336 unit
+  tests pass. PostgreSQL transition/race integration coverage remains blocked until
+  a local disposable database is available.
+- `Planned`: object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 - `Prepared, not implemented`: эти launch gaps собраны в восемь self-contained

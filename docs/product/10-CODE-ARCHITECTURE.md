@@ -48,7 +48,15 @@ SellerProfile
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
-- Product requires a moderation state before public visibility. A Product remains private while it is a draft, under review or rejected; `isEditableProductStatus` allows owner writes in `DRAFT`, `CHANGES_REQUESTED` and `REJECTED`; `submit` moves those states into `PENDING_REVIEW` on the same Product, admin moderation records a reasoned append-only audit trail, and the first public Listing transition sets immutable `publishedAt`. Owner Product, media and creation-story writes lock the Product row (`SELECT … FOR UPDATE`) in a Read Committed transaction and re-check owner, approved seller, editable status and the absence of a `SCHEDULED`/`LIVE` Listing before mutating, so submit, moderation and Listing schedule cannot be bypassed by a concurrent write;
+- `Product` is the current persistence name for a Work. `ProductRevision` holds
+  mutable public Work content and immutable revision-image membership; a Work points
+  to its editing and published revisions. A published Work copies its published
+  revision when the author starts a new edit. The prior revision and Product public
+  projection remain visible until admin approval atomically promotes the next
+  revision. Rejections and requested changes apply to the editing revision only;
+  hiding/unhiding applies to the approved Work. Work writes lock the Product row
+  (`SELECT … FOR UPDATE`) and re-check ownership and seller capability inside a
+  Read Committed transaction;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
