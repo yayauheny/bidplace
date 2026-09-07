@@ -14,13 +14,18 @@ function transactionPrisma(tx: object) {
 }
 
 describe('AdminModerationService', () => {
-  it('allows APPROVED product to move to CHANGES_REQUESTED with a reason', async () => {
+  it('requests changes for an editing revision without hiding the published product', async () => {
     const product = {
       id: 'product-id',
       status: 'APPROVED',
       sellerProfile: { status: 'APPROVED' },
       images: [{ id: 'image-id' }],
       listings: [],
+      editingRevision: {
+        id: 'revision-editing',
+        status: 'PENDING_REVIEW',
+        images: [{ imageId: 'image-id' }],
+      },
     };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
@@ -28,6 +33,7 @@ describe('AdminModerationService', () => {
         findUnique: vi.fn().mockResolvedValue(product),
         update: vi.fn().mockResolvedValue(product),
       },
+      productRevision: { update: vi.fn() },
       auditEvent: { create: vi.fn() },
     };
     const service = new AdminModerationService(transactionPrisma(tx) as never);
@@ -37,15 +43,19 @@ describe('AdminModerationService', () => {
       reason: 'Добавьте подтверждение происхождения',
     });
 
-    expect(tx.product.update).toHaveBeenCalledWith({
-      where: { id: 'product-id' },
-      data: { status: 'CHANGES_REQUESTED' },
+    expect(tx.product.update).not.toHaveBeenCalled();
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-editing' },
+      data: expect.objectContaining({ status: 'CHANGES_REQUESTED' }),
     });
     expect(tx.product.findUnique).toHaveBeenCalledWith({
       where: { id: 'product-id' },
       include: {
-        sellerProfile: { select: sellerProfileAuthSelect },
-        images: { select: { id: true } },
+          sellerProfile: { select: sellerProfileAuthSelect },
+          images: { select: { id: true } },
+          editingRevision: {
+            include: { images: { select: { imageId: true } } },
+          },
         listings: {
           where: { status: { in: ['SCHEDULED', 'LIVE'] } },
           select: { id: true },
@@ -60,6 +70,64 @@ describe('AdminModerationService', () => {
         }),
       }),
     );
+  });
+
+  it('publishes an approved revision as the new public work', async () => {
+    const editingRevision = {
+      id: 'revision-editing',
+      status: 'PENDING_REVIEW',
+      categoryId: 'category-id',
+      title: 'Approved title',
+      story: 'Approved story',
+      technique: null,
+      materials: null,
+      dimensions: null,
+      weight: null,
+      year: null,
+      condition: 'New',
+      uniqueness: 'Unique',
+      provenance: 'Created by author',
+      city: 'Minsk',
+      packaging: 'Box',
+      deliveryInfo: 'Contact author',
+      creationIntro: null,
+      images: [{ imageId: 'image-id' }],
+    };
+    const product = {
+      id: 'product-id',
+      status: 'PENDING_REVIEW',
+      sellerProfile: { status: 'APPROVED' },
+      images: [{ id: 'image-id' }],
+      listings: [],
+      editingRevision,
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+      product: {
+        findUnique: vi.fn().mockResolvedValue(product),
+        update: vi.fn().mockResolvedValue({ ...product, status: 'APPROVED' }),
+      },
+      productRevision: { update: vi.fn() },
+      auditEvent: { create: vi.fn() },
+    };
+    const service = new AdminModerationService(transactionPrisma(tx) as never);
+
+    await service.updateProductStatus('admin-id', 'product-id', {
+      status: 'APPROVED',
+    });
+
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-editing' },
+      data: expect.objectContaining({ status: 'APPROVED' }),
+    });
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { id: 'product-id' },
+      data: expect.objectContaining({
+        status: 'APPROVED',
+        publishedRevisionId: 'revision-editing',
+        title: 'Approved title',
+      }),
+    });
   });
 
   it('blocks admin from reopening a REJECTED product', async () => {

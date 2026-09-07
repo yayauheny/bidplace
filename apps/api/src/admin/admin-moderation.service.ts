@@ -15,6 +15,7 @@ import {
   runSerializableTransaction,
 } from '../core/database';
 import { missingProductApprovalFields } from '../products/product-requirements';
+import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
@@ -100,6 +101,9 @@ export class AdminModerationService {
         include: {
           sellerProfile: { select: sellerProfileAuthSelect },
           images: { select: { id: true } },
+          editingRevision: {
+            include: { images: { select: { imageId: true } } },
+          },
           listings: {
             where: { status: { in: ['SCHEDULED', 'LIVE'] } },
             select: { id: true },
@@ -112,41 +116,80 @@ export class AdminModerationService {
         throw new NotFoundException('Product not found');
       }
 
-      if (!this.isAllowedProductTransition(product.status, input.status)) {
+      const editingRevision = product.editingRevision;
+      const isRevisionReview =
+        editingRevision?.status === 'PENDING_REVIEW' &&
+        ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status);
+      const isVisibilityTransition =
+        (product.status === 'APPROVED' && input.status === 'ARCHIVED') ||
+        (product.status === 'ARCHIVED' && input.status === 'APPROVED');
+
+      if (!isRevisionReview && !isVisibilityTransition) {
         this.logger.warn(
           `Blocked product status transition target=${product.id} from=${product.status} to=${input.status}`,
         );
         throw new ConflictException('Product transition is not allowed');
       }
 
-      if (
-        ['CHANGES_REQUESTED', 'ARCHIVED'].includes(input.status) &&
-        product.listings.length > 0
-      ) {
-        this.logger.warn(
-          `Blocked product status transition target=${product.id} from=${product.status} to=${input.status} because a scheduled or live listing exists`,
+      if (isRevisionReview) {
+        assertProductRevisionTransition(
+          'admin',
+          editingRevision.status,
+          input.status,
         );
-        throw new ConflictException(
-          'Product cannot be changed while a scheduled or live listing exists',
-        );
-      }
 
-      if (input.status === 'APPROVED') {
-        this.assertProductApprovalRequirements(product);
-
-        if (product.sellerProfile.status !== 'APPROVED') {
-          this.logger.warn(
-            'Blocked product approval because seller is not approved',
-          );
-          throw new ConflictException('SellerProfile must be approved first');
+        if (input.status === 'APPROVED') {
+          this.assertProductApprovalRequirements({
+            ...editingRevision,
+            images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+          });
+          if (product.sellerProfile.status !== 'APPROVED') {
+            this.logger.warn(
+              'Blocked product approval because seller is not approved',
+            );
+            throw new ConflictException('SellerProfile must be approved first');
+          }
         }
+
+        await tx.productRevision.update({
+          where: { id: editingRevision.id },
+          data: { status: input.status, reviewedAt: new Date() },
+        });
+        const updated =
+          input.status === 'APPROVED'
+            ? await tx.product.update({
+                where: { id: productId },
+                data: {
+                  ...this.publishedProductData(editingRevision),
+                  status:
+                    product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
+                  publishedRevisionId: editingRevision.id,
+                },
+              })
+            : product.status === 'PENDING_REVIEW'
+              ? await tx.product.update({
+                  where: { id: productId },
+                  data: { status: input.status },
+                })
+              : product;
+
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: adminUserId,
+            targetType: 'PRODUCT',
+            targetId: product.id,
+            oldStatus: editingRevision.status,
+            newStatus: input.status,
+            reason: input.reason ?? null,
+          },
+        });
+        return updated;
       }
 
+      assertProductRevisionTransition('admin', product.status, input.status);
       const updated = await tx.product.update({
         where: { id: productId },
-        data: {
-          status: input.status,
-        },
+        data: { status: input.status },
       });
 
       await tx.auditEvent.create({
@@ -191,17 +234,40 @@ export class AdminModerationService {
     return allowed[current]?.has(next) ?? false;
   }
 
-  private isAllowedProductTransition(current: string, next: string): boolean {
-    const allowed: Record<string, ReadonlySet<string>> = {
-      DRAFT: new Set(['PENDING_REVIEW']),
-      PENDING_REVIEW: new Set(['APPROVED', 'CHANGES_REQUESTED', 'REJECTED']),
-      CHANGES_REQUESTED: new Set(['PENDING_REVIEW', 'REJECTED']),
-      APPROVED: new Set(['CHANGES_REQUESTED', 'ARCHIVED']),
-      REJECTED: new Set([]),
-      ARCHIVED: new Set([]),
+  private publishedProductData(revision: {
+    categoryId: string | null;
+    title: string | null;
+    story: string | null;
+    technique: string | null;
+    materials: string | null;
+    dimensions: string | null;
+    weight: string | null;
+    year: number | null;
+    condition: string | null;
+    uniqueness: string | null;
+    provenance: string | null;
+    city: string | null;
+    packaging: string | null;
+    deliveryInfo: string | null;
+    creationIntro: string | null;
+  }) {
+    return {
+      categoryId: revision.categoryId,
+      title: revision.title,
+      story: revision.story,
+      technique: revision.technique,
+      materials: revision.materials,
+      dimensions: revision.dimensions,
+      weight: revision.weight,
+      year: revision.year,
+      condition: revision.condition,
+      uniqueness: revision.uniqueness,
+      provenance: revision.provenance,
+      city: revision.city,
+      packaging: revision.packaging,
+      deliveryInfo: revision.deliveryInfo,
+      creationIntro: revision.creationIntro,
     };
-
-    return allowed[current]?.has(next) ?? false;
   }
 
   private assertSellerApprovalRequirements(sellerProfile: {
