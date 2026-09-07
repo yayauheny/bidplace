@@ -12,6 +12,7 @@ export const publicListingStatuses: PublicListingStatus[] = [
 ];
 
 export const publicProductContentWhere = {
+  publishedRevisionId: { not: null },
   categoryId: { not: null },
   title: { not: '' },
   story: { not: '' },
@@ -23,6 +24,8 @@ export const publicProductContentWhere = {
 } satisfies Prisma.ProductWhereInput;
 
 export const publicProductContentSql: Prisma.Sql = Prisma.sql`
+  p."published_revision_id" IS NOT NULL
+  AND
   p."category_id" IS NOT NULL
   AND NULLIF(BTRIM(p."title"), '') IS NOT NULL
   AND NULLIF(BTRIM(p."story"), '') IS NOT NULL

@@ -130,6 +130,9 @@ describe('ProductsService', () => {
     expect(publicCatalogProductWhere).toEqual(
       expect.objectContaining(publicProductContentWhere),
     );
+    expect(publicProductContentWhere).toHaveProperty('publishedRevisionId', {
+      not: null,
+    });
   });
 
   it('selects a live listing over an older ended listing', () => {
