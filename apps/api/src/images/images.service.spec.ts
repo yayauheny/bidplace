@@ -50,7 +50,7 @@ function createPrismaForAdd(options: {
     product: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
-    productImage: { create },
+    productImage: { create, update: vi.fn() },
     productRevisionImage: { create: vi.fn() },
   };
     const prisma = {

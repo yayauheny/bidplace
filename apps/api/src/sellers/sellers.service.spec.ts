@@ -83,6 +83,10 @@ describe('SellersService', () => {
           order.push('create');
           return createdProfile;
         }),
+        update: vi.fn().mockImplementation(async () => {
+          order.push('object-key');
+          return createdProfile;
+        }),
       },
     };
     const prisma = {
@@ -120,7 +124,7 @@ describe('SellersService', () => {
     );
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['create', 'put']);
+    expect(order).toEqual(['create', 'put', 'object-key']);
     expect(put).toHaveBeenCalledWith(
       'seller-photo:a0d82a10-3170-49eb-904f-a8bc87d311a5',
       {

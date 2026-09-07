@@ -89,8 +89,14 @@ export class ImagesService {
           },
         });
 
+        const key = imageKey.productImage(row.id);
+        await tx.productImage.update({
+          where: { id: row.id },
+          data: { objectKey: key },
+        });
+
         await this.imageStore.put(
-          imageKey.productImage(row.id),
+          key,
           {
             bytes: file.buffer,
             mimeType: file.mimeType,
@@ -263,6 +269,7 @@ export class ImagesService {
           checksum: createHash('sha256').update(validated.buffer).digest('hex'),
           width: validated.width ?? null,
           height: validated.height ?? null,
+          objectKey: imageKey.creationStep(currentStep.id),
         },
       });
 

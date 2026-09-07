@@ -190,6 +190,10 @@ export class SellersService {
           },
           tx,
         );
+        await tx.sellerProfile.update({
+          where: { id: created.id },
+          data: { profilePhotoObjectKey: imageKey.sellerPhoto(created.id) },
+        });
 
         return created;
       });
