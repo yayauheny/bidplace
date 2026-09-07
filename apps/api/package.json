@@ -12,6 +12,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
     "@bidplace/config": "workspace:*",
     "@bidplace/contracts": "workspace:*",
     "@bidplace/database": "workspace:*",
