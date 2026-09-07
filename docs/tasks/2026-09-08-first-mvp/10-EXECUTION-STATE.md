@@ -4,16 +4,16 @@
 
 | Field | Value |
 | --- | --- |
-| Current package | 01 — Commerce capability gate |
-| Base main SHA | `23fea271c46a8186482341203acfb4b487ffbf17` |
-| Working branch | `feature/commerce-capability-gate` |
-| Completed behavior | Package 01 is implemented and self-reviewed: typed default-off capability gates HTTP, admin commerce actions, lifecycle and realtime; public discovery is Listing-independent; mobile commerce controls and routes are unavailable. |
-| Commit SHA | `ebdbb49` |
-| Checks passed | API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). |
+| Current package | 02 — Portfolio Work lifecycle |
+| Base main SHA | `2cf5d893d6d57c64e8a2dfd68dcb3ab3856c0c20` |
+| Working branch | `feature/portfolio-work-lifecycle` |
+| Completed behavior | Package 01 is fast-forwarded into `main` and its branch is retained. The Work revision state/permission/visibility contract is recorded. |
+| Commit SHA | Pending package 02 contract checkpoint |
+| Checks passed | Package 01: API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). |
 | Checks failed | API PostgreSQL integration suite cannot start because PostgreSQL is unavailable at `127.0.0.1:5432`; all 21 affected suites fail before test execution. |
-| Remaining work | Fast-forward package 01 into `main`, retain the branch, then begin package 02. |
-| Known blockers | Local PostgreSQL is not running; rerun package integration verification when the service is available. |
-| Next exact action | Verify clean ancestry and fast-forward `feature/commerce-capability-gate` into `main` without deleting the branch; create `feature/portfolio-work-lifecycle` from the updated `main`. |
+| Remaining work | Add revision schema/migration, wire author/admin/public transitions, add concurrency coverage, document and fast-forward package 02. |
+| Known blockers | Local PostgreSQL is not running; migration and integration verification need a disposable database. |
+| Next exact action | Add the additive ProductRevision schema and migration with a deterministic legacy Product backfill. |
 
 ## Recovery procedure
 
