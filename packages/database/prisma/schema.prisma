@@ -108,6 +108,7 @@ model SellerProfile {
   profilePhotoMimeType String              @map("profile_photo_mime_type") @db.VarChar(100)
   profilePhotoByteLength Int              @map("profile_photo_byte_length")
   profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)
+  profilePhotoObjectKey String?            @map("profile_photo_object_key") @db.VarChar(255)
   profilePhotoData    Bytes               @map("profile_photo_data")
   socialLink          String              @map("social_link") @db.VarChar(255)
   telegramUrl         String?             @map("telegram_url") @db.VarChar(255)
@@ -214,6 +215,7 @@ model ProductImage {
   position   Int
   mimeType   String   @map("mime_type") @db.VarChar(100)
   byteLength Int      @map("byte_length")
+  objectKey  String?  @map("object_key") @db.VarChar(255)
   data       Bytes
   checksum   String   @db.Char(64)
   width      Int?
@@ -248,6 +250,7 @@ model ProductCreationStep {
   body       String   @db.Text
   mimeType   String?  @map("mime_type") @db.VarChar(100)
   byteLength Int?     @map("byte_length")
+  objectKey  String?  @map("object_key") @db.VarChar(255)
   data       Bytes?
   checksum   String?  @db.Char(64)
   width      Int?
