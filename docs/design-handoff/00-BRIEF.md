@@ -21,7 +21,7 @@
 | Кабинет | [11-ACCOUNT.md](./11-ACCOUNT.md) |
 | Логика карточки кабинета | [14-CABINET-LOGIC.md](./14-CABINET-LOGIC.md) |
 | Волна 2 | [12-FUTURE.md](./12-FUTURE.md) |
-| Подвал, cookie, жалоба | [13-FOOTER-AND-COMPLAINT.md](./13-FOOTER-AND-COMPLAINT.md) |
+| Подвал, cookie, поддержка | [13-FOOTER-AND-COMPLAINT.md](./13-FOOTER-AND-COMPLAINT.md) |
 
 Где можно решить картинкой — **на усмотрение**. «На встрече» — спросить, не угадывать.
 

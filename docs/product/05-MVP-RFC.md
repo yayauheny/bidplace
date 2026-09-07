@@ -1,9 +1,9 @@
 # bidplace MVP RFC
 
-Версия: 1.5
-Последнее обновление: 2026-09-06
+Версия: 1.6
+Последнее обновление: 2026-09-07
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-078`
+Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-081`
 
 ## 1. Цель MVP
 
@@ -306,7 +306,10 @@ SellerProfile отделён от buyer account. Для MVP использует
 
 Seller при onboarding указывает обязательный `handoffContact` и его тип: Telegram, phone или Instagram. Public profile не делает этот contact автоматически доступным.
 
-По умолчанию обе стороны получают нужный contact после создания активного Order: buyer видит выбранный seller handoff contact, seller видит verified buyer email. Контакты доступны только сторонам active Order и admin.
+Текущий runtime выдаёт нужный contact после создания активного Order: buyer видит
+выбранный seller handoff contact, seller видит verified buyer email. Контакты доступны
+только сторонам active Order и admin. Финальный target UX проверяется Task 10 и
+юристом.
 
 Privacy mode seller:
 
@@ -316,9 +319,18 @@ Privacy mode seller:
 
 Будущее: internal inbox.
 
+Автоматическое раскрытие контакта после Order, отдельная reveal-кнопка, выбор
+инициатора связи и доступ следующего участника остаются открыты до Task 10 и ответа
+юриста. Контакты всех bidders не раскрываются только на основании участия в аукционе.
+
 Каждый новый Order (lifecycle close, admin recovery и manual replacement) сохраняет `contactDueAt` как 48-часовой snapshot от фактического момента создания этой сделки. Настройка seller 24/48/72 отложена. См. `DEC-070`.
 
-Тот же create-path замораживает title, final amount, currency и Listing identity (`listingId` + product public id). Карточка сделки и seller Orders inbox читают эти поля, а не живой Product. Исторические ряды без snapshot-колонок читают live Product/Listing до отдельного backfill. См. `DEC-074`.
+Тот же create-path замораживает title, final amount, currency и Listing identity
+(`listingId` + product public id). Карточка сделки и seller Orders inbox читают эти
+поля, а не живой Product. Исторические локальные ряды без snapshot-колонок являются
+disposable test data и очищаются перед public pilot. После этой границы
+production-like чтение не использует live Product/Listing как исторический fallback.
+См. `DEC-074`, `DEC-081`.
 
 Seller находит свои сделки, кроме `CANCELLED`, через paginated `GET /api/orders` (sellerId из сессии, не из query). Cancelled Orders скрыты так же, как в карточке.
 
@@ -443,6 +455,7 @@ Minimum success:
 - live;
 - chat;
 - external notifications;
+- in-app notification center;
 - payments;
 - shipping;
 - watchlist;
@@ -487,11 +500,14 @@ counteroffer, competing-buy, non-payment and contact mechanics remain open; do n
 bidplace не принимает оплату и не оформляет доставку. Старт бесплатный; подписка вне этой волны.
 
 - **Work first:** автор создаёт Work независимо от продажи. Work может быть
-  portfolio-only, позже получить Listing или быть перевыставлен из архива.
+  portfolio-only, позже получить Listing или быть перевыставлен после продажи, которая
+  не состоялась. Portfolio-only, sold-through-bidplace, sold-elsewhere и withdrawn
+  остаются разными фактами, даже если UI позднее сгруппирует их как архив.
 - **Auction:** стартовая цена, шаг, время старта/окончания и server-authoritative
   ставки. Нет «Купить» и «Предложить цену».
-- **Fixed:** unique Work нельзя продать дважды. Отдельное buyer confirmation
-  атомарно создаёт сделку и снимает Work с продажи.
+- **Fixed:** обязательного срока окончания нет. Listing остаётся активным до снятия
+  автором либо создания Order. Unique Work нельзя продать дважды; отдельное buyer
+  confirmation атомарно создаёт сделку и снимает Work с продажи.
 - **Offer:** только опция fixed Listing, которую включает автор. Явное seller
   acceptance сразу создаёт сделку по принятой цене. Expiry, revoke,
   counteroffer and competing-buy rules не выбраны.
@@ -499,7 +515,12 @@ bidplace не принимает оплату и не оформляет дос�
   финальная marketplace policy. Target выбирается после research + legal review.
 - **Currency:** MVP использует `BYN`; другие валюты и conversion hint — после MVP.
 - **History:** кабинет называется `Покупки / Продажи`; cancelled/failed outcomes
-  сохраняются в истории.
+  сохраняются в истории. Успешно переданная unique Work остаётся sold и не получает
+  новый Listing; подтверждённый buyer-side failure может снова открыть relist.
+- **Order identity:** auction, fixed и accepted offer создают один format-neutral
+  Order с одним public deal code. Runtime `sourceBidId` не является целевой моделью
+  для non-auction sources; synthetic bids запрещены. Persistence shape выбирается
+  после Task 10 и Work-first contract.
 - **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без
   silent `+24h`.
 - **Legal UX:** `DEC-078` выбрал layout из отдельных строк соглашения, политики,
@@ -510,6 +531,8 @@ bidplace не принимает оплату и не оформляет дос�
   draft microcopy находятся в BY legal UX research; финальный текст проверяет юрист.
 - **Error report:** V1 передаёт только текст пользователя. Технический
   context preview и optional screenshot отложены.
+- **Deferred tooling:** in-app notification center и общие reports на Work/автора
+  находятся после MVP. Узкий flow проблемы конкретного Order остаётся частью handoff.
 - **Redesign:** только после стабилизации contract/data/flows; Figma read-only.
 
 До новых append-only решений P0-E может проектировать варианты и race matrix, но

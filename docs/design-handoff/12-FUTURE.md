@@ -7,7 +7,9 @@
 | Направление | Что понадобится в будущем |
 |---|---|
 | Подписка и продвижение | тарифы, лимиты, scheduled publication, analytics, маркировка продвижения |
+| In-app уведомления | результат торгов, offer, handoff, second chance, настройки каналов |
 | Чат, отзывы, рейтинг | transaction-bound flows, moderation, appeal, verified author |
+| Общие жалобы | report на Work/автора, moderation queue, ответ пользователю |
 | Likes и коллекции | сохранение работ, private/public collections, buyer profile |
 | Расширенный автор | биография, годы, образование, выставки, серии, ручная сортировка |
 | Share/QR | QR профиля и Work, short link, story frame, embed, физические tags/stickers |

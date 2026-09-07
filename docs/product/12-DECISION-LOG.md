@@ -1474,3 +1474,124 @@ follow-up messages
 The Belarus research finds a primary-source conflict, the final lawyer review
 requires a change, marketing email is enabled, or technical diagnostics are added
 to error reports.
+
+## DEC-079 — Work availability and persistent fixed sale
+
+Date: 2026-09-07
+Status: Confirmed scope; edit and moderation mechanics remain open
+Source: explicit founder clarification after the T07 architecture review
+
+### Decision
+
+Work and its sale attempt remain separate lifecycles. When publishing a Work, the
+author may keep it outside sale for the portfolio, attach an auction or attach a
+direct fixed-price sale. A portfolio-only Work can receive a Listing later.
+
+A fixed Listing has no required end time. It stays active until an Order is created or
+the author withdraws it before a buyer action has created an Order. An auction that
+ends without a sale, or a sale whose buyer-side failure is confirmed by the future
+handoff rules, may be restarted through a new Listing without rewriting the previous
+Listing or Order.
+
+A successfully transferred unique Work remains visible as sold-through-bidplace and
+cannot be listed again. The product must also distinguish a Work sold elsewhere from
+a Work merely kept outside sale. The final user-facing names and whether the UI groups
+these states under `Архив` remain design/research questions; one overloaded database
+`ARCHIVED` state must not erase the distinction.
+
+MVP still sells one unique Work at a time. Limited editions, quantity and presale are
+future formats. The Work-first contract must document a migration boundary for them,
+but unused inventory/presale behavior is not implemented speculatively in MVP.
+
+### Revises
+
+- Extends `DEC-075` with the fixed Listing lifetime and explicit sold-through-platform,
+  sold-elsewhere and portfolio-only distinctions.
+- Clarifies that relist means a new sale attempt on the same Work, not reuse or rewrite
+  of the previous Listing/Order.
+
+### Still open
+
+- Which edits require repeat moderation in each Work/Listing state.
+- Which confirmed failure reasons release a Work for relist.
+- Exact state names and UI grouping after the marketplace/community research.
+
+### Revisit when
+
+The service introduces quantity, editions, presale, platform payment or a legal answer
+requires a fixed Listing deadline.
+
+## DEC-080 — One format-neutral Order identity
+
+Date: 2026-09-07
+Status: Confirmed domain boundary; persistence shape remains open
+Source: explicit founder clarification after the T07 architecture review
+
+### Decision
+
+Auction, fixed purchase and accepted buyer offer all create the same domain entity:
+one `Order` with one internal ID and one public deal code. UI and API may show how the
+deal originated, but they do not create separate auction-order and fixed-order families.
+
+Order must not require `Bid` as the source for non-auction formats and must never create
+a synthetic Bid. A type alone is insufficient evidence: the accepted price, Work,
+Listing/sale attempt, actors, confirmation and applicable rule versions remain
+immutable provenance of the Order.
+
+The exact persistence boundary is intentionally open. The architecture review must
+compare a common `DealIntent/PurchaseIntent`, typed origin records and direct typed
+references. The chosen model must retain referential integrity, idempotency and
+Work-level double-sale protection without putting every future format into nullable
+Order columns.
+
+Future quantity and presale must be possible through an explicit inventory/edition
+extension. They do not change the current rule that one MVP Order concerns one unique
+Work and quantity one.
+
+### Revises
+
+Extends `DEC-074`: immutable Order snapshot is format-neutral. The current mandatory
+`sourceBidId` is a runtime limitation, not a target contract for fixed/offer.
+
+### Revisit when
+
+The research and Work-first contract choose the persistence model, or a multi-unit
+format is approved for implementation.
+
+## DEC-081 — Test-data reset and deferred general platform tooling
+
+Date: 2026-09-07
+Status: Confirmed
+Source: explicit founder clarification after the T07 architecture review
+
+### Decision
+
+All current business records are local test data and disposable. Before public pilot,
+they may be removed through a controlled reset instead of reconstructing Order history
+from mutable Product/Listing fields. Production-like Order reads must not retain a live
+fallback after that boundary.
+
+An in-app notification center is deferred until after MVP and is one of the first
+follow-up candidates. Current cabinet/activity states remain the MVP status surface.
+Research must still identify whether an auction result, accepted offer or second chance
+requires a minimal transactional delivery channel before launch.
+
+General reports about a Work or author and a full complaint workspace are deferred.
+MVP still needs a narrow problem/outcome flow for the parties of a concrete Order so a
+failed handoff can be resolved without rewriting history. The text-only service error
+feedback selected in `DEC-078` remains a separate small function and is not changed by
+this decision.
+
+### Revises
+
+- Resolves D04 from `DEC-075`/`DEC-074` in favor of clearing disposable test data.
+- Revises `DEC-075`: an in-app notification center is no longer required before the
+  redesign or MVP completion.
+- Narrows pre-MVP complaints to transaction-specific handoff problems; general content
+  and author reports move after MVP.
+
+### Revisit when
+
+Research shows that the auction cannot produce a reliable result without a minimal
+notification, public users enter the database, or abuse volume requires general
+reporting before the planned post-MVP phase.

@@ -1,11 +1,12 @@
 # bidplace — активный backlog public MVP
 
-Дата: 2026-09-06
+Дата: 2026-09-07
 Owner: founder
 Источник состояния: [`docs/audits/00-CURRENT-MVP-READINESS.md`](../../audits/00-CURRENT-MVP-READINESS.md)
 
-В этом каталоге хранятся только задачи, которые можно выполнять сейчас. Выполненные
-промты удалены; их история доступна в Git.
+В этом каталоге хранятся активные задачи и ближайшие research gates. Заблокированные
+задачи имеют явную зависимость в таблице. Выполненные промты удалены; их история
+доступна в Git.
 
 ## Как использовать модели
 
@@ -25,31 +26,35 @@ Owner: founder
 | 01 | P1 | [Проверить и интегрировать seller sales history](01-SELLER-SALES-HISTORY-INTEGRATION.md) | GPT-5.6 Sol | Ветка `fix/seller-sales-history`, SHA `c3ef615` |
 | 02 | P1 | [Legacy HTTPS preflight](02-HTTPS-LEGACY-PREFLIGHT.md) | Grok 4.6 High; review Sol | Нет |
 | 03 | P2 | [Lifecycle bounded progress](03-LIFECYCLE-BOUNDED-PROGRESS.md) | Grok 4.6 High; review Sol | Нет |
-| 04 | P0 | [Work-first domain contract](04-WORK-FIRST-DOMAIN-CONTRACT.md) | GPT-5.6 Sol | Открытые варианты сохраняются явно |
+| 04 | P0 | [Work-first domain contract](04-WORK-FIRST-DOMAIN-CONTRACT.md) | GPT-5.6 Sol | После Task 10 и решения D01–D03 |
 | 05 | P0 | [Фактическая data/legal map](05-DATA-AND-LEGAL-INVENTORY.md) | Grok 4.6 High; review Sol | Не читать secrets |
 | 06 | P1 | [JWT role freshness](06-AUTH-ROLE-FRESHNESS.md) | Grok 4.6 High; security review Sol | Нет |
 | 08 | P1 | [Security и dependency evidence review](08-SECURITY-DEPENDENCY-REVIEW.md) | Grok 4.6 High; security review Sol | Интернет только для первичных advisories |
 | 09 | P1 | [Public-pilot operations readiness](09-PUBLIC-PILOT-OPERATIONS-READINESS.md) | Grok 4.6 High; review Sol | Без deploy и чтения secrets |
+| 10 | P0 | [Creator commerce, handoff и community research](10-CREATOR-COMMERCE-FLOWS-RESEARCH.md) | Grok 4.6 High с браузером | До T04 и handoff contract |
 
 ## Если модели выполняют задачи последовательно
 
-- **GPT-5.6 Sol:** `решение основателя по D01–D04 → 04 → 01 → review результатов Grok`.
-- **Grok 4.6 High:** `05 → 08 → 06 → 02 → 09 → 03`.
+- **GPT-5.6 Sol:** `review T10 → решение основателя по D01–D03 → 04 → 01 → review результатов Grok`.
+- **Grok 4.6 High:** `10 → 05 → 08 → 06 → 02 → 09 → 03`.
 
 Stress-test T07 завершён; рекомендация находится в
 [`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
-T04 ждёт решения основателя по D01–D04. T05 идёт первым у Grok, потому что его data
-map нужна legal drafts, complaints, cookies и operations review.
+T04 ждёт результата T10 и решения основателя по D01–D03. D04 закрыт `DEC-081`.
+После T10 T05 идёт первым из code/data reviews, потому что его data map нужна legal
+drafts, transaction problems, cookies и operations review.
 
 ## Нужно решение основателя
 
-Открыты только D01–D04 из
+Открыты только D01–D03 из
 [`docs/product/14-OPEN-MVP-DECISIONS.md`](../../product/14-OPEN-MVP-DECISIONS.md):
 
 - offer expiry/revoke/counteroffer/competing fixed buy;
 - non-payment и second chance;
-- кто подтверждает связь и завершение передачи;
-- backfill старых Order snapshots.
+- кто подтверждает связь и завершение передачи.
+
+D04 закрыт `DEC-081`: текущие test rows очищаются перед public pilot; live fallback
+не переносится в production-like модель.
 
 ## После Work-first contract и решений
 
@@ -60,16 +65,17 @@ map нужна legal drafts, complaints, cookies и operations review.
 3. Offer lifecycle и конкурентные fixed/offer действия.
 4. Non-payment/second chance.
 5. Versioned legal acceptance, cookie choices и contact disclosure audit.
-6. Жалобы на Work/автора/сделку и text-only `Сообщить об ошибке`.
-7. `Покупки / Продажи` и in-app notifications.
+6. Узкий Order problem flow и text-only `Сообщить об ошибке`.
+7. `Покупки / Продажи` без общего report/notification center.
 8. S3-compatible media, thumbnails и обновлённый backup/restore.
-9. Mobile-first redesign, затем 1024/1440 и acceptance states.
+9. Формальный visual-source cutover на versioned read-only Figma handoff, затем
+   mobile-first redesign, 1024/1440 и acceptance states.
 
 Для этих блоков отдельные промты создаются после стабилизации входного контракта. Это
 не позволяет исполнителю реализовать спорную механику по догадке и не засоряет проект
 заведомо устаревающими заданиями.
 
-После Work-first contract и решения D01–D04 сильной модели отдельно передаётся
+После Work-first contract и решения D01–D03 сильной модели отдельно передаётся
 contract matrix `Work → Listing → Offer/Bid → Order → handoff` для API, кабинета и
 дизайна. До этого такой промт преждевременен: он неизбежно закрепит неподтверждённые
 states и actions.
@@ -93,6 +99,7 @@ schema или state machine вместо основателя.
 
 ## После MVP
 
-Чат, отзывы и рейтинг, wishlist, подписка, платное продвижение, встроенная оплата,
+In-app notification center, общие reports на Work/автора, чат, отзывы и рейтинг,
+wishlist, подписка, платное продвижение, встроенная оплата,
 доставка платформы, drops/presale, дополнительные валюты и языки, AI-помощник,
 расширенный QR/social export, коллекции и автоматические session diagnostics.

@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-07 — Work/Order boundaries and research gate
+
+- `Implemented` (docs only): `DEC-079` confirms portfolio-first Work states,
+  persistent fixed sale, relist boundaries and permanent sold history; `DEC-080`
+  confirms one format-neutral Order/public code without synthetic Bid; `DEC-081`
+  selects controlled test-data reset and defers in-app notifications/general reports.
+- `Needs research`: contact timeout, chat dependency, second chance, outcome
+  confirmation, contact disclosure, edit/remoderation and the exact Order-origin model
+  are assigned to
+  [`../tasks/2026-09-06-reconciliation/10-CREATOR-COMMERCE-FLOWS-RESEARCH.md`](../tasks/2026-09-06-reconciliation/10-CREATOR-COMMERCE-FLOWS-RESEARCH.md).
+- `Not implemented`: all named changes are product/documentation boundaries. Current
+  auction-only schema, mandatory `sourceBidId`, seller-only handoff transitions and
+  live snapshot fallback remain unchanged.
+- `Needs future design cutover`: current `docs/design/*` still governs the Pen-based
+  runtime. The founder-selected original Figma is a read-only source for the later
+  redesign; its exact file/version and inspect/token/asset handoff must be recorded
+  before replacing the current design authority.
+- This entry supersedes the 2026-09-06 stress-test status below: D04 is closed by
+  `DEC-081`; only D01–D03 remain open.
+- Tests were not rerun for this docs-only task.
+
 ## 2026-09-07 — open architecture gaps retained
 
 - `Implemented` (docs only): обнаруженные в T07 технические пробелы и варианты их

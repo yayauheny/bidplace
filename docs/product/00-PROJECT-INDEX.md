@@ -38,7 +38,7 @@
 | `02-PRODUCT-EVOLUTION.md`               | История появления идеи и хронология изменений                                |
 | `03-CUSTDEV-TAISIA.md`                  | Полный разбор первого интервью                                               |
 | `04-MARKET-AND-COMPETITIVE-PLAYBOOK.md` | Что заимствовать у рынка и чего избегать                                     |
-| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — Work-first и expanded sale scope (`DEC-075`–`DEC-078`) |
+| `05-MVP-RFC.md`                         | Точный контракт первой рабочей версии и пилота; §21 — Work-first и expanded sale scope (`DEC-075`–`DEC-081`) |
 | `06-ROADMAP-24-MONTHS.md`               | Волны развития на два года и переходные критерии                             |
 | `07-GROWTH-AND-ADVERTISING-PLAYBOOK.md` | Реклама, контент и запуск авторов                                            |
 | `08-SELLER-AND-ITEM-POLICY.md`          | Кто может продавать и какие предметы допустимы                               |
@@ -53,7 +53,7 @@
 | `analytics-metrics.md`                  | Definitions and sources for admin dashboard metrics                          |
 | `../design/00-DESIGN-INDEX.md`          | Навигация по дизайн-принципам, flows, системе, статусу и handoff             |
 | `../design-handoff/00-BRIEF.md`         | Бриф волны 1 для дизайнера: поля, механики, вопросы на встречу               |
-| `../design-handoff/13-FOOTER-AND-COMPLAINT.md` | Подвал, cookie, галочки, жалоба                                         |
+| `../design-handoff/13-FOOTER-AND-COMPLAINT.md` | Подвал, cookie, галочки, transaction problem и поддержка                |
 | `../design-handoff/14-CABINET-LOGIC.md`  | Статусы кабинета, правка работы, блок после продажи                          |
 | `../00-WAVES.md`                        | Две волны: сначала MVP, потом оплата сервиса и остальное                     |
 | `../legal/00-MVP-LAUNCH-CHECKLIST.md`   | Когда публиковать документы; не бриф дизайнеру                              |

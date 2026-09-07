@@ -22,15 +22,16 @@
 | Binary hydration | Из известных list/moderation paths убрана загрузка полного photo blob; статус отражён в `11-PROJECT-STATUS.md`. |
 | Figma inventory | Read-only аудит выполнен; оригинальный Figma не менялся. По статусу основателя основные прототипы готовы, кроме окончательной логики `Покупки / Продажи`. Визуальная готовность не заменяет отсутствующие fixed/offer contracts. |
 | Marketplace и abuse research | Достаточно для выбора продуктовых вариантов: Work/Listing разделены, second chance является отдельным действием, self-bid блокируется, сетевые признаки не считаются доказательством, история остаётся неизменяемой. |
-| Stress-test D01–D04 | Варианты проверены как одна модель сделки. Зафиксированы Work-level deal invariant, защита fixed/offer races, two-party/admin resolution и безопасный second chance. Это рекомендация, а не решение основателя. |
+| Stress-test D01–D04 | Варианты проверены как одна модель сделки. D04 принят: тестовые данные очищаются до пилота. Рекомендации по D01–D03, включая two-party/admin resolution и second chance, ещё не являются решением основателя. |
 | Belarus legal UX research | Достаточно для проектирования мест controls, cookies, action confirmations, footer и audit evidence. Оно не заменяет финальную проверку юриста. |
-| Решения основателя | Оператор и юридическая рамка — Беларусь, первая аудитория — Беларусь и Россия; BYN; Work-first; аукцион отдельно от fixed; offer только для fixed; деньги и доставка вне платформы; fixed подтверждает покупатель; принятый offer создаёт сделку. |
+| Решения основателя | Оператор и юридическая рамка — Беларусь, первая аудитория — Беларусь и Россия; BYN; Work-first; аукцион отдельно от fixed; offer только для fixed; деньги и доставка вне платформы; fixed бессрочен до покупки/снятия; один format-neutral Order; все текущие данные тестовые; in-app notifications и общие reports после MVP. |
 
-## Работа, которую можно брать сейчас
+## Активные задачи и зависимости
 
 | Приоритет | Задача | Состояние | Исполнитель |
 |---|---|---|---|
-| P0 | Зафиксировать Work-first domain contract | Не выполнено; без него нельзя безопасно строить fixed и offer | GPT-5.6 Sol |
+| P0 | Исследовать creator commerce, handoff и community pain | Не выполнено; должно предшествовать финальному Work-first/handoff contract | Grok 4.6 High с браузером |
+| P0 | Зафиксировать Work-first domain contract | Заблокировано до результата исследования и решений D01–D03 | GPT-5.6 Sol |
 | P0 | Составить фактическую data/cookie/processor map | Не выполнено; блокирует legal drafts и consent implementation | Grok 4.6 High, review Sol |
 | P1 | Интегрировать seller sales history | Код есть только на `fix/seller-sales-history` / `c3ef615`, в HEAD его нет | GPT-5.6 Sol review, затем перенос |
 | P1 | Legacy HTTPS preflight | Strict schema существует, старые `http:` значения не проверены | Grok 4.6 High, review Sol |
@@ -54,6 +55,8 @@
 4. Статусы передачи: кто может отметить `Связались` и `Передача завершена`, требуется
    ли подтверждение второй стороны.
 
+D04 закрыт: текущие записи тестовые и очищаются до public pilot (`DEC-081`).
+
 Актуальные варианты находятся в
 [`docs/product/14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md), а
 совместимая рекомендация и последствия — в
@@ -62,11 +65,10 @@
 ## Открытые архитектурные пробелы
 
 Полная карта вариантов хранится в
-[`01-OPEN-ARCHITECTURE-GAPS.md`](01-OPEN-ARCHITECTURE-GAPS.md). До решения D01–D04 и
-Work-first contract открыты девять связанных областей: Work-level защита от двойной
-продажи, источники Order, двусторонний handoff outcome, second chance, immutable
-history, evidence раскрытия контактов, durable notifications, граница Work/Listing и
-отдельный complaint domain.
+[`01-OPEN-ARCHITECTURE-GAPS.md`](01-OPEN-ARCHITECTURE-GAPS.md). `DEC-079`–`DEC-081`
+закрыли общий Work lifecycle, format-neutral Order boundary, test-data reset и
+post-MVP deferrals. Точные persistence, edit/remoderation и handoff варианты остаются
+открыты до Task 10 и Work-first contract.
 
 Самые опасные текущие расхождения:
 
@@ -79,19 +81,30 @@ history, evidence раскрытия контактов, durable notifications, 
 Это зафиксированные пробелы, а не разрешение менять schema. Варианты и рекомендуемые
 направления должны быть утверждены перед техническими задачами.
 
+## Граница текущего UI и будущего редизайна
+
+Текущий `docs/design/*` и repository guard описывают Pen v2 как визуальный источник
+уже реализованного UI. Основатель выбрал новый оригинальный Figma-файл как read-only
+источник будущего редизайна и запретил изменять его. Эти два факта относятся к разным
+этапам, но формальный cutover ещё не оформлен: перед реализацией редизайна нужно
+зафиксировать точный Figma file/version, доступный inspect/token/asset handoff и момент,
+с которого старые Pen-owner docs становятся historical. До этого нельзя смешивать
+значения из Pen и Figma либо удалять текущую защиту `.pen` в обычной code-задаче.
+
 ## Последовательность реализации
 
-1. Принять четыре решения выше и утвердить Work-first contract.
+1. Выполнить Task 10, принять D01–D03 и утвердить Work-first contract.
 2. Интегрировать seller history; закрыть HTTPS, role freshness и lifecycle residuals.
 3. Реализовать Work без продажи и attach/relist Listing.
 4. Реализовать fixed sale отдельным атомарным блоком.
 5. Реализовать buyer offer отдельным блоком.
 6. Реализовать non-payment/second chance по принятому решению.
 7. Собрать data map; затем versioned acceptances, cookies и contact-disclosure audit.
-8. Реализовать жалобы, text-only сообщение об ошибке, кабинет и уведомления.
+8. Реализовать узкий Order problem flow, text-only сообщение об ошибке и кабинет.
 9. Перенести изображения в S3-compatible storage и обновить backup/restore перед
    ожидаемой публичной нагрузкой.
-10. Выполнить mobile-first redesign, затем 1024/1440 и полный state/accessibility QA.
+10. Оформить visual-source cutover на read-only Figma; выполнить mobile-first
+    redesign, затем 1024/1440 и полный state/accessibility QA.
 11. Провести staging, race, email, consent, backup/restore и rollback rehearsal.
 
 ## Что не блокирует текущую работу
@@ -107,8 +120,9 @@ history, evidence раскрытия контактов, durable notifications, 
 - защита от двойной продажи и утечки контактов для новых flows;
 - data/cookie/processor map и реализация legal evidence;
 - адаптированный комплект документов и финальная проверка юриста Беларуси;
-- complaint/support flow;
+- transaction-specific problem/support flow;
 - кабинет `Покупки / Продажи` с полной историей;
+- формальный cutover с текущих Pen owner-docs на versioned read-only Figma handoff;
 - завершённый responsive redesign и release rehearsal.
 
 ## Проверка этого обновления

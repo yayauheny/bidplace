@@ -1,7 +1,7 @@
 # bidplace — открытые архитектурные пробелы public MVP
 
 Дата среза: 2026-09-07
-Статус: варианты для будущего решения; не являются утверждённой архитектурой
+Статус: открытые варианты и выбранные направления, ожидающие реализации
 Основа: текущий runtime и
 [`MVP deal decision stress-test`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md)
 
@@ -13,22 +13,23 @@ fixed sale, buyer offer и нового handoff. Реализованная ар
 в [`14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md).
 
 Поле `Рекомендуемое направление` помогает обсуждению, но не считается выбранным
-решением. До ответа основателя и, где указано, юриста нельзя переносить его в RFC,
-decision log, schema или API contract.
+решением без ссылки на `DEC-*`. `DEC-079`–`DEC-081` закрыли часть продуктовых границ;
+остальные варианты нельзя переносить в schema или API contract до Task 10 и
+Work-first contract.
 
 ## Короткая карта
 
-| ID | Пробел | Что может сломаться | Когда блокирует |
+| ID | Пробел | Статус выбора | Когда блокирует |
 |---|---|---|---|
-| A01 | Нет Work-level инварианта продажи | Два Listing одной Work могут породить две сделки | До fixed/offer schema |
-| A02 | Order привязан только к Bid | Нельзя честно сохранить fixed и accepted offer | До fixed/offer schema |
-| A03 | Seller единолично завершает handoff | Можно отменить неудобного победителя или исказить историю | До нового handoff API |
-| A04 | Replacement создаёт Order без согласия runner-up | Контакты и обязательство возникают без нового подтверждения | До second chance |
-| A05 | Старые Orders используют live fallback | История меняется вместе с карточкой Work | До public pilot |
-| A06 | Нет отдельного evidence раскрытия контактов | Нельзя доказать, кому и когда раскрыли данные | До public pilot/legal UX |
-| A07 | Нет durable delivery для важных уведомлений | Сделка создана, но сторона не узнаёт об этом | До public pilot |
-| A08 | Не определена граница Work content и sale state | Edit, archive, sold и relist начнут конфликтовать | До Work-first contract |
-| A09 | Жалоба смешивается с исходом сделки | Report сможет случайно изменить commerce state | До complaints/handoff |
+| A01 | Нет Work-level инварианта продажи | Founder preference: A; проверить модель после Task 10 | До fixed/offer schema |
+| A02 | Order привязан только к Bid | Format-neutral Order подтверждён; persistence shape открыт | До fixed/offer schema |
+| A03 | Seller единолично завершает handoff | Открыто до исследования | До нового handoff API |
+| A04 | Replacement создаёт Order без согласия runner-up | Открыто до исследования | До second chance |
+| A05 | Старые Orders используют live fallback | Выбран controlled test reset (`DEC-081`) | До public pilot |
+| A06 | Нет evidence раскрытия контактов | Предпочтение: automatic reveal сторонам Order; research/legal gate | До public pilot/legal UX |
+| A07 | Нет durable in-app notifications | Отложено после MVP; Task 10 проверяет минимальный канал результата | После MVP либо раньше по evidence |
+| A08 | Не определена граница Work content и sale state | Основной lifecycle подтверждён; edit/remoderation открыты | До Work-first contract |
+| A09 | Нет узкого transaction-dispute contract | Общие reports отложены; Order problem flow остаётся MVP | До handoff contract |
 
 ## A01 — единая доступность Work для продажи
 
@@ -69,8 +70,10 @@ fixed purchase, offer acceptance, auction close, second chance и relist бло�
 
 ### Рекомендуемое направление
 
-Вариант A для MVP. Если final Work-first contract потребует нескольких одновременно
-действующих sale intents или резервов, до migration повторно сравнить с вариантом B.
+Founder preference — вариант A. Task 10 и Work-first contract должны проверить, не
+создаёт ли выбранный набор состояний ложную блокировку relist. Правильный invariant
+запрещает параллельную/повторную продажу `SOLD`, но возвращает Work в доступное
+состояние после отсутствия продажи или подтверждённого buyer-side failure.
 
 ### Что ещё нужно решить
 
@@ -89,34 +92,50 @@ fixed Order или Order из accepted buyer offer без фиктивной с�
 
 ### Варианты
 
-**A — type + nullable typed sources.** Добавить `sourceType` и nullable уникальные
-ссылки `sourceBidId`, `sourceBuyerOfferId`, `sourceSecondChanceId` с DB CHECK: заполнен
-ровно один источник. Общие immutable deal fields остаются непосредственно в Order.
+**A — общий DealIntent/PurchaseIntent.** Auction close, fixed confirmation, accepted
+buyer offer и accepted second chance сначала дают одну format-neutral запись намерения
+заключить сделку. Order имеет одну обязательную ссылку на accepted intent; Bid и Offer
+остаются evidence своих механизмов, а не обязательными полями каждого Order.
 
-- Плюсы: прямые FK, понятные запросы, малый объём для трёх известных источников.
-- Минусы: новый формат требует новой колонки и migration.
+- Плюсы: один Order contract и FK, одинаковые idempotency/acceptance правила, чистая
+  точка расширения для будущих форматов.
+- Минусы: новая сущность и риск превратить intent в слишком универсальную таблицу с
+  большим количеством условных полей.
 
-**B — отдельный DealSource.** Order ссылается на одну нормализованную запись источника,
-а она — на конкретное действие.
+**B — typed origin tables.** Общий Order хранит `originType`, а детали лежат в одной
+из таблиц `AuctionOrderOrigin`, `FixedOrderOrigin`, `OfferOrderOrigin` с уникальным
+`orderId` и CHECK/trigger, который допускает ровно один origin.
 
-- Плюсы: проще расширять новыми форматами.
-- Минусы: больше таблиц и полиморфная целостность сложнее Prisma/FK.
+- Плюсы: сильная referential integrity и отсутствие nullable source-полей в Order.
+- Минусы: больше таблиц, сложнее Prisma queries и добавление каждого нового формата.
 
-**C — создавать synthetic Bid.** Fixed и offer маскируются под ставку.
+**C — nullable typed sources в Order.** `sourceType` и nullable уникальные
+`sourceBidId`, `sourceBuyerOfferId`, `sourceSecondChanceId` с DB CHECK: заполнен ровно
+один подходящий источник.
+
+- Плюсы: прямые FK и простые запросы для известных форматов.
+- Минусы: Order накапливает привязки; новый формат требует колонку и migration.
+
+**D — создавать synthetic Bid.** Fixed и offer маскируются под ставку.
 
 - Плюсы: почти не меняет Order.
 - Минусы: портит историю торгов, аналитику и юридический смысл. Вариант является hack.
 
 ### Рекомендуемое направление
 
-Вариант A для MVP с DB CHECK и единой функцией создания immutable Order snapshot.
+`DEC-080` уже подтверждает один общий Order/publicId и запрещает synthetic Bid.
+Предварительно вариант A лучше соответствует желанию не привязывать Order к каждому
+механизму продажи, но Task 10 должен сравнить его с B и C по referential integrity,
+Prisma complexity, performance и расширению к editions/quantity.
 
 ### Что ещё нужно решить
 
 - Какие версии пользовательского соглашения и action-specific правил входят в
   snapshot/evidence.
-- Нужна ли отдельная публичная identity для источника сделки.
-- Финальный набор Order source types после решения D01–D03.
+- Нужен ли отдельный public ID intent либо пользователю достаточно кода Order.
+- Может ли DealIntent остаться компактным без JSON, nullable-поля на все будущие
+  форматы и дублирование Bid/Offer state machines.
+- Финальный набор origin types после решения D01–D03.
 
 ## A03 — подтверждение результата handoff
 
@@ -150,9 +169,10 @@ Seller API единолично переводит Order в `CONTACTED`, `COMPLE
 
 ### Рекомендуемое направление
 
-Вариант A. `CONTACTED` можно оставить односторонним операционным marker с actor/time,
-поскольку он не освобождает Work. `COMPLETED` и `FAILED` требуют согласованных claims
-или admin resolution.
+Предварительно вариант A. Task 10 должен проверить его против более лёгкого
+self-service flow: две совпавшие отметки закрывают обычный случай, timeout сам не
+освобождает Work, а admin получает только конфликт или длительное молчание.
+`CONTACTED` можно оставить односторонним marker, поскольку он не освобождает Work.
 
 ### Что ещё нужно решить
 
@@ -191,8 +211,9 @@ acceptance создаёт новый Order и раскрывает контак�
 
 ### Рекомендуемое направление
 
-Вариант A. Текущий replacement оставить только временным admin recovery до появления
-публичного flow, не показывая его как финальную second chance механику.
+Предварительно вариант A. Текущий replacement оставить только временным admin recovery
+до выбора публичного flow. Task 10 отдельно сравнивает runner-up, очередь, выбор автора
+и новый Listing; ни один из вариантов пока не утверждён.
 
 ### Что ещё нужно решить
 
@@ -229,13 +250,13 @@ immutable audit/source evidence и отметить reconstructed provenance.
 
 ### Рекомендуемое направление
 
-Вариант A, если основатель подтверждает, что все строки локальные и тестовые. При
-обнаружении хотя бы одной реальной записи остановить очистку и применить вариант B к
-ней отдельно.
+Выбран вариант A (`DEC-081`): все текущие строки подтверждены как локальные и тестовые.
+Controlled reset выполняется отдельной задачей перед public pilot; до него runtime
+fallback остаётся фактом кода, а не разрешённой production policy.
 
 ### Что ещё нужно решить
 
-- Явно подтвердить disposable nature текущих данных.
+- Определить точный reset/preflight procedure и момент удаления fallback.
 - Получить у юриста retention period для будущих Orders, claims и audit evidence.
 
 ## A06 — раскрытие контактов и evidence
@@ -269,7 +290,11 @@ audit, следующие остаются idempotent.
 
 ### Рекомендуемое направление
 
-Вариант A после ответа юриста. До него не фиксировать поля и тексты reveal dialog.
+Founder preference — автоматическое раскрытие разрешённого контакта сторонам Order без
+дополнительной кнопки, если правило `кто пишет первым` показано до ставки/покупки и
+действие пользователя включает необходимое согласие. Это ближе к варианту B, но Task
+10 и юрист должны проверить минимальный набор данных, evidence и влияние prefetch/
+повторных GET. До этого не фиксировать contract или microcopy.
 
 ### Что ещё нужно решить
 
@@ -306,8 +331,11 @@ receipt и досылает сообщения.
 
 ### Рекомендуемое направление
 
-Вариант A до публичного fixed/offer/second chance. Для закрытого локального теста
-допустим вариант B как временный этап, если он явно отмечен и имеет срок удаления.
+In-app notification center отложен после MVP (`DEC-081`) и является одним из первых
+кандидатов следующей волны. Task 10 должен установить, нужен ли до запуска минимальный
+transactional канал для результата аукциона, accepted offer и second chance. Если
+нужен, отдельно выбрать outbox или reconciliation; полноценный notification center
+из этого не следует.
 
 ### Что ещё нужно решить
 
@@ -348,8 +376,11 @@ immutable sale snapshot. Существенные изменения требу�
 
 ### Рекомендуемое направление
 
-Вариант A для MVP. Versioned Work revisions можно вернуть после проверки реальной
-потребности в глубокой provenance history.
+`DEC-079` подтвердил portfolio-only Work, бессрочный fixed Listing, relist после
+отсутствия продажи/подтверждённого buyer-side failure и постоянный sold state после
+успешной передачи. Предварительно вариант A лучше всего отделяет Work от попытки
+продажи. Task 10 должен определить edit/remoderation matrix и понятные пользовательские
+названия; versioned revisions остаются после MVP.
 
 ### Что ещё нужно решить
 
@@ -357,54 +388,58 @@ immutable sale snapshot. Существенные изменения требу�
 - Какие поля Work существенны для сделки.
 - Различие между скрытием из портфолио и разрешением повторной продажи.
 
-## A09 — жалоба отдельно от commerce outcome
+## A09 — проблема конкретной сделки отдельно от commerce outcome
 
 ### Текущее состояние
 
-Публичного complaint domain нет. В будущей модели спор потребуется и для контента, и
-для участника, и для конкретного Order. Если кодировать жалобу через Order status,
-открытие обращения сможет случайно освободить Work или изменить историю сделки.
+Публичного dispute domain нет. Общие reports на Work/автора отложены после MVP
+(`DEC-081`), но сторонам конкретного Order нужен минимальный способ сообщить о
+несвязи, отказе или споре. Если кодировать сообщение напрямую через terminal Order
+status, одно действие сможет освободить Work или изменить историю сделки.
 
 ### Варианты
 
-**A — отдельные Report и Case.** Report хранит обращение и target; Case объединяет
-review, evidence, resolution и связь с Order outcome. Commerce state меняется только
-явным resolution action.
+**A — отдельные OrderIssue и Case.** OrderIssue хранит заявление стороны; Case
+появляется только при конфликте или отсутствии ответа и объединяет review, evidence и
+resolution. Commerce state меняется только явным resolution action.
 
 - Плюсы: разделяет сообщение пользователя, модерацию и состояние сделки.
 - Минусы: две сущности и admin workflow.
 
-**B — одна Complaint с resolution fields.** Одна запись содержит target, category,
-status, resolver и outcome link.
+**B — один OrderDispute record.** Одна запись содержит Order, стороны, category,
+claims, status, resolver и outcome link.
 
 - Плюсы: достаточно для малого MVP и проще админка.
 - Минусы: сложнее объединять повторные reports и хранить несколько решений.
 
-**C — специальные Order statuses для жалобы.**
+**C — специальные Order statuses для заявления о проблеме.**
 
 - Плюсы: не нужна отдельная таблица.
-- Минусы: смешивает review и commerce lifecycle; плохо работает для жалобы на Work,
-  автора или сервис.
+- Минусы: смешивает review и commerce lifecycle и плохо хранит разные заявления
+  сторон.
 
 ### Рекомендуемое направление
 
-Вариант B для MVP с жёстким правилом: Complaint сама не меняет Listing, Work или
-Order. Если объём повторных обращений потребует triage/case aggregation, перейти к A.
+Task 10 должен сравнить A и B с целью оставить admin только конфликтные случаи.
+Обязательное правило уже определено: создание issue/dispute само не меняет Listing,
+Work или terminal Order outcome. Общие content/author reports в этот contract не входят.
 
 ### Что ещё нужно решить
 
-- Категории и обязательные поля complaints.
+- Категории и обязательные поля transaction issue.
 - Какие resolution actions доступны администратору.
 - Retention, доступ стороны к ответу и legal deadline.
 
 ## Порядок закрытия
 
-1. Основатель отвечает на D01–D04; юрист закрывает только отмеченные legal gates.
-2. Work-first contract выбирает A08, затем A01 и A02 как одну transaction model.
-3. Handoff contract совместно выбирает A03, A04 и A09.
-4. Legal UX/data work выбирает A05 и A06.
-5. До public pilot выбирается A07 и проводится race/recovery review всей цепочки.
-6. Только после выбора варианты переносятся append-only решением в decision log,
+1. Task 10 собирает official/community evidence по D01–D03 и A01–A09; юрист закрывает
+   только отмеченные legal gates.
+2. Основатель отвечает на D01–D03; D04 уже закрыт `DEC-081`.
+3. Work-first contract финализирует A08, затем A01 и A02 как одну transaction model.
+4. Handoff contract совместно выбирает A03, A04, A06 и A09.
+5. A05 реализуется отдельным reset/preflight перед public pilot. A07 остаётся после
+   MVP, если Task 10 не докажет необходимость минимального launch channel.
+6. Только после выбора оставшиеся варианты переносятся append-only решением в decision log,
    затем в RFC/architecture и задачи реализации.
 
 ## Запрещённые короткие пути

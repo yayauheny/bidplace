@@ -1,19 +1,20 @@
 # bidplace — stress-test решений по сделке MVP
 
 Дата: 2026-09-06
-Статус: рекомендация для решения основателя; не является продуктовым решением или
-юридическим заключением
+Статус: исторический stress-test; D04 принят в `DEC-081`, рекомендации D01–D03
+проверяются Task 10 и не являются продуктовым решением или юридическим заключением
 
 ## Зачем нужен этот документ
 
-Этот memo проверяет D01–D04 из
+Этот memo проверил D01–D04 из
 [`14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md) как один сценарий:
 
 `Work → Listing → Bid или buyer offer → Order → связь → завершение или повторная продажа`.
 
 Рекомендации учитывают текущую схему и код, сравнительное исследование площадок,
-abuse-модель и белорусский legal UX research. Они не меняют `05-MVP-RFC.md` и не
-становятся обязательными до отдельного решения основателя. Юридические вопросы
+abuse-модель и белорусский legal UX research. D04 позднее принят в `DEC-081`:
+disposable test data очищаются до public pilot. Варианты D01–D03 остаются
+предварительными до Task 10 и отдельного решения основателя. Юридические вопросы
 остаются в
 [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
 Развёрнутые технические альтернативы сохранены отдельно в
@@ -32,7 +33,7 @@ abuse-модель и белорусский legal UX research. Они не ме
 | D02.3 Second chance | Только runner-up, отдельное предложение на 24 часа, новая сделка после его подтверждения |
 | D02.4 Если runner-up отказался | Новый Listing той же Work; автоматической цепочки предложений нет |
 | D03 Связь и передача | Связь отмечает любая сторона; завершение и несостоявшаяся передача требуют двух подтверждений или решения администратора |
-| D04 Старые snapshots | Удалить только disposable local/test data перед пилотом; не восстанавливать историю из текущей изменяемой карточки |
+| D04 Старые snapshots | **Принято в DEC-081:** удалить disposable local/test data перед пилотом; не восстанавливать историю из текущей изменяемой карточки |
 
 ## Одна сквозная модель
 
@@ -254,8 +255,8 @@ abuse-модель и белорусский legal UX research. Они не ме
 
 ## Проверка D04 — старые Order snapshots
 
-- **Рекомендация:** подтвердить, что все текущие Orders являются disposable test data,
-  и удалить их контролируемым reset перед public pilot. Затем убрать production
+- **Решение принято (`DEC-081`):** все текущие Orders являются disposable test data;
+  их нужно удалить контролируемым reset перед public pilot. Затем убрать production
   fallback на живые `Product.title`, `Product.publicId` и `Listing.currency` и требовать
   полные immutable snapshots для каждого нового Order.
 - **Почему:** backfill из изменяемой текущей карточки создаст убедительно выглядящую,
@@ -270,9 +271,9 @@ abuse-модель и белорусский legal UX research. Они не ме
   evidence нужен после публичного запуска? Этот ответ не нужен для удаления явно
   тестовой локальной базы, но нужен до production retention policy.
 
-Если основатель не подтверждает disposable nature всех строк, автоматический backfill
-не выполнять. Для каждой сохраняемой записи требуется проверяемый источник; реконструкция
-помечается отдельно и не выдаётся за исходный snapshot.
+Если до reset будет обнаружен нетестовый источник, reset нужно остановить и разобрать
+его отдельно. Автоматический backfill из живой карточки не выполнять: для каждой
+сохраняемой записи требуется проверяемый источник.
 
 ## Обязательные race и abuse invariants
 
@@ -310,19 +311,19 @@ abuse-модель и белорусский legal UX research. Они не ме
 | Backfill snapshots из текущей Work | Подменяет исторические данные изменяемыми значениями | Только при наличии immutable audit/source records |
 | Удаление failed/cancelled history | Разрушает provenance, поддержку и anti-abuse evidence | Не планируется; меняются лишь retention/access rules по закону |
 
-## Что должен решить основатель
+## Что ещё должен решить основатель
 
-Можно принять пакет целиком либо явно изменить отдельные строки таблицы в начале:
+После Task 10 нужно выбрать D01–D03; приведённые ниже значения остаются рекомендацией:
 
 1. 48 часов для buyer offer, отзыв до принятия, без counteroffer, без резерва Work.
 2. 48 часов на связь; истечение создаёт overdue, а не автоматический failed.
 3. Два подтверждения или admin resolution для terminal completion/failure.
 4. Один second chance только runner-up на 24 часа; затем новый Listing.
-5. Удаление всех текущих disposable Orders перед public pilot вместо недостоверного
-   backfill.
+D04 уже закрыт `DEC-081`: текущие disposable Orders удаляются перед public pilot,
+недостоверного backfill не будет.
 
-После решения следует добавить append-only `DEC-*`, обновить RFC и только затем
-финализировать Work-first domain contract и задачи schema/API/UI.
+После решений D01–D03 следует добавить append-only `DEC-*`, обновить RFC и только
+затем финализировать Work-first domain contract и задачи schema/API/UI.
 
 ## Что остаётся у юриста
 
@@ -337,13 +338,13 @@ abuse-модель и белорусский legal UX research. Они не ме
 4. Какие причины и последствия несостоявшейся передачи допустимо закрепить, когда
    платформа не видит оплату и доставку.
 5. Допустимы ли two-party confirmation и admin resolution для освобождения Work.
-6. Как долго хранить Order history, reports, contact-disclosure audit и acceptances
-   после публичного запуска и удаления аккаунта.
+6. Как долго хранить Order history, transaction-problem records, contact-disclosure
+   audit и acceptances после публичного запуска и удаления аккаунта.
 
 ## Основания и проверенный runtime
 
 - [`05-MVP-RFC.md`](../product/05-MVP-RFC.md) — текущая целевая граница MVP;
-- [`12-DECISION-LOG.md`](../product/12-DECISION-LOG.md) — `DEC-075`–`DEC-078`;
+- [`12-DECISION-LOG.md`](../product/12-DECISION-LOG.md) — `DEC-075`–`DEC-081`;
 - [`2026-09-06-MARKETPLACE-MECHANICS-COMPARISON.md`](2026-09-06-MARKETPLACE-MECHANICS-COMPARISON.md);
 - [`2026-09-06-AUCTION-ABUSE-CONTROLS.md`](2026-09-06-AUCTION-ABUSE-CONTROLS.md);
 - [`2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md);

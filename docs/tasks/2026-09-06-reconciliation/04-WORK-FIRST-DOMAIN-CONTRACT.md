@@ -7,8 +7,10 @@
 ## Цель
 
 Составить исполнимый контракт, где Work существует независимо от продажи, а Listing
-является отдельной попыткой продажи. Основа: `DEC-075`–`DEC-078`, RFC §21, текущая
-Prisma schema/API и `14-OPEN-MVP-DECISIONS.md`.
+является отдельной попыткой продажи. Основа: `DEC-075`–`DEC-081`, RFC §21, результат
+Task 10, текущая Prisma schema/API и `14-OPEN-MVP-DECISIONS.md`.
+
+Не начинать финальную версию до завершения Task 10 и решения основателя по D01–D03.
 
 ## Правила выполнения
 
@@ -22,14 +24,19 @@ Prisma schema/API и `14-OPEN-MVP-DECISIONS.md`.
 ## Обязательно описать
 
 - identities и состояния Work, Listing, Offer, Order и immutable events;
+- один format-neutral Order/publicId и выбранную persistence-модель его origin;
 - portfolio-only Work, moderation, public visibility;
-- attach auction/fixed Listing, cancel before start, relist archived Work;
+- attach auction/fixed Listing, бессрочный fixed, cancel before Order, relist после
+  отсутствия продажи/разрешённого failed outcome;
 - одна активная продажа и не более одной успешной сделки для unique Work;
+- постоянный sold-through-bidplace и отдельный sold-elsewhere outcome;
 - какие Work-поля можно менять в каждом состоянии;
+- повторную модерацию после изменения и immutable sale snapshot;
 - историю невыкупа/отмены без переписывания предыдущего результата;
 - permissions, idempotency keys, transaction/lock order и race matrix;
 - API/contracts/migrations по этапам;
-- какие места остаются blocked D01–D04 или юристом.
+- migration boundary для future Edition/InventoryUnit/quantity без реализации presale;
+- какие места остаются blocked D01–D03 или юристом.
 
 ## Критерии готовности
 
