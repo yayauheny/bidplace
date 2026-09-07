@@ -157,6 +157,8 @@ model Product {
   creationIntro   String?       @map("creation_intro") @db.Text
   publishedAt     DateTime?     @map("published_at")
   status          ProductStatus @default(DRAFT)
+  editingRevisionId String?     @unique @map("editing_revision_id") @db.Uuid
+  publishedRevisionId String?   @unique @map("published_revision_id") @db.Uuid
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id], onDelete: Restrict)
@@ -164,9 +166,46 @@ model Product {
   images          ProductImage[]
   creationSteps   ProductCreationStep[]
   listings        Listing[]
+  revisions       ProductRevision[] @relation("ProductRevisions")
+  editingRevision ProductRevision? @relation("ProductEditingRevision", fields: [editingRevisionId], references: [id], onDelete: Restrict)
+  publishedRevision ProductRevision? @relation("ProductPublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
 
   @@index([sellerProfileId, status])
   @@map("products")
+}
+
+model ProductRevision {
+  id            String        @id @default(uuid()) @db.Uuid
+  productId     String        @map("product_id") @db.Uuid
+  version       Int
+  status        ProductStatus @default(DRAFT)
+  categoryId    String?       @map("category_id") @db.Uuid
+  title         String?       @db.VarChar(200)
+  story         String?       @db.Text
+  technique     String?       @db.Text
+  materials     String?       @db.Text
+  dimensions    String?       @db.VarChar(240)
+  weight        String?       @db.VarChar(120)
+  year          Int?
+  condition     String?       @db.VarChar(120)
+  uniqueness    String?       @db.VarChar(240)
+  provenance    String?       @db.Text
+  city          String?       @db.VarChar(160)
+  packaging     String?       @db.Text
+  deliveryInfo  String?       @map("delivery_info") @db.Text
+  creationIntro String?       @map("creation_intro") @db.Text
+  submittedAt   DateTime?     @map("submitted_at")
+  reviewedAt    DateTime?     @map("reviewed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  product       Product       @relation("ProductRevisions", fields: [productId], references: [id], onDelete: Cascade)
+  editingFor    Product?      @relation("ProductEditingRevision")
+  publishedFor  Product?      @relation("ProductPublishedRevision")
+  images        ProductRevisionImage[]
+
+  @@unique([productId, version])
+  @@index([productId, status])
+  @@map("product_revisions")
 }
 
 model ProductImage {
@@ -181,10 +220,24 @@ model ProductImage {
   height     Int?
   createdAt  DateTime @default(now()) @map("created_at")
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  revisions  ProductRevisionImage[]
 
   @@index([productId])
   @@unique([productId, position])
   @@map("product_images")
+}
+
+model ProductRevisionImage {
+  revisionId String          @map("revision_id") @db.Uuid
+  imageId    String          @map("image_id") @db.Uuid
+  position   Int
+  revision   ProductRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  image      ProductImage    @relation(fields: [imageId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, imageId])
+  @@unique([revisionId, position])
+  @@index([imageId])
+  @@map("product_revision_images")
 }
 
 model ProductCreationStep {

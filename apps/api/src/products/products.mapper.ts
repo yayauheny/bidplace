@@ -33,6 +33,8 @@ export const productSelect = {
   deliveryInfo: true,
   publishedAt: true,
   status: true,
+  editingRevisionId: true,
+  publishedRevisionId: true,
   createdAt: true,
   updatedAt: true,
   images: {
@@ -106,6 +108,8 @@ export const publicCatalogProductSelect = {
   creationIntro: true,
   publishedAt: true,
   status: true,
+  editingRevisionId: true,
+  publishedRevisionId: true,
   createdAt: true,
   updatedAt: true,
   sellerProfile: { select: publicSellerProfileSelect },

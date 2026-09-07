@@ -561,6 +561,8 @@ export class ProductsService {
       deliveryInfo: record.deliveryInfo,
       publishedAt: record.publishedAt,
       status: record.status,
+      editingRevisionId: record.editingRevisionId,
+      publishedRevisionId: record.publishedRevisionId,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       images: record.images,
