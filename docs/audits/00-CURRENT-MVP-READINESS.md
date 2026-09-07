@@ -30,7 +30,7 @@
 
 | Приоритет | Задача | Состояние | Исполнитель |
 |---|---|---|---|
-| P0 | Исследовать creator commerce, handoff и community pain | Не выполнено; должно предшествовать финальному Work-first/handoff contract | Grok 4.6 High с браузером |
+| P0 | Исследовать creator commerce, handoff и community pain | Не выполнено; браузерный исследователь возвращает текст и источники без доступа к repo | GPT browser researcher; review Sol |
 | P0 | Зафиксировать Work-first domain contract | Заблокировано до результата исследования и решений D01–D03 | GPT-5.6 Sol |
 | P0 | Составить фактическую data/cookie/processor map | Не выполнено; блокирует legal drafts и consent implementation | Grok 4.6 High, review Sol |
 | P1 | Интегрировать seller sales history | Код есть только на `fix/seller-sales-history` / `c3ef615`, в HEAD его нет | GPT-5.6 Sol review, затем перенос |

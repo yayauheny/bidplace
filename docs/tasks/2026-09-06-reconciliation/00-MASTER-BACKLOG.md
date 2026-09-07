@@ -12,6 +12,7 @@ Owner: founder
 
 | Модель | Роль |
 |---|---|
+| GPT browser researcher | Только внешнее web-исследование; возвращает текст и прямые источники без доступа к repo |
 | GPT-5.6 Sol | Domain contracts, независимый review, security/concurrency review, reconciliation чужих веток |
 | Grok 4.6 High | Основная реализация, migrations, multi-module work, code/data inventory |
 
@@ -31,12 +32,13 @@ Owner: founder
 | 06 | P1 | [JWT role freshness](06-AUTH-ROLE-FRESHNESS.md) | Grok 4.6 High; security review Sol | Нет |
 | 08 | P1 | [Security и dependency evidence review](08-SECURITY-DEPENDENCY-REVIEW.md) | Grok 4.6 High; security review Sol | Интернет только для первичных advisories |
 | 09 | P1 | [Public-pilot operations readiness](09-PUBLIC-PILOT-OPERATIONS-READINESS.md) | Grok 4.6 High; review Sol | Без deploy и чтения secrets |
-| 10 | P0 | [Creator commerce, handoff и community research](10-CREATOR-COMMERCE-FLOWS-RESEARCH.md) | Grok 4.6 High с браузером | До T04 и handoff contract |
+| 10 | P0 | [Creator commerce, handoff и community research](10-CREATOR-COMMERCE-FLOWS-RESEARCH.md) | GPT browser researcher; review Sol | Только текст и web sources; до T04 |
 
 ## Если модели выполняют задачи последовательно
 
-- **GPT-5.6 Sol:** `review T10 → решение основателя по D01–D03 → 04 → 01 → review результатов Grok`.
-- **Grok 4.6 High:** `10 → 05 → 08 → 06 → 02 → 09 → 03`.
+- **GPT browser researcher:** `10` без доступа к репозиторию.
+- **GPT-5.6 Sol:** `review текстового ответа T10 → решение основателя по D01–D03 → 04 → 01 → review результатов Grok`.
+- **Grok 4.6 High:** `05 → 08 → 06 → 02 → 09 → 03`.
 
 Stress-test T07 завершён; рекомендация находится в
 [`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).

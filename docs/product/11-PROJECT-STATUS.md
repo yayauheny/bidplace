@@ -7,8 +7,10 @@
   confirms one format-neutral Order/public code without synthetic Bid; `DEC-081`
   selects controlled test-data reset and defers in-app notifications/general reports.
 - `Needs research`: contact timeout, chat dependency, second chance, outcome
-  confirmation, contact disclosure, edit/remoderation and the exact Order-origin model
-  are assigned to
+  confirmation, contact disclosure, edit/remoderation and the business evidence an
+  Order must preserve are assigned to a browser-only GPT researcher. The exact
+  persistence model remains the later technical contract. The researcher receives a
+  standalone prompt and returns text plus direct web sources without repository access:
   [`../tasks/2026-09-06-reconciliation/10-CREATOR-COMMERCE-FLOWS-RESEARCH.md`](../tasks/2026-09-06-reconciliation/10-CREATOR-COMMERCE-FLOWS-RESEARCH.md).
 - `Not implemented`: all named changes are product/documentation boundaries. Current
   auction-only schema, mandatory `sourceBidId`, seller-only handoff transitions and

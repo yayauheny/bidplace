@@ -125,8 +125,9 @@ buyer offer и accepted second chance сначала дают одну format-ne
 
 `DEC-080` уже подтверждает один общий Order/publicId и запрещает synthetic Bid.
 Предварительно вариант A лучше соответствует желанию не привязывать Order к каждому
-механизму продажи, но Task 10 должен сравнить его с B и C по referential integrity,
-Prisma complexity, performance и расширению к editions/quantity.
+механизму продажи. Task 10 должен установить, какие business facts и evidence требуют
+реальные площадки; затем технический Work-first contract сравнит A, B и C по
+referential integrity, Prisma complexity, performance и расширению к editions/quantity.
 
 ### Что ещё нужно решить
 
