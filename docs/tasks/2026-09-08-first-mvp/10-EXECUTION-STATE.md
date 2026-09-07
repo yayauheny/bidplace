@@ -7,13 +7,13 @@
 | Current package | 02 — Portfolio Work lifecycle |
 | Base main SHA | `2cf5d89fdf93733f0e8eb93022de8b5c20329213` |
 | Working branch | `feature/portfolio-work-lifecycle` |
-| Completed behavior | Package 01 is fast-forwarded into `main` and its branch is retained. The Work revision state/permission/visibility contract, additive schema and deterministic legacy backfill migration are recorded. |
-| Commit SHA | `a15866a` |
-| Checks passed | Package 01: API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). Package 02 schema build and API typecheck pass. |
+| Completed behavior | Package 01 is fast-forwarded into `main` and its branch is retained. Package 02 records the Work revision state/permission/visibility contract, additive schema and deterministic legacy backfill migration. New Work creation atomically creates its editing revision. |
+| Commit SHA | `60dea88` |
+| Checks passed | Package 01: API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). Package 02 schema build, API typecheck/lint, product service tests (14/14), and image service tests (15/15) pass. |
 | Checks failed | API PostgreSQL integration suite cannot start because PostgreSQL is unavailable at `127.0.0.1:5432`; all 21 affected suites fail before test execution. |
-| Remaining work | Wire author/admin/public queries to revision pointers, make image references immutable, add concurrency coverage, document and fast-forward package 02. |
+| Remaining work | Wire author/admin/public queries to revision pointers, copy image references when starting an edit revision, add concurrency coverage, document and fast-forward package 02. |
 | Known blockers | Local PostgreSQL is not running; migration and integration verification need a disposable database. |
-| Next exact action | Connect the tested server-side revision state machine to author submit/hide/unhide and admin moderation transitions. |
+| Next exact action | Implement transactional copy-on-edit for a published Work and use revision state transitions for submit/hide/unhide without changing public projection until promotion. |
 
 ## Recovery procedure
 
