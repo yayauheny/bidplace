@@ -246,6 +246,86 @@ describe('ProductsService', () => {
     }
   });
 
+  it('copies a published Product into an editing revision without changing its public fields', async () => {
+    const publishedRevision = {
+      id: 'revision-published',
+      version: 1,
+      status: 'APPROVED',
+      categoryId: approvedProduct.categoryId,
+      title: approvedProduct.title,
+      story: approvedProduct.story,
+      technique: null,
+      materials: null,
+      dimensions: null,
+      weight: null,
+      year: null,
+      condition: approvedProduct.condition,
+      uniqueness: approvedProduct.uniqueness,
+      provenance: approvedProduct.provenance,
+      city: approvedProduct.city,
+      packaging: approvedProduct.packaging,
+      deliveryInfo: approvedProduct.deliveryInfo,
+      creationIntro: null,
+      images: [{ imageId: approvedProduct.images[0]!.id, position: 0 }],
+    };
+    const published = {
+      ...ownerProduct('APPROVED'),
+      editingRevisionId: 'revision-published',
+      publishedRevisionId: 'revision-published',
+    };
+    const response = { ...approvedProduct, status: 'APPROVED' as const };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
+      product: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce(published)
+          .mockResolvedValueOnce(response),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(response),
+        update: vi.fn().mockResolvedValue(response),
+        updateMany: vi.fn(),
+      },
+      productRevision: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue(publishedRevision),
+        create: vi.fn().mockResolvedValue({ id: 'revision-editing' }),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+      ),
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const result = await service.update('owner-id', product.id, {
+      title: 'Исправленное название',
+    });
+
+    expect(result.product.title).toBe(approvedProduct.title);
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
+    expect(tx.productRevision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        productId: product.id,
+        version: 2,
+        status: 'DRAFT',
+        images: {
+          createMany: {
+            data: [{ imageId: approvedProduct.images[0]!.id, position: 0 }],
+          },
+        },
+      }),
+    });
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-editing' },
+      data: { title: 'Исправленное название' },
+    });
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { id: product.id },
+      data: { editingRevisionId: 'revision-editing' },
+    });
+  });
+
   it('resubmits a rejected Product to pending review without creating a duplicate', async () => {
     const pending = { ...approvedProduct, status: 'PENDING_REVIEW' as const };
     const { prisma, tx } = createWritePrisma({

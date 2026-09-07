@@ -146,31 +146,142 @@ export class ProductsService {
 
   async update(userId: string, id: string, input: ProductWriteRequest) {
     const data: Prisma.ProductUncheckedUpdateInput = {};
+    const revisionData: Prisma.ProductRevisionUncheckedUpdateInput = {};
 
-    if (input.categoryId !== undefined) data.categoryId = input.categoryId;
-    if (input.title !== undefined) data.title = input.title;
-    if (input.story !== undefined) data.story = input.story;
-    if (input.technique !== undefined) data.technique = input.technique;
-    if (input.materials !== undefined) data.materials = input.materials;
-    if (input.dimensions !== undefined) data.dimensions = input.dimensions;
-    if (input.weight !== undefined) data.weight = input.weight;
-    if (input.year !== undefined) data.year = input.year;
-    if (input.condition !== undefined) data.condition = input.condition;
-    if (input.uniqueness !== undefined) data.uniqueness = input.uniqueness;
-    if (input.provenance !== undefined) data.provenance = input.provenance;
-    if (input.city !== undefined) data.city = input.city;
-    if (input.packaging !== undefined) data.packaging = input.packaging;
-    if (input.deliveryInfo !== undefined)
+    if (input.categoryId !== undefined) {
+      data.categoryId = input.categoryId;
+      revisionData.categoryId = input.categoryId;
+    }
+    if (input.title !== undefined) {
+      data.title = input.title;
+      revisionData.title = input.title;
+    }
+    if (input.story !== undefined) {
+      data.story = input.story;
+      revisionData.story = input.story;
+    }
+    if (input.technique !== undefined) {
+      data.technique = input.technique;
+      revisionData.technique = input.technique;
+    }
+    if (input.materials !== undefined) {
+      data.materials = input.materials;
+      revisionData.materials = input.materials;
+    }
+    if (input.dimensions !== undefined) {
+      data.dimensions = input.dimensions;
+      revisionData.dimensions = input.dimensions;
+    }
+    if (input.weight !== undefined) {
+      data.weight = input.weight;
+      revisionData.weight = input.weight;
+    }
+    if (input.year !== undefined) {
+      data.year = input.year;
+      revisionData.year = input.year;
+    }
+    if (input.condition !== undefined) {
+      data.condition = input.condition;
+      revisionData.condition = input.condition;
+    }
+    if (input.uniqueness !== undefined) {
+      data.uniqueness = input.uniqueness;
+      revisionData.uniqueness = input.uniqueness;
+    }
+    if (input.provenance !== undefined) {
+      data.provenance = input.provenance;
+      revisionData.provenance = input.provenance;
+    }
+    if (input.city !== undefined) {
+      data.city = input.city;
+      revisionData.city = input.city;
+    }
+    if (input.packaging !== undefined) {
+      data.packaging = input.packaging;
+      revisionData.packaging = input.packaging;
+    }
+    if (input.deliveryInfo !== undefined) {
       data.deliveryInfo = input.deliveryInfo;
-    if (input.creationIntro !== undefined)
+      revisionData.deliveryInfo = input.deliveryInfo;
+    }
+    if (input.creationIntro !== undefined) {
       data.creationIntro = input.creationIntro;
+      revisionData.creationIntro = input.creationIntro;
+    }
 
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       await lockProductRowForUpdate(tx, id);
       const product = await tx.product.findUnique({
         where: { id },
-        select: productWriteGuardSelect,
+        select: {
+          ...productWriteGuardSelect,
+          editingRevisionId: true,
+          publishedRevisionId: true,
+        },
       });
+      if (
+        product &&
+        (product.status === 'APPROVED' || product.status === 'ARCHIVED') &&
+        product.publishedRevisionId &&
+        product.editingRevisionId
+      ) {
+        if (product.sellerProfile.userId !== userId) {
+          throw new ForbiddenException('Product is not owned by user');
+        }
+        assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        let editingRevisionId = product.editingRevisionId;
+        if (product.editingRevisionId === product.publishedRevisionId) {
+          const published = await tx.productRevision.findUniqueOrThrow({
+            where: { id: product.publishedRevisionId },
+            include: { images: true },
+          });
+          const editing = await tx.productRevision.create({
+            data: {
+              productId: product.id,
+              version: published.version + 1,
+              status: 'DRAFT',
+              categoryId: published.categoryId,
+              title: published.title,
+              story: published.story,
+              technique: published.technique,
+              materials: published.materials,
+              dimensions: published.dimensions,
+              weight: published.weight,
+              year: published.year,
+              condition: published.condition,
+              uniqueness: published.uniqueness,
+              provenance: published.provenance,
+              city: published.city,
+              packaging: published.packaging,
+              deliveryInfo: published.deliveryInfo,
+              creationIntro: published.creationIntro,
+              images: {
+                createMany: {
+                  data: published.images.map((image) => ({
+                    imageId: image.imageId,
+                    position: image.position,
+                  })),
+                },
+              },
+            },
+          });
+          editingRevisionId = editing.id;
+          await tx.product.update({
+            where: { id: product.id },
+            data: { editingRevisionId },
+          });
+        }
+
+        await tx.productRevision.update({
+          where: { id: editingRevisionId },
+          data: revisionData,
+        });
+        const updated = await tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
+        return toProductResponse(updated);
+      }
       assertProductWritable(product, userId, 'edit');
 
       const written = await tx.product.updateMany({
