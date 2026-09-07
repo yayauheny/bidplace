@@ -4,16 +4,16 @@
 
 | Field | Value |
 | --- | --- |
-| Current package | 02 — Portfolio Work lifecycle |
-| Base main SHA | `2cf5d89fdf93733f0e8eb93022de8b5c20329213` |
-| Working branch | `feature/portfolio-work-lifecycle` |
-| Completed behavior | Package 01 is fast-forwarded into `main` and its branch is retained. Package 02 records the Work revision state/permission/visibility contract, additive schema and deterministic legacy backfill migration. New Work creation atomically creates its editing revision; submit moves that revision into review; published Work edits copy into a separate revision; admin approval atomically promotes its fields and pointer; change requests preserve the published projection; newly uploaded Work media attaches to the editing revision. |
-| Commit SHA | `418b12e` |
-| Checks passed | Package 01: API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). Package 02 schema build, API typecheck/lint, product service tests (336/336), and image service tests (15/15) pass. |
+| Current package | 03 — Object storage media |
+| Base main SHA | `48c7cfe` |
+| Working branch | `feature/object-storage-media` |
+| Completed behavior | Packages 01 and 02 are fast-forwarded into `main` and their branches are retained. Package 03 adds typed S3-compatible configuration, an AWS SDK backed `ImageStore` adapter, selectable provider DI, additive object-key persistence and deterministic metadata backfill. New product, creation-step and profile uploads record their object key. |
+| Commit SHA | `4dc59f3` |
+| Checks passed | Database generate/build; API typecheck/lint; API unit tests (338/338); targeted image and seller tests. |
 | Checks failed | API PostgreSQL integration suite cannot start because PostgreSQL is unavailable at `127.0.0.1:5432`; all 21 affected suites fail before test execution. |
-| Remaining work | Complete immutable media ordering/removal and published-media projection, add concurrency coverage, update product status/architecture documentation, self-review, and fast-forward package 02. |
-| Known blockers | Local PostgreSQL is not running; migration and integration verification need a disposable database. |
-| Next exact action | Make image removal and ordering revision-scoped, then add transactional race coverage for revision edits, submits, moderation, and hide/unhide. |
+| Remaining work | Migrate binary reads/writes fully to S3, add resumable backfill, orphan cleanup and restore manifest, document, self-review and fast-forward package 03. |
+| Known blockers | Local PostgreSQL is not running; migration and integration verification need a disposable database. A local MinIO/S3 endpoint is also not configured. |
+| Next exact action | Make S3 storage the non-PostgreSQL binary source when selected and add a resumable legacy binary backfill command. |
 
 ## Recovery procedure
 
