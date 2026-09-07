@@ -1,7 +1,12 @@
 # bidplace — mapping материалов Bidbaits
 
-Дата: 2026-09-06  
+Дата: 2026-09-06
 Статус: research mapping; не копировать как документы bidplace
+
+> **Актуализация 2026-09-08:** First MVP — portfolio без commerce (`DEC-082`).
+> Privacy, author-content, prohibited-content и rights-holder patterns остаются
+> входом первого legal review. Fixed, auction, delivery, reviews и handoff rows ниже
+> сохранены только для post-MVP commerce wave.
 
 ## Источники
 

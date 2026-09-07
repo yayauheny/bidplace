@@ -4,6 +4,15 @@
 
 Статус: **Approved runtime scope implemented; workflow remains mandatory**
 
+## 0. Portfolio-first addendum — 2026-09-08
+
+Для First MVP новый read-only target — Figma `NM63j9lwRMqpo2HvAiYNll`. Workflow этого
+документа применяется с заменой `canonical Pen node` на versioned Figma node/handoff.
+Figma запрещено модифицировать любым tool; production адаптируется к нему. Текущий
+`.pen` остаётся защищённым historical runtime reference и также не меняется/не
+удаляется. Product behavior определяется `05-MVP-RFC.md`, а commerce-композиции Figma
+не реализуются в First MVP.
+
 ## 1. Главный запрет
 
 Canonical source: `design/pen/bidplace-web-v2.pen`.

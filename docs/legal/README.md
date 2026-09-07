@@ -1,16 +1,21 @@
 # bidplace — актуальная юридическая документация
 
-Дата: 2026-09-06
+Дата: 2026-09-08
 Юрисдикция текущей работы: Республика Беларусь
+Текущий scope: публичное portfolio без commerce (`DEC-082`)
 
 ## Читать сейчас
 
-1. [`02-LAWYER-ANSWERS-2026-08-24.md`](02-LAWYER-ANSWERS-2026-08-24.md) — источник решений встречи и сообщений юриста.
-2. [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md) — состав публичного комплекта и места показа.
-3. [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md) — только вопросы, которые ещё требуют ответа.
-4. [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md) — что можно использовать как структуру, а что нельзя копировать.
-5. [`00-MVP-LAUNCH-CHECKLIST.md`](00-MVP-LAUNCH-CHECKLIST.md) — gate публичной публикации.
+1. [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md) — пакет первого portfolio launch и
+   сохранённая граница commerce drafts.
+2. [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md)
+   — сначала вопросы A, которые блокируют portfolio; commerce-вопросы сохранены в B.
+3. [`00-MVP-LAUNCH-CHECKLIST.md`](00-MVP-LAUNCH-CHECKLIST.md) — gate публикации.
+4. [`02-LAWYER-ANSWERS-2026-08-24.md`](02-LAWYER-ANSWERS-2026-08-24.md) — исторический
+   источник встречи и сообщений юриста; не новый portfolio contract.
+5. [`08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md`](08-BIDBAITS-SOURCE-MAPPING-2026-09-06.md)
+   — структура/риски источника, который нельзя копировать.
 6. [`drafts/`](drafts/) — рабочие тексты; не одобрены для публикации.
 
-Прежние широкие BY+RF пакеты, закрытые вопросники и review prompts удалены из рабочего
-дерева. Они остаются в истории Git и не являются текущими инструкциями.
+Auction/sale draft и вопросы не удалены, но не блокируют первый portfolio MVP и не
+должны публиковаться как действующие правила до commerce wave.

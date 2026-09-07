@@ -1,8 +1,23 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-08
 
 Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
+
+## 2026-09-08 — Portfolio-first Figma scope
+
+- `Confirmed`: First MVP is public creator portfolio without commerce (`DEC-082`).
+- `Confirmed`: public Creator uses `Работы` / `Об авторе`; public `Архив`, cart, likes
+  and notification bell are excluded.
+- `Confirmed`: Work creation is photos/title → details → optional plain-text story →
+  moderation. Sale, payment/delivery, buyer contact, AI and process blocks are deferred.
+- `Confirmed`: Home/Works/Authors/Work keep the approved Figma composition while
+  commerce sections, fields and navigation are not rendered.
+- `Planned`: file `NM63j9lwRMqpo2HvAiYNll` is the read-only target for the next
+  mobile-first implementation. Exact inspect/token/asset handoff remains required.
+- `Historical runtime`: current production is still Pen-based and commerce-oriented.
+  Neither Figma nor `.pen` was changed by this documentation update.
+- Tests were not rerun because runtime behavior did not change.
 
 ## 2026-09-06 — Activity cancellation truthfulness
 

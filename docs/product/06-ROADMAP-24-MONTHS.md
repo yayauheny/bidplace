@@ -1,329 +1,132 @@
 # bidplace — roadmap на 24 месяца
 
-Последнее обновление: 2026-07-18  
-Статус: Planned  
-Горизонт: 8 циклов по 3 месяца
+Последнее обновление: 2026-09-08
+Статус: Planned
+Текущая граница: `DEC-082`–`DEC-084`
 
 ## 1. Ограничения
 
-Ресурсы:
+- один основной разработчик и небольшая ручная moderation;
+- не более двух крупных целей одновременно;
+- следующая волна начинается только после фактического gate;
+- сдвиг вправо лучше запуска несвязанных функций одновременно.
 
-- один основной разработчик;
-- возможно 1–2 человека позднее;
-- ограниченный бюджет;
-- ручная работа допустима;
-- скорость не цель;
-- крупный механизм получает месяцы, не неделю.
-
-Принцип:
-
-```text
-сделать → проверить → исправить → повторить → расширять
-```
-
-Не более двух крупных продуктовых целей на цикл.
-
-## 2. Переходные правила
-
-Следующая волна не начинается автоматически. Нужен gate:
-
-- технический;
-- продуктовый;
-- операционный;
-- trust;
-- capacity.
-
-Сдвиг вправо допустим.
-
-## 3. Месяцы 0–3: техническая устойчивость
+## 2. Месяцы 0–3: публичное портфолио
 
 ### Цель
 
-Надёжный auction flow.
+Авторы создают и распространяют полноценные публичные страницы с реальными Work.
 
-### Работы
+### Scope
 
-- auth;
-- SellerProfile;
-- lot;
-- images;
-- structured card;
-- scheduled auction;
-- reserve;
-- atomic bids;
-- increments;
-- realtime;
-- participation status;
-- phone verification;
-- hard close;
-- cron;
-- handoff;
-- admin;
-- audit;
-- analytics;
-- mobile web.
-
-### Тест
-
-10 users, conflicts, reconnect, close race, privacy, recovery.
+- email auth и recovery;
+- application и moderation автора;
+- профиль, structured public socials, about и optional achievements;
+- Work draft/moderation/publication/hide;
+- изображения, детали и text-only creation story;
+- Home, Works, Authors, search и простые filters;
+- share/copy и QR;
+- portfolio legal pack;
+- object storage, backup/restore, security и operations;
+- mobile-first read-only Figma implementation.
 
 ### Gate
 
-Нет critical defects из MVP RFC.
+- минимум 5 одобренных авторов и реальные работы;
+- несколько авторов самостоятельно закончили onboarding;
+- реальные переходы по profile link/QR;
+- нет critical privacy/security/content incident;
+- авторы возвращаются обновлять Work либо понятна причина отказа.
 
-## 4. Месяцы 4–6: первые продажи
+## 3. Месяцы 4–6: улучшение creator value
+
+Кандидаты выбираются по данным пилота:
+
+- clickable tags;
+- photo/text creation story;
+- notification center;
+- series/collections и ordering;
+- reports/error feedback;
+- creator analytics и social export.
+
+Buyer accounts, likes/follow и collections появляются только при доказанной ценности.
+
+## 4. Месяцы 7–9: commerce contract и controlled build
 
 ### Цель
 
-1–5 реальных аукционов.
+Подготовить один согласованный commerce contour без публичного включения.
 
 ### Работы
 
-- concierge;
-- preview assets;
-- первый seller;
-- ads;
-- moderation;
-- checklist;
-- sale confirmation;
-- interviews;
-- UX fixes;
-- status center;
-- incidents.
-
-### Условные эксперименты
-
-После первой сделки:
-
-- soft close prototype;
-- simplified fixed price;
-- limited drop prototype.
-
-Не обязательно выпускать все. Выбирается реально запрошенное.
+- Work/Listing/Order/handoff domain contract;
+- Belarus commerce legal pack;
+- auction/fixed/offer decisions;
+- double-sale, idempotency, snapshots and outcome events;
+- contact disclosure and critical delivery;
+- purchases/sales UI and admin exception flow;
+- review текущего auction runtime перед повторным включением.
 
 ### Gate
 
-- одна завершённая сделка;
-- нет trust incident;
-- creator готов повторить или ясно отказывается;
-- известны drop-off.
+Все mechanics, документы, UI states и abuse/race cases утверждены; capability остаётся
+выключенной до controlled pilot.
 
-## 5. Месяцы 7–9: повторяемый запуск
+## 5. Месяцы 10–12: первая commerce wave
 
-### Цель
+Ограниченный pilot auction, fixed price и optional buyer offer. Деньги и доставка идут
+напрямую между сторонами. Метрики: Listing→Order, contact reveal, contact success,
+failed outcome, admin involvement, relist and repeat author.
 
-Снизить стоимость запуска следующего creator.
+Gate: несколько реальных завершённых попыток без double-sale/privacy incident и с
+понятной операционной нагрузкой.
 
-### Работы
+## 6. Месяцы 13–15: доверие и повторяемость
 
-- onboarding checklist;
-- listing template;
-- social assets;
-- creator profile;
-- other works;
-- relist;
-- drafts;
-- availability;
-- category attributes;
-- ad tracking;
-- case studies.
+- reviews/ratings только из Order outcome;
+- transaction chat, если внешний handoff создаёт проблемы;
+- dispute workspace;
+- creator analytics;
+- stronger abuse controls;
+- repeat listing and launch tooling.
 
-### Gate
+## 7. Месяцы 16–18: монетизация сервиса
 
-- 3 creators;
-- 5 real auctions;
-- 3 sales;
-- один repeat seller.
+- optional creator subscription;
+- billing provider и отдельные условия;
+- scheduled publication, expanded limits, statistics, AI assistance;
+- marked promotion;
+- physical QR creator packs.
 
-## 6. Месяцы 10–12: несколько механизмов
+Оплата Work, escrow и комиссия не добавляются автоматически вместе с subscription.
 
-### Цель
+## 8. Месяцы 19–21: quantity и новые форматы
 
-Добавить доказанные форматы.
+Только после спроса:
+
+- editions and sale units;
+- drops;
+- presale/made-to-order;
+- services/commissions как отдельный contract.
+
+## 9. Месяцы 22–24: расширение
 
 Кандидаты:
 
-- timed auction;
-- soft-close auction;
-- fixed price;
-- limited drop.
+- platform payments/escrow после отдельной financial architecture;
+- delivery providers;
+- currencies/languages/countries;
+- curated discovery and recommendations на реальных данных.
 
-Preorder только при реальном спросе.
+## 10. Вне обязательного плана
 
-### Работы
+AR/3D, visual search, crypto/NFT, financing, open resale, mass-market inventory,
+lotteries and random draws.
 
-- common Sale model;
-- lifecycle;
-- quantity;
-- order intent;
-- purchase history;
-- seller status;
-- dispute tools;
-- category navigation;
-- editorial landing.
+## 11. Когда остановить расширение
 
-Не делать recommendations, open marketplace, international payments.
-
-### Gate
-
-Каждый новый формат — минимум 3 реальных запуска и интервью.
-
-## 7. Месяцы 13–15: payment readiness
-
-### Цель
-
-Подготовить безопасные platform transactions.
-
-### Работы
-
-- legal review;
-- merchant/intermediary model;
-- provider talks;
-- KYC;
-- refunds;
-- chargebacks;
-- ledger;
-- payout;
-- idempotency;
-- antifraud;
-- reconciliation.
-
-Entities:
-
-- Order;
-- PaymentIntent;
-- LedgerEntry;
-- Payout;
-- Refund.
-
-Не проводить деньги без sandbox, double-entry, legal approval.
-
-## 8. Месяцы 16–18: payment pilot
-
-### Цель
-
-Ограниченные сделки через платформу.
-
-### Работы
-
-- one provider;
-- one currency;
-- checkout;
-- payout;
-- one fee model;
-- refund;
-- payout delay;
-- fraud flags;
-- manual review;
-- delivery confirmation;
-- runbooks.
-
-Gate: reconciliation без расхождений и ошибочных выплат.
-
-## 9. Месяцы 19–21: публичные creators
-
-### Цель
-
-Движение к North Star.
-
-### Работы
-
-- enhanced verification;
-- representative account;
-- privacy mode;
-- inbox;
-- provenance evidence;
-- labels personal/signed;
-- concierge workspace;
-- approval workflow;
-- media kit;
-- high-traffic hardening;
-- soft close default для крупных запусков, если подтверждено.
-
-Sellers:
-
-- локальные известные creators;
-- музыканты;
-- блогеры;
-- предприниматели;
-- artists с аудиторией.
-
-Brands всё ещё не open segment.
-
-Gate: один запуск публичного человека без privacy/trust incident.
-
-## 10. Месяцы 22–24: controlled discovery
-
-### Цель
-
-Помочь найти других creators.
-
-Предпосылки:
-
-- каталог;
-- repeat buyers;
-- category data;
-- moderation;
-- несколько active sales.
-
-Работы:
-
-- search;
-- filters;
-- curated collections;
-- similar works;
-- creator follow без spam;
-- limited feed;
-- ending soon;
-- new creators;
-- value editorial.
-
-Не делать без данных:
-
-- сложный AI;
-- black-box ranking;
-- infinite feed;
-- popularity-only.
-
-Gate: cross-creator engagement без mass-market шума.
-
-## 11. Вне обязательного плана
-
-- visual search;
-- room-photo search;
-- AR/3D;
-- masterclasses;
-- booking;
-- corporate procurement;
-- charity;
-- brand onboarding;
-- international shipping;
-- multi-currency;
-- collectibles;
-- verified resale;
-- financing;
-- advanced recommendations.
-
-## 12. Когда замедлиться
-
-- текущая механика не прошла сделки;
-- растут incidents;
+- текущая волна не прошла gate;
 - docs расходятся с code;
-- нет времени на tests;
-- privacy/security issue;
-- capacity падает;
-- feature не усиливает value;
-- рынок просит другой механизм.
-
-## 13. Обновление
-
-Для каждой волны:
-
-- статус;
-- фактические даты;
-- gates;
-- перенесённое;
-- причины;
-- новые decisions.
-
-Текущий progress хранится только в `11-PROJECT-STATUS.md`.
+- растут moderation/privacy/security incidents;
+- feature не усиливает ценность автора или Work;
+- нет capacity на поддержку и recovery.

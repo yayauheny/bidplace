@@ -1,131 +1,92 @@
-# bidplace — текущее состояние public MVP
+# bidplace — готовность первого portfolio MVP
 
-Дата среза: 2026-09-07
-Проверенный code baseline: `fix/figma-readonly-audit`, HEAD `beed3a0`
-Текущая документация: `feature/mvp-decision-review`
-Статус: текущий аудит; прежние датированные аудиты удалены из рабочего дерева и остаются в Git
+Дата среза: 2026-09-08
+Product contract: [`docs/product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
+Active work: [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)
+Deferred work: [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
 
 ## Итог
 
-Закрытый локальный тест текущего аукциона возможен. Публичный MVP пока не готов:
-в коде нет Work-first модели, прямой продажи и предложения цены; правила невыкупа
-не выбраны; legal UX не реализован; публичные документы не адаптированы к фактической
-инфраструктуре и не проверены юристом Беларуси; новый дизайн нельзя окончательно
-подключить к отсутствующим server contracts.
+Scope первого запуска теперь достаточно узкий и определён: публичное портфолио автора
+без сделок. Продуктовые развилки commerce больше не блокируют запуск. Код пока не
+соответствует новому scope: production UI и API содержат auction/order surfaces, новый
+Figma ещё не реализован, portfolio creation/profile contracts требуют reconciliation,
+а public legal/data/storage/operations gates не закрыты.
 
-## Подтверждённо закрыто
+## Что уже закрыто и используется
 
-| Область | Результат |
+| Область | Состояние |
 |---|---|
-| Product write atomicity | В HEAD находятся `e35a4f5` и follow-up `474ef07`: Product, media, story, scheduling и moderation используют общий row-lock invariant; race coverage добавлен. |
-| Buyer Activity | `e3f1b99`: отмена больше не называется проигранной ставкой, Order выбирается детерминированно. |
-| Binary hydration | Из известных list/moderation paths убрана загрузка полного photo blob; статус отражён в `11-PROJECT-STATUS.md`. |
-| Figma inventory | Read-only аудит выполнен; оригинальный Figma не менялся. По статусу основателя основные прототипы готовы, кроме окончательной логики `Покупки / Продажи`. Визуальная готовность не заменяет отсутствующие fixed/offer contracts. |
-| Marketplace и abuse research | Достаточно для выбора продуктовых вариантов: Work/Listing разделены, second chance является отдельным действием, self-bid блокируется, сетевые признаки не считаются доказательством, история остаётся неизменяемой. |
-| Stress-test D01–D04 | Варианты проверены как одна модель сделки. D04 принят: тестовые данные очищаются до пилота. Рекомендации по D01–D03, включая two-party/admin resolution и second chance, ещё не являются решением основателя. |
-| Belarus legal UX research | Достаточно для проектирования мест controls, cookies, action confirmations, footer и audit evidence. Оно не заменяет финальную проверку юриста. |
-| Решения основателя | Оператор и юридическая рамка — Беларусь, первая аудитория — Беларусь и Россия; BYN; Work-first; аукцион отдельно от fixed; offer только для fixed; деньги и доставка вне платформы; fixed бессрочен до покупки/снятия; один format-neutral Order; все текущие данные тестовые; in-app notifications и общие reports после MVP. |
+| Product write atomicity | Реализован общий Product row-lock invariant для известных write paths; race coverage существует. |
+| Auth/security baseline | Email/password, verification/recovery, fail-closed production config, upload authorization/limits и admin emergency paths существуют; остаточные проверки перечислены ниже. |
+| Author/Work foundations | Seller application, Product draft/moderation, public discovery, creator profile, structured socials и creation story имеют текущую реализацию, которую можно адаптировать. |
+| Public discovery | Home, Works, Authors, Search и server-side pagination/filtering существуют; commerce-specific projection надо убрать из First MVP. |
+| Design | Новый creator-first Figma визуально согласован и остаётся read-only. Анализ экранов завершил portfolio cut list. Реализация не начата. |
+| Research | Marketplace/abuse/legal UX и новое creator-commerce исследование сохранены для второй волны; они больше не блокируют First MVP. |
+| Test data | Текущие business rows disposable и очищаются контролируемо перед public pilot (`DEC-081`). |
 
-## Активные задачи и зависимости
+## Что блокирует публичный portfolio launch
 
-| Приоритет | Задача | Состояние | Исполнитель |
-|---|---|---|---|
-| P0 | Исследовать creator commerce, handoff и community pain | Не выполнено; браузерный исследователь возвращает текст и источники без доступа к repo | GPT browser researcher; review Sol |
-| P0 | Зафиксировать Work-first domain contract | Заблокировано до результата исследования и решений D01–D03 | GPT-5.6 Sol |
-| P0 | Составить фактическую data/cookie/processor map | Не выполнено; блокирует legal drafts и consent implementation | Grok 4.6 High, review Sol |
-| P1 | Интегрировать seller sales history | Код есть только на `fix/seller-sales-history` / `c3ef615`, в HEAD его нет | GPT-5.6 Sol review, затем перенос |
-| P1 | Legacy HTTPS preflight | Strict schema существует, старые `http:` значения не проверены | Grok 4.6 High, review Sol |
-| P1 | JWT role freshness | Guards могут доверять роли из ранее выданного токена | Grok 4.6 High, security review Sol |
-| P2 | Lifecycle bounded progress | Batch 50 есть; нет доказательства `51 → 50 + 1`, решения poison-prefix и multi-instance policy | Grok 4.6 High, review Sol |
-| P1 | Security/dependency evidence review | Самописный JWT и другие security-critical utilities не получили отдельного evidence review; запрос на сравнение с поддерживаемыми библиотеками не был оформлен задачей | Grok 4.6 High, security review Sol |
-| P1 | Public-pilot operations readiness | Runbook существует, но его утверждения и реальные deploy/backup/email/TLS gaps не сверены заново | Grok 4.6 High, review Sol |
+1. **Commerce isolation:** server и client пока не имеют доказанного fail-closed режима
+   для выключения auction/bid/order/handoff без удаления кода.
+2. **Portfolio Work lifecycle:** нет утверждённой и реализованной revision-модели, при
+   которой public Work можно обновлять через moderation без потери последней одобренной
+   версии.
+3. **Media:** требуется утверждённый object-storage/rendition/cleanup/backup boundary;
+   portfolio зависит от изображений сильнее прежнего auction pilot.
+4. **Author onboarding/profile:** надо сверить required/optional fields, public/private
+   data, achievements и moderation с новым RFC и Figma.
+5. **Work creation:** текущий sale-oriented flow надо свести к photos/title → details →
+   optional text story → moderation.
+6. **Public projections:** Home/catalog/profile/Work должны перестать требовать Listing,
+   price, timer, sale status, bids или Order.
+7. **Auth/legal UX:** оставить email/password path, убрать неподдержанные OAuth/magic
+   code controls, определить фактические registration/cookie controls и документы.
+8. **Security residuals:** role freshness, dependency evidence и legacy HTTPS preflight
+   остаются незакрытыми.
+9. **Operations:** staging email, TLS, migrations, object restore, rollback,
+   observability и real-content checks не доказаны для public environment.
+10. **Figma implementation:** mobile-first screens и required states ещё не перенесены
+    в production.
 
-## Решения основателя, нужные до реализации сделок
+## Что не блокирует First MVP
 
-Исследование не определяет один обязательный отраслевой вариант. До schemas и UI
-нужно выбрать:
+- offer expiry/revoke/counteroffer;
+- non-payment, second chance и handoff statuses;
+- seller sales history и auction scheduler starvation;
+- auction/fixed/offer legal copy;
+- orders, purchase/sales cabinet and critical commerce notifications;
+- chat, reviews, ratings, likes, wishlist, notification center;
+- photo/text process story, AI, subscription, payments, delivery, quantity and
+  internationalization.
 
-1. Offer: срок, возможность отзыва покупателем, counteroffer и судьба offer при
-   параллельной fixed-покупке.
-2. Невыкуп: срок связи, кто объявляет сделку несостоявшейся, напоминания и условия
-   повторной продажи.
-3. Second chance: отсутствует; либо отдельное предложение одному следующему
-   участнику с его подтверждением, либо только новый Listing. Исходный результат
-   никогда не переписывается, контакты всех участников автоматически не открываются.
-4. Статусы передачи: кто может отметить `Связались` и `Передача завершена`, требуется
-   ли подтверждение второй стороны.
+Всё перечисленное сохранено во втором backlog; ничего не объявлено отменённым.
 
-D04 закрыт: текущие записи тестовые и очищаются до public pilot (`DEC-081`).
+## Рекомендуемый технический способ отключения commerce
 
-Актуальные варианты находятся в
-[`docs/product/14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md), а
-совместимая рекомендация и последствия — в
-[`docs/research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md).
+Durable-вариант — server-authoritative capability, default `false`:
 
-## Открытые архитектурные пробелы
+- client navigation/routes/actions не экспонируют commerce;
+- API mutations и чувствительные reads проверяют capability;
+- jobs/scheduler не создают commerce outcomes;
+- public discovery исключает commerce-only поля и тестовые listings;
+- commerce tests явно включают capability;
+- существующие modules/migrations/tests остаются в Git.
 
-Полная карта вариантов хранится в
-[`01-OPEN-ARCHITECTURE-GAPS.md`](01-OPEN-ARCHITECTURE-GAPS.md). `DEC-079`–`DEC-081`
-закрыли общий Work lifecycle, format-neutral Order boundary, test-data reset и
-post-MVP deferrals. Точные persistence, edit/remoderation и handoff варианты остаются
-открыты до Task 10 и Work-first contract.
+Долгоживущая отдельная ветка хуже: она перестаёт получать общие auth/media/security
+исправления. Новая feature branch нужна только на время будущей реализации commerce v2.
 
-Самые опасные текущие расхождения:
+## Порядок закрытия
 
-- DB гарантирует один активный Order на Listing, но не на Work;
-- fixed и accepted offer нельзя представить без обязательного `sourceBidId`;
-- seller единолично ставит terminal handoff statuses;
-- admin replacement создаёт новый Order до согласия runner-up;
-- production-like чтение старых Orders может подменять snapshot живой карточкой.
-
-Это зафиксированные пробелы, а не разрешение менять schema. Варианты и рекомендуемые
-направления должны быть утверждены перед техническими задачами.
-
-## Граница текущего UI и будущего редизайна
-
-Текущий `docs/design/*` и repository guard описывают Pen v2 как визуальный источник
-уже реализованного UI. Основатель выбрал новый оригинальный Figma-файл как read-only
-источник будущего редизайна и запретил изменять его. Эти два факта относятся к разным
-этапам, но формальный cutover ещё не оформлен: перед реализацией редизайна нужно
-зафиксировать точный Figma file/version, доступный inspect/token/asset handoff и момент,
-с которого старые Pen-owner docs становятся historical. До этого нельзя смешивать
-значения из Pen и Figma либо удалять текущую защиту `.pen` в обычной code-задаче.
-
-## Последовательность реализации
-
-1. Выполнить Task 10, принять D01–D03 и утвердить Work-first contract.
-2. Интегрировать seller history; закрыть HTTPS, role freshness и lifecycle residuals.
-3. Реализовать Work без продажи и attach/relist Listing.
-4. Реализовать fixed sale отдельным атомарным блоком.
-5. Реализовать buyer offer отдельным блоком.
-6. Реализовать non-payment/second chance по принятому решению.
-7. Собрать data map; затем versioned acceptances, cookies и contact-disclosure audit.
-8. Реализовать узкий Order problem flow, text-only сообщение об ошибке и кабинет.
-9. Перенести изображения в S3-compatible storage и обновить backup/restore перед
-   ожидаемой публичной нагрузкой.
-10. Оформить visual-source cutover на read-only Figma; выполнить mobile-first
-    redesign, затем 1024/1440 и полный state/accessibility QA.
-11. Провести staging, race, email, consent, backup/restore и rollback rehearsal.
-
-## Что не блокирует текущую работу
-
-Подписка, встроенная оплата, доставка платформы, чат, отзывы, рейтинг, wishlist,
-дропы, пресейл, другие валюты, AI-помощник, расширенный QR/social export и
-автоматическое приложение session logs к сообщению об ошибке находятся после MVP.
-
-## Текущие release blockers
-
-- открытые продуктовые правила offer/non-payment/second chance;
-- Work-first, fixed и offer server contracts;
-- защита от двойной продажи и утечки контактов для новых flows;
-- data/cookie/processor map и реализация legal evidence;
-- адаптированный комплект документов и финальная проверка юриста Беларуси;
-- transaction-specific problem/support flow;
-- кабинет `Покупки / Продажи` с полной историей;
-- формальный cutover с текущих Pen owner-docs на versioned read-only Figma handoff;
-- завершённый responsive redesign и release rehearsal.
+1. F01 commerce gate, F02 Work lifecycle, F04 data inventory и F05–F07 security можно
+   выполнять параллельно.
+2. F03 media boundary закрыть до real-content migration.
+3. Реализовать author/profile, Work creation и public discovery contracts.
+4. Адаптировать portfolio legal pack и получить Belarus lawyer review.
+5. Оформить versioned read-only Figma handoff и выполнить mobile-first UI.
+6. Провести security/design/operations review, staging smoke, restore и rollback.
 
 ## Проверка этого обновления
 
-Изменялась только документация. Код и тесты приложения не запускались. `.pen` и
-оригинальный Figma не изменялись.
+Это documentation-only scope change. Код, schema, Figma и `.pen` не менялись; tests не
+запускались. Фактические code statuses не повышались.

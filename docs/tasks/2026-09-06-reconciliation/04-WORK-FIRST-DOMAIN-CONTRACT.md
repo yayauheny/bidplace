@@ -1,5 +1,8 @@
 # Task 04 — Work-first domain contract
 
+> **Status: split by `DEC-082`.** Portfolio Work lifecycle is active task F02; the Listing/Order/handoff part of this older prompt is deferred and its RFC §21/D01–D03 prerequisites are historical. Do not execute it unchanged.
+
+
 Исполнитель: GPT-5.6 Sol
 Приоритет: P0
 Режим: specification-only; app code и schemas не менять

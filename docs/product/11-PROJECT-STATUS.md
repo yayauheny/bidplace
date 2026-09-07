@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-08 — First MVP scope changed to public portfolio
+
+- `Confirmed product`: `DEC-082`–`DEC-084` replace the first public release target
+  with creator profiles and portfolio Work; commerce moves to the post-MVP backlog.
+- `Not implemented`: current runtime remains Pen-based and commerce-oriented. Auction,
+  Bid, Order and handoff code still exists and does not yet have the required
+  server-authoritative default-off capability.
+- `Planned`: portfolio Work revisions, object storage, creator onboarding, simplified
+  Work creation, portfolio discovery and the read-only Figma cutover are tracked in
+  [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
+- `Deferred`: seller history, auction lifecycle residuals, fixed/offer, handoff and the
+  completed creator-commerce research are preserved in
+  [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
+- `Needs verification`: no code status was promoted. This was a documentation-only
+  scope reconciliation; tests were not run and Figma/`.pen` were not changed.
+
 ## 2026-09-07 — Work/Order boundaries and research gate
 
 - `Implemented` (docs only): `DEC-079` confirms portfolio-first Work states,
@@ -55,7 +71,7 @@
   удалены из активной структуры; текущие blockers сведены в
   [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md),
   активные задачи — в
-  [`../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md).
+  [`../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 - `Implemented` (research): Belarus legal UX findings перенесены в
   [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
   Research определяет понятные места controls, но не заменяет заключение юриста.
@@ -105,7 +121,7 @@
   typecheck 7/7, lint 2/2, API unit 302, contracts 27, integration 73 and build
   7/7. Passing tests do not cover the named concurrency/product gaps.
 - Current audit: `../audits/00-CURRENT-MVP-READINESS.md`; backlog:
-  `../tasks/2026-09-06-reconciliation/00-MASTER-BACKLOG.md`; legal questions:
+  `../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`; legal questions:
   `../legal/06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
 
 ## 2026-09-06 — Seller inbox HTTP 401/403

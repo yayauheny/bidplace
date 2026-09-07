@@ -1,5 +1,10 @@
 # Task 10 — промт для браузерного исследования creator commerce
 
+> **Status: completed research input, deferred implementation.** The browser response is
+> archived at `docs/research/raw/2026-09-08-creator-commerce-research.md`. Commerce is
+> outside First MVP (`DEC-082`); keep this prompt for source/audit history.
+
+
 Исполнитель: GPT в браузерной версии с полноценным web search
 Приоритет: P0 research gate перед Work-first и handoff contract
 Результат: один текстовый ответ на русском языке с прямыми ссылками на источники

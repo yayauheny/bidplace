@@ -1,543 +1,285 @@
-# bidplace MVP RFC
+# bidplace — First MVP RFC
 
-Версия: 1.6
-Последнее обновление: 2026-09-07
+Версия: 2.0
+Последнее обновление: 2026-09-08
 Статус: Confirmed
-Связанные решения: `DEC-003` — `DEC-011`, `DEC-016` — `DEC-020`, `DEC-023`, `DEC-039`, `DEC-042` — `DEC-054`, `DEC-070` — `DEC-081`
+Основные решения: `DEC-082`, `DEC-083`, `DEC-084`
 
-## 1. Цель MVP
+## 1. Что проверяет первый MVP
 
-Проверить полный сценарий:
+Первый публичный MVP проверяет один сценарий:
 
-> Реальный creator публикует реальную уникальную физическую работу, приводит аудиторию, получает конкурентные ставки, завершает продажу победителю и передаёт предмет.
+> Автор создаёт красивую публичную страницу, добавляет реальные работы, проходит
+> модерацию и делится одной ссылкой или QR. Посетители открывают автора и его работы
+> без регистрации.
 
-MVP проверяет:
+Проверяем:
 
-- понятность аукциона;
-- способность автора привести покупателей;
-- способность карточки объяснить ценность;
-- техническую корректность торгов;
-- готовность победителя оплатить;
-- готовность автора повторить.
+- готовы ли авторы заполнить профиль и добавить несколько работ;
+- воспринимается ли bidplace как полноценная публичная страница автора;
+- переходят ли люди по ссылке и QR;
+- открывают ли другие работы и профили;
+- возвращается ли автор обновлять портфолио;
+- можно ли поддерживать качество контента небольшой ручной модерацией.
 
-MVP не проверяет полноценный marketplace.
+Этот MVP не проверяет спрос, цену, ставки, оплату или завершение сделки.
 
-## 2. Первая гипотеза
+## 2. Граница запуска
 
-> Creator с небольшой активной аудиторией способен через хорошо оформленный scheduled auction получить минимум две реальные ставки от разных людей и завершить продажу без встроенных платежей.
+- оператор и legal workstream — Республика Беларусь;
+- интерфейс первого запуска — русский;
+- просмотр публичных страниц не требует аккаунта;
+- авторы допускаются вручную;
+- деньги за работы и доставка отсутствуют в пользовательских сценариях;
+- подписки, комиссии и платное продвижение отсутствуют;
+- новый Figma-файл является read-only target будущей UI-реализации;
+- существующий commerce runtime сохраняется, но выключен fail-closed (`DEC-084`).
 
-## 3. Первый запуск
+## 3. Роли
 
-- оператор — ИП Беларуси;
-- актуальный legal launch gate и публичные документы проверяются по
-  законодательству Беларуси (`DEC-077`);
-- русский язык интерфейса;
-- валюта MVP — `BYN`; другие валюты и подсказки конвертации остаются после MVP;
-- закрытый pilot: публичная заявка seller доступна, но продавать можно только после ручного admin approval;
-- вероятный первый продавец — Таисия Борисова;
-- оригинальная физическая работа;
-- оплата и доставка вне платформы.
+### Посетитель
 
-Юридические и налоговые выводы требуют отдельной проверки до публичного запуска.
+- открывает главную, каталог работ и каталог авторов;
+- ищет и фильтрует публичный контент;
+- открывает профиль автора и страницу работы;
+- использует публичную ссылку и QR;
+- не обязан регистрироваться.
 
-## 4. Роли
+### Автор-кандидат
 
-### Visitor
+- создаёт аккаунт по email и паролю;
+- подтверждает email;
+- заполняет заявку и профиль автора;
+- ожидает ручной проверки;
+- исправляет замечания в той же заявке.
 
-- открывает страницу;
-- видит автора, работу, цену, время, историю;
-- понимает правила;
-- переходит к регистрации.
+### Одобренный автор
 
-### Buyer
+- создаёт и сохраняет Work draft;
+- отправляет Work на модерацию;
+- видит свои drafts, работы на проверке, замечания, опубликованные и скрытые работы;
+- обновляет профиль и отправляет затрагивающие публичные данные изменения на проверку;
+- скрывает работу из публичного профиля;
+- копирует ссылку и QR профиля.
 
-После регистрации и verification перед первой ставкой:
+### Администратор
 
-- делает ставку;
-- видит свой статус;
-- видит историю;
-- переживает refresh/reconnect;
-- получает результат;
-- видит доступные контакты после победы.
+- проверяет заявки авторов;
+- проверяет Work и публичные изменения;
+- одобряет, запрашивает изменения, отклоняет или скрывает контент;
+- блокирует аккаунт и отзывает сессии;
+- видит необходимый audit trail.
 
-### Seller
+## 4. Публичная навигация
 
-- создаёт черновик;
-- загружает изображения;
-- заполняет карточку;
-- назначает start/end;
-- задаёт start price;
-- публикует preview после модерации;
-- видит ставки;
-- получает winner;
-- может скрыть личный контакт;
-- подтверждает продажу.
-
-### Admin
-
-- подтверждает автора;
-- подтверждает/скрывает лот;
-- смотрит audit;
-- блокирует пользователя;
-- сопровождает failed handoff;
-- фиксирует итог пилота.
-
-## 5. Основной путь
-
-### Seller onboarding
-
-1. Visitor подаёт публичную заявку seller и заполняет SellerProfile со статусом `PENDING_REVIEW`.
-2. Admin вручную проверяет заявку. Только `APPROVED` SellerProfile открывает seller cabinet для Product и Listing.
-3. Approved seller создаёт Product draft.
-4. Product отправляется на ручную модерацию.
-5. После Product approval seller создаёт и планирует Listing.
-6. Preview и публичная ссылка появляются только для approved Product.
-7. Seller получает материалы для анонса.
-
-### Buyer flow
-
-1. Открывает ссылку без регистрации.
-2. Изучает работу.
-3. Нажимает bid CTA.
-4. Регистрируется email/password.
-5. Подтверждает email перед первой ставкой.
-6. Перед первой ставкой видит и принимает версию правил сервиса.
-7. Видит minimum и получает client-side feedback для числовой BYN суммы и правила increment.
-8. Перед первой ставкой в конкретном Listing явно подтверждает предмет, сумму, server minimum, deadline и последствие действия.
-9. Отправляет bid; повторная ставка в том же Listing не повторяет confirmation при известном participation status.
-10. Backend атомарно фиксирует или отклоняет; при отклонении client refetches canonical snapshot и показывает новый minimum/price.
-11. Клиенты получают realtime как сигнал для refetch.
-12. Статус виден в разделе участия.
-
-### Closing
-
-1. Backend использует server time.
-2. После `endsAt` bids не принимаются.
-3. Cron закрывает идемпотентно.
-4. Highest valid Bid становится winner.
-5. Если valid Bid нет — Listing завершается без winner.
-6. Contacts раскрываются по privacy mode.
-7. Оплата/передача вне платформы.
-8. Seller подтверждает результат или проблему.
-
-## 6. Scheduled auction
+Мобильная основная навигация первого MVP:
 
 ```text
-SellerProfile: PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | SUSPENDED
-Product:       DRAFT → PENDING_REVIEW → APPROVED | CHANGES_REQUESTED | REJECTED | ARCHIVED
-               CHANGES_REQUESTED | REJECTED → PENDING_REVIEW (owner resubmit, same Product)
-Listing:       DRAFT → SCHEDULED → LIVE → ENDED | CANCELLED
-               SCHEDULED → CANCELLED if `endsAt` passes without activation (`DEC-073`)
-Order:         PENDING_CONTACT → CONTACTED → COMPLETED | HANDOFF_FAILED | CANCELLED
+Главная | Поиск | Добавить | Профиль
 ```
 
-- SellerProfile в `PENDING_REVIEW` доступен заявителю только для просмотра статуса; Product и Listing writes открываются только после `APPROVED`.
-- Product в `DRAFT`, `PENDING_REVIEW`, `CHANGES_REQUESTED` или `REJECTED` не виден публично.
-- Approved seller-owner может править Product в `REJECTED` в тех же границах, что `CHANGES_REQUESTED` (поля, изображения, creation story), видеть последнюю причину модерации и отправить тот же Product обратно в `PENDING_REVIEW`. Новый Product не создаётся. AuditEvent остаётся append-only. См. `DEC-071`.
-- Product попадает в public catalog только при `APPROVED` Product и `SCHEDULED`, `LIVE` либо `ENDED` Listing. Фильтр только открытых торгов остаётся будущим default-фильтром; завершённый Product сохраняет public URL и историю, если его не скрыл admin.
-- до `startsAt` bid недоступен; backend переводит Listing в `LIVE`; client timer не источник истины.
-- Если `SCHEDULED` Listing так и не активировался до `endsAt`, cron переводит его в `CANCELLED` с append-only audit, без Order и без тихого +24h. См. `DEC-073`.
+`Добавить` для гостя ведёт к авторизации/заявке, для одобренного автора — к созданию
+Work. Cart, likes и notification bell отсутствуют. Плавающая панель никогда не
+перекрывает контент и safe area.
 
-## 7. Правила ставок
+## 5. Главная
 
-### Backend — источник истины
+Допустимые секции:
 
-Server определяет time, price, status, winner.
+1. `Открытие недели` — реальный вручную выбранный автор или работа; если выбора нет,
+   секция скрыта.
+2. `Новые работы`.
+3. `Новые авторы` либо короткий переход в каталог авторов.
 
-WebSocket только ускоряет отображение.
+Нет `Активных торгов`, цен, таймеров и commerce status. Нельзя публиковать фиктивный
+editorial choice или тестовые карточки как реальные.
 
-### Конкурентность
+## 6. Каталоги и поиск
 
-Ставка выполняется в transaction.
+### Работы
 
-Инварианты:
+- полнотекстовый поиск по поддерживаемым полям;
+- фильтры: категория и материал;
+- сортировка: сначала новые или сначала старые;
+- server-side pagination;
+- карточка показывает изображение, название, автора и краткие факты Work.
 
-- цена не откатывается;
-- конфликтующие bids не получают одинаковое winning state;
-- history, currentPrice, bidCount, winner согласованы;
-- rejected bid получает причину и новый minimum.
+Нет вкладок `Аукционы`, `Анонсы`, `Архив`, price filter, sale state и слова `лот`.
 
-### Soft close
+### Авторы
 
-MVP:
+- поиск по публичному имени и username;
+- фильтры: направление/tag и город;
+- простая сортировка по имени или дате добавления;
+- карточка показывает фотографию, имя, username и чипы.
 
-- bid валиден, если backend фиксирует его до актуального `endsAt`;
-- device time игнорируется;
-- Bid в последние 60 seconds продлевает `endsAt` на 60 seconds;
-- суммарное продление ограничено 600 seconds от исходного `endsAt`;
-- после актуального `endsAt` bid отклоняется.
+Интерфейс не обещает проверку личности, подлинности или профессионального статуса.
 
-Server рассчитывает и атомарно фиксирует новое `endsAt`; client timer не источник истины.
+## 7. Публичный профиль автора
 
-### Принятие правил
+Профиль содержит:
 
-Перед первой ставкой buyer видит краткие правила сервиса и явным действием соглашается с их versioned text. Backend хранит версию правил и timestamp принятия. Это не payment flow и не заменяет юридические документы.
+- фото, публичное имя, `@slug`, город и страну;
+- направления и короткие чипы;
+- указанные автором Telegram, Instagram и website;
+- share/copy и QR;
+- вкладки `Работы` и `Об авторе`;
+- биографию, практику/подход и необязательные выставки/достижения;
+- только опубликованные работы.
 
-### Bid increments
+Чипы сохраняют утверждённый вид. До включения tag discovery они имеют
+неинтерактивную семантику. Public email и отдельный handoff contact не показываются.
+Draft, moderation, rejected и hidden никогда не попадают в публичный профиль.
 
-| Цена | Шаг |
-|---|---:|
-| 0–25 BYN | 0.5 |
-| 25–100 BYN | 1 |
-| 100–500 BYN | 5 |
-| 500–1 000 BYN | 10 |
-| 1 000+ BYN | 25 |
+## 8. Заявка и профиль автора
 
-Client проверяет формат суммы и эту таблицу для немедленной обратной связи. Он не является источником истины: server transaction окончательно решает current price, minimum next bid, Listing state, `endsAt` и soft close.
+Минимальные обязательные данные:
 
-### История
+- фото профиля;
+- публичное имя;
+- уникальный `@slug`;
+- страна и город;
+- короткий текст о себе;
+- хотя бы одно основное направление.
 
-Показывается:
+Дополнительно:
 
-- сумма;
-- время;
-- псевдоним типа `user123`;
-- порядок.
+- практика и подход;
+- Telegram, Instagram и website;
+- выставки и достижения: дата/год, короткое описание и необязательное изображение.
 
-Не показываются email, phone, internal ID, полное имя без необходимости.
+Auth email не становится публичным автоматически. Экран не использует тексты
+`начните продавать`, `для покупателя` или `не сможете продавать`. Незавершённая
+заявка сохраняется и может быть продолжена.
 
-## 8. Цена
+## 9. Work и его состояния
 
-MVP использует только start price в BYN. Это минимальная цена seller; hidden reserve и reserve status не существуют в runtime, public UI или API.
+Work существует независимо от Listing и Order. Для первого MVP применяются состояния:
 
-Нельзя:
+```text
+Draft → Pending review → Published
+          ↘ Changes requested
+          ↘ Rejected
+Published ↔ Hidden
+```
 
-- использовать связанные accounts;
-- создавать platform bids;
-- менять start price после планирования Listing.
+Публично виден только approved/published Work. Публичного состояния `Архив` нет.
+Скрытие Work не стирает его данные и не создаёт sale history.
 
-## 9. Статус участия вместо внешних уведомлений
+После изменения публичных существенных полей используется повторная модерация.
+Целевой durable-вариант сохраняет последнюю одобренную версию публичной, пока новая
+revision проверяется; точная migration/API реализация входит в First MVP backlog.
 
-Нет email/push/SMS о торгах.
+## 10. Создание Work
 
-Раздел «Мои покупки / Ставки»:
+Три шага:
 
-- `Побеждает`;
-- `Перебита`;
-- `Выиграна`;
-- `Проиграна`;
-- `Ожидает завершения`;
-- `Требуется действие`.
+1. **Основная информация:** несколько основных фотографий и название. Первая
+   фотография является обложкой; автор может удалить изображение и выбрать обложку.
+2. **Детали:** категория, размеры, материал/техника, `Тираж`, год или дата создания.
+3. **История создания — необязательно:** одно plain-text поле с абзацами.
 
-Статус realtime и визуально различим.
-
-Причина:
-
-- не засорять почту;
-- no-name сервис не должен начинать со spam;
-- пользователь сам контролирует участие.
-
-Риск: не вернётся после outbid.
-
-Проверка:
-
-- post-interview;
-- return rate;
-- status views;
-- пересмотр при систематическом drop-off.
-
-Критические сообщения об оплате и безопасности позднее отделяются от маркетинговых.
-
-In-app notifications входят в MVP до redesign. Точный набор transactional email
-для результата сделки, replacement/deadline, security и complaint определяется
-после legal/product mapping (`DEC-075`). Verification и password reset остаются
-обязательными service messages. Outbid/marketing email пока вне MVP.
-
-## 10. Email verification
-
-- не нужна для просмотра;
-- может не требоваться при базовой регистрации;
-- обязательна перед первой ставкой в production;
-- production MVP использует email; Telegram verification и phone verification рассматриваются после MVP;
-- rate limit;
-- verification code expiry;
-- abuse check.
-
-Dev/test окружение может использовать явный non-production bypass, который невозможен в production build и не отключает authorization, transaction или idempotency checks.
-
-## 11. Карточка лота
-
-Обязательно:
-
-- название;
-- автор;
-- категория;
-- короткая идея;
-- история;
-- техника;
-- материалы;
-- размеры;
-- вес при необходимости;
-- год;
-- уникальность/тираж;
-- город;
-- передача/доставка;
-- start price;
-- startsAt;
-- endsAt;
-- изображения.
-
-Для MVP обязателен минимум один собственный снимок предмета. Главное изображение, деталь и масштаб/интерьер остаются рекомендуемым набором для качественной модерации и анонса, но не являются техническим gate. Состояние не запрашивается для creator-made Product: предполагается новая авторская вещь; поле может понадобиться поздним классам предметов и не является обязательным MVP-атрибутом.
-
-Требования: чистота, качество, честный цвет, отсутствие мусора и чужих изображений.
-
-## 12. Профиль автора
-
-Минимум:
-
-- profile photo;
-- имя и фамилия либо название seller;
-- короткое описание автора, его стиля и работ;
-- хотя бы один social link либо другие публично проверяемые данные;
-- страна; город и направление — optional.
-
-SellerProfile отделён от buyer account. Для MVP используется одно поле `fullName`: в нём seller указывает публичное имя, имя и фамилию или название. Оно может предзаполняться из регистрации, но данные buyer не становятся публичными автоматически.
-
-Другие работы:
-
-- простой блок примеров или других аукционов;
-- Work автора может существовать как portfolio-only и позже получить Listing.
-  Collections, сложная сортировка и social portfolio mechanics остаются после MVP
-  (`DEC-075`).
-
-Ранги «профессионал/любитель» не используются.
-
-## 13. Контакты и handoff
-
-Seller при onboarding указывает обязательный `handoffContact` и его тип: Telegram, phone или Instagram. Public profile не делает этот contact автоматически доступным.
-
-Текущий runtime выдаёт нужный contact после создания активного Order: buyer видит
-выбранный seller handoff contact, seller видит verified buyer email. Контакты доступны
-только сторонам active Order и admin. Финальный target UX проверяется Task 10 и
-юристом.
-
-Privacy mode seller:
-
-- личный контакт скрыт;
-- seller получает buyer contact;
-- пишет с отдельного аккаунта или через представителя.
-
-Будущее: internal inbox.
-
-Автоматическое раскрытие контакта после Order, отдельная reveal-кнопка, выбор
-инициатора связи и доступ следующего участника остаются открыты до Task 10 и ответа
-юриста. Контакты всех bidders не раскрываются только на основании участия в аукционе.
-
-Каждый новый Order (lifecycle close, admin recovery и manual replacement) сохраняет `contactDueAt` как 48-часовой snapshot от фактического момента создания этой сделки. Настройка seller 24/48/72 отложена. См. `DEC-070`.
-
-Тот же create-path замораживает title, final amount, currency и Listing identity
-(`listingId` + product public id). Карточка сделки и seller Orders inbox читают эти
-поля, а не живой Product. Исторические локальные ряды без snapshot-колонок являются
-disposable test data и очищаются перед public pilot. После этой границы
-production-like чтение не использует live Product/Listing как исторический fallback.
-См. `DEC-074`, `DEC-081`.
-
-Seller находит свои сделки, кроме `CANCELLED`, через paginated `GET /api/orders` (sellerId из сессии, не из query). Cancelled Orders скрыты так же, как в карточке.
-
-SLA 24 часа и штрафы — Hypothesis, не MVP.
-
-## 14. Отказ победителя
-
-1. Seller отмечает отказ/нет ответа.
-2. Admin проверяет.
-3. Admin вручную отменяет исходный Order с причиной и выбирает replacement из ranked Bid list. Replacement Order получает новое 48-часовое окно контакта от своего создания и не наследует deadline исходной сделки.
-4. История не меняется.
-5. Original winner остаётся в audit.
-
-Текущий runtime выполняет replacement вручную через admin. Target-механика
-second chance, ранга и раскрытия контактов открыта до marketplace research и
-письменного legal answer (`DEC-075`). AI-анализ evidence вне MVP.
-
-## 15. Хранение
-
-Bid history хранится долгосрочно. Все persisted entities должны иметь `createdAt` и `updatedAt`; для Product дополнительно требуется `publishedAt`, фиксируемый в момент первой публичной публикации. Удаление аккаунта, Product или PII в MVP не реализуется; сроки и процедура будущего удаления остаются отдельным legal/privacy решением.
-
-Bid audit хранит:
-
-- auctionId;
-- bidderId;
-- amount;
-- createdAt;
-- server order;
-- status;
-- audit metadata.
-
-Hide из UI не удаляет audit.
-
-Сроки PII/device data требуют legal/privacy решения.
-
-## 16. Analytics
-
-Без сложного dashboard и third-party marketing trackers. MVP собирает только минимальные first-party события, необходимые для проверки гипотезы и сопровождения пилота.
-
-Events:
-
-- lot viewed;
-- bid CTA clicked;
-- registration started/completed;
-- email verification started/completed;
-- bid attempted/accepted/rejected;
-- participation viewed;
-- seller viewed;
-- auction closed;
-- handoff opened;
-- sale confirmed;
-- handoff failed.
-
-## 17. Technical rehearsal gate
-
-До real seller:
-
-- минимум 10 concurrent users;
-- разные sessions/devices;
-- synchronized bids;
-- refresh/reconnect;
-- delayed WebSocket;
-- stale state;
-- last-second bid;
-- cron close/repeat;
-- bid after close;
-- correct winner;
-- soft-close cases;
-- seller handoff.
-
-Blockers:
-
-- потеря accepted bid;
-- double winner;
-- price mismatch;
-- wrong winner;
-- post-close bid;
-- contact leak;
-- impossible handoff.
-
-## 18. Первый pilot
-
-Автор: Таисия или аналогичный creator.
-
-Подготовка:
-
-- выбрать работу;
-- согласовать цену;
-- подготовить фото и историю;
-- preview;
-- branded asset;
-- analytics;
-- анонс;
-- небольшой ad test.
-
-Длительность:
-
-- default 2–3 дня;
-- допустимо до 7;
-- preview заранее.
-
-Minimum success:
-
-- 2 valid bidders;
-- конкуренция;
-- winner;
-- оплата;
-- передача;
-- interviews seller/winner/loser.
-
-## 19. Не входит
-
-- drops;
-- preorder;
-- services;
-- brands;
-- resale;
-- charity;
-- collectibles;
-- proxy;
-- hidden reserve;
-- live;
-- chat;
-- external notifications;
-- in-app notification center;
-- payments;
-- shipping;
-- watchlist;
-- recommendations;
-- discovery;
-- AI moderation;
-- app-store launch;
-- full disputes;
-- KYC;
-- ratings;
-- automatic penalties;
-- auction Buy Now / buyout on a live auction;
-- counteroffer;
-- automatic next bidder;
-- IP-based currency conversion.
-
-Fixed-price sale and optional buyer price offers for that sale are **in the target
-product scope** (`DEC-075`, `DEC-076`, `DEC-078`, §21) and **not in the current runtime**.
-Price offers and Buy Now are not auction mechanics. Offer expiry/revocation,
-counteroffer, competing-buy, non-payment and contact mechanics remain open; do not implement the superseded
-`DEC-072` defaults.
-
-## 20. Критерии пересмотра
-
-- users пропускают outbid;
-- hard close вызывает sniping;
-- reserve снижает trust;
-- sellers требуют изменения контракта fixed/offer после P0-E;
-- нет двух bidders при достаточном traffic;
-- value непонятна;
-- winner не платит;
-- seller не завершает;
-- ads не конвертируются;
-- code не проходит gate.
-
-## 21. Контракт expanded MVP (`DEC-075` — `DEC-078`)
-
-Целевой web MVP: портфолио работ и два раздельных формата продажи:
-аукцион и прямая продажа по фиксированной цене. В фиксированной продаже автор
-может разрешить покупателю предложить свою цену. На аукционе этой функции нет.
-Деньги за работу и доставка всегда идут напрямую между продавцом и покупателем.
-bidplace не принимает оплату и не оформляет доставку. Старт бесплатный; подписка вне этой волны.
-
-- **Work first:** автор создаёт Work независимо от продажи. Work может быть
-  portfolio-only, позже получить Listing или быть перевыставлен после продажи, которая
-  не состоялась. Portfolio-only, sold-through-bidplace, sold-elsewhere и withdrawn
-  остаются разными фактами, даже если UI позднее сгруппирует их как архив.
-- **Auction:** стартовая цена, шаг, время старта/окончания и server-authoritative
-  ставки. Нет «Купить» и «Предложить цену».
-- **Fixed:** обязательного срока окончания нет. Listing остаётся активным до снятия
-  автором либо создания Order. Unique Work нельзя продать дважды; отдельное buyer
-  confirmation атомарно создаёт сделку и снимает Work с продажи.
-- **Offer:** только опция fixed Listing, которую включает автор. Явное seller
-  acceptance сразу создаёт сделку по принятой цене. Expiry, revoke,
-  counteroffer and competing-buy rules не выбраны.
-- **Next bidder/contact:** manual admin replacement и 48h — текущий runtime, а не
-  финальная marketplace policy. Target выбирается после research + legal review.
-- **Currency:** MVP использует `BYN`; другие валюты и conversion hint — после MVP.
-- **History:** кабинет называется `Покупки / Продажи`; cancelled/failed outcomes
-  сохраняются в истории. Успешно переданная unique Work остаётся sold и не получает
-  новый Listing; подтверждённый buyer-side failure может снова открыть relist.
-- **Order identity:** auction, fixed и accepted offer создают один format-neutral
-  Order с одним public deal code. Runtime `sourceBidId` не является целевой моделью
-  для non-auction sources; synthetic bids запрещены. Persistence shape выбирается
-  после Task 10 и Work-first contract.
-- **Missed schedule:** `CANCELLED` + audit + уведомление + удобный relist; без
-  silent `+24h`.
-- **Legal UX:** `DEC-078` выбрал layout из отдельных строк соглашения, политики,
-  согласия на ПДн и отдельного 18+. До implementation юрист должен подтвердить,
-  является ли отдельное PD consent обязательным для регистрации после разделения
-  целей и правовых оснований. Cookie banner обязателен. Marketing consent не блокирует
-  регистрацию и используется только при добровольной подписке. Места controls и
-  draft microcopy находятся в BY legal UX research; финальный текст проверяет юрист.
-- **Error report:** V1 передаёт только текст пользователя. Технический
-  context preview и optional screenshot отложены.
-- **Deferred tooling:** in-app notification center и общие reports на Work/автора
-  находятся после MVP. Узкий flow проблемы конкретного Order остаётся частью handoff.
-- **Redesign:** только после стабилизации contract/data/flows; Figma read-only.
-
-До новых append-only решений P0-E может проектировать варианты и race matrix, но
-не реализует спорные mechanics. Две сделки на одну unique Work недопустимы.
-
-## Implementation verification — 2026-07-19
-
-Task A established a partial technical baseline: BYN auction only, no reserve or Buy Now, verified-phone bids, soft close and authorized Orders. Seller application approval, Product moderation workflow, seller handoff actions, minimal analytics, production OTP transport and the 10-user rehearsal remain implementation work; the factual status belongs to `11-PROJECT-STATUS.md`.
+Завершающее действие: `Отправить на проверку`. Закрытие непустой формы сохраняет
+Draft. Не используются rich text, Markdown, AI fill, process media, повторяющиеся
+photo/text blocks, цена, валюта, sale mode, сроки, оплата, доставка и buyer contact.
+
+`Тираж` является фактом Work. Он не означает количество единиц в продаже и не создаёт
+inventory model.
+
+## 11. Публичная страница Work
+
+Содержит:
+
+- галерею основных фотографий;
+- share/copy;
+- название и ссылку на автора;
+- чипы;
+- `История`, если текст существует;
+- `Детали` с размерами, материалом/техникой, тиражом и датой создания;
+- другие опубликованные работы того же автора.
+
+Если истории нет, пустая вкладка не показывается и открываются `Детали`. Подпись
+`Информация предоставлена автором` применяется к утверждениям об аутентификации,
+происхождении и подобным фактам, которые bidplace не проверяет экспертно.
+
+Нет archive badge, price, timer, sale CTA, bid history, `Оплата и доставка`, likes или
+cart. Блок `Другие работы автора` не содержит карточку самого автора под видом Work.
+
+## 12. Auth
+
+Первый MVP использует уже существующий и проверяемый путь:
+
+- email + password registration/login;
+- email verification;
+- forgot/reset password;
+- neutral responses для recovery, rate limits и session revocation.
+
+Telegram OAuth, Google OAuth и passwordless email code отложены. Generic buyer
+registration не продвигается, потому что у посетителя пока нет отдельного account-only
+действия.
+
+## 13. Legal UX и moderation
+
+До публичного запуска нужны документы и controls только для фактического portfolio
+flow: соглашение сервиса, политика персональных данных/cookies, корректное основание
+обработки, правила авторов и лицензия на показ материалов, запрещённый контент,
+механизм обращения пользователя/правообладателя и реквизиты оператора.
+
+Auction/sale rules, bid confirmation, buyer/seller contact disclosure и consumer
+transaction copy не блокируют portfolio MVP. Маркетинговое согласие нужно только при
+реальной добровольной рассылке. Только essential cookies не превращаются в фиктивный
+`Принять все` flow.
+
+## 14. Commerce capability
+
+При выключенной capability:
+
+- client не показывает commerce routes, navigation, price, timer или actions;
+- прямой вызов commerce mutation/API fail-closed;
+- scheduler не создаёт новых пользовательских commerce outcomes;
+- старые тестовые записи не попадают в public discovery;
+- существующие модули, migrations и tests остаются в Git;
+- commerce tests явно включают capability в изолированной среде.
+
+Capability нельзя реализовать только CSS/route hiding. Точная матрица endpoints/jobs/
+events является отдельной P0-задачей.
+
+## 15. Не входит в First MVP
+
+- auction, bids и scheduled sale;
+- fixed price и buyer offer;
+- Orders, purchases/sales cabinet, handoff и second chance;
+- payment, escrow, commission и shipping;
+- transactional chat, reviews, rating и disputes;
+- likes, wishlist, follow и buyer collections;
+- notification center и marketing email;
+- general reports и automatic session diagnostics;
+- subscriptions, promotions и seller analytics;
+- clickable tag discovery, recommendations и popularity ranking;
+- process photo/text story builder и video;
+- AI autofill/moderation/photo processing;
+- drops, presale, editions inventory и services;
+- multi-currency, conversion hint, localization и app-store release.
+
+Все направления сохранены в `15-POST-MVP-BACKLOG.md` и execution backlog.
+
+## 16. Release gates
+
+1. Commerce выключен и с UI, и на сервере; обход URL/API не включает действие.
+2. Visitor может пройти Home → catalog → author → Work без регистрации.
+3. Author проходит email auth → application → moderation → Work draft → moderation →
+   published profile.
+4. Admin может запросить исправления, скрыть контент, заблокировать пользователя и
+   отозвать его сессии.
+5. Upload authorization, formats, size/count limits, storage, renditions и backup/
+   restore проверены.
+6. Публичные документы соответствуют фактическим данным, cookies и providers и
+   проверены юристом Беларуси.
+7. Empty/loading/error/missing-media/long-content, keyboard, screen reader, reduced
+   motion и 390/1024/1440 состояния проверены.
+8. Нет `.pen`/Figma changes; реализация использует утверждённый read-only handoff.
+9. Typecheck, lint, affected tests/builds, staging smoke, rollback и restore drill
+   проходят перед публикацией.
+
+Фактическая готовность кода находится только в `11-PROJECT-STATUS.md` и текущем
+аудите. Этот RFC не означает, что перечисленное уже реализовано.

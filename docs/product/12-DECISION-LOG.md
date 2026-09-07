@@ -8,7 +8,7 @@
 
 ## DEC-001 — Ценность является ядром
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -27,7 +27,7 @@ Status: Confirmed
 
 ## DEC-002 — Внешняя формулировка
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -48,7 +48,7 @@ Status: Confirmed
 
 ## DEC-003 — Первый механизм: timed auction
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -67,7 +67,7 @@ MVP тестирует timed auction.
 
 ## DEC-004 — Seller-tool-first
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -86,7 +86,7 @@ Status: Confirmed
 
 ## DEC-005 — Закрытый запуск
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -101,7 +101,7 @@ Status: Confirmed
 
 ## DEC-006 — Первый рынок
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -116,7 +116,7 @@ Status: Confirmed
 
 ## DEC-007 — Первый creator
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Hypothesis
 
 ### Decision
@@ -131,7 +131,7 @@ Status: Hypothesis
 
 ## DEC-008 — Hard close в MVP
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -150,7 +150,7 @@ Soft close.
 
 ## DEC-009 — Soft close planned
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Planned
 
 ### Decision
@@ -165,7 +165,7 @@ Load test, понятный UI, отдельное решение.
 
 ## DEC-010 — Внешние уведомления не входят в MVP
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -184,7 +184,7 @@ Status: Confirmed
 
 ## DEC-011 — Искусственные ставки запрещены
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Rejected
 
 ### Decision
@@ -199,7 +199,7 @@ Status: Rejected
 
 ## DEC-012 — Общий resale запрещён
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Rejected
 
 ### Decision
@@ -214,7 +214,7 @@ bidplace не становится вторичным рынком.
 
 ## DEC-013 — Два seller-направления
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -230,7 +230,7 @@ Status: Confirmed
 
 ## DEC-014 — Brands отложены
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Rejected for current stage
 
 ### Decision
@@ -245,7 +245,7 @@ Status: Rejected for current stage
 
 ## DEC-015 — Creator без известности может быть допущен
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -260,7 +260,7 @@ Follower count не абсолютный gate.
 
 ## DEC-016 — Телефон перед первой ставкой
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -271,7 +271,7 @@ Status: Confirmed
 
 ## DEC-017 — Scheduled preview
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -282,7 +282,7 @@ Auction page публикуется заранее, bidding открываетс
 
 ## DEC-018 — Seller privacy mode
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -297,7 +297,7 @@ Internal inbox/representative.
 
 ## DEC-019 — Bid history сохраняется
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -308,7 +308,7 @@ Bid audit не удаляется вместе с UI auction.
 
 ## DEC-020 — Первые пилоты без комиссии
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -323,7 +323,7 @@ Status: Confirmed
 
 ## DEC-021 — Монетизация не фиксируется заранее
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Hypothesis
 
 ### Candidates
@@ -338,7 +338,7 @@ Buyer fee, seller fee, promotion, subscription, paid tools.
 
 ## DEC-022 — Discovery позднее
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Planned
 
 ### Decision
@@ -349,7 +349,7 @@ Feed, recommendations и AI не входят в первые фазы.
 
 ## DEC-023 — Technical gate: 10 users
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -360,7 +360,7 @@ Status: Confirmed
 
 ## DEC-024 — Concierge для первых sellers
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -371,7 +371,7 @@ Status: Confirmed
 
 ## DEC-025 — Профиль без рангов
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -382,7 +382,7 @@ Status: Confirmed
 
 ## DEC-026 — Образовательный контент не продукт
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -397,7 +397,7 @@ Status: Confirmed
 
 ## DEC-027 — Services/masterclasses отложены
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Rejected for current roadmap
 
 ### Decision
@@ -408,7 +408,7 @@ Status: Rejected for current roadmap
 
 ## DEC-028 — Charity и significant events отложены
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Rejected for current stage
 
 ### Decision
@@ -419,7 +419,7 @@ Status: Rejected for current stage
 
 ## DEC-029 — Документы разделены по state
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -434,7 +434,7 @@ Coding-agent обновляет status и релевантный докумен�
 
 ## DEC-030 — Roadmap трёхмесячными волнами
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -445,7 +445,7 @@ Status: Confirmed
 
 ## DEC-031 — Market reports дают гипотезы
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -456,7 +456,7 @@ Status: Confirmed
 
 ## DEC-032 — Admin panel сохраняется
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -467,7 +467,7 @@ Admin — controlled operations layer, расширяется по реальн�
 
 ## DEC-033 — Mobile web first
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -482,7 +482,7 @@ Status: Confirmed
 
 ## DEC-034 — Start price и reserve
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Hypothesis
 
 ### Decision
@@ -497,7 +497,7 @@ MVP поддерживает hidden reserve; цена первого seller со
 
 ## DEC-035 — Три источника ценности
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -508,7 +508,7 @@ Status: Confirmed
 
 ## DEC-036 — Mass brand не создаёт ценность автоматически
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -523,7 +523,7 @@ Status: Confirmed
 
 ## DEC-037 — Product и Listing разделяют предмет и размещение
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -539,7 +539,7 @@ Status: Confirmed
 
 ## DEC-038 — Публичная ссылка Product использует random publicId
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -550,7 +550,7 @@ Status: Confirmed
 
 ## DEC-039 — BYN, startPrice и soft close для MVP
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -565,7 +565,7 @@ MVP использует только BYN. Reserve и Buy Now исключены
 
 ## DEC-040 — Order foundation и минимальная moderation входят в MVP
 
-Date: 2026-07-18  
+Date: 2026-07-18
 Status: Confirmed
 
 ### Decision
@@ -1091,7 +1091,7 @@ one operational UI.
 
 ## DEC-068 — MVP static-only image uploads with authz-before-decode
 
-Status: Confirmed  
+Status: Confirmed
 Date: 2026-08-21
 
 ### Decision
@@ -1115,7 +1115,7 @@ an explicit product decision and update to `13-APPLICATION-SECURITY.md`.
 
 ## DEC-069 — Pilot ops: single-replica Compose + pg_dump backup
 
-Status: Confirmed  
+Status: Confirmed
 Date: 2026-08-22
 
 ### Decision
@@ -1595,3 +1595,87 @@ this decision.
 Research shows that the auction cannot produce a reliable result without a minimal
 notification, public users enter the database, or abuse volume requires general
 reporting before the planned post-MVP phase.
+
+## DEC-082 — Первый публичный MVP проверяет портфолио автора
+
+Date: 2026-09-08
+Status: Confirmed
+Source: explicit founder decision after review of the final creator-first Figma screens
+Revises for the first public release: `DEC-003`, `DEC-016`–`DEC-020`, `DEC-075`–`DEC-081`
+
+### Decision
+
+Первый публичный MVP bidplace — самостоятельный сервис-портфолио. Автор проходит
+модерацию, создаёт публичный профиль, публикует работы и получает одну ссылку и QR для
+распространения. Посетитель без регистрации открывает каталог авторов, каталог работ,
+профиль и страницу работы.
+
+В первом MVP нет активной коммерции: аукциона, fixed sale, предложения цены, ставок,
+Order, handoff, корзины, истории покупок/продаж и контактов для сделки. Это не отказ от
+commerce-направления. Оно сохраняется как следующая продуктовая волна после проверки
+портфолио и отдельного legal/domain gate.
+
+### Why
+
+Одновременный запуск портфолио, трёх способов сделки, невыкупа, раскрытия контактов и
+споров делает первую проверку слишком большой и задерживает выход. Публичное портфолио
+само проверяет ценность профиля, работ, creator onboarding, discovery и share loop.
+
+### Revisit when
+
+Есть несколько одобренных авторов с реальными работами, публичные страницы используются
+внешней аудиторией, а основатель готов открыть отдельную commerce wave.
+
+## DEC-083 — Публичная модель Work без «Архива» и простой creation flow
+
+Date: 2026-09-08
+Status: Confirmed
+Source: explicit founder decisions during creator-page and creation-flow review
+Extends: `DEC-075`, `DEC-079`
+
+### Decision
+
+- Публичный профиль имеет вкладки `Работы` и `Об авторе`. Публичной вкладки `Архив`
+  нет.
+- Публичные работы вне продажи остаются обычными работами портфолио. Draft,
+  moderation и hidden — внутренние состояния кабинета.
+- Чипы направления, категории и материала сохраняют утверждённый вид. В первом MVP
+  они могут быть описательными; переход к поиску по тегу включается позднее.
+- Создание Work состоит из трёх шагов: основные фотографии и название; детали;
+  необязательная текстовая история создания. Фото-текстовые этапы истории отложены.
+- В деталях `Тираж` описывает произведение и не является inventory продажи;
+  `Год/дата создания` не называется датой продажи.
+- После заполнения Work отправляется на модерацию. Выбор способа продажи, цена,
+  валюта, сроки, оплата, доставка и buyer contact отсутствуют.
+- Если история не заполнена, пустая вкладка `История` не показывается.
+
+Public likes, wishlist, notification bell и cart/navigation purchase entry отсутствуют
+в первом MVP. Share и QR профиля входят в первый MVP.
+
+### Revisit when
+
+Добавляются clickable tag discovery, rich creation story, commerce availability или
+buyer account value.
+
+## DEC-084 — Commerce сохраняется в коде и выключается fail-closed
+
+Date: 2026-09-08
+Status: Confirmed implementation boundary
+Source: founder instruction not to delete implemented functionality
+
+### Decision
+
+Существующие auction, bid, Order и handoff модули, migrations и tests не удаляются.
+Публичный portfolio MVP запускается с server-authoritative commerce capability,
+выключенной по умолчанию. Клиент скрывает commerce navigation и actions, а API также
+отклоняет прямой вызов выключенных mutations/routes. Одного client-side скрытия
+недостаточно.
+
+Commerce tests могут явно включать capability в изолированном test environment.
+Долгоживущая отдельная ветка не является хранилищем уже принятого кода: она быстро
+расходится с общими исправлениями auth, media и security. Отдельная feature branch
+используется только для будущей ограниченной разработки commerce v2 до review/merge.
+
+### Revisit when
+
+Commerce contract, документы, UX и release gates утверждены и проверены отдельно.

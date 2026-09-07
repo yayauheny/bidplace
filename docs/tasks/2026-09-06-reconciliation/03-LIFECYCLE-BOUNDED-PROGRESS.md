@@ -1,5 +1,8 @@
 # Task 03 — lifecycle bounded progress
 
+> **Status: deferred to post-MVP commerce wave.** Auction lifecycle jobs are disabled in First MVP; preserve this prompt for the capability reopen review.
+
+
 Исполнитель: Grok 4.6 High
 Review: GPT-5.6 Sol
 Приоритет: P2

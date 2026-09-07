@@ -1,14 +1,23 @@
 # Волны bidplace
 
-Бриф по страницам: [`design-handoff/00-BRIEF.md`](design-handoff/00-BRIEF.md).
+Дата: 2026-09-08
 
-Волна 1 — public MVP: Work-first портфолио, аукцион, фиксированная продажа,
-предложение цены, `Покупки / Продажи`, legal UX, жалобы и необходимые
-уведомления. Спорные mechanics фиксируются только после research и проверки
-юристом (`DEC-075`).
+## Волна 1 — First portfolio MVP
 
-Волна 2 — полный [`product/15-POST-MVP-BACKLOG.md`](product/15-POST-MVP-BACKLOG.md).
-Короткий дизайнерский указатель остаётся в [`design-handoff/12-FUTURE.md`](design-handoff/12-FUTURE.md).
-Финальная адаптация production UI к Figma начинается после стабилизации волны 1.
+Публичные профили авторов и Work без commerce: onboarding/moderation, создание работы,
+Home/Works/Authors/search, простые filters, страница автора и Work, share и QR, legal/
+security/operations gate. Точный контракт: [`product/05-MVP-RFC.md`](product/05-MVP-RFC.md).
+Активные задачи: [`tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md`](tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
 
-Юрист: [`legal/02-LAWYER-ANSWERS-2026-08-24.md`](legal/02-LAWYER-ANSWERS-2026-08-24.md). Публичные документы (черновики, не закон): [`legal/04-DOCUMENT-SET.md`](legal/04-DOCUMENT-SET.md).
+## Волна 2 — улучшение портфолио и commerce
+
+Commerce-код не удаляется, но в первой волне выключен fail-closed. Исследование,
+auction/fixed/offer, Orders/handoff, chat/reviews, richer media, subscription, payments,
+quantity, languages и остальные направления сохранены в:
+
+- [`product/15-POST-MVP-BACKLOG.md`](product/15-POST-MVP-BACKLOG.md);
+- [`tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md`](tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
+
+Read-only Figma определяет visual target первой волны после стабилизации contract/API.
+Старые handoff и Pen материалы сохраняются как исторические источники и не изменяются
+в ходе этой документационной подбивки.

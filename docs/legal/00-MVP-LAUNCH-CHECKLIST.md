@@ -1,42 +1,48 @@
-# bidplace — gate публикации юридических документов
+# bidplace — legal gate первого portfolio MVP
 
-Дата: 2026-09-06
-Статус: актуальный checklist; не юридическое заключение
+Дата: 2026-09-08
+Статус: launch checklist; не юридическое заключение
 
 Комплект: [`04-DOCUMENT-SET.md`](04-DOCUMENT-SET.md).
-Открытые вопросы: [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
-Legal UX: [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
+Вопросы: [`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
 
-## Уже решено
+## Scope gate
 
-- оператор — ИП Беларуси;
-- `63.12` основной, `62.01` и `73.11` дополнительные;
-- Work-first, аукцион и отдельная fixed sale с optional offer;
-- BYN;
-- деньги за работу и доставка проходят мимо bidplace;
-- cookie banner обязателен;
-- email-маркетинг отделён от регистрации;
-- чат, отзывы, подписка и встроенная оплата не входят в MVP.
+- [ ] Commerce capability выключена на client/API/jobs; публичные тексты не обещают
+      продажу, ставку, оплату или доставку.
+- [ ] Public pages показывают только approved author/Work fields.
+- [ ] Auth email, moderation data и private application fields не публикуются.
+- [ ] Share/QR использует только публичную canonical URL.
 
-## До публичного пилота обязательно
+## Data gate
 
-1. Зарегистрировать ИП и подставить фактические наименование, УНП, адрес и домен.
-2. Завершить Work/fixed/offer/non-payment contracts и реализовать их server-authoritative.
-3. Составить фактическую data/cookie/processor map: хостинг, почта, analytics,
-   monitoring, storage, backup, страны и сроки.
-4. По этой карте адаптировать семь документов под право Беларуси и реальное поведение.
-5. Получить письменный ответ по вопросам из `06` и финальную проверку всей пачки юристом.
-6. Реализовать versioned acceptance, cookie choices и audit раскрытия контактов.
-7. Реализовать footer, legal pages, complaints и рабочий адрес поддержки.
-8. Проверить, что необязательные cookies не запускаются до выбора пользователя.
-9. Провести consent/cookie/contact/delete rehearsal и сохранить доказательства.
+- [ ] Составлен production inventory данных, целей, оснований, providers, стран и сроков.
+- [ ] Проверены фактические cookies, analytics и third-party SDK.
+- [ ] Object storage/email/hosting отражены в policy и contracts.
+- [ ] Реализованы required acceptance/cookie evidence и удаление/retention procedure.
 
-## Не публиковать
+## Document gate
 
-- плейсхолдеры оператора, адреса, домена, providers или сроков;
-- утверждения о функциях, которых нет в коде;
-- чужие реквизиты и формулировки Bidbaits;
-- обещания гарантии сделки, проверки подлинности, оплаты или доставки площадкой.
+- [ ] User agreement описывает portfolio service, auth, moderation и availability.
+- [ ] Privacy/cookie policy соответствует inventory.
+- [ ] Отдельное PD consent используется только там, где подтвердил юрист.
+- [ ] Author rules закрепляют content responsibility, license, share/QR и moderation.
+- [ ] Prohibited content и правообладательский contact доступны из footer.
+- [ ] Auction/sale rules не представлены как действующие правила First MVP.
+- [ ] Реквизиты ИП, даты, версии и support contact заполнены.
+- [ ] Весь пакет проверен юристом Беларуси одной согласованной редакцией.
 
-Закрытый локальный тест без публичной рекламы и реальных денег не делает эти черновики
-публичной офертой. Перед выходом на аудиторию checklist выполняется полностью.
+## UI gate
+
+- [ ] Registration controls имеют точные тексты и не содержат marketing bundling.
+- [ ] Author application/Work submit ссылаются на актуальные author rules.
+- [ ] Essential-only cookie notice соответствует фактическому режиму.
+- [ ] Нет claims `проверенный автор`, `проверенная подлинность` или гарантий платформы.
+- [ ] Error/rightsholder contact не собирает лишние персональные данные.
+
+## Release evidence
+
+- [ ] Version IDs/timestamps acceptance воспроизводимы.
+- [ ] Withdrawal/deletion/moderation requests имеют рабочий process.
+- [ ] Backup/restore и access controls для данных/медиа проверены.
+- [ ] Final UI/API/document reconciliation не обнаружил commerce leakage.

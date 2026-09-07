@@ -5,7 +5,9 @@
 Текущий состав: [`../04-DOCUMENT-SET.md`](../04-DOCUMENT-SET.md). Открытые проверки:
 [`../06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](../06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
 
-Drafts описывают только целевой MVP. Будущие функции хранятся в
+Drafts предшествуют portfolio pivot и требуют новой согласованной редакции. Файлы
+01–04 и 06 используются только как сырьё для portfolio legal pack. Файл 05 сохраняется
+для commerce wave и не публикуется в First MVP. Будущие функции хранятся в
 [`../../product/15-POST-MVP-BACKLOG.md`](../../product/15-POST-MVP-BACKLOG.md) и
 переносятся сюда только перед реальным включением.
 

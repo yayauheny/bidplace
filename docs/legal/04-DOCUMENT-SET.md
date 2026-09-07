@@ -1,49 +1,54 @@
-# bidplace — комплект публичных документов MVP
+# bidplace — комплект публичных документов portfolio MVP
 
-Дата: 2026-09-06
-Статус: рабочий состав; drafts не публиковать до адаптации и проверки юристом
+Дата: 2026-09-08
+Статус: рабочий состав; drafts не публиковать до data inventory и проверки юристом Беларуси
 
-## Семь документов
+## Документы первого запуска
 
-| Документ | Черновик | Где показывать |
+| Документ | Текущий материал | Где нужен |
 |---|---|---|
-| Пользовательское соглашение | [`drafts/01-user-agreement.md`](drafts/01-user-agreement.md) | Регистрация, footer |
-| Политика персональных данных и cookies | [`drafts/02-privacy-policy.md`](drafts/02-privacy-policy.md) | Регистрация, cookie banner, footer |
-| Согласие на обработку персональных данных | [`drafts/03-pd-consent.md`](drafts/03-pd-consent.md) | Точное обязательное место определит юрист после purpose map |
-| Правила для авторов | [`drafts/04-author-rules.md`](drafts/04-author-rules.md) | Заявка автора, создание Work, включение продажи |
-| Правила аукционов и продаж | [`drafts/05-auction-and-sale-rules.md`](drafts/05-auction-and-sale-rules.md) | Публикация продажи, первая ставка, fixed confirmation, offer actions |
-| Запрещённые товары и поведение | [`drafts/06-prohibited.md`](drafts/06-prohibited.md) | Заявка/публикация, footer, правообладателям |
-| Согласие на email-маркетинг | Ещё не создано | Только добровольная подписка; footer при включении marketing |
+| Пользовательское соглашение сервиса | `drafts/01-user-agreement.md` требует удаления неактивной commerce semantics | Registration, footer |
+| Политика персональных данных и cookies | `drafts/02-privacy-policy.md` требует фактических providers/data/countries | Registration, cookie notice, footer |
+| Согласие/иной корректный control для ПДн | `drafts/03-pd-consent.md`; обязательность и цели подтверждает юрист | В точках, определённых purpose/legal-basis map |
+| Правила автора и лицензия на материалы | `drafts/04-author-rules.md` адаптировать под profile/Work/moderation/share | Author application, Work submit, footer |
+| Запрещённый контент и поведение | `drafts/06-prohibited.md` | Author application, Work submit, footer |
+| Обращение пользователя/правообладателя | Короткий procedure/contact; не требует полного report workspace | Footer и moderation contact |
 
-Email consent не блокирует MVP, если маркетинговой подписки и рассылки в продукте нет.
-Файл создаётся до включения этой функции, а не как пустая ссылка.
+Auction/sale rules (`drafts/05-auction-and-sale-rules.md`) сохраняются, но не
+публикуются как применимые правила первого MVP. Они вернутся в commerce wave после
+обновления механик и legal review.
 
-## Короткие controls
+Email-marketing consent создаётся только при реальной добровольной рассылке и не
+блокирует portfolio launch. Transaction contact rules отсутствуют, потому что First MVP
+не создаёт Order и не раскрывает buyer/seller contacts.
 
-- Registration: отдельные unchecked строки и отдельное 18+. Обязательность PD consent
-  остаётся lawyer check; marketing отсутствует.
-- Cookies: при only-essential режиме — уведомление и ссылка; при optional categories —
-  `Принять все`, `Только необходимые`, `Настроить`.
-- Первая ставка: сумма, обязанность купить при победе, rules link и подтверждение.
-- Fixed: сумма и отдельное `Подтвердить покупку`.
-- Offer buyer: `Это ещё не покупка`; seller: `Принять и создать сделку`.
-- Contact: private deal context и объяснение цели раскрытия.
+## Controls первого MVP
 
-Полная матрица: [`../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md`](../research/2026-09-06-BELARUS-LEGAL-UX-PATTERNS.md).
+- Registration: отдельные понятные строки/controls по результату purpose/legal-basis
+  review; marketing отсутствует.
+- Cookies: если фактически используются только essential cookies, короткое уведомление
+  и ссылка; optional analytics/marketing не запускаются до выбора.
+- Author application/Work submit: ссылка на author rules, content responsibility,
+  license and prohibited content.
+- Footer: agreement, privacy/cookies, author rules, prohibited content, operator details,
+  support/rightsholder contact.
 
 ## Что должен содержать финальный пакет
 
-- фактические реквизиты оператора и рабочие контакты;
-- только реализованные product flows;
+- фактические реквизиты ИП и рабочие контакты;
+- только реализованный portfolio flow;
 - purpose/legal-basis/data/processor/retention map;
-- версии документов и правила повторного принятия;
-- порядок раскрытия контактов, удаления данных, жалоб и апелляций;
-- точные правила аукциона, fixed, offer, невыкупа и повторной продажи;
-- фактические cookies, providers и трансграничную передачу.
+- cookies и providers, реально используемые production;
+- version/evidence принятия там, где оно требуется;
+- public/private поля профиля;
+- лицензия на показ/share/promotional use и порядок отзыва;
+- moderation, complaint/rightsholder and appeal procedure;
+- правила удаления/скрытия Work и аккаунта.
 
-## Следующий шаг
+## Порядок
 
-Сначала выполнить data inventory и закрыть
-[`06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`](06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md).
-Затем переписать drafts одной согласованной редакцией и отдать всю пачку юристу
-Беларуси. Частичное одобрение отдельных абзацев не считается готовностью к публикации.
+1. Выполнить фактический data/provider/cookie inventory.
+2. Закрыть First MVP section в `06-OPEN-QUESTIONS-FOR-BELARUS-LAWYER.md`.
+3. Переписать drafts одной согласованной portfolio-редакцией.
+4. Получить пакетную проверку юриста Беларуси.
+5. Сверить каждый публичный текст и control с production UI/API.

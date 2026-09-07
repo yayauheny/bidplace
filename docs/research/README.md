@@ -50,3 +50,11 @@ Raw используется, если:
 - `2026-08-25-bidbaits-legal-documents.md`
 - `2026-09-06-researcher-marketplace-abuse-by-legal-response.md`
 - фиксация встречи с юристом: `docs/legal/02-LAWYER-ANSWERS-2026-08-24.md` (26 августа наложена расшифровка созвона)
+
+## 2026-09-08 — creator-commerce research
+
+Raw browser-research response:
+[`raw/2026-09-08-creator-commerce-research.md`](raw/2026-09-08-creator-commerce-research.md).
+It is evidence for the deferred commerce wave, not a First MVP product contract.
+Citations and changing marketplace practices must be rechecked before implementation.
+Portfolio-first conclusions were recorded separately in `DEC-082`–`DEC-084`.

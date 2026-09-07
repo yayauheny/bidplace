@@ -1,173 +1,128 @@
-# bidplace — пользовательские потоки и экраны
+# bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-05
+Последнее обновление: 2026-09-08
+Статус: Confirmed product/UI scope; implementation pending
+Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
-Статус: **Runtime scope implemented; matched Pen overlay and founder/device acceptance pending**
+## 1. Источник и граница
 
-## 1. Граница текущего редизайна
+Новый оригинальный Figma-файл `NM63j9lwRMqpo2HvAiYNll` — read-only visual target
+portfolio-first UI. Его запрещено редактировать, переименовывать, очищать или
+пересохранять в code-задачах. Screenshots являются review evidence, но точные tokens,
+assets и measurements берутся только из versioned inspect/handoff.
 
-Pen v2 задаёт публичный web-модуль: Global Header, Home, Browse Works, Browse
-Authors, Product tabs, AuctionPlayer и Creator Profile. Остальные работающие
-routes сохраняют поведение и должны пережить смену общего shell, но не имеют
-нового утверждённого визуального target в текущем Pen-реестре.
+Текущий production остаётся Pen-based до формального cutover. Защищённый `.pen` не
+редактируется и не удаляется. Во время реализации новый product contract определяет
+поведение и данные, Figma — визуальную композицию, а Pen — только historical runtime
+reference.
 
-## 2. Карта экранов
+## 2. Основной flow
 
-| Экран              | Pen node | Route                 | Contract status                                            |
-| ------------------ | -------- | --------------------- | ---------------------------------------------------------- |
-| Global Header      | `L9UV9`  | общий shell           | role-aware shell and account/discovery overlays implemented; visual gate pending |
-| Home               | `BJd1P`  | `/`                   | `/api/discovery/home` supplies top, creators and new works; visual gate pending |
-| Browse Works       | `H5vf2`  | `/works`              | server-backed search, sort, status, category, author, material, price and uniqueness |
-| Browse Authors     | `N4ebBk` | `/authors`            | approved seller directory API, route, photos and discipline |
-| Product / About    | `L7ytbv` | `/product/[publicId]` | public product hero, facts, related works and AuctionPlayer |
-| Product / Creation | `cK8kD`  | тот же Product route  | ordered ProductCreationStep data and safe process media |
-| Product / Bids     | `XIzHe`  | тот же Product route  | participant alias/bid/time with Listing-scoped privacy |
-| Creator Profile    | `MqUMz`  | `/seller/[slug]`      | `MVP v1` creator profile; structured public links only |
+```text
+Visitor
+  → Home / Works / Authors / Search
+  → Creator profile
+  → Work
+  → Share / QR
 
-Решение о `/`, `/works`, `/authors`, `/search?q=...` и server-authoritative
-discovery contracts зафиксировано в `DEC-065`. Pen по-прежнему управляет
-композицией, а product/API boundaries — данными, видимостью и permissions.
+Author candidate
+  → Email registration and verification
+  → Author application/profile
+  → Admin moderation
+  → Work draft
+  → Work moderation
+  → Published Creator + Work
+```
 
-## 3. Global Header и роли
+Commerce routes/actions отсутствуют в First MVP navigation и fail-closed на сервере.
 
-Canonical header: `L9UV9`.
+## 3. Screen matrix
 
-| Роль   | Pen evidence | Обязательное поведение                                                |
-| ------ | ------------ | --------------------------------------------------------------------- |
-| Guest  | `H4bCnh`     | public discovery + login/register actions                             |
-| Buyer  | `GEnsG`      | public discovery + доступные buyer actions                            |
-| Seller | `S5B4C2`     | buyer/public actions + seller capability routes только при разрешении |
-| Admin  | `kilAz`      | catalog/moderation; без bidding и buyer activity                      |
+| Экран | First MVP | Убирается/откладывается |
+|---|---|---|
+| Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
+| Home | Открытие недели, новые работы, новые авторы | Активные торги, цены, timers, sale badges |
+| Works | Search, category/material filters, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters |
+| Authors | Search, tag/city filters, name/date sort | Rating, followers, sales and verified authenticity claims |
+| Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements | Public `Архив`, cart, like, bell, private states |
+| Work | Gallery, title, author, chips, optional story, details, related works | Price, timer, archive badge, bid CTA/history, payment/delivery |
+| Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
+| Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
+| Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
+| Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
-Discovery group `SYE9r`, Search `VKsEM`, user actions `AG6gK`, search bar
-`Uulvx`, navigation `BF8Nr`, menu trigger `MsOKe`, menu `SHHWu`, Works item
-`B0EaXH`, Authors item `VUDwA`, actions `hLoyZ`.
+## 4. Home
 
-Search и Authors используют поддержанные API contracts; client-only matching и
-ranking не допускаются. Back/forward restoration и URL-backed discovery state
-реализованы; fixed-scale overlay и physical-device acceptance остаются внешним
-release gate.
+`Открытие недели` показывается только при реальном ручном выборе. Если selection нет,
+секция исчезает без placeholder. Work cards показывают название, автора и portfolio
+facts. `Новые работы` не дублируется на одной странице.
 
-## 4. Discovery flow
+## 5. Works and Authors discovery
 
-Целевой путь: discovery entry → Works/Authors → карточка → Product или Creator
-Profile → связанная работа.
+Works filters: category and material. Authors filters: direction/tag and city. Search и
+filtering выполняются сервером до pagination. Чипы в profile/cards сохраняют Figma
+appearance; пока переход по тегу не включён, они семантически не являются кнопками.
 
-### Home `BJd1P`
+Кнопка результата использует `работ`, не `лотов`. Unsupported placeholder filters не
+рендерятся. Popularity/price/availability sorting отсутствует.
 
-Секции: header `CV9fF`, Works intro `t0SBW8`, section `mGtKx`, auction card
-`WxEOg`, creator card `b8iVxg`, editorial work card `b60Eaa`.
+## 6. Creator profile
 
-Top/New и набор creators приходят из отдельного `/api/discovery/home`; экран
-остаётся Partial до matched responsive screenshots и проверки всех состояний.
+Публичные вкладки:
 
-### Browse Works `H5vf2`
+```text
+Работы N | Об авторе
+```
 
-Header `WT8GE`, title `MO2OC`, toolbar `Evfb1`, grid `nWd4G`. Controls:
-primary tabs `Jefsy`, auction tabs `g7INs`, state chip `yFl4g`, sort `s2ARGu`.
+Все published portfolio Work находятся в `Работы`. Draft, Pending, Rejected и Hidden
+видит только автор в кабинете. Sold/unsold taxonomy вернётся вместе с commerce и не
+восстанавливает один общий public `Архив`.
 
-Сохраняются текущие public visibility, states `SCHEDULED`/`LIVE`/`ENDED`,
-pagination и API contract. Реализованы server-backed search, sort, category,
-author, material, price, status и uniqueness controls. Pen `Тип работы`
-намеренно скрыт до появления подтверждённого domain field.
+`Об авторе` поддерживает about, practice и optional achievements timeline. Пустые
+секции скрываются. Bottom navigation учитывает safe area и не закрывает текст/cards.
 
-AuctionCard media масштабируется только внутри clipped viewport; toolbar menu
-открывается с shared panel motion. Hover/focus/open states определены в `03` и
-обязательны, хотя static screen показывает только отдельные snapshots.
+## 7. Work
 
-### Browse Authors `N4ebBk`
+Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 
-Header `FnXJy`, Works/Authors navigation `LuxiL`, title `wiPHC`, controls
-`usLfn`, grid `O8lu9`. Используется CreatorCard `SrXPq` с photo `k9hN07`, name
-`atoev`, discipline `sUQFf`.
+- `История` только если заполнен plain text;
+- `Детали` всегда.
 
-Bio variant `S1BHg` и comparison board `BvSRz` не являются production target.
-Никаких ratings, sales, followers, verified, awards или ranking.
+`Оплата и доставка` и `Ставки` отсутствуют. `Другие работы автора` содержит только
+Work cards; ссылка имени уже ведёт в Creator profile. Claims об authenticity/provenance
+маркируются как информация автора, если platform не проводила экспертизу.
 
-## 5. Product flow
+## 8. Author application
 
-Один route `/product/[publicId]` использует общую рамку, ProductTabs `Jh9jr` и
-AuctionPlayer `X6Ksg`.
+Четыре визуальных шага допустимы:
 
-- About `L7ytbv`: integrated header/hero `iSDm7`, tabs `TrdWx`, content
-  `QSHsB`.
-- Creation `cK8kD`: tabs `a6wx43`, story `kuP8Q`, sticky player `i1AJd`.
-- Bids `XIzHe`: tabs `BNobs`, history `Ko0lA`, sticky player `BOdiT`.
-- Tabs: About `CBb5S`, Creation `bzabH`, Bids `ryIwP`, underline `KSVlN`.
-- Player: bid `w8O9kE`, time `k7l1d`, action `xozqk`.
+1. photo/name/slug/location;
+2. optional public socials;
+3. short about, practice and directions;
+4. optional achievements.
 
-Bid history показывает только participant alias, bid amount и time. Wallet,
-NFT, blockchain, identity leakage и новые financial fields запрещены.
+Auth email не подставляется как public email. Выход сохраняет непустой draft; dialog
+не говорит, что пользователь потеряет возможность продавать.
 
-Tabs могут быть URL state или локальным accessible state только после фиксации
-deep-link/back behavior. Bid action сохраняет confirmation, OTP/rules gate,
-canonical refetch и server error handling.
+## 9. Work creation
 
-Hero может использовать artwork-derived blurred atmosphere по `03`, но sharp
-artwork, readable transaction data и единственный AuctionPlayer всегда выше
-декоративного слоя. Tab и inline→sticky transitions не размножают state.
+Три шага:
 
-## 6. Creator Profile `MqUMz`
+1. main images + title;
+2. category, dimensions, material/technique, edition fact and creation date/year;
+3. optional plain-text creation story.
 
-Header `P7BDB`, creator hero `aAJ8B`, works `NFpuI`; карточки работ переиспользуют
-AuctionCard `k5vYGf`. Это публичная авторская страница, не seller dashboard.
+CTA: `Отправить на проверку`. Main gallery и future process media — разные сущности.
+Повторяющиеся photo/text stages и video находятся после MVP.
 
-Creator hero использует restrained atmosphere только при наличии real public
-photo/artwork; grid cards наследуют тот же media-hover contract, что Browse.
+## 10. Required states
 
-Показываются только разрешённые публичные данные. Structured Telegram,
-Instagram и website links отображаются только из public contract. Private
-handoff contact никогда не появляется здесь.
+Для каждого реализованного экрана:
 
-## 7. Остальные routes
-
-Auth, Activity, Order, seller Orders inbox, seller application/profile, Product/Listing draft и
-admin moderation остаются функционально обязательными. Admin moderation включает
-Authors/Works/Orders plus **Пользователи** (ban/revoke) and **Восстановление**
-(needs-order queue, emergency cancel). Смена Global Header или
-tokens не должна делать их недоступными. Их визуальная миграция требует
-отдельных Pen targets или явного правила наследования новой системы.
-
-### Seller Orders inbox
-
-`/orders` lists the current seller's non-cancelled deals from `GET /api/orders`.
-Cards show frozen snapshot title, amount/currency, contact deadline and buyer
-email, then open `/order/[publicId]`. Loading, empty, error/retry and
-"Загрузить ещё" pagination are required. Current-style UI, not a Pen target.
-
-### Seller product draft
-
-`/products/new` and `/products/[id]` hydrate from owner detail.
-`REJECTED` and `CHANGES_REQUESTED` reopen the same form with the latest
-moderation reason and resubmit the same Product. `PENDING_REVIEW` and
-`APPROVED` stay locked. Public visibility remains false until a later
-`APPROVED`.
-
-### Auth (mobile)
-
-| Экран | Route | Поведение |
-| ----- | ----- | --------- |
-| Sign in | `/login` | email/password; ссылка «Забыли пароль?» → forgot |
-| Register | `/register` | email/password registration |
-| Forgot password | `/forgot-password` | email submit; always neutral success |
-| Reset password | `/reset-password?token=` | new password + confirm; invalid/expired token → recoverable error |
-
-После успешного reset пользователь возвращается на `/login`. Deep link token
-парсится из query string; expired/replay token показывает localized error state.
-Login → forgot сохраняет `redirectTo` query param через auth routes.
-
-## 8. Обязательные состояния каждого реализуемого экрана
-
-- default и realistic long content;
-- loading/skeleton;
-- empty;
-- recoverable error + retry;
-- missing/failed media;
-- disabled/permission denied;
-- keyboard focus, hover, pressed и validation;
-- guest и релевантные authenticated roles;
-- 1440 desktop, 1024 tablet и 390 mobile;
-- zoom/text scaling и reduced motion.
-
-Статус `Implemented` запрещён, пока состояния и responsive behavior не
-проверены.
+- loading, empty, recoverable error/retry and missing media;
+- realistic long names/text and zero optional fields;
+- guest, candidate, approved author and admin permissions;
+- keyboard/focus, screen reader, zoom and reduced motion;
+- 390 mobile, 1024 tablet and 1440 desktop;
+- safe-area/keyboard behavior for fixed or floating controls;
+- direct URL access to disabled commerce surfaces fails safely.

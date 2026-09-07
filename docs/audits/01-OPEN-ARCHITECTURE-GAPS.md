@@ -1,21 +1,43 @@
-# bidplace — открытые архитектурные пробелы public MVP
+# bidplace — архитектурные пробелы: portfolio MVP и отложенный commerce
 
-Дата среза: 2026-09-07
-Статус: открытые варианты и выбранные направления, ожидающие реализации
+Дата актуализации: 2026-09-08
+
+## Текущий статус
+
+`DEC-082` перенёс commerce из первого запуска. Существующие A01–A09 ниже сохранены как
+полный анализ **второй commerce wave** и не блокируют portfolio MVP. Их нельзя удалять
+или реализовывать до отдельного решения открыть commerce.
+
+Первый MVP сейчас имеет пять архитектурных блокеров:
+
+| ID | Пробел | Durable target |
+|---|---|---|
+| P01 | Commerce нельзя безопасно выключить одним скрытием UI | Server-authoritative capability закрывает UI, API, jobs и public projections; default off |
+| P02 | Approved Work нельзя удобно обновлять как живое портфолио | Pending revision отдельно от последней published revision; moderation атомарно продвигает новую версию |
+| P03 | Binary media/storage boundary не готов к публичному портфолио | Object storage + metadata/renditions in DB + authorization/cleanup/backup/restore |
+| P04 | Public Creator/Work contracts несут sale-oriented поля и состояния | Portfolio projections не зависят от Listing/Order; private moderation states не утекают публично |
+| P05 | Auth surface содержит потенциальные варианты без ценности посетителя | Existing email/password для author/admin; OAuth/magic code/buyer-only account actions выключены до отдельного value case |
+
+Выбор конкретной schema/migration выполняется задачами F01–F10 из First MVP backlog.
+Нельзя использовать portfolio pivot для удаления исторических Bid/Order данных или
+ослабления существующих security invariants.
+
+Дата исходного commerce-аудита: 2026-09-07
+Статус разделов A01–A09: deferred; варианты сохранены до commerce wave
 Основа: текущий runtime и
 [`MVP deal decision stress-test`](../research/2026-09-06-MVP-DEAL-DECISION-STRESS-TEST.md)
 
 ## Как использовать этот файл
 
-Здесь хранятся только архитектурные вопросы, обнаруженные до реализации Work-first,
+Ниже сохранены архитектурные вопросы, обнаруженные до реализации Work-first commerce,
 fixed sale, buyer offer и нового handoff. Реализованная архитектура остаётся в
 [`10-CODE-ARCHITECTURE.md`](../product/10-CODE-ARCHITECTURE.md), продуктовые варианты —
 в [`14-OPEN-MVP-DECISIONS.md`](../product/14-OPEN-MVP-DECISIONS.md).
 
 Поле `Рекомендуемое направление` помогает обсуждению, но не считается выбранным
-решением без ссылки на `DEC-*`. `DEC-079`–`DEC-081` закрыли часть продуктовых границ;
-остальные варианты нельзя переносить в schema или API contract до Task 10 и
-Work-first contract.
+решением без ссылки на `DEC-*`. `DEC-079`–`DEC-081` закрыли часть commerce-границ, а `DEC-082` перенёс весь этот
+контур после First MVP. Варианты нельзя переносить в schema/API до решения открыть
+commerce и обновлённого Work-first contract.
 
 ## Короткая карта
 

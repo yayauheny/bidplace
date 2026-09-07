@@ -1,5 +1,8 @@
 # Task 01 — проверить и интегрировать seller sales history
 
+> **Status: deferred to post-MVP commerce wave.** Keep the branch/commit reference, but do not integrate it into the portfolio-first release without adapting it to the future Order contract.
+
+
 Исполнитель: GPT-5.6 Sol
 Приоритет: P1
 Режим: review first; исправлять только подтверждённые дефекты

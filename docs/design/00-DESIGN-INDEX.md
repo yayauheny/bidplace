@@ -1,14 +1,16 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-08-14
+Последнее обновление: 2026-09-08
 
 Статус: **Confirmed documentation baseline**
 
 ## Назначение
 
-Этот раздел — единая документационная точка входа для редизайна bidplace.
-Документы описывают, как переносить утверждённое визуальное направление из
-Pen в production-код, не меняя продуктовые правила, данные и permissions.
+Этот раздел — единая документационная точка входа для UI bidplace. First MVP
+переведён на portfolio-first product contract. Новый Figma-файл
+`NM63j9lwRMqpo2HvAiYNll` является read-only target следующей реализации; текущий
+Pen-based production и защищённый `.pen` сохраняются как historical runtime baseline
+до формального cutover.
 
 Старая Modern UI design system удалена. Её документы, внешние референсы и
 cutover-план больше не являются источниками решений. Текущий production UI —
@@ -18,16 +20,17 @@ cutover-план больше не являются источниками ре�
 
 При конфликте использовать такой порядок:
 
-1. Product behavior, privacy, auction rules и permissions — owner-документы в
-   `../product/` и серверные контракты.
-2. Визуальный эталон — `../../design/pen/bidplace-web-v2.pen`.
-3. Этот design-модуль — перевод Pen в правила, карту экранов и план кода.
-4. Утверждённые founder references из `06` — interaction/motion evidence там,
-   где static Pen не показывает состояние.
-5. Production-код — фактическое текущее поведение, которое надо сохранить.
+1. Product behavior, privacy and permissions — owner-документы в `../product/` и
+   server contracts.
+2. Для portfolio-first target — read-only Figma `NM63j9lwRMqpo2HvAiYNll` после
+   versioned inspect/token/asset handoff.
+3. Для текущего historical runtime — защищённый `../../design/pen/bidplace-web-v2.pen`.
+4. Этот design-модуль — screen/behavior/state mapping.
+5. Production-код — фактическое исходное состояние, а не новый visual target.
 
-Pen определяет композицию, визуальную иерархию, стили и component anatomy. Он
-не создаёт новые routes, API, поля, фильтры, permissions или auction rules.
+Для текущего historical runtime Pen описывает композицию и component anatomy. Для
+portfolio target эту роль после versioned handoff выполняет read-only Figma. Ни один
+визуальный источник не создаёт routes, API, поля, permissions или product rules.
 Foundation/Gamma/Avant Arte не переопределяют Pen и не переносят в bidplace
 wallet/NFT/crypto semantics; их разрешённая роль закреплена в `DEC-064`.
 
@@ -72,10 +75,10 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 
 1. прочитать product index, foundation и project status;
 2. прочитать `00`–`04` этого раздела;
-3. для реализации открыть `05`, `06` и релевантный этап в `07`;
-4. прочитать Pen README и нужные canonical nodes;
-5. проверить фактические routes, contracts, components и tests в коде.
-6. для задач направления creator-first — `design/creator-first/README.md` (V1) или `design/creator-first-v2/README.md` (V2 art-direction) и соответствующий `spec/`.
+3. для portfolio target открыть `02`, `04`, `05`, `06` и versioned Figma handoff;
+4. Pen README/nodes читать только при reconciliation текущего historical runtime;
+5. проверить фактические routes, contracts, components и tests в коде;
+6. для исторических задач направления creator-first — `design/creator-first/README.md` (V1) или `design/creator-first-v2/README.md` (V2 art-direction) и соответствующий `spec/`.
 
 ## Что не является источником дизайна
 
