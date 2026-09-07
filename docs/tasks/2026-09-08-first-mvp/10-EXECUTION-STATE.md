@@ -7,13 +7,13 @@
 | Current package | 01 — Commerce capability gate |
 | Base main SHA | `23fea271c46a8186482341203acfb4b487ffbf17` |
 | Working branch | `feature/commerce-capability-gate` |
-| Completed behavior | Added the mobile capability surface: commerce navigation is hidden, legacy commerce routes show unavailable, and default portfolio cards do not show a price, timer, bid or sale state. |
-| Commit SHA | `58387e1` |
+| Completed behavior | Package 01 is implemented and self-reviewed: typed default-off capability gates HTTP, admin commerce actions, lifecycle and realtime; public discovery is Listing-independent; mobile commerce controls and routes are unavailable. |
+| Commit SHA | `ebdbb49` |
 | Checks passed | API typecheck/lint and unit tests (328/328); contracts tests (27/27); mobile typecheck/lint and card tests (5/5). |
 | Checks failed | API PostgreSQL integration suite cannot start because PostgreSQL is unavailable at `127.0.0.1:5432`; all 21 affected suites fail before test execution. |
-| Remaining work | Commit the package 01 final checkpoint, fast-forward into `main`, and begin package 02. |
+| Remaining work | Fast-forward package 01 into `main`, retain the branch, then begin package 02. |
 | Known blockers | Local PostgreSQL is not running; rerun package integration verification when the service is available. |
-| Next exact action | Commit the explicit test opt-in and final package 01 checkpoint, verify the diff, then fast-forward into `main` without deleting this branch. |
+| Next exact action | Verify clean ancestry and fast-forward `feature/commerce-capability-gate` into `main` without deleting the branch; create `feature/portfolio-work-lifecycle` from the updated `main`. |
 
 ## Recovery procedure
 
