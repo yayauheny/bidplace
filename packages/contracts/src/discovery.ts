@@ -75,6 +75,7 @@ export const publicSellerQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     tag: z.string().trim().min(1).max(160).optional(),
+    city: z.string().trim().min(1).max(160).optional(),
     sort: publicSellerSortSchema.default('activity'),
   })
   .strict();

@@ -61,6 +61,7 @@ export class PortfolioService {
       limit: query.limit,
       q: query.q,
       tag: query.tag,
+      city: query.city,
       sort: query.sort === 'name' ? 'name' : 'activity',
     });
     const authors = response.sellers.map((item) => ({

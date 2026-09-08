@@ -385,6 +385,14 @@ export class SellersService {
             },
           }
         : {}),
+      ...(query.city
+        ? {
+            city: {
+              equals: query.city,
+              mode: 'insensitive' as const,
+            },
+          }
+        : {}),
       ...searchWhere,
     };
     const [sellers, total] = await Promise.all([
