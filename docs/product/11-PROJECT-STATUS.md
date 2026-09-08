@@ -42,6 +42,11 @@
   primary image. The optional plain-text story is not a publication blocker; legacy
   delivery, packaging and provenance fields no longer gate moderation. API unit tests
   (343/343), typecheck and lint pass; PostgreSQL integration remains blocked locally.
+- `Partial`: portfolio legal drafts and the review manifest are prepared for external
+  Belarus lawyer review. They describe the portfolio-only release and retain auction
+  rules as deferred. Operator identity, provider/country/retention facts, lawful basis,
+  age control and deployed cookie inventory remain launch blockers; see
+  `docs/tasks/2026-09-08-first-mvp/11-EXTERNAL-BLOCKERS.md`.
 - `Planned`: object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
