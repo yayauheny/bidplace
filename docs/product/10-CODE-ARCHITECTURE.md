@@ -76,8 +76,9 @@ SellerProfile
   published-revision pointer. Public portfolio author data is read from the approved
   profile projection; author submission locks edits and admin moderation only promotes
   the approved revision. `SellerProfileRevisionAchievement` belongs to that revision,
-  so pending achievements cannot leak into the public author page. The achievement
-  append operation locks the revision row before calculating position;
+  so pending achievements cannot leak into the public author page. A new profile
+  revision copies the prior published achievement records (including media metadata),
+  and the append operation locks the revision row before calculating position;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not

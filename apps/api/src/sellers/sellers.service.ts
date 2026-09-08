@@ -323,7 +323,14 @@ export class SellersService {
         async (tx) => {
           const profile = await tx.sellerProfile.findUnique({
             where: { id: current.id },
-            include: { editingRevision: true, publishedRevision: true },
+            include: {
+              editingRevision: true,
+              publishedRevision: {
+                include: {
+                  achievements: { orderBy: { position: 'asc' } },
+                },
+              },
+            },
           });
           if (!profile?.publishedRevision) {
             throw new ConflictException(
@@ -349,6 +356,17 @@ export class SellersService {
                 instagramUrl: published.instagramUrl,
                 websiteUrl: published.websiteUrl,
                 shortDescription: published.shortDescription,
+                achievements: {
+                  create: published.achievements.map((achievement) => ({
+                    position: achievement.position,
+                    occurredAt: achievement.occurredAt,
+                    body: achievement.body,
+                    mimeType: achievement.mimeType,
+                    byteLength: achievement.byteLength,
+                    checksum: achievement.checksum,
+                    objectKey: achievement.objectKey,
+                  })),
+                },
               },
             });
             revisionId = editing.id;

@@ -286,6 +286,111 @@ describe('SellersService', () => {
     },
   );
 
+  it('copies approved achievements into a new profile editing revision', async () => {
+    const now = new Date('2026-07-24T00:00:00.000Z');
+    const publishedRevision = {
+      id: 'published-revision-id',
+      version: 1,
+      slug: 'seller-slug',
+      discipline: 'Керамика',
+      fullName: 'Seller',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: 'https://example.com/seller',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Description',
+      achievements: [
+        {
+          position: 0,
+          occurredAt: new Date('2025-01-02T00:00:00.000Z'),
+          body: 'First exhibition',
+          mimeType: 'image/png',
+          byteLength: 12,
+          checksum: 'a'.repeat(64),
+          objectKey: 'achievement:one',
+        },
+      ],
+    };
+    const response = {
+      id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+      userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      slug: 'seller-slug',
+      fullName: 'Seller',
+      sellerType: 'creator',
+      discipline: 'Керамика',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: 'https://example.com/seller',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Description',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@seller',
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'APPROVED',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const tx = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'APPROVED',
+          editingRevisionId: 'published-revision-id',
+          publishedRevisionId: 'published-revision-id',
+          editingRevision: { id: 'published-revision-id' },
+          publishedRevision,
+        }),
+        update: vi.fn(),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(response),
+      },
+      sellerProfileRevision: {
+        create: vi.fn().mockResolvedValue({ id: 'editing-revision-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ status: 'DRAFT' }),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'APPROVED',
+          slug: 'seller-slug',
+        }),
+      },
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
+
+    await service.update('user-id', { fullName: 'Updated seller' });
+
+    expect(tx.sellerProfileRevision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        achievements: {
+          create: [
+            expect.objectContaining({
+              position: 0,
+              body: 'First exhibition',
+              objectKey: 'achievement:one',
+            }),
+          ],
+        },
+      }),
+    });
+  });
+
   it('allows edits only when SellerProfile is CHANGES_REQUESTED', async () => {
     const now = new Date('2026-07-24T00:00:00.000Z');
     const prisma = {

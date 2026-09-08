@@ -39,11 +39,11 @@
   are omitted rather than causing a public response failure. SellerProfile revisions
   now keep approved public fields stable while the author edits/submits a draft, and
   moderation promotes only the approved revision. Revision-scoped achievements have
-  text and optional date and are exposed only from the published profile revision;
-  their append operation locks the revision row before assigning its position. Optional
-  achievement images and profile-photo revision storage are not implemented API
-  contracts, and PostgreSQL integration coverage is blocked locally, so this is not a
-  complete RFC visitor-to-author flow.
+  text and optional date and are exposed only from the published profile revision.
+  A new draft copies the published achievement set, while append locks the revision row
+  before assigning its position. Optional achievement images and profile-photo revision
+  storage are not implemented API contracts, and PostgreSQL integration coverage is
+  blocked locally, so this is not a complete RFC visitor-to-author flow.
 - `Implemented`: portfolio Work approval in
   `apps/api/src/products/product-requirements.ts` requires title, category and one
   primary image. The optional plain-text story is not a publication blocker; legacy
