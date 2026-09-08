@@ -1,7 +1,7 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-06
-Статус: Confirmed technical boundaries for the current Product / Listing MVP.
+Последнее обновление: 2026-09-09
+Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## Applications and shared boundaries
 
@@ -14,6 +14,10 @@
   commerce admin actions, lifecycle and Socket.IO consume the same boundary.
   `apps/api/src/discovery` delegates to Product/Seller services and portfolio
   discovery no longer requires a `Listing` to make an approved Work public.
+- `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author and author
+  application projections. It delegates persistence to Product/Seller services and
+  validates all public responses with `packages/contracts`; its DTOs never expose
+  commerce fields.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
@@ -41,8 +45,12 @@
 
 ```text
 SellerProfile
+  ├─ SellerProfileRevision[]
+  │    └─ SellerProfileRevisionAchievement[] (text/date; revision scoped)
   └─ Product
-       ├─ ProductImage[]
+       ├─ ProductRevision[]
+       │    └─ ProductRevisionImage[]
+       ├─ ProductImage[] (legacy metadata)
        └─ Listing[]
             ├─ AuctionRules
             ├─ Bid[]
@@ -64,6 +72,12 @@ SellerProfile
   hiding/unhiding applies to the approved Work. Work writes lock the Product row
   (`SELECT … FOR UPDATE`) and re-check ownership and seller capability inside a
   Read Committed transaction;
+- `SellerProfileRevision` gives approved authors an editing-revision pointer and a
+  published-revision pointer. Public portfolio author data is read from the approved
+  profile projection; author submission locks edits and admin moderation only promotes
+  the approved revision. `SellerProfileRevisionAchievement` belongs to that revision,
+  so pending achievements cannot leak into the public author page. The achievement
+  append operation locks the revision row before calculating position;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
@@ -122,8 +136,10 @@ SellerProfile
   Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
   then `ImageStore.get`. Per-user upload rate limits apply. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
-- Product images remain binary PostgreSQL storage for the pilot; swapping to object
-  storage is a future `ImageStore` adapter change, not a service rewrite.
+- `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
+  S3-compatible adapter for configured production storage. New media paths persist
+  metadata and deterministic keys in PostgreSQL while the object store holds bytes;
+  full MinIO/PostgreSQL restore verification remains a release gate.
 
 ## Runtime topology and extension boundary
 

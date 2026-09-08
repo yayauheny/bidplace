@@ -38,9 +38,12 @@
   Author queries require a city in the database query, so incomplete legacy profiles
   are omitted rather than causing a public response failure. SellerProfile revisions
   now keep approved public fields stable while the author edits/submits a draft, and
-  moderation promotes only the approved revision. Achievement data, profile-photo
-  revision storage, and PostgreSQL integration coverage are still outstanding, so this
-  is not a complete RFC visitor-to-author flow.
+  moderation promotes only the approved revision. Revision-scoped achievements have
+  text and optional date and are exposed only from the published profile revision;
+  their append operation locks the revision row before assigning its position. Optional
+  achievement images and profile-photo revision storage are not implemented API
+  contracts, and PostgreSQL integration coverage is blocked locally, so this is not a
+  complete RFC visitor-to-author flow.
 - `Implemented`: portfolio Work approval in
   `apps/api/src/products/product-requirements.ts` requires title, category and one
   primary image. The optional plain-text story is not a publication blocker; legacy
@@ -60,10 +63,11 @@
 - `Deferred`: seller history, auction lifecycle residuals, fixed/offer, handoff and the
   completed creator-commerce research are preserved in
   [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
-- `Needs verification`: `pnpm verify` reaches database generation, typecheck, lint and
-  API unit tests (345/345), but its PostgreSQL integration stage cannot initialize
-  because no server is listening at `127.0.0.1:5432`. A standalone `pnpm build`
-  succeeds for all seven packages. Figma/`.pen` were not changed.
+- `Needs verification`: `pnpm verify` reaches database generation, typecheck (7/7),
+  lint (2/2), API unit tests (353/353) and contracts tests (30/30), but its PostgreSQL
+  integration stage cannot initialize because no server is listening at `127.0.0.1:5432`.
+  A standalone `pnpm build` succeeds for all seven packages. Figma/`.pen` were not
+  changed.
 
 ## 2026-09-07 — Work/Order boundaries and research gate
 
