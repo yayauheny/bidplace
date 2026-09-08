@@ -20,6 +20,7 @@
     "ops:backup": "bash scripts/ops/backup-db.sh",
     "ops:restore": "bash scripts/ops/restore-db.sh",
     "ops:verify-restore": "pnpm --filter @bidplace/database build && node scripts/ops/verify-restore-integrity.mjs",
+    "ops:backfill-media": "pnpm --filter @bidplace/database build && node scripts/ops/backfill-media-to-s3.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "turbo clean && rm -rf node_modules",
