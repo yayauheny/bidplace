@@ -17,7 +17,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Control | Status | Modules / tests |
 | --- | --- | --- |
 | Password hashing (Argon2) | Implemented | `apps/api/src/auth/` |
-| Session JWT with `sessionVersion` invalidation on ban/reset/revoke | Implemented | `auth-token.service.ts`, `bearer-auth.guard.ts` |
+| Session JWT with current status, session version and role | Implemented | `auth-token.service.ts`, `bearer-auth.guard.ts`, `optional-bearer-auth.guard.ts` |
 | Neutral forgot-password (no email enumeration) | Implemented | `password-reset/` + `password-reset.integration.spec.ts` |
 | Reset token stored as SHA-256 only; single-use + session bump in one TX | Implemented | `password-reset.service.ts` |
 | SMTP single-recipient guard | Implemented | `core/email/smtp-transport.ts` |
@@ -62,7 +62,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
-| Canonical storage | Implemented | Normalized bytes persisted to PostgreSQL |
+| Canonical storage | Partial | S3-compatible `ImageStore` is required in production; live object-store drill remains pending |
 
 Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`.  
 Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`.
@@ -94,7 +94,7 @@ Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `selle
 | Authz-before-decode uploads | Implemented | Forbidden before CPU spend | Slightly more service logic | N/A unless upload path splits |
 | 4096 / 16M pixel budgets | Implemented | Blocks common bombs | May reject very large art scans | Creator uploads exceed budget in pilot |
 | Admin self/admin incident guards | Implemented | Prevents founder lockout | Stricter emergency ops | Never without alternate break-glass |
-| PostgreSQL binary image storage | Implemented (pilot) | Simple ops | DB size / egress | Object storage decision |
+| S3-compatible binary image storage | Partial | Keeps binary outside PostgreSQL in production | Needs production bucket and restore drill | Before public launch |
 
 See [`12-DECISION-LOG.md`](12-DECISION-LOG.md) **DEC-068** for the static-only image decision record.
 
@@ -115,7 +115,7 @@ Env parsing rejects inconsistent pairs before bootstrap:
 | `development` or `test` | `production` | Rejected: `APP_ENV=production requires NODE_ENV=production` |
 | `production` | `local` (including default) | Rejected: `NODE_ENV=production requires APP_ENV=production or APP_ENV=staging` |
 
-Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
+Production security (`NODE_ENV=production` or `APP_ENV=production`) requires SMTP, service rules, `PASSWORD_RESET_URL_BASE`, S3 media configuration, and `JWT_SECRET` of at least 32 characters. `TEST_EMAIL_BYPASS` cannot be enabled. Session cookies use `secure` on that profile. Local mail transport and default service-rules text cannot run there.
 
 Destructive demo seed remains `NODE_ENV=development|test`, `APP_ENV=local`, and `ALLOW_DESTRUCTIVE_DEMO_SEED=true` only.
 
