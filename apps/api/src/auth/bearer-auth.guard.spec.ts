@@ -29,6 +29,7 @@ describe('BearerAuthGuard', () => {
       exp: 2_000_000_000,
     });
     prisma.user.findUnique.mockResolvedValue({
+      role: 'user',
       status: 'active',
       sessionVersion: 2,
     });
@@ -65,6 +66,7 @@ describe('BearerAuthGuard', () => {
       exp: 2_000_000_000,
     });
     prisma.user.findUnique.mockResolvedValue({
+      role: 'user',
       status: 'active',
       sessionVersion: 2,
     });
@@ -82,6 +84,29 @@ describe('BearerAuthGuard', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  it('uses the current database role when a token role is stale', async () => {
+    authTokenService.verify.mockReturnValue({
+      sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'seller@example.com',
+      role: 'admin',
+      sessionVersion: 2,
+      iat: 1,
+      exp: 2_000_000_000,
+    });
+    prisma.user.findUnique.mockResolvedValue({
+      role: 'user',
+      status: 'active',
+      sessionVersion: 2,
+    });
+    const request = { headers: { cookie: 'bidplace_session=session-token' } };
+
+    await guard.canActivate({
+      switchToHttp: () => ({ getRequest: () => request }),
+    });
+
+    expect(request).toMatchObject({ auth: { role: 'user' } });
+  });
+
   it('propagates invalid persistence user status values', async () => {
     authTokenService.verify.mockReturnValue({
       sub: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -92,6 +117,7 @@ describe('BearerAuthGuard', () => {
       exp: 2_000_000_000,
     });
     prisma.user.findUnique.mockResolvedValue({
+      role: 'user',
       status: 'corrupted',
       sessionVersion: 2,
     });

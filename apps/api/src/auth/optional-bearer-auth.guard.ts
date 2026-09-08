@@ -10,7 +10,7 @@ import {
 import { AUTH_TOKEN_COOKIE_NAME } from './auth.constants';
 import { AuthTokenService } from './auth-token.service';
 import { extractBearerToken, readCookie } from './auth.helpers';
-import { parseUserStatus } from '../core/contracts';
+import { parseUserRole, parseUserStatus } from '../core/contracts';
 import { PrismaService } from '../core/database';
 
 type AuthenticatedRequest = {
@@ -22,6 +22,7 @@ type AuthenticatedRequest = {
 };
 
 const optionalAuthGuardUserSelect = {
+  role: true,
   status: true,
   sessionVersion: true,
 } satisfies Prisma.UserSelect;
@@ -69,7 +70,10 @@ export class OptionalBearerAuthGuard implements CanActivate {
       throw new UnauthorizedException('User is not active');
     }
 
-    request.auth = auth;
+    request.auth = {
+      ...auth,
+      role: parseUserRole(user.role, auth.sub),
+    };
     return true;
   }
 
