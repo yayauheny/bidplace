@@ -15,6 +15,7 @@ export * from './order';
 export * from './product';
 export * from './public-product';
 export * from './public-seller';
+export * from './portfolio';
 export * from './pagination';
 export * from './primitives';
 export * from './seller-profile';

@@ -13,6 +13,8 @@ import {
   publicDiscoveryQuerySchema,
   publicProductSchema,
   publicSellerQuerySchema,
+  portfolioWorksQuerySchema,
+  portfolioWorkDetailResponseSchema,
   realtimeEventPayloadSchema,
   sellerOrderListQuerySchema,
   sellerOrderResponseSchema,
@@ -22,6 +24,62 @@ import {
 } from '../src';
 
 describe('shared contracts', () => {
+  it('keeps portfolio public work responses free of commerce fields', () => {
+    const work = {
+      id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      publicId: 'portfolio01',
+      title: 'Work',
+      story: null,
+      categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      technique: null,
+      materials: null,
+      dimensions: null,
+      year: null,
+      images: [
+        {
+          id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          position: 0,
+          url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          mimeType: 'image/jpeg',
+          byteLength: 1,
+          checksum: 'a'.repeat(64),
+          width: 1,
+          height: 1,
+        },
+      ],
+      publishedAt: '2026-09-08T00:00:00.000Z',
+    };
+    const author = {
+      id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      slug: 'author',
+      fullName: 'Author',
+      country: 'Belarus',
+      discipline: 'Painting',
+      profilePhotoUrl: '/api/sellers/author/photo',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Bio',
+    };
+
+    expect(
+      portfolioWorkDetailResponseSchema.safeParse({
+        work: { ...work, listing: null },
+        author,
+        relatedWorks: [],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts only portfolio newest or oldest work sorting', () => {
+    expect(portfolioWorksQuerySchema.parse({ sort: 'oldest' }).sort).toBe(
+      'oldest',
+    );
+    expect(
+      portfolioWorksQuerySchema.safeParse({ sort: 'priceAsc' }).success,
+    ).toBe(false);
+  });
+
   it('exposes contacted and failed-handoff buyer activity statuses', () => {
     expect(activityStatusSchema.safeParse('CONTACTED').success).toBe(true);
     expect(activityStatusSchema.safeParse('HANDOFF_FAILED').success).toBe(true);

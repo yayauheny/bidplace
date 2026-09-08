@@ -1,4 +1,8 @@
-import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import {
+  type MiddlewareConsumer,
+  Module,
+  type NestModule,
+} from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -29,6 +33,7 @@ import { ImagesModule } from './images/images.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { SellersModule } from './sellers/sellers.module';
 import { DiscoveryModule } from './discovery/discovery.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
 
 @Module({
   imports: [
@@ -55,6 +60,7 @@ import { DiscoveryModule } from './discovery/discovery.module';
     RealtimeModule,
     SellersModule,
     DiscoveryModule,
+    PortfolioModule,
   ],
   providers: [
     {

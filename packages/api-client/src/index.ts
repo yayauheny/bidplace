@@ -16,6 +16,7 @@ import { createListingsClient } from './listings';
 import { createImagesClient } from './images';
 import { createOrdersClient } from './orders';
 import { createProductsClient } from './products';
+import { createPortfolioClient } from './portfolio';
 import {
   createRequestContext,
   requestJson,
@@ -31,7 +32,11 @@ export function createApiClient(options: ApiClientOptions) {
 
   return {
     baseUrl: context.baseUrl,
-    request<T>(path: string, schema: ZodType<T>, requestOptions?: RequestOptions) {
+    request<T>(
+      path: string,
+      schema: ZodType<T>,
+      requestOptions?: RequestOptions,
+    ) {
       return requestJson(context, path, schema, requestOptions);
     },
     auth: createAuthClient(context),
@@ -40,6 +45,7 @@ export function createApiClient(options: ApiClientOptions) {
     listings: createListingsClient(context),
     images: createImagesClient(context),
     products: createProductsClient(context),
+    portfolio: createPortfolioClient(context),
     orders: createOrdersClient(context),
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
