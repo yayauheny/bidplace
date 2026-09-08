@@ -29,7 +29,9 @@ export const portfolioAuthorSchema = z
     slug: slugSchema,
     fullName: publicText,
     country: publicText,
+    city: publicText,
     discipline: publicText,
+    practice: z.string().trim().min(1).nullable(),
     profilePhotoUrl: z
       .string()
       .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
@@ -137,7 +139,9 @@ export const portfolioAuthorApplicationSchema = z
     slug: slugSchema,
     fullName: publicText,
     country: publicText,
+    city: publicText.nullable(),
     discipline: publicText,
+    practice: z.string().trim().min(1).nullable(),
     shortDescription: publicText,
     status: z.enum([
       'PENDING_REVIEW',

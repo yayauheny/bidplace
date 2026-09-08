@@ -110,7 +110,9 @@ export class PortfolioService {
         slug: profile.slug,
         fullName: profile.fullName,
         country: profile.country,
+        city: profile.city,
         discipline: profile.discipline,
+        practice: profile.practice,
         shortDescription: profile.shortDescription,
         status: profile.status,
       },
@@ -184,7 +186,9 @@ function toPortfolioAuthor(profile: {
   slug: string;
   fullName: string;
   country: string;
+  city: string | null;
   discipline: string;
+  practice: string | null;
   profilePhotoUrl: string;
   telegramUrl: string | null;
   instagramUrl: string | null;
@@ -196,7 +200,9 @@ function toPortfolioAuthor(profile: {
     slug: profile.slug,
     fullName: profile.fullName,
     country: profile.country,
+    city: profile.city ?? '',
     discipline: profile.discipline,
+    practice: profile.practice,
     profilePhotoUrl: profile.profilePhotoUrl,
     telegramUrl: profile.telegramUrl,
     instagramUrl: profile.instagramUrl,

@@ -166,6 +166,8 @@ export class SellersService {
             ...(input.discipline ? { discipline: input.discipline } : {}),
             fullName: input.fullName,
             country: input.country,
+            city: input.city ?? null,
+            practice: input.practice ?? null,
             socialLink: input.socialLink,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,

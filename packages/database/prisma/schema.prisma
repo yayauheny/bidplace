@@ -105,6 +105,8 @@ model SellerProfile {
   discipline          String              @default("Автор") @db.VarChar(160)
   fullName            String              @map("full_name") @db.VarChar(160)
   country             String              @db.VarChar(80)
+  city                String?             @db.VarChar(160)
+  practice            String?             @db.Text
   profilePhotoMimeType String              @map("profile_photo_mime_type") @db.VarChar(100)
   profilePhotoByteLength Int              @map("profile_photo_byte_length")
   profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)

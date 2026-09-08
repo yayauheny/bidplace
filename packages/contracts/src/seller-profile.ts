@@ -6,7 +6,12 @@ import {
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
-import { httpsUrlSchema, isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import {
+  httpsUrlSchema,
+  isoDateTimeSchema,
+  slugSchema,
+  uuidSchema,
+} from './primitives';
 
 export const sellerTelegramHandleSchema = z
   .string()
@@ -42,6 +47,8 @@ export const sellerProfileSchema = z
     discipline: sellerDisciplineSchema,
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
+    city: z.string().trim().min(1).nullable(),
+    practice: z.string().trim().min(1).nullable(),
     profilePhotoUrl: sellerProfilePhotoUrlSchema,
     socialLink: sellerPublicUrlSchema,
     telegramUrl: sellerPublicUrlSchema.nullable(),
@@ -65,6 +72,8 @@ export const publicSellerProfileSchema = sellerProfileSchema.pick({
   fullName: true,
   profilePhotoUrl: true,
   country: true,
+  city: true,
+  practice: true,
   socialLink: true,
   telegramUrl: true,
   instagramUrl: true,
@@ -79,6 +88,8 @@ const sellerProfileBaseWriteSchema = z
     discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
+    city: z.string().trim().min(1).optional(),
+    practice: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema,
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
@@ -136,6 +147,8 @@ export const sellerProfileUpdateRequestSchema = z
     discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1).optional(),
     country: z.string().trim().min(1).optional(),
+    city: z.string().trim().min(1).nullable().optional(),
+    practice: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema.optional(),
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),

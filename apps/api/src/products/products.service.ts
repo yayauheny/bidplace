@@ -37,9 +37,7 @@ import {
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
-import {
-  publicDirectProductWhere,
-} from './public-visibility';
+import { publicDirectProductWhere } from './public-visibility';
 import { assertProductRevisionTransition } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
@@ -366,7 +364,9 @@ export class ProductsService {
         );
         const missingFields = missingProductApprovalFields({
           ...editingRevision,
-          images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+          images: editingRevision.images.map(({ imageId }) => ({
+            id: imageId,
+          })),
         });
         if (missingFields.length > 0) {
           throw new ConflictException(
@@ -738,6 +738,8 @@ export class ProductsService {
         discipline: string;
         fullName: string;
         country: string;
+        city: string | null;
+        practice: string | null;
         socialLink: string;
         telegramUrl: string | null;
         instagramUrl: string | null;

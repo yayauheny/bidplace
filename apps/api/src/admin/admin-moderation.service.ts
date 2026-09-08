@@ -141,7 +141,9 @@ export class AdminModerationService {
         if (input.status === 'APPROVED') {
           this.assertProductApprovalRequirements({
             ...editingRevision,
-            images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+            images: editingRevision.images.map(({ imageId }) => ({
+              id: imageId,
+            })),
           });
           if (product.sellerProfile.status !== 'APPROVED') {
             this.logger.warn(
@@ -272,12 +274,14 @@ export class AdminModerationService {
 
   private assertSellerApprovalRequirements(sellerProfile: {
     fullName: string | null;
+    city: string | null;
     socialLink: string | null;
     shortDescription: string | null;
     profilePhotoData: Uint8Array | null;
   }) {
     if (
       !sellerProfile.fullName ||
+      !sellerProfile.city ||
       !sellerProfile.socialLink ||
       !sellerProfile.shortDescription ||
       !sellerProfile.profilePhotoData ||
