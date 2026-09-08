@@ -21,6 +21,54 @@ describe('SellersService', () => {
     ).toEqual({ SCHEDULED: 1, LIVE: 1, ENDED: 1 });
   });
 
+  it('adds an achievement after locking the editable profile revision', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'revision-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          editingRevision: { id: 'revision-id', status: 'DRAFT' },
+        }),
+      },
+      sellerProfileRevisionAchievement: {
+        count: vi.fn().mockResolvedValue(2),
+        create: vi.fn().mockResolvedValue({
+          id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
+          occurredAt: null,
+          body: 'First exhibition',
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
+
+    await expect(
+      service.addAchievement('user-id', { body: 'First exhibition' }),
+    ).resolves.toEqual({
+      achievement: {
+        id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
+        occurredAt: null,
+        body: 'First exhibition',
+      },
+    });
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
+      where: { revisionId: 'revision-id' },
+    });
+    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ revisionId: 'revision-id', position: 2 }),
+    });
+  });
+
   it('maps a concurrent duplicate SellerProfile or slug to a conflict', async () => {
     const tx = {
       sellerProfile: {

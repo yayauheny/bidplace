@@ -44,6 +44,7 @@ import {
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
+import { lockSellerProfileRevisionRowForUpdate } from './seller-profile-revision-lock';
 import { canAuthorEditSellerProfileRevision } from './seller-profile-revision-state';
 
 export function countPublicSellerStatuses(
@@ -486,6 +487,7 @@ export class SellersService {
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
       const revision = await this.editableRevision(tx, userId);
+      await lockSellerProfileRevisionRowForUpdate(tx, revision.id);
       const position = await tx.sellerProfileRevisionAchievement.count({
         where: { revisionId: revision.id },
       });

@@ -216,11 +216,13 @@ function toPortfolioAuthor(profile: {
   instagramUrl: string | null;
   websiteUrl: string | null;
   shortDescription: string;
-  achievements?: Array<{
-    id: string;
-    occurredAt: string | null;
-    body: string;
-  }>;
+  achievements?:
+    | Array<{
+        id: string;
+        occurredAt: string | null;
+        body: string;
+      }>
+    | undefined;
 }) {
   return {
     id: profile.id,
