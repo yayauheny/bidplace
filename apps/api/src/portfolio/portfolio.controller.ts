@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import {
   portfolioAuthorsQuerySchema,
   portfolioWorksQuerySchema,
 } from '@bidplace/contracts';
 
 import { parseBody } from '../core/validation';
+import { BearerAuthGuard, CurrentUser } from '../auth';
 import { PortfolioService } from './portfolio.service';
 
 @Controller()
@@ -41,5 +42,17 @@ export class PortfolioController {
       slug,
       parseBody(portfolioWorksQuerySchema, query),
     );
+  }
+
+  @Get('author/application')
+  @UseGuards(BearerAuthGuard)
+  application(@CurrentUser() auth: { sub: string }) {
+    return this.portfolio.getApplication(auth.sub);
+  }
+
+  @Get('author/cabinet/works')
+  @UseGuards(BearerAuthGuard)
+  cabinetWorks(@CurrentUser() auth: { sub: string }) {
+    return this.portfolio.listCabinetWorks(auth.sub);
   }
 }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
+import { productStatusSchema } from './enums';
 import { slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
@@ -114,6 +115,42 @@ export const portfolioHomeResponseSchema = z
     newWorks: z.array(portfolioWorkListItemSchema),
     newAuthors: z.array(portfolioAuthorSchema),
   })
+  .strict();
+
+export const portfolioCabinetWorkSchema = z
+  .object({
+    id: uuidSchema,
+    publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    title: z.string().trim().min(1).nullable(),
+    status: productStatusSchema,
+    updatedAt: z.string().datetime(),
+    moderationMessage: z.string().nullable(),
+  })
+  .strict();
+
+export const portfolioCabinetWorksResponseSchema = z
+  .object({ works: z.array(portfolioCabinetWorkSchema) })
+  .strict();
+
+export const portfolioAuthorApplicationSchema = z
+  .object({
+    slug: slugSchema,
+    fullName: publicText,
+    country: publicText,
+    discipline: publicText,
+    shortDescription: publicText,
+    status: z.enum([
+      'PENDING_REVIEW',
+      'APPROVED',
+      'CHANGES_REQUESTED',
+      'REJECTED',
+      'SUSPENDED',
+    ]),
+  })
+  .strict();
+
+export const portfolioAuthorApplicationResponseSchema = z
+  .object({ application: portfolioAuthorApplicationSchema })
   .strict();
 
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;

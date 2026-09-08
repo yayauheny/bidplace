@@ -1,6 +1,8 @@
 import {
   portfolioAuthorDetailResponseSchema,
   portfolioAuthorsResponseSchema,
+  portfolioAuthorApplicationResponseSchema,
+  portfolioCabinetWorksResponseSchema,
   portfolioHomeResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksResponseSchema,
@@ -98,6 +100,39 @@ export class PortfolioService {
       newWorks: works.works,
       newAuthors: authors.authors.map((item) => item.author),
     });
+  }
+
+  async getApplication(userId: string) {
+    const response = await this.sellers.getMine(userId);
+    const profile = response.sellerProfile;
+    return portfolioAuthorApplicationResponseSchema.parse({
+      application: {
+        slug: profile.slug,
+        fullName: profile.fullName,
+        country: profile.country,
+        discipline: profile.discipline,
+        shortDescription: profile.shortDescription,
+        status: profile.status,
+      },
+    });
+  }
+
+  async listCabinetWorks(userId: string) {
+    const response = await this.sellers.listProducts(userId);
+    const works = await Promise.all(
+      response.products.map(async (product) => {
+        const detail = await this.sellers.getProduct(userId, product.id);
+        return {
+          id: product.id,
+          publicId: product.publicId,
+          title: product.title,
+          status: product.status,
+          updatedAt: product.updatedAt,
+          moderationMessage: detail.lastModerationReason,
+        };
+      }),
+    );
+    return portfolioCabinetWorksResponseSchema.parse({ works });
   }
 }
 

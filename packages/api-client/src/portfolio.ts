@@ -2,6 +2,8 @@ import {
   portfolioAuthorDetailResponseSchema,
   portfolioAuthorsQuerySchema,
   portfolioAuthorsResponseSchema,
+  portfolioAuthorApplicationResponseSchema,
+  portfolioCabinetWorksResponseSchema,
   portfolioHomeResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksQuerySchema,
@@ -49,6 +51,20 @@ export function createPortfolioClient(context: RequestContext) {
         `/api/authors/${slug}`,
         portfolioAuthorDetailResponseSchema,
         { query: portfolioWorksQuerySchema.parse(query ?? {}) },
+      );
+    },
+    getAuthorApplication() {
+      return requestJson(
+        context,
+        '/api/author/application',
+        portfolioAuthorApplicationResponseSchema,
+      );
+    },
+    listCabinetWorks() {
+      return requestJson(
+        context,
+        '/api/author/cabinet/works',
+        portfolioCabinetWorksResponseSchema,
       );
     },
   };

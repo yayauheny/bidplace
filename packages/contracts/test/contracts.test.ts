@@ -15,6 +15,7 @@ import {
   publicSellerQuerySchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
+  portfolioAuthorApplicationResponseSchema,
   realtimeEventPayloadSchema,
   sellerOrderListQuerySchema,
   sellerOrderResponseSchema,
@@ -77,6 +78,22 @@ describe('shared contracts', () => {
     );
     expect(
       portfolioWorksQuerySchema.safeParse({ sort: 'priceAsc' }).success,
+    ).toBe(false);
+  });
+
+  it('keeps author application projections free of private handoff data', () => {
+    expect(
+      portfolioAuthorApplicationResponseSchema.safeParse({
+        application: {
+          slug: 'author',
+          fullName: 'Author',
+          country: 'Belarus',
+          discipline: 'Painting',
+          shortDescription: 'Bio',
+          status: 'PENDING_REVIEW',
+          handoffContactValue: '@private_contact',
+        },
+      }).success,
     ).toBe(false);
   });
 
