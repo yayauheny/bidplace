@@ -29,3 +29,10 @@ rows, credentials or production-provider dashboards were read.
 Operator, processors, countries, retention schedules, deletion/anonymization process,
 cookie inventory and incident contacts must be confirmed before public launch. These
 remain `UNKNOWN` and must not be converted into legal claims without evidence.
+
+## Legacy public URL preflight
+
+`pnpm ops:url-preflight` is a read-only count report for `socialLink`, Telegram,
+Instagram and website fields. It never prints values, changes data or upgrades
+`http:` to `https:`. Any non-HTTPS legacy value requires manual correction by the
+author or an explicitly reviewed cleanup migration before it can be publicly projected.
