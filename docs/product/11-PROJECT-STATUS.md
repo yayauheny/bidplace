@@ -37,6 +37,11 @@
   Work category/material and Author tag filtering run on the server. The author
   application, profile revision, cabinet and PostgreSQL integration coverage are still
   outstanding, so this is not a complete RFC visitor-to-author flow.
+- `Implemented`: portfolio Work approval in
+  `apps/api/src/products/product-requirements.ts` requires title, category and one
+  primary image. The optional plain-text story is not a publication blocker; legacy
+  delivery, packaging and provenance fields no longer gate moderation. API unit tests
+  (343/343), typecheck and lint pass; PostgreSQL integration remains blocked locally.
 - `Planned`: object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
