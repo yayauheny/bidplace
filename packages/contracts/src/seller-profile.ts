@@ -82,15 +82,17 @@ export const publicSellerProfileSchema = sellerProfileSchema
     shortDescription: true,
   })
   .extend({
-    achievements: z.array(
-      z
-        .object({
-          id: uuidSchema,
-          occurredAt: isoDateTimeSchema.nullable(),
-          body: z.string().trim().min(1),
-        })
-        .strict(),
-    ),
+    achievements: z
+      .array(
+        z
+          .object({
+            id: uuidSchema,
+            occurredAt: isoDateTimeSchema.nullable(),
+            body: z.string().trim().min(1),
+          })
+          .strict(),
+      )
+      .optional(),
   });
 
 const sellerProfileBaseWriteSchema = z

@@ -216,7 +216,7 @@ function toPortfolioAuthor(profile: {
   instagramUrl: string | null;
   websiteUrl: string | null;
   shortDescription: string;
-  achievements: Array<{
+  achievements?: Array<{
     id: string;
     occurredAt: string | null;
     body: string;
@@ -235,6 +235,6 @@ function toPortfolioAuthor(profile: {
     instagramUrl: profile.instagramUrl,
     websiteUrl: profile.websiteUrl,
     shortDescription: profile.shortDescription,
-    achievements: profile.achievements,
+    achievements: profile.achievements ?? [],
   };
 }
