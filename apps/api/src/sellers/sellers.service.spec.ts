@@ -31,11 +31,16 @@ describe('SellersService', () => {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
-    const service = new SellersService(prisma as never, {} as never, imageStore as never);
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
 
     await expect(
       service.create(
@@ -88,13 +93,17 @@ describe('SellersService', () => {
           return createdProfile;
         }),
       },
+      sellerProfileRevision: {
+        create: vi.fn().mockResolvedValue({ id: 'revision-id' }),
+      },
     };
     const prisma = {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const put = vi.fn().mockImplementation(async () => {
@@ -124,7 +133,13 @@ describe('SellersService', () => {
     );
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(order).toEqual(['create', 'put', 'object-key']);
+    expect(order).toEqual(['create', 'put', 'object-key', 'object-key']);
+    expect(tx.sellerProfileRevision.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sellerProfileId: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+        status: 'PENDING_REVIEW',
+      }),
+    });
     expect(put).toHaveBeenCalledWith(
       'seller-photo:a0d82a10-3170-49eb-904f-a8bc87d311a5',
       {
@@ -162,8 +177,9 @@ describe('SellersService', () => {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const put = vi.fn().mockRejectedValue(new Error('store down'));
@@ -209,7 +225,11 @@ describe('SellersService', () => {
           update: vi.fn(),
         },
       };
-      const service = new SellersService(prisma as never, {} as never, imageStore as never);
+      const service = new SellersService(
+        prisma as never,
+        {} as never,
+        imageStore as never,
+      );
 
       await expect(
         service.update('user-id', { fullName: 'Updated seller' }),
@@ -246,7 +266,11 @@ describe('SellersService', () => {
         }),
       },
     };
-    const service = new SellersService(prisma as never, {} as never, imageStore as never);
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
 
     const result = await service.update('user-id', {
       fullName: 'Updated seller',
@@ -293,8 +317,9 @@ describe('SellersService', () => {
         }),
         update: vi.fn(),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const put = vi.fn().mockResolvedValue(undefined);
@@ -404,7 +429,11 @@ describe('SellersService', () => {
       },
       auditEvent: { findFirst: vi.fn().mockResolvedValue(null) },
     };
-    const service = new SellersService(prisma as never, {} as never, imageStore as never);
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
 
     const result = await service.getProduct(
       'owner-id',
@@ -473,7 +502,11 @@ describe('SellersService', () => {
         delete: vi.fn(),
       },
     };
-    const service = new SellersService(prisma as never, {} as never, imageStore as never);
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
 
     const result = await service.getProduct(
       'owner-id',

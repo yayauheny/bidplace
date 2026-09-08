@@ -1,6 +1,7 @@
 import {
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
+  type SellerProfileRevisionStatus,
 } from '@bidplace/contracts';
 import {
   ConflictException,
@@ -76,10 +77,11 @@ export class AdminModerationService {
       }
 
       if (isRevisionReview) {
+        const revisionStatus = input.status as SellerProfileRevisionStatus;
         assertSellerProfileRevisionTransition(
           'admin',
           editingRevision.status,
-          input.status,
+          revisionStatus,
         );
         if (input.status === 'APPROVED') {
           this.assertSellerApprovalRequirements({
@@ -90,7 +92,7 @@ export class AdminModerationService {
 
         await tx.sellerProfileRevision.update({
           where: { id: editingRevision.id },
-          data: { status: input.status, reviewedAt: new Date() },
+          data: { status: revisionStatus, reviewedAt: new Date() },
         });
 
         const updated =

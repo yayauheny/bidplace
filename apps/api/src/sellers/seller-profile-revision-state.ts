@@ -1,30 +1,30 @@
 import { ConflictException } from '@nestjs/common';
-import type { SellerStatus } from '@bidplace/contracts';
+import type { SellerProfileRevisionStatus } from '@bidplace/contracts';
 
 const authorTransitions: Readonly<
-  Record<SellerStatus, readonly SellerStatus[]>
+  Record<SellerProfileRevisionStatus, readonly SellerProfileRevisionStatus[]>
 > = {
+  DRAFT: ['PENDING_REVIEW'],
   PENDING_REVIEW: [],
   APPROVED: [],
   CHANGES_REQUESTED: ['PENDING_REVIEW'],
   REJECTED: ['PENDING_REVIEW'],
-  SUSPENDED: [],
 };
 
 const adminTransitions: Readonly<
-  Record<SellerStatus, readonly SellerStatus[]>
+  Record<SellerProfileRevisionStatus, readonly SellerProfileRevisionStatus[]>
 > = {
+  DRAFT: [],
   PENDING_REVIEW: ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'],
   APPROVED: [],
   CHANGES_REQUESTED: [],
   REJECTED: [],
-  SUSPENDED: [],
 };
 
 export function assertSellerProfileRevisionTransition(
   actor: 'author' | 'admin',
-  current: SellerStatus,
-  next: SellerStatus,
+  current: SellerProfileRevisionStatus,
+  next: SellerProfileRevisionStatus,
 ): void {
   const transitions = actor === 'author' ? authorTransitions : adminTransitions;
   if (!transitions[current].includes(next)) {

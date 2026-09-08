@@ -96,6 +96,12 @@ export class SellersController {
     );
   }
 
+  @Post('seller/profile/submit')
+  @UseGuards(BearerAuthGuard)
+  submitProfileRevision(@CurrentUser() auth: { sub: string }) {
+    return this.sellers.submitProfileRevision(auth.sub);
+  }
+
   @Get('seller/products')
   @UseGuards(BearerAuthGuard)
   listProducts(@CurrentUser() auth: { sub: string }) {

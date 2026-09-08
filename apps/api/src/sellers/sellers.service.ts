@@ -17,7 +17,11 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
-import { isPrismaUniqueConstraintError, PrismaService } from '../core/database';
+import {
+  isPrismaUniqueConstraintError,
+  PrismaService,
+  runReadCommittedTransaction,
+} from '../core/database';
 import { emptyImageBytes, ImageStore, imageKey } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
@@ -52,6 +56,28 @@ export function countPublicSellerStatuses(
   }
 
   return counts;
+}
+
+function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
+  return {
+    ...(input.slug !== undefined ? { slug: input.slug } : {}),
+    ...(input.discipline !== undefined ? { discipline: input.discipline } : {}),
+    ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+    ...(input.country !== undefined ? { country: input.country } : {}),
+    ...(input.city !== undefined ? { city: input.city } : {}),
+    ...(input.practice !== undefined ? { practice: input.practice } : {}),
+    ...(input.socialLink !== undefined ? { socialLink: input.socialLink } : {}),
+    ...(input.telegramUrl !== undefined
+      ? { telegramUrl: input.telegramUrl }
+      : {}),
+    ...(input.instagramUrl !== undefined
+      ? { instagramUrl: input.instagramUrl }
+      : {}),
+    ...(input.websiteUrl !== undefined ? { websiteUrl: input.websiteUrl } : {}),
+    ...(input.shortDescription !== undefined
+      ? { shortDescription: input.shortDescription }
+      : {}),
+  };
 }
 
 type PublicSellerProductPageRow = { id: string };
@@ -199,6 +225,30 @@ export class SellersService {
           data: { profilePhotoObjectKey: imageKey.sellerPhoto(created.id) },
         });
 
+        const revision = await tx.sellerProfileRevision.create({
+          data: {
+            sellerProfileId: created.id,
+            version: 1,
+            status: 'PENDING_REVIEW',
+            slug: input.slug,
+            discipline: input.discipline ?? 'Автор',
+            fullName: input.fullName,
+            country: input.country,
+            city: input.city ?? null,
+            practice: input.practice ?? null,
+            socialLink: input.socialLink,
+            telegramUrl: input.telegramUrl ?? null,
+            instagramUrl: input.instagramUrl ?? null,
+            websiteUrl: input.websiteUrl ?? null,
+            shortDescription: input.shortDescription,
+            submittedAt: new Date(),
+          },
+        });
+        await tx.sellerProfile.update({
+          where: { id: created.id },
+          data: { editingRevisionId: revision.id },
+        });
+
         return created;
       });
 
@@ -230,6 +280,78 @@ export class SellersService {
 
     if (!current) {
       throw new NotFoundException('Seller profile not found');
+    }
+
+    if (current.status === 'APPROVED') {
+      if (profilePhoto) {
+        throw new ConflictException(
+          'Profile photo changes require a dedicated profile revision',
+        );
+      }
+      if (
+        input.sellerType !== undefined ||
+        input.handoffContactType !== undefined ||
+        input.handoffContactValue !== undefined ||
+        input.handoffInitiator !== undefined
+      ) {
+        throw new ForbiddenException(
+          'Only public profile fields can be revised after approval',
+        );
+      }
+
+      const sellerProfile = await runReadCommittedTransaction(
+        this.prisma,
+        async (tx) => {
+          const profile = await tx.sellerProfile.findUnique({
+            where: { id: current.id },
+            include: { editingRevision: true, publishedRevision: true },
+          });
+          if (!profile?.publishedRevision) {
+            throw new ConflictException(
+              'Published profile revision is missing',
+            );
+          }
+          let revisionId = profile.editingRevisionId;
+          if (revisionId === profile.publishedRevisionId) {
+            const published = profile.publishedRevision;
+            const editing = await tx.sellerProfileRevision.create({
+              data: {
+                sellerProfileId: profile.id,
+                version: published.version + 1,
+                status: 'DRAFT',
+                slug: published.slug,
+                discipline: published.discipline,
+                fullName: published.fullName,
+                country: published.country,
+                city: published.city,
+                practice: published.practice,
+                socialLink: published.socialLink,
+                telegramUrl: published.telegramUrl,
+                instagramUrl: published.instagramUrl,
+                websiteUrl: published.websiteUrl,
+                shortDescription: published.shortDescription,
+              },
+            });
+            revisionId = editing.id;
+            await tx.sellerProfile.update({
+              where: { id: profile.id },
+              data: { editingRevisionId: revisionId },
+            });
+          }
+          if (!revisionId) {
+            throw new ConflictException('Profile editing revision is missing');
+          }
+          await tx.sellerProfileRevision.update({
+            where: { id: revisionId },
+            data: publicProfileRevisionData(input),
+          });
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: profile.id },
+            select: sellerProfileResponseSelect,
+          });
+        },
+      );
+      return toSellerProfileResponse(sellerProfile);
     }
 
     if (current.status !== 'CHANGES_REQUESTED') {
@@ -294,6 +416,43 @@ export class SellersService {
 
       throw error;
     }
+  }
+
+  async submitProfileRevision(userId: string) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const profile = await tx.sellerProfile.findUnique({
+        where: { userId },
+        include: { editingRevision: true },
+      });
+      if (!profile?.editingRevision) {
+        throw new NotFoundException('Seller profile revision not found');
+      }
+      if (profile.status === 'SUSPENDED') {
+        throw new ForbiddenException('Seller profile is suspended');
+      }
+      const revision = profile.editingRevision;
+      if (
+        !['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(revision.status)
+      ) {
+        throw new ConflictException(
+          'Seller profile revision cannot be submitted',
+        );
+      }
+      await tx.sellerProfileRevision.update({
+        where: { id: revision.id },
+        data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
+      });
+      if (profile.status !== 'APPROVED') {
+        await tx.sellerProfile.update({
+          where: { id: profile.id },
+          data: { status: 'PENDING_REVIEW' },
+        });
+      }
+      return tx.sellerProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+        select: sellerProfileResponseSelect,
+      });
+    }).then(toSellerProfileResponse);
   }
 
   async listProducts(userId: string) {

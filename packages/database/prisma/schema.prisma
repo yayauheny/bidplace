@@ -17,6 +17,14 @@ enum SellerProfileStatus {
   SUSPENDED
 }
 
+enum SellerProfileRevisionStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+}
+
 enum ProductStatus {
   DRAFT
   PENDING_REVIEW
@@ -138,7 +146,7 @@ model SellerProfileRevision {
   id              String              @id @default(uuid()) @db.Uuid
   sellerProfileId String              @map("seller_profile_id") @db.Uuid
   version         Int
-  status          SellerProfileStatus @default(PENDING_REVIEW)
+  status          SellerProfileRevisionStatus @default(DRAFT)
   slug            String              @db.VarChar(120)
   discipline      String              @db.VarChar(160)
   fullName        String              @map("full_name") @db.VarChar(160)
