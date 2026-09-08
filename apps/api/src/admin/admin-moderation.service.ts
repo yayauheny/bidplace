@@ -18,6 +18,7 @@ import { missingProductApprovalFields } from '../products/product-requirements';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
+import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
 
 @Injectable()
 export class AdminModerationService {
@@ -33,6 +34,7 @@ export class AdminModerationService {
     return runSerializableTransaction(this.prisma, async (tx) => {
       const sellerProfile = await tx.sellerProfile.findUnique({
         where: { id: sellerProfileId },
+        include: { editingRevision: true },
       });
 
       if (!sellerProfile) {
@@ -40,7 +42,15 @@ export class AdminModerationService {
         throw new NotFoundException('Seller profile not found');
       }
 
-      if (!this.isAllowedSellerTransition(sellerProfile.status, input.status)) {
+      const editingRevision = sellerProfile.editingRevision;
+      const isRevisionReview =
+        editingRevision?.status === 'PENDING_REVIEW' &&
+        ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status);
+
+      if (
+        !isRevisionReview &&
+        !this.isAllowedSellerTransition(sellerProfile.status, input.status)
+      ) {
         this.logger.warn(
           `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status}`,
         );
@@ -63,6 +73,53 @@ export class AdminModerationService {
             'Seller cannot be suspended while a scheduled or live listing exists',
           );
         }
+      }
+
+      if (isRevisionReview) {
+        assertSellerProfileRevisionTransition(
+          'admin',
+          editingRevision.status,
+          input.status,
+        );
+        if (input.status === 'APPROVED') {
+          this.assertSellerApprovalRequirements({
+            ...editingRevision,
+            profilePhotoData: sellerProfile.profilePhotoData,
+          });
+        }
+
+        await tx.sellerProfileRevision.update({
+          where: { id: editingRevision.id },
+          data: { status: input.status, reviewedAt: new Date() },
+        });
+
+        const updated =
+          input.status === 'APPROVED'
+            ? await tx.sellerProfile.update({
+                where: { id: sellerProfileId },
+                data: {
+                  ...this.publishedSellerProfileData(editingRevision),
+                  status:
+                    sellerProfile.status === 'PENDING_REVIEW'
+                      ? 'APPROVED'
+                      : sellerProfile.status,
+                  publishedRevisionId: editingRevision.id,
+                },
+              })
+            : sellerProfile;
+
+        await tx.auditEvent.create({
+          data: {
+            actorUserId: adminUserId,
+            targetType: 'SELLER_PROFILE',
+            targetId: sellerProfile.id,
+            oldStatus: editingRevision.status,
+            newStatus: input.status,
+            reason: input.reason ?? null,
+          },
+        });
+
+        return updated;
       }
 
       if (input.status === 'APPROVED') {
@@ -269,6 +326,34 @@ export class AdminModerationService {
       packaging: revision.packaging,
       deliveryInfo: revision.deliveryInfo,
       creationIntro: revision.creationIntro,
+    };
+  }
+
+  private publishedSellerProfileData(revision: {
+    slug: string;
+    discipline: string;
+    fullName: string;
+    country: string;
+    city: string | null;
+    practice: string | null;
+    socialLink: string;
+    telegramUrl: string | null;
+    instagramUrl: string | null;
+    websiteUrl: string | null;
+    shortDescription: string;
+  }) {
+    return {
+      slug: revision.slug,
+      discipline: revision.discipline,
+      fullName: revision.fullName,
+      country: revision.country,
+      city: revision.city,
+      practice: revision.practice,
+      socialLink: revision.socialLink,
+      telegramUrl: revision.telegramUrl,
+      instagramUrl: revision.instagramUrl,
+      websiteUrl: revision.websiteUrl,
+      shortDescription: revision.shortDescription,
     };
   }
 

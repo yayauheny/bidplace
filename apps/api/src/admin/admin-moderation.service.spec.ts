@@ -7,13 +7,62 @@ import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 function transactionPrisma(tx: object) {
   return {
-    $transaction: vi.fn(async (callback: (client: object) => Promise<unknown>) =>
-      callback(tx),
+    $transaction: vi.fn(
+      async (callback: (client: object) => Promise<unknown>) => callback(tx),
     ),
   };
 }
 
 describe('AdminModerationService', () => {
+  it('approves a pending profile revision without exposing it before moderation', async () => {
+    const revision = {
+      id: 'revision-id',
+      status: 'PENDING_REVIEW',
+      slug: 'updated-author',
+      discipline: 'Painting',
+      fullName: 'Updated author',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: 'https://example.com',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Updated description',
+    };
+    const sellerProfile = {
+      id: 'seller-id',
+      status: 'APPROVED',
+      profilePhotoData: new Uint8Array([1]),
+      editingRevision: revision,
+    };
+    const tx = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue(sellerProfile),
+        update: vi.fn().mockResolvedValue({ ...sellerProfile }),
+      },
+      sellerProfileRevision: { update: vi.fn() },
+      auditEvent: { create: vi.fn() },
+    };
+    const service = new AdminModerationService(transactionPrisma(tx) as never);
+
+    await service.updateSellerStatus('admin-id', 'seller-id', {
+      status: 'APPROVED',
+    });
+
+    expect(tx.sellerProfileRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: expect.objectContaining({ status: 'APPROVED' }),
+    });
+    expect(tx.sellerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'seller-id' },
+      data: expect.objectContaining({
+        publishedRevisionId: 'revision-id',
+        fullName: 'Updated author',
+      }),
+    });
+  });
+
   it('requests changes for an editing revision without hiding the published product', async () => {
     const product = {
       id: 'product-id',
@@ -51,11 +100,11 @@ describe('AdminModerationService', () => {
     expect(tx.product.findUnique).toHaveBeenCalledWith({
       where: { id: 'product-id' },
       include: {
-          sellerProfile: { select: sellerProfileAuthSelect },
-          images: { select: { id: true } },
-          editingRevision: {
-            include: { images: { select: { imageId: true } } },
-          },
+        sellerProfile: { select: sellerProfileAuthSelect },
+        images: { select: { id: true } },
+        editingRevision: {
+          include: { images: { select: { imageId: true } } },
+        },
         listings: {
           where: { status: { in: ['SCHEDULED', 'LIVE'] } },
           select: { id: true },
@@ -188,7 +237,9 @@ describe('AdminModerationService', () => {
         }),
       },
       listing: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
+        findFirst: vi
+          .fn()
+          .mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
       },
     };
     const service = new AdminModerationService(transactionPrisma(tx) as never);
