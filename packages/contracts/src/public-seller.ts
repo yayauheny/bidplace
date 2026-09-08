@@ -8,6 +8,7 @@ const publicSellerWorkStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED']);
 const publicSellerWorkSortSchema = z.enum([
   'activity',
   'newest',
+  'oldest',
   'priceAsc',
   'priceDesc',
 ]);

@@ -26,7 +26,7 @@ export class PortfolioService {
       q: query.q,
       category: query.category,
       materials: query.materials,
-      sort: query.sort === 'newest' ? 'newest' : 'activity',
+      sort: query.sort,
     });
 
     return portfolioWorksResponseSchema.parse({
@@ -58,26 +58,17 @@ export class PortfolioService {
       page: query.page,
       limit: query.limit,
       q: query.q,
+      tag: query.tag,
       sort: query.sort === 'name' ? 'name' : 'activity',
     });
-    const tag = query.tag?.toLocaleLowerCase();
-    const authors = response.sellers
-      .filter(
-        (item) =>
-          !tag ||
-          item.sellerProfile.discipline.toLocaleLowerCase().includes(tag),
-      )
-      .map((item) => ({
-        author: toPortfolioAuthor(item.sellerProfile),
-        workCount: item.workCount,
-      }));
+    const authors = response.sellers.map((item) => ({
+      author: toPortfolioAuthor(item.sellerProfile),
+      workCount: item.workCount,
+    }));
 
     return portfolioAuthorsResponseSchema.parse({
       authors,
-      pagination: {
-        ...response.pagination,
-        total: tag ? authors.length : response.pagination.total,
-      },
+      pagination: response.pagination,
     });
   }
 
@@ -85,7 +76,7 @@ export class PortfolioService {
     const response = await this.sellers.getPublic(slug, {
       page: query.page,
       limit: query.limit,
-      sort: query.sort === 'newest' ? 'newest' : 'activity',
+      sort: query.sort,
     });
 
     if (!response) throw new NotFoundException('Author not found');

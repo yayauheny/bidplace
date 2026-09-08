@@ -12,6 +12,7 @@ export const publicDiscoverySortSchema = z.enum([
   'activity',
   'endingSoon',
   'newest',
+  'oldest',
   'priceAsc',
   'priceDesc',
 ]);
@@ -73,6 +74,7 @@ export const publicSellerSortSchema = z.enum(['activity', 'name']);
 export const publicSellerQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
+    tag: z.string().trim().min(1).max(160).optional(),
     sort: publicSellerSortSchema.default('activity'),
   })
   .strict();

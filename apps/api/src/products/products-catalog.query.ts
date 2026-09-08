@@ -12,7 +12,9 @@ export function escapeLikePattern(value: string): string {
     .replaceAll('_', '\\_');
 }
 
-export function publicCatalogOrderBy(sort: PublicDiscoveryQuery['sort']): string {
+export function publicCatalogOrderBy(
+  sort: PublicDiscoveryQuery['sort'],
+): string {
   switch (sort) {
     case 'activity':
       return 'p."published_at" DESC NULLS LAST, p."id" ASC';
@@ -24,6 +26,8 @@ export function publicCatalogOrderBy(sort: PublicDiscoveryQuery['sort']): string
       return 'p."published_at" DESC NULLS LAST, p."id" ASC';
     case 'newest':
       return 'p."published_at" DESC NULLS LAST, p."id" ASC';
+    case 'oldest':
+      return 'p."published_at" ASC NULLS LAST, p."id" ASC';
   }
 }
 

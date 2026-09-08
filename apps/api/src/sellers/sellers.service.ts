@@ -115,6 +115,8 @@ function publicSellerProductsOrderBy(sort: PublicSellerWorksQuery['sort']) {
       return 'p."current_price" DESC, p."id" ASC';
     case 'newest':
       return 'p."created_at" DESC, p."id" ASC';
+    case 'oldest':
+      return 'p."created_at" ASC, p."id" ASC';
     case 'activity':
       return 'p."bid_count" DESC, p."created_at" DESC, p."id" ASC';
   }
@@ -371,7 +373,18 @@ export class SellersService {
           ],
         }
       : {};
-    const where = { status: 'APPROVED' as const, ...searchWhere };
+    const where = {
+      status: 'APPROVED' as const,
+      ...(query.tag
+        ? {
+            discipline: {
+              contains: query.tag,
+              mode: 'insensitive' as const,
+            },
+          }
+        : {}),
+      ...searchWhere,
+    };
     const [sellers, total] = await Promise.all([
       this.prisma.sellerProfile.findMany({
         where,
