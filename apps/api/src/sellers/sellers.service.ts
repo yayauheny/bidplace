@@ -42,6 +42,7 @@ import {
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
+import { canAuthorEditSellerProfileRevision } from './seller-profile-revision-state';
 
 export function countPublicSellerStatuses(
   products: Array<{ listings: Array<{ status: string }> }>,
@@ -355,6 +356,13 @@ export class SellersService {
           }
           if (!revisionId) {
             throw new ConflictException('Profile editing revision is missing');
+          }
+          const editing = await tx.sellerProfileRevision.findUniqueOrThrow({
+            where: { id: revisionId },
+            select: { status: true },
+          });
+          if (!canAuthorEditSellerProfileRevision(editing.status)) {
+            throw new ConflictException('Seller profile revision is locked');
           }
           await tx.sellerProfileRevision.update({
             where: { id: revisionId },

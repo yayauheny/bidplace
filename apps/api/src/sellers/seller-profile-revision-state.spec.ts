@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertSellerProfileRevisionTransition } from './seller-profile-revision-state';
+import {
+  assertSellerProfileRevisionTransition,
+  canAuthorEditSellerProfileRevision,
+} from './seller-profile-revision-state';
 
 describe('seller profile revision state', () => {
   it('allows an author to resubmit requested changes', () => {
@@ -27,5 +30,10 @@ describe('seller profile revision state', () => {
     expect(() =>
       assertSellerProfileRevisionTransition('admin', 'REJECTED', 'APPROVED'),
     ).toThrow('Seller profile revision transition is not allowed');
+  });
+
+  it('locks a pending revision against author edits', () => {
+    expect(canAuthorEditSellerProfileRevision('PENDING_REVIEW')).toBe(false);
+    expect(canAuthorEditSellerProfileRevision('DRAFT')).toBe(true);
   });
 });

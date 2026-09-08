@@ -33,3 +33,13 @@ export function assertSellerProfileRevisionTransition(
     );
   }
 }
+
+export function canAuthorEditSellerProfileRevision(
+  status: SellerProfileRevisionStatus,
+): boolean {
+  return (
+    status === 'DRAFT' ||
+    status === 'CHANGES_REQUESTED' ||
+    status === 'REJECTED'
+  );
+}
