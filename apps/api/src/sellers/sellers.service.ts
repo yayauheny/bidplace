@@ -7,6 +7,8 @@ import {
   type PublicSellerWorksQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
+  type PortfolioAchievementWriteRequest,
+  portfolioAchievementResponseSchema,
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
@@ -476,6 +478,50 @@ export class SellersService {
         select: sellerProfileResponseSelect,
       });
     }).then(toSellerProfileResponse);
+  }
+
+  async addAchievement(
+    userId: string,
+    input: PortfolioAchievementWriteRequest,
+  ) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const revision = await this.editableRevision(tx, userId);
+      const position = await tx.sellerProfileRevisionAchievement.count({
+        where: { revisionId: revision.id },
+      });
+      const achievement = await tx.sellerProfileRevisionAchievement.create({
+        data: {
+          revisionId: revision.id,
+          position,
+          occurredAt: input.occurredAt ? new Date(input.occurredAt) : null,
+          body: input.body,
+        },
+      });
+      return portfolioAchievementResponseSchema.parse({
+        achievement: {
+          id: achievement.id,
+          occurredAt: achievement.occurredAt?.toISOString() ?? null,
+          body: achievement.body,
+        },
+      });
+    });
+  }
+
+  private async editableRevision(
+    tx: Parameters<Parameters<typeof runReadCommittedTransaction>[1]>[0],
+    userId: string,
+  ) {
+    const profile = await tx.sellerProfile.findUnique({
+      where: { userId },
+      include: { editingRevision: true },
+    });
+    if (!profile?.editingRevision) {
+      throw new NotFoundException('Seller profile revision not found');
+    }
+    if (!canAuthorEditSellerProfileRevision(profile.editingRevision.status)) {
+      throw new ConflictException('Seller profile revision is locked');
+    }
+    return profile.editingRevision;
   }
 
   async listProducts(userId: string) {

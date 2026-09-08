@@ -1,6 +1,15 @@
-import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   portfolioAuthorsQuerySchema,
+  portfolioAchievementWriteRequestSchema,
   portfolioWorksQuerySchema,
 } from '@bidplace/contracts';
 
@@ -54,6 +63,15 @@ export class PortfolioController {
   @UseGuards(BearerAuthGuard)
   submitApplication(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.submitApplication(auth.sub);
+  }
+
+  @Post('author/application/achievements')
+  @UseGuards(BearerAuthGuard)
+  addAchievement(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
+    return this.portfolio.addAchievement(
+      auth.sub,
+      parseBody(portfolioAchievementWriteRequestSchema, body),
+    );
   }
 
   @Get('author/cabinet/works')

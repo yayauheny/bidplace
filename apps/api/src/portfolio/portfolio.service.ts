@@ -8,6 +8,7 @@ import {
   portfolioWorksResponseSchema,
   type PortfolioAuthorsQuery,
   type PortfolioWorksQuery,
+  type PortfolioAchievementWriteRequest,
 } from '@bidplace/contracts';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
@@ -134,6 +135,10 @@ export class PortfolioService {
   async submitApplication(userId: string) {
     await this.sellers.submitProfileRevision(userId);
     return this.getApplication(userId);
+  }
+
+  addAchievement(userId: string, input: PortfolioAchievementWriteRequest) {
+    return this.sellers.addAchievement(userId, input);
   }
 
   async listCabinetWorks(userId: string) {

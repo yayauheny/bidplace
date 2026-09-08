@@ -178,6 +178,29 @@ export const portfolioAuthorApplicationResponseSchema = z
   })
   .strict();
 
+export const portfolioAchievementWriteRequestSchema = z
+  .object({
+    occurredAt: z.string().datetime().nullable().optional(),
+    body: publicText.max(4_000),
+  })
+  .strict();
+
+export const portfolioAchievementResponseSchema = z
+  .object({
+    achievement: z
+      .object({
+        id: uuidSchema,
+        occurredAt: z.string().datetime().nullable(),
+        body: publicText,
+      })
+      .strict(),
+  })
+  .strict();
+
+export type PortfolioAchievementWriteRequest = z.infer<
+  typeof portfolioAchievementWriteRequestSchema
+>;
+
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
