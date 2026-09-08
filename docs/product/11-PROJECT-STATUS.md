@@ -34,9 +34,11 @@
 - `Partial`: `packages/contracts/src/portfolio.ts`, `packages/api-client/src/portfolio.ts`
   and `apps/api/src/portfolio` add strict portfolio-only Home, Work and Author
   projections. Their DTOs exclude Listing, price, bid, timer, Order and sale fields;
-  Work category/material and Author tag filtering run on the server. The author
-  application, profile revision, cabinet and PostgreSQL integration coverage are still
-  outstanding, so this is not a complete RFC visitor-to-author flow.
+  Work category/material and Author tag/city filtering run on the server. Portfolio
+  Author queries require a city in the database query, so incomplete legacy profiles
+  are omitted rather than causing a public response failure. The author application,
+  profile revision, cabinet and PostgreSQL integration coverage are still outstanding,
+  so this is not a complete RFC visitor-to-author flow.
 - `Implemented`: portfolio Work approval in
   `apps/api/src/products/product-requirements.ts` requires title, category and one
   primary image. The optional plain-text story is not a publication blocker; legacy
@@ -56,8 +58,10 @@
 - `Deferred`: seller history, auction lifecycle residuals, fixed/offer, handoff and the
   completed creator-commerce research are preserved in
   [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md).
-- `Needs verification`: no code status was promoted. This was a documentation-only
-  scope reconciliation; tests were not run and Figma/`.pen` were not changed.
+- `Needs verification`: `pnpm verify` reaches database generation, typecheck, lint and
+  API unit tests (345/345), but its PostgreSQL integration stage cannot initialize
+  because no server is listening at `127.0.0.1:5432`. A standalone `pnpm build`
+  succeeds for all seven packages. Figma/`.pen` were not changed.
 
 ## 2026-09-07 — Work/Order boundaries and research gate
 

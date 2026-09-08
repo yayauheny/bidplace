@@ -56,14 +56,17 @@ export class PortfolioService {
   }
 
   async listAuthors(query: PortfolioAuthorsQuery) {
-    const response = await this.sellers.listPublic({
-      page: query.page,
-      limit: query.limit,
-      q: query.q,
-      tag: query.tag,
-      city: query.city,
-      sort: query.sort === 'name' ? 'name' : 'activity',
-    });
+    const response = await this.sellers.listPublic(
+      {
+        page: query.page,
+        limit: query.limit,
+        q: query.q,
+        tag: query.tag,
+        city: query.city,
+        sort: query.sort === 'name' ? 'name' : 'activity',
+      },
+      { requireCity: true },
+    );
     const authors = response.sellers.map((item) => ({
       author: toPortfolioAuthor(item.sellerProfile),
       workCount: item.workCount,
@@ -76,11 +79,15 @@ export class PortfolioService {
   }
 
   async getAuthor(slug: string, query: PortfolioWorksQuery) {
-    const response = await this.sellers.getPublic(slug, {
-      page: query.page,
-      limit: query.limit,
-      sort: query.sort,
-    });
+    const response = await this.sellers.getPublic(
+      slug,
+      {
+        page: query.page,
+        limit: query.limit,
+        sort: query.sort,
+      },
+      { requireCity: true },
+    );
 
     if (!response) throw new NotFoundException('Author not found');
 

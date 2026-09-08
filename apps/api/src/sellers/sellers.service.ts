@@ -360,7 +360,10 @@ export class SellersService {
     });
   }
 
-  async listPublic(query: PublicSellerQuery) {
+  async listPublic(
+    query: PublicSellerQuery,
+    options: { requireCity?: boolean } = {},
+  ) {
     const searchWhere = query.q
       ? {
           OR: [
@@ -392,7 +395,9 @@ export class SellersService {
               mode: 'insensitive' as const,
             },
           }
-        : {}),
+        : options.requireCity
+          ? { city: { not: null } }
+          : {}),
       ...searchWhere,
     };
     const [sellers, total] = await Promise.all([
@@ -448,9 +453,14 @@ export class SellersService {
   async getPublic(
     slug: string,
     query: PublicSellerWorksQuery = { page: 1, limit: 20, sort: 'activity' },
+    options: { requireCity?: boolean } = {},
   ) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
-      where: { slug, status: 'APPROVED' },
+      where: {
+        slug,
+        status: 'APPROVED',
+        ...(options.requireCity ? { city: { not: null } } : {}),
+      },
       select: publicSellerProfileSelect,
     });
 
