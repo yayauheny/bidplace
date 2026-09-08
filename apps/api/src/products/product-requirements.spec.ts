@@ -4,19 +4,12 @@ import { missingProductApprovalFields } from './product-requirements';
 
 const completeProduct = {
   title: 'Предмет',
-  story: 'Описание',
   categoryId: 'category-id',
-  condition: null,
-  uniqueness: 'Единственный экземпляр',
-  provenance: 'Создан автором',
-  city: 'Минск',
-  packaging: null,
-  deliveryInfo: 'Самовывоз',
   images: [{ id: 'image-id' }],
 };
 
 describe('product approval requirements', () => {
-  it('accepts a complete physical work', () => {
+  it('accepts a complete portfolio work without commerce data', () => {
     expect(missingProductApprovalFields(completeProduct)).toEqual([]);
   });
 
@@ -24,9 +17,9 @@ describe('product approval requirements', () => {
     expect(
       missingProductApprovalFields({
         ...completeProduct,
-        deliveryInfo: null,
+        categoryId: null,
         images: [],
       }),
-    ).toEqual(['deliveryInfo', 'images']);
+    ).toEqual(['categoryId', 'images']);
   });
 });

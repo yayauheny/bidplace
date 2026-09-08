@@ -1,25 +1,10 @@
 type ProductApprovalInput = {
   title: string | null;
-  story: string | null;
   categoryId: string | null;
-  condition: string | null;
-  uniqueness: string | null;
-  provenance: string | null;
-  city: string | null;
-  packaging: string | null;
-  deliveryInfo: string | null;
   images: Array<{ id: string }>;
 };
 
-const requiredTextFields = [
-  'title',
-  'story',
-  'categoryId',
-  'uniqueness',
-  'provenance',
-  'city',
-  'deliveryInfo',
-] as const;
+const requiredTextFields = ['title', 'categoryId'] as const;
 
 export function missingProductApprovalFields(
   product: ProductApprovalInput,

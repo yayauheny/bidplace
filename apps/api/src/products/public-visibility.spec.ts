@@ -11,9 +11,9 @@ describe('public product content visibility', () => {
     expect(publicProductContentWhere).not.toHaveProperty('packaging');
   });
 
-  it('keeps creator condition and packaging optional in SQL queries', () => {
+  it('uses only required portfolio Work fields in SQL queries', () => {
     expect(publicProductContentSql.text).not.toContain('"condition"');
     expect(publicProductContentSql.text).not.toContain('"packaging"');
-    expect(publicProductContentSql.text).toContain('"delivery_info"');
+    expect(publicProductContentSql.text).not.toContain('"delivery_info"');
   });
 });
