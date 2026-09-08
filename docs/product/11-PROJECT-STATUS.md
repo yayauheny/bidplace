@@ -36,9 +36,11 @@
   projections. Their DTOs exclude Listing, price, bid, timer, Order and sale fields;
   Work category/material and Author tag/city filtering run on the server. Portfolio
   Author queries require a city in the database query, so incomplete legacy profiles
-  are omitted rather than causing a public response failure. The author application,
-  profile revision, cabinet and PostgreSQL integration coverage are still outstanding,
-  so this is not a complete RFC visitor-to-author flow.
+  are omitted rather than causing a public response failure. SellerProfile revisions
+  now keep approved public fields stable while the author edits/submits a draft, and
+  moderation promotes only the approved revision. Achievement data, profile-photo
+  revision storage, and PostgreSQL integration coverage are still outstanding, so this
+  is not a complete RFC visitor-to-author flow.
 - `Implemented`: portfolio Work approval in
   `apps/api/src/products/product-requirements.ts` requires title, category and one
   primary image. The optional plain-text story is not a publication blocker; legacy
