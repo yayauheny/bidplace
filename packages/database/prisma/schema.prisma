@@ -165,10 +165,29 @@ model SellerProfileRevision {
   sellerProfile   SellerProfile       @relation("SellerProfileRevisions", fields: [sellerProfileId], references: [id], onDelete: Cascade)
   editingFor      SellerProfile?      @relation("SellerProfileEditingRevision")
   publishedFor    SellerProfile?      @relation("SellerProfilePublishedRevision")
+  achievements    SellerProfileRevisionAchievement[]
 
   @@unique([sellerProfileId, version])
   @@index([sellerProfileId, status])
   @@map("seller_profile_revisions")
+}
+
+model SellerProfileRevisionAchievement {
+  id          String                @id @default(uuid()) @db.Uuid
+  revisionId  String                @map("revision_id") @db.Uuid
+  position    Int
+  occurredAt  DateTime?             @map("occurred_at")
+  body        String                @db.Text
+  mimeType    String?               @map("mime_type") @db.VarChar(100)
+  byteLength  Int?                  @map("byte_length")
+  checksum    String?               @db.Char(64)
+  objectKey   String?               @map("object_key") @db.VarChar(255)
+  createdAt   DateTime              @default(now()) @map("created_at")
+  revision    SellerProfileRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@unique([revisionId, position])
+  @@index([objectKey])
+  @@map("seller_profile_revision_achievements")
 }
 
 model Category {
