@@ -21,6 +21,11 @@
   Work media is attached to the editing revision. API typecheck, lint and 336 unit
   tests pass. PostgreSQL transition/race integration coverage remains blocked until
   a local disposable database is available.
+- `Partial`: S3-compatible media storage is selected through the `ImageStore` port;
+  production requires complete S3 configuration, media rows have deterministic object
+  keys, and backfill/restore commands validate checksums. Unit coverage verifies S3
+  commands without a live bucket. A real MinIO plus PostgreSQL migration/restore drill
+  is still required before marking this operationally verified.
 - `Planned`: object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).

@@ -20,6 +20,13 @@
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `AuctionCardGrid` rather than duplicating card anatomy.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
+- `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
+  metadata, ownership, checksum and deterministic object key; S3-compatible storage
+  retains binary bytes when `MEDIA_STORAGE_PROVIDER=s3`. Production configuration
+  fails closed without complete S3 settings. `scripts/ops/backfill-media-to-s3.mjs`
+  is dry-run by default and validates checksums before object writes; restore
+  verification reads sampled objects and compares their checksums without logging
+  content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
 - `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
