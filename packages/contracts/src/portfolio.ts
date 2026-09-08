@@ -40,6 +40,15 @@ export const portfolioAuthorSchema = z
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
     shortDescription: publicText,
+    achievements: z.array(
+      z
+        .object({
+          id: uuidSchema,
+          occurredAt: z.string().datetime().nullable(),
+          body: publicText,
+        })
+        .strict(),
+    ),
   })
   .strict();
 

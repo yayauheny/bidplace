@@ -54,6 +54,15 @@ describe('toPublicSellerProfile', () => {
       instagramUrl: 'https://instagram.com/maker',
       websiteUrl: null,
       shortDescription: 'Short bio',
+      publishedRevision: {
+        achievements: [
+          {
+            id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
+            occurredAt: new Date('2025-03-02T00:00:00.000Z'),
+            body: 'Групповая выставка',
+          },
+        ],
+      },
     });
 
     expect(profile).toMatchObject({
@@ -61,6 +70,13 @@ describe('toPublicSellerProfile', () => {
       telegramUrl: 'https://t.me/maker',
       instagramUrl: 'https://instagram.com/maker',
       websiteUrl: null,
+      achievements: [
+        {
+          id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
+          occurredAt: '2025-03-02T00:00:00.000Z',
+          body: 'Групповая выставка',
+        },
+      ],
     });
     expect(profile).not.toHaveProperty('handoffContactType');
     expect(profile).not.toHaveProperty('handoffContactValue');

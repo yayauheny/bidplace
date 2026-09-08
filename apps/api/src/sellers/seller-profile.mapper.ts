@@ -15,6 +15,14 @@ export const publicSellerProfileSelect = {
   instagramUrl: true,
   websiteUrl: true,
   shortDescription: true,
+  publishedRevision: {
+    select: {
+      achievements: {
+        orderBy: [{ occurredAt: 'desc' }, { position: 'asc' }],
+        select: { id: true, occurredAt: true, body: true },
+      },
+    },
+  },
 } satisfies Prisma.SellerProfileSelect;
 
 export type PublicSellerProfileRecord = Prisma.SellerProfileGetPayload<{
@@ -77,7 +85,9 @@ export function sellerProfilePhotoUrl(slug: string): string {
 }
 
 export function toPublicSellerProfile(
-  sellerProfile: PublicSellerProfileRecord,
+  sellerProfile: Omit<PublicSellerProfileRecord, 'publishedRevision'> & {
+    publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
+  },
 ) {
   return {
     id: sellerProfile.id,
@@ -94,6 +104,12 @@ export function toPublicSellerProfile(
     instagramUrl: sellerProfile.instagramUrl ?? null,
     websiteUrl: sellerProfile.websiteUrl ?? null,
     shortDescription: sellerProfile.shortDescription,
+    achievements:
+      sellerProfile.publishedRevision?.achievements.map((achievement) => ({
+        id: achievement.id,
+        occurredAt: achievement.occurredAt?.toISOString() ?? null,
+        body: achievement.body,
+      })) ?? [],
   };
 }
 

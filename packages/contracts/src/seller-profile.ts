@@ -64,22 +64,34 @@ export const sellerProfileSchema = z
   })
   .strict();
 
-export const publicSellerProfileSchema = sellerProfileSchema.pick({
-  id: true,
-  slug: true,
-  sellerType: true,
-  discipline: true,
-  fullName: true,
-  profilePhotoUrl: true,
-  country: true,
-  city: true,
-  practice: true,
-  socialLink: true,
-  telegramUrl: true,
-  instagramUrl: true,
-  websiteUrl: true,
-  shortDescription: true,
-});
+export const publicSellerProfileSchema = sellerProfileSchema
+  .pick({
+    id: true,
+    slug: true,
+    sellerType: true,
+    discipline: true,
+    fullName: true,
+    profilePhotoUrl: true,
+    country: true,
+    city: true,
+    practice: true,
+    socialLink: true,
+    telegramUrl: true,
+    instagramUrl: true,
+    websiteUrl: true,
+    shortDescription: true,
+  })
+  .extend({
+    achievements: z.array(
+      z
+        .object({
+          id: uuidSchema,
+          occurredAt: isoDateTimeSchema.nullable(),
+          body: z.string().trim().min(1),
+        })
+        .strict(),
+    ),
+  });
 
 const sellerProfileBaseWriteSchema = z
   .object({
