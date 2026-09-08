@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
 import { productStatusSchema } from './enums';
+import { sellerProfileRevisionStatusSchema } from './enums';
 import { slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
@@ -155,7 +156,17 @@ export const portfolioAuthorApplicationSchema = z
   .strict();
 
 export const portfolioAuthorApplicationResponseSchema = z
-  .object({ application: portfolioAuthorApplicationSchema })
+  .object({
+    application: portfolioAuthorApplicationSchema,
+    editingRevision: z
+      .object({
+        id: uuidSchema,
+        version: z.number().int().positive(),
+        status: sellerProfileRevisionStatusSchema,
+      })
+      .strict()
+      .nullable(),
+  })
   .strict();
 
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;

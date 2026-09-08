@@ -111,7 +111,10 @@ export class PortfolioService {
   }
 
   async getApplication(userId: string) {
-    const response = await this.sellers.getMine(userId);
+    const [response, editingRevision] = await Promise.all([
+      this.sellers.getMine(userId),
+      this.sellers.getEditingRevision(userId),
+    ]);
     const profile = response.sellerProfile;
     return portfolioAuthorApplicationResponseSchema.parse({
       application: {
@@ -124,7 +127,13 @@ export class PortfolioService {
         shortDescription: profile.shortDescription,
         status: profile.status,
       },
+      editingRevision,
     });
+  }
+
+  async submitApplication(userId: string) {
+    await this.sellers.submitProfileRevision(userId);
+    return this.getApplication(userId);
   }
 
   async listCabinetWorks(userId: string) {

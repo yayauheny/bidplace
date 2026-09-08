@@ -169,6 +169,21 @@ export class SellersService {
     return toSellerProfileResponse(sellerProfile);
   }
 
+  async getEditingRevision(userId: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        editingRevision: {
+          select: { id: true, version: true, status: true },
+        },
+      },
+    });
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+    return sellerProfile.editingRevision;
+  }
+
   async create(
     userId: string,
     input: SellerProfileCreateRequest,

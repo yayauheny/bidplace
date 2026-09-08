@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   portfolioAuthorsQuerySchema,
   portfolioWorksQuerySchema,
@@ -48,6 +48,12 @@ export class PortfolioController {
   @UseGuards(BearerAuthGuard)
   application(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.getApplication(auth.sub);
+  }
+
+  @Post('author/application/submit')
+  @UseGuards(BearerAuthGuard)
+  submitApplication(@CurrentUser() auth: { sub: string }) {
+    return this.portfolio.submitApplication(auth.sub);
   }
 
   @Get('author/cabinet/works')

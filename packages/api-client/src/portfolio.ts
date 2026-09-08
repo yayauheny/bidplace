@@ -60,6 +60,14 @@ export function createPortfolioClient(context: RequestContext) {
         portfolioAuthorApplicationResponseSchema,
       );
     },
+    submitAuthorApplication() {
+      return requestJson(
+        context,
+        '/api/author/application/submit',
+        portfolioAuthorApplicationResponseSchema,
+        { method: 'POST' },
+      );
+    },
     listCabinetWorks() {
       return requestJson(
         context,
