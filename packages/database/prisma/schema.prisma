@@ -121,12 +121,46 @@ model SellerProfile {
   handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
   handoffInitiator    HandoffInitiator    @default(BUYER_CONTACTS_SELLER) @map("handoff_initiator")
   status              SellerProfileStatus @default(PENDING_REVIEW)
+  editingRevisionId   String?             @unique @map("editing_revision_id") @db.Uuid
+  publishedRevisionId String?             @unique @map("published_revision_id") @db.Uuid
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
   user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
   products            Product[]
+  revisions           SellerProfileRevision[] @relation("SellerProfileRevisions")
+  editingRevision     SellerProfileRevision? @relation("SellerProfileEditingRevision", fields: [editingRevisionId], references: [id], onDelete: Restrict)
+  publishedRevision   SellerProfileRevision? @relation("SellerProfilePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
 
   @@map("seller_profiles")
+}
+
+model SellerProfileRevision {
+  id              String              @id @default(uuid()) @db.Uuid
+  sellerProfileId String              @map("seller_profile_id") @db.Uuid
+  version         Int
+  status          SellerProfileStatus @default(PENDING_REVIEW)
+  slug            String              @db.VarChar(120)
+  discipline      String              @db.VarChar(160)
+  fullName        String              @map("full_name") @db.VarChar(160)
+  country         String              @db.VarChar(80)
+  city            String?             @db.VarChar(160)
+  practice        String?             @db.Text
+  socialLink      String              @map("social_link") @db.VarChar(255)
+  telegramUrl     String?             @map("telegram_url") @db.VarChar(255)
+  instagramUrl    String?             @map("instagram_url") @db.VarChar(255)
+  websiteUrl      String?             @map("website_url") @db.VarChar(255)
+  shortDescription String              @map("short_description") @db.Text
+  submittedAt     DateTime?           @map("submitted_at")
+  reviewedAt      DateTime?           @map("reviewed_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  sellerProfile   SellerProfile       @relation("SellerProfileRevisions", fields: [sellerProfileId], references: [id], onDelete: Cascade)
+  editingFor      SellerProfile?      @relation("SellerProfileEditingRevision")
+  publishedFor    SellerProfile?      @relation("SellerProfilePublishedRevision")
+
+  @@unique([sellerProfileId, version])
+  @@index([sellerProfileId, status])
+  @@map("seller_profile_revisions")
 }
 
 model Category {
