@@ -4,14 +4,27 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+const { GetObjectCommand, S3Client } = require('@aws-sdk/client-s3');
 const { PrismaClient } = require(
-  join(dirname(fileURLToPath(import.meta.url)), '../../packages/database/dist/index.js'),
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../packages/database/dist/index.js',
+  ),
 );
 
 const targetDatabaseUrl = process.env.TARGET_DATABASE_URL;
+const requiredS3Keys = [
+  'S3_ENDPOINT',
+  'S3_REGION',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY_ID',
+  'S3_SECRET_ACCESS_KEY',
+];
 
-if (!targetDatabaseUrl) {
-  console.error('Set TARGET_DATABASE_URL before running restore integrity checks.');
+if (!targetDatabaseUrl || requiredS3Keys.some((key) => !process.env[key])) {
+  console.error(
+    'Set TARGET_DATABASE_URL and complete S3 configuration before running restore integrity checks.',
+  );
   process.exit(1);
 }
 
@@ -21,6 +34,15 @@ const prisma = new PrismaClient({
     db: {
       url: targetDatabaseUrl,
     },
+  },
+});
+const s3 = new S3Client({
+  endpoint: process.env.S3_ENDPOINT,
+  region: process.env.S3_REGION,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
   },
 });
 
@@ -57,13 +79,29 @@ async function main() {
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
+      objectKey: true,
       checksum: true,
-      data: true,
     },
   });
 
   for (const image of samples) {
-    const computed = createHash('sha256').update(image.data).digest('hex');
+    if (!image.objectKey) {
+      console.error(`Missing object key for image ${image.id}`);
+      process.exit(1);
+    }
+    const object = await s3.send(
+      new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: image.objectKey,
+      }),
+    );
+    if (!object.Body) {
+      console.error(`Missing object for image ${image.id}`);
+      process.exit(1);
+    }
+    const computed = createHash('sha256')
+      .update(await object.Body.transformToByteArray())
+      .digest('hex');
 
     if (computed !== image.checksum) {
       console.error(`Checksum mismatch for image ${image.id}`);
