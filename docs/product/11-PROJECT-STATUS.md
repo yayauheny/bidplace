@@ -26,6 +26,11 @@
   keys, and backfill/restore commands validate checksums. Unit coverage verifies S3
   commands without a live bucket. A real MinIO plus PostgreSQL migration/restore drill
   is still required before marking this operationally verified.
+- `Partial`: security preflight documents factual data handling and evidence-based
+  launch risks. Bearer and optional bearer guards refresh role, status and session
+  version from the current account record; URL preflight reports legacy public URL
+  counts without exposing or rewriting values. PostgreSQL and object-store drills,
+  release-environment dependency audit and operator decisions remain required.
 - `Planned`: object storage, creator onboarding, simplified
   Work creation, portfolio discovery and the read-only Figma cutover are tracked in
   [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md).
