@@ -19,3 +19,10 @@
 
 Auction/sale draft и вопросы не удалены, но не блокируют первый portfolio MVP и не
 должны публиковаться как действующие правила до commerce wave.
+
+# Legal preparation
+
+The active portfolio-only legal review status and evidence matrix are in
+[`09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md`](09-PORTFOLIO-LEGAL-REVIEW-MANIFEST.md).
+No draft is approved for publication until its external Belarus lawyer review and the
+operator/provider facts are recorded.
