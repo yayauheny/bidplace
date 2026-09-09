@@ -51,6 +51,22 @@
 - `Not implemented`: Geist font files; Figma search overlay.
 - Figma and `.pen` were not edited.
 
+## 2026-09-09 — Task 11 real glass dock
+
+- `Implemented` (supersedes the earlier dock `Partial`): shared
+  `FloatingDockFrame` renders the Figma 60% white surface, 6px live background
+  blur, 0.5px gradient stroke, radius 200 and no shadow. Web uses a body portal;
+  native uses `expo-blur`, with `AppShell` providing Android `BlurTargetView`.
+  The MVP navigation remains Home / Search / Add / Profile without cart.
+- Evidence: `apps/mobile/src/components/figma/FloatingDock.tsx`,
+  `FloatingDockFrame.web.tsx`, `FloatingDockFrame.tsx`,
+  `apps/mobile/src/components/layout/AppShell.tsx`,
+  `apps/mobile/e2e/figma-glass-dock.spec.ts`.
+- Checks: mobile typecheck; mobile Vitest 233/233; design-tokens build; Expo
+  export for web/iOS/Android; Chromium pixel probe for exact `232×64` geometry,
+  `blur(6px)`, fill/stroke, absent shadow and live changed backdrop pixels.
+  `.pen` is absent from the diff.
+
 ## 2026-09-09 — Review-hole closure (fail-closed commerce, owner revision, visitor reuse)
 
 - `Implemented`: `CommerceEnabledGuard` also covers `GET /api/sellers`,

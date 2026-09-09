@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
+import { BlurTargetView } from 'expo-blur';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +21,7 @@ export function AppShell({
   hideDock?: boolean;
 }) {
   const auth = useAuth();
+  const dockBlurTarget = useRef<View | null>(null);
 
   return (
     <OverlayHost>
@@ -60,7 +62,8 @@ export function AppShell({
             />
           </View>
         ) : null}
-        <View
+        <BlurTargetView
+          ref={dockBlurTarget}
           testID="app-shell-content"
           style={{
             flex: 1,
@@ -72,8 +75,8 @@ export function AppShell({
           }}
         >
           {children}
-        </View>
-        {hideDock ? null : <FloatingDock />}
+        </BlurTargetView>
+        {hideDock ? null : <FloatingDock blurTarget={dockBlurTarget} />}
       </SafeAreaView>
     </OverlayHost>
   );

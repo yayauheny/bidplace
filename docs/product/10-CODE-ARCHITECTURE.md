@@ -172,6 +172,12 @@ SellerProfile
 
 ## Runtime topology and extension boundary
 
+The phone shell owns the floating-glass sampling boundary. `AppShell` wraps
+route content in `expo-blur` `BlurTargetView`; the platform-specific
+`FloatingDockFrame` uses that target on Android and a body portal with CSS
+`backdrop-filter` on web. Route screens provide navigation content only and do
+not implement their own dock blur, fill, border or elevation.
+
 The API currently assumes a single scheduler and Socket.IO instance. The pilot deployment must enforce one API replica via Docker Compose (`docker compose --profile app`). Before multi-instance deployment, lifecycle work needs a distributed lock or external queue and realtime needs an adapter. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):

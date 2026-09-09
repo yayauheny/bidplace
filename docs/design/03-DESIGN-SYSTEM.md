@@ -23,6 +23,15 @@ behind identity. `apps/mobile/src/components/ui` wraps those masters (`Button`,
 Добавить / Профиль, no cart). Wide windows keep the same column. 1024/1440
 compositions are out of this wave.
 
+`FloatingDock` reproduces Figma `Frame 34` as one platform-aware primitive:
+36px items contain 24px icons with 6px padding, the row uses 20px gaps and
+14px outer padding, and the surface has radius 200, white at 60%, a 0.5px
+`#DEDEDE → #F3F3F3` gradient stroke and 6px background blur. It has no drop
+shadow. Web portals the dock to `document.body` so `backdrop-filter` samples
+the moving page. Native wraps the app content in `BlurTargetView` and uses
+`expo-blur` plus the same translucent fill and gradient stroke. Reduced-motion
+does not disable blur because blur is a static surface property.
+
 Runtime type is bundled Inter. Figma names Geist on some frames; files are not
 in the app.
 

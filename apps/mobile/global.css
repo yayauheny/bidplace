@@ -25,11 +25,6 @@ textarea:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0ms !important;
   }
-
-  .figma-dock-glass {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 
 /*
@@ -48,16 +43,38 @@ textarea:focus-visible,
 }
 
 .figma-dock-glass {
+  position: relative;
   pointer-events: auto;
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 20px;
-  padding: 14px;
-  border-radius: 200px;
-  border: 0.5px solid #dedede;
-  background: rgba(255, 255, 255, 0.6);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.12);
+  gap: var(--figma-dock-gap);
+  padding: var(--figma-dock-padding);
+  overflow: hidden;
+  border-radius: var(--figma-dock-radius);
+  background: var(--figma-dock-background);
+  -webkit-backdrop-filter: blur(var(--figma-dock-blur));
+  backdrop-filter: blur(var(--figma-dock-blur));
+}
+
+.figma-dock-glass::before {
+  position: absolute;
+  inset: 0;
+  padding: 0.5px;
+  border-radius: inherit;
+  background: linear-gradient(
+    var(--figma-dock-border-start),
+    var(--figma-dock-border-end)
+  );
+  content: '';
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }

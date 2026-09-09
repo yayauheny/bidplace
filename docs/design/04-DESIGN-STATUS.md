@@ -4,15 +4,27 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
-## 2026-09-09 — Cover frost, dock glass, author atmosphere
+## 2026-09-09 — Cover frost, real dock glass, author atmosphere
 
 - `Partial`: work/author cover overlays use `CoverFrost` (blurred artwork slice +
   gradient, not an opaque LinearGradient). Author profile uses `AuthorAtmosphere`
-  (485px photo, blur 40, opacity 0.5, scrim). Header chips are `onGlass`. Dock
-  applies `backdrop-filter` + `WebkitBackdropFilter`. Evidence:
+  (485px photo, blur 40, opacity 0.5, scrim). Header chips are `onGlass`.
+  Evidence:
   `apps/mobile/src/components/figma/CoverFrost.tsx`,
-  `AuthorAtmosphere.tsx`, `FloatingDock.tsx`,
+  `AuthorAtmosphere.tsx`,
   `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
+- `Implemented`: `FloatingDock` has the exact Figma `Frame 34` surface contract:
+  60% white fill, 6px live background blur, 0.5px gradient stroke, radius 200,
+  no drop shadow, 64px height, 36px controls and full-opacity 24px icons. Web
+  uses a body portal and native uses `expo-blur` with an Android
+  `BlurTargetView`. The MVP dock stays Home / Search / Add / Profile; cart is
+  intentionally absent. Evidence: `FloatingDock.tsx`,
+  `FloatingDockFrame.web.tsx`, `FloatingDockFrame.tsx`, `AppShell.tsx`,
+  `apps/mobile/e2e/figma-glass-dock.spec.ts`.
+- Verification: mobile typecheck and all 233 mobile unit tests pass. Expo export
+  passes for web, iOS and Android. A Chromium pixel probe confirms `232×64`,
+  `blur(6px)`, exact fill/stroke, `box-shadow: none`, and changed pixels when
+  blur is disabled.
 - Local Expo must rebuild `@bidplace/design-tokens` `dist/` and start Metro with
   `--clear`. `pnpm --filter @bidplace/mobile exec expo start` skips that build.
 - `Not implemented`: login as a sheet over the current page; Home opening-of-week

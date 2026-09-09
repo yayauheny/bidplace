@@ -39,6 +39,7 @@ export const designTokens = {
     glass: 'rgba(255, 255, 255, 0.60)',
     glassChip: 'rgba(255, 255, 255, 0.70)',
     glassBorder: '#DEDEDE',
+    glassBorderEnd: '#F3F3F3',
     atmosphereScrim: 'rgba(0, 0, 0, 0.30)',
     headerControl: '#F3F3F3',
     solid: '#292929',
@@ -333,6 +334,8 @@ export const designTokens = {
   focus: { width: 2, offset: 2 },
   blur: {
     dock: 6,
+    dockNativeIntensity: 30,
+    dockAndroidReductionFactor: 5,
     overlay: 30,
     atmosphere: 40,
   },

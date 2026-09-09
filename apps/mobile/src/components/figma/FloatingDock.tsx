@@ -1,8 +1,7 @@
-import { type ReactNode, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import type { RefObject } from 'react';
 import { Image } from 'expo-image';
 import { Link, type Href, usePathname, useRouter } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -12,6 +11,7 @@ import { useAuth } from '../../providers/auth-provider';
 import { getMobileCreateHref } from '../layout/header-chrome';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
+import { FloatingDockFrame } from './FloatingDockFrame';
 import {
   figmaDockItems,
   isFigmaDockItemSelected,
@@ -20,8 +20,14 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const brandMark = require('../../../assets/branding/bidplace-logo.png');
+const dockItemHitSlop =
+  (figmaTokens.size.dockIconHit - figmaTokens.size.control) / 2;
 
-export function FloatingDock() {
+export function FloatingDock({
+  blurTarget,
+}: {
+  blurTarget: RefObject<View | null>;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
@@ -58,76 +64,9 @@ export function FloatingDock() {
   ));
 
   return (
-    <DockFrame bottom={bottom}>
+    <FloatingDockFrame bottom={bottom} blurTarget={blurTarget}>
       {buttons}
-    </DockFrame>
-  );
-}
-
-function DockFrame({
-  bottom,
-  children,
-}: {
-  bottom: number;
-  children: ReactNode;
-}) {
-  const [webHost, setWebHost] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      setWebHost(document.body);
-    }
-  }, []);
-
-  if (Platform.OS === 'web') {
-    if (!webHost) {
-      return null;
-    }
-
-    return createPortal(
-      <div className="figma-dock-layer" style={{ bottom }}>
-        <div
-          className="figma-dock-glass"
-          role="tablist"
-          aria-label="Основная навигация"
-        >
-          {children}
-        </div>
-      </div>,
-      webHost,
-    );
-  }
-
-  return (
-    <View
-      pointerEvents="box-none"
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom,
-        alignItems: 'center',
-        zIndex: 20,
-      }}
-    >
-      <View
-        accessibilityRole="tablist"
-        accessibilityLabel="Основная навигация"
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: figmaTokens.space.dockGap,
-          padding: figmaTokens.space.dockPad,
-          borderRadius: figmaTokens.radius.dock,
-          borderWidth: 0.5,
-          borderColor: figmaTokens.color.glassBorder,
-          backgroundColor: figmaTokens.color.glass,
-          ...figmaTokens.elevation.floating,
-        }}
-      >
-        {children}
-      </View>
-    </View>
+    </FloatingDockFrame>
   );
 }
 
@@ -172,13 +111,13 @@ function DockItem({
       accessibilityState={{ selected }}
       onPress={onPress}
       preset="icon"
+      hitSlop={dockItemHitSlop}
       style={{
-        minWidth: figmaTokens.size.dockIconHit,
-        minHeight: figmaTokens.size.dockIconHit,
+        width: figmaTokens.size.control,
+        height: figmaTokens.size.control,
         padding: figmaTokens.space.dockIconPad,
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: selected ? 1 : 0.72,
       }}
     >
       {item.icon === 'logo' ? (

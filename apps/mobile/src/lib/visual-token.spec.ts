@@ -58,6 +58,8 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.blur.overlay).toBe(30);
     expect(designTokens.blur.atmosphere).toBe(40);
     expect(designTokens.blur.dock).toBe(6);
+    expect(designTokens.blur.dockNativeIntensity).toBe(30);
+    expect(designTokens.blur.dockAndroidReductionFactor).toBe(5);
     expect(designTokens.size.authorAtmosphere).toBe(485);
     expect(designTokens.size.social).toBe(38);
     expect(designTokens.space.atmosphereOffset).toBe(36);
