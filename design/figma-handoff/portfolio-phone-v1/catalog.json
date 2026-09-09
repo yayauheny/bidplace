@@ -23,6 +23,134 @@
       "referencePath": "screens/creator/creator__about__390x1609__node-621-19475/reference.png"
     },
     {
+      "id": "creator-about-list-phone",
+      "originalName": "Страница автора / Об авторе",
+      "sourceFolderName": "Страница_автора___Об_авторе.figmacapture (1).zip",
+      "surface": "creator",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 1328
+      },
+      "nodeId": "526:14122",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__about__390x1328__node-526-14122",
+      "referencePath": "screens/creator/creator__about__390x1328__node-526-14122/reference.png"
+    },
+    {
+      "id": "creator-about-quote-phone",
+      "originalName": "Страница автора / Об авторе",
+      "sourceFolderName": "Страница_автора___Об_авторе.figmacapture (3).zip",
+      "surface": "creator",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:14225",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__about__390x860__node-526-14225",
+      "referencePath": "screens/creator/creator__about__390x860__node-526-14225/reference.png"
+    },
+    {
+      "id": "creator-works-phone",
+      "originalName": "Страница автора / Работы",
+      "sourceFolderName": "Страница_автора___Работы.figmacapture (1)",
+      "surface": "creator",
+      "state": "works",
+      "viewport": {
+        "width": 390,
+        "height": 2703
+      },
+      "nodeId": "526:13351",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__works__390x2703__node-526-13351",
+      "referencePath": "screens/creator/creator__works__390x2703__node-526-13351/reference.png"
+    },
+    {
+      "id": "creator-works-owner-phone",
+      "originalName": "Страница автора / Работы",
+      "sourceFolderName": "Страница_автора___Работы.figmacapture (2).zip",
+      "surface": "creator",
+      "state": "works",
+      "viewport": {
+        "width": 390,
+        "height": 2703
+      },
+      "nodeId": "621:19820",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__works__390x2703__node-621-19820",
+      "referencePath": "screens/creator/creator__works__390x2703__node-621-19820/reference.png"
+    },
+    {
+      "id": "creator-header-phone",
+      "originalName": "Страница автора",
+      "sourceFolderName": "Страница_автора.figmacapture.zip",
+      "surface": "creator",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 859
+      },
+      "nodeId": "526:13892",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "medium",
+      "packagePath": "screens/creator/creator__default__390x859__node-526-13892",
+      "referencePath": "screens/creator/creator__default__390x859__node-526-13892/reference.png"
+    },
+    {
+      "id": "creator-header-alt-phone",
+      "originalName": "Страница автора",
+      "sourceFolderName": "Страница_автора.figmacapture (1).zip",
+      "surface": "creator",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:14046",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "medium",
+      "packagePath": "screens/creator/creator__default__390x860__node-526-14046",
+      "referencePath": "screens/creator/creator__default__390x860__node-526-14046/reference.png"
+    },
+    {
+      "id": "creator-about-scrolled-phone",
+      "originalName": "Страница автора навигация страинцы автора",
+      "sourceFolderName": "Страница_автора_навигация_страинцы_автора.figmacapture.zip",
+      "surface": "creator",
+      "state": "scrolled",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:14482",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__scrolled__390x860__node-526-14482",
+      "referencePath": "screens/creator/creator__scrolled__390x860__node-526-14482/reference.png"
+    },
+    {
+      "id": "creator-about-scrolled-alt-phone",
+      "originalName": "Страница автора навигация страинцы автора",
+      "sourceFolderName": "Страница_автора_навигация_страинцы_автора.figmacapture (1).zip",
+      "surface": "creator",
+      "state": "scrolled",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:14560",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__scrolled__390x860__node-526-14560",
+      "referencePath": "screens/creator/creator__scrolled__390x860__node-526-14560/reference.png"
+    },
+    {
       "id": "creator-share-sheet-phone",
       "originalName": "Каталог работ / идут торги / сделать ставку",
       "sourceFolderName": "Каталог_работ___идут_торги___сделать_ставку.figmacapture",
@@ -37,6 +165,22 @@
       "classificationConfidence": "medium",
       "packagePath": "screens/creator/creator__share-sheet__390x874__node-526-13756",
       "referencePath": "screens/creator/creator__share-sheet__390x874__node-526-13756/reference.png"
+    },
+    {
+      "id": "achievements-timeline",
+      "originalName": "Frame 219",
+      "sourceFolderName": "Frame_219.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 1471,
+        "height": 641
+      },
+      "nodeId": "742:20510",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/achievements-timeline__1471x641__node-742-20510",
+      "referencePath": "components/achievements-timeline__1471x641__node-742-20510/reference.png"
     },
     {
       "id": "unclassified-overlay-dimmer",

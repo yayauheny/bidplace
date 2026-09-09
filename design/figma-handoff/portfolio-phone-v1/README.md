@@ -42,6 +42,10 @@ the original `page:node` ID.
 Original Russian frame names stay in `catalog.json`, `INDEX.md`, and each
 package README. Filesystem paths are lowercase ASCII.
 
+Creator variants in this library: `about`, `works`, `default` (header only),
+`scrolled` (sticky compact identity), and `share-sheet`. Owner works
+(`621:19820`) is a separate package from visitor works (`526:13351`).
+
 ## How to find a screen
 
 1. Open `INDEX.md` for a human table.
