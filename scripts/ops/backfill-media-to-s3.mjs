@@ -12,10 +12,7 @@ const requireFromDatabase = createRequire(
 );
 const { S3Client, PutObjectCommand } = requireFromApi('@aws-sdk/client-s3');
 const { PrismaClient } = requireFromDatabase(
-  join(
-    scriptDirectory,
-    '../../packages/database/dist/index.js',
-  ),
+  join(scriptDirectory, '../../packages/database/dist/index.js'),
 );
 
 const dryRun = !process.argv.includes('--apply');
