@@ -35,6 +35,7 @@ class FixedClock extends Clock {
 
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
+const commerceEnabled = { isEnabled: () => true };
 
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
@@ -56,6 +57,7 @@ function lifecycleService(clock: FixedClock, publicId = 'closeOrd001') {
     clock,
     { generate: () => publicId } as never,
     { emit: vi.fn() } as never,
+    commerceEnabled as never,
   );
 }
 

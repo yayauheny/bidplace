@@ -249,10 +249,74 @@ describe('ImagesService', () => {
     expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
   });
 
+  it('does not expose media that is absent from the published revision', async () => {
+    const imageStore = createImageStoreMock();
+    imageStore.get.mockResolvedValue({
+      bytes: Uint8Array.from([1]),
+      mimeType: 'image/png',
+    });
+    const prisma = {
+      productImage: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'image-id',
+          mimeType: 'image/png',
+          revisions: [{ revisionId: 'editing-revision' }],
+          product: {
+            status: 'APPROVED',
+            publishedRevisionId: 'published-revision',
+            sellerProfile: {
+              userId: 'owner-id',
+              status: 'APPROVED',
+            },
+          },
+        }),
+      },
+    };
+    const service = new ImagesService(prisma as never, imageStore as never);
+
+    await expect(service.get('image-id')).rejects.toThrow('Image not found');
+    expect(imageStore.get).not.toHaveBeenCalled();
+    await expect(
+      service.get('image-id', 'owner-id', 'user'),
+    ).resolves.toMatchObject({ isPublic: false });
+  });
+
+  it('serves media that belongs to the published revision', async () => {
+    const imageStore = createImageStoreMock();
+    imageStore.get.mockResolvedValue({
+      bytes: Uint8Array.from([1]),
+      mimeType: 'image/png',
+    });
+    const prisma = {
+      productImage: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'image-id',
+          mimeType: 'image/png',
+          revisions: [{ revisionId: 'published-revision' }],
+          product: {
+            status: 'APPROVED',
+            publishedRevisionId: 'published-revision',
+            sellerProfile: {
+              userId: 'owner-id',
+              status: 'APPROVED',
+            },
+          },
+        }),
+      },
+    };
+    const service = new ImagesService(prisma as never, imageStore as never);
+
+    await expect(service.get('image-id')).resolves.toMatchObject({
+      isPublic: true,
+    });
+    expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
+  });
+
   it('reorders images through temporary positions before final positions', async () => {
     const update = vi.fn().mockResolvedValue({});
     const productRow = {
       id: 'product-id',
+      editingRevisionId: 'revision-id',
       status: 'DRAFT',
       sellerProfile: {
         userId: 'owner-id',
@@ -275,6 +339,7 @@ describe('ImagesService', () => {
           productImage: {
             update,
           },
+          productRevisionImage: { update: vi.fn() },
         } as never),
       ),
     };
@@ -295,6 +360,7 @@ describe('ImagesService', () => {
       .mockResolvedValue([{ id: 'image-b' }, { id: 'image-c' }]);
     const productRow = {
       id: 'product-id',
+      editingRevisionId: 'revision-id',
       status: 'DRAFT',
       sellerProfile: {
         userId: 'owner-id',
@@ -320,6 +386,15 @@ describe('ImagesService', () => {
             delete: deleteImage,
             update,
           },
+          productRevisionImage: {
+            deleteMany: vi.fn(),
+            count: vi.fn().mockResolvedValue(0),
+            findMany: vi.fn().mockResolvedValue([
+              { imageId: 'image-b' },
+              { imageId: 'image-c' },
+            ]),
+            update: vi.fn(),
+          },
         } as never),
       ),
     };
@@ -344,6 +419,7 @@ describe('ImagesService', () => {
       .mockResolvedValue([{ id: 'image-b' }, { id: 'image-c' }]);
     const outerProduct = {
       id: 'product-id',
+      editingRevisionId: 'revision-id',
       status: 'DRAFT',
       sellerProfile: {
         userId: 'owner-id',
@@ -375,6 +451,15 @@ describe('ImagesService', () => {
             findMany,
             delete: deleteImage,
             update,
+          },
+          productRevisionImage: {
+            deleteMany: vi.fn(),
+            count: vi.fn().mockResolvedValue(0),
+            findMany: vi.fn().mockResolvedValue([
+              { imageId: 'image-b' },
+              { imageId: 'image-c' },
+            ]),
+            update: vi.fn(),
           },
         } as never),
       ),

@@ -37,6 +37,10 @@ async function reset() {
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.productCreationStep.deleteMany();
   await prisma.product.deleteMany();
@@ -142,11 +146,42 @@ async function createSubmitReadyProduct(
       id: true,
       title: true,
       status: true,
+      editingRevisionId: true,
       images: { select: { id: true, byteLength: true } },
       creationSteps: { select: { id: true, title: true } },
     },
   });
-  return { owner, product };
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status,
+      categoryId: category.id,
+      title: 'Original title',
+      story: 'Original story',
+      uniqueness: 'One',
+      provenance: 'Studio',
+      city: 'Minsk',
+      deliveryInfo: 'Pickup',
+      images: {
+        create: {
+          imageId: product.images[0]!.id,
+          position: 0,
+        },
+      },
+    },
+  });
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: status === 'APPROVED' ? revision.id : null,
+    },
+  });
+  return {
+    owner,
+    product: { ...product, editingRevisionId: revision.id },
+  };
 }
 
 function createServices() {
@@ -420,11 +455,18 @@ describe('Product write atomicity against PostgreSQL', () => {
         checksum: 'b'.repeat(64),
       },
     });
+    await prisma.productRevisionImage.create({
+      data: {
+        revisionId: product.editingRevisionId,
+        imageId: second.id,
+        position: 1,
+      },
+    });
     const { images } = createServices();
     const { release, finished } = await holdProductAndMutate(
       product.id,
       async (tx) => {
-        await tx.productImage.create({
+        const added = await tx.productImage.create({
           data: {
             productId: product.id,
             position: 2,
@@ -432,6 +474,13 @@ describe('Product write atomicity against PostgreSQL', () => {
             byteLength: png.byteLength,
             data: png,
             checksum: 'c'.repeat(64),
+          },
+        });
+        await tx.productRevisionImage.create({
+          data: {
+            revisionId: product.editingRevisionId,
+            imageId: added.id,
+            position: 2,
           },
         });
       },
@@ -463,7 +512,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     const { release, finished } = await holdProductAndMutate(
       product.id,
       async (tx) => {
-        await tx.productImage.create({
+        const added = await tx.productImage.create({
           data: {
             productId: product.id,
             position: 1,
@@ -471,6 +520,13 @@ describe('Product write atomicity against PostgreSQL', () => {
             byteLength: png.byteLength,
             data: png,
             checksum: 'd'.repeat(64),
+          },
+        });
+        await tx.productRevisionImage.create({
+          data: {
+            revisionId: product.editingRevisionId,
+            imageId: added.id,
+            position: 1,
           },
         });
       },

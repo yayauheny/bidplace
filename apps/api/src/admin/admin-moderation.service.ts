@@ -18,7 +18,10 @@ import {
 import { missingProductApprovalFields } from '../products/product-requirements';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
-import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
+import {
+  sellerProfileAuthSelect,
+  sellerProfileResponseSelect,
+} from '../sellers/seller-profile.mapper';
 import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
 
 @Injectable()
@@ -47,10 +50,16 @@ export class AdminModerationService {
       const isRevisionReview =
         editingRevision?.status === 'PENDING_REVIEW' &&
         ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status);
+      const isVisibilityTransition =
+        (sellerProfile.status === 'APPROVED' &&
+          input.status === 'SUSPENDED') ||
+        (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
 
       if (
         !isRevisionReview &&
-        !this.isAllowedSellerTransition(sellerProfile.status, input.status)
+        !isVisibilityTransition &&
+        (editingRevision !== null ||
+          !this.isAllowedSellerTransition(sellerProfile.status, input.status))
       ) {
         this.logger.warn(
           `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status}`,
@@ -107,8 +116,18 @@ export class AdminModerationService {
                       : sellerProfile.status,
                   publishedRevisionId: editingRevision.id,
                 },
+                select: sellerProfileResponseSelect,
               })
-            : sellerProfile;
+            : sellerProfile.status === 'PENDING_REVIEW'
+              ? await tx.sellerProfile.update({
+                  where: { id: sellerProfileId },
+                  data: { status: input.status },
+                  select: sellerProfileResponseSelect,
+                })
+              : await tx.sellerProfile.findUniqueOrThrow({
+                  where: { id: sellerProfileId },
+                  select: sellerProfileResponseSelect,
+                });
 
         await tx.auditEvent.create({
           data: {
@@ -131,6 +150,7 @@ export class AdminModerationService {
       const updated = await tx.sellerProfile.update({
         where: { id: sellerProfileId },
         data: { status: input.status },
+        select: sellerProfileResponseSelect,
       });
 
       await tx.auditEvent.create({

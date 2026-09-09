@@ -29,7 +29,10 @@ export async function createHttpTestApp(
     ...serverEnv,
     CORS_ORIGIN: resolveCorsOrigin(serverEnv),
   };
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await NestFactory.create(AppModule, {
+    logger: false,
+    abortOnError: false,
+  });
 
   configureHttpApp(app, runtimeEnv);
   await app.listen(0, '127.0.0.1');

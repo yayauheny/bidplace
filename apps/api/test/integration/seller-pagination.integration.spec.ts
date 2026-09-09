@@ -14,6 +14,10 @@ let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 
 async function reset() {
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.listing.deleteMany();
   await prisma.product.deleteMany();
@@ -68,8 +72,8 @@ describe('Public seller pagination PostgreSQL behavior', () => {
     });
     const now = new Date('2026-08-12T10:00:00.000Z');
     const products = await Promise.all(
-      ['First', 'Second'].map((title, index) =>
-        prisma.product.create({
+      ['First', 'Second'].map(async (title, index) => {
+        const product = await prisma.product.create({
           data: {
             publicId: `${suffix.replace(/-/g, '').slice(0, 10)}${index}`,
             sellerProfileId: profile.id,
@@ -104,8 +108,36 @@ describe('Public seller pagination PostgreSQL behavior', () => {
               },
             },
           },
-        }),
-      ),
+          include: { images: { select: { id: true } } },
+        });
+        const revision = await prisma.productRevision.create({
+          data: {
+            productId: product.id,
+            version: 1,
+            status: 'APPROVED',
+            categoryId: category.id,
+            title,
+            story: 'Story',
+            uniqueness: 'One',
+            provenance: 'Created by the seller',
+            city: 'Minsk',
+            deliveryInfo: 'Pickup',
+            images: {
+              create: {
+                imageId: product.images[0]!.id,
+                position: 0,
+              },
+            },
+          },
+        });
+        return prisma.product.update({
+          where: { id: product.id },
+          data: {
+            editingRevisionId: revision.id,
+            publishedRevisionId: revision.id,
+          },
+        });
+      }),
     );
     const service = new SellersService(
       prisma as never,

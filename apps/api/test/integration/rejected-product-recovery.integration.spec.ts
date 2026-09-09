@@ -113,7 +113,35 @@ async function createRejectedProduct(
         },
       },
     },
-    select: { id: true, publicId: true },
+    select: {
+      id: true,
+      publicId: true,
+      images: { select: { id: true } },
+    },
+  });
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: 'REJECTED',
+      categoryId: fixture.categoryId,
+      title: 'Rejected recovery work',
+      story: 'A rejected item that should be recoverable',
+      uniqueness: 'One',
+      provenance: 'Studio',
+      city: 'Minsk',
+      deliveryInfo: 'Pickup',
+      images: {
+        create: {
+          imageId: product.images[0]!.id,
+          position: 0,
+        },
+      },
+    },
+  });
+  await prisma.product.update({
+    where: { id: product.id },
+    data: { editingRevisionId: revision.id },
   });
   await prisma.auditEvent.create({
     data: {

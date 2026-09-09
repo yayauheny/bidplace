@@ -142,33 +142,58 @@ export class ImagesService {
       if (!locked.images.some((image) => image.id === imageId)) {
         throw new NotFoundException('Image not found');
       }
+      if (!locked.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
       const remaining = await tx.productImage.findMany({
         where: { productId, id: { not: imageId } },
         select: { id: true },
         orderBy: { position: 'asc' },
       });
 
-      await this.imageStore.delete(imageKey.productImage(imageId), tx);
-      await tx.productImage.delete({ where: { id: imageId } });
+      await tx.productRevisionImage.deleteMany({
+        where: {
+          revisionId: locked.editingRevisionId,
+          imageId,
+        },
+      });
+      const revisionReferences = await tx.productRevisionImage.count({
+        where: { imageId },
+      });
+      const remainingRevisionImages =
+        await tx.productRevisionImage.findMany({
+          where: { revisionId: locked.editingRevisionId },
+          select: { imageId: true },
+          orderBy: { position: 'asc' },
+        });
+      if (revisionReferences === 0) {
+        await this.imageStore.delete(imageKey.productImage(imageId), tx);
+        await tx.productImage.delete({ where: { id: imageId } });
+        const temporaryBase = remaining.length + 1;
 
-      const temporaryBase = remaining.length + 1;
+        await Promise.all(
+          remaining.map((image, index) =>
+            tx.productImage.update({
+              where: { id: image.id },
+              data: { position: temporaryBase + index },
+            }),
+          ),
+        );
 
-      await Promise.all(
-        remaining.map((image, index) =>
-          tx.productImage.update({
-            where: { id: image.id },
-            data: { position: temporaryBase + index },
-          }),
-        ),
-      );
+        await Promise.all(
+          remaining.map((image, index) =>
+            tx.productImage.update({
+              where: { id: image.id },
+              data: { position: index },
+            }),
+          ),
+        );
+      }
 
-      await Promise.all(
-        remaining.map((image, index) =>
-          tx.productImage.update({
-            where: { id: image.id },
-            data: { position: index },
-          }),
-        ),
+      await this.reindexRevisionImages(
+        tx,
+        locked.editingRevisionId,
+        remainingRevisionImages.map((image) => image.imageId),
       );
     });
 
@@ -208,6 +233,9 @@ export class ImagesService {
           'Image order must include every Product image exactly once',
         );
       }
+      if (!locked.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
       const temporaryBase = locked.images.length;
 
       await Promise.all(
@@ -217,6 +245,12 @@ export class ImagesService {
             data: { position: temporaryBase + index },
           }),
         ),
+      );
+
+      await this.reindexRevisionImages(
+        tx,
+        locked.editingRevisionId,
+        imageIds,
       );
 
       await Promise.all(
@@ -338,9 +372,11 @@ export class ImagesService {
       select: {
         id: true,
         mimeType: true,
+        revisions: { select: { revisionId: true } },
         product: {
           select: {
             status: true,
+            publishedRevisionId: true,
             sellerProfile: {
               select: {
                 userId: true,
@@ -361,7 +397,12 @@ export class ImagesService {
     const isAdmin = role === 'admin';
     const isPublic =
       image.product.status === 'APPROVED' &&
-      image.product.sellerProfile.status === 'APPROVED';
+      image.product.sellerProfile.status === 'APPROVED' &&
+      image.product.publishedRevisionId !== null &&
+      image.revisions.some(
+        ({ revisionId }) =>
+          revisionId === image.product.publishedRevisionId,
+      );
 
     if (!isOwner && !isAdmin && !isPublic) {
       throw new NotFoundException('Image not found');
@@ -387,6 +428,31 @@ export class ImagesService {
   ) {
     await lockProductRowForUpdate(tx, productId);
     return this.requireEditableOwner(tx, userId, productId, imageSelect);
+  }
+
+  private async reindexRevisionImages(
+    tx: Prisma.TransactionClient,
+    revisionId: string,
+    imageIds: string[],
+  ): Promise<void> {
+    const temporaryBase = imageIds.length + 1;
+
+    await Promise.all(
+      imageIds.map((imageId, index) =>
+        tx.productRevisionImage.update({
+          where: { revisionId_imageId: { revisionId, imageId } },
+          data: { position: temporaryBase + index },
+        }),
+      ),
+    );
+    await Promise.all(
+      imageIds.map((imageId, index) =>
+        tx.productRevisionImage.update({
+          where: { revisionId_imageId: { revisionId, imageId } },
+          data: { position: index },
+        }),
+      ),
+    );
   }
 
   private async requireEditableOwner(

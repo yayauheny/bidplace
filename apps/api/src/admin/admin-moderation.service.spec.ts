@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { ConflictException } from '@nestjs/common';
 
 import { AdminModerationService } from './admin-moderation.service';
-import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
+import {
+  sellerProfileAuthSelect,
+  sellerProfileResponseSelect,
+} from '../sellers/seller-profile.mapper';
 
 function transactionPrisma(tx: object) {
   return {
@@ -60,6 +63,7 @@ describe('AdminModerationService', () => {
         publishedRevisionId: 'revision-id',
         fullName: 'Updated author',
       }),
+      select: sellerProfileResponseSelect,
     });
   });
 

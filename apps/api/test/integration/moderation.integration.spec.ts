@@ -43,6 +43,7 @@ function applicationForm(): FormData {
   form.set('sellerType', 'creator');
   form.set('fullName', '  Applicant Creator  ');
   form.set('country', ' BY ');
+  form.set('city', ' Minsk ');
   form.set('socialLink', 'https://example.com/applicant');
   form.set('shortDescription', '  Applicant description  ');
   form.set('handoffContactType', 'TELEGRAM');
@@ -52,6 +53,12 @@ function applicationForm(): FormData {
     new Blob([permissionImage], { type: 'image/png' }),
     'profile.png',
   );
+  return form;
+}
+
+function sellerUpdateForm(fullName: string): FormData {
+  const form = new FormData();
+  form.set('fullName', fullName);
   return form;
 }
 
@@ -185,6 +192,18 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
+        await applicantClient.patch(
+          '/seller/profile',
+          sellerUpdateForm('Applicant Creator Revised'),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await applicantClient.post('/author/application/submit')).status,
+    ).toBe(201);
+
+    expect(
+      (
         await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
           status: 'CHANGES_REQUESTED',
           reason: 'Add a clearer provenance description',
@@ -194,7 +213,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
     expect((await auditFor('SELLER_PROFILE', profile.id))[1]).toMatchObject({
       actorUserId: admin.id,
-      oldStatus: 'APPROVED',
+      oldStatus: 'PENDING_REVIEW',
       newStatus: 'CHANGES_REQUESTED',
       reason: 'Add a clearer provenance description',
     });
@@ -210,6 +229,18 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     ).toBe(409);
     expect(await permissionState(prisma)).toEqual(repeatBefore);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
+
+    expect(
+      (
+        await applicantClient.patch(
+          '/seller/profile',
+          sellerUpdateForm('Applicant Creator Corrected'),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await applicantClient.post('/author/application/submit')).status,
+    ).toBe(201);
 
     expect(
       (
@@ -326,6 +357,23 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
         deliveryInfo: 'Pickup',
       },
     });
+    const draft = await prisma.product.findUniqueOrThrow({
+      where: { id: fixture.approvedDraftProductId },
+      select: { editingRevisionId: true },
+    });
+    if (!draft.editingRevisionId) {
+      throw new Error('Permission fixture editing revision is missing');
+    }
+    await prisma.productRevision.update({
+      where: { id: draft.editingRevisionId },
+      data: {
+        status: 'PENDING_REVIEW',
+        uniqueness: 'One',
+        provenance: 'Wave 3 provenance',
+        city: 'Minsk',
+        deliveryInfo: 'Pickup',
+      },
+    });
 
     expect(
       (
@@ -348,6 +396,28 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       },
     ]);
 
+    const ownerClient = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.1.5',
+    );
+    await login(ownerClient, fixture.sellers.approved);
+    expect(
+      (
+        await ownerClient.patch(
+          `/products/${fixture.approvedDraftProductId}`,
+          { story: 'Revised story awaiting moderation' },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await ownerClient.post(
+          `/products/${fixture.approvedDraftProductId}/submit`,
+        )
+      ).status,
+    ).toBe(201);
+
     expect(
       (
         await adminClient.patch(
@@ -361,7 +431,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     ).toBe(200);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
 
     const productRepeatBefore = await permissionState(prisma);
     expect(
@@ -378,7 +448,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await permissionState(prisma)).toEqual(productRepeatBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
 
     const rejectedProductBefore = await permissionState(prisma);
     expect(
@@ -392,7 +462,23 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     expect(await permissionState(prisma)).toEqual(rejectedProductBefore);
     expect(
       await auditFor('PRODUCT', fixture.approvedDraftProductId),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
+
+    expect(
+      (
+        await ownerClient.patch(
+          `/products/${fixture.approvedDraftProductId}`,
+          { story: 'Corrected story for another review' },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await ownerClient.post(
+          `/products/${fixture.approvedDraftProductId}/submit`,
+        )
+      ).status,
+    ).toBe(201);
 
     expect(
       (
@@ -409,17 +495,17 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       await prisma.product.findUniqueOrThrow({
         where: { id: fixture.approvedDraftProductId },
       }),
-    ).toMatchObject({ status: 'REJECTED' });
+    ).toMatchObject({ status: 'APPROVED' });
     const rejectedProductAudit = await auditFor(
       'PRODUCT',
       fixture.approvedDraftProductId,
     );
-    expect(rejectedProductAudit).toHaveLength(3);
-    expect(rejectedProductAudit[2]).toEqual({
+    expect(rejectedProductAudit).toHaveLength(5);
+    expect(rejectedProductAudit[4]).toEqual({
       actorUserId: admin.id,
       targetType: 'PRODUCT',
       targetId: fixture.approvedDraftProductId,
-      oldStatus: 'CHANGES_REQUESTED',
+      oldStatus: 'PENDING_REVIEW',
       newStatus: 'REJECTED',
       reason: 'The item provenance could not be confirmed',
     });
@@ -441,7 +527,6 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       0,
     );
 
-    const lockedArchiveBefore = await permissionState(prisma);
     expect(
       (
         await adminClient.patch(
@@ -452,10 +537,17 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
           },
         )
       ).status,
-    ).toBe(409);
-    expect(await permissionState(prisma)).toEqual(lockedArchiveBefore);
+    ).toBe(200);
+    expect(
+      (
+        await prisma.product.findUniqueOrThrow({
+          where: { id: fixture.approvedProductId },
+          select: { status: true },
+        })
+      ).status,
+    ).toBe('ARCHIVED');
     expect(await auditFor('PRODUCT', fixture.approvedProductId)).toHaveLength(
-      0,
+      1,
     );
 
     const archivedProduct = await prisma.product.create({

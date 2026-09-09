@@ -54,6 +54,53 @@ async function createUser(
   return { ...user, password: 'password123' };
 }
 
+async function attachProductRevision(
+  prisma: PrismaClient,
+  product: {
+    id: string;
+    images: Array<{ id: string }>;
+  },
+  input: {
+    status: 'DRAFT' | 'APPROVED';
+    categoryId: string;
+    title: string;
+    story: string;
+    uniqueness?: string;
+    provenance?: string;
+    city?: string;
+    deliveryInfo?: string;
+  },
+): Promise<void> {
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: input.status,
+      categoryId: input.categoryId,
+      title: input.title,
+      story: input.story,
+      uniqueness: input.uniqueness ?? null,
+      provenance: input.provenance ?? null,
+      city: input.city ?? null,
+      deliveryInfo: input.deliveryInfo ?? null,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId:
+        input.status === 'APPROVED' ? revision.id : null,
+    },
+  });
+}
+
 async function createSeller(
   prisma: PrismaClient,
   status: 'PENDING_REVIEW' | 'CHANGES_REQUESTED' | 'SUSPENDED' | 'APPROVED',
@@ -80,6 +127,29 @@ async function createSeller(
     },
     select: { id: true },
   });
+  const revisionStatus = status === 'SUSPENDED' ? 'APPROVED' : status;
+  const profileRevision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: revisionStatus,
+      slug: `wave3-${slugStatus}-${suffix}`,
+      discipline: 'Автор',
+      fullName: `Wave 3 ${status}`,
+      country: 'BY',
+      city: 'Minsk',
+      socialLink: 'https://example.com/wave3',
+      shortDescription: 'Wave 3 seller fixture',
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      editingRevisionId: profileRevision.id,
+      publishedRevisionId:
+        revisionStatus === 'APPROVED' ? profileRevision.id : null,
+    },
+  });
   const category = await prisma.category.findFirstOrThrow();
   const product = await prisma.product.create({
     data: {
@@ -100,6 +170,12 @@ async function createSeller(
       },
     },
     select: { id: true, images: { select: { id: true } } },
+  });
+  await attachProductRevision(prisma, product, {
+    status: 'DRAFT',
+    categoryId: category.id,
+    title: `${status} product`,
+    story: 'Wave 3 permission fixture',
   });
   const listing = await prisma.listing.create({
     data: {
@@ -134,8 +210,16 @@ export async function resetPermissionFixture(
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.sellerProfile.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.sellerProfileRevision.deleteMany();
   await prisma.sellerProfile.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
@@ -194,6 +278,16 @@ export async function createPermissionFixture(
       images: { select: { id: true }, orderBy: { position: 'asc' } },
     },
   });
+  await attachProductRevision(prisma, approvedDraftProduct, {
+    status: 'DRAFT',
+    categoryId: category.id,
+    title: 'Approved owner draft',
+    story: 'Draft with images for permission coverage',
+    uniqueness: 'One',
+    provenance: 'Wave 3 fixture',
+    city: 'Minsk',
+    deliveryInfo: 'Pickup',
+  });
 
   const approvedProduct = await prisma.product.create({
     data: {
@@ -218,6 +312,16 @@ export async function createPermissionFixture(
       },
     },
     select: { id: true, images: { select: { id: true } } },
+  });
+  await attachProductRevision(prisma, approvedProduct, {
+    status: 'APPROVED',
+    categoryId: category.id,
+    title: 'Approved owner listing product',
+    story: 'Approved product for Listing permission coverage',
+    uniqueness: 'One',
+    provenance: 'Wave 3 fixture',
+    city: 'Minsk',
+    deliveryInfo: 'Pickup',
   });
 
   const approvedListing = await prisma.listing.create({

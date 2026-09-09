@@ -433,7 +433,7 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
     ).toBe(1);
   });
 
-  it('allows SellerProfile correction only in CHANGES_REQUESTED and denies other statuses', async () => {
+  it('keeps approved profile edits in a draft revision and blocks ineligible statuses', async () => {
     const fixture = await createPermissionFixture(prisma);
     const clients = await createClients(fixture);
 
@@ -454,8 +454,6 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
     for (const [key, client] of [
       ['pending', clients.pending],
       ['suspended', clients.suspended],
-      ['approved', clients.approved],
-      ['otherApproved', clients.otherApproved],
     ] as const) {
       const before = await permissionState(prisma);
       await expectUnchanged(
@@ -466,6 +464,32 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
         ),
         403,
       );
+    }
+
+    for (const [key, client] of [
+      ['approved', clients.approved],
+      ['otherApproved', clients.otherApproved],
+    ] as const) {
+      const profileId = fixture.sellers[key].profileId;
+      const before = await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: profileId },
+        select: { fullName: true, publishedRevisionId: true },
+      });
+      const response = await client.patch(
+        '/seller/profile',
+        sellerUpdateForm(`Draft ${key}`),
+      );
+      expect(response.status).toBe(200);
+      const after = await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: profileId },
+        include: { editingRevision: true },
+      });
+      expect(after.fullName).toBe(before.fullName);
+      expect(after.editingRevisionId).not.toBe(before.publishedRevisionId);
+      expect(after.editingRevision).toMatchObject({
+        status: 'DRAFT',
+        fullName: `Draft ${key}`,
+      });
     }
 
     const response = await clients.changes.patch(

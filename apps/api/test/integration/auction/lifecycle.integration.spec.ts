@@ -44,6 +44,7 @@ class MutableClock extends Clock {
 
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
+const commerceEnabled = { isEnabled: () => true };
 
 beforeAll(async () => {
   context = await createIntegrationDatabaseContext();
@@ -64,6 +65,7 @@ function lifecycle(
       clock,
       { generate: () => publicId } as never,
       { emit } as never,
+      commerceEnabled as never,
     ),
     emit,
   };
@@ -209,6 +211,7 @@ describe('auction lifecycle business guarantees', () => {
       clock,
       collidingPublicIds as never,
       { emit } as never,
+      commerceEnabled as never,
     );
 
     expect(await service.close(target.listing.id, closeAt)).toBe(true);
@@ -256,6 +259,7 @@ describe('auction lifecycle business guarantees', () => {
       clock,
       failingPublicIds as never,
       { emit } as never,
+      commerceEnabled as never,
     );
     const closeAt = new Date(fixture.listing.endsAt.getTime() + 1);
 
