@@ -27,6 +27,7 @@ export function PageState({
           alignItems: 'center',
           justifyContent: 'center',
           paddingVertical: designTokens.space.x8,
+          paddingHorizontal: designTokens.space.pageGutter,
         }}
       >
         <AppText
@@ -48,16 +49,19 @@ export function PageState({
         justifyContent: 'center',
         gap: designTokens.space.x3,
         paddingVertical: designTokens.space.x8,
+        paddingHorizontal: designTokens.space.pageGutter,
       }}
     >
-      <AppText role="sectionTitle">{title}</AppText>
+      <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
+        {title}
+      </AppText>
       {message || mode === 'error' ? (
         <AppText role="bodySmall" tone="secondary" style={{ textAlign: 'center' }}>
           {message ?? 'Проверьте соединение и повторите попытку.'}
         </AppText>
       ) : null}
       {retry ? (
-        <PrimaryButton label="Повторить" onPress={retry} alignSelf="center" />
+        <PrimaryButton label="Повторить" onPress={retry} />
       ) : null}
     </View>
   );

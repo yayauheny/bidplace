@@ -1,8 +1,39 @@
-# bidplace — дизайн-система Pen v2
+# bidplace — дизайн-система
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-09
 
-Статус: **Measured baseline; motion and responsive verification remain**
+Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
+
+## Current runtime
+
+One token layer: `packages/design-tokens` `designTokens` (aliases `figmaTokens`).
+Values are measured from inspect copy `uMo04w9bgrchWXXDgO4W62`. There is no nested
+`designTokens.figma`.
+
+Shared primitives live in `apps/mobile/src/components/figma/` and are the
+production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`, `FigmaIcon`,
+`WorkCoverCard`, `AuthorCoverCard`, `AuthorIdentity`, `CoverFrost`,
+`AuthorAtmosphere`, `FloatingDock`. Cover overlays frost the artwork
+(`backdrop-filter` / duplicated blur on web, `blurRadius` on native) instead of
+painting an opaque gradient. Author pages use a 485px blurred photo atmosphere
+behind identity. `apps/mobile/src/components/ui` wraps those masters (`Button`,
+`TextField`, `AuctionCard` → `WorkCoverCard` portfolio mode).
+
+`AppShell` is a centered 390 column plus `FloatingDock` (Главная / Поиск /
+Добавить / Профиль, no cart). Wide windows keep the same column. 1024/1440
+compositions are out of this wave.
+
+Runtime type is bundled Inter. Figma names Geist on some frames; files are not
+in the app.
+
+Skipped nodes and unused variants: [`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
+
+## Historical Pen extraction
+
+The remainder of this document records Pen v2 measurements used before the
+Figma cutover. Do not treat those breakpoints or Onest/header geometry as the
+current runtime. The `.pen` file stays protected and unused at runtime.
+
 
 ## 1. Архитектура источников
 
@@ -254,9 +285,33 @@ derived before coding each component and recorded in handoff:
 Breakpoints follow composition pressure, not device names. A component is not
 complete if it matches only the 1440 frame.
 
+## 6.1. Figma portfolio primitives — 2026-09-09
+
+Read-only source: Figma file `uMo04w9bgrchWXXDgO4W62`, page «Компоненты», plus
+Home node `1:2`. Values are the only `designTokens` export (`figmaTokens`
+alias).
+
+Shared masters:
+
+- `FigmaIcon` — Hugeicons stroke-rounded, Figma layer names;
+- `FigmaButton` — solid / outline / ghost / muted, hover / pressed / disabled;
+- `FigmaTextField` — empty, hover, filled, focus, error, success, disabled;
+- `FigmaChip` — non-interactive tags (`onLight` / `onDark`);
+- `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
+  and stay off unless `mode="commerce"`;
+- `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;
+- `FloatingDock` — Главная / Поиск / Добавить / Профиль; cart is not an item.
+
+Deferred Figma pieces kept in the registry only: Google icon, AI magic icon,
+cart/basket icon, sale badges, prices and timers. Public and author MVP screens
+use these masters (`DEC-085`).
+
+Figma card frames name Geist; runtime uses already-bundled Inter until a
+licensed Geist file is added. Do not substitute a system font.
+
 ## 7. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime components живут
-в `apps/mobile/src/components/ui`; параллельного legacy component/token layer
-нет. `components/ui` реализует текущую систему, но не заменяет Pen и design docs
-как визуальный source of truth.
+в `apps/mobile/src/components/figma` and wrappers in `components/ui`. There is
+no nested Figma token object. Figma is the production visual source (`DEC-085`);
+the protected `.pen` file is historical and unused at runtime.

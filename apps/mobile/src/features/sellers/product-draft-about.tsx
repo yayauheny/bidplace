@@ -14,17 +14,16 @@ import {
 type StepOneErrors = {
   categoryId?: string;
   title?: string;
-  story?: string;
   year?: string;
   uniqueness?: string;
-  provenance?: string;
-  city?: string;
-  deliveryInfo?: string;
 };
+
+export type ProductDraftAboutSection = 'title' | 'details' | 'all';
 
 export type ProductDraftAboutStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
+  section: ProductDraftAboutSection;
 
   editable: boolean;
   categories: Array<{ id: string; name: string }>;
@@ -52,8 +51,6 @@ export type ProductDraftAboutStepProps = {
 
   title: string;
   onChangeTitle: (value: string) => void;
-  story: string;
-  onChangeStory: (value: string) => void;
   uniqueness: string;
   onChangeUniqueness: (value: string) => void;
   condition: string;
@@ -62,20 +59,22 @@ export type ProductDraftAboutStepProps = {
 
   stepOneAttempted: boolean;
   stepOneErrors: StepOneErrors;
-  canSaveStepOne: boolean;
+  canSaveCurrentSection: boolean;
 
   saveIsPending: boolean;
   saveIsError: boolean;
 
   onSavePress: () => void;
 
-  wizardCanOpenImages: boolean;
-  onContinueToImages: () => void;
+  wizardCanContinue: boolean;
+  continueLabel: string;
+  onContinue: () => void;
 };
 
 export function ProductDraftAboutStep({
   isCreationFlow,
   wizardStep,
+  section,
   editable,
   categories,
   categoryId,
@@ -98,8 +97,6 @@ export function ProductDraftAboutStep({
   onChangeDeliveryInfo,
   title,
   onChangeTitle,
-  story,
-  onChangeStory,
   uniqueness,
   onChangeUniqueness,
   condition,
@@ -107,22 +104,47 @@ export function ProductDraftAboutStep({
   onChangeProvenance,
   stepOneAttempted,
   stepOneErrors,
-  canSaveStepOne,
+  canSaveCurrentSection,
   saveIsPending,
   saveIsError,
   onSavePress,
-  wizardCanOpenImages,
-  onContinueToImages,
+  wizardCanContinue,
+  continueLabel,
+  onContinue,
 }: ProductDraftAboutStepProps) {
-  const titleLabel = isCreationFlow
+  const showTitle = section === 'title' || section === 'all';
+  const showDetails = section === 'details' || section === 'all';
+  const showLogistics = section === 'all';
+  const saveLabel = isCreationFlow
     ? 'Сохранить и продолжить'
     : 'Сохранить изменения';
 
   return (
     <>
-      <FormPageColumns
-        sidebar={
-          <>
+      {showTitle ? (
+        <FormSection
+          title={isCreationFlow ? 'Название' : 'О работе'}
+          description={
+            isCreationFlow
+              ? 'Основная информация для каталога.'
+              : 'Основная информация для каталога и страницы предмета.'
+          }
+        >
+          <TextField
+            label="Название"
+            value={title}
+            onChangeText={onChangeTitle}
+            placeholder="Название"
+            editable={editable}
+            required
+            error={stepOneAttempted ? stepOneErrors.title : undefined}
+          />
+        </FormSection>
+      ) : null}
+
+      {showDetails ? (
+        <FormPageColumns
+          sidebar={
             <FormSection
               title="Характеристики"
               description="Параметры помогают точно описать работу."
@@ -148,13 +170,15 @@ export function ProductDraftAboutStep({
                 placeholder="Необязательно"
                 editable={editable}
               />
-              <TextField
-                label="Вес"
-                value={weight}
-                onChangeText={onChangeWeight}
-                placeholder="Необязательно"
-                editable={editable}
-              />
+              {section === 'all' ? (
+                <TextField
+                  label="Вес"
+                  value={weight}
+                  onChangeText={onChangeWeight}
+                  placeholder="Необязательно"
+                  editable={editable}
+                />
+              ) : null}
               <TextField
                 label="Год создания"
                 value={year}
@@ -164,150 +188,111 @@ export function ProductDraftAboutStep({
                 editable={editable}
                 error={stepOneAttempted ? stepOneErrors.year : undefined}
               />
-            </FormSection>
-            <FormSection title="Логистика">
               <TextField
-                label="Город"
-                value={city}
-                onChangeText={onChangeCity}
-                placeholder="Город"
+                label="Тираж"
+                value={uniqueness}
+                onChangeText={onChangeUniqueness}
+                placeholder="Единственный экземпляр или тираж"
                 editable={editable}
                 required
-                error={stepOneAttempted ? stepOneErrors.city : undefined}
+                error={stepOneAttempted ? stepOneErrors.uniqueness : undefined}
               />
-              <TextField
-                label="Упаковка"
-                value={packaging}
-                onChangeText={onChangePackaging}
-                placeholder="Необязательно"
-                multiline
-                editable={editable}
-              />
-              <TextField
-                label="Передача или доставка"
-                value={deliveryInfo}
-                onChangeText={onChangeDeliveryInfo}
-                placeholder="Передача или доставка"
-                multiline
-                editable={editable}
-                required
-                error={
-                  stepOneAttempted ? stepOneErrors.deliveryInfo : undefined
-                }
-              />
+              {condition ? (
+                <AppText role="bodySmall" tone="secondary">
+                  Состояние: {condition}
+                </AppText>
+              ) : null}
+              {section === 'all' ? (
+                <TextField
+                  label="Происхождение"
+                  value={provenance}
+                  onChangeText={onChangeProvenance}
+                  placeholder="Необязательно"
+                  multiline
+                  editable={editable}
+                />
+              ) : null}
             </FormSection>
-          </>
-        }
-      >
-        <FormSection title="Категория">
-          {categories.map((category) => (
-            <SecondaryButton
-              key={category.id}
-              label={
-                categoryId === category.id
-                  ? `✓ ${category.name}`
-                  : category.name
-              }
-              disabled={!editable}
-              width="block"
-              onPress={() => onChangeCategoryId(category.id)}
-            />
-          ))}
-          {stepOneAttempted && stepOneErrors.categoryId ? (
-            <AppText role="bodySmall" tone="danger">
-              {stepOneErrors.categoryId}
-            </AppText>
-          ) : null}
-        </FormSection>
-
-        <FormSection
-          title="О работе"
-          description="Основная информация для каталога и страницы предмета."
+          }
         >
-          <TextField
-            label="Название"
-            value={title}
-            onChangeText={onChangeTitle}
-            placeholder="Название"
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.title : undefined}
-          />
-          <TextField
-            label="История предмета"
-            value={story}
-            onChangeText={onChangeStory}
-            placeholder="История предмета"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.story : undefined}
-          />
-          <TextField
-            label="Уникальность или тираж"
-            value={uniqueness}
-            onChangeText={onChangeUniqueness}
-            placeholder="Уникальность или тираж"
-            editable={editable}
-            required
-            error={
-              stepOneAttempted ? stepOneErrors.uniqueness : undefined
-            }
-          />
-          {condition ? (
-            <AppText role="bodySmall" tone="secondary">
-              Состояние: {condition}
-            </AppText>
-          ) : null}
-          <TextField
-            label="Происхождение"
-            value={provenance}
-            onChangeText={onChangeProvenance}
-            placeholder="Происхождение"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.provenance : undefined}
-          />
-        </FormSection>
-      </FormPageColumns>
-
-      {!isCreationFlow || wizardStep === productWizardStep.about ? (
-        <AppText role="bodySmall" tone="secondary">
-          Дата размещения установится автоматически при первой публичной
-          публикации.
-        </AppText>
+          <FormSection title="Категория">
+            {categories.map((category) => (
+              <SecondaryButton
+                key={category.id}
+                label={
+                  categoryId === category.id
+                    ? `✓ ${category.name}`
+                    : category.name
+                }
+                disabled={!editable}
+                width="full"
+                onPress={() => onChangeCategoryId(category.id)}
+              />
+            ))}
+            {stepOneAttempted && stepOneErrors.categoryId ? (
+              <AppText role="bodySmall" tone="danger">
+                {stepOneErrors.categoryId}
+              </AppText>
+            ) : null}
+          </FormSection>
+        </FormPageColumns>
       ) : null}
 
-      {editable && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {showLogistics ? (
+        <FormSection title="Логистика">
+          <TextField
+            label="Город"
+            value={city}
+            onChangeText={onChangeCity}
+            placeholder="Город"
+            editable={editable}
+          />
+          <TextField
+            label="Упаковка"
+            value={packaging}
+            onChangeText={onChangePackaging}
+            placeholder="Необязательно"
+            multiline
+            editable={editable}
+          />
+          <TextField
+            label="Передача или доставка"
+            value={deliveryInfo}
+            onChangeText={onChangeDeliveryInfo}
+            placeholder="Необязательно"
+            multiline
+            editable={editable}
+          />
+        </FormSection>
+      ) : null}
+
+      {editable ? (
         <PrimaryButton
-          label={titleLabel}
+          label={saveLabel}
           loading={saveIsPending}
-          width="block"
+          width="full"
           onPress={onSavePress}
         />
       ) : null}
 
-      {isCreationFlow &&
-      wizardStep === productWizardStep.about &&
-      stepOneAttempted &&
-      !canSaveStepOne ? (
+      {isCreationFlow && stepOneAttempted && !canSaveCurrentSection ? (
         <AppText role="bodySmall" tone="danger">
           {productWizardStepOneIncompleteMessage}
         </AppText>
       ) : null}
 
       {isCreationFlow &&
-      wizardStep === productWizardStep.about &&
-      wizardCanOpenImages ? (
+      (wizardStep === productWizardStep.photos ||
+        wizardStep === productWizardStep.details) &&
+      wizardCanContinue ? (
         <SecondaryButton
-          label="Продолжить к изображениям"
-          width="block"
-          onPress={onContinueToImages}
+          label={continueLabel}
+          width="full"
+          onPress={onContinue}
         />
       ) : null}
 
-      {saveIsError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {saveIsError ? (
         <AppText role="bodySmall" tone="danger">
           Не удалось сохранить предмет.
         </AppText>
@@ -315,4 +300,3 @@ export function ProductDraftAboutStep({
     </>
   );
 }
-

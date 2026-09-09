@@ -1,5 +1,5 @@
 import { Image, type ImageProps } from 'expo-image';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -25,7 +25,12 @@ export type ResilientRemoteImageComponent =
   | 'CreationStep'
   | 'ProductGallery'
   | 'ProductAuthor'
-  | 'AuthorPhoto';
+  | 'AuthorPhoto'
+  | 'WorkCoverCard'
+  | 'AuthorCoverCard'
+  | 'AuthorIdentity'
+  | 'CoverFrost'
+  | 'AuthorAtmosphere';
 
 type ResilientRemoteImageProps = {
   uri: string;
@@ -36,6 +41,7 @@ type ResilientRemoteImageProps = {
   contentFit?: ImageProps['contentFit'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
+  blurRadius?: number;
 };
 
 export function ResilientRemoteImage({
@@ -47,6 +53,7 @@ export function ResilientRemoteImage({
   contentFit = 'cover',
   transition,
   recyclingKey,
+  blurRadius,
 }: ResilientRemoteImageProps) {
   const recovery = useMediaRecovery(uri);
   const currentUriRef = useRef(uri);
@@ -164,7 +171,6 @@ export function ResilientRemoteImage({
         {visibleRecovery.exhausted ? (
           <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
             <SecondaryButton
-              compact
               label="Повторить"
               onPress={handleManualRetry}
             />
@@ -183,9 +189,16 @@ export function ResilientRemoteImage({
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${visibleRecovery.requestVersion}`}
         accessibilityLabel={accessibilityLabel}
+        accessible={Boolean(accessibilityLabel)}
+        blurRadius={blurRadius}
         onLoad={handleLoad}
         onError={handleError}
-        style={StyleSheet.absoluteFill}
+        style={[
+          StyleSheet.absoluteFill,
+          Platform.OS === 'web' && blurRadius
+            ? ({ filter: `blur(${blurRadius}px)` } as ImageStyle)
+            : null,
+        ]}
       />
     </View>
   );

@@ -1,8 +1,16 @@
 # bidplace — handoff Pen v2 → production code
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-09
 
-Статус: **Approved runtime scope implemented; workflow remains mandatory**
+Статус: **Approved runtime scope implemented; Figma component masters added, screen cutover still open**
+
+## 0.1. Figma component masters — 2026-09-09
+
+Inspected copy `uMo04w9bgrchWXXDgO4W62` page «Компоненты». New shared masters
+are in `apps/mobile/src/components/figma/`. They are not yet wired over Pen
+screens. Commerce fields on `WorkCoverCard` and cart/Google/AI icons are
+implemented as hidden/deferred slots, not deleted from the design registry.
+Figma itself was not edited.
 
 ## 0. Portfolio-first addendum — 2026-09-08
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import type { PortfolioAuthorsQuery } from '@bidplace/contracts';
 
@@ -13,7 +13,6 @@ import {
   PageState,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
-import { getCatalogColumnCount } from '../products/catalog-layout';
 
 type AuthorSort = PortfolioAuthorsQuery['sort'];
 
@@ -21,33 +20,6 @@ const authorSortOptions: Array<{ value: AuthorSort; label: string }> = [
   { value: 'added', label: 'По активности' },
   { value: 'name', label: 'По имени' },
 ];
-
-function AuthorSort({
-  sort,
-  onChange,
-}: {
-  sort: AuthorSort;
-  onChange: (sort: AuthorSort) => void;
-}) {
-  return (
-    <View style={{ alignSelf: 'flex-end', position: 'relative' }}>
-      <FilterMenu
-        variant="sort"
-        label="Сортировка авторов"
-        value={sort}
-        options={authorSortOptions.map((option) => ({
-          value: option.value,
-          label: option.label,
-        }))}
-        onSelect={(next) => {
-          if (!next) return;
-          onChange(next as AuthorSort);
-        }}
-        dismissOnOutside={false}
-      />
-    </View>
-  );
-}
 
 export function PublicAuthorsScreen({
   query,
@@ -58,7 +30,6 @@ export function PublicAuthorsScreen({
 }) {
   const api = useApiClient();
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const result = useQuery({
     queryKey: ['portfolio-authors', { q: query, sort }],
     queryFn: () =>
@@ -92,7 +63,6 @@ export function PublicAuthorsScreen({
         items={result.data.authors.map((item) => ({
           sellerProfile: item.author,
         }))}
-        columns={getCatalogColumnCount(width)}
       />
     );
   }
@@ -101,65 +71,39 @@ export function PublicAuthorsScreen({
     <AppShell>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal:
-            width >= designTokens.breakpoint.desktopShell
-              ? designTokens.layout.desktopGutter
-              : designTokens.layout.mobileGutter,
-          paddingBottom: designTokens.space.x20,
-          paddingTop:
-            width >= designTokens.breakpoint.desktopShell
-              ? designTokens.space.x20 + designTokens.space.x6
-              : width >= designTokens.breakpoint.compactHeader
-                ? designTokens.space.x16
-                : designTokens.space.x10,
+          paddingHorizontal: designTokens.space.pageGutter,
+          paddingTop: designTokens.space.x10,
+          paddingBottom: designTokens.space.x5,
+          gap: designTokens.space.sectionGap,
         }}
-        style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            width: '100%',
-            maxWidth: designTokens.layout.discoveryMaxWidth,
-            alignSelf: 'center',
-          }}
-        >
-          <View
-            style={{
-              gap:
-                width >= designTokens.breakpoint.desktopShell
-                  ? designTokens.space.x3
-                  : designTokens.space.x6,
-            }}
-          >
-            <View style={{ maxWidth: 720 }}>
-              <AppText
-                role="screenTitle"
-                style={
-                  width >= designTokens.breakpoint.compactHeader
-                    ? { fontSize: 72, lineHeight: 69, letterSpacing: -2.5 }
-                    : undefined
-                }
-              >
-                {query ? `Авторы: ${query}` : 'Авторы'}
-              </AppText>
-            </View>
-            <View
-              style={{
-                alignItems: 'flex-end',
-                paddingBottom:
-                  width >= designTokens.breakpoint.desktopShell
-                    ? designTokens.space.x1
-                    : 0,
-              }}
-            >
-              <AuthorSort
-                sort={sort}
-                onChange={(nextSort) => router.setParams({ sort: nextSort })}
-              />
-            </View>
-          </View>
-          {content}
+        <View style={{ gap: designTokens.space.x2 }}>
+          <AppText role="screenTitle">
+            {query ? `Авторы: ${query}` : 'Креативные и проверенные авторы на Bidplace'}
+          </AppText>
+          <AppText role="bodySmall" tone="secondary">
+            Покупайте самые эксклюзивные коллекции наших избранных авторов, все
+            увиденное вами это исключительно ручная работа
+          </AppText>
         </View>
+        <View style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
+          <FilterMenu
+            variant="sort"
+            label="Сортировка"
+            value={sort}
+            options={authorSortOptions.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            onSelect={(next) => {
+              if (!next) return;
+              router.setParams({ sort: next });
+            }}
+            dismissOnOutside
+          />
+        </View>
+        {content}
       </ScrollView>
     </AppShell>
   );

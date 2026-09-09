@@ -12,7 +12,7 @@ const toneColors = {
   default: designTokens.color.ink,
   secondary: designTokens.color.textSecondary,
   muted: designTokens.color.textMuted,
-  accent: designTokens.color.accentDark,
+  accent: designTokens.color.ink,
   danger: designTokens.color.danger,
   success: designTokens.color.success,
 } as const;
@@ -26,11 +26,7 @@ export function AppText({
   return (
     <Text
       {...props}
-      style={[
-        designTokens.typography[role],
-        { color: toneColors[tone] },
-        style,
-      ]}
+      style={[designTokens.typography[role], { color: toneColors[tone] }, style]}
     />
   );
 }

@@ -8,7 +8,9 @@ import {
   highestOpenableProductWizardStep,
   parseProductWizardStepParam,
   productWizardStep,
+  productWizardStepCount,
   productWizardStepOneIncompleteMessage,
+  productWizardStepTitles,
   resolveProductWizardStep,
   shouldRewriteProductWizardStepParam,
 } from './product-draft-wizard';
@@ -41,10 +43,10 @@ describe('product draft wizard accessibility', () => {
     );
   });
 
-  it('opens steps 1 and 2 when a draft exists without images', () => {
+  it('opens only step 1 until a draft has photos', () => {
     expect(
       canOpenProductWizardStep(productWizardStep.images, productWithoutImages),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       canOpenProductWizardStep(
         productWizardStep.creation,
@@ -55,17 +57,17 @@ describe('product draft wizard accessibility', () => {
       canOpenProductWizardStep(productWizardStep.review, productWithoutImages),
     ).toBe(false);
     expect(highestOpenableProductWizardStep(productWithoutImages)).toBe(
-      productWizardStep.images,
+      productWizardStep.about,
     );
     expect(
       resolveProductWizardStep(productWizardStep.review, productWithoutImages),
-    ).toBe(productWizardStep.images);
+    ).toBe(productWizardStep.about);
     expect(
       resolveProductWizardStep(
         productWizardStep.creation,
         productWithoutImages,
       ),
-    ).toBe(productWizardStep.images);
+    ).toBe(productWizardStep.about);
   });
 
   it('opens all steps when a draft has at least one image', () => {
@@ -118,7 +120,7 @@ describe('product draft wizard accessibility', () => {
       productWizardStep.review,
     );
     expect(resolveProductWizardStep(99, productWithoutImages)).toBe(
-      productWizardStep.images,
+      productWizardStep.about,
     );
   });
 
@@ -158,5 +160,20 @@ describe('product draft wizard accessibility', () => {
       'Проверьте обязательные поля',
     );
     expect(productWizardStepOneIncompleteMessage).not.toBe('Введите название');
+  });
+
+  it('names Figma creation screens without sale language', () => {
+    expect(productWizardStepTitles[productWizardStep.photos]).toBe(
+      'Основная информация',
+    );
+    expect(productWizardStepTitles[productWizardStep.details]).toBe(
+      'Детали работы',
+    );
+    expect(productWizardStepTitles[productWizardStep.story]).toBe(
+      'История создания',
+    );
+    expect(productWizardStepCount).toBe(4);
+    expect(productWizardStep.photos).toBe(1);
+    expect(productWizardStep.details).toBe(2);
   });
 });

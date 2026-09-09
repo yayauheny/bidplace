@@ -1,11 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import {
-  ScrollView,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -14,11 +10,10 @@ import {
   AppText,
   AuctionCard,
   PageState,
+  SecondaryButton,
   toAuctionCardItem,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
-import { getCatalogColumnCount } from './catalog-layout';
-import { CatalogGrid } from './CatalogGrid';
 import { CatalogCardSkeleton } from './CatalogCardSkeleton';
 import {
   toPortfolioWorksListQuery,
@@ -30,22 +25,9 @@ const sortOptions: Array<{ value: PortfolioCatalogSort; label: string }> = [
   { value: 'oldest', label: 'Сначала старые' },
 ];
 
-function CatalogLoadingAnnouncement() {
-  return (
-    <AppText
-      role="caption"
-      accessibilityRole="progressbar"
-      accessibilityLiveRegion="polite"
-      style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-    >
-      Загружаем работы…
-    </AppText>
-  );
-}
-
 export function ProductListScreen({
   query: searchQuery,
-  title = 'Работы',
+  title = 'Каталог работ на Bidplace',
   sort = 'newest',
   category,
   material,
@@ -58,7 +40,6 @@ export function ProductListScreen({
 } = {}) {
   const api = useApiClient();
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const listQuery = toPortfolioWorksListQuery({
     q: searchQuery,
     category,
@@ -69,16 +50,14 @@ export function ProductListScreen({
     queryKey: ['portfolio-works', listQuery],
     queryFn: () => api.portfolio.listWorks(listQuery),
   });
-  const columns = getCatalogColumnCount(width);
 
   let content: ReactNode;
   if (query.isLoading) {
     content = (
-      <CatalogGrid
-        columns={columns}
-        count={columns === 1 ? 2 : columns * 2}
-        renderCard={() => <CatalogCardSkeleton />}
-      />
+      <View style={{ gap: designTokens.space.sectionGap }}>
+        <CatalogCardSkeleton />
+        <CatalogCardSkeleton />
+      </View>
     );
   } else if (query.isError || !query.data) {
     content = (
@@ -97,13 +76,11 @@ export function ProductListScreen({
     );
   } else {
     content = (
-      <CatalogGrid
-        columns={columns}
-        count={query.data.works.length}
-        renderCard={(index) => (
-          <AuctionCard item={toAuctionCardItem(query.data.works[index]!)} />
-        )}
-      />
+      <View style={{ gap: designTokens.space.sectionGap }}>
+        {query.data.works.map((item) => (
+          <AuctionCard key={item.work.publicId} item={toAuctionCardItem(item)} />
+        ))}
+      </View>
     );
   }
 
@@ -112,82 +89,74 @@ export function ProductListScreen({
       <ScrollView
         testID="catalog-scroll-view"
         contentContainerStyle={{
-          paddingHorizontal:
-            width >= designTokens.breakpoint.desktopShell
-              ? designTokens.layout.desktopGutter
-              : designTokens.layout.mobileGutter,
-          paddingBottom: designTokens.space.x20,
-          paddingTop: designTokens.space.x3,
+          paddingHorizontal: designTokens.space.pageGutter,
+          paddingTop: designTokens.space.x10,
+          paddingBottom: designTokens.space.x5,
+          gap: designTokens.space.sectionGap,
         }}
-        style={{ backgroundColor: designTokens.color.surfaceWarm }}
         showsVerticalScrollIndicator={false}
       >
+        <View style={{ gap: designTokens.space.x2 }}>
+          <AppText role="screenTitle">{title}</AppText>
+          <AppText role="bodySmall" tone="secondary">
+            Покупайте самые эксклюзивные коллекции наших избранных авторов, все
+            увиденное вами это исключительно ручная работа
+          </AppText>
+        </View>
         <View
           style={{
-            width: '100%',
-            maxWidth: designTokens.layout.discoveryMaxWidth,
-            alignSelf: 'center',
+            borderBottomWidth: 1,
+            borderBottomColor: designTokens.color.divider,
+            paddingBottom: 4,
+            alignSelf: 'flex-start',
           }}
         >
+          <AppText role="label">Все работы</AppText>
           <View
             style={{
-              paddingTop:
-                width >= designTokens.breakpoint.compactHeader
-                  ? designTokens.space.x10
-                  : designTokens.space.x6,
-              paddingBottom: designTokens.space.x8,
-              borderBottomWidth: 1,
-              borderBottomColor: designTokens.color.border,
+              height: 2,
+              backgroundColor: designTokens.color.ink,
+              marginTop: 4,
             }}
-          >
-            <AppText
-              role="screenTitle"
-              style={
-                width >= designTokens.breakpoint.compactHeader
-                  ? { fontSize: 32, lineHeight: 34, letterSpacing: -0.96 }
-                  : undefined
-              }
-            >
-              {title}
-            </AppText>
-          </View>
-          <View
-            style={{
-              paddingTop: designTokens.space.x7,
-              paddingBottom: designTokens.space.x7,
-              alignSelf: 'flex-start',
-            }}
-          >
-            <FilterMenu
-              variant="sort"
-              label="Сортировка работ"
-              value={sort}
-              options={sortOptions}
-              onSelect={(next) => {
-                if (!next) return;
-                router.setParams({
-                  sort: next,
-                  category,
-                  material,
-                });
-              }}
-              dropdownAlign="left"
-              dropdownMinWidth={190}
-              dismissOnOutside
-            />
-          </View>
-          {query.isLoading ? <CatalogLoadingAnnouncement /> : null}
-          {content}
-          {query.isFetching && !query.isLoading ? (
-            <AppText
-              role="caption"
-              tone="secondary"
-              accessibilityLiveRegion="polite"
-            >
-              Обновляем работы…
-            </AppText>
-          ) : null}
+          />
         </View>
+        <View style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
+          <SecondaryButton
+            label="Фильтры"
+            icon="filter-horizontal"
+            onPress={() => undefined}
+            disabled
+            accessibilityHint="Фильтры появятся вместе с поиском"
+          />
+          <FilterMenu
+            variant="sort"
+            label="Сортировка"
+            value={sort}
+            options={sortOptions}
+            onSelect={(next) => {
+              if (!next) return;
+              router.setParams({
+                sort: next,
+                category,
+                material,
+              });
+            }}
+            dropdownAlign="left"
+            dropdownMinWidth={190}
+            dismissOnOutside
+          />
+        </View>
+        {query.isLoading ? (
+          <AppText
+            role="caption"
+            accessibilityRole="progressbar"
+            accessibilityLiveRegion="polite"
+            style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
+          >
+            Загружаем работы…
+          </AppText>
+        ) : null}
+        {content}
       </ScrollView>
     </AppShell>
   );

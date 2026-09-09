@@ -2,7 +2,56 @@
 
 Последнее обновление: 2026-09-09
 
-Общий статус: **Pen v2 public discovery implementation is Partial; visitor Work/Author screens read portfolio APIs on the existing routes; `pnpm verify` passed for this data-source cutover**
+Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
+
+## 2026-09-09 — Cover frost, dock glass, author atmosphere
+
+- `Partial`: work/author cover overlays use `CoverFrost` (blurred artwork slice +
+  gradient, not an opaque LinearGradient). Author profile uses `AuthorAtmosphere`
+  (485px photo, blur 40, opacity 0.5, scrim). Header chips are `onGlass`. Dock
+  applies `backdrop-filter` + `WebkitBackdropFilter`. Evidence:
+  `apps/mobile/src/components/figma/CoverFrost.tsx`,
+  `AuthorAtmosphere.tsx`, `FloatingDock.tsx`,
+  `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
+- Local Expo must rebuild `@bidplace/design-tokens` `dist/` and start Metro with
+  `--clear`. `pnpm --filter @bidplace/mobile exec expo start` skips that build.
+- `Not implemented`: login as a sheet over the current page; Home opening-of-week
+  / auctions (product skip list).
+- Figma and `.pen` were not edited.
+
+## 2026-09-09 — Figma phone cutover (`DEC-085`)
+
+- `Implemented`: production shell is a 390 column + `FloatingDock`. Tokens are a
+  single Figma layer in `packages/design-tokens`. Public Home / Works / Authors /
+  Author / Work, auth chrome, author application (4 screens) and create-work
+  (4 screens) use Figma primitives. Search is a stub. Work shows
+  `PAYMENT_DELIVERY_STUB`. Home does not render «Открытие недели».
+- Evidence: `apps/mobile/src/components/layout/AppShell.tsx`,
+  `apps/mobile/src/components/figma/`,
+  `apps/mobile/src/features/home/home-screen.tsx`,
+  `apps/mobile/src/features/products/product-screen.tsx`,
+  `apps/mobile/src/features/sellers/product-draft-wizard.ts`,
+  `docs/design/09-FIGMA-CUTOVER-GAPS.md`.
+- Checks: `pnpm verify` 2026-09-09; browser Home → Works → Work → Author →
+  login at ~390. No `.pen` in the diff.
+- `Not implemented`: Figma search overlay, 1024/1440, Geist files, opening-of-week,
+  commerce chrome.
+- Figma and `.pen` were not edited.
+
+## 2026-09-09 — Figma component library (hidden commerce slots)
+
+- `Partial`: page «Компоненты» from Figma `uMo04w9bgrchWXXDgO4W62` is now a
+  shared primitive set under `apps/mobile/src/components/figma/` with values in
+  the single `designTokens` export. Icons are Hugeicons stroke-rounded. Buttons, fields,
+  chips, work/author covers, author identity and the floating dock exist.
+- Commerce price/timer/status on `WorkCoverCard` default to hidden
+  (`mode="portfolio"`). Dock has no cart. Google and AI icons are registered
+  and unused. Public/author screens render these Figma masters, not Pen
+  `AppHeader` / Pen cards.
+- Figma named Geist on some card frames; runtime uses bundled Inter until a
+  licensed Geist file is added.
+- Figma and `.pen` were not modified. Unit coverage is in
+  `apps/mobile/src/components/figma/*.spec.ts`.
 
 ## 2026-09-09 — Visitor screens reuse existing routes on portfolio data
 
@@ -11,8 +60,8 @@
   Auction player, bid CTA, listing status tabs and price sort are not rendered.
   `/works/[publicId]` and `/authors/[slug]` are Redirect-only aliases for RFC
   share paths. No `.pen` or token change. `pnpm verify` passed on 2026-09-09.
-- Remaining: package 07 Figma/Pen visual cutover; commerce chrome if
-  `COMMERCE_ENABLED` is later true.
+- Remaining: Figma search overlay; commerce chrome if `COMMERCE_ENABLED` is later
+  true.
 
 ## 2026-09-08 — Portfolio-first Figma scope
 

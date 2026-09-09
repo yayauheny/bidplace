@@ -25,4 +25,39 @@ textarea:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0ms !important;
   }
+
+  .figma-dock-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/*
+ * RN-web Views use overflow:hidden and often sit under a white SafeArea
+ * stacking context, so style.backdropFilter never samples page content.
+ * The dock is portaled to document.body and styled here as real CSS.
+ */
+.figma-dock-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.figma-dock-glass {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  padding: 14px;
+  border-radius: 200px;
+  border: 0.5px solid #dedede;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.12);
 }

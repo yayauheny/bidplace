@@ -3,16 +3,16 @@
 ## Current checkpoint
 
 ```text
-Current package: review-hole closure on feature/profile-revision-media (uncommitted)
-Base main SHA: 08b916e
-Working branch: feature/profile-revision-media
-Completed behavior: CommerceEnabledGuard on GET /sellers, /sellers/:slug/detail, /products/:publicId, /me/activity while /works and /authors stay open; owner profile overlays the editing revision; visitor /product and /seller reuse portfolio APIs with Redirect aliases for /works/:id and /authors/:slug; city SQL pagination; Postgres revision keys 404/503; object delete after commit.
-Commit SHA: none (WIP on 08b916e)
-Checks passed: `pnpm verify` on 2026-09-09 (typecheck 7/7, lint 2/2, API unit 381/381, contracts 30/30, integration 89/89, build 7/7). `git diff --name-only -- '*.pen'` is empty.
-Checks failed: none.
-Remaining work: Package 07 (Figma/UI) is not started. Do not start it from this branch. Commerce-wave must later restore listing chrome if COMMERCE_ENABLED becomes true; these two public screens stay on portfolio until then.
-Known blockers: Belarus lawyer review; production hosting/SMTP/S3 provider facts; staging deploy; object-store backfill/checksum of existing local bytes.
-Next exact action: Review this branch. Do not start package 07 from here.
+Current package: Figma phone UI cutover on feature/figma-portfolio-ui
+Base main SHA: see git
+Working branch: feature/figma-portfolio-ui
+Completed behavior: One Figma token layer; AppShell phone column + FloatingDock; public Home/Works/Authors/Author/Work from Figma frames on portfolio APIs; auth restyle; 4-step author application and create-work; search stub; payment/delivery stub; DEC-085 / RFC / design gaps journal.
+Commit SHA: none (WIP, uncommitted)
+Checks passed: pnpm verify 2026-09-09 (typecheck 7/7, lint 2/2, API unit 381, contracts 30, integration 89, build 7/7); mobile vitest 227/227; browser Home→Works→Work→Author→search stub→login/register at ~390; git diff --name-only -- '*.pen' empty.
+Checks failed: none recorded yet.
+Remaining work: none in this package. Do not edit `.pen` or Figma. Search overlay later.
+Known blockers: Belarus lawyer review; production hosting/SMTP/S3; search overlay later.
+Next exact action: Commit this branch when asked; keep `.pen` out of the diff.
 ```
 
 ## Recovery procedure

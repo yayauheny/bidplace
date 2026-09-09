@@ -1679,3 +1679,47 @@ Commerce tests могут явно включать capability в изолиро
 ### Revisit when
 
 Commerce contract, документы, UX и release gates утверждены и проверены отдельно.
+
+## DEC-083 revision — wizard screen count (phone Figma cutover)
+
+Date: 2026-09-09
+Status: Confirmed revision of step UX only
+Source: founder-approved Figma cutover plan
+Revises: `DEC-083` creation-flow screen count; does not reopen public Work model,
+archive, chips, or deferred photo-text story.
+
+Создание Work на phone UI использует четыре экрана Figma: основная информация
+(фото + название), детали, необязательная текстовая история, проверка/отправка.
+Поля, API и запрет sale/price/delivery не меняются. Заявка автора использует
+четыре экрана: идентичность, о себе, публичные ссылки, закрытый контакт.
+
+## DEC-085 — Figma is the production visual source; Pen file stays historical
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder cutover plan for phone UI
+Revises: `DEC-062` / `DEC-063` **runtime** role only. The `.pen` file remains
+protected historical source on disk and must not be edited, deleted, or adapted
+to code.
+
+### Decision
+
+- Production visual source for First MVP phone UI is the read-only Figma inspect
+  copy `uMo04w9bgrchWXXDgO4W62`. Canonical origin file `NM63j9lwRMqpo2HvAiYNll`
+  stays read-only.
+- Runtime has one token layer (`packages/design-tokens` `designTokens`) measured
+  from Figma. Nested `designTokens.figma` is not a second system.
+- Pen primitives (`AppHeader`, Pen buttons/fields, auction player, slide-to-bid)
+  are removed from the render path. `design/pen/bidplace-web-v2.pen` stays in git
+  as protected history.
+- Layout is phone-only (~390). Wide windows keep a centered 390 column. 1024/1440
+  compositions are out of this wave.
+- Search overlay, `Открытие недели`, catalog tabs Аукционы/Анонсы/Архив, cart and
+  Geist font files are deferred. Work shows an `Оплата и доставка` unavailable
+  stub.
+
+### Revisit when
+
+Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
+capability is enabled with matching frames.
+

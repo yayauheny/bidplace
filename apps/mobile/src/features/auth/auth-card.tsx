@@ -14,17 +14,7 @@ export function AuthCard({
   children: ReactNode;
 }) {
   return (
-    <View
-      style={{
-        width: '100%',
-        gap: designTokens.space.x6,
-        borderRadius: designTokens.radius.sheet,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surfaceWarm,
-        padding: designTokens.space.x8,
-      }}
-    >
+    <View style={{ width: '100%', gap: designTokens.space.x6 }}>
       <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="sectionTitle">{title}</AppText>
         <AppText role="body" tone="secondary">

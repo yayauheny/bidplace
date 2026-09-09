@@ -28,10 +28,14 @@
   `/authors/{slug}`). `socialLink` is owner/persistence-only and is omitted from
   portfolio public author DTOs.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
-- `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
-- `apps/mobile/src/components/ui` is the only runtime component system.
-  Product tabs are controlled by Expo Router URL state, and related Product/
-  Creator grids reuse `AuctionCardGrid` rather than duplicating card anatomy.
+- `apps/mobile/src/components/layout/AppShell.tsx` owns the phone column
+  (`maxWidth: 390`) and `FloatingDock`. Pen `AppHeader` is not on the render path
+  (`DEC-085`). Route screens remain responsible for their own scroll/content.
+- `packages/design-tokens` exports one Figma-measured `designTokens` map
+  (`figmaTokens` is the same object). `apps/mobile/src/components/figma/` is the
+  production primitive set. `components/ui` wraps those masters; `AuctionCard`
+  renders `WorkCoverCard` in `mode="portfolio"`. Commerce player/bid/header
+  modules may still exist on disk but are not exported into screens.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
   metadata, ownership, checksum and deterministic object key. `PostgresImageStore`

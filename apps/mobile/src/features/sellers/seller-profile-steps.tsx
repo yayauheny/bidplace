@@ -1,10 +1,12 @@
-import type { Dispatch, SetStateAction } from 'react';
-
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import type { ProfileFieldErrors } from './profile-validation';
+import {
+  authorApplicationStep,
+  authorApplicationStepCount,
+} from './seller-profile-wizard';
 
 import {
   handoffContactTypeLabels,
@@ -16,7 +18,6 @@ import {
   AppText,
   FormSection,
   SelectableRow,
-  SecondaryButton,
   TextField,
 } from '../../components/ui';
 
@@ -43,44 +44,15 @@ export type SellerProfileForDisplay = Pick<
 
 export function SellerProfileCreationStepSelector({
   profileStep,
-  setProfileStep,
-  stepCount = 3,
 }: {
   profileStep: number;
-  setProfileStep: Dispatch<SetStateAction<number>>;
+  setProfileStep?: unknown;
   stepCount?: number;
 }) {
   return (
-    <FormSection
-      title="Создание профиля"
-      description="Соберите публичную страницу автора и отдельно укажите закрытые данные для передачи предмета."
-    >
-      <View
-        accessibilityRole="tablist"
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: designTokens.space.x2,
-        }}
-      >
-        {['Об авторе', 'Публичные ссылки', 'Передача и проверка'].map(
-          (label, index) => {
-            const step = index + 1;
-            return (
-              <SecondaryButton
-                key={label}
-                label={`${step}. ${label}`}
-                disabled={step > profileStep}
-                onPress={() => setProfileStep(step)}
-              />
-            );
-          },
-        )}
-      </View>
-      <AppText role="metadata" tone="secondary">
-        Шаг {profileStep} из {stepCount}
-      </AppText>
-    </FormSection>
+    <AppText role="metadata" tone="secondary">
+      Шаг {profileStep} из {authorApplicationStepCount}
+    </AppText>
   );
 }
 
@@ -107,10 +79,10 @@ export function SellerProfileFormSteps({
 }) {
   return (
     <>
-      {(!isProfileCreation || profileStep === 1) && (
+      {(!isProfileCreation || profileStep === authorApplicationStep.identity) && (
         <FormSection
           title="Публичный профиль"
-          description="Эти данные увидят коллекционеры на странице автора."
+          description="Имя, адрес страницы и город будут на открытой странице автора."
         >
           <TextField
             label="URL-slug"
@@ -147,6 +119,14 @@ export function SellerProfileFormSteps({
             required
             error={fieldErrors.city}
           />
+        </FormSection>
+      )}
+
+      {(!isProfileCreation || profileStep === authorApplicationStep.about) && (
+        <FormSection
+          title="Раскройте себя как автора"
+          description="Напишите о себе и укажите основные направления."
+        >
           <TextField
             label="Дисциплина"
             value={fields.discipline}
@@ -154,15 +134,6 @@ export function SellerProfileFormSteps({
             placeholder="Керамика, живопись, текстиль"
             editable={editable}
             required
-          />
-          <TextField
-            label="Публичная ссылка"
-            value={fields.socialLink}
-            onChangeText={(value) => update('socialLink', value)}
-            placeholder="https://t.me/..."
-            autoCapitalize="none"
-            editable={editable}
-            error={fieldErrors.socialLink}
           />
           <TextField
             label="Короткое описание"
@@ -176,7 +147,7 @@ export function SellerProfileFormSteps({
         </FormSection>
       )}
 
-      {(!isProfileCreation || profileStep === 2) && (
+      {(!isProfileCreation || profileStep === authorApplicationStep.contacts) && (
         <FormSection
           title="Публичные ссылки"
           description="Эти ссылки попадут на открытую страницу автора."
@@ -226,10 +197,10 @@ export function SellerProfileFormSteps({
         </FormSection>
       )}
 
-      {(!isProfileCreation || profileStep === 3) && (
+      {(!isProfileCreation || profileStep === authorApplicationStep.handoff) && (
         <FormSection
-          title="Передача предмета"
-          description="Контакт используется для передачи предмета после завершения аукциона."
+          title="Закрытый контакт"
+          description="Контакт не публикуется. Он нужен только для передачи предмета."
         >
           {!profile || editable ? (
             <>
@@ -258,7 +229,7 @@ export function SellerProfileFormSteps({
                 editable={editable}
                 error={
                   isProfileCreation &&
-                  profileStep === 3 &&
+                  profileStep === authorApplicationStep.handoff &&
                   !fields.handoffContactValue.trim()
                     ? 'Укажите контакт для передачи'
                     : handoffContactError
@@ -314,12 +285,14 @@ export function SellerProfileVerificationSection({
   profileStep: number;
   fields: ProfileFields;
 }) {
-  if (!isProfileCreation || profileStep !== 3) return null;
+  if (!isProfileCreation || profileStep !== authorApplicationStep.handoff) {
+    return null;
+  }
 
   return (
     <FormSection
       title="Проверка профиля"
-      description="Публичная страница показывает имя, адрес, описание, фото и ссылки. Контакт передачи остаётся закрытым до завершения сделки."
+      description="Публичная страница показывает имя, адрес, описание, фото и ссылки. Контакт передачи остаётся закрытым."
     >
       <AppText role="label">
         {fields.fullName || 'Имя автора'} · @{fields.slug || 'profile-address'}

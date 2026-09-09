@@ -1,6 +1,6 @@
 # bidplace — реестр дизайн-ресурсов
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-09
 
 Статус: **Canonical source, runtime mapping и локальные demo fixtures verified**
 
@@ -146,6 +146,21 @@ wordmark определяется конкретным целевым Pen state;
 быть отдельный semantic variant/state, а не recolor случайной иконки или
 растрового файла. Текущий общий `PrimaryButton` остаётся чёрным по shared token
 contract; retry/error state нужно сверять с конкретным Pen node перед заменой.
+
+### 3.5. Figma Hugeicons (portfolio cutover)
+
+Иконки страницы «Компоненты» не экспортируются PNG из Figma: слой называет
+Hugeicons stroke-rounded (`search-01`, `plus`, `filter-horizontal`, …).
+Runtime master — `apps/mobile/src/components/figma/FigmaIcon.tsx` через
+`@hugeicons/core-free-icons` и `@hugeicons/react-native`. Размер в наборе
+кнопок 18px, stroke ≈ 1.13; в доке 24px / 1.5. Бренд-марк дока остаётся
+`bidplace-logo.png`, не иконкой Hugeicons.
+
+`google`, `ai-magic` и `shopping-basket-01` есть в реестре и не ставятся на
+First MVP surfaces. Lucide `AppIcon` остаётся historical Pen runtime.
+
+Figma-кнопки и поля: `FigmaButton`, `FigmaTextField` в том же каталоге.
+Карточки работ хранят commerce overlay, но `mode` по умолчанию `portfolio`.
 
 ### Approved logo input
 

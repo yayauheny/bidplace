@@ -1,20 +1,20 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-09-08
+Последнее обновление: 2026-09-09
 
 Статус: **Confirmed documentation baseline**
 
 ## Назначение
 
 Этот раздел — единая документационная точка входа для UI bidplace. First MVP
-переведён на portfolio-first product contract. Новый Figma-файл
-`NM63j9lwRMqpo2HvAiYNll` является read-only target следующей реализации; текущий
-Pen-based production и защищённый `.pen` сохраняются как historical runtime baseline
-до формального cutover.
+переведён на portfolio-first product contract. Production visual source is the
+read-only Figma inspect copy `uMo04w9bgrchWXXDgO4W62` (`DEC-085`). Canonical
+origin `NM63j9lwRMqpo2HvAiYNll` stays read-only. При конфликте побеждает живой
+Figma, не HTML dump. Защищённый `.pen` остаётся historical file on disk and is
+not the runtime shell.
 
 Старая Modern UI design system удалена. Её документы, внешние референсы и
-cutover-план больше не являются источниками решений. Текущий production UI —
-только исходное состояние для рефакторинга, а не визуальный эталон.
+cutover-план больше не являются источниками решений.
 
 ## Иерархия источников
 
@@ -22,11 +22,12 @@ cutover-план больше не являются источниками ре�
 
 1. Product behavior, privacy and permissions — owner-документы в `../product/` и
    server contracts.
-2. Для portfolio-first target — read-only Figma `NM63j9lwRMqpo2HvAiYNll` после
-   versioned inspect/token/asset handoff.
-3. Для текущего historical runtime — защищённый `../../design/pen/bidplace-web-v2.pen`.
+2. Для production phone UI — read-only Figma inspect `uMo04w9bgrchWXXDgO4W62`
+   (`DEC-085`). Origin `NM63j9lwRMqpo2HvAiYNll` remains the canonical read-only file.
+3. Защищённый `../../design/pen/bidplace-web-v2.pen` — historical visual archive,
+   not the runtime shell. The file must not be edited.
 4. Этот design-модуль — screen/behavior/state mapping.
-5. Production-код — фактическое исходное состояние, а не новый visual target.
+5. Production-код — фактическая реализация phone UI.
 
 Для текущего historical runtime Pen описывает композицию и component anatomy. Для
 portfolio target эту роль после versioned handoff выполняет read-only Figma. Ни один
@@ -57,17 +58,19 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 | ----------------------------------------------- | ------------------------------------------------- |
 | `00-DESIGN-INDEX.md`                            | источники, правила чтения и границы design-модуля |
 | `01-DESIGN-FOUNDATION.md`                       | защищённые визуальные принципы                    |
-| `02-USER-FLOWS-AND-SCREENS.md`                  | routes, роли, состояния и карта Pen screens       |
-| `03-DESIGN-SYSTEM.md`                           | tokens, components, motion и responsive rules     |
+| `02-USER-FLOWS-AND-SCREENS.md`                  | routes, роли, состояния и карта Figma screens     |
+| `03-DESIGN-SYSTEM.md`                           | tokens, components, motion и phone layout rules   |
 | `04-DESIGN-STATUS.md`                           | фактическая готовность дизайна и реализации       |
-| `05-DESIGN-HANDOFF.md`                          | обязательный процесс Pen → code → QA              |
+| `05-DESIGN-HANDOFF.md`                          | обязательный процесс Figma → code → QA            |
 | `06-ASSET-INVENTORY.md`                         | разрешённые assets, fonts, icons и ограничения    |
-| `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | полный аудит, node registry и этапы реализации    |
+| `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | historical Pen audit; not the current runtime     |
 | `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
+| `09-FIGMA-CUTOVER-GAPS.md`                      | skipped Figma nodes, unused variants, questions   |
 
-`bidplace-web-v2.pen` остаётся единственным каноном для текущего production UI.
-Текущие blockers и порядок redesign находятся в
-[`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md).
+Figma inspect copy is the production visual source (`DEC-085`).
+`bidplace-web-v2.pen` остаётся защищённым historical file. Текущие blockers
+находятся в [`../audits/00-CURRENT-MVP-READINESS.md`](../audits/00-CURRENT-MVP-READINESS.md)
+и [`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
 
 ## Обязательное чтение
 

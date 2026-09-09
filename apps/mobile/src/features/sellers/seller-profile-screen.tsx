@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import {
@@ -17,6 +17,7 @@ import {
 import {
   FormPageColumns,
   FormPageShell,
+  WizardProgress,
 } from '../../components/layout';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
@@ -30,11 +31,16 @@ import {
   isSellerProfileFormEditable,
 } from './seller-profile-editable';
 import {
-  SellerProfileCreationStepSelector,
   SellerProfileFormSteps,
   SellerProfileVerificationSection,
   type ProfileFields,
 } from './seller-profile-steps';
+import {
+  authorApplicationStep,
+  authorApplicationStepCount,
+  authorApplicationStepDescriptions,
+  authorApplicationStepTitles,
+} from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = {
   slug: '',
@@ -69,6 +75,7 @@ function sellerStatusLabel(status: SellerStatus): string {
 
 export function SellerProfileScreen() {
   const api = useApiClient();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['seller', 'profile'],
@@ -273,16 +280,16 @@ export function SellerProfileScreen() {
   const canSave =
     editable &&
     (profile ? Object.keys(fieldErrors).length === 0 : Boolean(photoBlob));
-  const canContinueFromAbout = Boolean(
+  const canContinueFromIdentity = Boolean(
     fields.fullName.trim() &&
     fields.slug.trim() &&
-    fields.discipline.trim() &&
     fields.country.trim() &&
     fields.city.trim() &&
-    fields.shortDescription.trim() &&
     (Boolean(photoBlob) || Boolean(profile)) &&
-    !fieldErrors.socialLink &&
     !fieldErrors.city,
+  );
+  const canContinueFromAbout = Boolean(
+    fields.discipline.trim() && fields.shortDescription.trim(),
   );
   const canContinueFromLinks =
     hasPublicLink &&
@@ -296,48 +303,69 @@ export function SellerProfileScreen() {
     canContinueFromLinks,
   );
   const photoPreview = photoUri;
+  const profileForSteps = profile
+    ? {
+        handoffContactType: profile.handoffContactType,
+        handoffContactValue: profile.handoffContactValue,
+        handoffInitiator: profile.handoffInitiator,
+      }
+    : null;
 
   return (
     <FormPageShell>
       <View style={{ gap: designTokens.space.x5 }}>
-        <View style={{ gap: designTokens.space.x2 }}>
-          <PageHeader
-            title="Профиль продавца"
-            description={
-              !profile
-                ? 'Заполните профиль, чтобы подать заявку на модерацию.'
-                : undefined
-            }
-          />
-          {profile ? (
-            <AppText
-              role="caption"
-              tone={
-                sellerStatusTone(profile.status) === 'negative'
-                  ? 'danger'
-                  : sellerStatusTone(profile.status) === 'positive'
-                    ? 'success'
-                    : 'secondary'
-              }
-            >
-              {sellerStatusLabel(profile.status)}
-            </AppText>
-          ) : null}
-        </View>
-
         {isProfileCreation ? (
-          <SellerProfileCreationStepSelector
-            profileStep={profileStep}
-            setProfileStep={setProfileStep}
+          <WizardProgress
+            step={profileStep}
+            total={authorApplicationStepCount}
+            title={
+              authorApplicationStepTitles[
+                profileStep as keyof typeof authorApplicationStepTitles
+              ]
+            }
+            description={
+              authorApplicationStepDescriptions[
+                profileStep as keyof typeof authorApplicationStepDescriptions
+              ]
+            }
+            onBack={
+              profileStep > authorApplicationStep.identity
+                ? () => setProfileStep((current) => current - 1)
+                : () => router.push('/')
+            }
+            onClose={() => router.push('/')}
           />
-        ) : null}
+        ) : (
+          <View style={{ gap: designTokens.space.x2 }}>
+            <PageHeader
+              title="Профиль автора"
+              description={undefined}
+            />
+            {profile ? (
+              <AppText
+                role="caption"
+                tone={
+                  sellerStatusTone(profile.status) === 'negative'
+                    ? 'danger'
+                    : sellerStatusTone(profile.status) === 'positive'
+                      ? 'success'
+                      : 'secondary'
+                }
+              >
+                {sellerStatusLabel(profile.status)}
+              </AppText>
+            ) : null}
+          </View>
+        )}
 
+        {(!isProfileCreation ||
+        profileStep === authorApplicationStep.identity) ? (
         <FormPageColumns
           sidebarFirstOnCompact
           sidebar={
             <FormSection
               title="Фото профиля"
-              description="Квадратный портрет или логотип автора."
+              description="Разместите лицо в центре кадра."
             >
               {photoPreview && !photoFailed ? (
                 <Image
@@ -360,7 +388,7 @@ export function SellerProfileScreen() {
               <SecondaryButton
                 label={photoPreview ? 'Изменить фото' : 'Добавить фото'}
                 disabled={!editable}
-                width="block"
+                width="full"
                 onPress={() => void choosePhoto()}
               />
               {!profile ? (
@@ -376,21 +404,26 @@ export function SellerProfileScreen() {
             profileStep={profileStep}
             editable={editable}
             fields={fields}
-            profile={
-              profile
-                ? {
-                    handoffContactType: profile.handoffContactType,
-                    handoffContactValue: profile.handoffContactValue,
-                    handoffInitiator: profile.handoffInitiator,
-                  }
-                : null
-            }
+            profile={profileForSteps}
             fieldErrors={fieldErrors}
             hasPublicLink={hasPublicLink}
             handoffContactError={handoffContactError}
             update={update}
           />
         </FormPageColumns>
+        ) : (
+          <SellerProfileFormSteps
+            isProfileCreation={isProfileCreation}
+            profileStep={profileStep}
+            editable={editable}
+            fields={fields}
+            profile={profileForSteps}
+            fieldErrors={fieldErrors}
+            hasPublicLink={hasPublicLink}
+            handoffContactError={handoffContactError}
+            update={update}
+          />
+        )}
 
         <SellerProfileVerificationSection
           isProfileCreation={isProfileCreation}
@@ -411,12 +444,17 @@ export function SellerProfileScreen() {
           disabled={
             !canSave ||
             (isProfileCreation &&
-              ((profileStep === 1 && !canContinueFromAbout) ||
-                (profileStep === 2 && !canContinueFromLinks) ||
-                (profileStep === 3 && !canSubmitProfile)))
+              ((profileStep === authorApplicationStep.identity &&
+                !canContinueFromIdentity) ||
+                (profileStep === authorApplicationStep.about &&
+                  !canContinueFromAbout) ||
+                (profileStep === authorApplicationStep.contacts &&
+                  !canContinueFromLinks) ||
+                (profileStep === authorApplicationStep.handoff &&
+                  !canSubmitProfile)))
           }
           onPress={() => {
-            if (!isProfileCreation || profileStep === 3) {
+            if (!isProfileCreation || profileStep === authorApplicationStep.handoff) {
               mutation.mutate();
             } else {
               setProfileStep((current) => current + 1);
@@ -425,11 +463,11 @@ export function SellerProfileScreen() {
           label={
             profile
               ? 'Сохранить'
-              : profileStep === 3
+              : profileStep === authorApplicationStep.handoff
                 ? 'Создать профиль'
                 : 'Продолжить'
           }
-          width="block"
+          width="full"
         />
 
         {canSubmitRevision ? (

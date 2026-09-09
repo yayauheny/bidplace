@@ -56,8 +56,8 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
     );
   return (
     <AuthCard
-      title="Вход"
-      description="Войдите или создайте аккаунт, чтобы продолжить работу с аукционами."
+      title="Вход на Bidplace"
+      description="Войдите по email и паролю, чтобы открыть профиль автора и добавлять работы."
     >
       <View style={{ gap: designTokens.space.x3 }}>
         <Controller
@@ -180,7 +180,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
   return (
     <AuthCard
       title="Регистрация"
-      description="Создайте аккаунт, чтобы участвовать в торгах и при необходимости подать заявку продавца."
+      description="Создайте аккаунт, чтобы подать заявку автора и публиковать работы."
     >
       <View style={{ gap: designTokens.space.x3 }}>
         <Controller

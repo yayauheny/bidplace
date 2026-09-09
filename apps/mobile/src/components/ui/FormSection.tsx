@@ -15,18 +15,9 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <View
-      style={{
-        gap: designTokens.space.x5,
-        borderRadius: designTokens.radius.panel,
-        borderWidth: 1,
-        borderColor: designTokens.color.border,
-        backgroundColor: designTokens.color.surfaceWarm,
-        padding: designTokens.space.x6,
-      }}
-    >
-      <View style={{ gap: designTokens.space.x1 }}>
-        <AppText role="cardTitle">{title}</AppText>
+    <View style={{ gap: designTokens.space.sectionGap }}>
+      <View style={{ gap: designTokens.space.x2 }}>
+        <AppText role="screenTitle">{title}</AppText>
         {description ? (
           <AppText role="bodySmall" tone="secondary">
             {description}

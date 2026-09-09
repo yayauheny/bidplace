@@ -1,7 +1,7 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-08
-Статус: Confirmed product/UI scope; implementation pending
+Последнее обновление: 2026-09-09
+Статус: Confirmed product/UI scope for Figma phone cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
 ## 1. Источник и граница
@@ -11,10 +11,9 @@ portfolio-first UI. Его запрещено редактировать, пер
 пересохранять в code-задачах. Screenshots являются review evidence, но точные tokens,
 assets и measurements берутся только из versioned inspect/handoff.
 
-Текущий production остаётся Pen-based до формального cutover. Защищённый `.pen` не
-редактируется и не удаляется. Во время реализации новый product contract определяет
-поведение и данные, Figma — визуальную композицию, а Pen — только historical runtime
-reference.
+Текущий production — phone UI из Figma inspect copy (`DEC-085`). Защищённый
+`.pen` не редактируется и не удаляется. Product owner documents и server
+contracts по-прежнему определяют routes, data, permissions и auction behavior.
 
 ## 2. Основной flow
 
@@ -41,21 +40,21 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Экран | First MVP | Убирается/откладывается |
 |---|---|---|
 | Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Открытие недели, новые работы, новые авторы | Активные торги, цены, timers, sale badges |
-| Works | Search, category/material filters, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters |
-| Authors | Search, tag/city filters, name/date sort | Rating, followers, sales and verified authenticity claims |
-| Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements | Public `Архив`, cart, like, bell, private states |
-| Work | Gallery, title, author, chips, optional story, details, related works | Price, timer, archive badge, bid CTA/history, payment/delivery |
+| Home | Новые работы, авторы | Открытие недели, активные торги, цены, timers |
+| Works | Title, intro, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters, live search overlay |
+| Authors | Catalog of published authors | Rating, followers, sales and verified authenticity claims |
+| Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе` | Public `Архив`, cart, like, bell, private states |
+| Work | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub | Price, timer, archive badge, bid CTA/history |
 | Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
-| Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
-| Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
+| Author application | Four Figma screens: identity, about, public links, private handoff | Sale language, buyer-visible handoff, achievement photo blocks |
+| Create work | Four Figma screens: photos+title, details, optional story, review | Sale status/time/price, photo-text process steps |
+| Search | Stub copy; optional `?q=` lists | Figma overlay with categories / authors / works |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
 ## 4. Home
 
-`Открытие недели` показывается только при реальном ручном выборе. Если selection нет,
-секция исчезает без placeholder. Work cards показывают название, автора и portfolio
-facts. `Новые работы` не дублируется на одной странице.
+`Открытие недели` не рендерится в этом cutover. Work cards показывают название и
+автора. `Новые работы` и переход к авторам — единственные секции.
 
 ## 5. Works and Authors discovery
 
@@ -88,27 +87,31 @@ Portfolio variant сохраняет визуальную галерею и ин
 - `История` только если заполнен plain text;
 - `Детали` всегда.
 
-`Оплата и доставка` и `Ставки` отсутствуют. `Другие работы автора` содержит только
-Work cards; ссылка имени уже ведёт в Creator profile. Claims об authenticity/provenance
-маркируются как информация автора, если platform не проводила экспертизу.
+`Оплата и доставка` показывается как v1 stub без цены и CTA ставки. `Ставки`
+отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
+ведёт в Creator profile. Claims об authenticity/provenance маркируются как
+информация автора, если platform не проводила экспертизу.
 
 ## 8. Author application
 
-Четыре визуальных шага допустимы:
+Четыре экрана Figma:
 
-1. photo/name/slug/location;
-2. optional public socials;
-3. short about, practice and directions;
-4. optional achievements.
+1. photo / name / slug / city;
+2. discipline and short about;
+3. public socials;
+4. private handoff contact.
 
 Auth email не подставляется как public email. Выход сохраняет непустой draft; dialog
 не говорит, что пользователь потеряет возможность продавать.
 
 ## 9. Work creation
 
-Три шага:
+Четыре экрана Figma:
 
 1. main images + title;
+2. details (category, dimensions, materials/technique, edition, year);
+3. optional plain-text story;
+4. review and submit.
 2. category, dimensions, material/technique, edition fact and creation date/year;
 3. optional plain-text creation story.
 

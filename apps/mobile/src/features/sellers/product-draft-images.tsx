@@ -94,6 +94,7 @@ export type ProductDraftImagesStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
   wizardCanOpenCreation: boolean;
+  embedded?: boolean;
 
   reorderPending: boolean;
   removePending: boolean;
@@ -117,6 +118,7 @@ export function ProductDraftImagesStep({
   isCreationFlow,
   wizardStep,
   wizardCanOpenCreation,
+  embedded = false,
   reorderPending,
   removePending,
   uploadPending,
@@ -130,11 +132,14 @@ export function ProductDraftImagesStep({
   onContinueToCreation,
 }: ProductDraftImagesStepProps) {
   const showWizardNavigation =
-    isCreationFlow && wizardStep === productWizardStep.images;
+    !embedded && isCreationFlow && wizardStep === productWizardStep.images;
 
   return (
     <View style={{ gap: designTokens.space.x2 }}>
-      <FormSection title="Изображения">
+      <FormSection
+        title="Изображения"
+        description="Добавьте несколько фотографий вашей работы. Формат 3:4, до 10 МБ."
+      >
         <AppText role="bodySmall" tone="secondary">
           {images.length}/10 изображений
         </AppText>

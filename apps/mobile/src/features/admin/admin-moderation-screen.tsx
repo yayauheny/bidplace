@@ -396,7 +396,6 @@ export function AdminModerationScreen() {
                 ) : null}
                 {seller.status === 'PENDING_REVIEW' ? (
                   <PrimaryButton
-                    compact
                     label="Одобрить"
                     loading={sellerStatus.isPending}
                     onPress={() =>
@@ -405,7 +404,6 @@ export function AdminModerationScreen() {
                   />
                 ) : null}
                 <DestructiveButton
-                  compact
                   disabled={
                     seller.status === 'SUSPENDED' || seller.hasBlockingListing
                   }
@@ -540,7 +538,6 @@ export function AdminModerationScreen() {
                   ) : null}
                   {product.status === 'PENDING_REVIEW' ? (
                     <PrimaryButton
-                      compact
                       label="Одобрить"
                       loading={productStatus.isPending}
                       disabled={!productSellerApproved}
@@ -559,7 +556,6 @@ export function AdminModerationScreen() {
                     </AppText>
                   ) : null}
                   <DestructiveButton
-                    compact
                     disabled={
                       !['APPROVED', 'PENDING_REVIEW'].includes(
                         product.status,

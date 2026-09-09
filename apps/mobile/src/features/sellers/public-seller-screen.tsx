@@ -1,71 +1,41 @@
+import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 
-import type { PortfolioWorksQuery } from '@bidplace/contracts';
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell, FilterMenu } from '../../components/layout';
+import { AppShell } from '../../components/layout';
 import {
   AppText,
   AuctionCardGrid,
+  MotionPressable,
   PageState,
-  SecondaryButton,
+  PrimaryButton,
+  ResilientRemoteImage,
   toAuctionCardItem,
 } from '../../components/ui';
+import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
+import { FigmaChip } from '../../components/figma/FigmaChip';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
-import { getAuthorWorkColumnCount } from './author-layout';
-import { CreatorHero } from './CreatorHero';
+import { CreatorSocialLink } from './CreatorSocialLink';
 
-const sortOptions: Array<{
-  value: Extract<PortfolioWorksQuery['sort'], 'newest' | 'oldest'>;
-  label: string;
-}> = [
-  { value: 'newest', label: 'Сначала новые' },
-  { value: 'oldest', label: 'Сначала старые' },
-];
-
-function CreatorSort({
-  sort,
-  onChange,
-}: {
-  sort: Extract<PortfolioWorksQuery['sort'], 'newest' | 'oldest'>;
-  onChange: (
-    sort: Extract<PortfolioWorksQuery['sort'], 'newest' | 'oldest'>,
-  ) => void;
-}) {
-  return (
-    <View style={{ alignSelf: 'flex-start', position: 'relative' }}>
-      <FilterMenu
-        variant="sort"
-        label="Сортировка работ автора"
-        value={sort}
-        options={sortOptions}
-        onSelect={(next) => {
-          if (!next) return;
-          onChange(next as Extract<PortfolioWorksQuery['sort'], 'newest' | 'oldest'>);
-        }}
-        dropdownAlign="right"
-        dropdownMinWidth={190}
-        dismissOnOutside
-      />
-    </View>
-  );
-}
+import { type AuthorPublicTab } from './author-public-tabs';
 
 export function PublicSellerScreen({
   slug,
   sort = 'newest',
 }: {
   slug: string;
-  sort?: Extract<PortfolioWorksQuery['sort'], 'newest' | 'oldest'>;
+  sort?: 'newest' | 'oldest';
 }) {
   const api = useApiClient();
-  const router = useRouter();
-  const { width } = useWindowDimensions();
+  const [tab, setTab] = useState<AuthorPublicTab>('works');
   const query = useInfiniteQuery({
     queryKey: ['public-author', slug, { sort }],
     initialPageParam: 1,
@@ -87,111 +57,266 @@ export function PublicSellerScreen({
   const firstPage = query.data?.pages[0];
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const items = works.map(toAuctionCardItem);
-  const sellerProfileId = firstPage?.author.id;
+  const author = firstPage?.author;
+  const sellerProfileId = author?.id;
 
   useTrackSellerView({
     sellerProfileId,
-    sellerSlug: firstPage?.author.slug ?? slug,
+    sellerSlug: author?.slug ?? slug,
     enabled: Boolean(firstPage && sellerProfileId),
   });
 
-  let content: React.ReactNode;
+  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>(
+    'idle',
+  );
+
+  const copyProfileLink = () => {
+    if (
+      Platform.OS !== 'web' ||
+      typeof window === 'undefined' ||
+      !navigator.clipboard
+    ) {
+      setCopyState('error');
+      return;
+    }
+    void navigator.clipboard
+      .writeText(new URL(`/seller/${slug}`, window.location.origin).toString())
+      .then(() => setCopyState('success'))
+      .catch(() => setCopyState('error'));
+  };
+
   if (query.isLoading) {
-    content = <PageState title="Загружаем работы автора…" loading />;
-  } else if (
+    return (
+      <AppShell>
+        <PageState title="Загружаем работы автора…" loading />
+      </AppShell>
+    );
+  }
+  if (
     query.isError &&
     query.error instanceof ApiClientError &&
     query.error.kind === 'not_found'
   ) {
-    content = (
-      <PageState title="Автор не найден" message="Профиль больше недоступен." />
+    return (
+      <AppShell>
+        <PageState title="Автор не найден" message="Профиль больше недоступен." />
+      </AppShell>
     );
-  } else if (query.isError || !firstPage) {
-    content = (
-      <PageState
-        title="Не удалось загрузить работы автора"
-        retry={() => void query.refetch()}
-      />
-    );
-  } else if (items.length === 0) {
-    content = <PageState title="У автора пока нет опубликованных работ" />;
-  } else {
-    content = (
-      <View style={{ gap: designTokens.space.x5 }}>
-        <AuctionCardGrid
-          items={items}
-          columns={getAuthorWorkColumnCount(width)}
+  }
+  if (query.isError || !firstPage || !author) {
+    return (
+      <AppShell>
+        <PageState
+          title="Не удалось загрузить работы автора"
+          retry={() => void query.refetch()}
         />
-        {query.hasNextPage ? (
-          <View style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
-            <SecondaryButton
-              label="Загрузить ещё"
-              loading={query.isFetchingNextPage}
-              onPress={() => void query.fetchNextPage()}
-            />
-            {query.isFetchNextPageError ? (
-              <AppText role="bodySmall" tone="danger">
-                Не удалось загрузить следующую страницу.
-              </AppText>
-            ) : null}
-          </View>
-        ) : null}
-      </View>
+      </AppShell>
     );
   }
 
+  const tags = author.discipline
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
   return (
-    <AppShell ambientVariant="creator">
-      <ScrollView
-        style={{ backgroundColor: 'transparent' }}
-        contentContainerStyle={{ paddingBottom: designTokens.space.x20 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ width: '100%', alignSelf: 'center' }}>
-          {firstPage ? (
-            <CreatorHero profile={firstPage.author} slug={slug} />
-          ) : null}
+    <AppShell>
+      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+        <AuthorAtmosphere
+          imageUrl={author.profilePhotoUrl}
+          fullName={author.fullName}
+        />
+        <ScrollView
+          contentContainerStyle={{
+            paddingBottom: designTokens.space.x5,
+            overflow: 'visible',
+          }}
+          style={{ overflow: 'visible' }}
+          showsVerticalScrollIndicator={false}
+        >
           <View
             style={{
-              gap: designTokens.space.x5,
-              paddingTop: designTokens.space.x6,
-              paddingHorizontal:
-                width >= designTokens.breakpoint.desktopShell
-                  ? designTokens.layout.creatorDesktopGutter
-                  : designTokens.layout.mobileGutter,
-              paddingBottom: designTokens.space.x12,
-              backgroundColor: designTokens.color.surfaceWarm,
+              alignItems: 'center',
+              gap: 18,
+              paddingHorizontal: designTokens.space.pageGutter,
+              paddingTop: 40,
+              zIndex: 1,
             }}
           >
+          <ResilientRemoteImage
+            uri={getApiAssetUrl(author.profilePhotoUrl)}
+            component="AuthorPhoto"
+            accessibilityLabel={`Фото автора ${author.fullName}`}
+            fallbackLabel={`Фото автора недоступно: ${author.fullName}`}
+            style={{
+              width: designTokens.size.avatar,
+              height: designTokens.size.avatar,
+              borderRadius: designTokens.radius.avatar,
+            }}
+            contentFit="cover"
+          />
+          <View style={{ alignItems: 'center' }}>
+            <AppText role="identityHandle">@{author.slug}</AppText>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: designTokens.space.x4,
+                gap: designTokens.space.x2,
               }}
             >
-              <AppText
-                role="sectionTitle"
+              <AppText role="label">{author.fullName}</AppText>
+              <View
                 style={{
-                  fontFamily: 'Inter_700Bold',
-                  fontSize: 30,
-                  lineHeight: 34,
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: designTokens.color.ink,
                 }}
-              >
-                Работы
-              </AppText>
-              <CreatorSort
-                sort={sort}
-                onChange={(nextSort) => router.setParams({ sort: nextSort })}
               />
-            </View>
-            <View nativeID="creator-works-panel" role="tabpanel">
-              {content}
+              <AppText role="label">{author.city}</AppText>
             </View>
           </View>
+          {tags.length > 0 ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: designTokens.space.chipGap,
+              }}
+            >
+              {tags.map((tag) => (
+                <FigmaChip key={tag} label={tag} tone="onGlass" />
+              ))}
+            </View>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            {author.telegramUrl ? (
+              <CreatorSocialLink
+                href={author.telegramUrl}
+                icon="send"
+                label="Telegram автора"
+              />
+            ) : null}
+            {author.instagramUrl ? (
+              <CreatorSocialLink
+                href={author.instagramUrl}
+                icon="instagram"
+                label="Instagram автора"
+              />
+            ) : null}
+            {author.websiteUrl ? (
+              <CreatorSocialLink
+                href={author.websiteUrl}
+                icon="globe"
+                label="Сайт автора"
+              />
+            ) : null}
+            <MotionPressable
+              accessibilityRole="button"
+              accessibilityLabel="Скопировать ссылку на профиль"
+              onPress={copyProfileLink}
+              preset="icon"
+              style={figmaGlassCircleStyle()}
+            >
+              <FigmaIcon name="copy" />
+            </MotionPressable>
+          </View>
+          {copyState === 'success' ? (
+            <AppText role="caption" tone="success">
+              Ссылка скопирована.
+            </AppText>
+          ) : null}
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: 12,
+            marginTop: 24,
+            marginHorizontal: designTokens.space.pageGutter,
+            borderBottomWidth: 1,
+            borderBottomColor: designTokens.color.divider,
+          }}
+        >
+          <AuthorTabButton
+            label={`Работы ${firstPage.pagination.total}`}
+            selected={tab === 'works'}
+            onPress={() => setTab('works')}
+          />
+          <AuthorTabButton
+            label="Об авторе"
+            selected={tab === 'about'}
+            onPress={() => setTab('about')}
+          />
+        </View>
+
+        <View
+          style={{
+            paddingHorizontal: designTokens.space.pageGutter,
+            paddingTop: designTokens.space.sectionGap,
+            gap: designTokens.space.sectionGap,
+          }}
+        >
+          {tab === 'about' ? (
+            <View style={{ gap: designTokens.space.x4 }}>
+              <AppText role="body">{author.shortDescription}</AppText>
+              {author.achievements.map((item) => (
+                <AppText key={item.id} role="bodySmall" tone="secondary">
+                  {item.body}
+                </AppText>
+              ))}
+            </View>
+          ) : items.length === 0 ? (
+            <PageState title="У автора пока нет опубликованных работ" />
+          ) : (
+            <>
+              <AuctionCardGrid items={items} />
+              {query.hasNextPage ? (
+                <PrimaryButton
+                  label="Смотреть все"
+                  width="full"
+                  loading={query.isFetchingNextPage}
+                  onPress={() => void query.fetchNextPage()}
+                />
+              ) : null}
+            </>
+          )}
         </View>
       </ScrollView>
+      </View>
     </AppShell>
+  );
+}
+
+function AuthorTabButton({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <MotionPressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      preset="button"
+      style={{
+        paddingBottom: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: selected ? designTokens.color.ink : 'transparent',
+      }}
+    >
+      <AppText
+        role="label"
+        style={{ color: selected ? '#191919' : '#373737' }}
+      >
+        {label}
+      </AppText>
+    </MotionPressable>
   );
 }

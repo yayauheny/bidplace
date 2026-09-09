@@ -1,7 +1,9 @@
 import { Link, type Href } from 'expo-router';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { figmaTokens } from '@bidplace/design-tokens';
 
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
 import { AppIcon, MotionPressable } from '../../components/ui';
 
 export type CreatorSocialLinkProps = {
@@ -21,23 +23,18 @@ export function CreatorSocialLink({
         accessibilityRole="link"
         accessibilityLabel={label}
         preset="icon"
-        style={{
-          width: 28,
-          height: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          borderRadius: 14,
-        }}
+        style={figmaGlassCircleStyle()}
       >
-        <AppIcon
-          name={icon}
-          size={20}
-          color={designTokens.color.textSecondary}
-        />
+        {icon === 'send' ? (
+          <FigmaIcon name="telegram" />
+        ) : (
+          <AppIcon
+            name={icon}
+            size={figmaTokens.size.icon}
+            color={figmaTokens.color.ink}
+          />
+        )}
       </MotionPressable>
     </Link>
   );
 }
-

@@ -1,8 +1,20 @@
 # bidplace — журнал реализации Pen v2 UI
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-09
 
-Ветка: `feature/pen-v2-ui`
+Ветка: `feature/figma-portfolio-ui`
+
+## 2026-09-09 — Cover frost, dock glass, author atmosphere
+
+Cover overlays and author atmosphere frost artwork instead of a flat fade.
+Token `dist/` must be rebuilt for Expo. Gaps:
+[`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
+
+## 2026-09-09 — Figma phone cutover
+
+Runtime switched to Figma inspect copy. Pen file untouched. Gaps:
+[`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
+`pnpm verify` and 390 browser check passed 2026-09-09.
 
 ## Правила журнала
 
@@ -32,6 +44,14 @@
 | Cross-cutting — backend/security  | Готово | Visibility, uploads, aliases и integrity boundaries                        | `84336e9`                                             |
 
 ## Выполнено
+
+### 2026-09-09 — Figma component masters
+
+- Added `designTokens.figma` and `apps/mobile/src/components/figma/` from
+  read-only Figma `uMo04w9bgrchWXXDgO4W62` «Компоненты»: icons, buttons, fields,
+  chips, work/author covers, identity row, floating dock.
+- Commerce overlay and cart/Google/AI icons remain in the registry and stay
+  off First MVP callers. Pen screens were not switched. `.pen` unchanged.
 
 ### 2026-08-12 — shared image-derived atmosphere
 

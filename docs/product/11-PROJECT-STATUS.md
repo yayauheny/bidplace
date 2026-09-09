@@ -1,5 +1,56 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-09 — Cover frost / author atmosphere / token rebuild
+
+- `Partial`: cover overlays frost the artwork (`CoverFrost`); author profile
+  uses `AuthorAtmosphere` plus `onGlass` chips; dock glass includes
+  `-webkit-backdrop-filter`. Evidence:
+  `apps/mobile/src/components/figma/CoverFrost.tsx`,
+  `AuthorAtmosphere.tsx`, `FloatingDock.tsx`,
+  `apps/mobile/src/features/sellers/public-seller-screen.tsx`.
+- Expo serves `@bidplace/design-tokens` from `dist/`. After token edits, run
+  `pnpm --filter @bidplace/design-tokens build` and Metro `--clear`. The mobile
+  `web`/`start` scripts already build tokens; `exec expo start` does not.
+- `Not implemented`: login sheet overlay; Home «Открытие недели» / auctions.
+
+## 2026-09-09 — Figma phone UI cutover
+
+- `Implemented`: Expo public and author MVP screens use a single Figma token
+  layer and Figma primitives. `AppShell` is a centered 390 column with
+  `FloatingDock` (no cart, no Pen header). Home / Works / Authors / Author /
+  Work load `api.portfolio.*`. Create-work is four Figma screens; author
+  application is four Figma screens; search is a stub; Work payment/delivery is
+  an unavailable stub. Evidence: `packages/design-tokens/src/tokens.ts`,
+  `apps/mobile/src/components/layout/AppShell.tsx`,
+  `apps/mobile/src/features/home/home-screen.tsx`,
+  `apps/mobile/src/features/products/product-list-screen.tsx`,
+  `apps/mobile/src/features/products/product-screen.tsx`,
+  `apps/mobile/src/features/sellers/public-seller-screen.tsx`,
+  `apps/mobile/src/features/sellers/product-draft-wizard.ts`,
+  `apps/mobile/src/features/sellers/seller-profile-wizard.ts`,
+  `apps/mobile/src/features/search/search-screen.tsx`.
+- Checks: `pnpm verify` passed on 2026-09-09 (typecheck 7/7, lint 2/2, API unit
+  381, contracts 30, integration 89, build 7/7). Mobile vitest 227/227. Browser
+  at ~390: Home → Works → Work → Author (Работы | Об авторе) → search stub →
+  login/register. `git diff --name-only -- '*.pen'` empty.
+- `Not implemented`: Figma search overlay, opening-of-week, 1024/1440 layouts,
+  Geist files, commerce chrome.
+- Docs: `DEC-085`, RFC wizard/payment/mobile-only notes,
+  `docs/design/09-FIGMA-CUTOVER-GAPS.md`.
+
+## 2026-09-09 — Figma component masters (commerce slots hidden)
+
+- `Partial`: Figma «Компоненты» from `uMo04w9bgrchWXXDgO4W62` is implemented as
+  shared masters in `apps/mobile/src/components/figma/` and
+  `packages/design-tokens/src/figma.ts`. Hugeicons stroke-rounded maps Figma
+  layer names (`search-01`, `plus`, `filter-horizontal`, …).
+  `WorkCoverCard` keeps price/timer/status slots but defaults to portfolio
+  (no commerce text). `FloatingDock` is Главная / Поиск / Добавить / Профиль
+  without cart. Google/AI/basket icons are registered and not used on MVP
+  surfaces. Production screens now use these masters (`DEC-085` cutover above).
+- `Not implemented`: Geist font files; Figma search overlay.
+- Figma and `.pen` were not edited.
+
 ## 2026-09-09 — Review-hole closure (fail-closed commerce, owner revision, visitor reuse)
 
 - `Implemented`: `CommerceEnabledGuard` also covers `GET /api/sellers`,

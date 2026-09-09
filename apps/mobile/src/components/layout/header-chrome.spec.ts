@@ -20,7 +20,7 @@ describe('header-chrome', () => {
 
   it('computes discovery label', () => {
     expect(getDiscoveryLabel('/authors')).toBe('Авторы');
-    expect(getDiscoveryLabel('/works')).toBe('Аукционы');
+    expect(getDiscoveryLabel('/works')).toBe('Работы');
   });
 
   it('computes search placeholder for header chrome', () => {

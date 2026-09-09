@@ -1,9 +1,8 @@
-import { ScrollView, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
-import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { productMediaStyle } from './product-media-style';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
@@ -14,22 +13,6 @@ type ProductGalleryImage = {
   height?: number | null;
 };
 
-const desktopGalleryHeight = 514;
-const desktopGalleryMaxWidth = 420;
-
-function getDesktopImageSize(image: ProductGalleryImage) {
-  if (!image.width || !image.height) {
-    return { width: 360, height: desktopGalleryHeight };
-  }
-
-  const aspectRatio = image.width / image.height;
-  const width = Math.min(
-    desktopGalleryMaxWidth,
-    Math.round(desktopGalleryHeight * aspectRatio),
-  );
-  return { width, height: Math.round(width / aspectRatio) };
-}
-
 export function ProductGallery({
   images,
   label,
@@ -37,71 +20,22 @@ export function ProductGallery({
   images: [ProductGalleryImage, ...ProductGalleryImage[]];
   label: string;
 }) {
-  const { width } = useWindowDimensions();
-  const imageWidth =
-    width >= designTokens.breakpoint.productHeroThreeColumn
-      ? 520
-      : width >= designTokens.breakpoint.productDetailWide
-        ? designTokens.productHeroWide
-        : 300;
-
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        minWidth: '100%',
-        gap: designTokens.space.x3,
-        justifyContent: images.length === 1 ? 'center' : 'flex-start',
-      }}
+    <View
       accessibilityLabel={`Галерея: ${label}`}
+      style={{ gap: designTokens.space.x2 }}
     >
       {images.map((image) => (
-        <GalleryImage
+        <ResilientRemoteImage
           key={image.id}
-          image={image}
-          label={label}
-          width={imageWidth}
-          desktop={width >= designTokens.breakpoint.productHeroThreeColumn}
+          uri={getApiAssetUrl(image.url)}
+          component="ProductGallery"
+          accessibilityLabel={label}
+          fallbackLabel={`Изображение недоступно: ${label}`}
+          contentFit="cover"
+          style={[productMediaStyle(), { overflow: 'hidden' }]}
         />
       ))}
-    </ScrollView>
-  );
-}
-
-function GalleryImage({
-  image,
-  label,
-  width,
-  desktop,
-}: {
-  image: ProductGalleryImage;
-  label: string;
-  width: number;
-  desktop: boolean;
-}) {
-  const reducedMotion = useReducedMotion();
-  const imageLabel = `Изображение предмета: ${label}`;
-  const desktopSize = desktop ? getDesktopImageSize(image) : undefined;
-
-  return (
-    <ResilientRemoteImage
-      uri={getApiAssetUrl(image.url)}
-      component="ProductGallery"
-      accessibilityLabel={imageLabel}
-      fallbackLabel={`Изображение недоступно: ${label}`}
-      style={
-        desktop
-          ? {
-              width: desktopSize!.width,
-              height: desktopSize!.height,
-              borderRadius: designTokens.radius.media,
-              backgroundColor: 'transparent',
-            }
-          : productMediaStyle(width)
-      }
-      contentFit="contain"
-      transition={getMotionDuration(reducedMotion, designTokens.motion.fast)}
-    />
+    </View>
   );
 }

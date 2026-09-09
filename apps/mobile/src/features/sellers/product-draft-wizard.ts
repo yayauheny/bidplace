@@ -1,8 +1,20 @@
 export const productWizardStep = {
   about: 1,
+  photos: 1,
   images: 2,
+  details: 2,
   creation: 3,
+  story: 3,
   review: 4,
+} as const;
+
+export const productWizardStepCount = 4;
+
+export const productWizardStepTitles = {
+  [productWizardStep.photos]: 'Основная информация',
+  [productWizardStep.details]: 'Детали работы',
+  [productWizardStep.story]: 'История создания',
+  [productWizardStep.review]: 'Проверка',
 } as const;
 
 export type ProductWizardStep =
@@ -62,7 +74,6 @@ export function canOpenProductWizardStep(
     case productWizardStep.about:
       return true;
     case productWizardStep.images:
-      return draft.hasProduct;
     case productWizardStep.creation:
     case productWizardStep.review:
       return draft.hasProduct && draft.imageCount > 0;
@@ -77,10 +88,10 @@ export function highestOpenableProductWizardStep(
   if (canOpenProductWizardStep(productWizardStep.review, draft)) {
     return productWizardStep.review;
   }
-  if (canOpenProductWizardStep(productWizardStep.images, draft)) {
-    return productWizardStep.images;
+  if (canOpenProductWizardStep(productWizardStep.details, draft)) {
+    return productWizardStep.details;
   }
-  return productWizardStep.about;
+  return productWizardStep.photos;
 }
 
 export function resolveProductWizardStep(

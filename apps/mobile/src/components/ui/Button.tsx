@@ -1,165 +1,75 @@
-import { ActivityIndicator, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppIcon, type AppIconName } from './AppIcon';
-import { AppText } from './AppText';
+import { FigmaButton } from '../figma/FigmaButton';
+import { FigmaIcon } from '../figma/FigmaIcon';
+import { type FigmaIconName } from '../figma/figma-icon-names';
 import { MotionPressable } from './MotionPressable';
-import type { MotionPressableState } from './MotionPressable';
-import {
-  buttonContentLayoutStyle,
-  buttonLayoutStyle,
-  buttonLoadingOverlayStyle,
-  type ButtonWidth,
-} from './button-layout';
 
 type ButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  icon?: AppIconName;
+  icon?: FigmaIconName;
   accessibilityHint?: string;
-  width?: ButtonWidth;
+  width?: 'content' | 'full' | 'block';
   alignSelf?: ViewStyle['alignSelf'];
-  compact?: boolean;
 };
 
-function ButtonContent({
-  label,
-  loading,
-  icon,
-  color,
-}: Pick<ButtonProps, 'label' | 'loading' | 'icon'> & { color: string }) {
-  const hasIcon = Boolean(icon);
+function resolvedButtonWidth(width: ButtonProps['width']) {
+  return width === 'block' ? 'full' : (width ?? 'content');
+}
+
+export function PrimaryButton({
+  width = 'content',
+  alignSelf,
+  ...props
+}: ButtonProps) {
+  const resolvedWidth = resolvedButtonWidth(width);
   return (
-    <View style={buttonContentLayoutStyle(hasIcon)}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: hasIcon ? designTokens.space.x2 : 0,
-          opacity: loading ? 0 : 1,
-        }}
-      >
-        {icon ? <AppIcon name={icon} color={color} /> : null}
-        <AppText role="button" style={{ color }} numberOfLines={1}>
-          {label}
-        </AppText>
-      </View>
-      {loading ? (
-        <ActivityIndicator
-          color={color}
-          size="small"
-          style={buttonLoadingOverlayStyle()}
-        />
-      ) : null}
+    <View
+      style={{
+        alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
+      }}
+    >
+      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
     </View>
   );
 }
 
-function ButtonBase({
-  label,
-  onPress,
-  disabled,
-  loading,
-  icon,
-  accessibilityHint,
+export function SecondaryButton({
   width = 'content',
-  compact = false,
   alignSelf,
-  style,
-  textColor,
-}: ButtonProps & {
-  style: ViewStyle | ((state: MotionPressableState) => ViewStyle);
-  textColor: string;
-}) {
-  const inactive = disabled || loading;
+  ...props
+}: ButtonProps) {
+  const resolvedWidth = resolvedButtonWidth(width);
   return (
-    <MotionPressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
-      aria-busy={loading || undefined}
-      disabled={inactive}
-      onPress={onPress}
-      preset="primaryAction"
-      style={(state: MotionPressableState) => [
-        {
-          minHeight: compact
-            ? designTokens.size.buttonCompact
-            : designTokens.size.button,
-          justifyContent: 'center',
-          ...buttonLayoutStyle(width, alignSelf),
-        },
-        typeof style === 'function' ? style(state) : style,
-      ]}
+    <View
+      style={{
+        alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
+      }}
     >
-      <ButtonContent
-        label={label}
-        loading={loading}
-        icon={icon}
-        color={textColor}
-      />
-    </MotionPressable>
+      <FigmaButton {...props} variant="outline" width={resolvedWidth} />
+    </View>
   );
 }
 
-export function PrimaryButton(props: ButtonProps) {
+export function DestructiveButton({
+  width = 'content',
+  alignSelf,
+  ...props
+}: ButtonProps) {
+  const resolvedWidth = resolvedButtonWidth(width);
   return (
-    <ButtonBase
-      {...props}
-      textColor={designTokens.color.surface}
-      style={({ hovered, pressed }) => ({
-        borderRadius: props.compact
-          ? designTokens.radius.compact
-          : designTokens.radius.button,
-        backgroundColor:
-          hovered || pressed
-            ? designTokens.color.actionHover
-            : designTokens.color.action,
-      })}
-    />
-  );
-}
-
-export function SecondaryButton(props: ButtonProps) {
-  return (
-    <ButtonBase
-      {...props}
-      textColor={designTokens.color.ink}
-      style={({ hovered, pressed }) => ({
-        borderRadius: props.compact
-          ? designTokens.radius.compact
-          : designTokens.radius.button,
-        borderWidth: 1,
-        borderColor:
-          hovered || pressed
-            ? designTokens.color.borderStrong
-            : designTokens.color.border,
-        backgroundColor:
-          hovered || pressed
-            ? designTokens.color.surfaceStrong
-            : designTokens.color.surface,
-      })}
-    />
-  );
-}
-
-export function DestructiveButton(props: ButtonProps) {
-  return (
-    <ButtonBase
-      {...props}
-      textColor={designTokens.color.surface}
-      style={({ hovered, pressed }) => ({
-        borderRadius: props.compact
-          ? designTokens.radius.compact
-          : designTokens.radius.button,
-        backgroundColor:
-          hovered || pressed ? '#963030' : designTokens.color.danger,
-      })}
-    />
+    <View
+      style={{
+        alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
+      }}
+    >
+      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
+    </View>
   );
 }
 
@@ -171,39 +81,14 @@ export function TextButton({
   accessibilityHint,
 }: Omit<ButtonProps, 'loading'>) {
   return (
-    <MotionPressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: Boolean(disabled) }}
-      disabled={disabled}
+    <FigmaButton
+      label={label}
       onPress={onPress}
-      preset="button"
-      style={{
-        minHeight: designTokens.size.touch,
-        alignSelf: 'flex-start',
-        justifyContent: 'center',
-      }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: designTokens.space.x1,
-        }}
-      >
-        {icon ? (
-          <AppIcon name={icon} color={designTokens.color.accentDark} />
-        ) : null}
-        <AppText
-          role="label"
-          tone="accent"
-          style={{ textDecorationLine: 'underline' }}
-        >
-          {label}
-        </AppText>
-      </View>
-    </MotionPressable>
+      disabled={disabled}
+      icon={icon}
+      accessibilityHint={accessibilityHint}
+      variant="ghost"
+    />
   );
 }
 
@@ -214,7 +99,7 @@ export function IconButton({
   disabled,
   selected = false,
 }: {
-  icon: AppIconName;
+  icon: FigmaIconName;
   label: string;
   onPress: () => void;
   disabled?: boolean;
@@ -228,22 +113,16 @@ export function IconButton({
       disabled={disabled}
       onPress={onPress}
       preset="icon"
-      style={({ hovered, pressed }) => ({
+      style={{
         width: designTokens.size.touch,
         minHeight: designTokens.size.touch,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: designTokens.radius.pill,
-        backgroundColor: selected
-          ? designTokens.color.action
-          : hovered || pressed
-            ? designTokens.color.surfaceStrong
-            : 'transparent',
-      })}
+      }}
     >
-      <AppIcon
+      <FigmaIcon
         name={icon}
-        color={selected ? designTokens.color.surface : designTokens.color.ink}
+        color={selected ? designTokens.color.solid : designTokens.color.ink}
       />
     </MotionPressable>
   );
@@ -256,5 +135,5 @@ export function BackButton({
   onPress: () => void;
   label?: string;
 }) {
-  return <IconButton icon="chevronLeft" label={label} onPress={onPress} />;
+  return <IconButton icon="arrow-left-01" label={label} onPress={onPress} />;
 }
