@@ -3,11 +3,17 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const require = createRequire(import.meta.url);
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { PrismaClient } = require(
+const scriptDirectory = dirname(fileURLToPath(import.meta.url));
+const requireFromApi = createRequire(
+  join(scriptDirectory, '../../apps/api/package.json'),
+);
+const requireFromDatabase = createRequire(
+  join(scriptDirectory, '../../packages/database/package.json'),
+);
+const { S3Client, PutObjectCommand } = requireFromApi('@aws-sdk/client-s3');
+const { PrismaClient } = requireFromDatabase(
   join(
-    dirname(fileURLToPath(import.meta.url)),
+    scriptDirectory,
     '../../packages/database/dist/index.js',
   ),
 );
