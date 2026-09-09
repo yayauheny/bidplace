@@ -24,6 +24,8 @@ cutover-план больше не являются источниками ре�
    server contracts.
 2. Для production phone UI — read-only Figma inspect `uMo04w9bgrchWXXDgO4W62`
    (`DEC-085`). Origin `NM63j9lwRMqpo2HvAiYNll` remains the canonical read-only file.
+   Local versioned snapshot: [`../../design/figma-handoff/portfolio-phone-v1/`](../../design/figma-handoff/portfolio-phone-v1/README.md).
+   It is a handoff archive, not a replacement for live Figma.
 3. Защищённый `../../design/pen/bidplace-web-v2.pen` — historical visual archive,
    not the runtime shell. The file must not be edited.
 4. Этот design-модуль — screen/behavior/state mapping.
@@ -66,6 +68,7 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 | `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | historical Pen audit; not the current runtime     |
 | `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 | `09-FIGMA-CUTOVER-GAPS.md`                      | skipped Figma nodes, unused variants, questions   |
+| [`../../design/figma-handoff/portfolio-phone-v1/`](../../design/figma-handoff/portfolio-phone-v1/README.md) | versioned `.figmacapture` snapshot; not live Figma |
 
 Figma inspect copy is the production visual source (`DEC-085`).
 `bidplace-web-v2.pen` остаётся защищённым historical file. Текущие blockers

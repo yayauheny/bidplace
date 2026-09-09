@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "library": "portfolio-phone-v1",
+  "source": {
+    "kind": "read-only-figma-handoff",
+    "figmaFileId": "NM63j9lwRMqpo2HvAiYNll"
+  },
+  "captures": [
+    {
+      "id": "creator-about-phone",
+      "originalName": "Страница автора / Об авторе",
+      "sourceFolderName": "Страница_автора___Об_авторе.figmacapture",
+      "surface": "creator",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 1609
+      },
+      "nodeId": "621:19475",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/creator/creator__about__390x1609__node-621-19475",
+      "referencePath": "screens/creator/creator__about__390x1609__node-621-19475/reference.png"
+    },
+    {
+      "id": "creator-share-sheet-phone",
+      "originalName": "Каталог работ / идут торги / сделать ставку",
+      "sourceFolderName": "Каталог_работ___идут_торги___сделать_ставку.figmacapture",
+      "surface": "creator",
+      "state": "share-sheet",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:13756",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "medium",
+      "packagePath": "screens/creator/creator__share-sheet__390x874__node-526-13756",
+      "referencePath": "screens/creator/creator__share-sheet__390x874__node-526-13756/reference.png"
+    },
+    {
+      "id": "unclassified-overlay-dimmer",
+      "originalName": "Frame 140",
+      "sourceFolderName": "Frame_140.figmacapture",
+      "surface": "_unclassified",
+      "state": "overlay-dimmer",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:13880",
+      "scope": "REFERENCE_ONLY",
+      "classificationConfidence": "low",
+      "packagePath": "_unclassified/unclassified__overlay-dimmer__390x874__node-526-13880",
+      "referencePath": "_unclassified/unclassified__overlay-dimmer__390x874__node-526-13880/reference.png"
+    }
+  ]
+}
