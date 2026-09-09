@@ -6,6 +6,7 @@ import {
   type ImageObject,
   type ImageStoreClient,
   ImageStore,
+  RevisionMediaStorageError,
 } from './image-store';
 
 type ImageStoragePayload = {
@@ -57,6 +58,9 @@ export class PostgresImageStore extends ImageStore {
           },
         });
         return;
+      case 'seller-profile-revision':
+      case 'seller-achievement':
+        throw new RevisionMediaStorageError();
     }
   }
 
@@ -112,6 +116,9 @@ export class PostgresImageStore extends ImageStore {
           mimeType: profile.profilePhotoMimeType,
         };
       }
+      case 'seller-profile-revision':
+      case 'seller-achievement':
+        return null;
     }
   }
 
@@ -123,6 +130,9 @@ export class PostgresImageStore extends ImageStore {
       case 'product-image':
       case 'seller-photo':
         return;
+      case 'seller-profile-revision':
+      case 'seller-achievement':
+        throw new RevisionMediaStorageError();
       case 'creation-step':
         await db.productCreationStep.update({
           where: { id: parsed.id },

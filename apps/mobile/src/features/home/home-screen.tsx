@@ -11,6 +11,7 @@ import {
   CreatorCardGrid,
   MotionPressable,
   PageState,
+  toAuctionCardItem,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from '../products/catalog-layout';
@@ -38,14 +39,16 @@ export function HomeScreen() {
   const api = useApiClient();
   const { width } = useWindowDimensions();
   const home = useQuery({
-    queryKey: ['discovery-home'],
-    queryFn: () => api.discovery.home(),
+    queryKey: ['portfolio-home'],
+    queryFn: () => api.portfolio.home(),
   });
   const loading = home.isLoading;
   const failed = home.isError;
-  const productItems = home.data?.topAuctions ?? [];
-  const newWorkItems = home.data?.newWorks ?? [];
-  const sellerItems = home.data?.creators ?? [];
+  const curatorSelection = home.data?.curatorSelection ?? null;
+  const workItems = (home.data?.newWorks ?? []).map(toAuctionCardItem);
+  const sellerItems = (home.data?.newAuthors ?? []).map((author) => ({
+    sellerProfile: author,
+  }));
   const columns = getCatalogColumnCount(width);
 
   return (
@@ -88,7 +91,7 @@ export function HomeScreen() {
               }}
             />
           ) : null}
-          {!loading && !failed && productItems.length > 0 ? (
+          {!loading && !failed && curatorSelection ? (
             <View style={{ gap: designTokens.space.x6 }}>
               <View
                 style={{
@@ -102,12 +105,12 @@ export function HomeScreen() {
                 <SectionLink href="/works" label="Смотреть все работы" />
               </View>
               <AuctionCardGrid
-                items={productItems}
+                items={[toAuctionCardItem(curatorSelection)]}
                 columns={Math.min(columns, 3) as 1 | 2 | 3}
               />
             </View>
           ) : null}
-          {!loading && !failed && newWorkItems.length > 0 ? (
+          {!loading && !failed && workItems.length > 0 ? (
             <View style={{ gap: designTokens.space.x6 }}>
               <View
                 style={{
@@ -121,7 +124,7 @@ export function HomeScreen() {
                 <SectionLink href="/works" label="Смотреть все работы" />
               </View>
               <AuctionCardGrid
-                items={newWorkItems}
+                items={workItems}
                 columns={Math.min(columns, 3) as 1 | 2 | 3}
               />
             </View>
@@ -142,7 +145,7 @@ export function HomeScreen() {
               <CreatorCardGrid items={sellerItems} columns={columns} />
             </View>
           ) : null}
-          {!loading && !failed && productItems.length === 0 && sellerItems.length === 0 ? (
+          {!loading && !failed && workItems.length === 0 && sellerItems.length === 0 ? (
             <PageState
               title="Пока здесь тихо"
               message="Новые работы и авторы появятся после публикации."

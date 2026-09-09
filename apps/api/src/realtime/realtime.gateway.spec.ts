@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RealtimeGateway } from './realtime.gateway';
-import { publicProductContentWhere } from '../products/public-visibility';
+import { publicListingWhere } from '../products/public-visibility';
 
 const commerceEnabled = { isEnabled: () => true, assertEnabled: () => {} };
 
@@ -52,12 +52,7 @@ describe('RealtimeGateway', () => {
     expect(prisma.listing.findFirst).toHaveBeenCalledWith({
       where: {
         id: expect.any(String),
-        status: { in: ['SCHEDULED', 'LIVE'] },
-        product: {
-          status: 'APPROVED',
-          sellerProfile: { status: 'APPROVED' },
-          ...publicProductContentWhere,
-        },
+        ...publicListingWhere(['SCHEDULED', 'LIVE']),
       },
       select: { id: true },
     });

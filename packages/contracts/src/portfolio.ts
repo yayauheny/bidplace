@@ -8,6 +8,24 @@ import { slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
 
+export const portfolioAchievementImageSchema = z
+  .object({
+    url: z.string().regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
+    mimeType: publicText,
+    byteLength: z.number().int().positive(),
+    checksum: z.string().length(64),
+  })
+  .strict();
+
+export const portfolioAchievementSchema = z
+  .object({
+    id: uuidSchema,
+    occurredAt: z.string().datetime().nullable(),
+    body: publicText,
+    image: portfolioAchievementImageSchema.nullable(),
+  })
+  .strict();
+
 export const portfolioWorkSchema = z
   .object({
     id: uuidSchema,
@@ -21,6 +39,7 @@ export const portfolioWorkSchema = z
     year: z.number().int().nullable(),
     images: z.array(productImageSchema).nonempty(),
     publishedAt: z.string().datetime(),
+    sharePath: z.string().regex(/^\/works\/[A-Za-z0-9_-]{11}$/),
   })
   .strict();
 
@@ -40,15 +59,8 @@ export const portfolioAuthorSchema = z
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
     shortDescription: publicText,
-    achievements: z.array(
-      z
-        .object({
-          id: uuidSchema,
-          occurredAt: z.string().datetime().nullable(),
-          body: publicText,
-        })
-        .strict(),
-    ),
+    achievements: z.array(portfolioAchievementSchema),
+    sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
   })
   .strict();
 
@@ -68,6 +80,7 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     category: uuidSchema.optional(),
+    author: z.string().trim().min(1).max(120).optional(),
     materials: z
       .preprocess(
         (value) =>
@@ -187,13 +200,13 @@ export const portfolioAchievementWriteRequestSchema = z
 
 export const portfolioAchievementResponseSchema = z
   .object({
-    achievement: z
-      .object({
-        id: uuidSchema,
-        occurredAt: z.string().datetime().nullable(),
-        body: publicText,
-      })
-      .strict(),
+    achievement: portfolioAchievementSchema,
+  })
+  .strict();
+
+export const portfolioOkResponseSchema = z
+  .object({
+    ok: z.literal(true),
   })
   .strict();
 
@@ -204,4 +217,7 @@ export type PortfolioAchievementWriteRequest = z.infer<
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
+>;
+export type PortfolioWorkDetailResponse = z.infer<
+  typeof portfolioWorkDetailResponseSchema
 >;

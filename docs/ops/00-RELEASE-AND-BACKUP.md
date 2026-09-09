@@ -8,7 +8,7 @@ Operational runbook for the pilot single-replica stack. Product contracts remain
 
 - One API replica and one PostgreSQL instance.
 - Auction lifecycle cron and in-process rate limits assume a single scheduler.
-- Product images live in PostgreSQL `BYTEA`; backup is a database dump, not separate object storage.
+- Product images live in PostgreSQL `BYTEA` unless `MEDIA_STORAGE_PROVIDER=s3`; local Compose includes MinIO for S3-compatible revision media. Backup of Postgres remains a database dump; object restore is a separate checksum drill.
 - Mobile web is built and hosted separately (`expo export` or static host). The Compose `app` profile ships API + Postgres only.
 
 ## Toolchain and clean checkout gate
@@ -29,6 +29,35 @@ pnpm verify
 ```
 
 `pnpm verify` runs, in order: `db:generate`, `typecheck`, `lint`, `test:unit`, `test:integration`, and `build`.
+
+## Local MinIO
+
+Compose starts a local S3-compatible MinIO on ports `9000` (API) and `9001` (console), plus a one-shot `minio-init` job that creates the `bidplace-media` bucket. Credentials match the API unit-test stubs in [`.env.example`](../../.env.example). Do not commit production secrets.
+
+To persist revision/achievement media locally, set:
+
+```bash
+MEDIA_STORAGE_PROVIDER=s3
+S3_ENDPOINT=http://127.0.0.1:9000
+S3_REGION=us-east-1
+S3_BUCKET=bidplace-media
+S3_ACCESS_KEY_ID=test-access-key
+S3_SECRET_ACCESS_KEY=test-secret-key
+```
+
+`pnpm docker:up` starts Postgres and MinIO. A restore checksum drill needs an operator-supplied disposable database **and** the local S3 settings:
+
+```bash
+TARGET_DATABASE_URL='postgresql://auction:auction@127.0.0.1:5432/bidplace_restore?schema=public' \
+S3_ENDPOINT='http://127.0.0.1:9000' \
+S3_REGION='us-east-1' \
+S3_BUCKET='bidplace-media' \
+S3_ACCESS_KEY_ID='test-access-key' \
+S3_SECRET_ACCESS_KEY='test-secret-key' \
+  pnpm ops:verify-restore
+```
+
+Local MinIO is reachable on `9000` after Compose up. Against a database whose `product_images` still keep bytes in PostgreSQL, the drill reports S3 `NoSuchKey` until `pnpm ops:backfill-media` has copied objects. That remains a local ops gate, not a lawyer or production-provider blocker.
 
 GitHub Actions runs the same gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml).
 

@@ -10,8 +10,16 @@ function itemWith(overrides: {
 }) {
   return {
     product: {
+      id: 'product-id',
+      publicId: 'publicId001',
       title: overrides.title ?? 'Предмет',
       story: overrides.story ?? 'Описание предмета',
+      images: [{ id: 'image-id', url: '/api/images/image-id' }],
+    },
+    sellerProfile: {
+      slug: 'author',
+      fullName: 'Author',
+      profilePhotoUrl: '/api/sellers/author/photo',
     },
     listing: overrides.status
       ? {

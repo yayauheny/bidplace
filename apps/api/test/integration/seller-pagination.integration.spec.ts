@@ -53,6 +53,7 @@ describe('Public seller pagination PostgreSQL behavior', () => {
         sellerType: 'creator',
         fullName: 'Seller',
         country: 'BY',
+        city: 'Minsk',
         profilePhotoMimeType: 'image/png',
         profilePhotoByteLength: 1,
         profilePhotoChecksum: '0'.repeat(64),
@@ -85,6 +86,7 @@ describe('Public seller pagination PostgreSQL behavior', () => {
             city: 'Minsk',
             deliveryInfo: 'Pickup',
             status: 'APPROVED',
+            publishedAt: now,
             createdAt: new Date(now.getTime() + index * 1_000),
             images: {
               create: {

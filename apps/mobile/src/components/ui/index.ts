@@ -3,6 +3,7 @@ export * from './AppDialog';
 export * from './AppText';
 export * from './AuctionPlayer';
 export * from './SlideToBid';
+export * from './auction-card-item';
 export * from './AuctionCard';
 export * from './AuctionCardGrid';
 export * from './CreatorCard';

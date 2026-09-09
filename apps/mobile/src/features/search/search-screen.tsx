@@ -9,6 +9,7 @@ import {
   AuctionCardGrid,
   CreatorCardGrid,
   PageState,
+  toAuctionCardItem,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from '../products/catalog-layout';
@@ -16,21 +17,23 @@ import { getCatalogColumnCount } from '../products/catalog-layout';
 export function SearchScreen({ query }: { query: string }) {
   const api = useApiClient();
   const { width } = useWindowDimensions();
-  const products = useQuery({
-    queryKey: ['products', { q: query }],
-    queryFn: () => api.products.list({ q: query, limit: 12 }),
+  const works = useQuery({
+    queryKey: ['portfolio-works', { q: query }],
+    queryFn: () => api.portfolio.listWorks({ q: query, limit: 12 }),
     enabled: Boolean(query),
   });
-  const sellers = useQuery({
-    queryKey: ['public-sellers', { q: query }],
-    queryFn: () => api.sellers.listPublic({ q: query, limit: 8 }),
+  const authors = useQuery({
+    queryKey: ['portfolio-authors', { q: query }],
+    queryFn: () => api.portfolio.listAuthors({ q: query, limit: 8 }),
     enabled: Boolean(query),
   });
   const columns = getCatalogColumnCount(width);
-  const loading = products.isLoading || sellers.isLoading;
-  const failed = products.isError || sellers.isError;
-  const productItems = products.data?.products ?? [];
-  const sellerItems = sellers.data?.sellers ?? [];
+  const loading = works.isLoading || authors.isLoading;
+  const failed = works.isError || authors.isError;
+  const productItems = (works.data?.works ?? []).map(toAuctionCardItem);
+  const sellerItems = (authors.data?.authors ?? []).map((item) => ({
+    sellerProfile: item.author,
+  }));
   const hasResults = productItems.length > 0 || sellerItems.length > 0;
 
   return (
@@ -82,8 +85,8 @@ export function SearchScreen({ query }: { query: string }) {
             <PageState
               title="Не удалось выполнить поиск"
               retry={() => {
-                void products.refetch();
-                void sellers.refetch();
+                void works.refetch();
+                void authors.refetch();
               }}
             />
           ) : !hasResults ? (

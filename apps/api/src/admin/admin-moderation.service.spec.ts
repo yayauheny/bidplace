@@ -32,6 +32,10 @@ describe('AdminModerationService', () => {
       instagramUrl: null,
       websiteUrl: null,
       shortDescription: 'Updated description',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: 1,
+      profilePhotoChecksum: 'a'.repeat(64),
+      profilePhotoObjectKey: 'seller-profile-revision:revision-id',
     };
     const sellerProfile = {
       id: 'seller-id',
@@ -179,6 +183,7 @@ describe('AdminModerationService', () => {
         status: 'APPROVED',
         publishedRevisionId: 'revision-editing',
         title: 'Approved title',
+        publishedAt: expect.any(Date),
       }),
     });
   });
@@ -254,5 +259,48 @@ describe('AdminModerationService', () => {
         reason: 'Нужна проверка',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('blocks profile approval when the editing revision has no photo', async () => {
+    const revision = {
+      id: 'revision-id',
+      status: 'PENDING_REVIEW',
+      slug: 'updated-author',
+      discipline: 'Painting',
+      fullName: 'Updated author',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: 'https://example.com',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Updated description',
+      profilePhotoMimeType: null,
+      profilePhotoByteLength: null,
+      profilePhotoChecksum: null,
+      profilePhotoObjectKey: null,
+    };
+    const tx = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-id',
+          status: 'APPROVED',
+          editingRevision: revision,
+        }),
+        update: vi.fn(),
+      },
+      sellerProfileRevision: { update: vi.fn() },
+      auditEvent: { create: vi.fn() },
+    };
+    const service = new AdminModerationService(transactionPrisma(tx) as never);
+
+    await expect(
+      service.updateSellerStatus('admin-id', 'seller-id', {
+        status: 'APPROVED',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.sellerProfile.update).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
   });
 });

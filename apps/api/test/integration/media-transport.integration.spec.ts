@@ -52,23 +52,47 @@ describe('public media transport over HTTP and PostgreSQL', () => {
         status: 'DRAFT',
       },
     });
-    await prisma.productImage.createMany({
-      data: Array.from(
-        { length: productImageUploadLimits.maxFiles },
-        (_, position) => ({
-          productId: product.id,
-          position,
-          mimeType: 'image/png',
-          byteLength: permissionImage.byteLength,
-          data: permissionImage,
-          checksum: position.toString().padStart(64, '0'),
+    const images = await Promise.all(
+      Array.from({ length: productImageUploadLimits.maxFiles }, (_, position) =>
+        prisma.productImage.create({
+          data: {
+            productId: product.id,
+            position,
+            mimeType: 'image/png',
+            byteLength: permissionImage.byteLength,
+            data: permissionImage,
+            checksum: position.toString().padStart(64, '0'),
+          },
         }),
       ),
+    );
+    const revision = await prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 1,
+        status: 'DRAFT',
+        title: 'Capacity test',
+        images: {
+          create: images.map((image, position) => ({
+            imageId: image.id,
+            position,
+          })),
+        },
+      },
+      select: { id: true },
     });
-    const images = new ImagesService(prisma as never);
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { editingRevisionId: revision.id },
+    });
+    const service = new ImagesService(prisma as never, {
+      put: async () => undefined,
+      get: async () => null,
+      delete: async () => undefined,
+    } as never);
 
     await expect(
-      images.add(fixture.sellers.approved.id, product.id, [
+      service.add(fixture.sellers.approved.id, product.id, [
         { buffer: permissionImage, mimetype: 'image/png' },
       ]),
     ).rejects.toThrow(

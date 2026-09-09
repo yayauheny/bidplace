@@ -1,4 +1,3 @@
-import type { PublicSellerListItem } from '@bidplace/contracts';
 import { Link } from 'expo-router';
 import { View } from 'react-native';
 
@@ -9,7 +8,16 @@ import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
 
-export function CreatorCard({ item }: { item: PublicSellerListItem }) {
+export type CreatorCardItem = {
+  sellerProfile: {
+    slug: string;
+    fullName: string;
+    discipline: string;
+    profilePhotoUrl: string;
+  };
+};
+
+export function CreatorCard({ item }: { item: CreatorCardItem }) {
   const { sellerProfile } = item;
 
   return (

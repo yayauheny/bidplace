@@ -1,53 +1,53 @@
 # bidplace — готовность первого portfolio MVP
 
-Дата среза: 2026-09-08
+Дата среза: 2026-09-09
 Product contract: [`docs/product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 Active work: [`00-FIRST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/00-FIRST-MVP-BACKLOG.md)
 Deferred work: [`99-POST-MVP-BACKLOG.md`](../tasks/2026-09-06-reconciliation/99-POST-MVP-BACKLOG.md)
+Session retrospective (unfinished P0–P2 → visitor reuse → review findings):
+[`2026-09-09-profile-revision-media-session.md`](2026-09-09-profile-revision-media-session.md)
 
 ## Итог
 
-Scope первого запуска теперь достаточно узкий и определён: публичное портфолио автора
-без сделок. Продуктовые развилки commerce больше не блокируют запуск. Код пока не
-соответствует новому scope: production UI и API содержат auction/order surfaces, новый
-Figma ещё не реализован, portfolio creation/profile contracts требуют reconciliation,
-а public legal/data/storage/operations gates не закрыты.
+Scope первого запуска остаётся публичное портфолио без сделок. Backend/API P0–P2
+для published-only проекций, hide/unhide, RFC-minimal Work и fail-closed legacy
+commerce reads закрыты в коде и покрыты API unit/integration. Пакет 07 (Figma/UI),
+юрист Беларуси, production providers и staging **не** закрыты.
+
+## F01–F10 vs текущий код
+
+| ID | Состояние | Доказательство |
+|---|---|---|
+| F01 | `Implemented` для public commerce **reads** `GET /api/products`, `GET /api/products/:publicId`, `GET /api/discovery/home`, `GET /api/sellers`, `GET /api/sellers/:slug/detail`, `GET /api/me/activity` (`CommerceEnabledGuard`, default `COMMERCE_ENABLED=false`). Commerce mutations already gated. | `products.controller.ts`, `discovery.controller.ts`, `sellers.controller.ts`, `activity.controller.ts`, `commerce-disabled-reads.integration.spec.ts` |
+| F02 | `Implemented` для revision/moderation/hide: public = `publishedRevision`; owner gallery forks editing revision; `APPROVED` ↔ `ARCHIVED`. | `product-revision-write.ts`, `admin-moderation.service.ts`, `portfolio-published-revision.integration.spec.ts` |
+| F03 | `Partial`: `ImageStore` + local MinIO in Compose; Postgres fail-closed for new revision/achievement keys; restore checksum of existing BYTEA rows is `NoSuchKey` until backfill. Production S3 unselected. | `postgres-image-store.ts`, `docker-compose.yml`, `docs/ops/00-RELEASE-AND-BACKUP.md` |
+| F04 | `Partial`: security preflight and legal drafts exist; operator/provider/country/cookie inventory still external. | `11-EXTERNAL-BLOCKERS.md` |
+| F05 | `Partial` (prior wave): bearer guards refresh role/status/sessionVersion; not re-audited in this closure. | `apps/api/src/auth` |
+| F06 | `Partial`: evidence review docs exist; lawyer/staging not closed. | `13-APPLICATION-SECURITY.md` |
+| F07 | `Partial`: URL preflight reports legacy public URL counts; no rewrite. | `scripts/ops/url-preflight.mjs` |
+| F08 | `Implemented` for required submit fields, revision photo/achievements, public photo = published pointer, owner photo preview. Mobile application form now includes city. Figma onboarding is package 07. | `sellers.service.ts`, `seller-profile-steps.tsx` |
+| F09 | `Partial`: RFC-minimal create/submit/hide API and cabinet list exist; owner mobile wizard is still the older sale-oriented draft screen. | `products.service.ts`, `product-draft-screen.tsx` |
+| F10 | `Implemented` for portfolio Home/Works/Authors JSON and visitor Work/Author **detail** on existing `/product/:publicId` and `/seller/:slug` (portfolio APIs, commerce chrome hidden). Redirect aliases exist for RFC `sharePath`. | `packages/contracts/src/portfolio.ts`, `product-screen.tsx`, `public-seller-screen.tsx` |
 
 ## Что уже закрыто и используется
 
 | Область | Состояние |
 |---|---|
-| Product write atomicity | Реализован общий Product row-lock invariant для известных write paths; race coverage существует. |
-| Auth/security baseline | Email/password, verification/recovery, fail-closed production config, upload authorization/limits и admin emergency paths существуют; остаточные проверки перечислены ниже. |
-| Author/Work foundations | Seller application, Product draft/moderation, public discovery, creator profile, structured socials и creation story имеют текущую реализацию, которую можно адаптировать. |
-| Public discovery | Home, Works, Authors, Search и server-side pagination/filtering существуют; commerce-specific projection надо убрать из First MVP. |
-| Design | Новый creator-first Figma визуально согласован и остаётся read-only. Анализ экранов завершил portfolio cut list. Реализация не начата. |
-| Research | Marketplace/abuse/legal UX и новое creator-commerce исследование сохранены для второй волны; они больше не блокируют First MVP. |
-| Test data | Текущие business rows disposable и очищаются контролируемо перед public pilot (`DEC-081`). |
+| Product write atomicity | Реализован общий Product row-lock invariant; PostgreSQL race coverage существует (86 integration tests). |
+| Auth/security baseline | Email/password, verification/recovery, fail-closed production config, upload authorization/limits и admin emergency paths существуют; остаточные проверки ниже. |
+| Author/Work foundations | Seller application, ProductRevision/SellerProfileRevision, public portfolio discovery, hide/unhide, RFC-minimal Work. |
+| Public discovery | Portfolio Home/Works/Authors/Search JSON без Listing; legacy commerce Home/products 404 при default config. |
+| Design | Creator-first Figma остаётся read-only. Пакет 07 не начат. `.pen` не менялся. |
+| Research | Marketplace/abuse/legal UX сохранены для второй волны. |
+| Test data | Business rows disposable (`DEC-081`). |
 
 ## Что блокирует публичный portfolio launch
 
-1. **Commerce isolation:** server и client пока не имеют доказанного fail-closed режима
-   для выключения auction/bid/order/handoff без удаления кода.
-2. **Portfolio Work lifecycle:** нет утверждённой и реализованной revision-модели, при
-   которой public Work можно обновлять через moderation без потери последней одобренной
-   версии.
-3. **Media:** требуется утверждённый object-storage/rendition/cleanup/backup boundary;
-   portfolio зависит от изображений сильнее прежнего auction pilot.
-4. **Author onboarding/profile:** надо сверить required/optional fields, public/private
-   data, achievements и moderation с новым RFC и Figma.
-5. **Work creation:** текущий sale-oriented flow надо свести к photos/title → details →
-   optional text story → moderation.
-6. **Public projections:** Home/catalog/profile/Work должны перестать требовать Listing,
-   price, timer, sale status, bids или Order.
-7. **Auth/legal UX:** оставить email/password path, убрать неподдержанные OAuth/magic
-   code controls, определить фактические registration/cookie controls и документы.
-8. **Security residuals:** role freshness, dependency evidence и legacy HTTPS preflight
-   остаются незакрытыми.
-9. **Operations:** staging email, TLS, migrations, object restore, rollback,
-   observability и real-content checks не доказаны для public environment.
-10. **Figma implementation:** mobile-first screens и required states ещё не перенесены
-    в production.
+1. **Figma / package 07:** mobile-first screens and required states are not the Pen v2 / Figma cutover. Visitor Work/Author already reuse `/product/:publicId` and `/seller/:slug` on portfolio APIs.
+2. **Media ops:** production S3 provider unselected; local restore checksum needs backfill of existing PostgreSQL bytes.
+3. **Auth/legal UX:** email/password path exists; registration/cookie controls and Belarus lawyer answers are unfinished.
+4. **Security residuals:** dependency evidence and deployed cookie inventory remain launch gates.
+5. **Operations:** staging TLS, email, migrations, observability and real-content checks are not proven on a public environment.
 
 ## Что не блокирует First MVP
 
@@ -78,15 +78,12 @@ Durable-вариант — server-authoritative capability, default `false`:
 
 ## Порядок закрытия
 
-1. F01 commerce gate, F02 Work lifecycle, F04 data inventory и F05–F07 security можно
-   выполнять параллельно.
-2. F03 media boundary закрыть до real-content migration.
-3. Реализовать author/profile, Work creation и public discovery contracts.
-4. Адаптировать portfolio legal pack и получить Belarus lawyer review.
-5. Оформить versioned read-only Figma handoff и выполнить mobile-first UI.
-6. Провести security/design/operations review, staging smoke, restore и rollback.
+1. Review and fast-forward `feature/profile-revision-media` into `main` if accepted.
+2. Package 07 (Figma/UI) only after that explicit design task.
+3. Lawyer pack, production providers, staging restore/backfill, then F15.
 
 ## Проверка этого обновления
 
-Это documentation-only scope change. Код, schema, Figma и `.pen` не менялись; tests не
-запускались. Фактические code statuses не повышались.
+Код и API/mobile checks listed in [`11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md)
+were rerun on 2026-09-09. RFC and protected product docs were not rewritten.
+`.pen` is not in the diff.

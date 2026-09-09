@@ -6,6 +6,7 @@ import {
   type PublicDiscoveryQuery,
   type ProductWriteRequest,
   type SellerStatus,
+  type ProductStatus,
 } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 import {
@@ -19,12 +20,17 @@ import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
   productImageMetadataSelect,
+  productRevisionGallerySelect,
   productSelect,
   publicCatalogProductSelect,
   toContractProduct,
   toCreationStepContract,
+  toImageContracts,
   toProductResponse,
+  toRevisionGalleryImages,
+  type PublicCatalogProductRecord,
 } from './products.mapper';
+import { ensureAuthorEditingRevision } from './product-revision-write';
 import {
   publicCatalogCte,
   publicCatalogOrderBy,
@@ -221,55 +227,26 @@ export class ProductsService {
       if (
         product &&
         (product.status === 'APPROVED' || product.status === 'ARCHIVED') &&
-        product.publishedRevisionId &&
-        product.editingRevisionId
+        product.publishedRevisionId != null &&
+        product.editingRevisionId != null
       ) {
         if (product.sellerProfile.userId !== userId) {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-        let editingRevisionId = product.editingRevisionId;
-        if (product.editingRevisionId === product.publishedRevisionId) {
-          const published = await tx.productRevision.findUniqueOrThrow({
-            where: { id: product.publishedRevisionId },
-            include: { images: true },
+        if (Object.keys(revisionData).length === 0) {
+          const unchanged = await tx.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
           });
-          const editing = await tx.productRevision.create({
-            data: {
-              productId: product.id,
-              version: published.version + 1,
-              status: 'DRAFT',
-              categoryId: published.categoryId,
-              title: published.title,
-              story: published.story,
-              technique: published.technique,
-              materials: published.materials,
-              dimensions: published.dimensions,
-              weight: published.weight,
-              year: published.year,
-              condition: published.condition,
-              uniqueness: published.uniqueness,
-              provenance: published.provenance,
-              city: published.city,
-              packaging: published.packaging,
-              deliveryInfo: published.deliveryInfo,
-              creationIntro: published.creationIntro,
-              images: {
-                createMany: {
-                  data: published.images.map((image) => ({
-                    imageId: image.imageId,
-                    position: image.position,
-                  })),
-                },
-              },
-            },
-          });
-          editingRevisionId = editing.id;
-          await tx.product.update({
-            where: { id: product.id },
-            data: { editingRevisionId },
-          });
+          return toProductResponse(unchanged);
         }
+        const editingRevisionId = await ensureAuthorEditingRevision(
+          tx,
+          product,
+          userId,
+          'edit',
+        );
 
         await tx.productRevision.update({
           where: { id: editingRevisionId },
@@ -297,6 +274,15 @@ export class ProductsService {
           'edit',
         );
         throw new ConflictException('Product cannot be edited');
+      }
+      if (
+        product.editingRevisionId &&
+        Object.keys(revisionData).length > 0
+      ) {
+        await tx.productRevision.update({
+          where: { id: product.editingRevisionId },
+          data: revisionData,
+        });
       }
 
       const updated = await tx.product.findUniqueOrThrow({
@@ -439,6 +425,67 @@ export class ProductsService {
     });
   }
 
+  async hide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'ARCHIVED');
+  }
+
+  async unhide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'APPROVED');
+  }
+
+  private async setAuthorVisibility(
+    userId: string,
+    id: string,
+    nextStatus: 'APPROVED' | 'ARCHIVED',
+  ) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, id);
+      const product = await tx.product.findUnique({
+        where: { id },
+        select: {
+          ...productWriteGuardSelect,
+          publishedRevisionId: true,
+        },
+      });
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
+      }
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      assertProductRevisionTransition(
+        'author',
+        product.status as ProductStatus,
+        nextStatus,
+      );
+      if (product.publishedRevisionId == null) {
+        throw new ConflictException('Product has no published revision');
+      }
+
+      await tx.product.update({
+        where: { id },
+        data: { status: nextStatus },
+      });
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: userId,
+          targetType: 'PRODUCT',
+          targetId: id,
+          oldStatus: product.status,
+          newStatus: nextStatus,
+          reason: null,
+        },
+      });
+
+      const updated = await tx.product.findUniqueOrThrow({
+        where: { id },
+        select: productSelect,
+      });
+      return toProductResponse(updated);
+    });
+  }
+
   async replaceCreationStory(
     userId: string,
     productId: string,
@@ -559,6 +606,35 @@ export class ProductsService {
     });
   }
 
+  async getPortfolio(publicId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        publicId,
+        ...publicDirectProductWhere,
+      },
+      select: publicCatalogProductSelect,
+    });
+    if (!product) {
+      throw new NotFoundException('Work not found');
+    }
+    const item = this.toPortfolioItem(product);
+    if (!item) {
+      throw new NotFoundException('Work not found');
+    }
+    return item;
+  }
+
+  async listPortfolio(query: PublicDiscoveryQuery) {
+    const { products, pagination } = await this.loadCatalogPage(query);
+    return {
+      items: products.flatMap((product) => {
+        const item = this.toPortfolioItem(product);
+        return item ? [item] : [];
+      }),
+      pagination,
+    };
+  }
+
   async getPublic(publicId: string) {
     const product = await this.prisma.product.findFirst({
       where: {
@@ -568,6 +644,9 @@ export class ProductsService {
       include: {
         sellerProfile: {
           select: publicSellerProfileSelect,
+        },
+        publishedRevision: {
+          select: productRevisionGallerySelect,
         },
         images: {
           orderBy: { position: 'asc' },
@@ -620,6 +699,15 @@ export class ProductsService {
   }
 
   async listPublic(query: PublicDiscoveryQuery) {
+    const { products, pagination } = await this.loadCatalogPage(query);
+    return productListResponseSchema.parse({
+      products: products.map((product) => this.toPublicProduct(product)),
+      pagination,
+      facets: await this.discoveryFacets(query),
+    });
+  }
+
+  private async loadCatalogPage(query: PublicDiscoveryQuery) {
     const cte = publicCatalogCte(query);
     const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
       Prisma.sql`${cte}
@@ -643,11 +731,10 @@ export class ProductsService {
         );
 
     if (!pageRows.length) {
-      return productListResponseSchema.parse({
-        products: [],
+      return {
+        products: [] as PublicCatalogProductRecord[],
         pagination: { page: query.page, limit: query.limit, total },
-        facets: await this.discoveryFacets(query),
-      });
+      };
     }
 
     const products = await this.prisma.product.findMany({
@@ -660,15 +747,14 @@ export class ProductsService {
     const pagedProducts = pageRows
       .map((row) => productsById.get(row.id))
       .filter(
-        (product): product is (typeof products)[number] =>
+        (product): product is PublicCatalogProductRecord =>
           product !== undefined,
       );
 
-    return productListResponseSchema.parse({
-      products: pagedProducts.map((product) => this.toPublicProduct(product)),
+    return {
+      products: pagedProducts,
       pagination: { page: query.page, limit: query.limit, total },
-      facets: await this.discoveryFacets(query),
-    });
+    };
   }
 
   private async discoveryFacets(query: PublicDiscoveryQuery) {
@@ -726,67 +812,73 @@ export class ProductsService {
     };
   }
 
-  toPublicProduct(
-    product: Awaited<ReturnType<PrismaService['product']['findFirst']>> &
-      object,
-  ) {
-    const record = product as typeof product & {
-      sellerProfile: {
-        id: string;
-        slug: string;
-        sellerType: 'creator' | 'influencer';
-        discipline: string;
-        fullName: string;
-        country: string;
-        city: string | null;
-        practice: string | null;
-        socialLink: string;
-        telegramUrl: string | null;
-        instagramUrl: string | null;
-        websiteUrl: string | null;
-        shortDescription: string;
-      };
-      images: Array<{
-        id: string;
-        position: number;
-        mimeType: string;
-        byteLength: number;
-        checksum: string;
-        width: number | null;
-        height: number | null;
-      }>;
-    };
+  toPublicProduct(product: PublicCatalogProductRecord) {
+    const published = product.publishedRevision;
+    const publishedImages = toRevisionGalleryImages(published);
     const publicProduct = toContractProduct({
-      id: record.id,
-      publicId: record.publicId,
-      sellerProfileId: record.sellerProfileId,
-      categoryId: record.categoryId,
-      title: record.title,
-      story: record.story,
-      technique: record.technique,
-      materials: record.materials,
-      dimensions: record.dimensions,
-      weight: record.weight,
-      year: record.year,
-      condition: record.condition,
-      uniqueness: record.uniqueness,
-      provenance: record.provenance,
-      city: record.city,
-      packaging: record.packaging,
-      deliveryInfo: record.deliveryInfo,
-      publishedAt: record.publishedAt,
-      status: record.status,
-      editingRevisionId: record.editingRevisionId,
-      publishedRevisionId: record.publishedRevisionId,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      images: record.images,
+      id: product.id,
+      publicId: product.publicId,
+      sellerProfileId: product.sellerProfileId,
+      categoryId: published?.categoryId ?? product.categoryId,
+      title: published?.title ?? product.title,
+      story: published?.story ?? product.story,
+      technique: published?.technique ?? product.technique,
+      materials: published?.materials ?? product.materials,
+      dimensions: published?.dimensions ?? product.dimensions,
+      weight: product.weight,
+      year: published?.year ?? product.year,
+      condition: product.condition,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      packaging: product.packaging,
+      deliveryInfo: product.deliveryInfo,
+      publishedAt: product.publishedAt,
+      status: product.status,
+      editingRevisionId: product.editingRevisionId,
+      publishedRevisionId: product.publishedRevisionId,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      editingRevision: null,
+      images: publishedImages ?? [],
     });
 
     return {
       product: publicProduct,
-      sellerProfile: toPublicSellerProfile(record.sellerProfile),
+      sellerProfile: toPublicSellerProfile(product.sellerProfile),
       listing: null,
+    };
+  }
+
+  toPortfolioItem(product: PublicCatalogProductRecord) {
+    const published = product.publishedRevision;
+    const images = toRevisionGalleryImages(published);
+    if (
+      !published?.title ||
+      !published.categoryId ||
+      !product.publishedAt ||
+      !product.sellerProfile.city?.trim() ||
+      !images ||
+      images.length === 0
+    ) {
+      return null;
+    }
+
+    return {
+      product: {
+        id: product.id,
+        publicId: product.publicId,
+        title: published.title,
+        story: published.story,
+        categoryId: published.categoryId,
+        technique: published.technique,
+        materials: published.materials,
+        dimensions: published.dimensions,
+        year: published.year,
+        images: toImageContracts(images),
+        publishedAt: product.publishedAt.toISOString(),
+      },
+      sellerProfile: toPublicSellerProfile(product.sellerProfile),
     };
   }
 }

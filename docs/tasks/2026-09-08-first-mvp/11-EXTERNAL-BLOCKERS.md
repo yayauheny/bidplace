@@ -1,6 +1,6 @@
 # First MVP external blockers before design
 
-Status: `Open` as of 2026-09-08. These are external launch gates; they do not authorize
+Status: `Open` as of 2026-09-09. These are external launch gates; they do not authorize
 package 07 or a deployment.
 
 ## Lawyer review
@@ -20,7 +20,10 @@ package 07 or a deployment.
 - Configure production `MEDIA_STORAGE_PROVIDER=s3` and validate object storage, email,
   public URL, CORS/proxy and secret handling without logging credentials.
 - Run a disposable PostgreSQL plus MinIO/S3 migration, backfill, restore and checksum
-  drill. Current local environment has no PostgreSQL listening on `127.0.0.1:5432`.
+  drill. Local Compose now starts Postgres (`127.0.0.1:5432`) and MinIO (`9000`/`9001`,
+  bucket `bidplace-media`). API integration uses `bidplace_integration`. A restore
+  checksum of existing local `product_images` still fails with S3 `NoSuchKey` until
+  those bytes are backfilled; that remains an ops gate, not a “Postgres is down” issue.
 
 ## Staging verification
 

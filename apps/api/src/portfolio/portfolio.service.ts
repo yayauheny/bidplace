@@ -23,25 +23,26 @@ export class PortfolioService {
   ) {}
 
   async listWorks(query: PortfolioWorksQuery) {
-    const response = await this.products.listPublic({
+    const response = await this.products.listPortfolio({
       page: query.page,
       limit: query.limit,
       q: query.q,
       category: query.category,
       materials: query.materials,
       sort: query.sort,
+      author: query.author,
     });
 
     return portfolioWorksResponseSchema.parse({
-      works: response.products.map(toPortfolioWorkItem),
+      works: response.items.map(toPortfolioWorkItem),
       pagination: response.pagination,
     });
   }
 
   async getWork(publicId: string) {
-    const response = await this.products.getPublic(publicId);
+    const response = await this.products.getPortfolio(publicId);
     const work = toPortfolioWorkItem(response);
-    const authorWorks = await this.products.listPublic({
+    const authorWorks = await this.products.listPortfolio({
       page: 1,
       limit: 4,
       author: response.sellerProfile.slug,
@@ -50,7 +51,7 @@ export class PortfolioService {
 
     return portfolioWorkDetailResponseSchema.parse({
       ...work,
-      relatedWorks: authorWorks.products
+      relatedWorks: authorWorks.items
         .filter((item) => item.product.publicId !== publicId)
         .map(toPortfolioWorkItem),
     });
@@ -80,22 +81,22 @@ export class PortfolioService {
   }
 
   async getAuthor(slug: string, query: PortfolioWorksQuery) {
-    const response = await this.sellers.getPublic(
-      slug,
-      {
-        page: query.page,
-        limit: query.limit,
-        sort: query.sort,
-      },
-      { requireCity: true },
-    );
+    const author = await this.sellers.getApprovedPublicAuthor(slug, {
+      requireCity: true,
+    });
+    if (!author) throw new NotFoundException('Author not found');
 
-    if (!response) throw new NotFoundException('Author not found');
+    const works = await this.products.listPortfolio({
+      page: query.page,
+      limit: query.limit,
+      sort: query.sort,
+      author: slug,
+    });
 
     return portfolioAuthorDetailResponseSchema.parse({
-      author: toPortfolioAuthor(response.sellerProfile),
-      works: response.products.map(toPortfolioWorkItem),
-      pagination: response.pagination,
+      author: toPortfolioAuthor(author.sellerProfile),
+      works: works.items.map(toPortfolioWorkItem),
+      pagination: works.pagination,
     });
   }
 
@@ -112,10 +113,7 @@ export class PortfolioService {
   }
 
   async getApplication(userId: string) {
-    const [response, editingRevision] = await Promise.all([
-      this.sellers.getMine(userId),
-      this.sellers.getEditingRevision(userId),
-    ]);
+    const response = await this.sellers.getMine(userId);
     const profile = response.sellerProfile;
     return portfolioAuthorApplicationResponseSchema.parse({
       application: {
@@ -128,7 +126,7 @@ export class PortfolioService {
         shortDescription: profile.shortDescription,
         status: profile.status,
       },
-      editingRevision,
+      editingRevision: response.editingRevision,
     });
   }
 
@@ -137,26 +135,37 @@ export class PortfolioService {
     return this.getApplication(userId);
   }
 
-  addAchievement(userId: string, input: PortfolioAchievementWriteRequest) {
-    return this.sellers.addAchievement(userId, input);
+  addAchievement(
+    userId: string,
+    input: PortfolioAchievementWriteRequest,
+    image?: Parameters<SellersService['addAchievement']>[2],
+  ) {
+    return this.sellers.addAchievement(userId, input, image);
+  }
+
+  deleteAchievement(userId: string, achievementId: string) {
+    return this.sellers.deleteAchievement(userId, achievementId);
+  }
+
+  getApplicationPhoto(userId: string) {
+    return this.sellers.getEditingPhoto(userId);
+  }
+
+  getAchievementImage(id: string, userId?: string, role?: string) {
+    return this.sellers.getAchievementImage(id, userId, role);
   }
 
   async listCabinetWorks(userId: string) {
-    const response = await this.sellers.listProducts(userId);
-    const works = await Promise.all(
-      response.products.map(async (product) => {
-        const detail = await this.sellers.getProduct(userId, product.id);
-        return {
-          id: product.id,
-          publicId: product.publicId,
-          title: product.title,
-          status: product.status,
-          updatedAt: product.updatedAt,
-          moderationMessage: detail.lastModerationReason,
-        };
-      }),
-    );
+    const works = await this.sellers.listCabinetWorks(userId);
     return portfolioCabinetWorksResponseSchema.parse({ works });
+  }
+
+  hideWork(userId: string, productId: string) {
+    return this.products.hide(userId, productId);
+  }
+
+  unhideWork(userId: string, productId: string) {
+    return this.products.unhide(userId, productId);
   }
 }
 
@@ -164,27 +173,19 @@ function toPortfolioWorkItem(item: {
   product: {
     id: string;
     publicId: string;
-    title: string | null;
+    title: string;
     story: string | null;
-    categoryId: string | null;
+    categoryId: string;
     technique: string | null;
     materials: string | null;
     dimensions: string | null;
     year: number | null;
     images: Array<unknown>;
-    publishedAt: string | null;
+    publishedAt: string;
   };
   sellerProfile: Parameters<typeof toPortfolioAuthor>[0];
 }) {
   const { product, sellerProfile } = item;
-  if (
-    !product.title ||
-    !product.categoryId ||
-    !product.publishedAt ||
-    product.images.length === 0
-  ) {
-    throw new NotFoundException('Work not found');
-  }
   return {
     work: {
       id: product.id,
@@ -198,6 +199,7 @@ function toPortfolioWorkItem(item: {
       year: product.year,
       images: product.images,
       publishedAt: product.publishedAt,
+      sharePath: `/works/${product.publicId}`,
     },
     author: toPortfolioAuthor(sellerProfile),
   };
@@ -221,6 +223,12 @@ function toPortfolioAuthor(profile: {
         id: string;
         occurredAt: string | null;
         body: string;
+        image: {
+          url: string;
+          mimeType: string;
+          byteLength: number;
+          checksum: string;
+        } | null;
       }>
     | undefined;
 }) {
@@ -229,7 +237,7 @@ function toPortfolioAuthor(profile: {
     slug: profile.slug,
     fullName: profile.fullName,
     country: profile.country,
-    city: profile.city ?? '',
+    city: profile.city,
     discipline: profile.discipline,
     practice: profile.practice,
     profilePhotoUrl: profile.profilePhotoUrl,
@@ -238,5 +246,6 @@ function toPortfolioAuthor(profile: {
     websiteUrl: profile.websiteUrl,
     shortDescription: profile.shortDescription,
     achievements: profile.achievements ?? [],
+    sharePath: `/authors/${profile.slug}`,
   };
 }

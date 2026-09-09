@@ -501,9 +501,19 @@ describe('Product write atomicity against PostgreSQL', () => {
       orderBy: { position: 'asc' },
       select: { id: true, position: true },
     });
-    expect(remaining.map((row) => row.position)).toEqual([0, 1]);
+    expect(remaining).toHaveLength(2);
+    expect(new Set(remaining.map((row) => row.position)).size).toBe(2);
     expect(remaining.map((row) => row.id)).not.toContain(product.images[0]!.id);
     expect(remaining.some((row) => row.id === second.id)).toBe(true);
+    expect(
+      (
+        await prisma.productRevisionImage.findMany({
+          where: { revisionId: product.editingRevisionId },
+          orderBy: { position: 'asc' },
+          select: { position: true },
+        })
+      ).map((row) => row.position),
+    ).toEqual([0, 1]);
   });
 
   it('rejects reorder after a concurrent add changes the locked image set', async () => {
@@ -540,7 +550,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     await waitThenRelease(release);
 
     await expect(reorderPromise).rejects.toThrow(
-      'Image order must include every Product image exactly once',
+      'Image order must include every editing revision image exactly once',
     );
     await finished;
 

@@ -1,16 +1,15 @@
-import type { PublicSellerListItem } from '@bidplace/contracts';
 import { View, type DimensionValue } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { CreatorCard } from './CreatorCard';
+import { CreatorCard, type CreatorCardItem } from './CreatorCard';
 
 export function CreatorCardGrid({
   columns,
   items,
 }: {
   columns: 1 | 2 | 3 | 4;
-  items: PublicSellerListItem[];
+  items: CreatorCardItem[];
 }) {
   const width = `${(100 / columns).toFixed(4)}%` as DimensionValue;
 

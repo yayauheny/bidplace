@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   handoffContactTypeSchema,
   handoffInitiatorSchema,
+  sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
   sellerTypeSchema,
 } from './enums';
@@ -89,6 +90,19 @@ export const publicSellerProfileSchema = sellerProfileSchema
             id: uuidSchema,
             occurredAt: isoDateTimeSchema.nullable(),
             body: z.string().trim().min(1),
+            image: z
+              .object({
+                url: z
+                  .string()
+                  .regex(
+                    /^\/api\/author-achievements\/[0-9a-f-]+\/image$/,
+                  ),
+                mimeType: z.string().trim().min(1),
+                byteLength: z.number().int().positive(),
+                checksum: z.string().length(64),
+              })
+              .strict()
+              .nullable(),
           })
           .strict(),
       )
@@ -102,7 +116,7 @@ const sellerProfileBaseWriteSchema = z
     discipline: sellerDisciplineSchema.optional(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
-    city: z.string().trim().min(1).optional(),
+    city: z.string().trim().min(1),
     practice: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema,
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
@@ -229,6 +243,14 @@ export const sellerProfileUpdateRequestSchema = z
 export const sellerProfileResponseSchema = z
   .object({
     sellerProfile: sellerProfileSchema,
+    editingRevision: z
+      .object({
+        id: uuidSchema,
+        version: z.number().int().positive(),
+        status: sellerProfileRevisionStatusSchema,
+      })
+      .strict()
+      .nullable(),
   })
   .strict();
 

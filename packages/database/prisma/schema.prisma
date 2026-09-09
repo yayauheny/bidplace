@@ -158,6 +158,10 @@ model SellerProfileRevision {
   instagramUrl    String?             @map("instagram_url") @db.VarChar(255)
   websiteUrl      String?             @map("website_url") @db.VarChar(255)
   shortDescription String              @map("short_description") @db.Text
+  profilePhotoMimeType String?         @map("profile_photo_mime_type") @db.VarChar(100)
+  profilePhotoByteLength Int?          @map("profile_photo_byte_length")
+  profilePhotoChecksum String?         @map("profile_photo_checksum") @db.Char(64)
+  profilePhotoObjectKey String?        @map("profile_photo_object_key") @db.VarChar(255)
   submittedAt     DateTime?           @map("submitted_at")
   reviewedAt      DateTime?           @map("reviewed_at")
   createdAt       DateTime            @default(now()) @map("created_at")
@@ -169,6 +173,7 @@ model SellerProfileRevision {
 
   @@unique([sellerProfileId, version])
   @@index([sellerProfileId, status])
+  @@index([profilePhotoObjectKey])
   @@map("seller_profile_revisions")
 }
 

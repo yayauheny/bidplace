@@ -1,5 +1,85 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-09 — Review-hole closure (fail-closed commerce, owner revision, visitor reuse)
+
+- `Implemented`: `CommerceEnabledGuard` also covers `GET /api/sellers`,
+  `GET /api/sellers/:slug/detail` and `GET /api/me/activity`. Portfolio reads
+  `GET /api/works` and `GET /api/authors` stay available. Evidence:
+  `apps/api/src/sellers/sellers.controller.ts`,
+  `apps/api/src/activity/activity.controller.ts`,
+  `test/integration/commerce-disabled-reads.integration.spec.ts`.
+- `Implemented`: public Work SQL/Prisma require published revision title, category,
+  gallery, `published_at`, and a trimmed author city so `pagination.total` matches
+  items. Empty city omits the author instead of 500. `toPublicProduct` uses
+  `publishedImages ?? []`. Hide/unhide require `publishedRevisionId`. Empty PATCH
+  on an approved Work does not fork. Submit requires `socialLink`. `SUSPENDED`
+  cannot mutate achievements; `REJECTED` first applications can PATCH.
+- `Implemented`: owner `GET /api/seller/profile` and `GET /api/author/application`
+  overlay public fields from the editing revision while keeping live `status`.
+  The owner DTO includes `editingRevision`. Cabinet is editable for missing
+  profile, `CHANGES_REQUESTED`, or `APPROVED`/`REJECTED` with a
+  `DRAFT`/`CHANGES_REQUESTED`/`REJECTED` revision; city is required; pending photo
+  preview uses authenticated `GET /api/author/application/photo`.
+- `Implemented`: visitor `/product/[publicId]` and `/seller/[slug]` load
+  `api.portfolio.getWork` / `getAuthor`. Commerce chrome (player, bid, listing
+  tabs, price sort) is hidden. `/works/[publicId]` and `/authors/[slug]` are
+  Redirect-only aliases for RFC `sharePath`.
+- `Implemented`: Postgres revision/achievement `get` returns null; `put`/`delete`
+  throw `RevisionMediaStorageError`. Product/achievement object delete runs after
+  commit. Upload MIME uses `acceptSupportedUploadMimeType`; profile POST/PATCH and
+  achievement DELETE are rate-limited.
+- `Partial`: owner preview of a pending approved-profile photo is 404 on
+  `PostgresImageStore` because revision keys are fail-closed until S3. Guest
+  public photo stays on the published object key.
+- `Not implemented`: package 07 Figma/tokens/`.pen` cutover. If
+  `COMMERCE_ENABLED` is later true, these two public screens remain on portfolio
+  until a separate commerce-wave task.
+- `Needs verification`: none for this closure. `pnpm verify` passed on 2026-09-09
+  (typecheck 7/7, lint 2/2, API unit 381/381, contracts 30/30, integration 89/89,
+  build 7/7). `.pen` files are not in the diff. Lawyer and staging remain external.
+
+## 2026-09-09 — P0–P2 pre-design closure (published revision, hide, commerce reads)
+
+
+- `Implemented`: public portfolio Work JSON and image bytes are the published
+  revision only. `ProductsService.listPortfolio` / `getPortfolio` feed
+  `GET /api/works` without `publicProductSchema` (no required story, listing, or
+  `minimumNextBid`). Cover/order is `ProductRevisionImage.position` (`0` = cover).
+  Guest `GET /api/images/:id` is 404 unless the image belongs to
+  `publishedRevisionId`. Owner `PATCH` and gallery writes on `APPROVED`/`ARCHIVED`
+  fork the editing revision first. First Work approval sets `publishedAt` when
+  missing. Evidence: `apps/api/src/products/products.service.ts`,
+  `images.service.ts`, `test/integration/portfolio-published-revision.integration.spec.ts`.
+- `Implemented`: author hide/unhide is `POST /api/products/:id/hide` and `/unhide`
+  (`APPROVED` ↔ `ARCHIVED`). Unhide requires `publishedRevisionId`. Cabinet
+  `GET /api/author/cabinet/works` loads products plus one `auditEvent.findMany`
+  (no per-row `getProduct`). Public DTOs include relative `sharePath`
+  `/works/{publicId}` and `/authors/{slug}`.
+- `Implemented`: `CommerceEnabledGuard` on public `GET /api/products` and
+  `GET /api/discovery/home` returns 404 `Commerce is unavailable` while
+  `COMMERCE_ENABLED` defaults to false. Author `POST`/`PATCH`/`submit` are
+  unchanged. Mobile Home/Search/Authors and the Works catalog call
+  `api.portfolio.*`. Evidence:
+  `test/integration/commerce-disabled-reads.integration.spec.ts`.
+- `Implemented`: profile/achievement revision media keys
+  (`seller-profile-revision:{id}`, `seller-achievement:{id}`) fail closed in
+  `PostgresImageStore`. First application photo remains `seller-photo:{profileId}`.
+  Owner preview is `GET /api/author/application/photo`. Submit requires city,
+  photo, fullName, slug, country, bio, discipline. Achievement upload is rate-limited;
+  unpublished achievement images 404 for guests. API unit 370/370, contracts 30/30,
+  integration 86/86.
+- `Partial`: Compose runs local MinIO (`9000`/`9001`, bucket `bidplace-media`) and
+  `.env.example` documents `MEDIA_STORAGE_PROVIDER=s3`. `pnpm ops:verify-restore`
+  reaches MinIO; checksum of existing local `product_images` is `NoSuchKey` until
+  backfill. Production S3/SMTP/hosting remain unselected.
+- `Not implemented`: package 07 Figma/tokens/`.pen` cutover. Visitor Work/Author
+  screens now load portfolio APIs on `/product/:publicId` and `/seller/:slug`
+  (see the 2026-09-09 review-hole closure above).
+- `Needs verification`: none for this backend/API closure beyond the remaining
+  external gates. `pnpm verify` passed on 2026-09-09 (typecheck 7/7, lint 2/2,
+  API unit 370/370, contracts 30/30, integration 86/86, build 7/7). Lawyer and
+  staging remain external.
+
 ## 2026-09-08 — First MVP scope changed to public portfolio
 
 - `Confirmed product`: `DEC-082`–`DEC-084` replace the first public release target

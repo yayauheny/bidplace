@@ -1,15 +1,22 @@
 type AuctionCardItem = {
-  product: { title: string; story: string };
-  listing: {
-    currentPrice: number;
-    status: 'LIVE' | 'SCHEDULED' | 'ENDED' | 'CANCELLED' | 'DRAFT';
-    endsAt: string;
-  } | null;
+  product: {
+    id: string;
+    publicId: string;
+    title: string;
+    story: string | null;
+    images: Array<{ id: string; url: string }>;
+  };
+  sellerProfile: {
+    slug: string;
+    fullName: string;
+    profilePhotoUrl: string;
+  };
+  listing?: { status: string } | null;
 };
 
 export function getAuctionCardContent(item: AuctionCardItem) {
   const { product } = item;
-  const description = product.story.replace(/\s+/g, ' ').trim();
+  const description = (product.story ?? '').replace(/\s+/g, ' ').trim();
 
   return {
     title: product.title,

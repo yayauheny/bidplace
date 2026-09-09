@@ -35,5 +35,6 @@ describe('seller profile revision state', () => {
   it('locks a pending revision against author edits', () => {
     expect(canAuthorEditSellerProfileRevision('PENDING_REVIEW')).toBe(false);
     expect(canAuthorEditSellerProfileRevision('DRAFT')).toBe(true);
+    expect(canAuthorEditSellerProfileRevision('REJECTED')).toBe(true);
   });
 });

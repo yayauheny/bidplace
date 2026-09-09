@@ -3,15 +3,38 @@ import { type Prisma } from '@bidplace/database';
 
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
-export const productImageMetadataSelect = {
+export const productImageBlobSelect = {
   id: true,
-  position: true,
   mimeType: true,
   byteLength: true,
   checksum: true,
   width: true,
   height: true,
 } satisfies Prisma.ProductImageSelect;
+
+export const productImageMetadataSelect = {
+  ...productImageBlobSelect,
+  position: true,
+} satisfies Prisma.ProductImageSelect;
+
+export const productRevisionImageSelect = {
+  position: true,
+  image: { select: productImageBlobSelect },
+} satisfies Prisma.ProductRevisionImageSelect;
+
+export const productRevisionGallerySelect = {
+  title: true,
+  story: true,
+  categoryId: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  year: true,
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productRevisionImageSelect,
+  },
+} satisfies Prisma.ProductRevisionSelect;
 
 export const productSelect = {
   id: true,
@@ -37,6 +60,18 @@ export const productSelect = {
   publishedRevisionId: true,
   createdAt: true,
   updatedAt: true,
+  editingRevision: {
+    select: {
+      ...productRevisionGallerySelect,
+      weight: true,
+      condition: true,
+      uniqueness: true,
+      provenance: true,
+      city: true,
+      packaging: true,
+      deliveryInfo: true,
+    },
+  },
   images: {
     select: productImageMetadataSelect,
     orderBy: { position: 'asc' },
@@ -47,37 +82,68 @@ export type ProductRecord = Prisma.ProductGetPayload<{
   select: typeof productSelect;
 }>;
 
+type GalleryImage = {
+  id: string;
+  position: number;
+  mimeType: string;
+  byteLength: number;
+  checksum: string;
+  width: number | null;
+  height: number | null;
+};
+
+type RevisionGallery = {
+  images: Array<{
+    position: number;
+    image: Omit<GalleryImage, 'position'>;
+  }>;
+};
+
+export function toImageContracts(images: readonly GalleryImage[]) {
+  return images.map((image) => ({
+    id: image.id,
+    position: image.position,
+    url: `/api/images/${image.id}`,
+    mimeType: image.mimeType,
+    byteLength: image.byteLength,
+    checksum: image.checksum,
+    width: image.width ?? null,
+    height: image.height ?? null,
+  }));
+}
+
+export function toRevisionGalleryImages(revision: RevisionGallery | null | undefined) {
+  if (!revision) return null;
+  return revision.images.map(({ position, image }) => ({
+    ...image,
+    position,
+  }));
+}
+
 export function toContractProduct(product: ProductRecord): Product {
+  const editing = product.editingRevision;
+  const revisionImages = toRevisionGalleryImages(editing);
   return {
     id: product.id,
     publicId: product.publicId,
     sellerProfileId: product.sellerProfileId,
-    categoryId: product.categoryId ?? null,
-    title: product.title ?? null,
-    story: product.story ?? null,
-    technique: product.technique ?? null,
-    materials: product.materials ?? null,
-    dimensions: product.dimensions ?? null,
-    weight: product.weight ?? null,
-    year: product.year ?? null,
-    condition: product.condition ?? null,
-    uniqueness: product.uniqueness ?? null,
-    provenance: product.provenance ?? null,
-    city: product.city ?? null,
-    packaging: product.packaging ?? null,
-    deliveryInfo: product.deliveryInfo ?? null,
+    categoryId: (editing?.categoryId ?? product.categoryId) ?? null,
+    title: (editing ? editing.title : product.title) ?? null,
+    story: (editing ? editing.story : product.story) ?? null,
+    technique: (editing ? editing.technique : product.technique) ?? null,
+    materials: (editing ? editing.materials : product.materials) ?? null,
+    dimensions: (editing ? editing.dimensions : product.dimensions) ?? null,
+    weight: (editing ? editing.weight : product.weight) ?? null,
+    year: (editing ? editing.year : product.year) ?? null,
+    condition: (editing ? editing.condition : product.condition) ?? null,
+    uniqueness: (editing ? editing.uniqueness : product.uniqueness) ?? null,
+    provenance: (editing ? editing.provenance : product.provenance) ?? null,
+    city: (editing ? editing.city : product.city) ?? null,
+    packaging: (editing ? editing.packaging : product.packaging) ?? null,
+    deliveryInfo: (editing ? editing.deliveryInfo : product.deliveryInfo) ?? null,
     publishedAt: product.publishedAt?.toISOString() ?? null,
     status: product.status,
-    images: product.images.map((image) => ({
-      id: image.id,
-      position: image.position,
-      url: `/api/images/${image.id}`,
-      mimeType: image.mimeType,
-      byteLength: image.byteLength,
-      checksum: image.checksum,
-      width: image.width ?? null,
-      height: image.height ?? null,
-    })),
+    images: toImageContracts(revisionImages ?? product.images),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
   };
@@ -113,11 +179,16 @@ export const publicCatalogProductSelect = {
   createdAt: true,
   updatedAt: true,
   sellerProfile: { select: publicSellerProfileSelect },
+  publishedRevision: { select: productRevisionGallerySelect },
   images: {
     orderBy: { position: 'asc' as const },
     select: productImageMetadataSelect,
   },
 } satisfies Prisma.ProductSelect;
+
+export type PublicCatalogProductRecord = Prisma.ProductGetPayload<{
+  select: typeof publicCatalogProductSelect;
+}>;
 
 export function toCreationStepContract(step: {
   id: string;

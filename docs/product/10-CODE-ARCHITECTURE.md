@@ -12,12 +12,21 @@
 - `apps/api/src/core/commerce` owns the fail-closed commerce capability. Its typed
   `COMMERCE_ENABLED` configuration defaults to `false`; commerce HTTP controllers,
   commerce admin actions, lifecycle and Socket.IO consume the same boundary.
-  `apps/api/src/discovery` delegates to Product/Seller services and portfolio
-  discovery no longer requires a `Listing` to make an approved Work public.
+  Public `GET /api/products`, `GET /api/products/:publicId`,
+  `GET /api/discovery/home`, `GET /api/sellers`, `GET /api/sellers/:slug/detail`
+  and `GET /api/me/activity` use `CommerceEnabledGuard`.
+  `apps/api/src/portfolio` is the visitor catalog: `listPortfolio` / `getPortfolio`
+  read `publishedRevision` fields and `product_revision_images`, not
+  `publicProductSchema`.
+  Expo public Work/Author screens reuse `/product/[publicId]` and `/seller/[slug]`
+  but load `GET /api/works` and `GET /api/authors`; thin Redirect aliases exist
+  at `/works/[publicId]` and `/authors/[slug]` for RFC share paths.
 - `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author and author
   application projections. It delegates persistence to Product/Seller services and
   validates all public responses with `packages/contracts`; its DTOs never expose
-  commerce fields.
+  commerce fields. Canonical share paths are relative (`/works/{publicId}`,
+  `/authors/{slug}`). `socialLink` is owner/persistence-only and is omitted from
+  portfolio public author DTOs.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
@@ -25,12 +34,18 @@
   Creator grids reuse `AuctionCardGrid` rather than duplicating card anatomy.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
-  metadata, ownership, checksum and deterministic object key; S3-compatible storage
-  retains binary bytes when `MEDIA_STORAGE_PROVIDER=s3`. Production configuration
-  fails closed without complete S3 settings. `scripts/ops/backfill-media-to-s3.mjs`
-  is dry-run by default and validates checksums before object writes; restore
-  verification reads sampled objects and compares their checksums without logging
-  content or credentials.
+  metadata, ownership, checksum and deterministic object key. `PostgresImageStore`
+  still stores first-application seller photos (`seller-photo:{profileId}`) and
+  legacy product/creation-step bytes; `get` of `seller-profile-revision` and
+  `seller-achievement` keys returns `null` (HTTP 404), while `put`/`delete`
+  throw `RevisionMediaStorageError` (HTTP 503). Object bytes are deleted after
+  the metadata transaction commits. `MEDIA_STORAGE_PROVIDER=s3` holds revision
+  media.
+  Local Compose runs MinIO on `9000`/`9001` with bucket `bidplace-media`.
+  Production configuration fails closed without complete S3 settings.
+  `scripts/ops/backfill-media-to-s3.mjs` is dry-run by default and validates
+  checksums before object writes; restore verification reads sampled objects and
+  compares their checksums without logging content or credentials.
 - `apps/mobile/src/lib/environment.ts` owns API origin validation and `getApiAssetUrl`, which resolves relative media paths while preserving valid absolute HTTP(S) URLs. Media components own truthful missing/error presentation without changing API visibility rules.
 - `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
@@ -64,21 +79,29 @@ SellerProfile
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
 - `Product` is the current persistence name for a Work. `ProductRevision` holds
-  mutable public Work content and immutable revision-image membership; a Work points
-  to its editing and published revisions. A published Work copies its published
-  revision when the author starts a new edit. The prior revision and Product public
-  projection remain visible until admin approval atomically promotes the next
-  revision. Rejections and requested changes apply to the editing revision only;
-  hiding/unhiding applies to the approved Work. Work writes lock the Product row
+  mutable public Work content and revision-image membership; a Work points
+  to its editing and published revisions. Public JSON and image bytes are always
+  the published revision. Owner/admin reads and gallery writes use the editing
+  revision. A published Work copies its published revision when the author starts
+  a new edit (`ensureAuthorEditingRevision`). The prior revision stays public until
+  admin approval atomically sets `publishedRevisionId` and copies published fields
+  onto `Product`, including `publishedAt` on first publish. Rejections and requested
+  changes apply to the editing revision only; hiding/unhiding is `APPROVED` ↔
+  `ARCHIVED` on the Work. `ProductImage.position` is an opaque storage slot;
+  `ProductRevisionImage.position` is gallery order (cover is `0`). Object rows are
+  deleted only when no revision references them. Work writes lock the Product row
   (`SELECT … FOR UPDATE`) and re-check ownership and seller capability inside a
   Read Committed transaction;
 - `SellerProfileRevision` gives approved authors an editing-revision pointer and a
-  published-revision pointer. Public portfolio author data is read from the approved
-  profile projection; author submission locks edits and admin moderation only promotes
-  the approved revision. `SellerProfileRevisionAchievement` belongs to that revision,
-  so pending achievements cannot leak into the public author page. A new profile
-  revision copies the prior published achievement records (including media metadata),
-  and the append operation locks the revision row before calculating position;
+  published-revision pointer. Public portfolio author data and `GET /api/sellers/:slug/photo`
+  use the published/live pointer. Owner preview is `GET /api/author/application/photo`
+  against the editing revision object key. Author submission requires city, photo,
+  fullName, slug, country, bio and discipline. Admin moderation copies photo metadata
+  only after approval requirements succeed. `SellerProfileRevisionAchievement` belongs
+  to that revision (optional image); unpublished achievement bytes 404 for guests.
+  A new profile revision copies the prior published achievement records (including
+  media metadata), and the append operation locks the revision row before calculating
+  position;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
@@ -95,16 +118,16 @@ SellerProfile
   approved Product/SellerProfile Listing predicate, are rate-limited per IP,
   public rooms are capped per socket, and socket-local room tracking is cleared
   on disconnect.
-- Public discovery is split by contract: Product catalog queries use a
-  PostgreSQL canonical-listing CTE for server-side filters, status-aware sort,
-  total count and page selection before narrow Prisma hydration; Seller
-  directory queries expose only `q`, pagination and `activity`/`name` sort.
+- Public discovery is split by contract: portfolio Work catalog uses a PostgreSQL CTE
+  over approved products and `product_revision_images` of `published_revision_id`,
+  without a Listing join. Seller directory queries expose `q`, pagination and
+  `activity`/`name` sort and require a non-null city for public authors.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy
 
-- Buyer Activity (`GET /api/me/activity`) is a server-owned exhaustive projection of the latest Bid per Listing plus that buyer's Order. `CONTACTED` and `HANDOFF_FAILED` are first-class activity statuses. Cancelled Orders omit `orderPublicId` so the client cannot open a buyer-forbidden Order; the public Product link remains.
+- Buyer Activity (`GET /api/me/activity`) is a server-owned exhaustive projection of the latest Bid per Listing plus that buyer's Order. The HTTP path is fail-closed behind `CommerceEnabledGuard` while `COMMERCE_ENABLED` is false. `CONTACTED` and `HANDOFF_FAILED` are first-class activity statuses. Cancelled Orders omit `orderPublicId` so the client cannot open a buyer-forbidden Order; the public Product link remains.
 - Bid placement is server-time, serializable, idempotent by
   `(bidderUserId, idempotencyKey)`, self-bid protected, email/rules verified and
   compare-and-update guarded; admin accounts are explicitly denied by the Bids
@@ -125,10 +148,11 @@ SellerProfile
   seller snapshot only when the handoff initiator is `BUYER_CONTACTS_SELLER`,
   seller sees the buyer email snapshot, and admin sees the allowed full record.
 - Buyer-facing Order privacy mode can hide seller contacts entirely when the seller chooses `SELLER_CONTACTS_BUYER`; the buyer projection returns `null` contact fields in that mode.
-- Product image reorder uses a two-phase temporary offset inside a transaction
-  so the unique `(productId, position)` constraint never collides during swaps;
-  count/byte capacity is checked transactionally before insert. Listing `SCHEDULE`
-  locks the same Product row before `DRAFT → SCHEDULED`, which is the owner edit lock.
+- Product image reorder mutates only `ProductRevisionImage` rows of the editing
+  revision and must include every editing-revision image id exactly once.
+  `ProductImage.position` uniqueness still guards storage slots, not gallery order.
+  Listing `SCHEDULE` locks the same Product row before `DRAFT → SCHEDULED`, which is
+  the owner edit lock.
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
@@ -137,10 +161,10 @@ SellerProfile
   Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
   then `ImageStore.get`. Per-user upload rate limits apply. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
-- `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
-  S3-compatible adapter for configured production storage. New media paths persist
-  metadata and deterministic keys in PostgreSQL while the object store holds bytes;
-  full MinIO/PostgreSQL restore verification remains a release gate.
+- `ImageStore` selects PostgreSQL for legacy/backfill compatibility or an
+  S3-compatible adapter when configured. New profile-revision and achievement
+  binaries require S3; first application photos may still use Postgres. Full
+  MinIO checksum of existing BYTEA rows remains a release/ops gate.
 
 ## Runtime topology and extension boundary
 

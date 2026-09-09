@@ -1,19 +1,16 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Platform, View, type ViewStyle } from 'react-native';
-import type { z } from 'zod';
 
-import type { publicProductListItemSchema } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { getMotionDuration, useReducedMotion } from '../../lib/reduced-motion';
 import { getAuctionCardContent } from './auction-card-layout';
+import { type AuctionCardItem } from './auction-card-item';
 import { AppText } from './AppText';
 import { MotionPressable } from './MotionPressable';
 import { ResilientRemoteImage } from './ResilientRemoteImage';
-
-type AuctionCardItem = z.infer<typeof publicProductListItemSchema>;
 
 export function AuctionCard({ item }: { item: AuctionCardItem }) {
   const { product, sellerProfile, listing } = item;

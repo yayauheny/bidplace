@@ -89,4 +89,22 @@ describe('PostgresImageStore', () => {
       },
     });
   });
+
+  it('fails closed for new profile revision and achievement object keys', async () => {
+    await expect(
+      store.put(imageKey.sellerProfileRevision('revision-id'), {
+        bytes: Uint8Array.from([1]),
+        mimeType: 'image/png',
+      }),
+    ).rejects.toThrow('Revision media requires S3 image storage');
+    await expect(
+      store.delete(imageKey.sellerAchievement('achievement-id')),
+    ).rejects.toThrow('Revision media requires S3 image storage');
+    await expect(
+      store.get(imageKey.sellerProfileRevision('revision-id')),
+    ).resolves.toBeNull();
+    await expect(
+      store.get(imageKey.sellerAchievement('achievement-id')),
+    ).resolves.toBeNull();
+  });
 });

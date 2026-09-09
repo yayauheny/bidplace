@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { AppException } from '../core/errors';
 import { BidsService } from './bids.service';
-import { publicProductContentWhere } from '../products/public-visibility';
+import { publicListingWhere } from '../products/public-visibility';
 import { sellerProfileAuthSelect } from '../sellers/seller-profile.mapper';
 
 function createLiveListingTx(overrides: {
@@ -308,12 +308,7 @@ describe('BidsService error contract', () => {
     expect(findFirst).toHaveBeenCalledWith({
       where: {
         id: 'listing-id',
-        status: { in: ['LIVE', 'SCHEDULED', 'ENDED'] },
-        product: {
-          status: 'APPROVED',
-          sellerProfile: { status: 'APPROVED' },
-          ...publicProductContentWhere,
-        },
+        ...publicListingWhere(),
       },
       select: { id: true },
     });

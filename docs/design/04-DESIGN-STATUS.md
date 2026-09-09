@@ -1,8 +1,18 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-08
+Последнее обновление: 2026-09-09
 
-Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
+Общий статус: **Pen v2 public discovery implementation is Partial; visitor Work/Author screens read portfolio APIs on the existing routes; `pnpm verify` passed for this data-source cutover**
+
+## 2026-09-09 — Visitor screens reuse existing routes on portfolio data
+
+- `Implemented`: `/product/[publicId]` and `/seller/[slug]` stay the in-app
+  visitor URLs. They now load `GET /api/works/:id` and `GET /api/authors/:slug`.
+  Auction player, bid CTA, listing status tabs and price sort are not rendered.
+  `/works/[publicId]` and `/authors/[slug]` are Redirect-only aliases for RFC
+  share paths. No `.pen` or token change. `pnpm verify` passed on 2026-09-09.
+- Remaining: package 07 Figma/Pen visual cutover; commerce chrome if
+  `COMMERCE_ENABLED` is later true.
 
 ## 2026-09-08 — Portfolio-first Figma scope
 

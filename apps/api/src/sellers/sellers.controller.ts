@@ -22,11 +22,13 @@ import {
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
+import { CommerceEnabledGuard } from '../core/commerce';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
 import {
+  acceptSupportedUploadMimeType,
   getImageCacheControl,
   productImageUploadLimits,
-  supportedImageMimeTypes,
   type RawImageUpload,
   validateProductImageUploads,
 } from '../images/image-policy';
@@ -43,7 +45,13 @@ export class SellersController {
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -51,7 +59,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async create(
@@ -73,7 +81,13 @@ export class SellersController {
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -81,7 +95,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async update(
@@ -115,11 +129,13 @@ export class SellersController {
   }
 
   @Get('sellers')
+  @UseGuards(CommerceEnabledGuard)
   listPublic(@Query() query: unknown) {
     return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));
   }
 
   @Get('sellers/:slug/detail')
+  @UseGuards(CommerceEnabledGuard)
   getPublic(@Param('slug') slug: string, @Query() query: unknown) {
     return this.sellers.getPublic(
       slug,

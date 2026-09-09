@@ -12,14 +12,12 @@ import {
   PageHeader,
   PageState,
   PrimaryButton,
-  ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
 import {
   FormPageColumns,
   FormPageShell,
 } from '../../components/layout';
-import { getApiAssetUrl } from '../../lib/environment';
 import { useApiClient } from '../../providers/api-provider';
 import { ApiClientError } from '@bidplace/api-client';
 import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
@@ -27,6 +25,10 @@ import {
   getHandoffContactError,
   getProfileFieldErrors,
 } from './profile-validation';
+import {
+  canSubmitSellerProfileRevision,
+  isSellerProfileFormEditable,
+} from './seller-profile-editable';
 import {
   SellerProfileCreationStepSelector,
   SellerProfileFormSteps,
@@ -39,6 +41,7 @@ const emptyFields: ProfileFields = {
   fullName: '',
   discipline: '',
   country: 'BY',
+  city: '',
   socialLink: '',
   telegramUrl: '',
   instagramUrl: '',
@@ -78,8 +81,19 @@ export function SellerProfileScreen() {
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [profileStep, setProfileStep] = useState(1);
   const profile = query.data?.sellerProfile;
-  const editable = !profile || profile.status === 'CHANGES_REQUESTED';
+  const editingRevision = query.data?.editingRevision;
+  const editable = isSellerProfileFormEditable(profile, editingRevision);
+  const canSubmitRevision = canSubmitSellerProfileRevision(
+    profile,
+    editingRevision,
+  );
   const isProfileCreation = !profile;
+  const applicationPhoto = useQuery({
+    queryKey: ['seller', 'application-photo', profile?.id],
+    queryFn: () => api.portfolio.getAuthorApplicationPhoto(),
+    enabled: Boolean(profile) && !photoBlob,
+    retry: false,
+  });
 
   useEffect(() => {
     if (!profile) {
@@ -95,6 +109,7 @@ export function SellerProfileScreen() {
       fullName: profile.fullName,
       discipline: profile.discipline,
       country: profile.country,
+      city: profile.city ?? '',
       socialLink: profile.socialLink,
       telegramUrl: profile.telegramUrl ?? '',
       instagramUrl: profile.instagramUrl ?? '',
@@ -104,10 +119,27 @@ export function SellerProfileScreen() {
       handoffContactValue: profile.handoffContactValue,
       handoffInitiator: profile.handoffInitiator,
     });
-    setPhotoUri(getApiAssetUrl(profile.profilePhotoUrl));
     setPhotoFailed(false);
     setPhotoBlob(null);
   }, [profile]);
+
+  useEffect(() => {
+    if (photoBlob || !applicationPhoto.data) return;
+    let cancelled = false;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (cancelled || typeof reader.result !== 'string') return;
+      setPhotoUri(reader.result);
+      setPhotoFailed(false);
+    };
+    reader.onerror = () => {
+      if (!cancelled) setPhotoFailed(true);
+    };
+    reader.readAsDataURL(applicationPhoto.data);
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationPhoto.data, photoBlob]);
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -116,6 +148,7 @@ export function SellerProfileScreen() {
         fullName: fields.fullName,
         discipline: fields.discipline,
         country: fields.country,
+        city: fields.city.trim(),
         socialLink:
           fields.socialLink.trim() ||
           fields.websiteUrl.trim() ||
@@ -130,6 +163,10 @@ export function SellerProfileScreen() {
       if (profile) {
         if (!editable) {
           throw new Error('Seller profile is not editable');
+        }
+
+        if (profile.status === 'APPROVED') {
+          return api.sellers.updateProfile(payload, photoBlob ?? undefined);
         }
 
         return api.sellers.updateProfile(
@@ -158,8 +195,22 @@ export function SellerProfileScreen() {
         photoBlob,
       );
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['seller', 'application-photo'],
+      });
+    },
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: () => api.portfolio.submitAuthorApplication(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['seller', 'application-photo'],
+      });
+    },
   });
 
   const choosePhoto = async () => {
@@ -227,9 +278,11 @@ export function SellerProfileScreen() {
     fields.slug.trim() &&
     fields.discipline.trim() &&
     fields.country.trim() &&
+    fields.city.trim() &&
     fields.shortDescription.trim() &&
-    photoBlob &&
-    !fieldErrors.socialLink,
+    (Boolean(photoBlob) || Boolean(profile)) &&
+    !fieldErrors.socialLink &&
+    !fieldErrors.city,
   );
   const canContinueFromLinks =
     hasPublicLink &&
@@ -287,31 +340,16 @@ export function SellerProfileScreen() {
               description="Квадратный портрет или логотип автора."
             >
               {photoPreview && !photoFailed ? (
-                photoBlob ? (
-                  <Image
-                    source={{ uri: photoPreview }}
-                    style={{
-                      width: '100%',
-                      aspectRatio: 1,
-                      borderRadius: designTokens.radius.image,
-                    }}
-                    contentFit="cover"
-                    onError={() => setPhotoFailed(true)}
-                  />
-                ) : (
-                  <ResilientRemoteImage
-                    uri={photoPreview}
-                    component="AuthorPhoto"
-                    accessibilityLabel="Фото профиля"
-                    fallbackLabel="Фото профиля недоступно"
-                    style={{
-                      width: '100%',
-                      aspectRatio: 1,
-                      borderRadius: designTokens.radius.image,
-                    }}
-                    contentFit="cover"
-                  />
-                )
+                <Image
+                  source={{ uri: photoPreview }}
+                  style={{
+                    width: '100%',
+                    aspectRatio: 1,
+                    borderRadius: designTokens.radius.image,
+                  }}
+                  contentFit="cover"
+                  onError={() => setPhotoFailed(true)}
+                />
               ) : (
                 <ImagePlaceholder
                   ratio={1}
@@ -362,7 +400,9 @@ export function SellerProfileScreen() {
 
         {!editable ? (
           <AppText role="bodySmall" tone="secondary">
-            Профиль можно редактировать только после статуса «Нужны правки».
+            {editingRevision?.status === 'PENDING_REVIEW'
+              ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
+              : 'Сейчас профиль нельзя редактировать.'}
           </AppText>
         ) : null}
 
@@ -392,6 +432,16 @@ export function SellerProfileScreen() {
           width="block"
         />
 
+        {canSubmitRevision ? (
+          <PrimaryButton
+            loading={submitMutation.isPending}
+            disabled={submitMutation.isPending || mutation.isPending}
+            onPress={() => submitMutation.mutate()}
+            label="Отправить на проверку"
+            width="block"
+          />
+        ) : null}
+
         {profile ? (
           <Link href="/orders" asChild>
             <SecondaryButton
@@ -415,6 +465,11 @@ export function SellerProfileScreen() {
         {mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось сохранить профиль
+          </AppText>
+        ) : null}
+        {submitMutation.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось отправить заявку на проверку
           </AppText>
         ) : null}
       </View>

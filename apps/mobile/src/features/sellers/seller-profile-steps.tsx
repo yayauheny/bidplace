@@ -25,6 +25,7 @@ export type ProfileFields = {
   fullName: string;
   discipline: string;
   country: string;
+  city: string;
   socialLink: string;
   telegramUrl: string;
   instagramUrl: string;
@@ -136,6 +137,15 @@ export function SellerProfileFormSteps({
             autoCapitalize="characters"
             editable={editable}
             required
+          />
+          <TextField
+            label="Город"
+            value={fields.city}
+            onChangeText={(value) => update('city', value)}
+            placeholder="Минск"
+            editable={editable}
+            required
+            error={fieldErrors.city}
           />
           <TextField
             label="Дисциплина"

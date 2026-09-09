@@ -70,6 +70,32 @@ describe('shared contracts', () => {
         relatedWorks: [],
       }).success,
     ).toBe(false);
+
+    const publicWork = {
+      ...work,
+      sharePath: '/works/portfolio01',
+    };
+    const publicAuthor = {
+      ...author,
+      city: 'Minsk',
+      practice: null,
+      achievements: [],
+      sharePath: '/authors/author',
+    };
+    expect(
+      portfolioWorkDetailResponseSchema.parse({
+        work: publicWork,
+        author: publicAuthor,
+        relatedWorks: [],
+      }).work.sharePath,
+    ).toBe('/works/portfolio01');
+    expect(
+      portfolioWorkDetailResponseSchema.safeParse({
+        work,
+        author: publicAuthor,
+        relatedWorks: [],
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts only portfolio newest or oldest work sorting', () => {
@@ -243,6 +269,7 @@ describe('shared contracts', () => {
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
+      city: 'Minsk',
       socialLink: 'https://example.com/creator',
       shortDescription: 'About creator',
       handoffContactType: 'TELEGRAM' as const,
@@ -250,6 +277,12 @@ describe('shared contracts', () => {
     };
 
     expect(sellerProfileCreateRequestSchema.safeParse(base).success).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
+        city: undefined,
+      }).success,
+    ).toBe(false);
     expect(
       sellerProfileUpdateRequestSchema.safeParse({
         discipline: 'a'.repeat(161),
@@ -273,6 +306,7 @@ describe('shared contracts', () => {
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
+      city: 'Minsk',
       socialLink,
       shortDescription: 'About creator',
       handoffContactType: 'TELEGRAM',
@@ -289,6 +323,7 @@ describe('shared contracts', () => {
         discipline: 'Керамика',
         fullName: 'Creator',
         country: 'BY',
+        city: 'Minsk',
         socialLink: 'https://example.com/creator',
         shortDescription: 'About creator',
         handoffContactType: 'TELEGRAM',
@@ -302,6 +337,7 @@ describe('shared contracts', () => {
         discipline: 'Керамика',
         fullName: 'Creator',
         country: 'BY',
+        city: 'Minsk',
         socialLink: 'https://example.com/creator',
         shortDescription: 'About creator',
         handoffContactType: 'INSTAGRAM',

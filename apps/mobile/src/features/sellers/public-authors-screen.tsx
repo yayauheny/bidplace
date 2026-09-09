@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, useWindowDimensions, View } from 'react-native';
 
-import type { PublicSellerSort } from '@bidplace/contracts';
+import type { PortfolioAuthorsQuery } from '@bidplace/contracts';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -15,8 +15,10 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { getCatalogColumnCount } from '../products/catalog-layout';
 
-const authorSortOptions: Array<{ value: PublicSellerSort; label: string }> = [
-  { value: 'activity', label: 'По активности' },
+type AuthorSort = PortfolioAuthorsQuery['sort'];
+
+const authorSortOptions: Array<{ value: AuthorSort; label: string }> = [
+  { value: 'added', label: 'По активности' },
   { value: 'name', label: 'По имени' },
 ];
 
@@ -24,8 +26,8 @@ function AuthorSort({
   sort,
   onChange,
 }: {
-  sort: PublicSellerSort;
-  onChange: (sort: PublicSellerSort) => void;
+  sort: AuthorSort;
+  onChange: (sort: AuthorSort) => void;
 }) {
   return (
     <View style={{ alignSelf: 'flex-end', position: 'relative' }}>
@@ -39,7 +41,7 @@ function AuthorSort({
         }))}
         onSelect={(next) => {
           if (!next) return;
-          onChange(next as PublicSellerSort);
+          onChange(next as AuthorSort);
         }}
         dismissOnOutside={false}
       />
@@ -49,18 +51,18 @@ function AuthorSort({
 
 export function PublicAuthorsScreen({
   query,
-  sort = 'activity',
+  sort = 'added',
 }: {
   query?: string;
-  sort?: PublicSellerSort;
+  sort?: AuthorSort;
 }) {
   const api = useApiClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const result = useQuery({
-    queryKey: ['public-sellers', { q: query, sort }],
+    queryKey: ['portfolio-authors', { q: query, sort }],
     queryFn: () =>
-      api.sellers.listPublic(query ? { q: query, sort } : { sort }),
+      api.portfolio.listAuthors(query ? { q: query, sort } : { sort }),
   });
 
   let content: React.ReactNode;
@@ -73,7 +75,7 @@ export function PublicAuthorsScreen({
         retry={() => void result.refetch()}
       />
     );
-  } else if (result.data.sellers.length === 0) {
+  } else if (result.data.authors.length === 0) {
     content = (
       <PageState
         title={query ? 'Авторы не найдены' : 'Пока нет авторов'}
@@ -87,7 +89,9 @@ export function PublicAuthorsScreen({
   } else {
     content = (
       <CreatorCardGrid
-        items={result.data.sellers}
+        items={result.data.authors.map((item) => ({
+          sellerProfile: item.author,
+        }))}
         columns={getCatalogColumnCount(width)}
       />
     );

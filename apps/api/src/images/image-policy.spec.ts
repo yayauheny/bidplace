@@ -1,9 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import sharp from 'sharp';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   assertProductImageCapacity,
+  acceptSupportedUploadMimeType,
   detectImageMimeType,
   getImageCacheControl,
   productImagePixelBudgets,
@@ -101,6 +102,15 @@ describe('image policy', () => {
         },
       ]),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects unsupported upload MIME types before reading bytes', () => {
+    const done = vi.fn();
+    acceptSupportedUploadMimeType('image/gif', done);
+    expect(done).toHaveBeenCalledWith(expect.any(BadRequestException), false);
+    done.mockClear();
+    acceptSupportedUploadMimeType('image/png', done);
+    expect(done).toHaveBeenCalledWith(null, true);
   });
 
   it('accepts static webp uploads and normalizes to jpeg', async () => {
