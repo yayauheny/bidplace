@@ -183,6 +183,342 @@
       "referencePath": "components/achievements-timeline__1471x641__node-742-20510/reference.png"
     },
     {
+      "id": "text-fields",
+      "originalName": "Поля ввода",
+      "sourceFolderName": "Поля_ввода.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 789,
+        "height": 552
+      },
+      "nodeId": "292:5044",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/text-fields__789x552__node-292-5044",
+      "referencePath": "components/text-fields__789x552__node-292-5044/reference.png"
+    },
+    {
+      "id": "buttons",
+      "originalName": "Кнопки",
+      "sourceFolderName": "Кнопки.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 714,
+        "height": 283
+      },
+      "nodeId": "292:5058",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/buttons__714x283__node-292-5058",
+      "referencePath": "components/buttons__714x283__node-292-5058/reference.png"
+    },
+    {
+      "id": "button-icons",
+      "originalName": "Иконки кнопок",
+      "sourceFolderName": "Иконки_кнопок.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 250,
+        "height": 174
+      },
+      "nodeId": "297:5598",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/button-icons__250x174__node-297-5598",
+      "referencePath": "components/button-icons__250x174__node-297-5598/reference.png"
+    },
+    {
+      "id": "author-cover-card-frame-6",
+      "originalName": "Frame 6",
+      "sourceFolderName": "Frame_6.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-6",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5576",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/author-cover-card__264x352__node-874-5576",
+      "referencePath": "components/author-cover-card__264x352__node-874-5576/reference.png"
+    },
+    {
+      "id": "author-cover-card-frame-4",
+      "originalName": "Frame 4",
+      "sourceFolderName": "Frame_4.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-4",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5540",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/author-cover-card__264x352__node-874-5540",
+      "referencePath": "components/author-cover-card__264x352__node-874-5540/reference.png"
+    },
+    {
+      "id": "author-cover-card-frame-4-alt",
+      "originalName": "Frame 4",
+      "sourceFolderName": "Frame_4.figmacapture (1).zip",
+      "surface": "components",
+      "state": "frame-4-alt",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5564",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/author-cover-card__264x352__node-874-5564",
+      "referencePath": "components/author-cover-card__264x352__node-874-5564/reference.png"
+    },
+    {
+      "id": "author-identity-row",
+      "originalName": "Frame 33",
+      "sourceFolderName": "Frame_33.figmacapture.zip",
+      "surface": "components",
+      "state": "compact",
+      "viewport": {
+        "width": 348,
+        "height": 84
+      },
+      "nodeId": "874:5591",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/author-identity-row__348x84__node-874-5591",
+      "referencePath": "components/author-identity-row__348x84__node-874-5591/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-5",
+      "originalName": "Frame 5",
+      "sourceFolderName": "Frame_5.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-5",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5458",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5458",
+      "referencePath": "components/work-cover-card__264x352__node-874-5458/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-7",
+      "originalName": "Frame 7",
+      "sourceFolderName": "Frame_7.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-7",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5487",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5487",
+      "referencePath": "components/work-cover-card__264x352__node-874-5487/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-9",
+      "originalName": "Frame 9",
+      "sourceFolderName": "Frame_9.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-9",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5473",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5473",
+      "referencePath": "components/work-cover-card__264x352__node-874-5473/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-10",
+      "originalName": "Frame 10",
+      "sourceFolderName": "Frame_10.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-10",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5512",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5512",
+      "referencePath": "components/work-cover-card__264x352__node-874-5512/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-11",
+      "originalName": "Frame 11",
+      "sourceFolderName": "Frame_11.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-11",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5526",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5526",
+      "referencePath": "components/work-cover-card__264x352__node-874-5526/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-12",
+      "originalName": "Frame 12",
+      "sourceFolderName": "Frame_12.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-12",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5616",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5616",
+      "referencePath": "components/work-cover-card__264x352__node-874-5616/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-13",
+      "originalName": "Frame 13",
+      "sourceFolderName": "Frame_13.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-13",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5631",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5631",
+      "referencePath": "components/work-cover-card__264x352__node-874-5631/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-15",
+      "originalName": "Frame 15",
+      "sourceFolderName": "Frame_15.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-15",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5659",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5659",
+      "referencePath": "components/work-cover-card__264x352__node-874-5659/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-16",
+      "originalName": "Frame 16",
+      "sourceFolderName": "Frame_16.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-16",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5671",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5671",
+      "referencePath": "components/work-cover-card__264x352__node-874-5671/reference.png"
+    },
+    {
+      "id": "work-cover-card-frame-17",
+      "originalName": "Frame 17",
+      "sourceFolderName": "Frame_17.figmacapture.zip",
+      "surface": "components",
+      "state": "frame-17",
+      "viewport": {
+        "width": 264,
+        "height": 352
+      },
+      "nodeId": "874:5685",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/work-cover-card__264x352__node-874-5685",
+      "referencePath": "components/work-cover-card__264x352__node-874-5685/reference.png"
+    },
+    {
+      "id": "filter-sort-bar",
+      "originalName": "Frame 77",
+      "sourceFolderName": "Frame_77.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 293,
+        "height": 43
+      },
+      "nodeId": "874:5434",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/filter-sort-bar__293x43__node-874-5434",
+      "referencePath": "components/filter-sort-bar__293x43__node-874-5434/reference.png"
+    },
+    {
+      "id": "catalog-segment-tabs",
+      "originalName": "Frame 57",
+      "sourceFolderName": "Frame_57.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 28
+      },
+      "nodeId": "874:5421",
+      "scope": "HIDE_FOR_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/catalog-segment-tabs__390x28__node-874-5421",
+      "referencePath": "components/catalog-segment-tabs__390x28__node-874-5421/reference.png"
+    },
+    {
+      "id": "materials-taxonomy-label",
+      "originalName": "Живопись (холст, масло, акрил) Графика (рисунок, линогравюра, офорт) Скульптура Фотография  Керамика Стекло Текстиль (гобелены, авторские ковры)  Предметный дизайн (авторская мебель, объекты интерьера) Свет Ювелирное",
+      "sourceFolderName": "Живопись_(холст,_масло,_акрил)_Графика_(рисунок,_линогравюра,_офорт)_Скульптура_Фотография_Керамика_Стекло_Текстиль_(гобелены,_автор.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 278,
+        "height": 214
+      },
+      "nodeId": "874:5420",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "components/materials-taxonomy-label__278x214__node-874-5420",
+      "referencePath": "components/materials-taxonomy-label__278x214__node-874-5420/reference.png"
+    },
+    {
+      "id": "image-placeholder-vector",
+      "originalName": "Vector",
+      "sourceFolderName": "Vector.figmacapture.zip",
+      "surface": "components",
+      "state": "default",
+      "viewport": {
+        "width": 188,
+        "height": 142
+      },
+      "nodeId": "874:5454",
+      "scope": "REFERENCE_ONLY",
+      "classificationConfidence": "high",
+      "packagePath": "components/image-placeholder-vector__188x142__node-874-5454",
+      "referencePath": "components/image-placeholder-vector__188x142__node-874-5454/reference.png"
+    },
+    {
       "id": "unclassified-overlay-dimmer",
       "originalName": "Frame 140",
       "sourceFolderName": "Frame_140.figmacapture",
@@ -241,7 +577,7 @@
         "height": 860
       },
       "nodeId": "456:8298",
-      "scope": "KEEP_FIRST_MVP",
+      "scope": "POST_MVP",
       "classificationConfidence": "high",
       "packagePath": "screens/search/search__authors__390x860__node-456-8298",
       "referencePath": "screens/search/search__authors__390x860__node-456-8298/reference.png"
@@ -257,7 +593,7 @@
         "height": 860
       },
       "nodeId": "439:4652",
-      "scope": "KEEP_FIRST_MVP",
+      "scope": "POST_MVP",
       "classificationConfidence": "high",
       "packagePath": "screens/search/search__categories__390x860__node-439-4652",
       "referencePath": "screens/search/search__categories__390x860__node-439-4652/reference.png"
@@ -273,7 +609,7 @@
         "height": 860
       },
       "nodeId": "456:8392",
-      "scope": "KEEP_FIRST_MVP",
+      "scope": "POST_MVP",
       "classificationConfidence": "high",
       "packagePath": "screens/search/search__works-results__390x860__node-456-8392",
       "referencePath": "screens/search/search__works-results__390x860__node-456-8392/reference.png"
@@ -353,7 +689,7 @@
         "height": 862
       },
       "nodeId": "526:12278",
-      "scope": "KEEP_FIRST_MVP",
+      "scope": "POST_MVP",
       "classificationConfidence": "high",
       "packagePath": "screens/work/work__sold__390x862__node-526-12278",
       "referencePath": "screens/work/work__sold__390x862__node-526-12278/reference.png"
@@ -469,6 +805,470 @@
       "classificationConfidence": "high",
       "packagePath": "screens/filters/filters__materials-radio__390x860__node-526-13142",
       "referencePath": "screens/filters/filters__materials-radio__390x860__node-526-13142/reference.png"
+    },
+    {
+      "id": "create-work-basics-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture.zip",
+      "surface": "create-work",
+      "state": "basics",
+      "viewport": {
+        "width": 390,
+        "height": 1042
+      },
+      "nodeId": "749:2388",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__basics__390x1042__node-749-2388",
+      "referencePath": "screens/create-work/create-work__basics__390x1042__node-749-2388/reference.png"
+    },
+    {
+      "id": "create-work-story-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (1).zip",
+      "surface": "create-work",
+      "state": "story",
+      "viewport": {
+        "width": 390,
+        "height": 836
+      },
+      "nodeId": "749:2473",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__story__390x836__node-749-2473",
+      "referencePath": "screens/create-work/create-work__story__390x836__node-749-2473/reference.png"
+    },
+    {
+      "id": "create-work-details-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (2).zip",
+      "surface": "create-work",
+      "state": "details",
+      "viewport": {
+        "width": 390,
+        "height": 728
+      },
+      "nodeId": "873:4404",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__details__390x728__node-873-4404",
+      "referencePath": "screens/create-work/create-work__details__390x728__node-873-4404/reference.png"
+    },
+    {
+      "id": "create-work-shipping-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (3).zip",
+      "surface": "create-work",
+      "state": "shipping",
+      "viewport": {
+        "width": 390,
+        "height": 728
+      },
+      "nodeId": "873:4445",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__shipping__390x728__node-873-4445",
+      "referencePath": "screens/create-work/create-work__shipping__390x728__node-873-4445/reference.png"
+    },
+    {
+      "id": "create-work-buyer-contact-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (4).zip",
+      "surface": "create-work",
+      "state": "buyer-contact",
+      "viewport": {
+        "width": 390,
+        "height": 934
+      },
+      "nodeId": "881:6649",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__buyer-contact__390x934__node-881-6649",
+      "referencePath": "screens/create-work/create-work__buyer-contact__390x934__node-881-6649/reference.png"
+    },
+    {
+      "id": "create-work-buyer-contact-repeat-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (5).zip",
+      "surface": "create-work",
+      "state": "buyer-contact-repeat",
+      "viewport": {
+        "width": 390,
+        "height": 934
+      },
+      "nodeId": "881:6790",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__buyer-contact-repeat__390x934__node-881-6790",
+      "referencePath": "screens/create-work/create-work__buyer-contact-repeat__390x934__node-881-6790/reference.png"
+    },
+    {
+      "id": "create-work-story-process-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (6).zip",
+      "surface": "create-work",
+      "state": "story-process",
+      "viewport": {
+        "width": 390,
+        "height": 957
+      },
+      "nodeId": "877:6164",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__story-process__390x957__node-877-6164",
+      "referencePath": "screens/create-work/create-work__story-process__390x957__node-877-6164/reference.png"
+    },
+    {
+      "id": "create-work-story-alt-phone",
+      "originalName": "Создание работы ",
+      "sourceFolderName": "Создание_работы_.figmacapture (7).zip",
+      "surface": "create-work",
+      "state": "story",
+      "viewport": {
+        "width": 390,
+        "height": 836
+      },
+      "nodeId": "877:6338",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__story__390x836__node-877-6338",
+      "referencePath": "screens/create-work/create-work__story__390x836__node-877-6338/reference.png"
+    },
+    {
+      "id": "create-work-statuses-sheet-phone",
+      "originalName": "Создание работы / Подробнее о статусах",
+      "sourceFolderName": "Создание_работы___Подробнее_о_статусах.figmacapture.zip",
+      "surface": "create-work",
+      "state": "statuses-sheet",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "874:4772",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/create-work/create-work__statuses-sheet__390x874__node-874-4772",
+      "referencePath": "screens/create-work/create-work__statuses-sheet__390x874__node-874-4772/reference.png"
+    },
+    {
+      "id": "apply-landing-phone",
+      "originalName": "Стать автором",
+      "sourceFolderName": "Стать_автором.figmacapture.zip",
+      "surface": "apply",
+      "state": "landing",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:16074",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__landing__390x874__node-526-16074",
+      "referencePath": "screens/apply/apply__landing__390x874__node-526-16074/reference.png"
+    },
+    {
+      "id": "apply-identity-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture.zip",
+      "surface": "apply",
+      "state": "identity",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "527:16416",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__identity__390x874__node-527-16416",
+      "referencePath": "screens/apply/apply__identity__390x874__node-527-16416/reference.png"
+    },
+    {
+      "id": "apply-contacts-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (1).zip",
+      "surface": "apply",
+      "state": "contacts",
+      "viewport": {
+        "width": 390,
+        "height": 641
+      },
+      "nodeId": "746:22642",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__contacts__390x641__node-746-22642",
+      "referencePath": "screens/apply/apply__contacts__390x641__node-746-22642/reference.png"
+    },
+    {
+      "id": "apply-about-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (2).zip",
+      "surface": "apply",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 565
+      },
+      "nodeId": "746:22724",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__about__390x565__node-746-22724",
+      "referencePath": "screens/apply/apply__about__390x565__node-746-22724/reference.png"
+    },
+    {
+      "id": "apply-bio-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (3).zip",
+      "surface": "apply",
+      "state": "bio",
+      "viewport": {
+        "width": 390,
+        "height": 715
+      },
+      "nodeId": "578:17378",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__bio__390x715__node-578-17378",
+      "referencePath": "screens/apply/apply__bio__390x715__node-578-17378/reference.png"
+    },
+    {
+      "id": "apply-about-filled-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (4).zip",
+      "surface": "apply",
+      "state": "about-filled",
+      "viewport": {
+        "width": 390,
+        "height": 1920
+      },
+      "nodeId": "584:17717",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__about-filled__390x1920__node-584-17717",
+      "referencePath": "screens/apply/apply__about-filled__390x1920__node-584-17717/reference.png"
+    },
+    {
+      "id": "apply-identity-abort-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (5).zip",
+      "surface": "apply",
+      "state": "identity-abort",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "746:23037",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__identity-abort__390x874__node-746-23037",
+      "referencePath": "screens/apply/apply__identity-abort__390x874__node-746-23037/reference.png"
+    },
+    {
+      "id": "apply-about-long-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (6).zip",
+      "surface": "apply",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 2228
+      },
+      "nodeId": "738:20088",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__about__390x2228__node-738-20088",
+      "referencePath": "screens/apply/apply__about__390x2228__node-738-20088/reference.png"
+    },
+    {
+      "id": "apply-about-compact-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (7).zip",
+      "surface": "apply",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 1375
+      },
+      "nodeId": "738:20051",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__about__390x1375__node-738-20051",
+      "referencePath": "screens/apply/apply__about__390x1375__node-738-20051/reference.png"
+    },
+    {
+      "id": "apply-about-alt-phone",
+      "originalName": "Стать автором заполнение профиля",
+      "sourceFolderName": "Стать_автором_заполнение_профиля.figmacapture (8).zip",
+      "surface": "apply",
+      "state": "about",
+      "viewport": {
+        "width": 390,
+        "height": 1375
+      },
+      "nodeId": "584:18020",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/apply/apply__about__390x1375__node-584-18020",
+      "referencePath": "screens/apply/apply__about__390x1375__node-584-18020/reference.png"
+    },
+    {
+      "id": "auth-register-complete-phone",
+      "originalName": "Запонить данные регистрации",
+      "sourceFolderName": "Запонить_данные_регистрации.figmacapture.zip",
+      "surface": "auth",
+      "state": "register-complete",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:15581",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/auth/auth__register-complete__390x874__node-526-15581",
+      "referencePath": "screens/auth/auth__register-complete__390x874__node-526-15581/reference.png"
+    },
+    {
+      "id": "auth-login-password-board",
+      "originalName": "ФОрма входа логин пароль",
+      "sourceFolderName": "ФОрма_входа_логин_пароль.figmacapture.zip",
+      "surface": "auth",
+      "state": "login-password",
+      "viewport": {
+        "width": 1123,
+        "height": 1286
+      },
+      "nodeId": "527:16954",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/auth/auth__login-password__1123x1286__node-527-16954",
+      "referencePath": "screens/auth/auth__login-password__1123x1286__node-527-16954/reference.png"
+    },
+    {
+      "id": "auth-email-code-board",
+      "originalName": "Форма входа только по код паролю на почту",
+      "sourceFolderName": "Форма_входа_только_по_код_паролю_на_почту.figmacapture.zip",
+      "surface": "auth",
+      "state": "email-code",
+      "viewport": {
+        "width": 1123,
+        "height": 1185
+      },
+      "nodeId": "527:16955",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/auth/auth__email-code__1123x1185__node-527-16955",
+      "referencePath": "screens/auth/auth__email-code__1123x1185__node-527-16955/reference.png"
+    },
+    {
+      "id": "auth-register-error-board",
+      "originalName": "Регистрация и ошибка",
+      "sourceFolderName": "Регистрация_и_ошибка.figmacapture.zip",
+      "surface": "auth",
+      "state": "register-error",
+      "viewport": {
+        "width": 1123,
+        "height": 1286
+      },
+      "nodeId": "527:16956",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/auth/auth__register-error__1123x1286__node-527-16956",
+      "referencePath": "screens/auth/auth__register-error__1123x1286__node-527-16956/reference.png"
+    },
+    {
+      "id": "filters-materials-checkboxes-phone",
+      "originalName": "Фильтры чекбоксы",
+      "sourceFolderName": "Фильтры_чекбоксы.figmacapture (3).zip",
+      "surface": "filters",
+      "state": "materials-checkboxes",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "584:17554",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/filters/filters__materials-checkboxes__390x860__node-584-17554",
+      "referencePath": "screens/filters/filters__materials-checkboxes__390x860__node-584-17554/reference.png"
+    },
+    {
+      "id": "work-history-long-phone",
+      "originalName": "Каталог работ / идут торги / вкладка история",
+      "sourceFolderName": "Каталог_работ___идут_торги___вкладка_история.figmacapture (1).zip",
+      "surface": "work",
+      "state": "history",
+      "viewport": {
+        "width": 390,
+        "height": 2706
+      },
+      "nodeId": "621:19311",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__history__390x2706__node-621-19311",
+      "referencePath": "screens/work/work__history__390x2706__node-621-19311/reference.png"
+    },
+    {
+      "id": "work-bids-phone",
+      "originalName": "Каталог работ / идут торги / вкладка ставки",
+      "sourceFolderName": "Каталог_работ___идут_торги___вкладка_ставки.figmacapture.zip",
+      "surface": "work",
+      "state": "bids",
+      "viewport": {
+        "width": 390,
+        "height": 2390
+      },
+      "nodeId": "745:21660",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__bids__390x2390__node-745-21660",
+      "referencePath": "screens/work/work__bids__390x2390__node-745-21660/reference.png"
+    },
+    {
+      "id": "work-not-for-sale-phone",
+      "originalName": "Каталог работ / работа не для продажи  ",
+      "sourceFolderName": "Каталог_работ___работа_не_для_продажи_.figmacapture.zip",
+      "surface": "work",
+      "state": "not-for-sale",
+      "viewport": {
+        "width": 390,
+        "height": 786
+      },
+      "nodeId": "745:22106",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__not-for-sale__390x786__node-745-22106",
+      "referencePath": "screens/work/work__not-for-sale__390x786__node-745-22106/reference.png"
+    },
+    {
+      "id": "work-sold-price-phone",
+      "originalName": "Каталог работ / завершен ",
+      "sourceFolderName": "Каталог_работ___завершен_.figmacapture (1).zip",
+      "surface": "work",
+      "state": "sold",
+      "viewport": {
+        "width": 390,
+        "height": 922
+      },
+      "nodeId": "745:21970",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__sold__390x922__node-745-21970",
+      "referencePath": "screens/work/work__sold__390x922__node-745-21970/reference.png"
+    },
+    {
+      "id": "work-announcement-phone",
+      "originalName": "Каталог работ / анонс ",
+      "sourceFolderName": "Каталог_работ___анонс_.figmacapture.zip",
+      "surface": "work",
+      "state": "announcement",
+      "viewport": {
+        "width": 390,
+        "height": 922
+      },
+      "nodeId": "745:22241",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__announcement__390x922__node-745-22241",
+      "referencePath": "screens/work/work__announcement__390x922__node-745-22241/reference.png"
     }
   ]
 }

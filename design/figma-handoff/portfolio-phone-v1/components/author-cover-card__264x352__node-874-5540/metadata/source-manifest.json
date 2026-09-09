@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "1.0",
+  "producer": {
+    "name": "runkids/figma-to-prompt",
+    "version": "0.2.7",
+    "protocolVersion": 1
+  },
+  "capturedAt": "2026-09-09T21:18:26.553Z",
+  "source": {
+    "provider": "figma-plugin",
+    "fileKey": null,
+    "fileVersionId": null,
+    "nodeIds": [
+      "874:5540"
+    ],
+    "sourceUrl": null,
+    "locatorPath": "mcp/figma-locator.json"
+  },
+  "root": {
+    "id": "874:5540",
+    "name": "Frame 4",
+    "structurePath": "design/nodes.json",
+    "promptPath": "prompt.md",
+    "primaryReferencePath": "references/001-874_5540.png",
+    "targetViewport": {
+      "width": 264,
+      "height": 352,
+      "referencePath": "references/001-874_5540.png"
+    },
+    "referencePaths": [
+      "references/001-874_5540.png"
+    ],
+    "fallbackPaths": [
+      "fallbacks/001-874_5540.png",
+      "fallbacks/001-874_5540.svg"
+    ]
+  },
+  "files": [
+    {
+      "path": "assets/001-874_5540.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 111894,
+      "sha256": "3c8859a04e98da866b5eeb01e7ace6ebd27eb92aacbd64b490ef9490933b64e8",
+      "nodeId": "874:5540",
+      "pixelDimensions": {
+        "width": 264,
+        "height": 352
+      }
+    },
+    {
+      "path": "design/nodes.json",
+      "role": "design-structure",
+      "mediaType": "application/json",
+      "size": 13790,
+      "sha256": "3482ff1037fffb4a42434fdc79fba6d2423e3ebdd3ea34c065e40c94ccbbc899",
+      "nodeId": "874:5540"
+    },
+    {
+      "path": "fallbacks/001-874_5540.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 111894,
+      "sha256": "3c8859a04e98da866b5eeb01e7ace6ebd27eb92aacbd64b490ef9490933b64e8",
+      "nodeId": "874:5540",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "pixel",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ],
+      "pixelDimensions": {
+        "width": 264,
+        "height": 352
+      }
+    },
+    {
+      "path": "fallbacks/001-874_5540.svg",
+      "role": "design-asset",
+      "mediaType": "image/svg+xml",
+      "size": 189448,
+      "sha256": "4d657594418957056c0e553de56b7dcdc7fd3b88d564d66e8b66f2066d2c3641",
+      "nodeId": "874:5540",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "vector",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ]
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 529,
+      "sha256": "a412d059dbbf4c840af0127b11c417a8a4c9b579d1e9b80a958d29bf9c775ea3",
+      "nodeId": "874:5540"
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 3265,
+      "sha256": "8e4851e4fd14f2f0ee5e697ef3012dac758c2fe2733ce2197fa0b00ad2ce662a",
+      "nodeId": "874:5540"
+    },
+    {
+      "path": "prompt.md",
+      "role": "derived-prompt",
+      "mediaType": "text/markdown",
+      "size": 24923,
+      "sha256": "34741498c715d75c0c9794503bcabe77add3af7af74afc3dc180489afe7cd50d",
+      "nodeId": "874:5540"
+    },
+    {
+      "path": "references/001-874_5540.png",
+      "role": "reference-render",
+      "mediaType": "image/png",
+      "size": 111894,
+      "sha256": "3c8859a04e98da866b5eeb01e7ace6ebd27eb92aacbd64b490ef9490933b64e8",
+      "nodeId": "874:5540",
+      "pixelDimensions": {
+        "width": 264,
+        "height": 352
+      }
+    }
+  ],
+  "fidelity": {
+    "policy": "fail-closed",
+    "coveragePath": "fidelity/coverage.json",
+    "candidateNodeCount": 1,
+    "coveredNodeCount": 1,
+    "unresolvedNodeIds": [],
+    "exactVerification": {
+      "required": true,
+      "method": "rgba-pixel-equality",
+      "referencePath": "references/001-874_5540.png",
+      "referenceStability": {
+        "renderCount": 2,
+        "width": 264,
+        "height": 352,
+        "differentPixels": 0,
+        "maxChannelDelta": 0
+      }
+    }
+  },
+  "warnings": [
+    "Design asset 874:5540 provides only 0.73× real source detail; replace the Figma image with a 2× or higher source for retina-sharp AI output.",
+    "Figma file version is unavailable in the plugin sandbox."
+  ],
+  "provenance": {
+    "selectionCount": 1
+  }
+}

@@ -19,5 +19,5 @@ different image hash than the `@vex` shirt portrait.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_14226.png` | `526:14226` | Atmospheric hero raster |
-| `assets/002-526_14231.png` | `526:14231` | Sharp avatar |
+| `001-526_14226.png` | `526:14226` | Layer raster |
+| `002-526_14231.png` | `526:14231` | Layer raster |

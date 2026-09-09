@@ -4,6 +4,22 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Local Figma handoff integrity and component roadmap
+
+- `Verified`: all 95 supplied capture paths resolve to 79 unique Figma nodes;
+  the local library contains the exact same 79 `nodes.json` payloads, 172
+  retained rasters and 732 passing checksums.
+- `Corrected`: fully deferred search overlays, sold/archive Work states, and
+  create-work shipping/buyer-contact/process-story captures are classified as
+  `POST_MVP`; the unique source packages remain archived.
+- `Planned`: component implementation is split into resumable C1–C8 packages
+  in `10-FIGMA-COMPONENT-IMPLEMENTATION-PLAN.md`. Screen composition remains a
+  separate workstream.
+- Known archive limits: Figma file/version IDs are unavailable in capture
+  metadata; 39 captures warn about at least one sub-2× source raster. Those
+  files remain reference evidence, not production content.
+- No runtime behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-09 — Cover frost, real dock glass, author atmosphere
 
 - `Partial`: work/author cover overlays use `CoverFrost` (blurred artwork slice +

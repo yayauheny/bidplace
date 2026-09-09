@@ -25,5 +25,5 @@ This is a cropped hero after scroll, not a different blur type.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_14483.png` | `526:14483` | Atmospheric raster for the collapsed hero |
-| `assets/002-526_14523.png` | `526:14523` | Compact sticky avatar |
+| `001-526_14483.png` | `526:14483` | Layer raster |
+| `002-526_14523.png` | `526:14523` | Layer raster |

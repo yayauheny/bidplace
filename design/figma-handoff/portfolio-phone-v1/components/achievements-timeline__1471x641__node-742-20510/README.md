@@ -17,5 +17,5 @@ about uses a narrower carousel or list; this is the component anatomy.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-742_20503.png` | `742:20503` | Gallery exhibition photograph |
-| `assets/002-742_20508.png` | `742:20508` | Sculpture-hall photograph |
+| `001-742_20503.png` | `742:20503` | Layer raster |
+| `002-742_20508.png` | `742:20508` | Layer raster |

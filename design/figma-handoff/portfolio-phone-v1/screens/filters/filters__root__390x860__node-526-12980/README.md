@@ -12,3 +12,9 @@ mark that string `HIDE_FOR_FIRST_MVP`. Price row is also
 `HIDE_FOR_FIRST_MVP`. Category and materials rows are First MVP.
 
 No separate rasters. Icons are vectors in `nodes.json`.
+
+## Asset map
+
+| File | Node ID | Role |
+|------|---------|------|
+| — | — | No unique layer rasters |

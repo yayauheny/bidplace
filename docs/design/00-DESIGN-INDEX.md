@@ -68,6 +68,7 @@ wallet/NFT/crypto semantics; их разрешённая роль закрепл
 | `07-PEN-V2-UI-AUDIT-AND-IMPLEMENTATION-PLAN.md` | historical Pen audit; not the current runtime     |
 | `08-IMPLEMENTATION-LOG.md`                      | этапы, commits, проверки и оставшийся scope       |
 | `09-FIGMA-CUTOVER-GAPS.md`                      | skipped Figma nodes, unused variants, questions   |
+| `10-FIGMA-COMPONENT-IMPLEMENTATION-PLAN.md`     | component work packages and screen handoff contract |
 | [`../../design/figma-handoff/portfolio-phone-v1/`](../../design/figma-handoff/portfolio-phone-v1/README.md) | versioned `.figmacapture` snapshot; not live Figma |
 
 Figma inspect copy is the production visual source (`DEC-085`).

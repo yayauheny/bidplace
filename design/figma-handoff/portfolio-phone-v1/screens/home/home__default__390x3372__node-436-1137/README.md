@@ -36,19 +36,15 @@ Do not rebuild glass from the flattened PNG.
 
 ## Asset map
 
-| File | Node ID | Node name | Role |
-|------|---------|-----------|------|
-| `assets/001-436_1145.png` | `436:1145` | Rectangle 2 | `@vex` avatar (same hash as fold `439:4412`) |
-| `assets/002-436_1155.png` | `436:1155` | Frame 5 | Featured work raster (same hash as fold `439:4422`) |
-| `assets/003-436_1170.png` | `436:1170` | Frame 11 | 1×1 placeholder thumb |
-| `assets/004-436_1184.png` | `436:1184` | Frame 9 | 1×1 placeholder thumb |
-| `assets/006-436_1276.png` | `436:1276` | Frame 16 | «Радуга (Mask Series 1997 no.8)» |
-| `assets/007-436_1290.png` | `436:1290` | Frame 17 | «Ваза "Блоссом"» |
-| `assets/008-436_1304.png` | `436:1304` | Frame 18 | «Память» |
-| `assets/009-436_1322.png` | `436:1322` | Frame 16 | Second «Радуга» raster |
-| `assets/010-436_1336.png` | `436:1336` | Frame 17 | Second vase raster |
-| `assets/011-436_1350.png` | `436:1350` | Frame 18 | Second «Память» raster |
-
-`assets/005-436_1198.png` was a byte-identical alias of `004-436_1184.png` and
-was not copied. Both packages keep their own copies of the shared avatar /
-featured hashes so each package stays readable without cross-links.
+| File | Node ID | Role |
+|------|---------|------|
+| `001-436_1145.png` | `436:1145` | Layer raster |
+| `002-436_1155.png` | `436:1155` | Layer raster |
+| `003-436_1170.png` | `436:1170` | 1×1 placeholder |
+| `004-436_1184.png` | `436:1184` | 1×1 placeholder |
+| `006-436_1276.png` | `436:1276` | Photograph / artwork raster |
+| `007-436_1290.png` | `436:1290` | Photograph / artwork raster |
+| `008-436_1304.png` | `436:1304` | Photograph / artwork raster |
+| `009-436_1322.png` | `436:1322` | Photograph / artwork raster |
+| `010-436_1336.png` | `436:1336` | Photograph / artwork raster |
+| `011-436_1350.png` | `436:1350` | Photograph / artwork raster |

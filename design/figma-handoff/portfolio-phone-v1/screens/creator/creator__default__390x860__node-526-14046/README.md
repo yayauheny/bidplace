@@ -19,5 +19,5 @@ bottom radii 200, layer blur 80.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_14047.png` | `526:14047` | Atmospheric hero raster |
-| `assets/002-526_14052.png` | `526:14052` | Sharp avatar |
+| `001-526_14047.png` | `526:14047` | Photograph / artwork raster |
+| `002-526_14052.png` | `526:14052` | Layer raster |

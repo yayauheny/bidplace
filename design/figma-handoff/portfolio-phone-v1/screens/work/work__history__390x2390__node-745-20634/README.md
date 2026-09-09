@@ -16,12 +16,10 @@ Optional story is First MVP.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-745_20635.png` | `745:20635` | Hero artwork (same hash as details hero) |
-| `assets/002-745_20714.png` | `745:20714` | Story detail crop |
-| `assets/003-745_20723.png` | `745:20723` | Related author card |
-| `assets/004-745_20735.png` | `745:20735` | Related work raster |
-| `assets/005-745_20749.png` | `745:20749` | 1×1 placeholder |
-| `assets/007-745_20777.png` | `745:20777` | 1×1 placeholder |
-| `assets/008-745_20792.png` | `745:20792` | Status-bar chrome |
-
-`006-745_20762.png` was a byte-identical alias of `005` and was not copied.
+| `001-745_20635.png` | `745:20635` | Photograph / artwork raster |
+| `002-745_20714.png` | `745:20714` | Photograph / artwork raster |
+| `003-745_20723.png` | `745:20723` | Layer raster |
+| `004-745_20735.png` | `745:20735` | Layer raster |
+| `005-745_20749.png` | `745:20749` | 1×1 placeholder |
+| `007-745_20777.png` | `745:20777` | 1×1 placeholder |
+| `008-745_20792.png` | `745:20792` | Status-bar chrome (`Change-This`) |

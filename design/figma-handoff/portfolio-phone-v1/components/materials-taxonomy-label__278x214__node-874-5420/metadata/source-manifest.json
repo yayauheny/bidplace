@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "1.0",
+  "producer": {
+    "name": "runkids/figma-to-prompt",
+    "version": "0.2.7",
+    "protocolVersion": 1
+  },
+  "capturedAt": "2026-09-09T21:24:49.554Z",
+  "source": {
+    "provider": "figma-plugin",
+    "fileKey": null,
+    "fileVersionId": null,
+    "nodeIds": [
+      "874:5420"
+    ],
+    "sourceUrl": null,
+    "locatorPath": "mcp/figma-locator.json"
+  },
+  "root": {
+    "id": "874:5420",
+    "name": "Живопись (холст, масло, акрил) Графика (рисунок, линогравюра, офорт) Скульптура Фотография  Керамика Стекло Текстиль (гобелены, авторские ковры)  Предметный дизайн (авторская мебель, объекты интерьера) Свет Ювелирное",
+    "structurePath": "design/nodes.json",
+    "promptPath": "prompt.md",
+    "primaryReferencePath": "references/001-874_5420.png",
+    "targetViewport": {
+      "width": 278,
+      "height": 214,
+      "referencePath": "references/001-874_5420.png"
+    },
+    "referencePaths": [
+      "references/001-874_5420.png"
+    ],
+    "fallbackPaths": [
+      "fallbacks/001-874_5420.png",
+      "fallbacks/001-874_5420.svg"
+    ]
+  },
+  "files": [
+    {
+      "path": "design/nodes.json",
+      "role": "design-structure",
+      "mediaType": "application/json",
+      "size": 1657,
+      "sha256": "03bbbca326909f6fedd3ee2c4a4d89f8293c31afddfaa525a182360332ea2896",
+      "nodeId": "874:5420"
+    },
+    {
+      "path": "fallbacks/001-874_5420.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 17145,
+      "sha256": "1afb45d1cbfe81da3cc1f22557bf42b69ed1b653139f9bf52af924b9571bd780",
+      "nodeId": "874:5420",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "pixel",
+      "fallbackReasons": [
+        "text-rendering",
+        "context-dependent-effect"
+      ],
+      "pixelDimensions": {
+        "width": 278,
+        "height": 214
+      }
+    },
+    {
+      "path": "fallbacks/001-874_5420.svg",
+      "role": "design-asset",
+      "mediaType": "image/svg+xml",
+      "size": 113120,
+      "sha256": "fabda0ad99188b9b3e543fae8a1e6196d4744ae164c5203bfeffeaf8ec2fbc0a",
+      "nodeId": "874:5420",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "vector",
+      "fallbackReasons": [
+        "text-rendering",
+        "context-dependent-effect"
+      ]
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 546,
+      "sha256": "7ef41647731a121c65e4579812f45ee727b3ff64796761a725a2a30153b32aaa",
+      "nodeId": "874:5420"
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 800,
+      "sha256": "5b05d99b6adb12a178966e04b97c6839e64c553d4b1b7b673fcabf7d9ccf053b",
+      "nodeId": "874:5420"
+    },
+    {
+      "path": "prompt.md",
+      "role": "derived-prompt",
+      "mediaType": "text/markdown",
+      "size": 12927,
+      "sha256": "1ed9868d7927d15381f0e3c999dabe6c7cb54440391ebc7a2c3e2229f5dd445f",
+      "nodeId": "874:5420"
+    },
+    {
+      "path": "references/001-874_5420.png",
+      "role": "reference-render",
+      "mediaType": "image/png",
+      "size": 17145,
+      "sha256": "1afb45d1cbfe81da3cc1f22557bf42b69ed1b653139f9bf52af924b9571bd780",
+      "nodeId": "874:5420",
+      "pixelDimensions": {
+        "width": 278,
+        "height": 214
+      }
+    }
+  ],
+  "fidelity": {
+    "policy": "fail-closed",
+    "coveragePath": "fidelity/coverage.json",
+    "candidateNodeCount": 1,
+    "coveredNodeCount": 1,
+    "unresolvedNodeIds": [],
+    "exactVerification": {
+      "required": true,
+      "method": "rgba-pixel-equality",
+      "referencePath": "references/001-874_5420.png",
+      "referenceStability": {
+        "renderCount": 2,
+        "width": 278,
+        "height": 214,
+        "differentPixels": 0,
+        "maxChannelDelta": 0
+      }
+    }
+  },
+  "warnings": [
+    "Figma file version is unavailable in the plugin sandbox."
+  ],
+  "provenance": {
+    "selectionCount": 1
+  }
+}

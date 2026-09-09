@@ -15,6 +15,6 @@ The whole sheet is commerce. Keep the snapshot; do not ship in First MVP.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_12174.png` | `526:12174` | Underlay hero |
-| `assets/002-526_12193.png` | `526:12193` | 1×1 placeholder |
-| `assets/006-526_12244.png` | `526:12244` | 1×1 placeholder |
+| `001-526_12174.png` | `526:12174` | Photograph / artwork raster |
+| `002-526_12193.png` | `526:12193` | 1×1 placeholder |
+| `006-526_12244.png` | `526:12244` | 1×1 placeholder |

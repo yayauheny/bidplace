@@ -9,3 +9,9 @@
 Single-select materials list. Header is the placeholder «Набор радио
 кнопок». Options are Холст … Стекло; Акрил is selected. RFC allows
 material as a Works filter. Not checkboxes — radios.
+
+## Asset map
+
+| File | Node ID | Role |
+|------|---------|------|
+| — | — | No unique layer rasters |

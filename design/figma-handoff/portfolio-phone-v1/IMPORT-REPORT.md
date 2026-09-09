@@ -441,3 +441,127 @@ Russian names with different node IDs were kept as separate packages.
 ### Files larger than 10 MB that were still saved (this intake)
 
 - None. Largest new raster is hero `001-745_21210.png` ≈ 6.4 MB.
+
+## Fifth intake — create-work, apply, auth, Work variants, filters
+
+40 user paths were scanned. 11 were byte-aliases of packages already in the
+library (Work details/history/sold, share/bid/buy sheets, three checkbox
+filter zips, duplicate history zip). **29 new unique packages** were imported.
+After import, all **58** catalog packages were backfilled from Downloads so
+each has the standard handoff set (`reference.png`, `nodes.json`, four
+metadata files, unique `assets/`, `README.md`).
+
+### New packages (29)
+
+| Surface | Count | Examples |
+|---------|------:|----------|
+| `create-work` | 9 | basics, details, story, shipping, statuses sheet |
+| `apply` | 10 | identity, contacts, about, bio, landing, abort |
+| `auth` | 4 | login board, register complete/error, email-code board |
+| `work` | 5 | bids, announcement, not-for-sale, sold 922, history 2706 |
+| `filters` | 1 | materials-checkboxes |
+
+### Aliases skipped (11)
+
+- `Каталог_работ___вкладка_детали.figmacapture.zip` → `745:21209` (already imported)
+- `Каталог_работ___идут_торги___вкладка_история.figmacapture.zip` → `745:20634`
+- `Каталог_работ___завершен_.figmacapture.zip` → `526:12278`
+- Three «Участие в торгах» zips → share/bid/buy already imported
+- `Каталог_работ___идут_торги___сделать_ставку.figmacapture.zip` → creator share sheet `526:13756`
+- `Фильтры_чекбоксы.figmacapture.zip` / `(1)` / `(2)` → cities / city-search / materials-radio
+- `Каталог_работ___идут_торги___вкладка_история.figmacapture (2).zip` → byte-alias of `(1)`
+
+### What was copied into each package
+
+- `reference.png` from `references/*.png` (byte-identical, no re-encode)
+- `nodes.json` from `design/nodes.json` (unformatted)
+- `metadata/source-prompt.md`, `source-manifest.json`, `fidelity-coverage.json`, `figma-locator.json`
+- every **unique** raster from `assets/` (photographs and layer PNGs)
+- package `README.md` with scope and asset map
+
+### What was excluded
+
+- whole-frame SVG fallbacks with embedded photographs (up to ~50 MB per Work page)
+- fallback PNGs byte-identical to `reference.png`
+- byte-identical duplicate assets within a package (common 1×1 placeholders)
+- sanitized secrets from JSON metadata (`/Users/` paths, tokens)
+
+### Fifth-intake scope notes
+
+- Create-work sale status / time / price fields: `HIDE_FOR_FIRST_MVP`
+- Search overlays; create-work shipping, buyer-contact, process-story and statuses;
+  Work sold/archive/bids/announcement; auth email-code: `POST_MVP`
+- Three auth boards are 1123 px-wide multi-phone frames, not 390 phone captures
+- Four «Фильтры чекбоксы» zips are four different nodes — all kept
+
+### Library completeness check
+
+- Packages in catalog: **58**
+- Packages with full standard file set: **58 / 58**
+- Unique layer rasters saved: **158** across all packages
+- Symlinks to Downloads: **0**
+- Files larger than 10 MB in library: **0** (largest raster ≈ 6.9 MB)
+
+## Sixth intake — 2026-09-09 (foundation component sets)
+
+User noted three missing foundation captures from Downloads. All three were
+imported as shared component packages (not phone screens).
+
+| Input | Surface | Node | Destination |
+|-------|---------|------|-------------|
+| `Поля_ввода.figmacapture.zip` | text fields | `292:5044` | `components/text-fields__789x552__node-292-5044/` |
+| `Кнопки.figmacapture.zip` | buttons | `292:5058` | `components/buttons__714x283__node-292-5058/` |
+| `Иконки_кнопок.figmacapture.zip` | button icons | `297:5598` | `components/button-icons__250x174__node-297-5598/` |
+
+Evidence: each zip is a Figma `COMPONENT_SET` with variant rows (input states,
+button outline/black/disabled/hover/pressed, icon variants). No unique layer
+rasters — vectors only in `nodes.json`.
+
+Excluded: whole-frame SVG fallbacks (`001-292_5044.svg` 137 KB,
+`001-292_5058.svg` 62 KB, `001-297_5598.svg` 18 KB) — vector-only sets, no
+embedded photos; reference PNG copied as `reference.png`.
+
+### Updated library completeness
+
+- Packages in catalog: **61**
+- Packages with full standard file set: **61 / 61**
+- Unique layer rasters saved: **158** (unchanged; new packages have empty `assets/`)
+- Symlinks to Downloads: **0**
+
+## Seventh intake — 2026-09-10 (cards, filter chrome, materials)
+
+User supplied 20 paths. **18 imported**, **2 skipped as byte aliases**.
+
+### Aliases
+
+| Input | Alias of | Evidence |
+|-------|----------|----------|
+| `Frame_5.figmacapture (1).zip` | `874:5458` | same `nodes.json` SHA as `Frame_5.figmacapture.zip` |
+| `Frame_9.figmacapture` (folder) | `874:5473` | same `nodes.json` SHA as `Frame_9.figmacapture.zip` |
+
+### Imported
+
+| Input | Role | Node | Destination |
+|-------|------|------|-------------|
+| `Frame_6.figmacapture.zip` | author cover card | `874:5576` | `components/author-cover-card__264x352__node-874-5576/` |
+| `Frame_4.figmacapture.zip` | author cover card | `874:5540` | `components/author-cover-card__264x352__node-874-5540/` |
+| `Frame_4.figmacapture (1).zip` | author cover card | `874:5564` | `components/author-cover-card__264x352__node-874-5564/` |
+| `Frame_33.figmacapture.zip` | author identity row | `874:5591` | `components/author-identity-row__348x84__node-874-5591/` |
+| `Frame_5`…`17` (10 zips) | work cover card samples | `874:5458`…`874:5685` | `components/work-cover-card__264x352__node-*/` |
+| `Frame_77.figmacapture.zip` | filter + sort bar | `874:5434` | `components/filter-sort-bar__293x43__node-874-5434/` |
+| `Frame_57.figmacapture.zip` | catalog segment tabs | `874:5421` | `components/catalog-segment-tabs__390x28__node-874-5421/` |
+| `Живопись_…_автор.zip` | materials taxonomy label | `874:5420` | `components/materials-taxonomy-label__278x214__node-874-5420/` |
+| `Vector.figmacapture.zip` | image placeholder vector | `874:5454` | `components/image-placeholder-vector__188x142__node-874-5454/` |
+
+Two «Frame 4» captures kept separate (`874:5540` vs `874:5564`). Ten work-card
+samples share 264×352 geometry but differ in overlay layout and photo hash.
+
+Excluded whole-frame SVG fallbacks > 5 MB: `874:5458`, `874:5487`, `874:5473`,
+`874:5616`, `874:5631` (14–17 MB each, embedded photos).
+
+### Updated library completeness
+
+- Packages in catalog: **79**
+- Packages with full standard file set: **79 / 79**
+- Unique layer rasters saved: **172** (+14 photo assets from card captures)
+- Symlinks to Downloads: **0**

@@ -34,12 +34,9 @@ Do not rebuild glass from the flattened PNG.
 
 ## Asset map
 
-| File | Node ID | Node name | Role |
-|------|---------|-----------|------|
-| `assets/001-439_4412.png` | `439:4412` | Rectangle 2 | `@vex` avatar (216×216) |
-| `assets/002-439_4422.png` | `439:4422` | Frame 5 | Featured work raster (344×1408) |
-| `assets/003-439_4437.png` | `439:4437` | Frame 11 | 1×1 placeholder thumb |
-| `assets/004-439_4451.png` | `439:4451` | Frame 9 | 1×1 placeholder thumb |
-
-`assets/005-439_4465.png` was a byte-identical alias of `004-439_4451.png` and
-was not copied. Logo and dock icons are vectors in `nodes.json`.
+| File | Node ID | Role |
+|------|---------|------|
+| `001-439_4412.png` | `439:4412` | Layer raster |
+| `002-439_4422.png` | `439:4422` | Layer raster |
+| `003-439_4437.png` | `439:4437` | 1×1 placeholder |
+| `004-439_4451.png` | `439:4451` | 1×1 placeholder |

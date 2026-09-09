@@ -38,12 +38,9 @@ Same formula as the about package, same image hash `e877cde9ee970b0686af6c8c1d61
 
 ## Asset map
 
-| File | Node ID | Node name | Role |
-|------|---------|-----------|------|
-| `assets/001-526_13762.png` | `526:13762` | Frame 9 | 1×1 related-work placeholder |
-| `assets/004-526_13804.png` | `526:13804` | Frame 11 | 1×1 related-work placeholder (different bytes) |
-| `assets/005-526_13821.png` | `526:13821` | Rectangle 2 | Atmospheric / hero raster |
-| `assets/006-526_13826.png` | `526:13826` | Rectangle 2 | Sharp avatar |
-
-Aliases not stored: `002-526_13776.png` and `003-526_13789.png` are
-byte-identical to `001-526_13762.png`.
+| File | Node ID | Role |
+|------|---------|------|
+| `001-526_13762.png` | `526:13762` | 1×1 placeholder |
+| `004-526_13804.png` | `526:13804` | 1×1 placeholder |
+| `005-526_13821.png` | `526:13821` | Layer raster |
+| `006-526_13826.png` | `526:13826` | Layer raster |

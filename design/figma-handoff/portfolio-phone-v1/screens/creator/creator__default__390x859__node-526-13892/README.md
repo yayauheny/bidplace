@@ -18,5 +18,5 @@ bottom radii 200, layer blur 80. Shirt-portrait hash `e877cde9…`.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_13893.png` | `526:13893` | Atmospheric hero raster |
-| `assets/002-526_13898.png` | `526:13898` | Sharp avatar |
+| `001-526_13893.png` | `526:13893` | Layer raster |
+| `002-526_13898.png` | `526:13898` | Layer raster |

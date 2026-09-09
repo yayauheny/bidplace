@@ -18,5 +18,5 @@ Same scrolled about chrome as `526:14482`, different photo hash
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_14561.png` | `526:14561` | Atmospheric raster for the collapsed hero |
-| `assets/002-526_14601.png` | `526:14601` | Compact sticky avatar |
+| `001-526_14561.png` | `526:14561` | Layer raster |
+| `002-526_14601.png` | `526:14601` | Layer raster |

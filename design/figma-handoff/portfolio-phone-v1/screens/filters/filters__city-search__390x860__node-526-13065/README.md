@@ -10,3 +10,9 @@ City typeahead over a materials checkbox list. Title is «Город». Search
 field is in the «При вводе» variant with query «Сама» and a city
 suggestion list. Materials rows (ending in «Стекло») remain visible
 behind the overlay. Not a duplicate of `526:13009` or `526:13142`.
+
+## Asset map
+
+| File | Node ID | Role |
+|------|---------|------|
+| — | — | No unique layer rasters |

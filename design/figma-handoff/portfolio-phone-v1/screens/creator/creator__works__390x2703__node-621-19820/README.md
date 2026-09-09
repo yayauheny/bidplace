@@ -28,9 +28,9 @@ Active works underline `621:19872` is `#2A2A2A`. Commerce card slots remain
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-621_19821.png` | `621:19821` | Atmospheric hero raster |
-| `assets/002-621_19825.png` | `621:19825` | Sharp avatar (same bytes as visitor avatar) |
-| `assets/003-621_19881.png` | `621:19881` | First work cover |
-| `assets/004-621_19902.png` | `621:19902` | Second work cover |
-| `assets/005-621_19916.png` | `621:19916` | Third work cover (same bytes as `005-526_13440.png`) |
-| `assets/006-621_19930.png` | `621:19930` | Fourth work cover (same bytes as `006-526_13454.png`) |
+| `001-621_19821.png` | `621:19821` | Layer raster |
+| `002-621_19825.png` | `621:19825` | Layer raster |
+| `003-621_19881.png` | `621:19881` | Photograph / artwork raster |
+| `004-621_19902.png` | `621:19902` | Layer raster |
+| `005-621_19916.png` | `621:19916` | Photograph / artwork raster |
+| `006-621_19930.png` | `621:19930` | Photograph / artwork raster |

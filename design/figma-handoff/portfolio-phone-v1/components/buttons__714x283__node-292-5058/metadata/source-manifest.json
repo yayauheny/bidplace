@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "1.0",
+  "producer": {
+    "name": "runkids/figma-to-prompt",
+    "version": "0.2.7",
+    "protocolVersion": 1
+  },
+  "capturedAt": "2026-09-09T20:43:26.584Z",
+  "source": {
+    "provider": "figma-plugin",
+    "fileKey": null,
+    "fileVersionId": null,
+    "nodeIds": [
+      "292:5058"
+    ],
+    "sourceUrl": null,
+    "locatorPath": "mcp/figma-locator.json"
+  },
+  "root": {
+    "id": "292:5058",
+    "name": "Кнопки",
+    "structurePath": "design/nodes.json",
+    "promptPath": "prompt.md",
+    "primaryReferencePath": "references/001-292_5058.png",
+    "targetViewport": {
+      "width": 714,
+      "height": 283,
+      "referencePath": "references/001-292_5058.png"
+    },
+    "referencePaths": [
+      "references/001-292_5058.png"
+    ],
+    "fallbackPaths": [
+      "fallbacks/001-292_5058.png",
+      "fallbacks/001-292_5058.svg"
+    ]
+  },
+  "files": [
+    {
+      "path": "design/nodes.json",
+      "role": "design-structure",
+      "mediaType": "application/json",
+      "size": 111991,
+      "sha256": "a83ce84afe4fd0d20d7cff49f7eeab43fa49df490cbf5f803c455b28de68821a",
+      "nodeId": "292:5058"
+    },
+    {
+      "path": "fallbacks/001-292_5058.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 24043,
+      "sha256": "10d209ff83515cfb76ee11fec37b6d5d8818d13217f6535ca35a7625c560d349",
+      "nodeId": "292:5058",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "pixel",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ],
+      "pixelDimensions": {
+        "width": 714,
+        "height": 283
+      }
+    },
+    {
+      "path": "fallbacks/001-292_5058.svg",
+      "role": "design-asset",
+      "mediaType": "image/svg+xml",
+      "size": 62128,
+      "sha256": "df4d189309c402c699c7f9c27b91cabf0814ad19400f65a9bd10fd12255db88a",
+      "nodeId": "292:5058",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "vector",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ]
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 529,
+      "sha256": "30bd82402afda16d7fb85bafc88c5378de158ebdbc6aa8e829fe74c1156f5171",
+      "nodeId": "292:5058"
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 28603,
+      "sha256": "da306e55d79f0c1766057733670599a666bd143864697ac13df985fae29ea72f",
+      "nodeId": "292:5058"
+    },
+    {
+      "path": "prompt.md",
+      "role": "derived-prompt",
+      "mediaType": "text/markdown",
+      "size": 87853,
+      "sha256": "080b848b5ad258b233612770c83cf664e1d4933df98a3ca952ea9a2665365db9",
+      "nodeId": "292:5058"
+    },
+    {
+      "path": "references/001-292_5058.png",
+      "role": "reference-render",
+      "mediaType": "image/png",
+      "size": 24043,
+      "sha256": "10d209ff83515cfb76ee11fec37b6d5d8818d13217f6535ca35a7625c560d349",
+      "nodeId": "292:5058",
+      "pixelDimensions": {
+        "width": 714,
+        "height": 283
+      }
+    }
+  ],
+  "fidelity": {
+    "policy": "fail-closed",
+    "coveragePath": "fidelity/coverage.json",
+    "candidateNodeCount": 1,
+    "coveredNodeCount": 1,
+    "unresolvedNodeIds": [],
+    "exactVerification": {
+      "required": true,
+      "method": "rgba-pixel-equality",
+      "referencePath": "references/001-292_5058.png",
+      "referenceStability": {
+        "renderCount": 2,
+        "width": 714,
+        "height": 283,
+        "differentPixels": 0,
+        "maxChannelDelta": 0
+      }
+    }
+  },
+  "warnings": [
+    "Figma file version is unavailable in the plugin sandbox."
+  ],
+  "provenance": {
+    "selectionCount": 1
+  }
+}

@@ -26,11 +26,11 @@ Same visitor formula as about `621:19475`.
 
 ## Asset map
 
-| File | Node ID | Node name | Role |
-|------|---------|-----------|------|
-| `assets/001-526_13352.png` | `526:13352` | Rectangle 2 | Atmospheric hero raster |
-| `assets/002-526_13356.png` | `526:13356` | Rectangle 2 | Sharp avatar |
-| `assets/003-526_13411.png` | `526:13411` | (work media) | First work cover |
-| `assets/004-526_13426.png` | `526:13426` | (work media) | Second work cover |
-| `assets/005-526_13440.png` | `526:13440` | (work media) | Third work cover |
-| `assets/006-526_13454.png` | `526:13454` | (work media) | Fourth work cover |
+| File | Node ID | Role |
+|------|---------|------|
+| `001-526_13352.png` | `526:13352` | Layer raster |
+| `002-526_13356.png` | `526:13356` | Layer raster |
+| `003-526_13411.png` | `526:13411` | Photograph / artwork raster |
+| `004-526_13426.png` | `526:13426` | Layer raster |
+| `005-526_13440.png` | `526:13440` | Photograph / artwork raster |
+| `006-526_13454.png` | `526:13454` | Photograph / artwork raster |

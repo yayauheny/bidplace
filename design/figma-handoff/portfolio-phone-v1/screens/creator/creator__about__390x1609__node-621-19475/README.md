@@ -31,12 +31,9 @@ oracles. Author photos in the app stay dynamic.
 
 ## Asset map
 
-| File | Node ID | Node name | Role |
-|------|---------|-----------|------|
-| `assets/001-621_19476.png` | `621:19476` | Rectangle 2 | Atmospheric / hero raster (390×529 export of the blurred photo layer) |
-| `assets/002-621_19481.png` | `621:19481` | Rectangle 2 | Sharp circular avatar source (417×417) |
-| `assets/003-621_19582.png` | `621:19582` | Rectangle 14 | Exhibition card photograph (450×600) |
-| `assets/004-621_19587.png` | `621:19587` | Rectangle 14 | Second exhibition raster (116×447) |
-
-Logo and tab-bar icons are compact vectors inside `nodes.json`, not separate
-SVG files in this capture.
+| File | Node ID | Role |
+|------|---------|------|
+| `001-621_19476.png` | `621:19476` | Layer raster |
+| `002-621_19481.png` | `621:19481` | Layer raster |
+| `003-621_19582.png` | `621:19582` | Layer raster |
+| `004-621_19587.png` | `621:19587` | Layer raster |

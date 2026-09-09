@@ -20,11 +20,9 @@ details, and related works are First MVP.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-745_21210.png` | `745:21210` | Hero artwork |
-| `assets/002-745_21262.png` | `745:21262` | Related author card |
-| `assets/003-745_21274.png` | `745:21274` | Related work raster |
-| `assets/004-745_21288.png` | `745:21288` | 1×1 placeholder |
-| `assets/006-745_21316.png` | `745:21316` | 1×1 placeholder |
-| `assets/007-745_21331.png` | `745:21331` | Status-bar chrome (`Change-This`) |
-
-`005-745_21301.png` was a byte-identical alias of `004` and was not copied.
+| `001-745_21210.png` | `745:21210` | Photograph / artwork raster |
+| `002-745_21262.png` | `745:21262` | Layer raster |
+| `003-745_21274.png` | `745:21274` | Layer raster |
+| `004-745_21288.png` | `745:21288` | 1×1 placeholder |
+| `006-745_21316.png` | `745:21316` | 1×1 placeholder |
+| `007-745_21331.png` | `745:21331` | Status-bar chrome (`Change-This`) |

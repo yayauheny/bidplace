@@ -16,3 +16,9 @@ rectangle and was not imported.
 | File | Node ID | Node name | Role |
 |------|---------|-----------|------|
 | `reference.png` | `526:13880` | Frame 140 | Rendered dimmer oracle |
+
+## Asset map
+
+| File | Node ID | Role |
+|------|---------|------|
+| — | — | No unique layer rasters |

@@ -53,8 +53,40 @@ pixels — keep both. Search overlay variants: `authors`, `categories`,
 
 Works catalog is `works` / `default`. Authors catalog is `authors` /
 `default`. Work page variants: `details`, `history`, `sold`, `share-sheet`,
-`bid-sheet`, `buy-sheet`. Filter variants: `root`, `cities`, `city-search`,
-`materials-radio`. Same Russian overlay name is not a duplicate.
+`bid-sheet`, `buy-sheet`, `bids`, `not-for-sale`, `announcement`. Filter
+variants: `root`, `cities`, `city-search`, `materials-radio`,
+`materials-checkboxes`. Create-work, apply, and auth packages use those
+surface names. Same Russian overlay name is not a duplicate.
+
+Each package is a real copy inside this repo (`reference.png`, `nodes.json`,
+unique photos in `assets/`, metadata). Nothing here is a symlink or a path
+into Downloads.
+
+## Standard package contents
+
+Every capture directory in this library must contain the same
+implementation handoff set. Files are copied from the user’s `.figmacapture`
+zip or folder into the repo — never linked from Downloads.
+
+| Path | Purpose |
+|------|---------|
+| `reference.png` | Lossless capture screenshot for visual QA |
+| `nodes.json` | Figma tree: geometry, fills, effects, text, components |
+| `README.md` | Classification, scope, and asset map |
+| `metadata/source-prompt.md` | Capture description and block notes (read-only) |
+| `metadata/source-manifest.json` | Producer, viewport, node id, capture time |
+| `metadata/fidelity-coverage.json` | Coverage report from the capture plugin |
+| `metadata/figma-locator.json` | Node locator map (sanitized; no local paths) |
+| `assets/*.png` | Unique layer rasters (photos, hero art, icons) |
+
+Not copied on purpose:
+
+- whole-frame SVG fallbacks that embed photographs or exceed 5 MB;
+- byte-identical duplicate PNGs inside the same package;
+- `.DS_Store`, `__MACOSX`, tokens, cookies, and `/Users/` paths.
+
+Validation status: see [`VALIDATION.md`](VALIDATION.md) (2026-09-10: 79/79 packages
+complete, First MVP covered with documented visual gaps).
 
 ## How to find a screen
 
@@ -62,8 +94,9 @@ Works catalog is `works` / `default`. Authors catalog is `authors` /
 2. Open `catalog.json` for machine lookup by `surface`, `state`, or `nodeId`.
 3. Open the package `reference.png` first.
 4. Read `nodes.json` for geometry, fills, effects, and prototype data.
-5. Use `assets/` only for the specific layer rasters mapped in the package README.
-6. Use `metadata/` for capture provenance.
+5. Read `metadata/source-prompt.md` for block-level capture notes.
+6. Use `assets/` only for the specific layer rasters mapped in the package README.
+7. Use `metadata/` for capture provenance.
 
 ## Adding a new capture
 
@@ -88,6 +121,12 @@ Remove only proven junk from the imported copy:
 
 Do not delete a unique design because it is outside First MVP. Mark
 `HIDE_FOR_FIRST_MVP` or `POST_MVP` instead.
+
+`KEEP_FIRST_MVP` authorizes using the package as an MVP implementation source,
+but not every layer inside it: package README omissions and the product RFC still
+win. `POST_MVP` keeps a unique capture in the archive while explicitly forbidding
+its current runtime implementation. `HIDE_FOR_FIRST_MVP` is reserved for a
+component whose visible concept is excluded from the current product.
 
 ## Visual check order
 

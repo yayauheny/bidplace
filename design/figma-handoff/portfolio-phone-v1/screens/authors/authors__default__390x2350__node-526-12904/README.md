@@ -14,7 +14,7 @@ sort chips stay. Dock `526:12961` matches the works five-icon glass pill.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_12906.png` | `526:12906` | Анастасия Винова |
-| `assets/002-526_12918.png` | `526:12918` | Константин / @havoc |
-| `assets/003-526_12930.png` | `526:12930` | Клавдия Агаповна |
-| `assets/004-526_12942.png` | `526:12942` | Илья Васильев / @vex |
+| `001-526_12906.png` | `526:12906` | Layer raster |
+| `002-526_12918.png` | `526:12918` | Layer raster |
+| `003-526_12930.png` | `526:12930` | Photograph / artwork raster |
+| `004-526_12942.png` | `526:12942` | Layer raster |

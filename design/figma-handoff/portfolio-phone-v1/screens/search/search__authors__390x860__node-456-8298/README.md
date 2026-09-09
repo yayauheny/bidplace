@@ -3,7 +3,7 @@
 - Original Figma name: `Поиск пупап авторы`
 - Node ID: `456:8298`
 - Source folder basename: `Поиск_пупап_авторы.figmacapture.zip`
-- Scope: `KEEP_FIRST_MVP`
+- Scope: `POST_MVP`
 - Confidence: high
 
 Search overlay with tab «Авторы» selected. Sibling frames for categories
@@ -32,6 +32,6 @@ Do not rebuild those veils from the flattened PNG.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-456_8353.png` | `456:8353` | First author avatar |
-| `assets/002-456_8358.png` | `456:8358` | Second author avatar |
-| `assets/003-456_8363.png` | `456:8363` | Third author avatar |
+| `001-456_8353.png` | `456:8353` | Layer raster |
+| `002-456_8358.png` | `456:8358` | Layer raster |
+| `003-456_8363.png` | `456:8363` | Layer raster |

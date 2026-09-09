@@ -11,3 +11,9 @@ City checkbox list. Header text is «Материалы»; the rows are cities
 materials. Sibling checkbox zips are different nodes.
 
 Authors catalog may use city; Works First MVP does not. Keep the snapshot.
+
+## Asset map
+
+| File | Node ID | Role |
+|------|---------|------|
+| — | — | No unique layer rasters |

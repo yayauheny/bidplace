@@ -1,0 +1,151 @@
+{
+  "schemaVersion": "1.0",
+  "producer": {
+    "name": "runkids/figma-to-prompt",
+    "version": "0.2.7",
+    "protocolVersion": 1
+  },
+  "capturedAt": "2026-09-09T21:23:19.923Z",
+  "source": {
+    "provider": "figma-plugin",
+    "fileKey": null,
+    "fileVersionId": null,
+    "nodeIds": [
+      "874:5616"
+    ],
+    "sourceUrl": null,
+    "locatorPath": "mcp/figma-locator.json"
+  },
+  "root": {
+    "id": "874:5616",
+    "name": "Frame 12",
+    "structurePath": "design/nodes.json",
+    "promptPath": "prompt.md",
+    "primaryReferencePath": "references/001-874_5616.png",
+    "targetViewport": {
+      "width": 264,
+      "height": 352,
+      "referencePath": "references/001-874_5616.png"
+    },
+    "referencePaths": [
+      "references/001-874_5616.png"
+    ],
+    "fallbackPaths": [
+      "fallbacks/001-874_5616.png",
+      "fallbacks/001-874_5616.svg"
+    ]
+  },
+  "files": [
+    {
+      "path": "assets/001-874_5616.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 2327336,
+      "sha256": "415683219c5b2327c3dd8dde546ba4e400cf08e3b569bfc65dcc1eb3f0585c52",
+      "nodeId": "874:5616",
+      "pixelDimensions": {
+        "width": 1056,
+        "height": 1408
+      }
+    },
+    {
+      "path": "design/nodes.json",
+      "role": "design-structure",
+      "mediaType": "application/json",
+      "size": 14164,
+      "sha256": "f784e24e3c4ea28585374abafce57772650618be814165deaff4a1aabf38fa51",
+      "nodeId": "874:5616"
+    },
+    {
+      "path": "fallbacks/001-874_5616.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 159889,
+      "sha256": "8b71a4ce993912a73c5f86bde4eab5c5d195f7f0d3f8c641586eec4a2d4d3e49",
+      "nodeId": "874:5616",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "pixel",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ],
+      "pixelDimensions": {
+        "width": 264,
+        "height": 352
+      }
+    },
+    {
+      "path": "fallbacks/001-874_5616.svg",
+      "role": "design-asset",
+      "mediaType": "image/svg+xml",
+      "size": 14830080,
+      "sha256": "140343680a8faf6eb18840ddd97d2e4bccd5f4ddf648d59f15d845d70ba4b094",
+      "nodeId": "874:5616",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "vector",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ]
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 529,
+      "sha256": "62ea26d1847d8ca63b124957dcdc479e97d8093be91c12a324d8e02d418e0e45",
+      "nodeId": "874:5616"
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 4148,
+      "sha256": "b03a5e5b8e380939656d9f431174ee04116cbf63ebec8f20df05aa28f6609d1b",
+      "nodeId": "874:5616"
+    },
+    {
+      "path": "prompt.md",
+      "role": "derived-prompt",
+      "mediaType": "text/markdown",
+      "size": 25143,
+      "sha256": "eb3278ad88f35c3c481d4cf2e6e370fb4cb6db6d16e22b48ab2b0c966f972863",
+      "nodeId": "874:5616"
+    },
+    {
+      "path": "references/001-874_5616.png",
+      "role": "reference-render",
+      "mediaType": "image/png",
+      "size": 159889,
+      "sha256": "8b71a4ce993912a73c5f86bde4eab5c5d195f7f0d3f8c641586eec4a2d4d3e49",
+      "nodeId": "874:5616",
+      "pixelDimensions": {
+        "width": 264,
+        "height": 352
+      }
+    }
+  ],
+  "fidelity": {
+    "policy": "fail-closed",
+    "coveragePath": "fidelity/coverage.json",
+    "candidateNodeCount": 1,
+    "coveredNodeCount": 1,
+    "unresolvedNodeIds": [],
+    "exactVerification": {
+      "required": true,
+      "method": "rgba-pixel-equality",
+      "referencePath": "references/001-874_5616.png",
+      "referenceStability": {
+        "renderCount": 2,
+        "width": 264,
+        "height": 352,
+        "differentPixels": 0,
+        "maxChannelDelta": 0
+      }
+    }
+  },
+  "warnings": [
+    "Figma file version is unavailable in the plugin sandbox."
+  ],
+  "provenance": {
+    "selectionCount": 1
+  }
+}

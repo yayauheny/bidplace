@@ -18,7 +18,7 @@ pill: white 60%, **background** blur 12, radius 200.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-526_13250.png` | `526:13250` | Dalí card |
-| `assets/002-526_13265.png` | `526:13265` | Caricature card |
-| `assets/003-526_13279.png` | `526:13279` | «Желтый сапфир» |
-| `assets/004-526_13293.png` | `526:13293` | «Color calibration» |
+| `001-526_13250.png` | `526:13250` | Photograph / artwork raster |
+| `002-526_13265.png` | `526:13265` | Layer raster |
+| `003-526_13279.png` | `526:13279` | Photograph / artwork raster |
+| `004-526_13293.png` | `526:13293` | Photograph / artwork raster |

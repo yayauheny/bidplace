@@ -18,6 +18,6 @@ blur.
 
 | File | Node ID | Role |
 |------|---------|------|
-| `assets/001-597_18788.png` | `597:18788` | Underlay hero |
-| `assets/002-597_18807.png` | `597:18807` | 1×1 placeholder |
-| `assets/006-597_18858.png` | `597:18858` | 1×1 placeholder |
+| `001-597_18788.png` | `597:18788` | Photograph / artwork raster |
+| `002-597_18807.png` | `597:18807` | 1×1 placeholder |
+| `006-597_18858.png` | `597:18858` | 1×1 placeholder |
