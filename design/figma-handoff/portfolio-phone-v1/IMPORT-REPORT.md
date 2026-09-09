@@ -263,3 +263,81 @@ All listed whole-frame SVGs except the 174-byte Frame 140 rect.
 
 - None. Largest saved rasters are work covers ≈ 5.7 MB. Both ~48 MB
   whole-frame SVGs were excluded.
+
+## Third intake — 2026-09-09 (Home + Search)
+
+All seven user-supplied paths were read. Downloads were not modified. The two
+«Главная» copies are **not** duplicates: one is the first fold, one is the
+full page. Zips were opened read-only; whole-frame SVGs were not copied.
+
+### Aliases
+
+| Input | Alias of | Evidence |
+|-------|----------|----------|
+| `Главная.figmacapture.zip` | `439:4404` first-fold | same nodes SHA `213f06a9…` as `Главная.figmacapture` |
+| `Главная.figmacapture (1).zip` | `436:1137` full Home | same nodes SHA `3cb1bc23…` as `Главная.figmacapture (1)` |
+
+### New unique packages
+
+#### Главная.figmacapture
+
+- Screen/state: `home` / `first-fold`
+- Confidence: high
+- Destination: `screens/home/home__first-fold__390x860__node-439-4404/`
+- Evidence: node `439:4404`, viewport 390×860, «Открытие недели» + top of
+  «Активные торги», no «Новые работы». Split dock: 4-icon pill `439:4633`
+  plus search FAB `456:8265`.
+- Saved: reference PNG 390×860, nodes, avatar, featured raster, two unique
+  1×1 placeholder thumbs, metadata
+- Excluded: `fallbacks/001-439_4404.svg` (47 606 326 bytes, `<image>` /
+  base64); fallback PNG = reference; `assets/005-439_4465.png` byte-identical
+  to `004-439_4451.png`
+
+#### Главная.figmacapture (1)
+
+- Screen/state: `home` / `default`
+- Confidence: high
+- Destination: `screens/home/home__default__390x3372__node-436-1137/`
+- Evidence: node `436:1137`, viewport 390×3372, adds two «Новые работы»
+  blocks and a 5-icon dock `436:1366`. Different pixels from the fold.
+- Saved: reference PNG 390×3372, nodes, shared-hash avatar/featured copies,
+  six work rasters, metadata
+- Excluded: `fallbacks/001-436_1137.svg` (71 647 322 bytes, embedded raster);
+  fallback PNG = reference; `assets/005-436_1198.png` alias of `004`
+
+#### Поиск_пупап_авторы.figmacapture.zip
+
+- Screen/state: `search` / `authors`
+- Confidence: high
+- Destination: `screens/search/search__authors__390x860__node-456-8298/`
+- Evidence: node `456:8298`, selected tab `456:8381` `Обычная: Черная`
+- Excluded: `fallbacks/001-456_8298.svg` (1 547 808 bytes, `<image>`)
+
+#### Поиск_пупап_категории.figmacapture.zip
+
+- Screen/state: `search` / `categories`
+- Confidence: high
+- Destination: `screens/search/search__categories__390x860__node-439-4652/`
+- Evidence: node `439:4652`, selected tab `456:8248`, 3×3 category grid
+- Excluded: `fallbacks/001-439_4652.svg` (10 448 058 bytes, `<image>`)
+
+#### Поиск_пупап_работы.figmacapture.zip
+
+- Screen/state: `search` / `works-results`
+- Confidence: high
+- Destination: `screens/search/search__works-results__390x860__node-456-8392/`
+- Evidence: node `456:8392`, selected tab `456:8427`, work cards with
+  `Торги` / `Продано` / `Анонс`
+- Excluded: `fallbacks/001-456_8392.svg` (23 762 083 bytes, `<image>`)
+
+### Third-intake SVG exclusions
+
+- `001-439_4404.svg` (47.6 MB)
+- `001-436_1137.svg` (71.6 MB)
+- `001-456_8298.svg` (1.5 MB)
+- `001-439_4652.svg` (10.4 MB)
+- `001-456_8392.svg` (23.8 MB)
+
+### Files larger than 10 MB that were still saved (this intake)
+
+- None. Largest new raster is `006-436_1276.png` ≈ 4.8 MB.

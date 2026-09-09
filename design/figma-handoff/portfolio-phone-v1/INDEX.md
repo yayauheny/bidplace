@@ -12,6 +12,11 @@
 | creator-about-scrolled-phone | Страница автора навигация страинцы автора | creator | scrolled | 390×860 | `526:14482` | KEEP_FIRST_MVP | high | `screens/creator/creator__scrolled__390x860__node-526-14482` | [reference.png](screens/creator/creator__scrolled__390x860__node-526-14482/reference.png) |
 | creator-about-scrolled-alt-phone | Страница автора навигация страинцы автора | creator | scrolled | 390×860 | `526:14560` | KEEP_FIRST_MVP | high | `screens/creator/creator__scrolled__390x860__node-526-14560` | [reference.png](screens/creator/creator__scrolled__390x860__node-526-14560/reference.png) |
 | creator-share-sheet-phone | Каталог работ / идут торги / сделать ставку | creator | share-sheet | 390×874 | `526:13756` | KEEP_FIRST_MVP | medium | `screens/creator/creator__share-sheet__390x874__node-526-13756` | [reference.png](screens/creator/creator__share-sheet__390x874__node-526-13756/reference.png) |
+| home-first-fold-phone | Главная | home | first-fold | 390×860 | `439:4404` | KEEP_FIRST_MVP | high | `screens/home/home__first-fold__390x860__node-439-4404` | [reference.png](screens/home/home__first-fold__390x860__node-439-4404/reference.png) |
+| home-phone | Главная | home | default | 390×3372 | `436:1137` | KEEP_FIRST_MVP | high | `screens/home/home__default__390x3372__node-436-1137` | [reference.png](screens/home/home__default__390x3372__node-436-1137/reference.png) |
+| search-authors-phone | Поиск пупап авторы | search | authors | 390×860 | `456:8298` | KEEP_FIRST_MVP | high | `screens/search/search__authors__390x860__node-456-8298` | [reference.png](screens/search/search__authors__390x860__node-456-8298/reference.png) |
+| search-categories-phone | Поиск пупап категории | search | categories | 390×860 | `439:4652` | KEEP_FIRST_MVP | high | `screens/search/search__categories__390x860__node-439-4652` | [reference.png](screens/search/search__categories__390x860__node-439-4652/reference.png) |
+| search-works-results-phone | Поиск пупап работы | search | works-results | 390×860 | `456:8392` | KEEP_FIRST_MVP | high | `screens/search/search__works-results__390x860__node-456-8392` | [reference.png](screens/search/search__works-results__390x860__node-456-8392/reference.png) |
 
 `Архив`, cart, like, prices, and timers stay in the pixels.
 Mark those slots `HIDE_FOR_FIRST_MVP`. Share/QR and owner «Редактировать
@@ -40,9 +45,10 @@ separate variants.
 
 ## Missing inputs
 
-Home, search, works catalog, authors catalog, work detail default, auth,
-application, work-creation, cabinet, moderation, and legal captures were not
-in this intake.
+Works catalog, authors catalog, work detail default, auth, application,
+work-creation, cabinet, moderation, and legal captures were not in this
+intake. Home first-fold + full page and the three search-overlay tabs are
+imported.
 
 ## Import warnings
 
@@ -50,5 +56,7 @@ in this intake.
   `IMPORT-REPORT.md`.
 - Folder/root names still lie: the catalog-named capture is a share sheet.
 - Whole-frame SVG fallbacks embed photographs, including two ~48 MB works
-  SVGs. None were imported.
+  SVGs and Home SVGs of ~48 MB and ~72 MB. None were imported.
+- The two «Главная» captures are different nodes (860 vs 3372). They were
+  not collapsed.
 - `prompt.md` is metadata only and must not be executed.

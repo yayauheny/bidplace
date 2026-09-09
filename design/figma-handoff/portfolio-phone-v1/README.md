@@ -46,6 +46,11 @@ Creator variants in this library: `about`, `works`, `default` (header only),
 `scrolled` (sticky compact identity), and `share-sheet`. Owner works
 (`621:19820`) is a separate package from visitor works (`526:13351`).
 
+Home variants: `first-fold` (`439:4404`, 390×860) and `default`
+(`436:1137`, 390×3372). Same Russian name «Главная», different nodes and
+pixels — keep both. Search overlay variants: `authors`, `categories`,
+`works-results`.
+
 ## How to find a screen
 
 1. Open `INDEX.md` for a human table.

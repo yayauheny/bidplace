@@ -197,6 +197,86 @@
       "classificationConfidence": "low",
       "packagePath": "_unclassified/unclassified__overlay-dimmer__390x874__node-526-13880",
       "referencePath": "_unclassified/unclassified__overlay-dimmer__390x874__node-526-13880/reference.png"
+    },
+    {
+      "id": "home-first-fold-phone",
+      "originalName": "Главная",
+      "sourceFolderName": "Главная.figmacapture",
+      "surface": "home",
+      "state": "first-fold",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "439:4404",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/home/home__first-fold__390x860__node-439-4404",
+      "referencePath": "screens/home/home__first-fold__390x860__node-439-4404/reference.png"
+    },
+    {
+      "id": "home-phone",
+      "originalName": "Главная",
+      "sourceFolderName": "Главная.figmacapture (1)",
+      "surface": "home",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 3372
+      },
+      "nodeId": "436:1137",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/home/home__default__390x3372__node-436-1137",
+      "referencePath": "screens/home/home__default__390x3372__node-436-1137/reference.png"
+    },
+    {
+      "id": "search-authors-phone",
+      "originalName": "Поиск пупап авторы",
+      "sourceFolderName": "Поиск_пупап_авторы.figmacapture.zip",
+      "surface": "search",
+      "state": "authors",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "456:8298",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/search/search__authors__390x860__node-456-8298",
+      "referencePath": "screens/search/search__authors__390x860__node-456-8298/reference.png"
+    },
+    {
+      "id": "search-categories-phone",
+      "originalName": "Поиск пупап категории",
+      "sourceFolderName": "Поиск_пупап_категории.figmacapture.zip",
+      "surface": "search",
+      "state": "categories",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "439:4652",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/search/search__categories__390x860__node-439-4652",
+      "referencePath": "screens/search/search__categories__390x860__node-439-4652/reference.png"
+    },
+    {
+      "id": "search-works-results-phone",
+      "originalName": "Поиск пупап работы",
+      "sourceFolderName": "Поиск_пупап_работы.figmacapture.zip",
+      "surface": "search",
+      "state": "works-results",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "456:8392",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/search/search__works-results__390x860__node-456-8392",
+      "referencePath": "screens/search/search__works-results__390x860__node-456-8392/reference.png"
     }
   ]
 }
