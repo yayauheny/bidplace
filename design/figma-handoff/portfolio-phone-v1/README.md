@@ -51,6 +51,11 @@ Home variants: `first-fold` (`439:4404`, 390×860) and `default`
 pixels — keep both. Search overlay variants: `authors`, `categories`,
 `works-results`.
 
+Works catalog is `works` / `default`. Authors catalog is `authors` /
+`default`. Work page variants: `details`, `history`, `sold`, `share-sheet`,
+`bid-sheet`, `buy-sheet`. Filter variants: `root`, `cities`, `city-search`,
+`materials-radio`. Same Russian overlay name is not a duplicate.
+
 ## How to find a screen
 
 1. Open `INDEX.md` for a human table.

@@ -341,3 +341,103 @@ full page. Zips were opened read-only; whole-frame SVGs were not copied.
 ### Files larger than 10 MB that were still saved (this intake)
 
 - None. Largest new raster is `006-436_1276.png` ≈ 4.8 MB.
+
+## Fourth intake — 2026-09-09 (Work, catalogs, filters)
+
+All 18 user-supplied paths were read. Downloads were not modified. Same
+Russian names with different node IDs were kept as separate packages.
+
+### Aliases of packages already in the library
+
+| Input | Alias of | Evidence |
+|-------|----------|----------|
+| `Главная.figmacapture.zip` | `439:4404` first-fold | nodes SHA `213f06a9…` |
+| `Главная.figmacapture (1).zip` | `436:1137` full Home | nodes SHA `3cb1bc23…` |
+| `Поиск_пупап_авторы.figmacapture.zip` | `456:8298` | nodes SHA `593715be…` |
+| `Поиск_пупап_категории.figmacapture.zip` | `439:4652` | nodes SHA `5b183e14…` |
+| `Поиск_пупап_работы.figmacapture.zip` | `456:8392` | nodes SHA `9e84711b…` |
+| `Каталог_работ___идут_торги___сделать_ставку.figmacapture.zip` | `526:13756` creator share-sheet | nodes SHA `d8ff0f07…` |
+
+### New unique packages
+
+#### Каталог_работ.figmacapture.zip
+
+- `works` / `default` → `screens/works/works__default__390x2350__node-526-13248/`
+- Evidence: node `526:13248`, «Все работы» underline `#2A2A2A`
+- Excluded: whole-frame SVG 48 511 612 bytes
+
+#### Каталог_авторов.figmacapture (1).zip
+
+- `authors` / `default` → `screens/authors/authors__default__390x2350__node-526-12904/`
+- Evidence: author cards with name, `@slug`, chips
+- Excluded: whole-frame SVG 5 476 228 bytes
+
+#### Каталог_работ___вкладка_детали.figmacapture.zip
+
+- `work` / `details` → `screens/work/work__details__390x2390__node-745-21209/`
+- Evidence: body is sizes/edition/auth; tab chrome still underlines «История»
+- Confidence: medium
+- Excluded: SVG 33 579 850 bytes; `005` alias of `004`
+
+#### Каталог_работ___идут_торги___вкладка_история.figmacapture.zip
+
+- `work` / `history` → `screens/work/work__history__390x2390__node-745-20634/`
+- Evidence: «История» selected, story copy + detail crop
+- Excluded: SVG 50 062 615 bytes
+
+#### Каталог_работ___завершен_.figmacapture.zip
+
+- `work` / `sold` → `screens/work/work__sold__390x862__node-526-12278/`
+- Evidence: «Продано», locked CTA, first-fold 862
+- Excluded: SVG 15 369 195 bytes; four 1×1 aliases
+
+#### Каталог_работ___идут_торги___Участие_в_торгах.figmacapture.zip
+
+- `work` / `share-sheet` → `screens/work/work__share-sheet__390x874__node-597-18787/`
+- Evidence: overlay title «Поделиться», QR slot. Folder name lies.
+
+#### Каталог_работ___идут_торги___Участие_в_торгах.figmacapture (1).zip
+
+- `work` / `bid-sheet` → `screens/work/work__bid-sheet__390x874__node-526-12056/`
+- Evidence: «Участие в торгах», stepper, increments. Scope `POST_MVP`.
+
+#### Каталог_работ___идут_торги___Участие_в_торгах.figmacapture (2).zip
+
+- `work` / `buy-sheet` → `screens/work/work__buy-sheet__390x874__node-526-12173/`
+- Evidence: «Купить работу». Scope `POST_MVP`.
+
+#### Фильтры_.figmacapture (1).zip
+
+- `filters` / `root` → `screens/filters/filters__root__390x860__node-526-12980/`
+- Evidence: Категория / Материалы / Цена / radio row
+
+#### Фильтры_чекбоксы.figmacapture.zip
+
+- `filters` / `cities` → `screens/filters/filters__cities__390x860__node-526-13009/`
+- Evidence: city list; header wrongly says «Материалы»
+
+#### Фильтры_чекбоксы.figmacapture (1).zip
+
+- `filters` / `city-search` → `screens/filters/filters__city-search__390x860__node-526-13065/`
+- Evidence: title «Город», typeahead «Сама» over materials rows
+
+#### Фильтры_чекбоксы.figmacapture (2).zip
+
+- `filters` / `materials-radio` → `screens/filters/filters__materials-radio__390x860__node-526-13142/`
+- Evidence: radio list, Акрил selected; header «Набор радио кнопок»
+
+### Fourth-intake SVG exclusions
+
+- `001-745_21209.svg` (33.6 MB)
+- `001-745_20634.svg` (50.1 MB)
+- `001-526_12278.svg` (15.4 MB)
+- `001-526_12173.svg` (15.0 MB)
+- `001-526_12056.svg` (15.1 MB)
+- `001-597_18787.svg` (14.9 MB)
+- `001-526_13248.svg` (48.5 MB)
+- `001-526_12904.svg` (5.5 MB)
+- plus compact filter whole-frame SVGs (no separate rasters were needed)
+
+### Files larger than 10 MB that were still saved (this intake)
+
+- None. Largest new raster is hero `001-745_21210.png` ≈ 6.4 MB.

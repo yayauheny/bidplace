@@ -1,0 +1,236 @@
+{
+  "schemaVersion": "1.0",
+  "producer": {
+    "name": "runkids/figma-to-prompt",
+    "version": "0.2.7",
+    "protocolVersion": 1
+  },
+  "capturedAt": "2026-09-09T19:55:00.199Z",
+  "source": {
+    "provider": "figma-plugin",
+    "fileKey": null,
+    "fileVersionId": null,
+    "nodeIds": [
+      "745:20634"
+    ],
+    "sourceUrl": null,
+    "locatorPath": "mcp/figma-locator.json"
+  },
+  "root": {
+    "id": "745:20634",
+    "name": "Каталог работ / идут торги / вкладка история",
+    "structurePath": "design/nodes.json",
+    "promptPath": "prompt.md",
+    "primaryReferencePath": "references/001-745_20634.png",
+    "targetViewport": {
+      "width": 390,
+      "height": 2390,
+      "referencePath": "references/001-745_20634.png"
+    },
+    "referencePaths": [
+      "references/001-745_20634.png"
+    ],
+    "fallbackPaths": [
+      "fallbacks/001-745_20634.png",
+      "fallbacks/001-745_20634.svg"
+    ]
+  },
+  "files": [
+    {
+      "path": "assets/001-745_20635.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 6398381,
+      "sha256": "e8d38dc67c218b35d71dd4b28767198969e2bf69f05cde52960a2afa542b5d53",
+      "nodeId": "745:20635",
+      "pixelDimensions": {
+        "width": 1560,
+        "height": 2080
+      }
+    },
+    {
+      "path": "assets/002-745_20714.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 6876436,
+      "sha256": "c08612ecafe70cfdc7dfe04aa1acb152bce2808b0e28ed6c5bbd0daf20d825b3",
+      "nodeId": "745:20714",
+      "pixelDimensions": {
+        "width": 1512,
+        "height": 1952
+      }
+    },
+    {
+      "path": "assets/003-745_20723.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 413616,
+      "sha256": "c18d53e0d8910818199abd2e95ad22c02331d6ac17613bfeef179cbfd6832850",
+      "nodeId": "745:20723",
+      "pixelDimensions": {
+        "width": 1056,
+        "height": 1408
+      }
+    },
+    {
+      "path": "assets/004-745_20735.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 988480,
+      "sha256": "efae6cba5237bffef5c7932b1884c628d997b0d1be347d719a073b8375f6054d",
+      "nodeId": "745:20735",
+      "pixelDimensions": {
+        "width": 408,
+        "height": 1408
+      }
+    },
+    {
+      "path": "assets/005-745_20749.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 149,
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "nodeId": "745:20749",
+      "pixelDimensions": {
+        "width": 1,
+        "height": 1
+      }
+    },
+    {
+      "path": "assets/006-745_20762.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 149,
+      "sha256": "f4bfc50376bceedb0438d206ed45bd53cf7e1d63a7af2b0c3dfda58d7f458b48",
+      "nodeId": "745:20762",
+      "pixelDimensions": {
+        "width": 1,
+        "height": 1
+      }
+    },
+    {
+      "path": "assets/007-745_20777.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 149,
+      "sha256": "8843d25b445fac6b7354fda3cd53cbd8fcbca1d6aff40358942472ec312402a9",
+      "nodeId": "745:20777",
+      "pixelDimensions": {
+        "width": 1,
+        "height": 1
+      }
+    },
+    {
+      "path": "assets/008-745_20792.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 4645,
+      "sha256": "dab85d21768a2d900d15be8c88f07fd96e269c2ffff3e1f54fa3912466d2278d",
+      "nodeId": "745:20792",
+      "pixelDimensions": {
+        "width": 717,
+        "height": 92
+      }
+    },
+    {
+      "path": "design/nodes.json",
+      "role": "design-structure",
+      "mediaType": "application/json",
+      "size": 169438,
+      "sha256": "a9a0402a6069a7095580ebd93ec94605b5291c54c9d02e2fd250dfc085a29c95",
+      "nodeId": "745:20634"
+    },
+    {
+      "path": "fallbacks/001-745_20634.png",
+      "role": "design-asset",
+      "mediaType": "image/png",
+      "size": 1079583,
+      "sha256": "aee167cce595e145e32f10878e1b02b896856e20cde5adc99eee2302f2939513",
+      "nodeId": "745:20634",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "pixel",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ],
+      "pixelDimensions": {
+        "width": 390,
+        "height": 2390
+      }
+    },
+    {
+      "path": "fallbacks/001-745_20634.svg",
+      "role": "design-asset",
+      "mediaType": "image/svg+xml",
+      "size": 50062615,
+      "sha256": "b6fdeae7ec04abb301291e5876190ce1cd9460df470648f9604c95463d2ced75",
+      "nodeId": "745:20634",
+      "purpose": "rendered-fallback",
+      "fallbackVariant": "vector",
+      "fallbackReasons": [
+        "context-dependent-effect"
+      ]
+    },
+    {
+      "path": "fidelity/coverage.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 536,
+      "sha256": "d5c08f5f4324e3fe26d74ce6a4d5252039eaa17eb9ff8a4fc8454c75ae155f84",
+      "nodeId": "745:20634"
+    },
+    {
+      "path": "mcp/figma-locator.json",
+      "role": "provenance",
+      "mediaType": "application/json",
+      "size": 50193,
+      "sha256": "b0e54daac302aad472030ee66eb47ea54673d37d7f3568f4284f664276bc7049",
+      "nodeId": "745:20634"
+    },
+    {
+      "path": "prompt.md",
+      "role": "derived-prompt",
+      "mediaType": "text/markdown",
+      "size": 190367,
+      "sha256": "be5957946f166b46e108b594f600139ddc75a1872f44e629247620fc2256d6bc",
+      "nodeId": "745:20634"
+    },
+    {
+      "path": "references/001-745_20634.png",
+      "role": "reference-render",
+      "mediaType": "image/png",
+      "size": 1079583,
+      "sha256": "aee167cce595e145e32f10878e1b02b896856e20cde5adc99eee2302f2939513",
+      "nodeId": "745:20634",
+      "pixelDimensions": {
+        "width": 390,
+        "height": 2390
+      }
+    }
+  ],
+  "fidelity": {
+    "policy": "fail-closed",
+    "coveragePath": "fidelity/coverage.json",
+    "candidateNodeCount": 1,
+    "coveredNodeCount": 1,
+    "unresolvedNodeIds": [],
+    "exactVerification": {
+      "required": true,
+      "method": "rgba-pixel-equality",
+      "referencePath": "references/001-745_20634.png",
+      "referenceStability": {
+        "renderCount": 2,
+        "width": 390,
+        "height": 2390,
+        "differentPixels": 0,
+        "maxChannelDelta": 0
+      }
+    }
+  },
+  "warnings": [
+    "Design asset 745:20792 provides only 1.85× real source detail; replace the Figma image with a 2× or higher source for retina-sharp AI output.",
+    "Figma file version is unavailable in the plugin sandbox."
+  ],
+  "provenance": {
+    "selectionCount": 1
+  }
+}

@@ -277,6 +277,198 @@
       "classificationConfidence": "high",
       "packagePath": "screens/search/search__works-results__390x860__node-456-8392",
       "referencePath": "screens/search/search__works-results__390x860__node-456-8392/reference.png"
+    },
+    {
+      "id": "works-phone",
+      "originalName": "Каталог работ",
+      "sourceFolderName": "Каталог_работ.figmacapture.zip",
+      "surface": "works",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 2350
+      },
+      "nodeId": "526:13248",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/works/works__default__390x2350__node-526-13248",
+      "referencePath": "screens/works/works__default__390x2350__node-526-13248/reference.png"
+    },
+    {
+      "id": "authors-phone",
+      "originalName": "Каталог авторов",
+      "sourceFolderName": "Каталог_авторов.figmacapture (1).zip",
+      "surface": "authors",
+      "state": "default",
+      "viewport": {
+        "width": 390,
+        "height": 2350
+      },
+      "nodeId": "526:12904",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/authors/authors__default__390x2350__node-526-12904",
+      "referencePath": "screens/authors/authors__default__390x2350__node-526-12904/reference.png"
+    },
+    {
+      "id": "work-details-phone",
+      "originalName": "Каталог работ / вкладка детали",
+      "sourceFolderName": "Каталог_работ___вкладка_детали.figmacapture.zip",
+      "surface": "work",
+      "state": "details",
+      "viewport": {
+        "width": 390,
+        "height": 2390
+      },
+      "nodeId": "745:21209",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "medium",
+      "packagePath": "screens/work/work__details__390x2390__node-745-21209",
+      "referencePath": "screens/work/work__details__390x2390__node-745-21209/reference.png"
+    },
+    {
+      "id": "work-history-phone",
+      "originalName": "Каталог работ / идут торги / вкладка история",
+      "sourceFolderName": "Каталог_работ___идут_торги___вкладка_история.figmacapture.zip",
+      "surface": "work",
+      "state": "history",
+      "viewport": {
+        "width": 390,
+        "height": 2390
+      },
+      "nodeId": "745:20634",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__history__390x2390__node-745-20634",
+      "referencePath": "screens/work/work__history__390x2390__node-745-20634/reference.png"
+    },
+    {
+      "id": "work-sold-phone",
+      "originalName": "Каталог работ / завершен ",
+      "sourceFolderName": "Каталог_работ___завершен_.figmacapture.zip",
+      "surface": "work",
+      "state": "sold",
+      "viewport": {
+        "width": 390,
+        "height": 862
+      },
+      "nodeId": "526:12278",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__sold__390x862__node-526-12278",
+      "referencePath": "screens/work/work__sold__390x862__node-526-12278/reference.png"
+    },
+    {
+      "id": "work-share-sheet-phone",
+      "originalName": "Каталог работ / идут торги / Участие в торгах",
+      "sourceFolderName": "Каталог_работ___идут_торги___Участие_в_торгах.figmacapture.zip",
+      "surface": "work",
+      "state": "share-sheet",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "597:18787",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__share-sheet__390x874__node-597-18787",
+      "referencePath": "screens/work/work__share-sheet__390x874__node-597-18787/reference.png"
+    },
+    {
+      "id": "work-bid-sheet-phone",
+      "originalName": "Каталог работ / идут торги / Участие в торгах",
+      "sourceFolderName": "Каталог_работ___идут_торги___Участие_в_торгах.figmacapture (1).zip",
+      "surface": "work",
+      "state": "bid-sheet",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:12056",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__bid-sheet__390x874__node-526-12056",
+      "referencePath": "screens/work/work__bid-sheet__390x874__node-526-12056/reference.png"
+    },
+    {
+      "id": "work-buy-sheet-phone",
+      "originalName": "Каталог работ / идут торги / Участие в торгах",
+      "sourceFolderName": "Каталог_работ___идут_торги___Участие_в_торгах.figmacapture (2).zip",
+      "surface": "work",
+      "state": "buy-sheet",
+      "viewport": {
+        "width": 390,
+        "height": 874
+      },
+      "nodeId": "526:12173",
+      "scope": "POST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/work/work__buy-sheet__390x874__node-526-12173",
+      "referencePath": "screens/work/work__buy-sheet__390x874__node-526-12173/reference.png"
+    },
+    {
+      "id": "filters-root-phone",
+      "originalName": "Фильтры ",
+      "sourceFolderName": "Фильтры_.figmacapture (1).zip",
+      "surface": "filters",
+      "state": "root",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:12980",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/filters/filters__root__390x860__node-526-12980",
+      "referencePath": "screens/filters/filters__root__390x860__node-526-12980/reference.png"
+    },
+    {
+      "id": "filters-cities-phone",
+      "originalName": "Фильтры чекбоксы",
+      "sourceFolderName": "Фильтры_чекбоксы.figmacapture.zip",
+      "surface": "filters",
+      "state": "cities",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:13009",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/filters/filters__cities__390x860__node-526-13009",
+      "referencePath": "screens/filters/filters__cities__390x860__node-526-13009/reference.png"
+    },
+    {
+      "id": "filters-city-search-phone",
+      "originalName": "Фильтры чекбоксы",
+      "sourceFolderName": "Фильтры_чекбоксы.figmacapture (1).zip",
+      "surface": "filters",
+      "state": "city-search",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:13065",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/filters/filters__city-search__390x860__node-526-13065",
+      "referencePath": "screens/filters/filters__city-search__390x860__node-526-13065/reference.png"
+    },
+    {
+      "id": "filters-materials-radio-phone",
+      "originalName": "Фильтры чекбоксы",
+      "sourceFolderName": "Фильтры_чекбоксы.figmacapture (2).zip",
+      "surface": "filters",
+      "state": "materials-radio",
+      "viewport": {
+        "width": 390,
+        "height": 860
+      },
+      "nodeId": "526:13142",
+      "scope": "KEEP_FIRST_MVP",
+      "classificationConfidence": "high",
+      "packagePath": "screens/filters/filters__materials-radio__390x860__node-526-13142",
+      "referencePath": "screens/filters/filters__materials-radio__390x860__node-526-13142/reference.png"
     }
   ]
 }
