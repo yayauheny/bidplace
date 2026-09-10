@@ -4,6 +4,15 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Creator composition
+
+- `Implemented`: public creator screen composes C5 masters and a
+  `WorkCoverCard` grid. Tabs are `Работы` / `Об авторе` with URL/back.
+  Socials omit missing URLs. Share URL is `author.sharePath`. Empty
+  achievements omit the timeline. Feature-local `CreatorHero` was deleted.
+- Verification: `creator-profile-composition.spec.ts` and
+  `figma-creator.spec.ts`.
+
 ## 2026-09-10 — Home composition
 
 - `Implemented`: Home uses only `GET /api/portfolio/home`. `CuratorFeature`

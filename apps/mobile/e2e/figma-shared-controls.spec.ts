@@ -48,7 +48,7 @@ test('author copy uses a named icon button and omits missing socials', async ({
 
   await expect(page.getByText('Автор с Telegram')).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Скопировать ссылку на профиль' }),
+    page.getByRole('button', { name: 'Поделиться профилем' }),
   ).toHaveCount(1);
   await expect(page.getByRole('link', { name: 'Telegram автора' })).toHaveCount(
     1,

@@ -4,6 +4,13 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Creator composition
+
+- `Implemented`: `public-seller-screen.tsx` composes C5 + `WorkCoverCard`.
+  Share uses `author.sharePath`. Evidence:
+  `creator-profile-composition.spec.ts`, `figma-creator.spec.ts`.
+- Unused feature-local `CreatorHero.tsx` deleted.
+
 ## 2026-09-10 — Home composition
 
 - `Implemented`: `apps/mobile/src/features/home/home-screen.tsx` composes
@@ -55,8 +62,8 @@ acceptance target; retained native branches are compatibility code only.
   `creator-social-actions.spec.ts`, `creator-profile-tabs.spec.ts`,
   `achievements-timeline.spec.ts`, `share-qr.spec.ts`, `share-sheet.spec.ts`.
 - `Verified`: 276 mobile unit tests, mobile typecheck/lint, and Expo export
-  for web/iOS/Android pass. Public creator and work screens still use
-  route-local chrome; masters are not mounted.
+  for web/iOS/Android pass. The public creator screen now mounts these
+  masters; `/product/[publicId]` still uses route-local chrome.
 
 ## 2026-09-10 — Shared Figma control usage
 
@@ -71,8 +78,8 @@ acceptance target; retained native branches are compatibility code only.
   `apps/mobile/e2e/figma-shared-controls.spec.ts`.
 - `Partial`: glass 38 px social circles, tinted activity/order status pills,
   underline `AuthorTabButton` / `ProductTabs`, C4 filter chrome, and 40 px
-  header controls remain outside the current masters. Unused `CreatorHero` is
-  still unmounted.
+  header controls remain outside the current masters. Unused feature-local
+  `CreatorHero` was deleted.
 - `Verified`: 255 mobile unit tests, mobile typecheck/lint, two focused
   Playwright control tests, and Expo export for web/iOS/Android pass.
 

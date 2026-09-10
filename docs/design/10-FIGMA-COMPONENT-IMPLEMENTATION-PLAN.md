@@ -188,7 +188,7 @@ identity `874:5591`.
 
 ### C5 — creator profile components
 
-Статус: **Complete; unmounted until creator screen composition**
+Статус: **Complete; mounted on the public creator screen**
 
 Источники: creator about/works/default/scrolled packages, share sheet
 `526:13756`, achievements `742:20510`.
@@ -285,10 +285,10 @@ identity `874:5591`.
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
 | FilterSortBar / exact filter sheet | implemented; unmounted pending catalog composition |
 | Exact image placeholder | missing |
-| Creator hero/tabs/socials/timeline | implemented; unmounted pending creator composition |
+| Creator hero/tabs/socials/timeline | implemented and mounted on the public creator screen |
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
-| Share sheet / QR | implemented; unmounted pending screen composition |
+| Share sheet / QR | implemented and mounted on the public creator screen |
 | CuratorFeature | implemented and mounted on Home when `curatorSelection` is non-null |
 | Work tabs/story/facts/payment stub components | implemented; unmounted pending work composition |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
