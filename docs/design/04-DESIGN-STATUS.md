@@ -4,6 +4,21 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma component library C2a
+
+- `Partial`: added `FigmaGlassSurface` with separate captured navigation
+  (60% white) and control-group (80% white) presets, a 6 px blur contract,
+  0.5 px gradient stroke and radius 200.
+- Added `OverlayDimmer` with the exact Frame 140 `#2A2A2A` 50% veil; opacity
+  belongs to the color itself and is not compounded by a parent layer.
+- Decorative blur and non-interactive dimmer layers are excluded from the
+  accessibility tree. Existing `FloatingDock` remains unchanged as the
+  navigation-glass acceptance baseline.
+- Verification: 247 mobile unit tests, design-token and mobile typecheck, and
+  mobile lint pass. The new primitives are not mounted on a screen yet;
+  browser background-sampling and physical iOS/Android QA remain in C2.
+- No screen composition, product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma component library C1a
 
 - `Partial`: reconciled the shared Expo button and text-field masters against

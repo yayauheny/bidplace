@@ -7,8 +7,10 @@ export { FigmaChip } from './FigmaChip';
 export { FigmaChoiceChip } from './FigmaChoiceChip';
 export { FigmaIcon } from './FigmaIcon';
 export { FigmaIconButton } from './FigmaIconButton';
+export { FigmaGlassSurface } from './FigmaGlassSurface';
 export { FigmaTextField } from './FigmaTextField';
 export { FloatingDock } from './FloatingDock';
+export { OverlayDimmer } from './OverlayDimmer';
 export { WorkCoverCard } from './WorkCoverCard';
 export {
   figmaDeferredIconNames,
