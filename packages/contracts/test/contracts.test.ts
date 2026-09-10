@@ -1,24 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
-  activityStatusSchema,
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
   ApiErrorCode,
   apiErrorResponseSchema,
-  bidCreateRequestSchema,
   isEditableProductStatus,
-  listingCreateRequestSchema,
   listingStatusSchema,
   productWriteRequestSchema,
-  publicDiscoveryQuerySchema,
-  publicProductSchema,
-  publicSellerQuerySchema,
+  portfolioAuthorsQuerySchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
   portfolioAuthorApplicationResponseSchema,
-  realtimeEventPayloadSchema,
-  sellerOrderListQuerySchema,
-  sellerOrderResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
@@ -207,67 +199,13 @@ describe('shared contracts', () => {
     ).toBe(false);
   });
 
-  it('exposes contacted and failed-handoff buyer activity statuses', () => {
-    expect(activityStatusSchema.safeParse('CONTACTED').success).toBe(true);
-    expect(activityStatusSchema.safeParse('HANDOFF_FAILED').success).toBe(true);
-    expect(activityStatusSchema.safeParse('AUCTION_CANCELLED').success).toBe(
-      true,
-    );
-    expect(activityStatusSchema.safeParse('PENDING_CONTACT').success).toBe(
-      false,
-    );
-  });
-
   it('accepts a draft Product without art-only fields', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,
     ).toBe(true);
   });
-  it('keeps condition and packaging optional for public creator Products', () => {
-    expect(publicProductSchema.shape.condition.safeParse(null).success).toBe(
-      true,
-    );
-    expect(publicProductSchema.shape.packaging.safeParse(null).success).toBe(
-      true,
-    );
-  });
-  it('accepts an auction Listing only in BYN through server-owned currency', () => {
-    expect(
-      listingCreateRequestSchema.safeParse({
-        startPrice: 10,
-        startsAt: '2026-07-20T10:00:00.000Z',
-        endsAt: '2026-07-20T11:00:00.000Z',
-      }).success,
-    ).toBe(true);
-  });
-  it('rejects an invalid Listing timeframe', () => {
-    expect(
-      listingCreateRequestSchema.safeParse({
-        startPrice: 10,
-        startsAt: '2026-07-20T11:00:00.000Z',
-        endsAt: '2026-07-20T10:00:00.000Z',
-      }).success,
-    ).toBe(false);
-  });
-  it('accepts a bid amount but not client-owned Listing values', () => {
-    expect(bidCreateRequestSchema.safeParse({ amount: 15 }).success).toBe(true);
-    expect(
-      bidCreateRequestSchema.safeParse({ amount: 15, currency: 'USD' }).success,
-    ).toBe(false);
-  });
-  it('exposes listing realtime names without reserve or PII fields', () => {
-    expect(
-      realtimeEventPayloadSchema.safeParse({
-        event: 'listing.updated',
-        payload: {
-          listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-          currentPrice: 20,
-          bidCount: 1,
-          status: 'LIVE',
-          endsAt: '2026-07-20T11:00:00.000Z',
-        },
-      }).success,
-    ).toBe(true);
+  it('keeps Prisma listing status enums until P4', () => {
+    expect(listingStatusSchema.safeParse('LIVE').success).toBe(true);
     expect(listingStatusSchema.safeParse('active').success).toBe(false);
   });
   it('requires a reason for limiting admin actions', () => {
@@ -285,65 +223,21 @@ describe('shared contracts', () => {
         .success,
     ).toBe(true);
   });
-  it('normalizes optional discovery pagination and trims search text', () => {
+  it('accepts only supported portfolio author query parameters', () => {
     expect(
-      publicDiscoveryQuerySchema.parse({
-        q: '  ceramic  ',
-        author: '  marina  ',
-        limit: '12',
-        materials: ' clay, wood ',
-        uniqueness: '  One  ',
-        priceMin: '500',
-      }),
-    ).toEqual({
-      page: 1,
-      limit: 12,
-      q: 'ceramic',
-      author: 'marina',
-      materials: ['clay', 'wood'],
-      uniqueness: 'One',
-      priceMin: 500,
-      sort: 'newest',
-    });
-  });
-  it('rejects invalid discovery ranges and unknown keys', () => {
-    expect(publicDiscoveryQuerySchema.safeParse({ page: 0 }).success).toBe(
-      false,
-    );
-    expect(publicDiscoveryQuerySchema.safeParse({ limit: 101 }).success).toBe(
-      false,
-    );
-    expect(
-      publicDiscoveryQuerySchema.safeParse({ extra: 'value' }).success,
-    ).toBe(false);
-    expect(publicDiscoveryQuerySchema.safeParse({ q: '   ' }).success).toBe(
-      false,
-    );
-    expect(
-      publicDiscoveryQuerySchema.safeParse({ q: 'a'.repeat(121) }).success,
-    ).toBe(false);
-    expect(
-      publicDiscoveryQuerySchema.safeParse({ priceMin: 20, priceMax: 10 })
-        .success,
-    ).toBe(false);
-    expect(
-      publicDiscoveryQuerySchema.safeParse({ yearFrom: 2024, yearTo: 2020 })
-        .success,
-    ).toBe(false);
-  });
-
-  it('accepts only supported public seller query parameters', () => {
-    expect(
-      publicSellerQuerySchema.parse({ q: '  author  ', sort: 'name' }),
+      portfolioAuthorsQuerySchema.parse({ q: '  author  ', sort: 'name' }),
     ).toEqual({
       page: 1,
       limit: 20,
       q: 'author',
       sort: 'name',
     });
-    expect(publicSellerQuerySchema.safeParse({ status: 'LIVE' }).success).toBe(
-      false,
-    );
+    expect(
+      portfolioAuthorsQuerySchema.safeParse({ status: 'LIVE' }).success,
+    ).toBe(false);
+    expect(
+      portfolioAuthorsQuerySchema.safeParse({ sort: 'activity' }).success,
+    ).toBe(false);
   });
 
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
@@ -536,43 +430,5 @@ describe('shared contracts', () => {
         creationSteps: [],
       }).success,
     ).toBe(false);
-  });
-
-  it('requires frozen currency on Order projections', () => {
-    const base = {
-      order: {
-        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        publicId: 'orderPub001',
-        listingId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-        finalAmount: 120,
-        contactDueAt: '2026-07-19T00:00:00.000Z',
-        status: 'PENDING_CONTACT' as const,
-        cancellationReason: null,
-        createdAt: '2026-07-18T00:00:00.000Z',
-        updatedAt: '2026-07-18T00:00:00.000Z',
-      },
-      productSummary: { publicId: 'product0011', title: 'Work' },
-      buyerEmailAtClose: 'buyer@example.com',
-    };
-    expect(sellerOrderResponseSchema.safeParse(base).success).toBe(false);
-    expect(
-      sellerOrderResponseSchema.safeParse({
-        ...base,
-        order: { ...base.order, currency: 'BYN' },
-      }).success,
-    ).toBe(true);
-  });
-
-  it('paginates seller Order inbox without a client-supplied sellerId', () => {
-    expect(sellerOrderListQuerySchema.parse({ limit: '10' })).toEqual({
-      page: 1,
-      limit: 10,
-    });
-    expect(
-      sellerOrderListQuerySchema.safeParse({ sellerId: 'seller-id' }).success,
-    ).toBe(false);
-    expect(sellerOrderListQuerySchema.safeParse({ limit: 101 }).success).toBe(
-      false,
-    );
   });
 });

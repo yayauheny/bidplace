@@ -1,4 +1,4 @@
-import type { PublicSellerQuery } from '@bidplace/contracts';
+import type { PortfolioAuthorsQuery } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
 import { escapeLikePattern } from '../products/products-catalog.query';
@@ -6,7 +6,9 @@ import { publicProductContentSql } from '../products/public-visibility';
 
 export type PublicAuthorPageRow = { id: string; total: number | bigint };
 
-export function publicAuthorOrderBy(sort: PublicSellerQuery['sort']): string {
+export function publicAuthorOrderBy(
+  sort: PortfolioAuthorsQuery['sort'],
+): string {
   if (sort === 'name') {
     return 'filtered."full_name" ASC, filtered."id" ASC';
   }
@@ -14,7 +16,7 @@ export function publicAuthorOrderBy(sort: PublicSellerQuery['sort']): string {
 }
 
 export function publicAuthorCte(
-  query: PublicSellerQuery,
+  query: PortfolioAuthorsQuery,
   options: { requireCity?: boolean } = {},
 ): Prisma.Sql {
   const filters: Prisma.Sql[] = [Prisma.sql`author."status" = 'APPROVED'`];

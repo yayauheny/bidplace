@@ -31,7 +31,7 @@ describe('PortfolioService', () => {
     await service.listAuthors({ page: 1, limit: 20, sort: 'added' });
 
     expect(sellers.listPublic).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 20, sort: 'activity' }),
+      expect.objectContaining({ page: 1, limit: 20, sort: 'added' }),
       { requireCity: true },
     );
   });

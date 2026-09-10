@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { publicSellerQuerySchema } from '@bidplace/contracts';
+import { portfolioAuthorsQuerySchema } from '@bidplace/contracts';
 
 import { SellersService } from './sellers.service';
 
@@ -1078,7 +1078,7 @@ describe('SellersService', () => {
     );
 
     await service.listPublic(
-      publicSellerQuerySchema.parse({
+      portfolioAuthorsQuerySchema.parse({
         page: 2,
         limit: 5,
         sort: 'name',

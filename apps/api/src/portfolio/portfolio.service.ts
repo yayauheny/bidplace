@@ -62,17 +62,9 @@ export class PortfolioService {
   }
 
   async listAuthors(query: PortfolioAuthorsQuery) {
-    const response = await this.sellers.listPublic(
-      {
-        page: query.page,
-        limit: query.limit,
-        q: query.q,
-        tag: query.tag,
-        city: query.city,
-        sort: query.sort === 'name' ? 'name' : 'activity',
-      },
-      { requireCity: true },
-    );
+    const response = await this.sellers.listPublic(query, {
+      requireCity: true,
+    });
     const authors = response.sellers.map((item) => ({
       author: toPortfolioAuthor(item.sellerProfile),
       workCount: item.workCount,

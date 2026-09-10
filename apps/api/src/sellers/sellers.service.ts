@@ -1,8 +1,7 @@
 import {
-  publicSellerListResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
-  type PublicSellerQuery,
+  type PortfolioAuthorsQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
   type PortfolioAchievementWriteRequest,
@@ -870,7 +869,7 @@ export class SellersService {
   }
 
   async listPublic(
-    query: PublicSellerQuery,
+    query: PortfolioAuthorsQuery,
     options: { requireCity?: boolean } = {},
   ) {
     const cte = publicAuthorCte(query, options);
@@ -895,10 +894,10 @@ export class SellersService {
         );
 
     if (!pageRows.length) {
-      return publicSellerListResponseSchema.parse({
+      return {
         sellers: [],
         pagination: { page: query.page, limit: query.limit, total },
-      });
+      };
     }
 
     const sellers = await this.prisma.sellerProfile.findMany({
@@ -915,7 +914,7 @@ export class SellersService {
       .map((row) => sellersById.get(row.id))
       .filter((seller): seller is (typeof sellers)[number] => Boolean(seller));
 
-    return publicSellerListResponseSchema.parse({
+    return {
       sellers: pagedSellers.map((seller) => ({
         sellerProfile: toPublicSellerProfile(seller),
         workCount: seller._count.products,
@@ -925,7 +924,7 @@ export class SellersService {
         limit: query.limit,
         total,
       },
-    });
+    };
   }
 
   async getApprovedPublicAuthor(
