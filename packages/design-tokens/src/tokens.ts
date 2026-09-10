@@ -41,7 +41,7 @@ export const designTokens = {
     glassChip: 'rgba(255, 255, 255, 0.70)',
     glassBorder: '#DEDEDE',
     glassBorderEnd: '#F3F3F3',
-    atmosphereScrim: 'rgba(0, 0, 0, 0.30)',
+    atmosphereWash: 'rgba(255, 255, 255, 0.40)',
     modalDimmer: 'rgba(42, 42, 42, 0.50)',
     headerControl: '#F3F3F3',
     solid: '#292929',

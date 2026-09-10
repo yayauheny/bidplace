@@ -1,9 +1,8 @@
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
-
 import { getApiAssetUrl } from '../../lib/environment';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
+import { authorAtmosphereSpec } from './author-atmosphere-style';
 import { webFilterBlur } from './web-backdrop';
 
 export function AuthorAtmosphere({
@@ -13,42 +12,51 @@ export function AuthorAtmosphere({
   imageUrl: string;
   fullName: string;
 }) {
-  const size = figmaTokens.size.authorAtmosphere;
+  const spec = authorAtmosphereSpec();
 
   return (
     <View
-      pointerEvents="none"
+      aria-hidden
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
       style={{
         position: 'absolute',
-        top: -figmaTokens.space.atmosphereOffset,
-        left: '50%',
-        width: size,
-        height: size,
-        marginLeft: -size / 2,
-        opacity: figmaTokens.opacity.atmosphere,
+        pointerEvents: 'none',
+        top: spec.top,
+        left: spec.left,
+        width: spec.width,
+        height: spec.height,
+        opacity: spec.opacity,
         overflow: 'visible',
         zIndex: 0,
-        // Figma puts blur-[40px] on this 485 box, not on a clipped inner image.
-        ...webFilterBlur(figmaTokens.blur.atmosphere),
+        ...webFilterBlur(spec.blur),
       }}
     >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(imageUrl)}
-        component="AuthorAtmosphere"
-        accessibilityLabel=""
-        fallbackLabel={`Фон автора ${fullName}`}
-        blurRadius={
-          Platform.OS === 'web' ? undefined : figmaTokens.blur.atmosphere
-        }
-        contentFit="cover"
-        style={{ width: size, height: size }}
-      />
       <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: figmaTokens.color.atmosphereScrim },
-        ]}
-      />
+        style={{
+          width: spec.width,
+          height: spec.height,
+          borderBottomLeftRadius: spec.bottomRadius,
+          borderBottomRightRadius: spec.bottomRadius,
+          overflow: 'hidden',
+        }}
+      >
+        <ResilientRemoteImage
+          uri={getApiAssetUrl(imageUrl)}
+          component="AuthorAtmosphere"
+          accessibilityLabel=""
+          fallbackLabel={`Фон автора ${fullName}`}
+          blurRadius={Platform.OS === 'web' ? undefined : spec.blur}
+          contentFit="cover"
+          style={{ width: spec.width, height: spec.height }}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: spec.wash, pointerEvents: 'none' },
+          ]}
+        />
+      </View>
     </View>
   );
 }

@@ -1,6 +1,6 @@
 # bidplace — дизайн-система
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 
 Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
 
@@ -11,13 +11,18 @@ Values are measured from inspect copy `uMo04w9bgrchWXXDgO4W62`. There is no nest
 `designTokens.figma`.
 
 Shared primitives live in `apps/mobile/src/components/figma/` and are the
-production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`, `FigmaIcon`,
-`WorkCoverCard`, `AuthorCoverCard`, `AuthorIdentity`, `CoverFrost`,
-`AuthorAtmosphere`, `FloatingDock`. Cover overlays frost the artwork
+production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
+`FigmaChoiceChip`, `FigmaIcon`, `FigmaIconButton`, `FigmaGlassSurface`,
+`FigmaImagePlaceholder`, `OverlayDimmer`, `WorkCoverCard`, `AuthorCoverCard`,
+`AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`. Cover
+overlays frost the artwork
 (`backdrop-filter` / duplicated blur on web, `blurRadius` on native) instead of
-painting an opaque gradient. Author pages use a 485px blurred photo atmosphere
-behind identity. `apps/mobile/src/components/ui` wraps those masters (`Button`,
-`TextField`, `AuctionCard` → `WorkCoverCard` portfolio mode).
+painting an opaque gradient. Author pages use the exact node `621:19476`
+atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
+runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and
+200 px bottom corners. `apps/mobile/src/components/ui` wraps those masters
+(`Button`, `TextField`, `ImagePlaceholder`, `AuctionCard` → `WorkCoverCard`
+portfolio mode).
 
 `AppShell` is a centered 390 column plus `FloatingDock` (Главная / Поиск /
 Добавить / Профиль, no cart). Wide windows keep the same column. 1024/1440

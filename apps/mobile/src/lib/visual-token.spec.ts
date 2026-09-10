@@ -65,6 +65,9 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.space.atmosphereOffset).toBe(36);
     expect(designTokens.color.glass).toBe('rgba(255, 255, 255, 0.60)');
     expect(designTokens.color.glassChip).toBe('rgba(255, 255, 255, 0.70)');
+    expect(designTokens.color.atmosphereWash).toBe(
+      'rgba(255, 255, 255, 0.40)',
+    );
   });
 
   it('keeps one phone column instead of desktop header chrome', () => {

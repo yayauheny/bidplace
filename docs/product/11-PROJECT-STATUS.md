@@ -1,5 +1,19 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-10 — Exact creator photo atmosphere
+
+- `Implemented`: public creator identity keeps its sharp semantic avatar and
+  derives a separate decorative 485×485 background from the same public image.
+  The shared layer now matches Figma node `621:19476`: x=-47/y=-36, 40 px
+  runtime blur, 40% white wash, 50% layer opacity and 200 px bottom corners.
+  The previous black veil was removed. Evidence:
+  `apps/mobile/src/components/figma/AuthorAtmosphere.tsx` and
+  `author-atmosphere-style.spec.ts`.
+- `Verified`: 250 mobile unit tests, design-token/mobile typecheck, mobile lint
+  and Expo export for web/iOS/Android pass. A local 390 px mocked browser smoke
+  confirms the light image-derived field; formal matched overlay and physical
+  native blur acceptance remain pending.
+
 ## 2026-09-10 — Exact resilient-media fallback primitive
 
 - `Implemented`: failed remote media keeps the existing bounded retry and

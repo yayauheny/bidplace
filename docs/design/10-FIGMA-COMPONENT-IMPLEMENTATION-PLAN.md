@@ -99,7 +99,7 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C2 — glass, blur и media surfaces
 
-Статус: **Partial; C2a–C2b glass, dimmer and image fallback complete**
+Статус: **Partial; C2a–C2c glass, fallback and author atmosphere complete**
 
 Источники: dock `Frame 34`, creator `621:19475`, work/author cover nodes,
 overlay `526:13880`.
@@ -121,6 +121,8 @@ overlay `526:13880`.
 - [x] Зафиксировать точный `#2A2A2A` 50% modal dimmer без дополнительной
   container opacity.
 - [ ] Проверить web background sampling и native `expo-blur` отдельно.
+- [x] Ограничить `AuthorAtmosphere` captured box 485×485 и исключить duplicate
+  avatar + fallback descendants из accessibility tree.
 - [ ] Ограничить большие blur layers и исключить их из accessibility tree.
 - [x] Добавить missing/error fallback из vector node `874:5454` без подмены
   artwork или растрового upscale.

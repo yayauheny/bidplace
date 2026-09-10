@@ -4,6 +4,23 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma component library C2c
+
+- `Implemented`: `AuthorAtmosphere` now follows creator node `621:19476` as a
+  bounded 485×485 duplicate-photo layer at x=-47/y=-36, with 40 px CSS blur,
+  50% layer opacity, 40% white wash and 200 px bottom corners.
+- `Corrected`: removed the previous 30% black veil, which darkened colored and
+  monochrome profile photos instead of producing the captured pale atmosphere.
+- The duplicate media layer and its failed-media descendants are decorative and
+  excluded from the accessibility tree; the sharp profile avatar remains the
+  only semantic image.
+- Verification: 250 mobile unit tests, design-token/mobile typecheck, mobile
+  lint and Expo export for web/iOS/Android pass. A local 390 px browser smoke
+  with a mocked color profile confirms a pale image-derived field with no black
+  veil. Formal matched overlay and physical iOS/Android blur acceptance remain
+  pending.
+- No screen composition, product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma component library C2b
 
 - `Implemented`: shared failed-media UI now uses the exact scalable vector from
