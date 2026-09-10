@@ -1,0 +1,110 @@
+{
+  "sizes": {
+    "local": {
+      "minified": 614,
+      "gzip": 413
+    },
+    "library": {
+      "minified": 1708,
+      "gzip": 639
+    }
+  },
+  "clipping": {
+    "chromium-A": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "chromium-B3": {
+      "outerChanged": 0,
+      "frostCornerChanged": 25
+    },
+    "chromium-B4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 25
+    },
+    "chromium-B5": {
+      "outerChanged": 0,
+      "frostCornerChanged": 25
+    },
+    "chromium-C4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "chromium-C6": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "chromium-C8": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "chromium-M": {
+      "outerChanged": 0,
+      "frostCornerChanged": 25
+    },
+    "firefox-A": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-B3": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-B4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-B5": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-C4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-C6": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-C8": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "firefox-M": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-A": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-B3": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-B4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-B5": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-C4": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-C6": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-C8": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    },
+    "webkit-M": {
+      "outerChanged": 0,
+      "frostCornerChanged": 0
+    }
+  }
+}

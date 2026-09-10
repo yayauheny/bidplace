@@ -24,7 +24,6 @@ test('cover frost samples the real artwork once on web', async ({ page }) => {
               materials: null,
               dimensions: null,
               year: 2026,
-              uniqueness: null,
               images: [
                 {
                   id: imageId,
@@ -75,6 +74,20 @@ test('cover frost samples the real artwork once on web', async ({ page }) => {
   const frost = page.getByTestId('figma-cover-frost').first();
   await expect(frost).toBeVisible();
   await expect(page.getByText('Работа с живым фоном')).toBeVisible();
+
+  const card = page.getByRole('link', {
+    name: 'Работа с живым фоном — @test-author',
+    exact: true,
+  });
+  await expect(card.locator('img')).toHaveCount(1);
+  await expect(card.getByRole('img')).toHaveCount(1);
+  expect(await frost.ariaSnapshot()).toBe('');
+  await card.focus();
+  await expect(card).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(card).not.toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(card).toBeFocused();
 
   const implementation = await frost.evaluate((element) => {
     const style = getComputedStyle(element);

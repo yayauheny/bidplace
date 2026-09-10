@@ -1,0 +1,1965 @@
+{
+  "environment": {
+    "node": "v26.3.1",
+    "react": "19.2.3",
+    "viewport": [
+      390,
+      844
+    ],
+    "deviceScaleFactor": 1,
+    "vendor": "/private/tmp/cover-frost-vendor/package/dist/main.js",
+    "bundleBytes": 205162
+  },
+  "browsers": {
+    "chromium": {
+      "version": "152.0.7977.83",
+      "variants": {
+        "A": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 2.2199670505089126,
+              "whiteTitleContrastP05": 2.5497116643187137,
+              "horizontalEdgeEnergy": [
+                0.0029275627301805995,
+                0.0016438763180724142,
+                0.0011623519407782724
+              ],
+              "maxAdjacentRowLuminanceJump": 0.016666458191662202,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 2.377865589247898,
+              "whiteTitleContrastP05": 2.779409408331677,
+              "horizontalEdgeEnergy": [
+                0.0026760314344056145,
+                0.001517635391878333,
+                0.0010862964491912307
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01631998532126962,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 4.607518093747377,
+              "whiteTitleContrastP05": 4.67399125435606,
+              "horizontalEdgeEnergy": [
+                0.0008518348677652305,
+                0.0010817524735055879,
+                0.0009505960777251808
+              ],
+              "maxAdjacentRowLuminanceJump": 0.017034224088506224,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000007,
+              "p95Ms": 34.20000000000027,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 34.20000000000073,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 34.20000000000073,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(30px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B3": {
+          "images": {
+            "color": {
+              "maeAgainstA": 13.923081140350877,
+              "whiteTitleContrastMin": 1.568093611962335,
+              "whiteTitleContrastP05": 1.8125262414992667,
+              "horizontalEdgeEnergy": [
+                0.010416014477238843,
+                0.003748980522404466,
+                0.0020532345499143833
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02366718383489416,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 12.516337719298246,
+              "whiteTitleContrastMin": 1.6059285649300714,
+              "whiteTitleContrastP05": 1.878753074791962,
+              "horizontalEdgeEnergy": [
+                0.010021787199489119,
+                0.0028416081252939213,
+                0.0016550058285800897
+              ],
+              "maxAdjacentRowLuminanceJump": 0.024184823119988135,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 26.20657894736842,
+              "whiteTitleContrastMin": 2.16873306642071,
+              "whiteTitleContrastP05": 2.4632730504708715,
+              "horizontalEdgeEnergy": [
+                0.049540210758155685,
+                0.009878808650816898,
+                0.005382791458801984
+              ],
+              "maxAdjacentRowLuminanceJump": 0.034190762785903175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 34.09999999999991,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.400000000000546,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 33.5,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(20px)",
+            "blur(40px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 13.710434941520468,
+              "whiteTitleContrastMin": 1.4980619712744712,
+              "whiteTitleContrastP05": 1.7533244280270943,
+              "horizontalEdgeEnergy": [
+                0.009623627968737404,
+                0.0038528803730867828,
+                0.0019767382382946583
+              ],
+              "maxAdjacentRowLuminanceJump": 0.0237597303045475,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 12.51935307017544,
+              "whiteTitleContrastMin": 1.511923281931922,
+              "whiteTitleContrastP05": 1.8193943517176883,
+              "horizontalEdgeEnergy": [
+                0.009213228889014968,
+                0.0028944858532190627,
+                0.0016129618368097
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02401935913031518,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 22.947697368421053,
+              "whiteTitleContrastMin": 2.6791562985840893,
+              "whiteTitleContrastP05": 3.1925153965904713,
+              "horizontalEdgeEnergy": [
+                0.0403201606767423,
+                0.010889206766198175,
+                0.005046953081648483
+              ],
+              "maxAdjacentRowLuminanceJump": 0.039298311460218456,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.600000000000364,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.5,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 34,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(15px)",
+            "blur(30px)",
+            "blur(45px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B5": {
+          "images": {
+            "color": {
+              "maeAgainstA": 13.667379385964912,
+              "whiteTitleContrastMin": 1.4687759279940715,
+              "whiteTitleContrastP05": 1.711936124288274,
+              "horizontalEdgeEnergy": [
+                0.009302204944041005,
+                0.0035489929035156863,
+                0.0021325539250604095
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02369712366083575,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 12.589035087719298,
+              "whiteTitleContrastMin": 1.482266131414131,
+              "whiteTitleContrastP05": 1.7625598210034286,
+              "horizontalEdgeEnergy": [
+                0.0087374200947099,
+                0.002707055373740204,
+                0.0017155412305101174
+              ],
+              "maxAdjacentRowLuminanceJump": 0.023345621547845016,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 20.93015350877193,
+              "whiteTitleContrastMin": 3.362683071052112,
+              "whiteTitleContrastP05": 3.5924318038149794,
+              "horizontalEdgeEnergy": [
+                0.03624262524398909,
+                0.009026966069276294,
+                0.005701311321955304
+              ],
+              "maxAdjacentRowLuminanceJump": 0.04587391548324492,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.80000000000018,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.400000000000546,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 33.899999999999636,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(12px)",
+            "blur(24px)",
+            "blur(36px)",
+            "blur(48px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 24.261805555555554,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01686989352633186,
+                0.010175265350794953,
+                0.0014205713649489183
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018084758827182138,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 23.023848684210527,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015623336476602167,
+                0.007199457418520016,
+                0.0015354858852110631
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018318681343228407,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 50.204166666666666,
+              "whiteTitleContrastMin": 1.2480715209939224,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09788796916987223,
+                0.03974389639429186,
+                0.002139185809073386
+              ],
+              "maxAdjacentRowLuminanceJump": 0.017676860420723067,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 34,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.5,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 34,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(12.1644px)",
+            "blur(2.46621px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C6": {
+          "images": {
+            "color": {
+              "maeAgainstA": 22.63799342105263,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.016810115050858436,
+                0.0077707758917157895,
+                0.001241542230683673
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018131984145852265,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 22.23612938596491,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01543667593614137,
+                0.00648893957423141,
+                0.001518446118270211
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01832464726464591,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 43.81217105263158,
+              "whiteTitleContrastMin": 1.2480715209939224,
+              "whiteTitleContrastP05": 1.3076906134240802,
+              "horizontalEdgeEnergy": [
+                0.09830234819199543,
+                0.029312894952578092,
+                0.0010994313137921616
+              ],
+              "maxAdjacentRowLuminanceJump": 0.017012875839363204,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.5,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.599999999999454,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 33.400000000001455,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(23.0311px)",
+            "blur(8.84054px)",
+            "blur(3.39346px)",
+            "blur(1.30259px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C8": {
+          "images": {
+            "color": {
+              "maeAgainstA": 21.701498538011695,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.4886447615214689,
+              "horizontalEdgeEnergy": [
+                0.016543034213004806,
+                0.006612361235415278,
+                0.0012063637501485856
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018074209007142926,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 21.39588815789474,
+              "whiteTitleContrastMin": 1.4392582251285146,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01514940017066616,
+                0.005896357568981695,
+                0.001346868108556808
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018352982440408446,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 40.35877192982456,
+              "whiteTitleContrastMin": 1.2480715209939224,
+              "whiteTitleContrastP05": 1.3326388232838635,
+              "horizontalEdgeEnergy": [
+                0.09727239032500869,
+                0.024398002978867267,
+                0.0009558361116385405
+              ],
+              "maxAdjacentRowLuminanceJump": 0.017119788852433728,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.5,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 33.80000000000018,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 33.69999999999891,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(30.2779px)",
+            "blur(15.2792px)",
+            "blur(7.71034px)",
+            "blur(3.89088px)",
+            "blur(1.96346px)",
+            "blur(0.990823px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "M": {
+          "images": {
+            "color": {
+              "maeAgainstA": 20.153874269005847,
+              "whiteTitleContrastMin": 1.61649687041345,
+              "whiteTitleContrastP05": 1.7533244280270943,
+              "horizontalEdgeEnergy": [
+                0.014121497102116635,
+                0.0077218140026086525,
+                0.0021904158780935634
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02233782753710866,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "mono": {
+              "maeAgainstA": 17.63075657894737,
+              "whiteTitleContrastMin": 1.6390401482622179,
+              "whiteTitleContrastP05": 1.7625598210034286,
+              "horizontalEdgeEnergy": [
+                0.013383169079617703,
+                0.005306654059320927,
+                0.0017196173967400463
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022768919959802715,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            },
+            "contrast": {
+              "maeAgainstA": 48.45997807017544,
+              "whiteTitleContrastMin": 1.482266131414131,
+              "whiteTitleContrastP05": 1.5579550563651177,
+              "horizontalEdgeEnergy": [
+                0.08186435887014851,
+                0.029389686559807348,
+                0.006070382841910312
+              ],
+              "maxAdjacentRowLuminanceJump": 0.0217039593003596,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": true
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 33.30000000000007,
+              "p95Ms": 34.30000000000018,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000018,
+              "p95Ms": 34.29999999999927,
+              "over25ms": 119,
+              "frames": 119
+            },
+            {
+              "medianMs": 33.30000000000109,
+              "p95Ms": 34.399999999999636,
+              "over25ms": 119,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "reduced": {
+            "backdrop": "none",
+            "tint": "rgb(41, 41, 41)",
+            "forced": false,
+            "reduced": true
+          },
+          "scrollFilters": [
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        }
+      },
+      "errors": [],
+      "cssSupport": {
+        "backdrop": true,
+        "mask": true
+      }
+    },
+    "firefox": {
+      "version": "151.0",
+      "variants": {
+        "A": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 17.40000000000009,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(30px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B3": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 16.680000000000064,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(20px)",
+            "blur(40px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 16.93999999999994,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(15px)",
+            "blur(30px)",
+            "blur(45px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B5": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 17.6400000000001,
+              "over25ms": 1,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(12px)",
+            "blur(24px)",
+            "blur(36px)",
+            "blur(48px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 16.68000000000029,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(12.1644px)",
+            "blur(2.46621px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C6": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 17.480000000000018,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(23.0311px)",
+            "blur(8.84054px)",
+            "blur(3.39346px)",
+            "blur(1.30259px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C8": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 17.159999999999854,
+              "over25ms": 1,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(30.2779px)",
+            "blur(15.2792px)",
+            "blur(7.71034px)",
+            "blur(3.89088px)",
+            "blur(1.96346px)",
+            "blur(0.990823px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "M": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.01639559920557178,
+                0.01388151812494347,
+                0.007241224072494818
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01905443880585532,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.015355349062466989,
+                0.009076835326153098,
+                0.005011633733729425
+              ],
+              "maxAdjacentRowLuminanceJump": 0.022443325569152937,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09825399025650781,
+                0.05694823817027815,
+                0.028081077128424465
+              ],
+              "maxAdjacentRowLuminanceJump": 0.01611008128765583,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 16.660000000000082,
+              "p95Ms": 17.420000000000073,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": true,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        }
+      },
+      "errors": [],
+      "cssSupport": {
+        "backdrop": true,
+        "mask": true
+      }
+    },
+    "webkit": {
+      "version": "26.5",
+      "variants": {
+        "A": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 21,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(30px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B3": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 21,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(20px)",
+            "blur(40px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 18,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(15px)",
+            "blur(30px)",
+            "blur(45px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "B5": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 18,
+              "over25ms": 1,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(12px)",
+            "blur(24px)",
+            "blur(36px)",
+            "blur(48px)",
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C4": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 19,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(12.164404px)",
+            "blur(2.466212px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C6": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 18,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(23.031116px)",
+            "blur(8.840539px)",
+            "blur(3.393458px)",
+            "blur(1.302586px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "C8": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 19,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)",
+            "blur(30.277872px)",
+            "blur(15.27916px)",
+            "blur(7.710341px)",
+            "blur(3.890879px)",
+            "blur(1.963459px)",
+            "blur(0.990823px)",
+            "blur(0.5px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        },
+        "M": {
+          "images": {
+            "color": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.017638925206495973,
+                0.014373757669837818,
+                0.0076399244985010245
+              ],
+              "maxAdjacentRowLuminanceJump": 0.018000593417295884,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "mono": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.425303290666865,
+              "whiteTitleContrastP05": 1.482266131414131,
+              "horizontalEdgeEnergy": [
+                0.0164994538658555,
+                0.00952290799407944,
+                0.005404199261683435
+              ],
+              "maxAdjacentRowLuminanceJump": 0.02090662059473501,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            },
+            "contrast": {
+              "maeAgainstA": 0,
+              "whiteTitleContrastMin": 1.2365994749414904,
+              "whiteTitleContrastP05": 1.283381443065256,
+              "horizontalEdgeEnergy": [
+                0.09928029090655413,
+                0.05766987526033211,
+                0.02856665114717669
+              ],
+              "maxAdjacentRowLuminanceJump": 0.015359563249939175,
+              "width": 264,
+              "height": 78,
+              "filterChangesPixels": false
+            }
+          },
+          "scroll": [
+            {
+              "medianMs": 17,
+              "p95Ms": 19,
+              "over25ms": 0,
+              "frames": 119
+            }
+          ],
+          "a11y": "- article:\n  - img \"Artwork 1\"\n  - link \"Работа с живым фоном\":\n    - /url: \"#artwork\"\n  - text: \"@test-author\"\n  - button \"Height\"\n  - button \"Image\"",
+          "defaultTabHitsLink": false,
+          "dynamicHeight": [
+            78,
+            122
+          ],
+          "dynamicImage": true,
+          "forced": {
+            "backdrop": "none",
+            "tint": "rgb(255, 255, 255)",
+            "forced": true,
+            "reduced": false
+          },
+          "scrollFilters": [
+            "blur(60px)"
+          ],
+          "scrollReturnPixelsEqual": true
+        }
+      },
+      "errors": [],
+      "cssSupport": {
+        "backdrop": true,
+        "mask": true
+      }
+    }
+  }
+}

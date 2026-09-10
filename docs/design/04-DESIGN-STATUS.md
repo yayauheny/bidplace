@@ -4,6 +4,18 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Progressive CoverFrost applicability audit
+
+- `Verified`: isolated A/B/C prototypes and matched 390px contrast/scroll checks
+  reject adoption: progressive candidates reduce title-background contrast.
+  Existing production uniform `blur(30px)` remains unchanged.
+- `Verified`: corrected the baseline focused test fixture to the strict portfolio
+  contract and added one-image, accessibility-tree and keyboard assertions.
+  Unit tests (251), typecheck, lint, focused Playwright and Expo Web export pass.
+- `Needs verification`: real Safari/Firefox filter rendering and low-end mobile
+  GPU performance; no new progressive runtime capability is marked implemented.
+  Evidence: [research audit](../research/2026-09-10-cover-frost/README.md).
+
 ## 2026-09-10 — Figma cover frost correction C2e
 
 - `Corrected`: web `CoverFrost` now samples the real sharp artwork once through

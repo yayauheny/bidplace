@@ -4,6 +4,13 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — CoverFrost research verification
+
+- `Implemented` production uniform `blur(30px)` remains unchanged after the
+  progressive-candidate comparison. No new runtime capability is promoted.
+- Verification results and browser limitations are owned by
+  [design status](../design/04-DESIGN-STATUS.md) and its linked research audit.
+
 ## 2026-09-10 — Single-sampled card cover frost
 
 - `Implemented`: shared work/author cover overlays use one sharp semantic image
