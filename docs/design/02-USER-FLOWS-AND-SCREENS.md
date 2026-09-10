@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 Статус: Confirmed product/UI scope for Figma phone cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -40,7 +40,7 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Экран | First MVP | Убирается/откладывается |
 |---|---|---|
 | Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Новые работы, авторы | Открытие недели, активные торги, цены, timers |
+| Home | Новые работы, авторы, `Открытие недели` при непустом `curatorSelection` | активные торги, цены, timers |
 | Works | Title, intro, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters, live search overlay |
 | Authors | Catalog of published authors | Rating, followers, sales and verified authenticity claims |
 | Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе` | Public `Архив`, cart, like, bell, private states |
@@ -53,8 +53,10 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 
 ## 4. Home
 
-`Открытие недели` не рендерится в этом cutover. Work cards показывают название и
-автора. `Новые работы` и переход к авторам — единственные секции.
+`Открытие недели` рендерится только при непустом server `curatorSelection`.
+Work cards показывают название и автора. `Новые работы` и переход к авторам
+остаются основными секциями. Нет newest/random fallback и нет фиктивного
+editorial pick.
 
 ## 5. Works and Authors discovery
 

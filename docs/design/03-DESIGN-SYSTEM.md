@@ -343,8 +343,8 @@ Shared masters:
 - `ShareSheet` / `ShareQr` — dimmer, focus trap/dismiss, encoded QR from a
   canonical URL, copy and download;
 - `CuratorFeature` — «Открытие недели» editorial column plus one
-  `WorkCoverCard`; unmounted until Home composition. Does not invent extra
-  rail items;
+  `WorkCoverCard`; Home mounts it only when `curatorSelection` is non-null.
+  Does not invent extra rail items;
 - `WorkGallery` / `WorkIdentityBlock` / `WorkContentTabs` / `WorkStory` /
   `WorkFactsList` / `PaymentDeliveryStub` / `RelatedWorksSection` — public
   Work masters; no price, timer, bid or cart; `ShareSheet` reused from C5;

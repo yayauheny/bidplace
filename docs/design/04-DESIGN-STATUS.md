@@ -4,6 +4,19 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Home composition
+
+- `Implemented`: Home uses only `GET /api/portfolio/home`. `CuratorFeature`
+  mounts iff `curatorSelection` is non-null. `Новые работы` and `Авторы` are
+  horizontal cover rails with `sectionGap` / `pageGutter`. Wide windows stay
+  a 390 column via `AppShell`. Loading/empty/error stay on `PageState`.
+- RFC §5, this file's flows owner, and plan stop #6 now allow the
+  server-owned opening-of-week. No newest/random fallback.
+- Verification: 294 mobile unit tests, `home-composition.spec.ts` plus mocked
+  Playwright `figma-home.spec.ts` (populated with/without curator, empty,
+  error, long title / 1440 column). Mobile typecheck/lint.
+- No `.pen`, API, contracts or seed files changed.
+
 ## 2026-09-10 — C4 filter and sort masters
 
 - `Implemented`: `FilterSortBar`, `FilterTrigger`, `SortTrigger`,

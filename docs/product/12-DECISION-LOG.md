@@ -1723,3 +1723,15 @@ to code.
 Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
 capability is enabled with matching frames.
 
+## DEC-086 — Home renders server-owned opening of week
+
+Date: 2026-09-10
+Status: Confirmed
+Source: Home composition on `fix/shared-figma-control-usage`
+Revises: `DEC-085` runtime deferral of `Открытие недели` only. Does not reopen
+auctions, prices, timers, or fictitious editorial picks.
+
+Home renders `Открытие недели` only when `GET /api/portfolio/home` returns a
+non-null `curatorSelection`. If the field is `null`, the section is omitted.
+There is no newest/random fallback and no client-invented curator card.
+

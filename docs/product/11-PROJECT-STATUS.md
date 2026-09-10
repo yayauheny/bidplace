@@ -4,6 +4,17 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Home composition
+
+- `Implemented`: `apps/mobile/src/features/home/home-screen.tsx` composes
+  `CuratorFeature`, `WorkCoverCard` and `AuthorCoverCard` from
+  `GET /api/portfolio/home`. Curator renders only when `curatorSelection` is
+  non-null. Evidence: `home-composition.spec.ts`,
+  `apps/mobile/e2e/figma-home.spec.ts`.
+- `Verified`: 294 mobile unit tests, typecheck/lint, mocked Playwright home
+  states. RFC §5 and `DEC-086` record the product decision. No fake
+  editorial pick.
+
 ## 2026-09-10 — C4 filter and sort masters
 
 - `Implemented`: Figma discovery masters `FilterSortBar`, `FilterSheet`,

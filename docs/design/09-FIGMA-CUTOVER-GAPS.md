@@ -7,7 +7,8 @@ Runtime: Expo phone column ~390, tokens in `packages/design-tokens`
 ## Skipped Figma nodes
 
 - Page `Структура` moodboards and competitor dumps.
-- Home «Открытие недели» and «Активные торги».
+- Home «Активные торги». «Открытие недели» renders only for a non-null
+  server `curatorSelection` (`DEC-086`).
 - Catalog tabs `Аукционы` / `Анонсы` / `Архив` and price filter.
 - Dock cart / `shopping-basket-01`.
 - Search overlay (categories / authors / works). `/search` is a stub.
@@ -38,7 +39,7 @@ the previous glass/blur values.
 
 ## Deferred product questions
 
-- When to restore `Открытие недели` with a real editorial pick.
+- Search overlay API shape and filters.
 - Search overlay API shape and filters.
 - Whether create-work should collect `Тираж` as required once Figma labels it.
 - Licensed Geist files.

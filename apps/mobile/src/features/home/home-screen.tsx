@@ -1,40 +1,87 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { AuthorCoverCard } from '../../components/figma/AuthorCoverCard';
+import { CuratorFeature } from '../../components/figma/CuratorFeature';
+import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
-import {
-  AppText,
-  AuctionCardGrid,
-  CreatorCardGrid,
-  PageState,
-  PrimaryButton,
-  toAuctionCardItem,
-} from '../../components/ui';
+import { PageState, PrimaryButton } from '../../components/ui';
+import { AppText } from '../../components/ui/AppText';
 import { useApiClient } from '../../providers/api-provider';
+import {
+  authorDisciplineTags,
+  isHomeEmpty,
+  shouldRenderCuratorFeature,
+} from './home-composition';
+
+function HomeCoverRail({
+  title,
+  actionLabel,
+  onAction,
+  children,
+}: {
+  title: string;
+  actionLabel: string;
+  onAction: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <View style={{ gap: designTokens.space.sectionGap, width: '100%' }}>
+      <AppText
+        role="sectionTitle"
+        style={{ paddingHorizontal: designTokens.space.pageGutter }}
+      >
+        {title}
+      </AppText>
+      <ScrollView
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          gap: designTokens.space.pageGutter,
+          paddingHorizontal: designTokens.space.pageGutter,
+        }}
+      >
+        {children}
+      </ScrollView>
+      <View style={{ paddingHorizontal: designTokens.space.pageGutter }}>
+        <PrimaryButton label={actionLabel} width="full" onPress={onAction} />
+      </View>
+    </View>
+  );
+}
 
 export function HomeScreen() {
   const api = useApiClient();
-  const router = useRouter();
+  const { push } = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
     queryFn: () => api.portfolio.home(),
   });
   const loading = home.isLoading;
   const failed = home.isError;
-  const workItems = (home.data?.newWorks ?? []).map(toAuctionCardItem);
-  const sellerItems = (home.data?.newAuthors ?? []).map((author) => ({
-    sellerProfile: author,
-  }));
+  const curatorSelection = home.data?.curatorSelection ?? null;
+  const newWorks = home.data?.newWorks ?? [];
+  const newAuthors = home.data?.newAuthors ?? [];
+  const showCurator = shouldRenderCuratorFeature(curatorSelection);
+  const empty =
+    !loading &&
+    !failed &&
+    isHomeEmpty({
+      curatorSelection,
+      newWorksCount: newWorks.length,
+      newAuthorsCount: newAuthors.length,
+    });
 
   return (
     <AppShell>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x6,
           paddingBottom: designTokens.space.x5,
           gap: designTokens.space.sectionGap,
@@ -53,49 +100,73 @@ export function HomeScreen() {
             }}
           />
         ) : null}
-        {!loading && !failed && workItems.length > 0 ? (
-          <View style={{ gap: designTokens.space.sectionGap }}>
-            <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
-              Новые работы
-            </AppText>
-            <AuctionCardGrid items={workItems} />
-            <PrimaryButton
-              label="Смотреть все"
-              width="full"
-              onPress={() => router.push('/works')}
-            />
-          </View>
+        {!loading && !failed && showCurator ? (
+          <CuratorFeature selection={curatorSelection} />
         ) : null}
-        {!loading && !failed && sellerItems.length > 0 ? (
-          <View style={{ gap: designTokens.space.sectionGap }}>
-            <AppText role="sectionTitle">Авторы</AppText>
-            <CreatorCardGrid items={sellerItems} />
-            <PrimaryButton
-              label="Смотреть всех"
-              width="full"
-              onPress={() => router.push('/authors')}
-            />
-          </View>
+        {!loading && !failed && newWorks.length > 0 ? (
+          <HomeCoverRail
+            title="Новые работы"
+            actionLabel="Смотреть все"
+            onAction={() => push('/works')}
+          >
+            {newWorks.map((item) => (
+              <View
+                key={item.work.publicId}
+                style={{ width: designTokens.size.coverWidth }}
+              >
+                <WorkCoverCard
+                  href={`/product/${item.work.publicId}`}
+                  imageUrl={item.work.images[0]?.url ?? ''}
+                  imageLabel={item.work.title}
+                  title={item.work.title}
+                  authorSlug={item.author.slug}
+                  mode="portfolio"
+                />
+              </View>
+            ))}
+          </HomeCoverRail>
         ) : null}
-        {!loading &&
-        !failed &&
-        workItems.length === 0 &&
-        sellerItems.length === 0 ? (
+        {!loading && !failed && newAuthors.length > 0 ? (
+          <HomeCoverRail
+            title="Авторы"
+            actionLabel="Смотреть всех"
+            onAction={() => push('/authors')}
+          >
+            {newAuthors.map((author) => (
+              <View
+                key={author.slug}
+                style={{ width: designTokens.size.coverWidth }}
+              >
+                <AuthorCoverCard
+                  fullName={author.fullName}
+                  slug={author.slug}
+                  tags={authorDisciplineTags(author.discipline)}
+                  imageUrl={author.profilePhotoUrl}
+                />
+              </View>
+            ))}
+          </HomeCoverRail>
+        ) : null}
+        {empty ? (
           <View style={{ gap: designTokens.space.sectionGap }}>
             <PageState
               title="Пока здесь тихо"
               message="Новые работы и авторы появятся после публикации."
             />
-            <PrimaryButton
-              label="Все работы"
-              width="full"
-              onPress={() => router.push('/works')}
-            />
-            <PrimaryButton
-              label="Все авторы"
-              width="full"
-              onPress={() => router.push('/authors')}
-            />
+            <View style={{ paddingHorizontal: designTokens.space.pageGutter }}>
+              <PrimaryButton
+                label="Все работы"
+                width="full"
+                onPress={() => push('/works')}
+              />
+            </View>
+            <View style={{ paddingHorizontal: designTokens.space.pageGutter }}>
+              <PrimaryButton
+                label="Все авторы"
+                width="full"
+                onPress={() => push('/authors')}
+              />
+            </View>
           </View>
         ) : null}
       </ScrollView>

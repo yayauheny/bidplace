@@ -289,7 +289,7 @@ identity `874:5591`.
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
 | Share sheet / QR | implemented; unmounted pending screen composition |
-| CuratorFeature | implemented; unmounted pending Home composition |
+| CuratorFeature | implemented and mounted on Home when `curatorSelection` is non-null |
 | Work tabs/story/facts/payment stub components | implemented; unmounted pending work composition |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
 
@@ -302,7 +302,8 @@ Do not guess and stop only the affected component when one of these is required:
 3. phone verify-email / forgot-reset frames;
 4. payment/delivery tab frame beyond the RFC stub;
 5. licensed Geist files;
-6. explicit founder decision to enable optional `Открытие недели`;
+6. resolved 2026-09-10: Home renders optional `Открытие недели` only when
+   `curatorSelection` is non-null (`DEC-086`);
 7. API contract for live search overlay.
 
 ## 6. Resume protocol
