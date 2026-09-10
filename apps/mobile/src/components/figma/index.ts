@@ -17,10 +17,16 @@ export { FigmaIconButton } from './FigmaIconButton';
 export { FigmaImagePlaceholder } from './FigmaImagePlaceholder';
 export { FigmaGlassSurface } from './FigmaGlassSurface';
 export { FigmaTextField } from './FigmaTextField';
+export { FilterOptionRow } from './FilterOptionRow';
+export { FilterSearchField } from './FilterSearchField';
+export { FilterSheet } from './FilterSheet';
+export { FilterSortBar } from './FilterSortBar';
+export { FilterTrigger, SortTrigger } from './FilterTrigger';
 export { FloatingDock } from './FloatingDock';
 export { OverlayDimmer } from './OverlayDimmer';
 export { PaymentDeliveryStub } from './PaymentDeliveryStub';
 export { RelatedWorksSection } from './RelatedWorksSection';
+export { ResultsCountAction } from './ResultsCountAction';
 export { ShareQr } from './ShareQr';
 export { ShareSheet } from './ShareSheet';
 export { WorkContentTabs } from './WorkContentTabs';
@@ -64,3 +70,5 @@ export {
   visibleWorkContentTabs,
   type WorkContentTabId,
 } from './work-content-tabs';
+export { resultsCountLabel } from './results-count';
+export { visibleFilterGroups } from './filter-option-row';

@@ -163,6 +163,8 @@ identity `874:5591`.
 
 ### C4 — discovery controls
 
+Статус: **Complete; unmounted until catalog composition**
+
 Источники: `874:5434`, filters `526:12980`, `526:13009`, `526:13065`,
 `526:13142`, `584:17554`.
 
@@ -177,12 +179,12 @@ identity `874:5591`.
 
 Работа:
 
-- [ ] Компоненты отражают category/material и direction/city contracts, но не
+- [x] Компоненты отражают category/material и direction/city contracts, но не
   выполняют filtering сами.
-- [ ] Selected state передаётся снаружи; apply/reset callbacks явные.
-- [ ] Bottom sheet использует существующий native dependency только после
+- [x] Selected state передаётся снаружи; apply/reset callbacks явные.
+- [x] Bottom sheet использует существующий native dependency только после
   проверки web behavior и focus/dismiss contract.
-- [ ] Не реализовывать catalog auction/buy/archive segment tabs.
+- [x] Не реализовывать catalog auction/buy/archive segment tabs.
 
 ### C5 — creator profile components
 
@@ -281,7 +283,7 @@ identity `874:5591`.
 | CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
 | WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
-| FilterSortBar / exact filter sheet | missing; catalog «Фильтры» and FilterMenu remain C4 |
+| FilterSortBar / exact filter sheet | implemented; unmounted pending catalog composition |
 | Exact image placeholder | missing |
 | Creator hero/tabs/socials/timeline | implemented; unmounted pending creator composition |
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |

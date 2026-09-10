@@ -4,6 +4,15 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — C4 filter and sort masters
+
+- `Implemented`: Figma discovery masters `FilterSortBar`, `FilterSheet`,
+  `FilterOptionRow`, `FilterSearchField` and `ResultsCountAction` exist as
+  props-only components. Evidence: `filter-sort-bar-style.spec.ts`.
+- `Verified`: 291 mobile unit tests, mobile typecheck/lint. Works and Authors
+  catalogs still use `FilterMenu`. URL query remains the screen source of
+  truth after catalog composition.
+
 ## 2026-09-10 — C6 public work masters
 
 - `Implemented`: Figma work masters `WorkGallery`, `WorkIdentityBlock`,

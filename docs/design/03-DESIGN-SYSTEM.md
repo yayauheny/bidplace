@@ -24,7 +24,8 @@ production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `CreatorAboutSections`, `AchievementsTimeline`, `CompactCreatorHeader`,
 `ShareSheet`, `ShareQr`, `CuratorFeature`, `WorkGallery`, `WorkIdentityBlock`,
 `WorkContentTabs`, `WorkStory`, `WorkFactsList`, `PaymentDeliveryStub`,
-`RelatedWorksSection`. Cover overlays frost the artwork
+`RelatedWorksSection`, `FilterSortBar`, `FilterSheet`, `FilterOptionRow`,
+`FilterSearchField`, `ResultsCountAction`. Cover overlays frost the artwork
 instead of painting an opaque gradient. On web,
 `CoverFrost` samples the single sharp artwork behind it with
 `backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
@@ -347,6 +348,9 @@ Shared masters:
 - `WorkGallery` / `WorkIdentityBlock` / `WorkContentTabs` / `WorkStory` /
   `WorkFactsList` / `PaymentDeliveryStub` / `RelatedWorksSection` — public
   Work masters; no price, timer, bid or cart; `ShareSheet` reused from C5;
+- `FilterSortBar` / `FilterTrigger` / `SortTrigger` / `FilterSheet` /
+  `FilterOptionRow` / `FilterSearchField` / `ResultsCountAction` — discovery
+  controls; filter state stays in props; apply copy uses `работ`, not `лот`;
 - `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
   and stay off unless `mode="commerce"`;
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;

@@ -4,6 +4,20 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — C4 filter and sort masters
+
+- `Implemented`: `FilterSortBar`, `FilterTrigger`, `SortTrigger`,
+  `FilterSheet`, `FilterOptionRow`, `FilterSearchField` and
+  `ResultsCountAction` live under `apps/mobile/src/components/figma/`.
+  Selected/apply/reset are props and callbacks. The sheet uses
+  `OverlayDimmer` plus Escape/backdrop/focus return. Price and auction groups
+  are hidden by `visibleFilterGroups`. Apply copy is `Показать N работ`.
+- Catalog screens still use `FilterMenu`. Gorhom is not the web sheet.
+- Verification: 291 mobile unit tests, including glass trigger geometry,
+  hidden price/auction groups, multi-select toggle, `лот`-free apply label
+  and sheet Escape/backdrop/Tab helpers. Mobile typecheck/lint.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — C6 public work masters
 
 - `Implemented`: `WorkGallery`, `WorkIdentityBlock`, `WorkContentTabs`,
