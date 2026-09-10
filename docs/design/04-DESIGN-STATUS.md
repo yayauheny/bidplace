@@ -4,6 +4,14 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Visual fixtures
+
+- `Implemented`: mocked Playwright `figma-browser-acceptance.spec.ts`
+  captures Home / Works / Authors / creator / work at 390×844, plus reduced
+  motion, 200% zoom and keyboard. Artifacts only; mismatches are audited,
+  not patched in masters.
+- No `.pen` file changed.
+
 ## 2026-09-10 — Catalog composition
 
 - `Implemented`: Works and Authors catalogs use C4 `FilterSortBar` /

@@ -4,6 +4,12 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Visual fixtures
+
+- `Implemented`: `apps/mobile/e2e/figma-browser-acceptance.spec.ts` writes
+  screenshot artifacts for Home / Works / Authors / creator / work. No
+  runtime fake data. Masters were not patched to pass.
+
 ## 2026-09-10 — Catalog composition
 
 - `Implemented`: `product-list-screen.tsx` and `public-authors-screen.tsx`
