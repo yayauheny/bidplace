@@ -186,6 +186,8 @@ identity `874:5591`.
 
 ### C5 — creator profile components
 
+Статус: **Complete; unmounted until creator screen composition**
+
 Источники: creator about/works/default/scrolled packages, share sheet
 `526:13756`, achievements `742:20510`.
 
@@ -201,13 +203,13 @@ identity `874:5591`.
 
 Работа:
 
-- [ ] Social actions рендерятся только для present public URLs; public email и
+- [x] Social actions рендерятся только для present public URLs; public email и
   private handoff никогда не попадают в props.
-- [ ] Timeline принимает image and text-only records and degrades to a readable
+- [x] Timeline принимает image and text-only records and degrades to a readable
   phone list/carousel without treating 1471 px as a breakpoint.
-- [ ] QR encodes canonical server `sharePath`; screenshot placeholder is not a
+- [x] QR encodes canonical server `sharePath`; screenshot placeholder is not a
   QR implementation.
-- [ ] Share sheet owns dimmer, focus trap/dismiss, close, clipboard status and
+- [x] Share sheet owns dimmer, focus trap/dismiss, close, clipboard status and
   download state; screen owns only open/close and canonical URL.
 
 ### C6 — public Work components
@@ -279,10 +281,10 @@ identity `874:5591`.
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
 | FilterSortBar / exact filter sheet | missing; catalog «Фильтры» and FilterMenu remain C4 |
 | Exact image placeholder | missing |
-| Creator hero/tabs/socials/timeline | route-local or missing |
-| Glass creator social circles | remaining; C5 CreatorSocialActions |
+| Creator hero/tabs/socials/timeline | implemented; unmounted pending creator composition |
+| Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
-| Share sheet / QR | missing |
+| Share sheet / QR | implemented; unmounted pending screen composition |
 | Work tabs/story/facts/payment stub components | route-local |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
 

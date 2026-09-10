@@ -4,6 +4,18 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — C5 creator profile masters
+
+- `Implemented`: Figma creator masters `CreatorHero`, `CreatorSocialActions`,
+  `CreatorProfileTabs`, `CreatorAboutSections`, `AchievementsTimeline`,
+  `CompactCreatorHeader`, `ShareSheet` and `ShareQr` exist as props-only
+  production components in `apps/mobile/src/components/figma/`. Evidence:
+  `creator-social-actions.spec.ts`, `creator-profile-tabs.spec.ts`,
+  `achievements-timeline.spec.ts`, `share-qr.spec.ts`, `share-sheet.spec.ts`.
+- `Verified`: 276 mobile unit tests, mobile typecheck/lint, and Expo export
+  for web/iOS/Android pass. Public creator and work screens still use
+  route-local chrome; masters are not mounted.
+
 ## 2026-09-10 — Shared Figma control usage
 
 - `Implemented`: public copy and dialog close use `IconButton`; admin period

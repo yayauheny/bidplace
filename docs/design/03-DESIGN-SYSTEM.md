@@ -19,7 +19,10 @@ Shared primitives live in `apps/mobile/src/components/figma/` and are the
 production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `FigmaChoiceChip`, `FigmaIcon`, `FigmaIconButton`, `FigmaGlassSurface`,
 `FigmaImagePlaceholder`, `OverlayDimmer`, `WorkCoverCard`, `AuthorCoverCard`,
-`AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`. Cover
+`AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`,
+`CreatorHero`, `CreatorSocialActions`, `CreatorProfileTabs`,
+`CreatorAboutSections`, `AchievementsTimeline`, `CompactCreatorHeader`,
+`ShareSheet`, `ShareQr`. Cover
 overlays frost the artwork instead of painting an opaque gradient. On web,
 `CoverFrost` samples the single sharp artwork behind it with
 `backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
@@ -330,6 +333,12 @@ Shared masters:
 - `FigmaButton` — solid / outline / ghost / muted, hover / pressed / disabled;
 - `FigmaTextField` — empty, hover, filled, focus, error, success, disabled;
 - `FigmaChip` — non-interactive tags (`onLight` / `onDark`);
+- `CreatorHero` / `CreatorSocialActions` / `CreatorProfileTabs` /
+  `CreatorAboutSections` / `AchievementsTimeline` / `CompactCreatorHeader` —
+  public creator profile masters; socials omit missing URLs and never take
+  email or VK; timeline is a phone carousel, not the 1471 px desktop strip;
+- `ShareSheet` / `ShareQr` — dimmer, focus trap/dismiss, encoded QR from a
+  canonical URL, copy and download;
 - `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
   and stay off unless `mode="commerce"`;
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;

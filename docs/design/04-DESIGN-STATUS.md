@@ -4,6 +4,28 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — C5 creator profile masters
+
+- `Implemented`: production masters `CreatorHero`, `CreatorSocialActions`,
+  `CreatorProfileTabs`, `CreatorAboutSections`, `AchievementsTimeline`,
+  `CompactCreatorHeader`, `ShareSheet` and `ShareQr` now live under
+  `apps/mobile/src/components/figma/`. They take props and callbacks only;
+  public screens are still unwired.
+- Social actions render Telegram / Instagram / website only when a public URL
+  is present. Share is optional via `onShare`. Email, private handoff and VK
+  are not in the prop contract. Instagram and website keep `AppIcon` because
+  those glyphs are absent from `figma-icon-names`.
+- Timeline accepts image and text-only records on a 266 px phone carousel and
+  renders nothing for an empty list. It does not treat 1471 px as a breakpoint.
+- Share sheet owns `OverlayDimmer`, Escape/backdrop dismiss, focus return, copy
+  status and QR download. `ShareQr` encodes the supplied canonical URL with
+  `qrcode`; the capture raster is not used as a code.
+- Verification: 276 mobile unit tests, including social visibility, tab ids,
+  about/timeline empty states, QR encode and sheet keyboard/download helpers.
+  Mobile typecheck/lint and Expo web/iOS/Android export pass. Screens remain
+  on route-local creator chrome until the creator composition commit.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Shared Figma control usage C1
 
 - `Corrected`: route-local icon-only copy and dialog close now use `IconButton`
