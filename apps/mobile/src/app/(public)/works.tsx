@@ -2,24 +2,34 @@ import { useLocalSearchParams } from 'expo-router';
 
 import { ProductListScreen } from '../../features/products/product-list-screen';
 import type { PortfolioCatalogSort } from '../../features/products/portfolio-works-query';
-
-function firstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+import {
+  firstQueryParam,
+  parseCsvParam,
+  parsePageParam,
+} from '../../features/search/catalog-query';
 
 export default function WorksRoute() {
   const params = useLocalSearchParams<{
+    q?: string;
     sort?: PortfolioCatalogSort;
     category?: string;
+    materials?: string;
     material?: string;
+    page?: string;
   }>();
-  const sort = firstParam(params.sort) === 'oldest' ? 'oldest' : 'newest';
+  const sort = firstQueryParam(params.sort) === 'oldest' ? 'oldest' : 'newest';
+  const materials = [
+    ...parseCsvParam(params.materials),
+    ...parseCsvParam(params.material),
+  ];
 
   return (
     <ProductListScreen
+      query={firstQueryParam(params.q)}
       sort={sort}
-      category={firstParam(params.category)}
-      material={firstParam(params.material)}
+      category={firstQueryParam(params.category)}
+      materials={materials}
+      page={parsePageParam(params.page)}
     />
   );
 }

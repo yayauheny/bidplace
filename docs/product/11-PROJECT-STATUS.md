@@ -4,6 +4,13 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Catalog composition
+
+- `Implemented`: `product-list-screen.tsx` and `public-authors-screen.tsx`
+  use C4 masters. URL query is the source of truth. Evidence:
+  `catalog-query.spec.ts`, `figma-catalog.spec.ts`.
+- `Verified`: 298 mobile unit tests, typecheck/lint.
+
 ## 2026-09-10 — Work composition
 
 - `Implemented`: `product-screen.tsx` composes C6 + `ShareSheet`. Evidence:
@@ -35,8 +42,8 @@ acceptance target; retained native branches are compatibility code only.
   `FilterOptionRow`, `FilterSearchField` and `ResultsCountAction` exist as
   props-only components. Evidence: `filter-sort-bar-style.spec.ts`.
 - `Verified`: 291 mobile unit tests, mobile typecheck/lint. Works and Authors
-  catalogs still use `FilterMenu`. URL query remains the screen source of
-  truth after catalog composition.
+  catalogs now mount these masters. URL query remains the screen source of
+  truth. `FilterMenu` remains as an unused primitive.
 
 ## 2026-09-10 — C6 public work masters
 

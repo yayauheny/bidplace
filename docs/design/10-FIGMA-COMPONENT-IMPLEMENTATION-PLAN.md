@@ -163,7 +163,7 @@ identity `874:5591`.
 
 ### C4 — discovery controls
 
-Статус: **Complete; unmounted until catalog composition**
+Статус: **Complete; mounted on Works / Authors catalogs**
 
 Источники: `874:5434`, filters `526:12980`, `526:13009`, `526:13065`,
 `526:13142`, `584:17554`.
@@ -283,7 +283,7 @@ identity `874:5591`.
 | CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
 | WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
-| FilterSortBar / exact filter sheet | implemented; unmounted pending catalog composition |
+| FilterSortBar / exact filter sheet | implemented and mounted on Works / Authors catalogs |
 | Exact image placeholder | missing |
 | Creator hero/tabs/socials/timeline | implemented and mounted on the public creator screen |
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |

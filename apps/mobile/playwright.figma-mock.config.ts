@@ -9,6 +9,7 @@ export default defineConfig({
     'figma-home.spec.ts',
     'figma-creator.spec.ts',
     'figma-work.spec.ts',
+    'figma-catalog.spec.ts',
   ],
   workers: 1,
   timeout: 60_000,
