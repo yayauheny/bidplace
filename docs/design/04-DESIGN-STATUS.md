@@ -4,6 +4,18 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — CuratorFeature master
+
+- `Implemented`: `CuratorFeature` composes «Открытие недели», the editorial
+  column (author identity, «Выбор куратора», work title, «Смотреть профиль»)
+  and a single `WorkCoverCard` rail from the server `curatorSelection` shape.
+  Extra Figma carousel cards, prices and timers are not copied. Home is still
+  unmounted; RFC §5 still skips the section until Home composition.
+- Verification: 278 mobile unit tests, including one-item rail mapping and
+  omitted empty quote. Mobile typecheck/lint. No fake `publicId` and no
+  newest/random fallback.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — C5 creator profile masters
 
 - `Implemented`: production masters `CreatorHero`, `CreatorSocialActions`,

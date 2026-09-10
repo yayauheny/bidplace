@@ -8,6 +8,7 @@ export { CreatorAboutSections } from './CreatorAboutSections';
 export { CreatorHero } from './CreatorHero';
 export { CreatorProfileTabs } from './CreatorProfileTabs';
 export { CreatorSocialActions } from './CreatorSocialActions';
+export { CuratorFeature } from './CuratorFeature';
 export { FigmaButton } from './FigmaButton';
 export { FigmaChip } from './FigmaChip';
 export { FigmaChoiceChip } from './FigmaChoiceChip';
@@ -47,3 +48,4 @@ export {
   type AchievementRecord,
 } from './achievements-timeline';
 export { canonicalizeShareUrl, encodeShareQrSvg } from './share-qr';
+export { curatorFeatureContent, type CuratorSelection } from './curator-feature';

@@ -285,6 +285,7 @@ identity `874:5591`.
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
 | Share sheet / QR | implemented; unmounted pending screen composition |
+| CuratorFeature | implemented; unmounted pending Home composition |
 | Work tabs/story/facts/payment stub components | route-local |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
 

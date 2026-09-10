@@ -4,6 +4,16 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — CuratorFeature master
+
+- `Implemented`: `CuratorFeature` exists as a props-only Home section master
+  in `apps/mobile/src/components/figma/CuratorFeature.tsx`. It renders one
+  `WorkCoverCard` from `curatorSelection` (`work` + `author`) and does not
+  invent extra rail items. Evidence: `curator-feature.spec.ts`.
+- `Verified`: 278 mobile unit tests, mobile typecheck/lint. Home still does
+  not mount the section. RFC §5 remains skip-until the Home composition
+  commit.
+
 ## 2026-09-10 — C5 creator profile masters
 
 - `Implemented`: Figma creator masters `CreatorHero`, `CreatorSocialActions`,

@@ -22,8 +22,8 @@ production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`,
 `CreatorHero`, `CreatorSocialActions`, `CreatorProfileTabs`,
 `CreatorAboutSections`, `AchievementsTimeline`, `CompactCreatorHeader`,
-`ShareSheet`, `ShareQr`. Cover
-overlays frost the artwork instead of painting an opaque gradient. On web,
+`ShareSheet`, `ShareQr`, `CuratorFeature`. Cover overlays frost the artwork
+instead of painting an opaque gradient. On web,
 `CoverFrost` samples the single sharp artwork behind it with
 `backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
 uses one pointer-inert, accessibility-hidden `expo-image` duplicate with the
@@ -339,6 +339,9 @@ Shared masters:
   email or VK; timeline is a phone carousel, not the 1471 px desktop strip;
 - `ShareSheet` / `ShareQr` — dimmer, focus trap/dismiss, encoded QR from a
   canonical URL, copy and download;
+- `CuratorFeature` — «Открытие недели» editorial column plus one
+  `WorkCoverCard`; unmounted until Home composition. Does not invent extra
+  rail items;
 - `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
   and stay off unless `mode="commerce"`;
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;

@@ -32,7 +32,8 @@ export type ResilientRemoteImageComponent =
   | 'AuthorAtmosphere'
   | 'CreatorHero'
   | 'CompactCreatorHeader'
-  | 'AchievementsTimeline';
+  | 'AchievementsTimeline'
+  | 'CuratorFeature';
 
 type ResilientRemoteImageProps = {
   uri: string;
