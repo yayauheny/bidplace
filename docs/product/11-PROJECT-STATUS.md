@@ -4,6 +4,22 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Commerce v1 archive and P0 removal graph
+
+- `Implemented`: portfolio backend wave committed at `598d869` and frozen under
+  `archive/commerce-v1` plus annotated tag `commerce-v1-pre-portfolio`. Recovery
+  drill passed from tag in disposable worktree after `pnpm build`. Evidence:
+  `docs/audits/commerce-v1-archive-manifest.md`.
+- `Implemented`: founder decision `DEC-087` supersedes `DEC-084` retention in
+  active `main`; file-level removal graph recorded without deleting runtime code.
+  Evidence: `docs/audits/2026-09-10-commerce-removal-graph.md`,
+  `docs/product/12-DECISION-LOG.md`.
+- `Partial`: remote push and branch protection for archive refs not verified in
+  this session; local refs and zip backup exist.
+- `Not implemented`: P1–P6 commerce removal from `main`; Prisma model drops;
+  post-MVP design capture cleanup; Git history rewrite.
+- Residual risk: staging/production migration state unknown — blocker before P4.
+
 ## 2026-09-10 — Single-sampled card cover frost
 
 - `Implemented`: shared work/author cover overlays use one sharp semantic image

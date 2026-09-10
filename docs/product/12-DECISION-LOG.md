@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1745,4 +1745,45 @@ are forbidden.
 
 Home UI implements the section from an approved capture, or editorial workflow
 needs a non-admin operator tool.
+
+## DEC-087 — Commerce v1 archived; active main becomes portfolio-native
+
+Date: 2026-09-10
+Status: Confirmed
+Source: explicit founder decision after
+`docs/audits/2026-09-10-portfolio-simplification-and-commerce-archive.md`
+Revises: retention clause of `DEC-084` only. Does not reopen `DEC-082`, `DEC-083`,
+`DEC-085`, or `DEC-086`.
+
+### Decision
+
+- First public MVP stays portfolio-only with **no displayed price**, sale status,
+  timer, bid, order or purchase CTA.
+- The last verified full commerce-v1 implementation is frozen at
+  `598d8696295d18d32956da7dd366dc19464cc366` under protected refs
+  `archive/commerce-v1` and annotated tag `commerce-v1-pre-portfolio`.
+  Manifest: `docs/audits/commerce-v1-archive-manifest.md`.
+- Do not develop on the archive branch and do not merge it wholesale back into
+  `main`. Future `commerce-v2` starts from then-current `main` and uses the
+  archive as reference material only.
+- After archive recovery verification, physically remove commerce application
+  code from `main` in small reviewed commits (P1–P6 in the removal graph). This
+  is a separate execution track from Git-history or storage cleanup.
+- Do **not** remove Prisma commerce models or edit applied migrations until a
+  verified database inventory exists for every supported environment.
+- Do **not** rewrite Git history or introduce Git LFS as part of source cleanup.
+- Commerce is deferred and may be redesigned; it is not `Rejected`.
+
+### Why
+
+Portfolio MVP is already the public product contract. Keeping commerce modules,
+adapters and schema in the active tree preserves naming drift, test burden and
+accidental re-exposure risk even with `COMMERCE_ENABLED=false`. A protected
+archive preserves the exact prior implementation without maintaining two active
+product lines.
+
+### Revisit when
+
+Commerce contract, legal/domain gate, UX and release gates are approved for a
+new wave; then port deliberate concepts from the archive into `commerce-v2`.
 

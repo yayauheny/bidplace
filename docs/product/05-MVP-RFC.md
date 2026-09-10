@@ -1,9 +1,9 @@
 # bidplace — First MVP RFC
 
 Версия: 2.0
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 Статус: Confirmed
-Основные решения: `DEC-082`, `DEC-083`, `DEC-084`, `DEC-085`, `DEC-086`
+Основные решения: `DEC-082`, `DEC-083`, `DEC-085`, `DEC-086`, `DEC-087`
 
 ## 1. Что проверяет первый MVP
 
@@ -33,7 +33,8 @@
 - деньги за работы и доставка отсутствуют в пользовательских сценариях;
 - подписки, комиссии и платное продвижение отсутствуют;
 - новый Figma-файл является read-only target будущей UI-реализации;
-- существующий commerce runtime сохраняется, но выключен fail-closed (`DEC-084`).
+- commerce v1 заморожен в archive refs (`DEC-087`); активный `main` становится
+  portfolio-native без commerce runtime, цены и purchase actions.
 
 ## 3. Роли
 
@@ -242,17 +243,20 @@ transaction copy не блокируют portfolio MVP. Маркетингово
 
 ## 14. Commerce capability
 
-При выключенной capability:
+First MVP **не включает** commerce capability в активном runtime (`DEC-087`).
 
 - client не показывает commerce routes, navigation, price, timer или actions;
-- прямой вызов commerce mutation/API fail-closed;
-- scheduler не создаёт новых пользовательских commerce outcomes;
-- старые тестовые записи не попадают в public discovery;
-- существующие модули, migrations и tests остаются в Git;
-- commerce tests явно включают capability в изолированной среде.
+- default API composition не регистрирует commerce controllers, jobs или realtime
+  handlers после portfolio cleanup;
+- scheduler не создаёт пользовательских commerce outcomes;
+- portfolio DTO не раскрывают listing, price, bid, order или sale status;
+- последняя полная commerce-v1 реализация сохранена только в archive refs
+  (`archive/commerce-v1`, tag `commerce-v1-pre-portfolio`), не в развиваемом
+  `main`.
 
-Capability нельзя реализовать только CSS/route hiding. Точная матрица endpoints/jobs/
-events является отдельной P0-задачей.
+Historical retention in the active tree was governed by `DEC-084`; `DEC-087`
+supersedes that retention policy. Capability нельзя реализовать только
+CSS/route hiding.
 
 ## 15. Не входит в First MVP
 

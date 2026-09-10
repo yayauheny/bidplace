@@ -1,7 +1,10 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
+Transitional note (`DEC-087`): commerce modules still exist in the tree at archive
+freeze SHA `598d869` while P1–P6 removal executes; target state is portfolio-native
+`main` without default commerce composition.
 
 ## Applications and shared boundaries
 
@@ -57,7 +60,14 @@
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. `socialLink` is optional/nullable; empty strings are rejected. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
-- `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
+- `packages/database` owns Prisma schema, forward migrations and deterministic
+  local/test seed. As of 2026-09-10 the tree contains **17** migration directories
+  through `20260909120000_portfolio_media_socials_curator`; the earlier “single
+  unreleased baseline migration” wording below is stale and must be reconciled with
+  deployment inventory before schema cleanup. Bid/Order demo fixtures may run only
+  with `NODE_ENV=development|test`, `APP_ENV=local` and
+  `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes,
+  and an API PostgreSQL integration test verifies the seeded auction invariants.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
 
