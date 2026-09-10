@@ -1,43 +1,25 @@
 import {
   Body,
   Controller,
-  Get,
   Param,
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   productWriteRequestSchema,
   creationStepOrderRequestSchema,
   creationStoryWriteRequestSchema,
-  publicDiscoveryQuerySchema,
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
-import { CommerceEnabledGuard } from '../core/commerce';
 import { parseBody } from '../core/validation';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
-
-  @Get()
-  @UseGuards(CommerceEnabledGuard)
-  list(@Query() query: unknown) {
-    return this.products.listPublic(
-      parseBody(publicDiscoveryQuerySchema, query),
-    );
-  }
-
-  @Get(':publicId')
-  @UseGuards(CommerceEnabledGuard)
-  get(@Param('publicId') publicId: string) {
-    return this.products.getPublic(publicId);
-  }
 
   @Post()
   @UseGuards(BearerAuthGuard)

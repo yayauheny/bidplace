@@ -23,9 +23,7 @@ let prisma: PrismaClient;
 beforeAll(async () => {
   database = await createIntegrationDatabaseContext();
   prisma = database.prisma;
-  http = await createHttpTestApp(database.databaseUrl, 'http://localhost:8081', {
-    commerceEnabled: false,
-  });
+  http = await createHttpTestApp(database.databaseUrl, 'http://localhost:8081');
 });
 
 afterEach(async () => resetPermissionFixture(prisma));

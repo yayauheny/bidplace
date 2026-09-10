@@ -88,19 +88,6 @@ function formatRate(value: number | null): string {
   return `${Math.round(value * 1000) / 10}%`;
 }
 
-function formatSeconds(value: number | null): string {
-  if (value === null) {
-    return '—';
-  }
-  if (value < 60) {
-    return `${Math.round(value)} с`;
-  }
-  if (value < 3600) {
-    return `${Math.round(value / 60)} мин`;
-  }
-  return `${Math.round(value / 3600)} ч`;
-}
-
 function GrowthBars({
   growth,
 }: {
@@ -110,12 +97,7 @@ function GrowthBars({
     1,
     ...growth.map(
       (day) =>
-        day.newUsers +
-        day.listingViews +
-        day.bids +
-        day.orders +
-        day.newListings +
-        day.newSellers,
+        day.newUsers + day.listingViews + day.newWorks + day.newSellers,
     ),
   );
 
@@ -123,12 +105,7 @@ function GrowthBars({
     <View style={{ gap: designTokens.space.x3 }}>
       {growth.slice(-14).map((day) => {
         const total =
-          day.newUsers +
-          day.listingViews +
-          day.bids +
-          day.orders +
-          day.newListings +
-          day.newSellers;
+          day.newUsers + day.listingViews + day.newWorks + day.newSellers;
         const widthPercent = Math.max(4, Math.round((total / max) * 100));
         return (
           <View key={day.date} style={{ gap: designTokens.space.x1 }}>
@@ -141,8 +118,8 @@ function GrowthBars({
             >
               <AppText role="label">{day.date}</AppText>
               <AppText role="caption" tone="secondary">
-                users {day.newUsers} · views {day.listingViews} · bids{' '}
-                {day.bids} · orders {day.orders}
+                users {day.newUsers} · views {day.listingViews} · works{' '}
+                {day.newWorks}
               </AppText>
             </View>
             <View
@@ -267,26 +244,9 @@ export function AdminAnalyticsScreen() {
         drilldown: 'new_creators' as const,
       },
       {
-        label: 'Live auctions',
-        value: data.overview.liveAuctions.value,
-        definition: data.overview.liveAuctions.definition,
-      },
-      {
-        label: 'Bids',
-        value: data.overview.bids.value,
-        definition: data.overview.bids.definition,
-        drilldown: 'recent_bids' as const,
-      },
-      {
-        label: 'Ended auctions',
-        value: data.overview.endedAuctions.value,
-        definition: data.overview.endedAuctions.definition,
-      },
-      {
-        label: 'Successful auctions',
-        value: data.overview.successfulAuctions.value,
-        definition: data.overview.successfulAuctions.definition,
-        drilldown: 'recent_orders' as const,
+        label: 'Works created',
+        value: data.overview.worksCreated.value,
+        definition: data.overview.worksCreated.definition,
       },
     ];
   }, [data]);
@@ -314,7 +274,7 @@ export function AdminAnalyticsScreen() {
     <FormPageShell>
       <PageHeader
         title="Аналитика"
-        description="Обзор роста, воронок и здоровья marketplace без SQL."
+        description="Обзор роста авторов и работ без SQL."
       />
 
       <View
@@ -414,69 +374,21 @@ export function AdminAnalyticsScreen() {
       </FormSection>
 
       <FormSection
-        title="Buyer funnel"
-        description="Views/CTA — analytics; accepted bids/winners — PostgreSQL."
+        title="Visitor funnel"
+        description="listing_viewed analytics events in the selected period."
       >
         <AppText role="body">
-          {data.buyerFunnel.listingViewed.value} listing viewed →{' '}
-          {data.buyerFunnel.bidCtaClicked.value} bid CTA →{' '}
-          {data.buyerFunnel.bidAccepted.value} bid accepted →{' '}
-          {data.buyerFunnel.winners.value} winners
+          {data.visitorFunnel.listingViewed.value} listing viewed
         </AppText>
-        <SecondaryButton
-          label="Отклонённые ставки"
-          onPress={() => setDrilldown('bid_rejected')}
-        />
       </FormSection>
 
-      <FormSection title="Seller funnel" description="Почти всё из PostgreSQL.">
+      <FormSection title="Creator funnel" description="Почти всё из PostgreSQL.">
         <AppText role="body">
           {data.sellerFunnel.registeredUsers.value} registered →{' '}
           {data.sellerFunnel.sellerProfiles.value} sellers →{' '}
           {data.sellerFunnel.productsCreated.value} products →{' '}
-          {data.sellerFunnel.productsApproved.value} approved →{' '}
-          {data.sellerFunnel.auctionsStarted.value} auctions →{' '}
-          {data.sellerFunnel.auctionsWithBids.value} with bids →{' '}
-          {data.sellerFunnel.auctionsSold.value} sold
+          {data.sellerFunnel.productsApproved.value} approved
         </AppText>
-      </FormSection>
-
-      <FormSection title="Marketplace health">
-        <View style={{ gap: designTokens.space.x2 }}>
-          <AppText role="bodySmall">
-            LIVE: {data.marketplace.liveAuctions.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Started / ended: {data.marketplace.auctionsStarted.value} /{' '}
-            {data.marketplace.auctionsEnded.value}
-          </AppText>
-          <AppText role="bodySmall">
-            With bids / zero bids: {data.marketplace.auctionsWithBids.value} /{' '}
-            {data.marketplace.auctionsWithZeroBids.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Avg bids / ended:{' '}
-            {data.marketplace.averageBidsPerEndedAuction ?? '—'}
-          </AppText>
-          <AppText role="bodySmall">
-            Unique bidders / active sellers:{' '}
-            {data.marketplace.uniqueBidders.value} /{' '}
-            {data.marketplace.uniqueActiveSellers.value}
-          </AppText>
-          <AppText role="bodySmall">
-            Median time to first bid:{' '}
-            {formatSeconds(data.marketplace.medianSecondsToFirstBid)}
-          </AppText>
-          <AppText role="bodySmall">
-            Receiving bid rate:{' '}
-            {formatRate(data.marketplace.auctionsReceivingBidRate)} · sold rate:{' '}
-            {formatRate(data.marketplace.auctionsSoldRate)}
-          </AppText>
-          <SecondaryButton
-            label={`Auctions without bids: ${data.marketplace.auctionsWithZeroBids.value}`}
-            onPress={() => setDrilldown('auctions_without_bids')}
-          />
-        </View>
       </FormSection>
 
       <FormSection title="Growth" description="Последние дни периода.">
@@ -486,20 +398,12 @@ export function AdminAnalyticsScreen() {
       <FormSection title="Needs attention">
         <View style={{ gap: designTokens.space.x2 }}>
           <SecondaryButton
-            label={`Stale LIVE past endsAt: ${data.attention.staleLiveListings}`}
-            onPress={() => setDrilldown('stale_live_listings')}
-          />
-          <SecondaryButton
             label={`Products stuck in review: ${data.attention.stuckProducts}`}
             onPress={() => setDrilldown('stuck_products')}
           />
           <SecondaryButton
             label={`Sellers stuck in review: ${data.attention.stuckSellers}`}
             onPress={() => setDrilldown('stuck_sellers')}
-          />
-          <SecondaryButton
-            label={`Bid rejected events: ${data.attention.bidRejectedEvents}`}
-            onPress={() => setDrilldown('bid_rejected')}
           />
         </View>
       </FormSection>
@@ -534,38 +438,12 @@ export function AdminAnalyticsScreen() {
         }))}
       />
       <RecentList
-        title="Recent listings"
-        items={data.recent.listings.map((listing) => ({
-          id: listing.id,
-          label: listing.productTitle ?? listing.productPublicId,
-          meta: `${listing.status} · ${listing.createdAt}`,
-          href: `/product/${listing.productPublicId}`,
-        }))}
-      />
-      <RecentList
-        title="Recent bids"
-        items={data.recent.bids.map((bid) => ({
-          id: bid.id,
-          label: `${bid.amount} BYN`,
-          meta: `${bid.listingId} · ${bid.createdAt}`,
-        }))}
-      />
-      <RecentList
-        title="Recent ended auctions"
-        items={data.recent.endedAuctions.map((listing) => ({
-          id: listing.id,
-          label: listing.productTitle ?? listing.productPublicId,
-          meta: `bids ${listing.bidCount} · ${listing.closedAt ?? '—'}`,
-          href: `/product/${listing.productPublicId}`,
-        }))}
-      />
-      <RecentList
-        title="Recent orders"
-        items={data.recent.orders.map((order) => ({
-          id: order.publicId,
-          label: `${order.publicId} · ${order.finalAmount} BYN`,
-          meta: `${order.status} · ${order.createdAt}`,
-          href: `/order/${order.publicId}`,
+        title="Recent works"
+        items={data.recent.works.map((work) => ({
+          id: work.id,
+          label: work.title ?? work.publicId,
+          meta: `${work.status} · ${work.createdAt}`,
+          href: `/product/${work.publicId}`,
         }))}
       />
     </FormPageShell>

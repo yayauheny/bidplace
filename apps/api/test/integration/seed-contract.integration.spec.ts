@@ -119,9 +119,7 @@ describe('demo seed public portfolio HTTP', () => {
 
   beforeAll(async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
-    http = await createHttpTestApp(context.databaseUrl, 'http://localhost:8081', {
-      commerceEnabled: false,
-    });
+    http = await createHttpTestApp(context.databaseUrl, 'http://localhost:8081');
     guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
   });
 

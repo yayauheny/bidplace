@@ -1,4 +1,4 @@
-import type { PublicDiscoveryQuery } from '@bidplace/contracts';
+import type { PortfolioWorksQuery } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
 import { publicProductContentSql } from './public-visibility';
@@ -13,25 +13,15 @@ export function escapeLikePattern(value: string): string {
 }
 
 export function publicCatalogOrderBy(
-  sort: PublicDiscoveryQuery['sort'],
+  sort: PortfolioWorksQuery['sort'],
 ): string {
-  switch (sort) {
-    case 'activity':
-      return 'p."published_at" DESC NULLS LAST, p."id" ASC';
-    case 'endingSoon':
-      return 'p."published_at" DESC NULLS LAST, p."id" ASC';
-    case 'priceAsc':
-      return 'p."published_at" DESC NULLS LAST, p."id" ASC';
-    case 'priceDesc':
-      return 'p."published_at" DESC NULLS LAST, p."id" ASC';
-    case 'newest':
-      return 'p."published_at" DESC NULLS LAST, p."id" ASC';
-    case 'oldest':
-      return 'p."published_at" ASC NULLS LAST, p."id" ASC';
+  if (sort === 'oldest') {
+    return 'p."published_at" ASC NULLS LAST, p."id" ASC';
   }
+  return 'p."published_at" DESC NULLS LAST, p."id" ASC';
 }
 
-export function publicCatalogCte(query: PublicDiscoveryQuery): Prisma.Sql {
+export function publicCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
   const filters: Prisma.Sql[] = [Prisma.sql`p."status" = 'APPROVED'`];
 
   if (query.q) {
@@ -52,25 +42,13 @@ export function publicCatalogCte(query: PublicDiscoveryQuery): Prisma.Sql {
     filters.push(Prisma.sql`sp."slug" = ${query.author}`);
   }
 
-  if (query.yearFrom !== undefined) {
-    filters.push(Prisma.sql`p."year" >= ${query.yearFrom}`);
-  }
-
-  if (query.yearTo !== undefined) {
-    filters.push(Prisma.sql`p."year" <= ${query.yearTo}`);
-  }
-
   for (const material of query.materials ?? []) {
     const pattern = `%${escapeLikePattern(material)}%`;
     filters.push(Prisma.sql`p."materials" ILIKE ${pattern} ESCAPE '\\'`);
   }
 
-  if (query.uniqueness) {
-    filters.push(Prisma.sql`p."uniqueness" = ${query.uniqueness}`);
-  }
-
   return Prisma.sql`WITH filtered AS (
-    SELECT p."id", p."category_id", p."seller_profile_id", p."materials", p."uniqueness", p."published_at"
+    SELECT p."id", p."category_id", p."seller_profile_id", p."materials", p."published_at"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
     WHERE sp."status" = 'APPROVED'

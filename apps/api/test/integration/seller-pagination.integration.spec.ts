@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import { Prisma, type PrismaClient } from '@bidplace/database';
+import type { PrismaClient } from '@bidplace/database';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { ProductsService } from '../../src/products/products.service';
-import { SellersService } from '../../src/sellers/sellers.service';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -27,7 +26,7 @@ async function reset() {
   await prisma.user.deleteMany();
 }
 
-describe('Public seller pagination PostgreSQL behavior', () => {
+describe('Portfolio work pagination PostgreSQL behavior', () => {
   beforeAll(async () => {
     context = await createIntegrationDatabaseContext();
     prisma = context.prisma;
@@ -98,18 +97,6 @@ describe('Public seller pagination PostgreSQL behavior', () => {
                 checksum: '1'.repeat(64),
               },
             },
-            listings: {
-              create: {
-                status: 'LIVE',
-                startsAt: now,
-                originalEndsAt: new Date(now.getTime() + 86_400_000),
-                endsAt: new Date(now.getTime() + 86_400_000),
-                currentPrice: new Prisma.Decimal(10 + index),
-                auctionRules: {
-                  create: { startPrice: new Prisma.Decimal(10) },
-                },
-              },
-            },
           },
           include: { images: { select: { id: true } } },
         });
@@ -142,33 +129,29 @@ describe('Public seller pagination PostgreSQL behavior', () => {
         });
       }),
     );
-    const service = new SellersService(
-      prisma as never,
-      new ProductsService(prisma as never, {} as never),
-    );
+    const service = new ProductsService(prisma as never, {} as never);
 
-    const firstPage = await service.getPublic(profile.slug, {
+    const firstPage = await service.listPortfolio({
       page: 1,
       limit: 1,
       sort: 'newest',
+      author: profile.slug,
     });
-    const secondPage = await service.getPublic(profile.slug, {
+    const secondPage = await service.listPortfolio({
       page: 2,
       limit: 1,
       sort: 'newest',
+      author: profile.slug,
     });
 
     expect(firstPage.pagination).toEqual({ page: 1, limit: 1, total: 2 });
     expect(secondPage.pagination).toEqual({ page: 2, limit: 1, total: 2 });
-    expect(firstPage.products[0]?.product.publicId).toBe(products[1]?.publicId);
-    expect(secondPage.products[0]?.product.publicId).toBe(
-      products[0]?.publicId,
-    );
-    expect(firstPage.statusCounts).toEqual({ SCHEDULED: 0, LIVE: 2, ENDED: 0 });
-    expect(firstPage.products[0]?.product.images[0]).toMatchObject({
+    expect(firstPage.items[0]?.product.publicId).toBe(products[1]?.publicId);
+    expect(secondPage.items[0]?.product.publicId).toBe(products[0]?.publicId);
+    expect(firstPage.items[0]?.product.images[0]).toMatchObject({
       mimeType: 'image/png',
       byteLength: 4,
     });
-    expect(firstPage.products[0]?.product.images[0]).not.toHaveProperty('data');
+    expect(firstPage.items[0]?.product.images[0]).not.toHaveProperty('data');
   });
 });

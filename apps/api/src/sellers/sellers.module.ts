@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth';
-import { CommerceCapabilityModule } from '../core/commerce';
 import { DatabaseModule } from '../core/database';
 import { ImageStoreModule } from '../core/image-store';
 import { RateLimitModule } from '../core/rate-limit';
@@ -12,7 +11,6 @@ import { SellersService } from './sellers.service';
 @Module({
   imports: [
     AuthModule,
-    CommerceCapabilityModule,
     DatabaseModule,
     ImageStoreModule,
     ProductsModule,

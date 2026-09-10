@@ -232,7 +232,7 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
           startPrice: 10,
         })
       ).status,
-    ).toBe(409);
+    ).toBe(404);
 
     const submitResponse = await clients.approved.post(
       `/products/${rejected.id}/submit`,

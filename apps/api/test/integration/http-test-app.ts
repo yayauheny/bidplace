@@ -13,7 +13,6 @@ export type HttpTestApp = {
 export async function createHttpTestApp(
   databaseUrl: string,
   corsOrigin = 'http://localhost:8081',
-  options: { commerceEnabled?: boolean } = {},
 ): Promise<HttpTestApp> {
   process.env.NODE_ENV = 'test';
   process.env.APP_ENV = 'local';
@@ -22,7 +21,6 @@ export async function createHttpTestApp(
   process.env.TRUST_PROXY = 'true';
   process.env.JWT_SECRET = 'wave-3-http-test-secret';
   process.env.TEST_EMAIL_BYPASS = 'false';
-  process.env.COMMERCE_ENABLED = options.commerceEnabled === false ? 'false' : 'true';
 
   const { AppModule } = await import('../../src/app.module');
   const serverEnv = loadServerEnv();

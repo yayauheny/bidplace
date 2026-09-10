@@ -158,17 +158,7 @@ export const adminAnalyticsQuerySchema = z
     from: isoDateTimeSchema.optional(),
     to: isoDateTimeSchema.optional(),
     drilldown: z
-      .enum([
-        'auctions_without_bids',
-        'new_users',
-        'new_creators',
-        'recent_bids',
-        'recent_orders',
-        'bid_rejected',
-        'stuck_products',
-        'stuck_sellers',
-        'stale_live_listings',
-      ])
+      .enum(['new_users', 'new_creators', 'stuck_products', 'stuck_sellers'])
       .optional(),
   })
   .strict()
@@ -201,10 +191,7 @@ export const adminAnalyticsOverviewSchema = z
         newUsers: metricCountSchema,
         activeUsers: metricCountSchema,
         creators: metricCountSchema,
-        liveAuctions: metricCountSchema,
-        bids: metricCountSchema,
-        endedAuctions: metricCountSchema,
-        successfulAuctions: metricCountSchema,
+        worksCreated: metricCountSchema,
       })
       .strict(),
     acquisition: z
@@ -221,12 +208,9 @@ export const adminAnalyticsOverviewSchema = z
         visitorToSignupRate: z.number().nonnegative().nullable(),
       })
       .strict(),
-    buyerFunnel: z
+    visitorFunnel: z
       .object({
         listingViewed: metricCountSchema,
-        bidCtaClicked: metricCountSchema,
-        bidAccepted: metricCountSchema,
-        winners: metricCountSchema,
       })
       .strict(),
     sellerFunnel: z
@@ -235,24 +219,6 @@ export const adminAnalyticsOverviewSchema = z
         sellerProfiles: metricCountSchema,
         productsCreated: metricCountSchema,
         productsApproved: metricCountSchema,
-        auctionsStarted: metricCountSchema,
-        auctionsWithBids: metricCountSchema,
-        auctionsSold: metricCountSchema,
-      })
-      .strict(),
-    marketplace: z
-      .object({
-        liveAuctions: metricCountSchema,
-        auctionsStarted: metricCountSchema,
-        auctionsEnded: metricCountSchema,
-        auctionsWithZeroBids: metricCountSchema,
-        auctionsWithBids: metricCountSchema,
-        averageBidsPerEndedAuction: z.number().nonnegative().nullable(),
-        uniqueBidders: metricCountSchema,
-        uniqueActiveSellers: metricCountSchema,
-        medianSecondsToFirstBid: z.number().nonnegative().nullable(),
-        auctionsReceivingBidRate: z.number().nonnegative().nullable(),
-        auctionsSoldRate: z.number().nonnegative().nullable(),
       })
       .strict(),
     growth: z.array(
@@ -262,9 +228,7 @@ export const adminAnalyticsOverviewSchema = z
           newUsers: z.number().int().nonnegative(),
           listingViews: z.number().int().nonnegative(),
           newSellers: z.number().int().nonnegative(),
-          newListings: z.number().int().nonnegative(),
-          bids: z.number().int().nonnegative(),
-          orders: z.number().int().nonnegative(),
+          newWorks: z.number().int().nonnegative(),
         })
         .strict(),
     ),
@@ -290,44 +254,13 @@ export const adminAnalyticsOverviewSchema = z
             })
             .strict(),
         ),
-        listings: z.array(
+        works: z.array(
           z
             .object({
               id: uuidSchema,
-              productPublicId: z.string(),
-              productTitle: z.string().nullable(),
-              status: z.string(),
-              createdAt: isoDateTimeSchema,
-            })
-            .strict(),
-        ),
-        bids: z.array(
-          z
-            .object({
-              id: uuidSchema,
-              listingId: uuidSchema,
-              amount: z.string(),
-              createdAt: isoDateTimeSchema,
-            })
-            .strict(),
-        ),
-        endedAuctions: z.array(
-          z
-            .object({
-              id: uuidSchema,
-              productPublicId: z.string(),
-              productTitle: z.string().nullable(),
-              bidCount: z.number().int().nonnegative(),
-              closedAt: isoDateTimeSchema.nullable(),
-            })
-            .strict(),
-        ),
-        orders: z.array(
-          z
-            .object({
               publicId: z.string(),
+              title: z.string().nullable(),
               status: z.string(),
-              finalAmount: z.string(),
               createdAt: isoDateTimeSchema,
             })
             .strict(),
@@ -336,10 +269,8 @@ export const adminAnalyticsOverviewSchema = z
       .strict(),
     attention: z
       .object({
-        staleLiveListings: z.number().int().nonnegative(),
         stuckProducts: z.number().int().nonnegative(),
         stuckSellers: z.number().int().nonnegative(),
-        bidRejectedEvents: z.number().int().nonnegative(),
       })
       .strict(),
     drilldown: z

@@ -1,9 +1,7 @@
 import {
   creationStoryResponseSchema,
   type CreationStoryWriteRequest,
-  publicProductDetailResponseSchema,
-  productListResponseSchema,
-  type PublicDiscoveryQuery,
+  type PortfolioWorksQuery,
   type ProductWriteRequest,
   type SellerStatus,
   type ProductStatus,
@@ -19,11 +17,8 @@ import {
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
-  productImageMetadataSelect,
-  productRevisionGallerySelect,
   productSelect,
   publicCatalogProductSelect,
-  toContractProduct,
   toCreationStepContract,
   toImageContracts,
   toProductResponse,
@@ -46,10 +41,7 @@ import {
 import { publicDirectProductWhere } from './public-visibility';
 import { assertProductRevisionTransition } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
-import {
-  publicSellerProfileSelect,
-  toPublicSellerProfile,
-} from '../sellers/seller-profile.mapper';
+import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
 
 @Injectable()
 export class ProductsService {
@@ -624,7 +616,7 @@ export class ProductsService {
     return item;
   }
 
-  async listPortfolio(query: PublicDiscoveryQuery) {
+  async listPortfolio(query: PortfolioWorksQuery) {
     const { products, pagination } = await this.loadCatalogPage(query);
     return {
       items: products.flatMap((product) => {
@@ -635,79 +627,7 @@ export class ProductsService {
     };
   }
 
-  async getPublic(publicId: string) {
-    const product = await this.prisma.product.findFirst({
-      where: {
-        publicId,
-        ...publicDirectProductWhere,
-      },
-      include: {
-        sellerProfile: {
-          select: publicSellerProfileSelect,
-        },
-        publishedRevision: {
-          select: productRevisionGallerySelect,
-        },
-        images: {
-          orderBy: { position: 'asc' },
-          select: productImageMetadataSelect,
-        },
-        creationSteps: {
-          orderBy: { position: 'asc' },
-          select: {
-            id: true,
-            position: true,
-            title: true,
-            body: true,
-            mimeType: true,
-            byteLength: true,
-            checksum: true,
-            width: true,
-            height: true,
-          },
-        },
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    const projection = this.toPublicProduct(product);
-    return publicProductDetailResponseSchema.parse({
-      ...projection,
-      creationIntro: product.creationIntro ?? null,
-      creationSteps: product.creationSteps.map((step) => ({
-        id: step.id,
-        position: step.position,
-        title: step.title,
-        body: step.body,
-        image:
-          step.mimeType && step.byteLength && step.checksum
-            ? {
-                url: `/api/creation-steps/${step.id}/image`,
-                mimeType: step.mimeType,
-                byteLength: step.byteLength,
-                checksum: step.checksum,
-                width: step.width,
-                height: step.height,
-              }
-            : null,
-      })),
-      minimumNextBid: null,
-    });
-  }
-
-  async listPublic(query: PublicDiscoveryQuery) {
-    const { products, pagination } = await this.loadCatalogPage(query);
-    return productListResponseSchema.parse({
-      products: products.map((product) => this.toPublicProduct(product)),
-      pagination,
-      facets: await this.discoveryFacets(query),
-    });
-  }
-
-  private async loadCatalogPage(query: PublicDiscoveryQuery) {
+  private async loadCatalogPage(query: PortfolioWorksQuery) {
     const cte = publicCatalogCte(query);
     const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
       Prisma.sql`${cte}
@@ -754,99 +674,6 @@ export class ProductsService {
     return {
       products: pagedProducts,
       pagination: { page: query.page, limit: query.limit, total },
-    };
-  }
-
-  private async discoveryFacets(query: PublicDiscoveryQuery) {
-    const facetQuery = { ...query, status: undefined };
-    const cte = publicCatalogCte(facetQuery);
-    const [categoryRows, authorRows, materialRows, uniquenessRows] =
-      await Promise.all([
-        this.prisma.$queryRaw<
-          Array<{ id: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT c."id", c."name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "categories" c ON c."id" = f."category_id"
-          GROUP BY c."id", c."name"
-          ORDER BY c."name" ASC`,
-        ),
-        this.prisma.$queryRaw<
-          Array<{ slug: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT sp."slug", sp."full_name" AS "name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "seller_profiles" sp ON sp."id" = f."seller_profile_id"
-          GROUP BY sp."slug", sp."full_name"
-          ORDER BY sp."full_name" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ materials: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."materials"
-          FROM filtered f
-          WHERE f."materials" IS NOT NULL
-          ORDER BY f."materials" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ uniqueness: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."uniqueness"
-          FROM filtered f
-          WHERE f."uniqueness" IS NOT NULL
-          ORDER BY f."uniqueness" ASC`,
-        ),
-      ]);
-    return {
-      statusCounts: { SCHEDULED: 0, LIVE: 0, ENDED: 0 },
-      categories: categoryRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      authors: authorRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      materials: materialRows.map((row) => row.materials),
-      uniquenesses: uniquenessRows.map((row) => row.uniqueness),
-    };
-  }
-
-  toPublicProduct(product: PublicCatalogProductRecord) {
-    const published = product.publishedRevision;
-    const publishedImages = toRevisionGalleryImages(published);
-    const publicProduct = toContractProduct({
-      id: product.id,
-      publicId: product.publicId,
-      sellerProfileId: product.sellerProfileId,
-      categoryId: published?.categoryId ?? product.categoryId,
-      title: published?.title ?? product.title,
-      story: published?.story ?? product.story,
-      technique: published?.technique ?? product.technique,
-      materials: published?.materials ?? product.materials,
-      dimensions: published?.dimensions ?? product.dimensions,
-      weight: product.weight,
-      year: published?.year ?? product.year,
-      condition: product.condition,
-      uniqueness: product.uniqueness,
-      provenance: product.provenance,
-      city: product.city,
-      packaging: product.packaging,
-      deliveryInfo: product.deliveryInfo,
-      publishedAt: product.publishedAt,
-      status: product.status,
-      editingRevisionId: product.editingRevisionId,
-      publishedRevisionId: product.publishedRevisionId,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      editingRevision: null,
-      images: publishedImages ?? [],
-    });
-
-    return {
-      product: publicProduct,
-      sellerProfile: toPublicSellerProfile(product.sellerProfile),
-      listing: null,
     };
   }
 

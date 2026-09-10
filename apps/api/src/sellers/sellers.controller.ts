@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Res,
   UploadedFiles,
   UseGuards,
@@ -15,14 +14,11 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
-  publicSellerQuerySchema,
-  publicSellerWorksQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
-import { CommerceEnabledGuard } from '../core/commerce';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
 import {
@@ -126,21 +122,6 @@ export class SellersController {
   @UseGuards(BearerAuthGuard)
   getProduct(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.sellers.getProduct(auth.sub, id);
-  }
-
-  @Get('sellers')
-  @UseGuards(CommerceEnabledGuard)
-  listPublic(@Query() query: unknown) {
-    return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));
-  }
-
-  @Get('sellers/:slug/detail')
-  @UseGuards(CommerceEnabledGuard)
-  getPublic(@Param('slug') slug: string, @Query() query: unknown) {
-    return this.sellers.getPublic(
-      slug,
-      parseBody(publicSellerWorksQuerySchema, query),
-    );
   }
 
   @Get('sellers/:slug/photo')

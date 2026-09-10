@@ -1,10 +1,8 @@
 import {
   publicSellerListResponseSchema,
-  publicSellerDetailResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
   type PublicSellerQuery,
-  type PublicSellerWorksQuery,
   type SellerProfileCreateRequest,
   type SellerProfileUpdateRequest,
   type PortfolioAchievementWriteRequest,
@@ -36,14 +34,12 @@ import { type ValidatedImageUpload } from '../images/image-policy';
 import {
   productSelect,
   toContractProduct,
-  publicCatalogProductSelect,
   toCreationStepContract,
 } from '../products/products.mapper';
 import { ProductsService } from '../products/products.service';
 import {
   publicAuthorCityWhere,
   publicCatalogProductWhere,
-  publicProductContentSql,
 } from '../products/public-visibility';
 import {
   publicAuthorCte,
@@ -60,20 +56,6 @@ import {
 import { lockSellerProfileRevisionRowForUpdate } from './seller-profile-revision-lock';
 import { canAuthorEditSellerProfileRevision } from './seller-profile-revision-state';
 
-export function countPublicSellerStatuses(
-  products: Array<{ listings: Array<{ status: string }> }>,
-) {
-  const counts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
-
-  for (const product of products) {
-    const status = product.listings[0]?.status;
-    if (status === 'SCHEDULED' || status === 'LIVE' || status === 'ENDED') {
-      counts[status] += 1;
-    }
-  }
-
-  return counts;
-}
 
 function assertProfileRevisionReadyToSubmit(revision: {
   slug: string;
@@ -142,73 +124,6 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
   };
 }
 
-type PublicSellerProductPageRow = { id: string };
-type PublicSellerCountRow = { total: number | bigint };
-type PublicSellerStatusRow = {
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED';
-  count: number | bigint;
-};
-
-function publicSellerProductsCte(
-  slug: string,
-  status?: PublicSellerWorksQuery['status'],
-) {
-  const statusFilter = status
-    ? Prisma.sql`AND c."status" = CAST(${status} AS "ListingStatus")`
-    : Prisma.empty;
-
-  return Prisma.sql`WITH canonical AS (
-    SELECT DISTINCT ON (l."product_id")
-      l."product_id",
-      l."status",
-      l."current_price",
-      l."bid_count",
-      l."ends_at",
-      l."created_at" AS "listing_created_at"
-    FROM "listings" l
-    WHERE l."status" IN ('LIVE', 'SCHEDULED', 'ENDED')
-    ORDER BY
-      l."product_id",
-      CASE l."status"
-        WHEN 'LIVE' THEN 0
-        WHEN 'SCHEDULED' THEN 1
-        ELSE 2
-      END,
-      l."created_at" DESC,
-      l."id" DESC
-  ), filtered AS (
-    SELECT
-      p."id",
-      p."created_at",
-      c."status",
-      c."current_price",
-      c."bid_count",
-      c."ends_at"
-    FROM "products" p
-    INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
-    INNER JOIN canonical c ON c."product_id" = p."id"
-    WHERE p."status" = 'APPROVED'
-      AND sp."status" = 'APPROVED'
-      AND sp."slug" = ${slug}
-      AND ${publicProductContentSql}
-      ${statusFilter}
-  )`;
-}
-
-function publicSellerProductsOrderBy(sort: PublicSellerWorksQuery['sort']) {
-  switch (sort) {
-    case 'priceAsc':
-      return 'p."current_price" ASC, p."id" ASC';
-    case 'priceDesc':
-      return 'p."current_price" DESC, p."id" ASC';
-    case 'newest':
-      return 'p."created_at" DESC, p."id" ASC';
-    case 'oldest':
-      return 'p."created_at" ASC, p."id" ASC';
-    case 'activity':
-      return 'p."bid_count" DESC, p."created_at" DESC, p."id" ASC';
-  }
-}
 
 @Injectable()
 export class SellersService {
@@ -216,9 +131,11 @@ export class SellersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly products: ProductsService,
+    _products: ProductsService,
     private readonly imageStore: ImageStore,
-  ) {}
+  ) {
+    void _products;
+  }
 
   async getMine(userId: string) {
     const sellerProfile = await this.prisma.sellerProfile.findUnique({
@@ -1031,74 +948,6 @@ export class SellersService {
     };
   }
 
-  async getPublic(
-    slug: string,
-    query: PublicSellerWorksQuery = { page: 1, limit: 20, sort: 'activity' },
-    options: { requireCity?: boolean } = {},
-  ) {
-    const sellerProfile = await this.prisma.sellerProfile.findFirst({
-      where: {
-        slug,
-        status: 'APPROVED',
-        ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
-      },
-      select: publicSellerProfileSelect,
-    });
-
-    if (!sellerProfile) {
-      throw new NotFoundException('Seller profile not found');
-    }
-
-    const pageCte = publicSellerProductsCte(slug, query.status);
-    const countCte = publicSellerProductsCte(slug);
-    const [pageRows, totalRows, statusRows] = await Promise.all([
-      this.prisma.$queryRaw<PublicSellerProductPageRow[]>(
-        Prisma.sql`${pageCte}
-          SELECT p."id"
-          FROM filtered p
-          ORDER BY ${Prisma.raw(publicSellerProductsOrderBy(query.sort))}
-          LIMIT ${query.limit}
-          OFFSET ${(query.page - 1) * query.limit}`,
-      ),
-      this.prisma.$queryRaw<PublicSellerCountRow[]>(
-        Prisma.sql`${countCte} SELECT COUNT(*)::int AS "total" FROM filtered`,
-      ),
-      this.prisma.$queryRaw<PublicSellerStatusRow[]>(
-        Prisma.sql`${countCte}
-          SELECT "status", COUNT(*)::int AS "count"
-          FROM filtered
-          GROUP BY "status"`,
-      ),
-    ]);
-
-    const products = pageRows.length
-      ? await this.prisma.product.findMany({
-          where: { id: { in: pageRows.map((row) => row.id) } },
-          select: publicCatalogProductSelect,
-        })
-      : [];
-    const productsById = new Map(
-      products.map((product) => [product.id, product]),
-    );
-    const orderedProducts = pageRows
-      .map((row) => productsById.get(row.id))
-      .filter(
-        (product): product is (typeof products)[number] =>
-          product !== undefined,
-      );
-    const statusCounts = { SCHEDULED: 0, LIVE: 0, ENDED: 0 };
-    for (const row of statusRows) statusCounts[row.status] = Number(row.count);
-    const total = Number(totalRows[0]?.total ?? 0);
-
-    return publicSellerDetailResponseSchema.parse({
-      sellerProfile: toPublicSellerProfile(sellerProfile),
-      products: orderedProducts.map((product) =>
-        this.products.toPublicProduct(product),
-      ),
-      statusCounts,
-      pagination: { page: query.page, limit: query.limit, total },
-    });
-  }
 
   async getPhoto(slug: string, userId?: string, role?: string) {
     const sellerProfile = await this.prisma.sellerProfile.findFirst({
