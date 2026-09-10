@@ -15,6 +15,10 @@ import {
 import { designTokens } from '@bidplace/design-tokens';
 
 import { useReducedMotion } from '../../lib/reduced-motion';
+import {
+  motionPressableFeedback,
+  type MotionPressablePreset,
+} from './motion-pressable-feedback';
 
 export type MotionPressableState = PressableStateCallbackType & {
   focused: boolean;
@@ -23,18 +27,11 @@ export type MotionPressableState = PressableStateCallbackType & {
 
 type MotionPressableProps = Omit<ComponentProps<typeof Pressable>, 'style'> & {
   interactionStyle?: (state: MotionPressableState) => StyleProp<ViewStyle>;
-  preset?: 'icon' | 'button' | 'card' | 'primaryAction';
+  preset?: MotionPressablePreset;
   style?:
     | StyleProp<ViewStyle>
     | ((state: MotionPressableState) => StyleProp<ViewStyle>);
 };
-
-const pressedOpacity = {
-  icon: 0.6,
-  button: 0.92,
-  card: 0.96,
-  primaryAction: 0.9,
-} as const;
 
 export const MotionPressable = forwardRef<
   ElementRef<typeof Pressable>,
@@ -56,10 +53,11 @@ export const MotionPressable = forwardRef<
   const reducedMotion = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const feedback = motionPressableFeedback(preset, reducedMotion);
   const transitionStyle =
     Platform.OS === 'web'
       ? ({
-          transitionDuration: `${reducedMotion ? 0 : designTokens.motion.control}ms`,
+          transitionDuration: `${feedback.transitionDuration}ms`,
           transitionProperty:
             'background-color, border-color, opacity, transform',
           transitionTimingFunction: designTokens.motion.easing,
@@ -96,11 +94,9 @@ export const MotionPressable = forwardRef<
         {
           opacity: disabled
             ? designTokens.opacity.disabled
-            : reducedMotion
-              ? 1
-              : state.pressed
-                ? pressedOpacity[preset]
-                : 1,
+            : state.pressed
+              ? feedback.pressedOpacity
+              : 1,
         },
       ]}
     />

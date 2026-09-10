@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-10 — Stable Figma dock interaction
+
+- `Implemented`: the shared public phone dock keeps the exact glass geometry
+  while controls use an isolated 80 ms, 82% opacity press response. Dock items
+  add no fill/filter/shadow and their visible keyboard focus follows the pill
+  control bounds. Reduced motion removes the transition. Evidence:
+  `apps/mobile/src/components/figma/FloatingDock.tsx`,
+  `apps/mobile/src/components/ui/motion-pressable-feedback.ts` and
+  `apps/mobile/e2e/figma-glass-dock.spec.ts`.
+- `Verified`: 252 mobile unit tests, mobile typecheck/lint, focused Playwright
+  dock test and Expo export for web/iOS/Android pass.
+
 ## 2026-09-10 — Exact creator photo atmosphere
 
 - `Implemented`: public creator identity keeps its sharp semantic avatar and

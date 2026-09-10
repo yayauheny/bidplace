@@ -35,7 +35,10 @@ compositions are out of this wave.
 shadow. Web portals the dock to `document.body` so `backdrop-filter` samples
 the moving page. Native wraps the app content in `BlurTargetView` and uses
 `expo-blur` plus the same translucent fill and gradient stroke. Reduced-motion
-does not disable blur because blur is a static surface property.
+does not disable blur because blur is a static surface property. Dock controls
+keep a pill-shaped keyboard focus outline and use only a subtle 82% opacity
+press response over 80 ms; they do not add a selected fill, filter or shadow.
+Reduced motion removes that opacity transition.
 
 Runtime type is bundled Inter. Figma names Geist on some frames; files are not
 in the app.

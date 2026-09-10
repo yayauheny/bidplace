@@ -110,12 +110,13 @@ function DockItem({
       accessibilityLabel={item.label}
       accessibilityState={{ selected }}
       onPress={onPress}
-      preset="icon"
+      preset="dock"
       hitSlop={dockItemHitSlop}
       style={{
         width: figmaTokens.size.control,
         height: figmaTokens.size.control,
         padding: figmaTokens.space.dockIconPad,
+        borderRadius: figmaTokens.radius.pill,
         alignItems: 'center',
         justifyContent: 'center',
       }}

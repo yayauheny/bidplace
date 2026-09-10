@@ -4,6 +4,19 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma dock interaction correction C2d
+
+- `Corrected`: dock controls no longer inherit the generic icon press response
+  that dropped opacity to 60% and took 200 ms to settle. `MotionPressable` now
+  has a scoped dock preset: 82% pressed opacity over 80 ms, with no fill,
+  filter or shadow.
+- `Corrected`: the 36×36 dock controls now have the captured pill radius, so
+  keyboard focus follows the control instead of drawing a square around the
+  icon. Focus remains visible and reduced motion removes the transition.
+- Verification: 252 mobile unit tests, mobile typecheck/lint and the focused
+  Playwright dock blur/focus test pass. Expo web/iOS/Android export passes.
+- No screen composition, product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma component library C2c
 
 - `Implemented`: `AuthorAtmosphere` now follows creator node `621:19476` as a

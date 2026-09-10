@@ -39,6 +39,26 @@ test('floating dock keeps the Figma glass surface and live backdrop blur', async
   expect(glass.parentClass).toBe('figma-dock-layer');
   expect(glass.portaledToBody).toBe(true);
 
+  const home = page.getByLabel('Главная');
+  await home.focus();
+  const homeInteraction = await home.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      borderRadius: style.borderRadius,
+      boxShadow: style.boxShadow,
+      filter: style.filter,
+      outlineStyle: style.outlineStyle,
+      transitionDuration: style.transitionDuration,
+    };
+  });
+  expect(homeInteraction).toEqual({
+    borderRadius: '999px',
+    boxShadow: 'none',
+    filter: 'none',
+    outlineStyle: 'solid',
+    transitionDuration: '0.08s',
+  });
+
   await dock.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     const probe = document.createElement('div');
