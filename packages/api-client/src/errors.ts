@@ -1,7 +1,6 @@
 import {
   ApiErrorCode,
   apiErrorResponseSchema,
-  bidTooLowDetailsSchema,
   type ApiErrorCode as ApiErrorCodeValue,
   type ApiErrorResponse,
 } from '@bidplace/contracts';
@@ -170,22 +169,4 @@ export function createUnexpectedResponseError(status: number): ApiClientError {
 
 export function getApiErrorCode(error: unknown): string | null {
   return error instanceof ApiClientError ? error.code : null;
-}
-
-export function getBidTooLowMinimum(error: unknown): number | null {
-  if (!(error instanceof ApiClientError)) {
-    return null;
-  }
-
-  if (error.code !== ApiErrorCode.BID_TOO_LOW) {
-    return null;
-  }
-
-  const parsed = bidTooLowDetailsSchema.safeParse(error.details);
-  if (!parsed.success) {
-    return null;
-  }
-
-  const value = Number(parsed.data.minimumBid);
-  return Number.isFinite(value) ? value : null;
 }

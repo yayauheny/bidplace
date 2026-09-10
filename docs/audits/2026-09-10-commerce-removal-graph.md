@@ -1,7 +1,7 @@
-# commerce removal graph (P0–P1)
+# commerce removal graph (P0–P2)
 
 Date: 2026-09-10  
-Status: P0 inventory complete; **P1 client removal executed in active `main`**  
+Status: P0 inventory complete; **P1 client and P2 contracts/api-client executed**; P3 Nest composition is next  
 Owner decision: `DEC-087`  
 Archive SHA: `598d8696295d18d32956da7dd366dc19464cc366`  
 Proposal: [`2026-09-10-portfolio-simplification-and-commerce-archive.md`](2026-09-10-portfolio-simplification-and-commerce-archive.md)
@@ -25,7 +25,7 @@ portfolio baseline — never edit already-applied migration files.
 
 **Status: done (2026-09-10).** Public screens import `WorkCoverCard` /
 `WorkCoverCardGrid` only. Commerce routes and bid primitives are gone from the
-default mobile tree. Contracts, Nest, `COMMERCE_ENABLED`, and Prisma remain for P2–P4.
+default mobile tree. Nest, `COMMERCE_ENABLED`, and Prisma remain for P3–P4.
 
 **Removed:** auction vocabulary on public surfaces. **Kept:** `WorkCoverCard`
 as the card master.
@@ -89,6 +89,11 @@ in default mobile build.
 
 ## P2 — Contracts and API client
 
+**Status: done (2026-09-10) for client composition.** `dashboard.ts` deleted
+after moving seller product and category list schemas. `createApiClient` no
+longer composes listings/orders/activity/discovery. Nest-needed listing/bid/order
+Zod files remain exported until P3.
+
 ### Contract modules (`packages/contracts/src/`)
 
 | File | Commerce surface |
@@ -120,10 +125,16 @@ Keep untouched for portfolio: `portfolio.ts`, `seller-profile.ts`, `admin.ts`
 | `products.ts` | legacy public product catalog |
 | `index.ts` | Client composition |
 
-**P2 exit:** default web/mobile portfolio flows use only `portfolio` (+ auth/seller
-write) clients; contract tests prove no commerce fields on portfolio responses.
+**P2 exit (met for the client composition):** default web/mobile portfolio
+flows use only `portfolio` (+ auth/seller write) clients; contract tests prove
+no commerce fields on portfolio responses. Nest still 404s commerce HTTP via
+`COMMERCE_ENABLED=false`. Listing/bid/order Zod modules remain exported for
+Nest until P3.
 
 ## P3 — Nest runtime composition
+
+**Status: not started (next session).** Do not mix with a second contracts
+cut: Nest still compiles Listings/Bids/Orders while those contract files exist.
 
 ### Default `AppModule` imports to remove
 
@@ -188,6 +199,10 @@ Socket.IO commerce registration; negative tests for removed routes.
 
 ## P4 — Persistence (blocked until matrix closed)
 
+**Status: blocked.** Staging and production-like migration state remain
+**Unknown**. Do not drop `Listing` / `Bid` / `Order` or rewrite applied
+migrations until the matrix is filled and backup/restore is confirmed.
+
 ### Prisma models — do not drop until P4 approved
 
 From [`packages/database/prisma/schema.prisma`](../../packages/database/prisma/schema.prisma):
@@ -240,5 +255,6 @@ Replace removed suites with portfolio boundary tests:
 - [x] `DEC-087` recorded
 - [x] File-level removal graph exists
 - [x] P1 client portfolio-native executed
-- [ ] Remote archive refs pushed and protected
+- [x] P2 contracts/api-client default composition (Nest schemas remain until P3)
+- [ ] Remote archive refs pushed and protected (operator-only)
 - [ ] Staging/prod DB inventory confirmed

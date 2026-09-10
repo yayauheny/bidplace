@@ -1,22 +1,24 @@
-export * from './activity';
 export * from './analytics';
 export * from './auth';
 export * from './admin';
-export * from './bid';
 export * from './category';
-export * from './dashboard';
-export * from './discovery';
 export * from './error';
 export * from './enums';
-export * from './events';
-export * from './listing';
-export * from './rules';
-export * from './order';
 export * from './product';
-export * from './public-product';
-export * from './public-seller';
 export * from './portfolio';
 export * from './pagination';
 export * from './primitives';
 export * from './seller-profile';
 export * from './user';
+export * from './rules';
+
+// Nest still compiles commerce HTTP until P3 (DEC-087). createApiClient
+// does not compose these modules.
+export * from './activity';
+export * from './bid';
+export * from './listing';
+export * from './order';
+export * from './discovery';
+export * from './events';
+export * from './public-product';
+export * from './public-seller';

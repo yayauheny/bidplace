@@ -13,4 +13,11 @@ export const categorySchema = z
   })
   .strict();
 
+export const categoryListResponseSchema = z
+  .object({
+    categories: z.array(categorySchema),
+  })
+  .strict();
+
 export type Category = z.infer<typeof categorySchema>;
+export type CategoryListResponse = z.infer<typeof categoryListResponseSchema>;

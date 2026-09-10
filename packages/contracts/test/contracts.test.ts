@@ -120,6 +120,68 @@ describe('shared contracts', () => {
     ).toBe(false);
   });
 
+  it('keeps portfolio DTOs free of listing, price, bid and order keys', () => {
+    const publicWork = {
+      id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      publicId: 'portfolio01',
+      title: 'Work',
+      story: null,
+      categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      technique: null,
+      materials: null,
+      dimensions: null,
+      year: null,
+      uniqueness: null,
+      images: [
+        {
+          id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          position: 0,
+          url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          mimeType: 'image/jpeg',
+          byteLength: 1,
+          checksum: 'a'.repeat(64),
+          width: 1,
+          height: 1,
+        },
+      ],
+      publishedAt: '2026-09-08T00:00:00.000Z',
+      sharePath: '/works/portfolio01',
+    };
+    const publicAuthor = {
+      id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      slug: 'author',
+      fullName: 'Author',
+      country: 'Belarus',
+      city: 'Minsk',
+      discipline: 'Painting',
+      practice: null,
+      profilePhotoUrl: '/api/sellers/author/photo',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Bio',
+      achievements: [],
+      sharePath: '/authors/author',
+    };
+    const detail = portfolioWorkDetailResponseSchema.parse({
+      work: publicWork,
+      author: publicAuthor,
+      relatedWorks: [],
+    });
+    const commerceKey = /"(listing|listings|bid|bids|order|orders|startPrice|currentPrice|priceMin|priceMax)"/;
+    expect(JSON.stringify(detail)).not.toMatch(commerceKey);
+    expect(
+      portfolioWorkDetailResponseSchema.safeParse({
+        work: { ...publicWork, listing: null, currentPrice: 10 },
+        author: publicAuthor,
+        relatedWorks: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      portfolioWorksQuerySchema.safeParse({ sort: 'priceDesc' }).success,
+    ).toBe(false);
+  });
+
   it('accepts only portfolio newest or oldest work sorting', () => {
     expect(portfolioWorksQuerySchema.parse({ sort: 'oldest' }).sort).toBe(
       'oldest',

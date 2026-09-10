@@ -14,7 +14,7 @@
     "db:migrate": "pnpm --filter @bidplace/database db:migrate",
     "db:seed": "pnpm --filter @bidplace/database db:seed",
     "db:reset:demo": "echo '\\n⚠️  ВНИМАНИЕ: База данных очищается!\\n' && pnpm --filter @bidplace/database db:seed",
-    "test:unit": "pnpm --filter @bidplace/api test && pnpm --filter @bidplace/contracts test",
+    "test:unit": "pnpm --filter @bidplace/api test && pnpm --filter @bidplace/contracts test && pnpm --filter @bidplace/api-client test",
     "test:integration": "pnpm --filter @bidplace/api test:integration",
     "verify": "pnpm db:generate && pnpm typecheck && pnpm lint && pnpm test:unit && pnpm test:integration && pnpm build",
     "ops:backup": "bash scripts/ops/backup-db.sh",

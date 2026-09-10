@@ -31,7 +31,9 @@ freeze SHA `598d869` while P1–P6 removal executes; target state is portfolio-n
   `/authors/{slug}`). `socialLink` is optional on create/submit/approval, stored
   nullable, owner/persistence-only, and omitted from portfolio public author DTOs.
   Private handoff stays required on the owner profile and is never public.
-- `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
+- `apps/mobile` is an Expo Router client. React Query holds server state. The
+  default client no longer opens Socket.IO; Nest still registers the commerce
+  gateway until P3.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the phone column
   (`maxWidth: 390`) and `FloatingDock`. Pen `AppHeader` is not on the render path
   (`DEC-085`). Route screens remain responsible for their own scroll/content.
@@ -40,8 +42,8 @@ freeze SHA `598d869` while P1–P6 removal executes; target state is portfolio-n
   production primitive set. `components/ui` wraps shared masters such as
   `Button` and `ImagePlaceholder`. Public grids call `WorkCoverCard` /
   `WorkCoverCardGrid` directly; there is no `AuctionCard` wrapper and no
-  commerce overlay mode on the card. Nest commerce modules may still exist
-  behind `COMMERCE_ENABLED` until P2–P3.
+  commerce overlay mode on the card. Nest commerce modules remain behind
+  `COMMERCE_ENABLED` until P3.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
   metadata, ownership, checksum and deterministic object key. Local/test default
@@ -60,7 +62,12 @@ freeze SHA `598d869` while P1–P6 removal executes; target state is portfolio-n
 - `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
-- `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
+- `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client`
+  validates responses with those schemas. Default `createApiClient` composes
+  portfolio, auth, owner product write, owner seller profile, categories,
+  images, analytics ingest, and admin moderation/users/curator. Listing, order,
+  bid, activity and discovery clients are not in the default composition.
+  Commerce HTTP Zod modules remain exported for Nest until P3.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. `socialLink` is optional/nullable; empty strings are rejected. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
 - `packages/database` owns Prisma schema, forward migrations and deterministic
   local/test seed. As of 2026-09-10 the tree contains **17** migration directories

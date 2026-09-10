@@ -4,6 +4,42 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — P2 contracts and api-client without commerce clients
+
+- `Implemented`: `createApiClient` exposes portfolio, auth, owner product
+  write, owner seller profile, categories, images, analytics ingest, and
+  admin moderation/users/curator only. Listings, orders, activity, discovery
+  and public commerce catalog methods are gone from the default client.
+  Evidence: `packages/api-client/src/index.ts`, `products.ts`, `sellers.ts`,
+  `admin.ts`, `test/client-composition.test.ts`.
+- `Implemented`: seller product list/detail schemas live on `product.ts`;
+  category list schema lives on `category.ts`; `dashboard.ts` (seller listing
+  dashboard) is deleted. Portfolio contract tests reject listing/price/bid/order
+  keys. Analytics event name `listing_viewed` is unchanged.
+- `Partial`: Nest still imports listing/bid/order/activity/discovery/public
+  product schemas from `@bidplace/contracts` until P3. Prisma `Listing` /
+  `Bid` / `Order` remain until P4 after staging/prod inventory.
+- `Verified`: 32 contracts tests, 3 api-client tests, 212 mobile unit tests,
+  plus contracts/api-client/mobile/api typecheck and mobile lint. Local
+  `pnpm db:migrate` applied
+  `20260909120000_portfolio_media_socials_curator` so `curator_selections`
+  exists on Compose Postgres. API process was not running in this session, so
+  Home HTTP was not re-probed.
+- Residual: remote `archive/commerce-v1` / tag push is operator-only (not
+  done in this session). P3 Nest `AppModule` strip is the next code session.
+
+## 2026-09-10 — P3 Nest default boot (deferred)
+
+- `Not implemented`: `AppModule` still imports Listings, Bids, Lifecycle,
+  Orders, Activity, Realtime and Discovery. `COMMERCE_ENABLED=false` still
+  404s those HTTP routes. This session did not mix P3 into P2.
+
+## 2026-09-10 — P4 Prisma commerce models (blocked)
+
+- `Not implemented`: `Listing`, `Bid` and `Order` stay in
+  `packages/database/prisma/schema.prisma`. Staging/prod migration inventory
+  is Unknown — no model drops and no rewrite of applied migrations.
+
 ## 2026-09-10 — P1 client without commerce vocabulary
 
 - `Implemented`: Home, Works, Search, Author and Work render
@@ -23,13 +59,13 @@ acceptance target; retained native branches are compatibility code only.
 - `Implemented`: dedicated auction Playwright specs and `test:e2e:auction`
   removed from the active tree; remaining specs assert the absence of bid
   chrome. Analytics event name `listing_viewed` is unchanged (P2 contract).
-- `Partial`: Nest commerce modules, `packages/contracts`, `packages/api-client`,
-  `COMMERCE_ENABLED` and Prisma commerce models remain until P2–P4.
+- `Partial`: Nest commerce modules, remaining commerce contract schemas,
+  `COMMERCE_ENABLED` and Prisma commerce models remain until P3–P4.
 - `Verified`: 215 mobile unit tests, mobile typecheck and lint. Browser smoke
   on Works → Work → Author shows cover title/`@author` only (no BYN/bid chrome);
   `/orders`, `/listings/new` and `/me/activity` render Expo unmatched, not
-  «Раздел недоступен». Home still 500 on this machine until
-  `curator_selections` exists — that is a local DB gap, not a P1 client change.
+  «Раздел недоступен». Local Home 500 from missing `curator_selections` was a
+  DB migrate gap, later closed by `pnpm db:migrate` (see P2).
 - Residual risk: unmatched `/orders` and `/listings/new` must stay unmatched,
   not a «Раздел недоступен» stub.
 
@@ -43,10 +79,11 @@ acceptance target; retained native branches are compatibility code only.
   active `main`; file-level removal graph recorded without deleting runtime code.
   Evidence: `docs/audits/2026-09-10-commerce-removal-graph.md`,
   `docs/product/12-DECISION-LOG.md`.
-- `Partial`: remote push and branch protection for archive refs not verified in
-  this session; local refs and zip backup exist.
-- `Not implemented`: P2–P6 commerce removal from `main`; Prisma model drops;
-  post-MVP design capture cleanup; Git history rewrite.
+- `Partial`: remote push and GitHub protection for `archive/commerce-v1` and
+  tag `commerce-v1-pre-portfolio` remain operator-only; local refs and zip
+  backup exist.
+- `Not implemented`: P3 Nest default boot strip; P4 Prisma model drops; P5–P6
+  test/docs closure; Git history rewrite.
 - Residual risk: staging/production migration state unknown — blocker before P4.
 
 ## 2026-09-10 — Single-sampled card cover frost

@@ -4,6 +4,14 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — P2 admin without commerce recovery
+
+- `Implemented`: admin moderation keeps authors, works and users. Order
+  cancel/replace and listing recovery panels are removed from the default
+  client because those API methods left `createApiClient`.
+- Public Home / Works / Author / Work screens are unchanged from P1.
+- No `.pen` file changed.
+
 ## 2026-09-10 — P1 portfolio-only public cards
 
 - `Implemented`: public Home / Works / Search / Author / Work grids use

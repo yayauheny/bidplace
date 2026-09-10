@@ -1,7 +1,6 @@
 import {
   ApiClientError,
   getApiErrorCode,
-  getBidTooLowMinimum,
   type ApiClientErrorKind,
 } from '@bidplace/api-client';
 import { ApiErrorCode } from '@bidplace/contracts';
@@ -63,4 +62,4 @@ export function getUserFacingErrorMessage(
   return fallbackMessage;
 }
 
-export { ApiErrorCode, getBidTooLowMinimum };
+export { ApiErrorCode };

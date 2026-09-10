@@ -23,14 +23,12 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
-  cancellationReasonLabels,
   presentEnum,
   productStatusLabels,
   sellerStatusLabels,
   sellerTypeLabels,
 } from '../../lib/presentation';
 import { ModerationCard } from './ModerationCard';
-import { AdminRecoveryPanel } from './AdminRecoveryPanel';
 import { AdminUsersPanel } from './AdminUsersPanel';
 
 type AdminSellersData = Awaited<
@@ -39,17 +37,13 @@ type AdminSellersData = Awaited<
 type AdminProductsData = Awaited<
   ReturnType<ApiClient['admin']['listProducts']>
 >;
-type RankedBidsData = Awaited<ReturnType<ApiClient['admin']['listRankedBids']>>;
 type SellerProfile = AdminSellersData['sellerProfiles'][number];
 type AdminProduct = AdminProductsData['products'][number];
-type RankedBid = RankedBidsData['bids'][number];
 type Confirmation =
   | { kind: 'seller-suspend'; id: string }
-  | { kind: 'product-changes'; id: string }
-  | { kind: 'order-cancel' }
-  | { kind: 'order-replace'; bidId: string };
+  | { kind: 'product-changes'; id: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
-type ModerationTab = 'authors' | 'works' | 'orders' | 'users' | 'recovery';
+type ModerationTab = 'authors' | 'works' | 'users';
 type ModerationFilter =
   | 'ALL'
   | 'PENDING_REVIEW'
@@ -74,14 +68,6 @@ export function AdminModerationScreen() {
     queryFn: () => api.admin.listProducts(),
     enabled: moderationTab === 'works',
   });
-  const [orderPublicId, setOrderPublicId] = useState('');
-  const [cancelReason, setCancelReason] = useState<
-    'BUYER_DECLINED' | 'BUYER_UNREACHABLE' | 'ADMIN_CANCELLED'
-  >('BUYER_DECLINED');
-  const [cancelledOrder, setCancelledOrder] = useState<{
-    publicId: string;
-    listingId: string;
-  } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [moderationReason, setModerationReason] = useState('');
   const [productAction, setProductAction] =
@@ -139,36 +125,7 @@ export function AdminModerationScreen() {
       setConfirmation(null);
     },
   });
-  const cancelOrder = useMutation({
-    mutationFn: () =>
-      api.admin.cancelOrder(orderPublicId, { reason: cancelReason }),
-    onSuccess: (data) => {
-      setCancelledOrder({
-        publicId: data.order.publicId,
-        listingId: data.order.listingId,
-      });
-      setConfirmation(null);
-    },
-  });
-  const rankedBids = useQuery({
-    queryKey: ['admin', 'ranked-bids', cancelledOrder?.listingId],
-    queryFn: () => api.admin.listRankedBids(cancelledOrder!.listingId),
-    enabled: Boolean(cancelledOrder),
-  });
-  const replaceOrder = useMutation({
-    mutationFn: (bidId: string) =>
-      api.admin.replaceOrder(cancelledOrder!.publicId, { bidId }),
-    onSuccess: () => {
-      setCancelledOrder(null);
-      setOrderPublicId('');
-      setConfirmation(null);
-    },
-  });
-  const confirming =
-    sellerStatus.isPending ||
-    productStatus.isPending ||
-    cancelOrder.isPending ||
-    replaceOrder.isPending;
+  const confirming = sellerStatus.isPending || productStatus.isPending;
 
   const activeModerationQuery =
     moderationTab === 'authors'
@@ -213,9 +170,6 @@ export function AdminModerationScreen() {
         status: 'CHANGES_REQUESTED',
         reason: moderationReason.trim(),
       });
-    if (confirmation.kind === 'order-cancel') cancelOrder.mutate();
-    if (confirmation.kind === 'order-replace')
-      replaceOrder.mutate(confirmation.bidId);
   };
   const search = moderationSearch.trim().toLocaleLowerCase();
   const visibleSellers = sellers.data?.sellerProfiles.filter((seller) => {
@@ -253,17 +207,6 @@ export function AdminModerationScreen() {
       description:
         'Предмет будет снят с публикации. Автор сможет внести правки и повторно отправить его на модерацию.',
       label: 'Запросить изменения',
-    },
-    'order-cancel': {
-      title: 'Отменить заказ?',
-      description:
-        'Текущий покупатель потеряет активный заказ. Затем можно выбрать следующую принятую ставку.',
-      label: 'Отменить заказ',
-    },
-    'order-replace': {
-      title: 'Создать новый заказ?',
-      description: 'Выбранная ставка станет новым активным заказом.',
-      label: 'Создать новый заказ',
     },
   };
 
@@ -304,23 +247,9 @@ export function AdminModerationScreen() {
             }}
           />
           <SecondaryButton
-            label="Заказы"
-            onPress={() => {
-              setModerationTab('orders');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
             label="Пользователи"
             onPress={() => {
               setModerationTab('users');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Восстановление"
-            onPress={() => {
-              setModerationTab('recovery');
               setModerationSearch('');
             }}
           />
@@ -588,92 +517,7 @@ export function AdminModerationScreen() {
           </FormSection>
         </View>
       ) : null}
-      {moderationTab === 'orders' ? (
-        <FormSection title="Отмена и переназначение заказа">
-          <AppText role="bodySmall" tone="secondary">
-            После внешнего согласования отмените активный заказ и выберите
-            следующую принятую ставку. Контакты участников здесь не
-            раскрываются.
-          </AppText>
-          <TextField
-            label="Номер заказа"
-            value={orderPublicId}
-            onChangeText={(value) => {
-              setOrderPublicId(value);
-              setConfirmation(null);
-            }}
-            placeholder="ORD-..."
-            autoCapitalize="none"
-          />
-          <AppText role="bodySmall" tone="secondary">
-            Причина отмены:{' '}
-            {presentEnum(
-              cancelReason,
-              cancellationReasonLabels,
-              'Неизвестная причина отмены',
-            )}
-          </AppText>
-          {(
-            ['BUYER_DECLINED', 'BUYER_UNREACHABLE', 'ADMIN_CANCELLED'] as const
-          ).map((reason) => (
-            <SecondaryButton
-              key={reason}
-              label={`${cancelReason === reason ? '✓ ' : ''}${presentEnum(
-                reason,
-                cancellationReasonLabels,
-                'Неизвестная причина отмены',
-              )}`}
-              onPress={() => setCancelReason(reason)}
-            />
-          ))}
-          <DestructiveButton
-            label="Отменить заказ"
-            disabled={!orderPublicId}
-            onPress={() => setConfirmation({ kind: 'order-cancel' })}
-          />
-          {cancelOrder.isError ? (
-            <AppText role="bodySmall" tone="danger">
-              Не удалось отменить Order. Проверьте номер, статус и полномочия.
-            </AppText>
-          ) : null}
-          {cancelledOrder ? (
-            <View style={{ gap: designTokens.space.x2 }}>
-              <AppText role="bodySmall" tone="secondary">
-                Выберите replacement Bid для Listing {cancelledOrder.listingId}.
-              </AppText>
-              {rankedBids.isLoading ? (
-                <AppText role="bodySmall" tone="secondary">
-                  Загружаем принятые ставки…
-                </AppText>
-              ) : null}
-              {rankedBids.isError ? (
-                <SecondaryButton
-                  label="Повторить загрузку ставок"
-                  onPress={() => void rankedBids.refetch()}
-                />
-              ) : null}
-              {rankedBids.data?.bids.map((bid: RankedBid) => (
-                <SecondaryButton
-                  key={bid.id}
-                  label={`Назначить ${bid.bidderAlias}: ${bid.amount} BYN`}
-                  loading={replaceOrder.isPending}
-                  onPress={() =>
-                    setConfirmation({ kind: 'order-replace', bidId: bid.id })
-                  }
-                />
-              ))}
-              {replaceOrder.isError ? (
-                <AppText role="bodySmall" tone="danger">
-                  Не удалось создать replacement Order. Проверьте статус и
-                  повторите попытку.
-                </AppText>
-              ) : null}
-            </View>
-          ) : null}
-        </FormSection>
-      ) : null}
       {moderationTab === 'users' ? <AdminUsersPanel /> : null}
-      {moderationTab === 'recovery' ? <AdminRecoveryPanel /> : null}
       {confirmation ? (
         <AppDialog
           open
