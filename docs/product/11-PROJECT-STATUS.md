@@ -4,6 +4,21 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Figma cover card geometry
+
+- `Implemented`: work and author cover masters lock 264×352 anatomy and scale
+  the 366×488 phone consumer through aspect ratio and `cover` crop, without
+  stretch/crop drift or a second frost. Compact `AuthorIdentity` uses the
+  captured 84 px avatar. Portfolio rendering stays fail-closed for price,
+  timer and sale status. Evidence:
+  `apps/mobile/src/components/figma/cover-card-style.ts`,
+  `WorkCoverCard.tsx`, `AuthorCoverCard.tsx`, `AuthorIdentity.tsx`,
+  `cover-card-style.spec.ts`, `author-identity-style.spec.ts` and
+  `apps/mobile/e2e/figma-cover-cards.spec.ts`.
+- `Verified`: 258 mobile unit tests, mobile typecheck/lint, the focused
+  Playwright cover-card test (`e2e/figma-cover-cards.spec.ts`) and Expo Web
+  export pass.
+
 ## 2026-09-10 — Single-sampled card cover frost
 
 - `Implemented`: shared work/author cover overlays use one sharp semantic image

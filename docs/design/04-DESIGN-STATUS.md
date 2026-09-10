@@ -4,6 +4,22 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma cover card geometry C3
+
+- `Corrected`: `WorkCoverCard` and `AuthorCoverCard` now lock the captured
+  264×352 anatomy and scale the phone consumer to 366×488 through the shared
+  `264/352` aspect ratio and `cover` crop. Overlay type and padding stay at
+  captured pixels; CoverFrost is unchanged.
+- `Corrected`: compact `AuthorIdentity` uses the 84 px avatar from node
+  `874:5591` instead of the 112 px profile avatar, keeps the row 84 px tall,
+  and clips tags instead of wrapping.
+- Portfolio mode still hides price, timer and sale status. Typed commerce
+  props remain. Capture PNGs are not imported at runtime.
+- Verification: 258 mobile unit tests, mobile typecheck/lint, the focused
+  Playwright cover-card geometry test (`e2e/figma-cover-cards.spec.ts`) and
+  Expo Web export pass.
+- No screen composition, product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma cover frost correction C2e
 
 - `Corrected`: web `CoverFrost` now samples the real sharp artwork once through

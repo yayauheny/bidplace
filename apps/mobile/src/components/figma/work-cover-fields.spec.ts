@@ -31,7 +31,29 @@ describe('Work cover overlay', () => {
     const label = workCoverAccessibilityLabel(overlay);
 
     expect(label).toBe('Желтый сапфир — @quantumparadox');
-    expect(label).not.toMatch(/BYN|Торги|Анонс/);
+    expect(label).not.toMatch(/BYN|Торги|Анонс|13д/);
+  });
+
+  it('keeps one-line and two-line titles in the accessible name without commerce', () => {
+    const oneLine = getWorkCoverOverlay(
+      { ...sample, title: 'Color calibration' },
+      'portfolio',
+    );
+    const twoLine = getWorkCoverOverlay(
+      {
+        ...sample,
+        title: 'Японский плакат из Японии (Винтажный)',
+      },
+      'portfolio',
+    );
+
+    expect(workCoverAccessibilityLabel(oneLine)).toBe(
+      'Color calibration — @quantumparadox',
+    );
+    expect(workCoverAccessibilityLabel(twoLine)).toBe(
+      'Японский плакат из Японии (Винтажный) — @quantumparadox',
+    );
+    expect(workCoverAccessibilityLabel(twoLine)).not.toMatch(/BYN|Торги|Анонс/);
   });
 
   it('restores commerce overlay when explicitly enabled', () => {

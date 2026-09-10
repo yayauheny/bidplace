@@ -33,7 +33,11 @@ dynamic-media approximation, not a claim of pixel equality. Author pages use
 the exact node `621:19476`
 atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
 runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and
-200 px bottom corners. `apps/mobile/src/components/ui` wraps those masters
+200 px bottom corners. `WorkCoverCard` and `AuthorCoverCard` keep a 264×352
+master and a 366×488 full-width phone consumer through the same aspect ratio
+and `cover` crop; overlay type and CoverFrost padding do not scale with the
+box. Compact `AuthorIdentity` uses an 84 px avatar, not the 112 px profile
+avatar. `apps/mobile/src/components/ui` wraps those masters
 (`Button`, `TextField`, `ImagePlaceholder`, `AuctionCard` → `WorkCoverCard`
 portfolio mode).
 
@@ -330,9 +334,10 @@ Shared masters:
 - `FigmaButton` — solid / outline / ghost / muted, hover / pressed / disabled;
 - `FigmaTextField` — empty, hover, filled, focus, error, success, disabled;
 - `FigmaChip` — non-interactive tags (`onLight` / `onDark`);
-- `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
-  and stay off unless `mode="commerce"`;
+- `WorkCoverCard` — 264×352 master, 366×488 phone consumer; commerce
+  price/timer/status exist as slots and stay off unless `mode="commerce"`;
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;
+  compact identity is 348×84 with an 84 px avatar;
 - `FloatingDock` — Главная / Поиск / Добавить / Профиль; cart is not an item.
 
 Deferred Figma pieces kept in the registry only: Google icon, AI magic icon,

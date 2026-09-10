@@ -141,6 +141,8 @@ overlay `526:13880`.
 `5631`, `5659`, `5671`, `5685`; author cards `874:5540`, `5564`, `5576`;
 identity `874:5591`.
 
+Статус: **Partial; C3 cover cards and compact identity complete**
+
 Целевые masters:
 
 - `WorkCoverCard`;
@@ -149,14 +151,14 @@ identity `874:5591`.
 
 Работа:
 
-- [ ] Реализовать measured 264×352 anatomy и full-width 366×488 consumer
+- [x] Реализовать measured 264×352 anatomy и full-width 366×488 consumer
   without stretch drift.
-- [ ] Сохранить dynamic images; Figma rasters использовать только как QA input.
-- [ ] Portfolio mode показывает title/author/facts; commerce slots остаются
+- [x] Сохранить dynamic images; Figma rasters использовать только как QA input.
+- [x] Portfolio mode показывает title/author/facts; commerce slots остаются
   типизированными, но не рендерятся без явной будущей capability.
-- [ ] Исправить compact `AuthorIdentity`: source row 348×84 использует 84 px
+- [x] Исправить compact `AuthorIdentity`: source row 348×84 использует 84 px
   avatar; текущий master использует общий 112 px profile avatar.
-- [ ] Проверить long title/name/slug, zero tags и failed media.
+- [x] Проверить long title/name/slug, zero tags и failed media.
 
 ### C4 — discovery controls
 
@@ -272,8 +274,8 @@ identity `874:5591`.
 | FloatingDock | implemented and pixel-probed |
 | FigmaIcon / Button / TextField / Chip | partial; dedicated captures now available |
 | CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
-| WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |
-| AuthorIdentity | partial and currently unused; compact geometry mismatch |
+| WorkCoverCard / AuthorCoverCard | implemented for Expo Web phone; 264×352 master and 366×488 consumer |
+| AuthorIdentity | compact 84 px geometry corrected; still unused on screens |
 | FilterSortBar / exact filter sheet | missing |
 | Exact image placeholder | missing |
 | Creator hero/tabs/socials/timeline | route-local or missing |

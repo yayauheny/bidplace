@@ -6,6 +6,13 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
 import { getAuthorCoverContent, type AuthorCoverInput } from './author-cover-fields';
+import {
+  authorIdentityAvatarStyle,
+  authorIdentityContentStyle,
+  authorIdentityRowStyle,
+  authorIdentitySpec,
+  authorIdentityTagRowStyle,
+} from './author-identity-style';
 
 export function AuthorIdentity({
   fullName,
@@ -14,49 +21,27 @@ export function AuthorIdentity({
   imageUrl,
 }: AuthorCoverInput & { imageUrl: string }) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
+  const spec = authorIdentitySpec();
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        overflow: 'hidden',
-      }}
-    >
+    <View testID="figma-author-identity" style={authorIdentityRowStyle()}>
       <ResilientRemoteImage
         uri={getApiAssetUrl(imageUrl)}
         component="AuthorIdentity"
         accessibilityLabel={`Фото автора ${fullName}`}
         fallbackLabel={`Фото автора недоступно: ${fullName}`}
-        style={{
-          width: figmaTokens.size.avatar,
-          height: figmaTokens.size.avatar,
-          borderRadius: figmaTokens.radius.avatar,
-        }}
+        style={authorIdentityAvatarStyle()}
         contentFit="cover"
       />
-      <View
-        style={{
-          padding: figmaTokens.space.coverPad,
-          gap: figmaTokens.space.identityGap,
-        }}
-      >
+      <View style={authorIdentityContentStyle()}>
         <Text
-          style={[
-            { color: figmaTokens.color.ink },
-            figmaTokens.typography.identityHandle,
-          ]}
+          numberOfLines={1}
+          style={[{ color: figmaTokens.color.ink }, spec.handle]}
         >
           {content.handle}
         </Text>
         {content.tags.length > 0 ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: figmaTokens.space.chipGap,
-            }}
-          >
+          <View style={authorIdentityTagRowStyle()}>
             {content.tags.map((tag) => (
               <FigmaChip key={tag} label={tag} tone="onLight" />
             ))}

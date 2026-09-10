@@ -89,6 +89,7 @@ export const designTokens = {
     coverPad: 12,
     coverGap: 8,
     coverBlockGap: 4,
+    coverRowGap: 6,
     dockPad: 14,
     dockGap: 20,
     dockIconPad: 6,
@@ -264,6 +265,7 @@ export const designTokens = {
       fontFamily: 'Inter_500Medium',
       fontSize: 18,
       lineHeight: 22,
+      letterSpacing: -0.36,
       fontWeight: '500' as const,
     },
     coverPrice: {
@@ -282,6 +284,7 @@ export const designTokens = {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 22,
       lineHeight: 24,
+      letterSpacing: -0.66,
       fontWeight: '600' as const,
     },
     authorHandle: {
@@ -295,6 +298,13 @@ export const designTokens = {
       fontSize: 28,
       lineHeight: 32,
       letterSpacing: -1.12,
+      fontWeight: '600' as const,
+    },
+    identityCompactHandle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 25,
+      letterSpacing: -0.24,
       fontWeight: '600' as const,
     },
   },

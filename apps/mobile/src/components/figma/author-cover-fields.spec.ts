@@ -22,4 +22,31 @@ describe('Author identity chips', () => {
     expect(figmaChipTextColor('onDark')).toBe(figmaTokens.color.white);
     expect(figmaChipTextColor('onLight')).toBe(figmaTokens.color.ink);
   });
+
+  it('keeps long names and slugs in the accessible label', () => {
+    const content = getAuthorCoverContent({
+      fullName: 'Salvador Dalí Estate & Fundació Gala Сальвадор Дали',
+      slug: 'quantumparadox-very-long-handle',
+      tags: ['Художник-стеклодув'],
+    });
+
+    expect(content.handle).toBe('@quantumparadox-very-long-handle');
+    expect(authorCoverAccessibilityLabel(content)).toBe(
+      'Открыть профиль автора Salvador Dalí Estate & Fundació Gala Сальвадор Дали, @quantumparadox-very-long-handle, Художник-стеклодув',
+    );
+  });
+
+  it('omits a trailing tag clause when there are zero tags', () => {
+    const content = getAuthorCoverContent({
+      fullName: 'Клавдия Агаповна',
+      slug: 'bala_klava',
+      tags: ['', '  '],
+    });
+
+    expect(content.tags).toEqual([]);
+    expect(authorCoverAccessibilityLabel(content)).toBe(
+      'Открыть профиль автора Клавдия Агаповна, @bala_klava',
+    );
+    expect(authorCoverAccessibilityLabel(content)).not.toMatch(/,\s*$/);
+  });
 });
