@@ -44,28 +44,43 @@ export function ProductScreen({
   const api = useApiClient();
   const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
+  const tabCandidate = Array.isArray(tabParam) ? tabParam[0] : tabParam;
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
-    queryFn: () => api.portfolio.getWork(publicId as string),
+    queryFn: () => {
+      if (!publicId) {
+        throw new Error('Work route is missing publicId');
+      }
+      return api.portfolio.getWork(publicId);
+    },
     retry: retryTransientPublicQuery,
     enabled: Boolean(publicId),
   });
+  const loadedStory = query.data?.work.story;
 
   useEffect(() => {
-    if (!query.data || !publicId) return;
-    const hasStory = Boolean(visibleWorkStory(query.data.work.story));
-    if (!shouldDropWorkTabParam(tabParam, hasStory)) return;
+    if (!query.isSuccess || !publicId) return;
+    const hasStory = Boolean(visibleWorkStory(loadedStory));
+    if (!shouldDropWorkTabParam(tabCandidate, hasStory)) return;
     router.replace({
       pathname: '/product/[publicId]',
       params: { publicId },
     } as Href);
-  }, [query.data, publicId, tabParam, router]);
+  }, [query.isSuccess, publicId, tabCandidate, loadedStory, router]);
 
   useTrackListingView({
     productPublicId: publicId!,
     sellerProfileId: query.data?.author.id,
     enabled: Boolean(query.data && publicId),
   });
+
+  if (!publicId) {
+    return (
+      <AppShell>
+        <PageState title="Работа не найдена" />
+      </AppShell>
+    );
+  }
 
   if (query.isLoading) {
     return (

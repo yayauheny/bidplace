@@ -44,12 +44,16 @@ export function PublicSellerScreen({
   const query = useInfiniteQuery({
     queryKey: ['public-author', slug, { sort }],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.getAuthor(slug!, {
+    queryFn: ({ pageParam }) => {
+      if (!slug) {
+        throw new Error('Seller route is missing slug');
+      }
+      return api.portfolio.getAuthor(slug, {
         sort,
         page: pageParam,
         limit: 20,
-      }),
+      });
+    },
     getNextPageParam: (lastPage) => {
       const loaded = lastPage.pagination.page * lastPage.pagination.limit;
       return loaded < lastPage.pagination.total
@@ -69,6 +73,14 @@ export function PublicSellerScreen({
     sellerSlug: author?.slug ?? slug,
     enabled: Boolean(firstPage && sellerProfileId),
   });
+
+  if (!slug) {
+    return (
+      <AppShell>
+        <PageState title="Автор не найден" message="Профиль больше недоступен." />
+      </AppShell>
+    );
+  }
 
   if (query.isLoading) {
     return (
