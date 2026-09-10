@@ -10,14 +10,27 @@ One token layer: `packages/design-tokens` `designTokens` (aliases `figmaTokens`)
 Values are measured from inspect copy `uMo04w9bgrchWXXDgO4W62`. There is no nested
 `designTokens.figma`.
 
+The product target is the phone-width Expo Web application in browsers. Native
+iOS/Android rendering may remain as compatibility code in the Expo project, but
+it is not a visual acceptance or release target. New component fidelity work is
+verified against browser DOM/CSS, keyboard, screen-reader and responsive states.
+
 Shared primitives live in `apps/mobile/src/components/figma/` and are the
 production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `FigmaChoiceChip`, `FigmaIcon`, `FigmaIconButton`, `FigmaGlassSurface`,
 `FigmaImagePlaceholder`, `OverlayDimmer`, `WorkCoverCard`, `AuthorCoverCard`,
 `AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`. Cover
-overlays frost the artwork
-(`backdrop-filter` / duplicated blur on web, `blurRadius` on native) instead of
-painting an opaque gradient. Author pages use the exact node `621:19476`
+overlays frost the artwork instead of painting an opaque gradient. On web,
+`CoverFrost` samples the single sharp artwork behind it with
+`backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
+uses one pointer-inert, accessibility-hidden `expo-image` duplicate with the
+same bottom-aligned crop only as retained compatibility behavior; it is not a
+separate product target. Both paths add the captured transparent-to-
+`#292929` 70% gradient and 12 px top corners from nodes `874:5459`, `874:5474`
+and `874:5543`. Figma's 0→60 progressive background blur has no exact CSS or
+React Native equivalent; the runtime 30 px uniform blur is the documented
+dynamic-media approximation, not a claim of pixel equality. Author pages use
+the exact node `621:19476`
 atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
 runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and
 200 px bottom corners. `apps/mobile/src/components/ui` wraps those masters

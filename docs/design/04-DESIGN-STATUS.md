@@ -4,6 +4,24 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma cover frost correction C2e
+
+- `Corrected`: web `CoverFrost` now samples the real sharp artwork once through
+  `backdrop-filter: blur(30px)` and no longer stacks a second CSS-filtered image
+  under the gradient. This removes the previous double-blur/crop contamination.
+- The retained Expo native branch keeps one bottom-aligned decorative
+  `expo-image` fallback, but native iOS/Android is not a release or acceptance
+  target. The entire frost substrate is pointer-inert and excluded from the
+  accessibility tree; only the sharp card image remains semantic.
+- The shared contract locks Figma nodes `874:5459`, `874:5474` and `874:5543`:
+  progressive radius 60, runtime blur 30, 12 px top corners, 12 px padding,
+  8 px gap and transparent→`#292929` 70% gradient. Progressive blur has no exact
+  CSS equivalent, so matched browser-image acceptance remains pending.
+- Verification: 254 mobile unit tests, mobile typecheck/lint and a focused
+  Chromium test for live backdrop pixels, no duplicate web image, pointer
+  behavior and accessibility pass.
+- No screen composition, product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Coherent error/retry state C1c
 
 - `Corrected`: a failed session check no longer inserts a raw red banner and

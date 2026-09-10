@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+Current release target clarification: the phone UI is delivered through Expo
+Web in browsers. Native iOS/Android applications are not a release or visual
+acceptance target; retained native branches are compatibility code only.
+
+## 2026-09-10 — Single-sampled card cover frost
+
+- `Implemented`: shared work/author cover overlays use one sharp semantic image
+  plus one decorative frost substrate. Web samples the real artwork with a
+  30 px backdrop blur and does not render the previous second filtered image;
+  native uses one hidden, pointer-inert duplicate artwork fallback. The exact
+  gradient, crop ratio, padding, gap and corner contract is centralized in
+  `cover-frost-style.ts`. Evidence:
+  `apps/mobile/src/components/figma/CoverFrost.tsx`,
+  `cover-frost-style.spec.ts` and
+  `apps/mobile/e2e/figma-cover-frost.spec.ts`.
+- `Verified`: 254 mobile unit tests, mobile typecheck/lint and the focused web
+  backdrop/accessibility test pass. Figma progressive blur has no exact CSS
+  equivalent; matched browser-image acceptance remains pending.
+
 ## 2026-09-10 — Single recoverable page error
 
 - `Implemented`: public API failures render one route-owned `PageState`; a

@@ -50,7 +50,8 @@ composition.
 
 Каждый пакет завершается отдельным коммитом и обновляет статус ниже. Перед
 следующим пакетом обязательны mobile typecheck, lint без autofix, затронутые
-unit tests и Expo export для web/iOS/Android, если менялся runtime UI.
+unit tests и Expo Web build/acceptance, если менялся runtime UI. iOS/Android
+native не являются release target и отдельно не проверяются.
 
 ### C0 — handoff integrity и scope
 
@@ -101,7 +102,7 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C2 — glass, blur и media surfaces
 
-Статус: **Partial; C2a–C2d glass, fallback, atmosphere and dock interaction complete**
+Статус: **Partial; C2a–C2e primitives and web sampling complete**
 
 Источники: dock `Frame 34`, creator `621:19475`, work/author cover nodes,
 overlay `526:13880`.
@@ -122,12 +123,15 @@ overlay `526:13880`.
   `controlGroup`) без giant boolean props.
 - [x] Зафиксировать точный `#2A2A2A` 50% modal dimmer без дополнительной
   container opacity.
-- [ ] Проверить web background sampling и native `expo-blur` отдельно.
+- [x] Проверить web background sampling: один sharp artwork и живой
+  `backdrop-filter`, без второй CSS-filtered копии.
+- [x] Зафиксировать native branch только как compatibility fallback; physical
+  iOS/Android acceptance вне продуктового scope.
 - [x] Ограничить `AuthorAtmosphere` captured box 485×485 и исключить duplicate
   avatar + fallback descendants из accessibility tree.
 - [x] Ограничить dock press 80 мс без fill/shadow и сохранить pill-shaped
   keyboard focus без квадратной подсветки вокруг иконки.
-- [ ] Ограничить большие blur layers и исключить их из accessibility tree.
+- [x] Ограничить большие blur layers и исключить их из accessibility tree.
 - [x] Добавить missing/error fallback из vector node `874:5454` без подмены
   artwork или растрового upscale.
 
@@ -258,7 +262,7 @@ identity `874:5591`.
   только там, где без них нельзя безопасно собрать screen.
 - [ ] Unit coverage для state/visibility/accessibility contracts.
 - [ ] Matched 390 px screenshots после первой реальной screen composition.
-- [ ] Web + physical iOS/Android smoke для blur, sheet, keyboard и safe area.
+- [ ] Browser smoke для blur, sheet, keyboard, screen reader и phone safe area.
 - [ ] В diff нет `.pen`; Figma capture source files не импортируются в runtime.
 
 ## 4. Стартовое состояние production masters
@@ -267,7 +271,7 @@ identity `874:5591`.
 |---|---|
 | FloatingDock | implemented and pixel-probed |
 | FigmaIcon / Button / TextField / Chip | partial; dedicated captures now available |
-| CoverFrost / AuthorAtmosphere | partial; needs component-level parity and device QA |
+| CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
 | WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
 | FilterSortBar / exact filter sheet | missing |

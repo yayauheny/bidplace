@@ -66,7 +66,7 @@ export function WorkCoverCard({
           contentFit="cover"
         />
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <CoverFrost imageUrl={imageUrl} imageLabel={imageLabel}>
+          <CoverFrost imageUrl={imageUrl}>
             <View style={{ gap: figmaTokens.space.coverBlockGap }}>
               <Text
                 numberOfLines={2}

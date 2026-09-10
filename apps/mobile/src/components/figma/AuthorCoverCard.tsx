@@ -74,7 +74,7 @@ export function AuthorCoverCard({
             {content.fullName}
           </Text>
         </LinearGradient>
-        <CoverFrost imageUrl={imageUrl} imageLabel={`Фото автора ${fullName}`}>
+        <CoverFrost imageUrl={imageUrl}>
           <Text
             style={[
               { color: figmaTokens.color.white },

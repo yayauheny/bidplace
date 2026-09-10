@@ -29,7 +29,6 @@ export type ResilientRemoteImageComponent =
   | 'WorkCoverCard'
   | 'AuthorCoverCard'
   | 'AuthorIdentity'
-  | 'CoverFrost'
   | 'AuthorAtmosphere';
 
 type ResilientRemoteImageProps = {
