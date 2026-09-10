@@ -4,6 +4,7 @@ export { AuthorIdentity } from './AuthorIdentity';
 export { CoverFrost } from './CoverFrost';
 export { FigmaButton } from './FigmaButton';
 export { FigmaChip } from './FigmaChip';
+export { FigmaChoiceChip } from './FigmaChoiceChip';
 export { FigmaIcon } from './FigmaIcon';
 export { FigmaIconButton } from './FigmaIconButton';
 export { FigmaTextField } from './FigmaTextField';

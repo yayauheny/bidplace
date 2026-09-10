@@ -65,7 +65,7 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C1 — tokens, icons и базовые controls
 
-Статус: **Partial; C1a exact captured controls complete**
+Статус: **Partial; C1a–C1b exact controls complete**
 
 Источники: `292:5044`, `292:5058`, `297:5598`.
 
@@ -93,7 +93,8 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 - [ ] Убрать route-local имитации icon buttons и social circles.
 - [x] Зафиксировать public props и чистые style/state helpers unit-тестами для
   C1a masters.
-- [ ] Реализовать отдельный `FigmaChoiceChip` и его selected/disabled states.
+- [x] Реализовать отдельный 38 px `FigmaChoiceChip` по creator works node
+  `621:19943`, включая selected/hover/pressed/disabled states.
 - [ ] Не регистрировать POST_MVP icon как действие на MVP screen.
 
 ### C2 — glass, blur и media surfaces

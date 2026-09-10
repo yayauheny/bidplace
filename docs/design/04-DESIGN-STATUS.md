@@ -10,10 +10,14 @@
   local Figma captures `292:5058` and `292:5044`.
 - Added the shared 36 px transparent icon-button frame with a 44 px hit target
   and corrected per-icon stroke weights from capture `297:5598`.
-- Remaining C1 work is choice-chip state coverage and replacement of legacy
-  route-local social/icon control shells.
+- Added the dedicated 38 px `FigmaChoiceChip` selected/unselected master from
+  creator works node `621:19943`; static metadata remains in `FigmaChip`.
+- Remaining C1 work is replacement of legacy route-local social/icon control
+  shells while their owning components are implemented.
 - Verification: design-token typecheck, all 239 mobile unit tests, mobile
   typecheck, lint and Expo export for web/iOS/Android pass.
+- C1b verification raises the suite to 244 passing mobile unit tests; mobile
+  typecheck and lint pass. The new master is not mounted on a screen yet.
 - No screen composition or product flow changed in this checkpoint.
 
 ## 2026-09-10 — Local Figma handoff integrity and component roadmap
