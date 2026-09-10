@@ -19,9 +19,16 @@ export { FigmaGlassSurface } from './FigmaGlassSurface';
 export { FigmaTextField } from './FigmaTextField';
 export { FloatingDock } from './FloatingDock';
 export { OverlayDimmer } from './OverlayDimmer';
+export { PaymentDeliveryStub } from './PaymentDeliveryStub';
+export { RelatedWorksSection } from './RelatedWorksSection';
 export { ShareQr } from './ShareQr';
 export { ShareSheet } from './ShareSheet';
+export { WorkContentTabs } from './WorkContentTabs';
 export { WorkCoverCard } from './WorkCoverCard';
+export { WorkFactsList } from './WorkFactsList';
+export { WorkGallery } from './WorkGallery';
+export { WorkIdentityBlock } from './WorkIdentityBlock';
+export { WorkStory } from './WorkStory';
 export {
   figmaDeferredIconNames,
   figmaIconNames,
@@ -49,3 +56,11 @@ export {
 } from './achievements-timeline';
 export { canonicalizeShareUrl, encodeShareQrSvg } from './share-qr';
 export { curatorFeatureContent, type CuratorSelection } from './curator-feature';
+export { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
+export { visibleWorkFacts } from './work-facts';
+export { visibleWorkStory } from './work-story';
+export {
+  resolveWorkContentTab,
+  visibleWorkContentTabs,
+  type WorkContentTabId,
+} from './work-content-tabs';

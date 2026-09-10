@@ -22,7 +22,9 @@ production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`,
 `CreatorHero`, `CreatorSocialActions`, `CreatorProfileTabs`,
 `CreatorAboutSections`, `AchievementsTimeline`, `CompactCreatorHeader`,
-`ShareSheet`, `ShareQr`, `CuratorFeature`. Cover overlays frost the artwork
+`ShareSheet`, `ShareQr`, `CuratorFeature`, `WorkGallery`, `WorkIdentityBlock`,
+`WorkContentTabs`, `WorkStory`, `WorkFactsList`, `PaymentDeliveryStub`,
+`RelatedWorksSection`. Cover overlays frost the artwork
 instead of painting an opaque gradient. On web,
 `CoverFrost` samples the single sharp artwork behind it with
 `backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
@@ -342,6 +344,9 @@ Shared masters:
 - `CuratorFeature` — «Открытие недели» editorial column plus one
   `WorkCoverCard`; unmounted until Home composition. Does not invent extra
   rail items;
+- `WorkGallery` / `WorkIdentityBlock` / `WorkContentTabs` / `WorkStory` /
+  `WorkFactsList` / `PaymentDeliveryStub` / `RelatedWorksSection` — public
+  Work masters; no price, timer, bid or cart; `ShareSheet` reused from C5;
 - `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
   and stay off unless `mode="commerce"`;
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;

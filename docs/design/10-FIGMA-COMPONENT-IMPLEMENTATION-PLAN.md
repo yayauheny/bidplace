@@ -214,6 +214,8 @@ identity `874:5591`.
 
 ### C6 — public Work components
 
+Статус: **Complete; unmounted until work screen composition**
+
 Источники: `745:21209`, `745:20634`, `621:19311`, share `597:18787`.
 
 Целевые masters:
@@ -229,11 +231,11 @@ identity `874:5591`.
 
 Работа:
 
-- [ ] Не переносить price, timer, sold/archive badge, bid history or cart.
-- [ ] Figma underline inconsistency `745:21209` не копировать; semantic active
+- [x] Не переносить price, timer, sold/archive badge, bid history or cart.
+- [x] Figma underline inconsistency `745:21209` не копировать; semantic active
   tab определяется текущим panel state.
-- [ ] Gallery сохраняет aspect/crop, ordering и missing-media states.
-- [ ] Facts list скрывает отсутствующие optional values without empty rows.
+- [x] Gallery сохраняет aspect/crop, ordering и missing-media states.
+- [x] Facts list скрывает отсутствующие optional values without empty rows.
 
 ### C7 — form и wizard components
 
@@ -286,7 +288,7 @@ identity `874:5591`.
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
 | Share sheet / QR | implemented; unmounted pending screen composition |
 | CuratorFeature | implemented; unmounted pending Home composition |
-| Work tabs/story/facts/payment stub components | route-local |
+| Work tabs/story/facts/payment stub components | implemented; unmounted pending work composition |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
 
 ## 5. Open inputs and stop conditions

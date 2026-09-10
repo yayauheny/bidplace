@@ -4,6 +4,22 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — C6 public work masters
+
+- `Implemented`: `WorkGallery`, `WorkIdentityBlock`, `WorkContentTabs`,
+  `WorkStory`, `WorkFactsList`, `PaymentDeliveryStub` and
+  `RelatedWorksSection` live under `apps/mobile/src/components/figma/`.
+  `ProductGallery` now wraps `WorkGallery`. The payment stub constant moved
+  into the master and is re-exported for the still-unwired product screen.
+  `ShareSheet` is reused from C5. No price, timer, bid, sold/archive or cart.
+- Story tab is omitted when story is empty. Active tab follows panel state,
+  not the Figma details-frame underline mismatch `745:21209`. Facts omit
+  empty optionals. Related section renders nothing for an empty list.
+- Verification: 286 mobile unit tests, including gallery order, tab
+  visibility, story/facts empty states and stub copy. Mobile typecheck/lint.
+  Work screen composition is still pending.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — CuratorFeature master
 
 - `Implemented`: `CuratorFeature` composes «Открытие недели», the editorial

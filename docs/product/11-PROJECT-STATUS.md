@@ -4,6 +4,18 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — C6 public work masters
+
+- `Implemented`: Figma work masters `WorkGallery`, `WorkIdentityBlock`,
+  `WorkContentTabs`, `WorkStory`, `WorkFactsList`, `PaymentDeliveryStub` and
+  `RelatedWorksSection` exist as props-only components. Evidence:
+  `work-gallery.spec.ts`, `work-content-tabs.spec.ts`,
+  `work-public-masters.spec.ts`. `PAYMENT_DELIVERY_STUB` now lives in the
+  master. `ShareSheet` is reused from C5.
+- `Verified`: 286 mobile unit tests, mobile typecheck/lint. `/product/[publicId]`
+  still uses route-local chrome. Related exclusion of the current work stays a
+  screen concern.
+
 ## 2026-09-10 — CuratorFeature master
 
 - `Implemented`: `CuratorFeature` exists as a props-only Home section master
