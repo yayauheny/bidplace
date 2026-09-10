@@ -37,10 +37,13 @@ export function figmaFieldShowsFloatingLabel(status: FigmaFieldStatus) {
   return status !== 'empty' && status !== 'disabled';
 }
 
-export function figmaFieldStyle(status: FigmaFieldStatus) {
+export function figmaFieldStyle(
+  status: FigmaFieldStatus,
+  multiline = false,
+) {
   return {
     width: '100%' as const,
-    minHeight: 44,
+    minHeight: figmaTokens.size.input,
     paddingHorizontal: figmaTokens.space.fieldX,
     paddingVertical: figmaTokens.space.fieldY,
     borderRadius: figmaTokens.radius.field,
@@ -48,7 +51,7 @@ export function figmaFieldStyle(status: FigmaFieldStatus) {
     borderColor: fieldBorder(status),
     backgroundColor: fieldFill(status),
     flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+    alignItems: multiline ? ('flex-start' as const) : ('center' as const),
     gap: figmaTokens.space.fieldGap,
   };
 }

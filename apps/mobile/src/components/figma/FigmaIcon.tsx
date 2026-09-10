@@ -34,6 +34,7 @@ import {
   type FigmaIconName,
   figmaIconNames,
 } from './figma-icon-names';
+import { figmaIconStrokeWidth } from './figma-icon-style';
 
 const icons = {
   'filter-horizontal': FilterHorizontalIcon,
@@ -79,11 +80,7 @@ export function FigmaIcon({
       icon={icons[name]}
       size={size}
       color={color}
-      strokeWidth={
-        size >= figmaTokens.size.dockIcon
-          ? figmaTokens.stroke.dockIcon
-          : figmaTokens.stroke.icon
-      }
+      strokeWidth={figmaIconStrokeWidth(name, size)}
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'

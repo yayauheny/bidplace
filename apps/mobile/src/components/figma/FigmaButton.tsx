@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -8,6 +9,9 @@ import { type FigmaIconName } from './figma-icon-names';
 import {
   figmaButtonLabelColor,
   figmaButtonStyle,
+  figmaButtonSurfaceFill,
+  figmaButtonUsesGradientBorder,
+  type FigmaButtonInteraction,
   type FigmaButtonVariant,
 } from './figma-button-style';
 
@@ -18,6 +22,7 @@ export function FigmaButton({
   disabled = false,
   loading = false,
   icon,
+  iconPosition = 'left',
   accessibilityHint,
   width = 'content',
 }: {
@@ -27,6 +32,7 @@ export function FigmaButton({
   disabled?: boolean;
   loading?: boolean;
   icon?: FigmaIconName;
+  iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
 }) {
@@ -43,35 +49,118 @@ export function FigmaButton({
       onPress={onPress}
       preset="primaryAction"
       style={({ hovered, pressed }) => [
-        { position: 'relative', alignSelf: width === 'full' ? 'stretch' : 'flex-start' },
-        width === 'full' ? { width: '100%' } : null,
+        {
+          position: 'relative',
+          alignSelf: width === 'full' ? 'stretch' : 'flex-start',
+        },
         figmaButtonStyle(
           variant,
-          inactive ? 'disabled' : pressed ? 'pressed' : hovered ? 'hover' : 'idle',
+          resolveInteraction({ inactive, hovered, pressed }),
         ),
       ]}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: icon ? 2 : 0,
-          opacity: loading ? 0 : 1,
-        }}
-      >
-        {icon ? <FigmaIcon name={icon} color={textColor} /> : null}
-        <Text style={[{ color: textColor }, figmaTokens.typography.button]}>
-          {label}
-        </Text>
-      </View>
-      {loading ? (
-        <ActivityIndicator
-          color={textColor}
-          size="small"
-          style={{ position: 'absolute' }}
-        />
-      ) : null}
+      {({ hovered, pressed }) => {
+        const interaction = resolveInteraction({ inactive, hovered, pressed });
+        const iconElement = icon ? (
+          <View style={styles.iconFrame}>
+            <FigmaIcon name={icon} color={textColor} />
+          </View>
+        ) : null;
+
+        return (
+          <>
+            {figmaButtonUsesGradientBorder(variant) ? (
+              <>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[figmaTokens.color.ink, '#585858']}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.gradientBorder}
+                />
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.gradientSurface,
+                    {
+                      backgroundColor: figmaButtonSurfaceFill(
+                        variant,
+                        interaction,
+                      ),
+                    },
+                  ]}
+                />
+              </>
+            ) : null}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: icon ? 2 : 0,
+                opacity: loading ? 0 : 1,
+              }}
+            >
+              {iconPosition === 'left' ? iconElement : null}
+              <Text
+                style={[{ color: textColor }, figmaTokens.typography.button]}
+              >
+                {label}
+              </Text>
+              {iconPosition === 'right' ? iconElement : null}
+            </View>
+            {loading ? (
+              <ActivityIndicator
+                color={textColor}
+                size="small"
+                style={{ position: 'absolute' }}
+              />
+            ) : null}
+          </>
+        );
+      }}
     </MotionPressable>
   );
 }
+
+function resolveInteraction({
+  inactive,
+  hovered,
+  pressed,
+}: {
+  inactive: boolean;
+  hovered: boolean;
+  pressed: boolean;
+}): FigmaButtonInteraction {
+  if (inactive) return 'disabled';
+  if (pressed) return 'pressed';
+  if (hovered) return 'hover';
+  return 'idle';
+}
+
+const styles = StyleSheet.create({
+  gradientBorder: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: figmaTokens.radius.button,
+  },
+  gradientSurface: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    margin: 1,
+    borderRadius: figmaTokens.radius.button,
+  },
+  iconFrame: {
+    width: figmaTokens.size.buttonIconFrame,
+    height: figmaTokens.size.buttonIconFrame,
+    padding: figmaTokens.space.buttonIconPad,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

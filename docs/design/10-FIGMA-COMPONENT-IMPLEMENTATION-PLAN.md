@@ -65,6 +65,8 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C1 — tokens, icons и базовые controls
 
+Статус: **Partial; C1a exact captured controls complete**
+
 Источники: `292:5044`, `292:5058`, `297:5598`.
 
 Целевые masters:
@@ -79,10 +81,19 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 Работа:
 
+- [x] Сверить 16 button states, 8 field states и 23 captured icon variants с
+  `nodes.json`; сохранить 18 px glyph, 1.13/1.25 px stroke, 44 px button и
+  52 px field geometry.
+- [x] Добавить общий 36 px `FigmaIconButton` с 44 px hit target без постоянной
+  белой подложки.
+- [x] Исправить gradient outline, 26 px icon frame, left/right icon placement,
+  multiline alignment, error offset и uncontrolled field state.
 - [ ] Сопоставить каждое повторяющееся значение из `nodes.json` с единственным
   semantic token; не переносить одноразовые frame coordinates в tokens.
 - [ ] Убрать route-local имитации icon buttons и social circles.
-- [ ] Зафиксировать public props и чистые style/state helpers unit-тестами.
+- [x] Зафиксировать public props и чистые style/state helpers unit-тестами для
+  C1a masters.
+- [ ] Реализовать отдельный `FigmaChoiceChip` и его selected/disabled states.
 - [ ] Не регистрировать POST_MVP icon как действие на MVP screen.
 
 ### C2 — glass, blur и media surfaces

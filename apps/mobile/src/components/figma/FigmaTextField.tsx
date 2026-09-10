@@ -28,13 +28,21 @@ export function FigmaTextField({
   icon,
   value,
   defaultValue,
+  placeholder,
+  multiline = false,
+  onChangeText,
   onFocus,
   onBlur,
+  style: inputStyle,
   ...props
 }: FigmaTextFieldProps) {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const filled = String(value ?? defaultValue ?? '').length > 0;
+  const [uncontrolledFilled, setUncontrolledFilled] = useState(
+    String(defaultValue ?? '').length > 0,
+  );
+  const filled =
+    value === undefined ? uncontrolledFilled : String(value).length > 0;
   const status = figmaFieldStatus({
     disabled,
     error: Boolean(error),
@@ -48,7 +56,7 @@ export function FigmaTextField({
 
   const field = (
     <View style={{ width: '100%' }}>
-      <View style={figmaFieldStyle(status)}>
+      <View style={figmaFieldStyle(status, multiline)}>
         {icon ? (
           <View style={{ padding: figmaTokens.space.iconPad }}>
             <FigmaIcon name={icon} color={valueColor} />
@@ -62,8 +70,15 @@ export function FigmaTextField({
           accessibilityLabel={label}
           accessibilityHint={error ? `Ошибка: ${error}` : props.accessibilityHint}
           accessibilityState={{ disabled }}
-          placeholder={showLabel ? undefined : label}
+          placeholder={showLabel ? undefined : (placeholder ?? label)}
           placeholderTextColor={figmaTokens.color.muted}
+          multiline={multiline}
+          onChangeText={(nextValue) => {
+            if (value === undefined) {
+              setUncontrolledFilled(nextValue.length > 0);
+            }
+            onChangeText?.(nextValue);
+          }}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);
@@ -72,12 +87,16 @@ export function FigmaTextField({
             setFocused(false);
             onBlur?.(event);
           }}
-          style={{
-            flex: 1,
-            color: valueColor,
-            padding: 0,
-            ...figmaTokens.typography.field,
-          }}
+          style={[
+            {
+              flex: 1,
+              color: valueColor,
+              padding: 0,
+              textAlignVertical: multiline ? 'top' : 'center',
+              ...figmaTokens.typography.field,
+            },
+            inputStyle,
+          ]}
         />
         {showLabel ? (
           <View
@@ -105,7 +124,7 @@ export function FigmaTextField({
         <Text
           accessibilityLiveRegion="polite"
           style={{
-            marginTop: 8,
+            marginTop: figmaTokens.space.fieldErrorGap,
             marginLeft: 13,
             color: figmaTokens.color.error,
             ...figmaTokens.typography.fieldError,

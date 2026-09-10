@@ -21,7 +21,18 @@ describe('Figma text field states', () => {
 
     expect(status).toBe('empty');
     expect(figmaFieldShowsFloatingLabel(status)).toBe(false);
-    expect(figmaFieldStyle(status).borderColor).toBe(figmaTokens.color.muted);
+    expect(figmaFieldStyle(status)).toMatchObject({
+      minHeight: 52,
+      borderColor: figmaTokens.color.muted,
+      alignItems: 'center',
+    });
+  });
+
+  it('top-aligns multiline content while preserving the captured field minimum', () => {
+    expect(figmaFieldStyle('filled', true)).toMatchObject({
+      minHeight: figmaTokens.size.input,
+      alignItems: 'flex-start',
+    });
   });
 
   it('uses the blue focus ring while typing', () => {

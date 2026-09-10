@@ -1,11 +1,8 @@
 import { View, type ViewStyle } from 'react-native';
 
-import { designTokens } from '@bidplace/design-tokens';
-
 import { FigmaButton } from '../figma/FigmaButton';
-import { FigmaIcon } from '../figma/FigmaIcon';
+import { FigmaIconButton } from '../figma/FigmaIconButton';
 import { type FigmaIconName } from '../figma/figma-icon-names';
-import { MotionPressable } from './MotionPressable';
 
 type ButtonProps = {
   label: string;
@@ -106,25 +103,13 @@ export function IconButton({
   selected?: boolean;
 }) {
   return (
-    <MotionPressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(disabled), selected }}
-      disabled={disabled}
+    <FigmaIconButton
+      icon={icon}
+      label={label}
       onPress={onPress}
-      preset="icon"
-      style={{
-        width: designTokens.size.touch,
-        minHeight: designTokens.size.touch,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <FigmaIcon
-        name={icon}
-        color={selected ? designTokens.color.solid : designTokens.color.ink}
-      />
-    </MotionPressable>
+      disabled={disabled}
+      selected={selected}
+    />
   );
 }
 

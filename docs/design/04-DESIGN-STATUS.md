@@ -1,8 +1,20 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-10
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
+
+## 2026-09-10 — Figma component library C1a
+
+- `Partial`: reconciled the shared Expo button and text-field masters against
+  local Figma captures `292:5058` and `292:5044`.
+- Added the shared 36 px transparent icon-button frame with a 44 px hit target
+  and corrected per-icon stroke weights from capture `297:5598`.
+- Remaining C1 work is choice-chip state coverage and replacement of legacy
+  route-local social/icon control shells.
+- Verification: design-token typecheck, all 239 mobile unit tests, mobile
+  typecheck, lint and Expo export for web/iOS/Android pass.
+- No screen composition or product flow changed in this checkpoint.
 
 ## 2026-09-10 — Local Figma handoff integrity and component roadmap
 

@@ -5,6 +5,7 @@ export { CoverFrost } from './CoverFrost';
 export { FigmaButton } from './FigmaButton';
 export { FigmaChip } from './FigmaChip';
 export { FigmaIcon } from './FigmaIcon';
+export { FigmaIconButton } from './FigmaIconButton';
 export { FigmaTextField } from './FigmaTextField';
 export { FloatingDock } from './FloatingDock';
 export { WorkCoverCard } from './WorkCoverCard';
