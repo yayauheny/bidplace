@@ -1,7 +1,7 @@
-# commerce removal graph (P0–P2)
+# commerce removal graph (P0–P6)
 
-Date: 2026-09-10  
-Status: P0 inventory complete; **P1 client and P2 contracts/api-client executed**; P3 Nest composition is next  
+Date: 2026-09-11  
+Status: P0–P3, Nest-only contract drop, P5 and P6 executed locally; **P4 blocked**  
 Owner decision: `DEC-087`  
 Archive SHA: `598d8696295d18d32956da7dd366dc19464cc366`  
 Proposal: [`2026-09-10-portfolio-simplification-and-commerce-archive.md`](2026-09-10-portfolio-simplification-and-commerce-archive.md)
@@ -89,10 +89,11 @@ in default mobile build.
 
 ## P2 — Contracts and API client
 
-**Status: done (2026-09-10) for client composition.** `dashboard.ts` deleted
+**Status: done (2026-09-10) for client composition; Nest-only Zod dropped 2026-09-11 (`ab0a7c0`).** `dashboard.ts` deleted
 after moving seller product and category list schemas. `createApiClient` no
-longer composes listings/orders/activity/discovery. Nest-needed listing/bid/order
-Zod files remain exported until P3.
+longer composes listings/orders/activity/discovery. Listing/bid/order/activity
+/discovery/events/public-product/public-seller files are deleted. Prisma
+Listing/Order enums remain in `enums.ts` until P4.
 
 ### Contract modules (`packages/contracts/src/`)
 
@@ -125,77 +126,38 @@ Keep untouched for portfolio: `portfolio.ts`, `seller-profile.ts`, `admin.ts`
 | `products.ts` | legacy public product catalog |
 | `index.ts` | Client composition |
 
-**P2 exit (met for the client composition):** default web/mobile portfolio
-flows use only `portfolio` (+ auth/seller write) clients; contract tests prove
-no commerce fields on portfolio responses. Nest still 404s commerce HTTP via
-`COMMERCE_ENABLED=false`. Listing/bid/order Zod modules remain exported for
-Nest until P3.
+**P2 exit (met):** default web/mobile portfolio flows use only `portfolio`
+(+ auth/seller write) clients; contract tests prove no commerce fields on
+portfolio responses. Nest-only commerce Zod files are deleted. Prisma enums
+remain until P4.
 
 ## P3 — Nest runtime composition
 
-**Status: not started (next session).** Do not mix with a second contracts
-cut: Nest still compiles Listings/Bids/Orders while those contract files exist.
+**Status: done (2026-09-11, `7c6b187`).** Default boot has no commerce
+controllers, listing-close cron, or Socket.IO. Removed routes are unmatched
+404, not `CommerceEnabledGuard` 403. `COMMERCE_ENABLED` is deleted.
 
-### Default `AppModule` imports to remove
+### Default `AppModule` imports removed
 
 [`apps/api/src/app.module.ts`](../../apps/api/src/app.module.ts):
 
 - `ListingsModule`, `BidsModule`, `LifecycleModule`, `OrdersModule`,
-  `ActivityModule`, `RealtimeModule`
-- Evaluate `DiscoveryModule` — commerce home; portfolio uses `PortfolioModule`
+  `ActivityModule`, `RealtimeModule`, `DiscoveryModule`, `ScheduleModule`
 
-### Module directories (51 TS files under)
+### Module directories removed from the active tree
 
-- `apps/api/src/bids/` (8 files)
-- `apps/api/src/listings/` (5 files)
-- `apps/api/src/orders/` (10 files)
-- `apps/api/src/lifecycle/` (3 files)
-- `apps/api/src/activity/` (5 files)
-- `apps/api/src/realtime/` (8 files)
-- `apps/api/src/discovery/` (4 files)
-- `apps/api/src/core/commerce/` (6 files)
-- `apps/api/src/core/auction/` (7 files)
+- `apps/api/src/bids/`
+- `apps/api/src/listings/`
+- `apps/api/src/orders/`
+- `apps/api/src/lifecycle/`
+- `apps/api/src/activity/`
+- `apps/api/src/realtime/`
+- `apps/api/src/discovery/`
+- `apps/api/src/core/commerce/`
+- `apps/api/src/core/auction/` (P6)
 
-### Controllers guarded by `CommerceEnabledGuard`
-
-- `apps/api/src/products/products.controller.ts`
-- `apps/api/src/discovery/discovery.controller.ts`
-- `apps/api/src/sellers/sellers.controller.ts` (partial public catalog paths)
-- `apps/api/src/listings/listings.controller.ts`
-- `apps/api/src/bids/bids.controller.ts`
-- `apps/api/src/orders/orders.controller.ts`
-- `apps/api/src/activity/activity.controller.ts`
-
-### Admin commerce mutations
-
-- `apps/api/src/admin/admin.controller.ts` — ranked bids, needs-order, emergency
-  cancel, order cancel/replacement
-- `apps/api/src/admin/admin-listing-emergency.service.ts`
-- `apps/api/src/admin/admin-analytics.service.ts` — bid/order/listing aggregates
-- `apps/api/src/admin/admin.module.ts` — `OrdersModule`, `RealtimeModule` imports
-
-### Config boundary
-
-- `apps/api/src/core/config/env.ts` — `COMMERCE_ENABLED`
-- `apps/api/src/core/commerce/commerce-capability.module.ts`
-- `apps/api/src/core/commerce/commerce-enabled.guard.ts`
-
-After P3: delete guard only when no route registers; env flag must not resurrect
-commerce via orphaned modules.
-
-### Integration tests (commerce-dedicated)
-
-- `apps/api/test/integration/commerce-disabled-reads.integration.spec.ts`
-- `apps/api/test/integration/auction/` (4 specs + fixtures)
-- `apps/api/test/integration/order-mutations.integration.spec.ts`
-- `apps/api/test/integration/order-replacement.integration.spec.ts`
-- `apps/api/test/integration/seller-orders-inbox.integration.spec.ts`
-- `apps/api/test/integration/seller-orders-inbox-http.integration.spec.ts`
-- `apps/api/test/integration/admin-listing-emergency.integration.spec.ts`
-- `apps/api/test/integration/product-listing.integration.spec.ts` (partial)
-
-**P3 exit:** default API boot has no commerce controller, scheduler close job, or
-Socket.IO commerce registration; negative tests for removed routes.
+**P3 exit (met):** default API boot has no commerce controller, scheduler close
+job, or Socket.IO commerce registration. P5 owns the negative HTTP tests.
 
 ## P4 — Persistence (blocked until matrix closed)
 
@@ -223,19 +185,32 @@ tested upgrade or baseline procedure.
 
 ## P5 — Test replacement
 
-Replace removed suites with portfolio boundary tests:
+**Status: done (2026-09-11, `9c1c222`).**
 
-- No price/listing/bid/order fields in `GET /api/portfolio/*`
-- Removed commerce routes return 404 (not 403-only)
-- No commerce scheduler registration at boot
-- Author/work permissions unchanged
+- No price/listing/bid/order fields in `GET /api/portfolio/home`,
+  `GET /api/works`, `GET /api/authors`
+- Removed commerce routes return 404 (not 403)
+- No commerce scheduler or Socket.IO at boot (`app.module.spec.ts`)
+- Author/work permissions unchanged (existing moderation/recovery/atomicity
+  suites stay green)
 
 ## P6 — Documentation and dependency closure
 
-- Cruft search for `AuctionCard`, `Listing`, `COMMERCE_ENABLED`, `/api/orders`
-- Update `10-CODE-ARCHITECTURE.md` persistence diagram when models drop
-- Update `04-DESIGN-STATUS.md` when post-MVP captures leave active tree
-- Verify `git diff --name-only -- '*.pen'` empty
+**Status: done (2026-09-11).** Cruft search on the active tree:
+
+| Needle | Active-tree result |
+| --- | --- |
+| `AuctionCard` / `SlideToBid` / `toAuctionCardItem` | Absent from `apps/mobile` runtime |
+| `COMMERCE_ENABLED` | Absent from `apps/api/src` (negative tests mention the string) |
+| `createListingsClient` | Absent |
+| `/api/orders` | Unmatched 404; docs updated |
+| `RealtimeModule` | Absent from `AppModule`; named only in negative tests |
+| `listing.join` / `product.listings` | Kept in write-guard / admin moderation until P4 |
+| `apps/api/src/core/auction` | Deleted |
+
+- `10-CODE-ARCHITECTURE.md` default boot updated; **persistence diagram unchanged**
+- `04-DESIGN-STATUS.md` records admin analytics without commerce metrics
+- `git diff --name-only -- '*.pen'` must stay empty
 
 ## Shared infrastructure — verify before delete
 
@@ -255,6 +230,10 @@ Replace removed suites with portfolio boundary tests:
 - [x] `DEC-087` recorded
 - [x] File-level removal graph exists
 - [x] P1 client portfolio-native executed
-- [x] P2 contracts/api-client default composition (Nest schemas remain until P3)
+- [x] P2 contracts/api-client default composition
+- [x] P3 Nest default boot strip
+- [x] Nest-only commerce Zod dropped
+- [x] P5 negative HTTP/boot tests
+- [x] P6 docs/cruft (persistence diagram unchanged until P4)
 - [ ] Remote archive refs pushed and protected (operator-only)
 - [ ] Staging/prod DB inventory confirmed

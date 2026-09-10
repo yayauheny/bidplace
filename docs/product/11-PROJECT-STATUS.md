@@ -4,6 +4,78 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Morning handoff (P3–P6 local, P4 blocked)
+
+Operator-only, not done in this session:
+
+- Push and protect `archive/commerce-v1` and tag `commerce-v1-pre-portfolio`.
+- Smoke Home against a running API after `pnpm db:migrate`.
+- Fill staging/prod migration inventory, then P4 Prisma drops. Do not rewrite
+  applied migrations.
+
+Local commits on `feature/figma-component-library` (no remote push):
+`41867fb` P1, `a2b6827` P2, `7c6b187` P3, `ab0a7c0` Nest-only contracts,
+`9c1c222` P5. P6 is this status/docs/cruft pass.
+
+## 2026-09-11 — P6 docs, cruft, unused Nest realtime deps
+
+- `Implemented`: leftover `apps/api/src/core/auction` deleted. Unused
+  `@nestjs/platform-socket.io`, `@nestjs/schedule`, `@nestjs/websockets` and
+  `socket.io` removed from `apps/api/package.json`. Unused public-listing
+  helpers removed from `public-visibility.ts`. Write-guard `product.listings`
+  stays fail-closed until P4.
+- `Implemented`: `11-PROJECT-STATUS.md`, `10-CODE-ARCHITECTURE.md`,
+  `docs/audits/2026-09-10-commerce-removal-graph.md` and
+  `docs/design/04-DESIGN-STATUS.md` record P3/P5/P6. Persistence diagram
+  unchanged. `05-MVP-RFC.md` and `12-DECISION-LOG.md` not rewritten.
+- Residual: `CreateListingAction` still names listing but routes to
+  `/products/new`. Analytics ingest still accepts `listing_viewed` /
+  `bid_rejected`. Bid error codes stay on `apiErrorCodeSchema` for ingest.
+  Empty `(seller)/listings` directory removed if present.
+- `Verified`: `git diff --name-only -- '*.pen'` empty. No Prisma schema or
+  migration edits. api typecheck, lint, 283 unit tests, 70 integration tests.
+
+## 2026-09-11 — P5 negative commerce tests
+
+- `Implemented`: unmatched Nest 404 (not 403) for
+  `GET /api/listings/:id`, `POST /api/products/:id/listings`,
+  `GET`/`POST /api/listings/:id/bids`, `GET /api/orders`,
+  `GET /api/discovery/home`, `GET /api/products`,
+  `GET /api/products/:publicId`, `GET /api/sellers`, `GET /api/me/activity`.
+  Evidence: `apps/api/test/integration/commerce-removed-routes.integration.spec.ts`.
+- `Implemented`: default boot has no `@Cron`, `ScheduleModule`, Socket.IO
+  gateway or `COMMERCE_ENABLED`. Evidence: `apps/api/src/app.module.spec.ts`,
+  `GET /socket.io` 404, `ModulesContainer` names.
+- `Implemented`: `GET /api/portfolio/home`, `GET /api/works`, `GET /api/authors`
+  JSON has no listing/price/bid/order keys.
+- `Verified`: api unit 283; integration 17 files / 70 tests including
+  moderation, rejected-product-recovery, product-write-atomicity, portfolio-*.
+  P6 later deleted leftover `core/auction` specs.
+
+## 2026-09-11 — Nest-only commerce contracts dropped
+
+- `Implemented`: deleted `activity.ts`, `bid.ts`, `listing.ts`, `order.ts`,
+  `discovery.ts`, `events.ts`, `public-product.ts`, `public-seller.ts` from
+  `@bidplace/contracts`. Barrel no longer re-exports them. Prisma Listing/Order
+  enums remain in `enums.ts`. Bid/listing API error codes remain for analytics
+  ingest.
+- `Implemented`: `SellersService.listPublic` takes `PortfolioAuthorsQuery`
+  (`name` | `added`). Evidence: `sellers-catalog.query.ts`,
+  `portfolio.service.ts`.
+- `Verified`: contracts 23 tests, api-client 3, api unit, mobile typecheck.
+
+## 2026-09-11 — P3 Nest default boot
+
+- `Implemented`: `AppModule` has no Listings, Bids, Lifecycle, Orders,
+  Activity, Realtime, Discovery, `ScheduleModule`, or `CommerceEnabledGuard`.
+  `bootstrap.ts` has no Socket.IO adapter. `COMMERCE_ENABLED` deleted from env.
+  Evidence: `apps/api/src/app.module.ts`, `bootstrap.ts`, commit `7c6b187`.
+- `Implemented`: products HTTP is owner write only; sellers HTTP is owner +
+  photo; admin is curator + moderation + users (no ranked bids / needs-order /
+  listing emergency). Analytics overview is users/creators/works.
+- `Partial`: Prisma `Listing`/`Bid`/`Order` and `hasBlockingListing` via
+  `product.listings` remain until P4.
+
 ## 2026-09-10 — P2 contracts and api-client without commerce clients
 
 - `Implemented`: `createApiClient` exposes portfolio, auth, owner product
@@ -16,9 +88,9 @@ acceptance target; retained native branches are compatibility code only.
   category list schema lives on `category.ts`; `dashboard.ts` (seller listing
   dashboard) is deleted. Portfolio contract tests reject listing/price/bid/order
   keys. Analytics event name `listing_viewed` is unchanged.
-- `Partial`: Nest still imports listing/bid/order/activity/discovery/public
-  product schemas from `@bidplace/contracts` until P3. Prisma `Listing` /
-  `Bid` / `Order` remain until P4 after staging/prod inventory.
+- `Partial`: Nest still imported listing/bid/order Zod until the later
+  Nest-only contract drop (`ab0a7c0`). Prisma `Listing` / `Bid` / `Order`
+  remain until P4 after staging/prod inventory.
 - `Verified`: 32 contracts tests, 3 api-client tests, 212 mobile unit tests,
   plus contracts/api-client/mobile/api typecheck and mobile lint. Local
   `pnpm db:migrate` applied
@@ -26,13 +98,12 @@ acceptance target; retained native branches are compatibility code only.
   exists on Compose Postgres. API process was not running in this session, so
   Home HTTP was not re-probed.
 - Residual: remote `archive/commerce-v1` / tag push is operator-only (not
-  done in this session). P3 Nest `AppModule` strip is the next code session.
+  done in this session). Nest boot strip followed as `7c6b187`.
 
-## 2026-09-10 — P3 Nest default boot (deferred)
+## 2026-09-10 — P3 Nest default boot (deferred in the P2 session)
 
-- `Not implemented`: `AppModule` still imports Listings, Bids, Lifecycle,
-  Orders, Activity, Realtime and Discovery. `COMMERCE_ENABLED=false` still
-  404s those HTTP routes. This session did not mix P3 into P2.
+- Superseded by `2026-09-11 — P3 Nest default boot`. The P2 session did not mix
+  P3 into P2; P3 landed later as `7c6b187`.
 
 ## 2026-09-10 — P4 Prisma commerce models (blocked)
 
@@ -59,8 +130,7 @@ acceptance target; retained native branches are compatibility code only.
 - `Implemented`: dedicated auction Playwright specs and `test:e2e:auction`
   removed from the active tree; remaining specs assert the absence of bid
   chrome. Analytics event name `listing_viewed` is unchanged (P2 contract).
-- `Partial`: Nest commerce modules, remaining commerce contract schemas,
-  `COMMERCE_ENABLED` and Prisma commerce models remain until P3–P4.
+- `Partial`: Prisma commerce models remain until P4.
 - `Verified`: 215 mobile unit tests, mobile typecheck and lint. Browser smoke
   on Works → Work → Author shows cover title/`@author` only (no BYN/bid chrome);
   `/orders`, `/listings/new` and `/me/activity` render Expo unmatched, not
@@ -82,8 +152,9 @@ acceptance target; retained native branches are compatibility code only.
 - `Partial`: remote push and GitHub protection for `archive/commerce-v1` and
   tag `commerce-v1-pre-portfolio` remain operator-only; local refs and zip
   backup exist.
-- `Not implemented`: P3 Nest default boot strip; P4 Prisma model drops; P5–P6
-  test/docs closure; Git history rewrite.
+- `Implemented`: P1–P3, Nest-only contract drop, P5 and P6 landed locally
+  after this inventory; P4 Prisma model drops remain blocked; Git history
+  rewrite is still out of scope.
 - Residual risk: staging/production migration state unknown — blocker before P4.
 
 ## 2026-09-10 — Single-sampled card cover frost

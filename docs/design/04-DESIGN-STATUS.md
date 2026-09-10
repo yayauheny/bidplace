@@ -1,8 +1,18 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-10
+Последнее обновление: 2026-09-11
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
+
+## 2026-09-11 — P3 admin analytics without commerce metrics
+
+- `Implemented`: admin analytics overview cards are users, creators and works.
+  Bid/order/listing recovery metrics are gone from the default screen. Ingest
+  still records `listing_viewed` as the work-view event name.
+  Evidence: `apps/mobile/src/features/admin/admin-analytics-screen.tsx`,
+  `apps/api/src/admin/admin-analytics.service.ts`.
+- Public Home / Works / Author / Work screens are unchanged from P1.
+- No `.pen` file changed.
 
 ## 2026-09-10 — P2 admin without commerce recovery
 
