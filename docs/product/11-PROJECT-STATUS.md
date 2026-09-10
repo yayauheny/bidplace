@@ -1,5 +1,19 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-10 — Single recoverable page error
+
+- `Implemented`: public API failures render one route-owned `PageState`; a
+  failed anonymous session probe no longer adds a duplicate shell banner.
+  Protected routes preserve fail-closed access and reuse the same accessible
+  error/retry master. The dark retry action is centered. Evidence:
+  `apps/mobile/src/components/layout/AppShell.tsx`,
+  `apps/mobile/src/components/shared/protected-route.tsx`,
+  `apps/mobile/src/components/ui/PageState.tsx` and
+  `apps/mobile/e2e/figma-error-state.spec.ts`.
+- `Verified`: 252 mobile unit tests, mobile typecheck/lint, two focused
+  Playwright error-state tests, a 390×844 browser smoke and Expo export for
+  web/iOS/Android pass.
+
 ## 2026-09-10 — Stable Figma dock interaction
 
 - `Implemented`: the shared public phone dock keeps the exact glass geometry

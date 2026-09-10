@@ -65,7 +65,7 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C1 — tokens, icons и базовые controls
 
-Статус: **Partial; C1a–C1b exact controls complete**
+Статус: **Partial; C1a–C1c exact controls and coherent page feedback complete**
 
 Источники: `292:5044`, `292:5058`, `297:5598`.
 
@@ -95,6 +95,8 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
   C1a masters.
 - [x] Реализовать отдельный 38 px `FigmaChoiceChip` по creator works node
   `621:19943`, включая selected/hover/pressed/disabled states.
+- [x] Свести recoverable screen failure к одному route-owned `PageState` с
+  центрированным retry; protected routes используют тот же master.
 - [ ] Не регистрировать POST_MVP icon как действие на MVP screen.
 
 ### C2 — glass, blur и media surfaces

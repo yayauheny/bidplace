@@ -220,6 +220,9 @@ exposes its expanded state.
   (single dismiss + focus return contract for all sort/filter controls).
 - Status chips are informational unless the contract makes them controls.
 - Loading disables only the action in progress and keeps result/error legible.
+- Public pages render one route-owned `PageState` for recoverable failures;
+  session verification does not add a second shell banner. Protected routes
+  reuse the same centered dark retry action and accessible live-region alert.
 - Destructive actions retain explicit confirmation where product docs require
   it.
 - Focus cannot be clipped by overflow, sticky surfaces or rounded media.

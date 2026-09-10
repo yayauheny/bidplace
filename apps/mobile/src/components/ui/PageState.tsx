@@ -43,6 +43,8 @@ export function PageState({
 
   return (
     <View
+      accessibilityRole={mode === 'error' ? 'alert' : undefined}
+      accessibilityLiveRegion={mode === 'error' ? 'polite' : 'none'}
       style={{
         minHeight: 220,
         alignItems: 'center',
@@ -61,7 +63,7 @@ export function PageState({
         </AppText>
       ) : null}
       {retry ? (
-        <PrimaryButton label="Повторить" onPress={retry} />
+        <PrimaryButton label="Повторить" onPress={retry} alignSelf="center" />
       ) : null}
     </View>
   );

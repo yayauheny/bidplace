@@ -6,10 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { OverlayHost } from './OverlayHost';
-import { AppText } from '../ui/AppText';
-import { FigmaButton } from '../figma/FigmaButton';
 import { FloatingDock } from '../figma/FloatingDock';
-import { useAuth } from '../../providers/auth-provider';
 
 export function AppShell({
   children,
@@ -20,7 +17,6 @@ export function AppShell({
   ambientVariant?: string;
   hideDock?: boolean;
 }) {
-  const auth = useAuth();
   const dockBlurTarget = useRef<View | null>(null);
 
   return (
@@ -33,35 +29,6 @@ export function AppShell({
           overflow: 'visible',
         }}
       >
-        {auth.status === 'error' ? (
-          <View
-            accessibilityRole="alert"
-            style={{
-              width: '100%',
-              maxWidth: designTokens.layout.phoneWidth,
-              minHeight: designTokens.size.touch,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: designTokens.space.x3,
-              paddingHorizontal: designTokens.space.pageGutter,
-              paddingVertical: designTokens.space.x2,
-              backgroundColor: designTokens.color.canvas,
-              borderBottomWidth: 1,
-              borderBottomColor: designTokens.color.border,
-            }}
-          >
-            <AppText role="bodySmall" tone="danger">
-              {auth.sessionError}
-            </AppText>
-            <FigmaButton
-              label="Повторить"
-              variant="outline"
-              onPress={() => void auth.refreshSession()}
-            />
-          </View>
-        ) : null}
         <BlurTargetView
           ref={dockBlurTarget}
           testID="app-shell-content"

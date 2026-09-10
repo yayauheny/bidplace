@@ -4,6 +4,19 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Coherent error/retry state C1c
+
+- `Corrected`: a failed session check no longer inserts a raw red banner and
+  outline retry above a public page's own failure state. Public screens now
+  keep one route-owned `PageState`; protected routes reuse that same component.
+- `Corrected`: the shared retry action is explicitly centered under its title
+  and message. Retryable states expose one polite accessible alert and one dark
+  Figma action instead of two competing controls.
+- Verification: 252 mobile unit tests, mobile typecheck/lint and two focused
+  Playwright public/protected error-state tests pass. A 390×844 browser smoke
+  confirms one centered retry composition. Expo web/iOS/Android export passes.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma dock interaction correction C2d
 
 - `Corrected`: dock controls no longer inherit the generic icon press response
