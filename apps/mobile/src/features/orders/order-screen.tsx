@@ -131,19 +131,13 @@ export function OrderScreen({ publicId }: { publicId: string }) {
       </Shell>
     );
   if (query.isError || !query.data) {
-    const message =
+    const title =
       query.error instanceof ApiClientError && query.error.kind === 'forbidden'
         ? 'Заказ недоступен'
         : 'Не удалось загрузить заказ';
     return (
       <Shell>
-        <View style={{ gap: designTokens.space.x4 }}>
-          <AppText role="sectionTitle">{message}</AppText>
-          <SecondaryButton
-            label="Повторить"
-            onPress={() => void query.refetch()}
-          />
-        </View>
+        <PageState title={title} retry={() => void query.refetch()} />
       </Shell>
     );
   }

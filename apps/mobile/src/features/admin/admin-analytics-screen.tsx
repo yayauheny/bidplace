@@ -18,17 +18,12 @@ import {
   PageState,
   SecondaryButton,
 } from '../../components/ui';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { useApiClient } from '../../providers/api-provider';
+import { adminAnalyticsPeriodChips } from './admin-choice-chips';
 
 type PeriodOption = Exclude<AdminAnalyticsQuery['period'], 'custom'>;
 type Drilldown = NonNullable<AdminAnalyticsQuery['drilldown']>;
-
-const periodOptions: Array<{ value: PeriodOption; label: string }> = [
-  { value: 'today', label: 'Сегодня' },
-  { value: '7d', label: '7 дней' },
-  { value: '30d', label: '30 дней' },
-  { value: '90d', label: '90 дней' },
-];
 
 function MetricCard({
   label,
@@ -341,10 +336,11 @@ export function AdminAnalyticsScreen() {
             <AppText role="button">Модерация</AppText>
           </MotionPressable>
         </Link>
-        {periodOptions.map((option) => (
-          <SecondaryButton
+        {adminAnalyticsPeriodChips.map((option) => (
+          <FigmaChoiceChip
             key={option.value}
-            label={period === option.value ? `✓ ${option.label}` : option.label}
+            label={option.label}
+            selected={period === option.value}
             onPress={() => {
               setPeriod(option.value);
               setDrilldown(undefined);

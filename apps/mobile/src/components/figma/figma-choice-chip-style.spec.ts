@@ -30,6 +30,15 @@ describe('Figma choice chip styles', () => {
     expect(figmaChoiceChipTextColor(false)).toBe(figmaTokens.color.ink);
   });
 
+  it('encodes selected versus unselected without a label prefix', () => {
+    expect(figmaChoiceChipStyle(true, 'idle').backgroundColor).not.toBe(
+      figmaChoiceChipStyle(false, 'idle').backgroundColor,
+    );
+    expect(figmaChoiceChipTextColor(true)).not.toBe(
+      figmaChoiceChipTextColor(false),
+    );
+  });
+
   it('exposes pressed and disabled feedback without changing geometry', () => {
     expect(figmaChoiceChipStyle(false, 'pressed')).toMatchObject({
       minHeight: figmaTokens.size.choiceChip,

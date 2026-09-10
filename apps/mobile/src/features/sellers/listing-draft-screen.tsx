@@ -150,13 +150,10 @@ export function ListingDraftScreen({
         {products.isLoading ? (
           <PageState title="Загружаем ваши предметы…" loading />
         ) : (
-          <>
-            <AppText role="sectionTitle">Не удалось загрузить предметы</AppText>
-            <SecondaryButton
-              label="Повторить"
-              onPress={() => void products.refetch()}
-            />
-          </>
+          <PageState
+            title="Не удалось загрузить предметы"
+            retry={() => void products.refetch()}
+          />
         )}
       </FormPageShell>
     );

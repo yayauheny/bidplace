@@ -238,10 +238,9 @@ export function ProductDraftScreen({
   )
     return (
       <FormPageShell>
-        <AppText role="sectionTitle">Не удалось загрузить предмет</AppText>
-        <SecondaryButton
-          label="Повторить"
-          onPress={() => {
+        <PageState
+          title="Не удалось загрузить предмет"
+          retry={() => {
             void categories.refetch();
             void productDetail.refetch();
           }}

@@ -9,6 +9,7 @@ import { AppShell } from '../../components/layout';
 import {
   AppText,
   AuctionCardGrid,
+  IconButton,
   MotionPressable,
   PageState,
   PrimaryButton,
@@ -17,8 +18,6 @@ import {
 } from '../../components/ui';
 import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
 import { FigmaChip } from '../../components/figma/FigmaChip';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
@@ -212,15 +211,11 @@ export function PublicSellerScreen({
                 label="Сайт автора"
               />
             ) : null}
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel="Скопировать ссылку на профиль"
+            <IconButton
+              icon="copy"
+              label="Скопировать ссылку на профиль"
               onPress={copyProfileLink}
-              preset="icon"
-              style={figmaGlassCircleStyle()}
-            >
-              <FigmaIcon name="copy" />
-            </MotionPressable>
+            />
           </View>
           {copyState === 'success' ? (
             <AppText role="caption" tone="success">

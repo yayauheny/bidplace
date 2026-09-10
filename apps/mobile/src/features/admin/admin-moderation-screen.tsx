@@ -20,6 +20,7 @@ import {
   TextButton,
   TextField,
 } from '../../components/ui';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 import { useApiClient } from '../../providers/api-provider';
 import { getApiAssetUrl } from '../../lib/environment';
 import {
@@ -32,6 +33,12 @@ import {
 import { ModerationCard } from './ModerationCard';
 import { AdminRecoveryPanel } from './AdminRecoveryPanel';
 import { AdminUsersPanel } from './AdminUsersPanel';
+import {
+  adminModerationQueueTabs,
+  adminModerationStatusFilters,
+  type AdminModerationQueueTab,
+  type AdminModerationStatusFilter,
+} from './admin-choice-chips';
 
 type AdminSellersData = Awaited<
   ReturnType<ApiClient['admin']['listSellerProfiles']>
@@ -49,12 +56,8 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
-type ModerationTab = 'authors' | 'works' | 'orders' | 'users' | 'recovery';
-type ModerationFilter =
-  | 'ALL'
-  | 'PENDING_REVIEW'
-  | 'APPROVED'
-  | 'CHANGES_REQUESTED';
+type ModerationTab = AdminModerationQueueTab;
+type ModerationFilter = AdminModerationStatusFilter;
 
 export function AdminModerationScreen() {
   const api = useApiClient();
@@ -289,41 +292,18 @@ export function AdminModerationScreen() {
             gap: designTokens.space.x2,
           }}
         >
-          <SecondaryButton
-            label="Авторы"
-            onPress={() => {
-              setModerationTab('authors');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Работы"
-            onPress={() => {
-              setModerationTab('works');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Заказы"
-            onPress={() => {
-              setModerationTab('orders');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Пользователи"
-            onPress={() => {
-              setModerationTab('users');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Восстановление"
-            onPress={() => {
-              setModerationTab('recovery');
-              setModerationSearch('');
-            }}
-          />
+          {adminModerationQueueTabs.map((tab) => (
+            <FigmaChoiceChip
+              key={tab.id}
+              label={tab.label}
+              selected={moderationTab === tab.id}
+              accessibilityRole="tab"
+              onPress={() => {
+                setModerationTab(tab.id);
+                setModerationSearch('');
+              }}
+            />
+          ))}
         </View>
         {moderationTab === 'authors' || moderationTab === 'works' ? (
           <>
@@ -347,18 +327,13 @@ export function AdminModerationScreen() {
                 gap: designTokens.space.x2,
               }}
             >
-              {(
-                [
-                  ['PENDING_REVIEW', 'Ожидают проверки'],
-                  ['APPROVED', 'Одобрены'],
-                  ['CHANGES_REQUESTED', 'Нужны правки'],
-                  ['ALL', 'Все статусы'],
-                ] as const
-              ).map(([value, label]) => (
-                <SecondaryButton
-                  key={value}
-                  label={moderationFilter === value ? `✓ ${label}` : label}
-                  onPress={() => setModerationFilter(value)}
+              {adminModerationStatusFilters.map((filter) => (
+                <FigmaChoiceChip
+                  key={filter.id}
+                  label={filter.label}
+                  selected={moderationFilter === filter.id}
+                  accessibilityRole="tab"
+                  onPress={() => setModerationFilter(filter.id)}
                 />
               ))}
             </View>

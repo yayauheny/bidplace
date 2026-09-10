@@ -4,6 +4,24 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Shared Figma control usage
+
+- `Implemented`: public copy and dialog close use `IconButton`; admin period
+  and moderation queue/status rows use `FigmaChoiceChip`; listing draft,
+  product draft, order, and search page failures retry through `PageState`.
+  Missing social URLs still render no control. Evidence:
+  `apps/mobile/src/features/sellers/public-seller-screen.tsx`,
+  `apps/mobile/src/components/ui/AppDialog.tsx`,
+  `apps/mobile/src/features/admin/admin-choice-chips.ts`,
+  `apps/mobile/src/features/search/search-screen.tsx`,
+  `apps/mobile/e2e/figma-shared-controls.spec.ts`.
+- `Partial`: glass 38 px social circles, tinted activity/order status pills,
+  underline `AuthorTabButton` / `ProductTabs`, C4 filter chrome, and 40 px
+  header controls remain outside the current masters. Unused `CreatorHero` is
+  still unmounted.
+- `Verified`: 255 mobile unit tests, mobile typecheck/lint, two focused
+  Playwright control tests, and Expo export for web/iOS/Android pass.
+
 ## 2026-09-10 — Single-sampled card cover frost
 
 - `Implemented`: shared work/author cover overlays use one sharp semantic image

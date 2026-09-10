@@ -66,7 +66,7 @@ native не являются release target и отдельно не прове�
 
 ### C1 — tokens, icons и базовые controls
 
-Статус: **Partial; C1a–C1c exact controls and coherent page feedback complete**
+Статус: **Partial; C1a–C1c complete; icon-button, choice-chip, and page-retry usage now uses masters**
 
 Источники: `292:5044`, `292:5058`, `297:5598`.
 
@@ -91,7 +91,10 @@ native не являются release target и отдельно не прове�
   multiline alignment, error offset и uncontrolled field state.
 - [ ] Сопоставить каждое повторяющееся значение из `nodes.json` с единственным
   semantic token; не переносить одноразовые frame coordinates в tokens.
-- [ ] Убрать route-local имитации icon buttons и social circles.
+- [x] Убрать route-local имитации icon buttons и page-level retry (copy,
+  dialog close, admin choice chips, draft/order/search retry).
+- [ ] Убрать route-local имитации social circles (C5 `CreatorSocialActions`;
+  `instagram`/`globe` are not in the Figma icon registry).
 - [x] Зафиксировать public props и чистые style/state helpers unit-тестами для
   C1a masters.
 - [x] Реализовать отдельный 38 px `FigmaChoiceChip` по creator works node
@@ -274,9 +277,11 @@ identity `874:5591`.
 | CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
 | WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |
 | AuthorIdentity | partial and currently unused; compact geometry mismatch |
-| FilterSortBar / exact filter sheet | missing |
+| FilterSortBar / exact filter sheet | missing; catalog «Фильтры» and FilterMenu remain C4 |
 | Exact image placeholder | missing |
 | Creator hero/tabs/socials/timeline | route-local or missing |
+| Glass creator social circles | remaining; C5 CreatorSocialActions |
+| Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
 | Share sheet / QR | missing |
 | Work tabs/story/facts/payment stub components | route-local |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |

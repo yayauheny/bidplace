@@ -51,7 +51,13 @@ export function SearchScreen({ query }: { query: string }) {
         {query ? (
           <>
             {works.isError || authors.isError ? (
-              <PageState title="Не удалось выполнить поиск" />
+              <PageState
+                title="Не удалось выполнить поиск"
+                retry={() => {
+                  void works.refetch();
+                  void authors.refetch();
+                }}
+              />
             ) : null}
             {productItems.length > 0 ? (
               <View style={{ gap: designTokens.space.x3 }}>

@@ -6,8 +6,7 @@ import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
-import { AppIcon } from './AppIcon';
-import { MotionPressable } from './MotionPressable';
+import { IconButton } from './Button';
 
 type AppDialogProps = {
   open: boolean;
@@ -175,28 +174,13 @@ export function AppDialog({
                     {title}
                   </AppText>
                 </Dialog.Title>
-                <MotionPressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Закрыть окно"
-                  onPress={onClose}
-                  preset="icon"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    flexShrink: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: designTokens.radius.pill,
-                  }}
-                  interactionStyle={({ hovered, pressed }) => ({
-                    backgroundColor:
-                      hovered || pressed
-                        ? designTokens.color.surfaceStrong
-                        : 'transparent',
-                  })}
-                >
-                  <AppIcon name="x" size={22} />
-                </MotionPressable>
+                <View style={{ flexShrink: 0 }}>
+                  <IconButton
+                    icon="x"
+                    label="Закрыть окно"
+                    onPress={onClose}
+                  />
+                </View>
               </View>
               {description ? (
                 <Dialog.Description asChild>

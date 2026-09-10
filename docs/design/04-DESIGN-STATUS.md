@@ -4,6 +4,22 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Shared Figma control usage C1
+
+- `Corrected`: route-local icon-only copy and dialog close now use `IconButton`
+  (`FigmaIconButton`: 36 px frame, 44 px hit, required accessible name). Admin
+  period and queue/status choice rows use `FigmaChoiceChip` with selected state
+  on the master instead of a `✓` prefix. Draft, order, and search page failures
+  retry through `PageState`.
+- Missing author social URLs still omit the control. Copy may sit beside the
+  remaining glass Telegram/Instagram/website circles until C5
+  `CreatorSocialActions`. Tinted status pills, underline profile/product tabs,
+  C4 filter chrome, and 40 px header controls stay as documented gaps.
+- Verification: 255 mobile unit tests, mobile typecheck/lint, and two focused
+  Chromium tests for named copy / omitted socials and search `PageState` retry
+  pass. Expo web/iOS/Android export passes.
+- No product flow, server behavior, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma cover frost correction C2e
 
 - `Corrected`: web `CoverFrost` now samples the real sharp artwork once through
