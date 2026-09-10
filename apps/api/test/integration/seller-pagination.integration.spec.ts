@@ -86,7 +86,7 @@ describe('Portfolio work pagination PostgreSQL behavior', () => {
             city: 'Minsk',
             deliveryInfo: 'Pickup',
             status: 'APPROVED',
-            publishedAt: now,
+            publishedAt: new Date(now.getTime() + index * 1_000),
             createdAt: new Date(now.getTime() + index * 1_000),
             images: {
               create: {
