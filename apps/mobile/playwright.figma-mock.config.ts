@@ -8,6 +8,7 @@ export default defineConfig({
     'figma-shared-controls.spec.ts',
     'figma-home.spec.ts',
     'figma-creator.spec.ts',
+    'figma-work.spec.ts',
   ],
   workers: 1,
   timeout: 60_000,

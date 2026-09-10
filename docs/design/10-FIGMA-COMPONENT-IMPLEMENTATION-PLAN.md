@@ -216,7 +216,7 @@ identity `874:5591`.
 
 ### C6 — public Work components
 
-Статус: **Complete; unmounted until work screen composition**
+Статус: **Complete; mounted on the public work screen**
 
 Источники: `745:21209`, `745:20634`, `621:19311`, share `597:18787`.
 
@@ -288,9 +288,9 @@ identity `874:5591`.
 | Creator hero/tabs/socials/timeline | implemented and mounted on the public creator screen |
 | Glass creator social circles | replaced by C5 `CreatorSocialActions` glass cluster |
 | Tinted success/danger status chips | remaining; FigmaChip has no success/danger tone |
-| Share sheet / QR | implemented and mounted on the public creator screen |
+| Share sheet / QR | implemented and mounted on creator and work screens |
 | CuratorFeature | implemented and mounted on Home when `curatorSelection` is non-null |
-| Work tabs/story/facts/payment stub components | implemented; unmounted pending work composition |
+| Work tabs/story/facts/payment stub components | implemented and mounted on the public work screen |
 | Form/wizard visual masters | mixed historical wrappers; requires reconciliation |
 
 ## 5. Open inputs and stop conditions

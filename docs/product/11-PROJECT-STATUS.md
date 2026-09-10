@@ -4,6 +4,13 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — Work composition
+
+- `Implemented`: `product-screen.tsx` composes C6 + `ShareSheet`. Evidence:
+  `work-screen-composition.spec.ts`, `figma-work.spec.ts`.
+- `Verified`: story tab omitted when empty; related exclusion at the
+  screen layer.
+
 ## 2026-09-10 — Creator composition
 
 - `Implemented`: `public-seller-screen.tsx` composes C5 + `WorkCoverCard`.
@@ -40,7 +47,7 @@ acceptance target; retained native branches are compatibility code only.
   `work-public-masters.spec.ts`. `PAYMENT_DELIVERY_STUB` now lives in the
   master. `ShareSheet` is reused from C5.
 - `Verified`: 286 mobile unit tests, mobile typecheck/lint. `/product/[publicId]`
-  still uses route-local chrome. Related exclusion of the current work stays a
+  now mounts these masters. Related exclusion of the current work stays a
   screen concern.
 
 ## 2026-09-10 — CuratorFeature master
@@ -63,7 +70,7 @@ acceptance target; retained native branches are compatibility code only.
   `achievements-timeline.spec.ts`, `share-qr.spec.ts`, `share-sheet.spec.ts`.
 - `Verified`: 276 mobile unit tests, mobile typecheck/lint, and Expo export
   for web/iOS/Android pass. The public creator screen now mounts these
-  masters; `/product/[publicId]` still uses route-local chrome.
+  masters; the public work screen now mounts C6 as well.
 
 ## 2026-09-10 — Shared Figma control usage
 

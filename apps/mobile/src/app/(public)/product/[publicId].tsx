@@ -1,23 +1,23 @@
 import { type Href, useLocalSearchParams, useRouter } from 'expo-router';
 
-import {
-  parseProductTabParam,
-  type ProductTabId,
-} from '../../../components/ui';
+import { type WorkContentTabId } from '../../../components/figma';
 import { ProductScreen } from '../../../features/products/product-screen';
+import { parseWorkTabParam } from '../../../features/products/work-screen-composition';
 
 export default function ProductRoute() {
   const { publicId, tab } = useLocalSearchParams<{
     publicId: string;
     tab?: string | string[];
   }>();
-  const router = useRouter();
-  const activeTab = parseProductTabParam(tab);
+  const { push } = useRouter();
+  const activeTab = parseWorkTabParam(tab);
 
-  const openTab = (nextTab: ProductTabId) => {
-    const params =
-      nextTab === 'about' ? { publicId } : { publicId, tab: nextTab };
-    router.push({ pathname: '/product/[publicId]', params } as Href);
+  const openTab = (nextTab: WorkContentTabId) => {
+    push({
+      pathname: '/product/[publicId]',
+      params:
+        nextTab === 'details' ? { publicId } : { publicId, tab: nextTab },
+    } as Href);
   };
 
   return (
