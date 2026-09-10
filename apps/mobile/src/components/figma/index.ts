@@ -7,6 +7,7 @@ export { FigmaChip } from './FigmaChip';
 export { FigmaChoiceChip } from './FigmaChoiceChip';
 export { FigmaIcon } from './FigmaIcon';
 export { FigmaIconButton } from './FigmaIconButton';
+export { FigmaImagePlaceholder } from './FigmaImagePlaceholder';
 export { FigmaGlassSurface } from './FigmaGlassSurface';
 export { FigmaTextField } from './FigmaTextField';
 export { FloatingDock } from './FloatingDock';

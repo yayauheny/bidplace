@@ -4,6 +4,20 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — Figma component library C2b
+
+- `Implemented`: shared failed-media UI now uses the exact scalable vector from
+  Figma node `874:5454` at its captured 188×142 geometry and 180° orientation.
+- `FigmaImagePlaceholder` is the only vector master. The existing
+  `components/ui/ImagePlaceholder` remains a compatibility/layout wrapper, so
+  `ResilientRemoteImage` retry behavior and screen APIs are unchanged.
+- Removed the previous same-color background/icon combination that could make
+  the fallback glyph effectively invisible. No raster upscale or substitute
+  artwork is used.
+- Verification: 249 mobile unit tests, mobile typecheck and lint pass. The
+  shared fallback still requires matched browser and physical-device visual QA.
+- No product flow, Figma file, or `.pen` file changed.
+
 ## 2026-09-10 — Figma component library C2a
 
 - `Partial`: added `FigmaGlassSurface` with separate captured navigation

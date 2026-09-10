@@ -99,7 +99,7 @@ unit tests и Expo export для web/iOS/Android, если менялся runtim
 
 ### C2 — glass, blur и media surfaces
 
-Статус: **Partial; C2a shared glass surface and exact dimmer complete**
+Статус: **Partial; C2a–C2b glass, dimmer and image fallback complete**
 
 Источники: dock `Frame 34`, creator `621:19475`, work/author cover nodes,
 overlay `526:13880`.
@@ -122,7 +122,8 @@ overlay `526:13880`.
   container opacity.
 - [ ] Проверить web background sampling и native `expo-blur` отдельно.
 - [ ] Ограничить большие blur layers и исключить их из accessibility tree.
-- [ ] Добавить missing/error fallback без подмены artwork.
+- [x] Добавить missing/error fallback из vector node `874:5454` без подмены
+  artwork или растрового upscale.
 
 ### C3 — cover cards и identity
 

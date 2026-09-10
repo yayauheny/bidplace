@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-10 — Exact resilient-media fallback primitive
+
+- `Implemented`: failed remote media keeps the existing bounded retry and
+  manual recovery behavior, while its layout wrapper now renders the exact
+  scalable Figma placeholder vector (`874:5454`) instead of the previous
+  low-contrast generic icon. Evidence:
+  `apps/mobile/src/components/figma/FigmaImagePlaceholder.tsx`,
+  `apps/mobile/src/components/ui/ImagePlaceholder.tsx`, and
+  `figma-image-placeholder.spec.ts`.
+- `Verified`: 249 mobile unit tests, mobile typecheck and lint pass. Browser
+  matched comparison and physical iOS/Android acceptance remain pending.
+
 ## 2026-09-09 — Cover frost / author atmosphere / token rebuild
 
 - `Partial`: cover overlays frost the artwork (`CoverFrost`); author profile
