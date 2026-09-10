@@ -4,6 +4,20 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-10 — P1 portfolio-only public cards
+
+- `Implemented`: public Home / Works / Search / Author / Work grids use
+  `WorkCoverCard` directly. The `AuctionCard` wrapper is gone from runtime.
+- `Implemented`: `WorkCoverCard` is portfolio-only — title, `@author` chip and
+  cover frost. Price, timer and sale-status slots are removed from the active
+  component, not left behind as unused commerce mode.
+- `Implemented`: `/orders`, `/listings/new`, `/me/activity` and
+  `/order/[publicId]` are unmatched routes. Bid dock / `AuctionPlayer` /
+  `SlideToBid` are not in the default mobile tree.
+- Historical Pen tables below still name `AuctionCard` / `AuctionPlayer` as
+  extraction records; they are not current runtime masters.
+- No `.pen` file changed.
+
 ## 2026-09-10 — Figma cover frost correction C2e
 
 - `Corrected`: web `CoverFrost` now samples the real sharp artwork once through

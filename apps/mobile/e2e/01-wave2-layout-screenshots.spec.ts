@@ -44,13 +44,14 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       ).toBeVisible();
       await expect(
         page.getByRole('button', { name: 'Сортировка' }),
-      ).toContainText('По активности');
-      await expect(page.getByRole('button', { name: 'Статус' })).toBeVisible();
+      ).toContainText('Сначала новые');
+      await expect(page.getByRole('button', { name: 'Статус' })).toHaveCount(0);
       if (width === 1440) {
-        await page.getByRole('button', { name: 'Статус' }).click();
-        await page.getByRole('menuitem', { name: 'Идут торги' }).click();
-        await expect(page).toHaveURL(/status=LIVE/);
-        await page.goto('/works');
+        await page.getByRole('button', { name: 'Сортировка' }).click();
+        await expect(
+          page.getByRole('menuitem', { name: 'Сначала новые' }),
+        ).toBeVisible();
+        await page.keyboard.press('Escape');
       }
       if (width === 390) {
         const mobileHeaderAction = page.getByRole('button', { name: 'Меню' });
@@ -77,7 +78,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await expect
         .poll(() =>
           catalogCards
-            .locator('img[alt^="Изображение предмета:"]')
+            .locator('img')
             .evaluateAll(
               (images) =>
                 new Set(images.map((image) => (image as HTMLImageElement).src))
@@ -118,9 +119,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         await expect(
           card.getByText(product.title, { exact: true }),
         ).toBeVisible();
-        const image = card.locator(
-          `img[alt="Изображение предмета: ${product.title}"]`,
-        );
+        const image = card.locator(`img[alt="${product.title}"]`);
         await expect(image).toBeVisible();
         await image.scrollIntoViewIfNeeded();
         await expect
@@ -217,7 +216,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       }
 
       await page.route(
-        '**/api/products*',
+        '**/api/works*',
         async (route) => {
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
           await route.fallback();
@@ -231,10 +230,10 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         fullPage: true,
       });
       await expect(catalogCards).toHaveCount(seededProducts.length);
-      await page.unroute('**/api/products*');
+      await page.unroute('**/api/works*');
 
       await page.route(
-        '**/api/discovery/home',
+        '**/api/portfolio/home',
         async (route) => {
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 500));
           await route.fallback();
@@ -247,7 +246,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
         path: resolve(screenshotDir, `home-loading-${width}.png`),
         fullPage: true,
       });
-      await page.unroute('**/api/discovery/home');
+      await page.unroute('**/api/portfolio/home');
 
       const failedPage = await context.newPage();
       await failedPage.setViewportSize({
@@ -272,7 +271,13 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       await failedPage.close();
 
       await page.goto('/product/seedLive002');
-      await expect(page.getByText('До завершения').first()).toBeVisible();
+      await expect(
+        page.getByText('Стакан для кистей «Голубая комета»').first(),
+      ).toBeVisible();
+      await expect(page.getByText('До завершения')).toHaveCount(0);
+      await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
+        0,
+      );
       await page.screenshot({
         path: resolve(screenshotDir, `product-${width}.png`),
         fullPage: true,

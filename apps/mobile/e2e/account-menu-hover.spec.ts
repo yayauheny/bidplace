@@ -75,7 +75,6 @@ test.describe('desktop account menu hover', () => {
 
     for (const item of [
       page.getByRole('link', { name: 'Кабинет' }),
-      page.getByRole('link', { name: 'Покупки' }),
       page.getByRole('button', { name: 'Выйти' }),
     ]) {
       await item.hover();

@@ -14,12 +14,11 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  AuctionCardGrid,
   MotionPressable,
   PageState,
   ProductGallery,
-  type ProductTabId,
 } from '../../components/ui';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { useTrackListingView } from '../../lib/analytics/use-track-views';
@@ -37,8 +36,6 @@ export function ProductScreen({
   publicId,
 }: {
   publicId: string;
-  activeTab?: ProductTabId;
-  onTabChange?: (tab: ProductTabId) => void;
 }) {
   const api = useApiClient();
   const [shareState, setShareState] = useState<'idle' | 'success' | 'error'>(
@@ -126,8 +123,8 @@ export function ProductScreen({
   const model = toProductScreenModel(query.data);
   const product = model.product;
   const sellerProfile = model.sellerProfile;
-  const relatedItems = model.relatedItems.filter(
-    (item) => item.product.publicId !== product.publicId,
+  const relatedWorks = model.relatedWorks.filter(
+    (item) => item.work.publicId !== product.publicId,
   );
   const detailItems: DetailItem[] = [
     product.technique ? { label: 'Техника', value: product.technique } : null,
@@ -245,10 +242,10 @@ export function ProductScreen({
               </AppText>
             </MotionPressable>
           </View>
-          {relatedItems.length > 0 ? (
+          {relatedWorks.length > 0 ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
               <AppText role="label">Другие работы автора</AppText>
-              <AuctionCardGrid items={relatedItems} />
+              <WorkCoverCardGrid items={relatedWorks} />
             </View>
           ) : null}
         </View>

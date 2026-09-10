@@ -4,8 +4,6 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { designTokens } from '@bidplace/design-tokens';
-
 import { getCatalogColumnCount } from '../src/features/products/catalog-layout';
 import { getAuthorWorkColumnCount } from '../src/features/sellers/author-layout';
 import {
@@ -15,8 +13,7 @@ import {
   prioritizeSeededDemoProducts,
 } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
-import { openBidDialog } from './support/auction-actions';
-import { e2eApiBaseURL, e2eWebBaseURL } from './support/e2e-env';
+import { e2eWebBaseURL } from './support/e2e-env';
 
 const evidenceCommit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
   cwd: resolve(__dirname, '../../..'),
@@ -126,7 +123,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       expect(firstRow).toHaveLength(Math.min(expectedColumns, boxes.length));
       await assertLoadedImage(
         page,
-        'Изображение предмета: Стакан для кистей «Голубая комета»',
+        'Стакан для кистей «Голубая комета»',
       );
       await assertNoHorizontalOverflow(page);
       await capture(page, 'catalog', 'buyer', 'loaded', viewport);
@@ -136,7 +133,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       const loadingPage = await context.newPage();
       await loadingPage.setViewportSize(viewport);
       await loadingPage.route(
-        '**/api/discovery/home',
+        '**/api/portfolio/home',
         async (route) => {
           await new Promise((resolveDelay) => setTimeout(resolveDelay, 600));
           await route.continue();
@@ -229,7 +226,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
   }
 });
 
-test('Wave C product keeps buyer and admin auction boundaries', async ({
+test('Wave C product stays portfolio-only for buyer and admin', async ({
   browser,
 }) => {
   test.setTimeout(120_000);
@@ -243,13 +240,15 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
       await expect(
         buyer.page.getByText('Стакан для кистей «Голубая комета»').first(),
       ).toBeVisible();
+      await expect(buyer.page.getByText(/75\s*BYN/)).toHaveCount(0);
+      await expect(buyer.page.getByLabel(/Торги/)).toHaveCount(0);
       await expect(
-        buyer.page.getByLabel(/Торги\. Торги идут\./).first(),
-      ).toBeVisible();
-      await expect(buyer.page.getByText(/75\s*BYN/).first()).toBeVisible();
+        buyer.page.getByTestId('product-sticky-auction-player'),
+      ).toHaveCount(0);
+      await expect(buyer.page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await assertLoadedImage(
         buyer.page,
-        'Изображение предмета: Стакан для кистей «Голубая комета»',
+        'Стакан для кистей «Голубая комета»',
       );
       if (viewport.width === 390) {
         await assertInFirstViewport(
@@ -259,12 +258,7 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
         );
         await expect(
           buyer.page.getByTestId('mobile-bottom-action-bar'),
-        ).toBeVisible();
-        await assertInFirstViewport(
-          buyer.page,
-          buyer.page.getByTestId('mobile-bottom-action-bar'),
-          viewport,
-        );
+        ).toHaveCount(0);
         await capture(
           buyer.page,
           'product-seedLive002',
@@ -272,31 +266,7 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
           'loaded-mobile',
           viewport,
         );
-        await openBidDialog(buyer.page);
-        await buyer.page.getByLabel('Ваша ставка, BYN').focus();
-        await expect(buyer.page.getByLabel('Ваша ставка, BYN')).toBeFocused();
-        await capture(
-          buyer.page,
-          'product-seedLive002',
-          'buyer',
-          'keyboard-focus',
-          viewport,
-        );
       } else {
-        for (const auctionFact of [
-          buyer.page.getByText('Ставка', { exact: true }).first(),
-          buyer.page.getByText('До завершения', { exact: true }).first(),
-          buyer.page.getByLabel(/Окончание:/).first(),
-          buyer.page.getByRole('button', { name: 'Поставить' }).first(),
-        ]) {
-          if (
-            viewport.width >= designTokens.breakpoint.productHeroThreeColumn
-          ) {
-            await expect(auctionFact).toBeVisible();
-          } else {
-            await expect(auctionFact).toBeVisible();
-          }
-        }
         await capture(
           buyer.page,
           'product-seedLive002',
@@ -328,7 +298,7 @@ test('Wave C product keeps buyer and admin auction boundaries', async ({
   }
 });
 
-test('Wave C route matrix covers author, purchases, seller forms, admin, order and auth', async ({
+test('Wave C route matrix covers author, seller forms, admin and auth', async ({
   browser,
   page,
 }) => {
@@ -355,11 +325,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     browser,
     adminFixture.admin,
   );
-  const productResponse = await sellerSession.context.request.get(
-    `${e2eApiBaseURL}/api/products/${auction.product.publicId}`,
-  );
-  const product = await productResponse.json();
-  const authorSlug = product.sellerProfile.slug as string;
+  const authorSlug = auction.sellerProfile.slug;
 
   try {
     for (const viewport of viewports) {
@@ -367,9 +333,7 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       await page.goto(`/seller/${authorSlug}`, {
         waitUntil: 'domcontentloaded',
       });
-      await expect(
-        page.getByText('Работы', { exact: true }).first(),
-      ).toBeVisible();
+      await expect(page.getByRole('tab', { name: /Работы/ })).toBeVisible();
       await expect(page.getByText(auction.product.title).first()).toBeVisible();
       const authorCards = page.locator('a[href^="/product/"]');
       await expect(authorCards).toHaveCount(8);
@@ -429,25 +393,6 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
         'loaded',
         viewport,
       );
-      await sellerSession.page.goto('/listings/new', {
-        waitUntil: 'domcontentloaded',
-      });
-      await expect(
-        sellerSession.page.getByText('Новое размещение'),
-      ).toBeVisible();
-      await expect(
-        sellerSession.page.getByText(
-          'Сначала создайте предмет и дождитесь одобрения модерации.',
-        ),
-      ).toBeVisible();
-      await assertNoHorizontalOverflow(sellerSession.page);
-      await capture(
-        sellerSession.page,
-        'listing-draft',
-        'seller',
-        'loaded',
-        viewport,
-      );
 
       await adminSession.page.setViewportSize(viewport);
       await adminSession.page.goto('/admin', { waitUntil: 'domcontentloaded' });
@@ -459,80 +404,6 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
       ).toBeVisible();
       await assertNoHorizontalOverflow(adminSession.page);
       await capture(adminSession.page, 'admin', 'admin', 'loaded', viewport);
-    }
-
-    const seeded = await authenticatedPage(browser, seededBuyer);
-    try {
-      for (const viewport of viewports) {
-        await seeded.page.setViewportSize(viewport);
-        await seeded.page.goto('/me/activity', {
-          waitUntil: 'domcontentloaded',
-        });
-        await expect(seeded.page.getByText('Мои покупки')).toBeVisible();
-        await capture(seeded.page, 'purchases', 'buyer', 'loaded', viewport);
-        await seeded.page.goto('/order/seedOrder01', {
-          waitUntil: 'domcontentloaded',
-        });
-        await expect(seeded.page.getByText('Заказ seedOrder01')).toBeVisible();
-        await capture(
-          seeded.page,
-          'order-seedOrder01',
-          'buyer',
-          'loaded',
-          viewport,
-        );
-      }
-    } finally {
-      await seeded.context.close();
-    }
-
-    const longActivity = await authenticatedPage(browser, seededBuyer);
-    const longActivityTitle =
-      'Очень длинное название предмета для проверки переноса текста в строке покупок и отсутствия горизонтального переполнения';
-    await longActivity.page.route('**/api/me/activity', async (route) => {
-      const response = await route.fetch();
-      const payload = (await response.json()) as {
-        activity: Array<{
-          product: { title: string | null };
-          [key: string]: unknown;
-        }>;
-      };
-      expect(payload.activity.length).toBeGreaterThan(0);
-      await route.fulfill({
-        response,
-        body: JSON.stringify({
-          ...payload,
-          activity: payload.activity.map((item, index) =>
-            index === 0
-              ? {
-                  ...item,
-                  product: { ...item.product, title: longActivityTitle },
-                }
-              : item,
-          ),
-        }),
-      });
-    });
-    try {
-      for (const viewport of viewports) {
-        await longActivity.page.setViewportSize(viewport);
-        await longActivity.page.goto('/me/activity', {
-          waitUntil: 'domcontentloaded',
-        });
-        await expect(
-          longActivity.page.getByText(longActivityTitle),
-        ).toBeVisible();
-        await assertNoHorizontalOverflow(longActivity.page);
-        await capture(
-          longActivity.page,
-          'purchases',
-          'buyer',
-          'loaded-long-row',
-          viewport,
-        );
-      }
-    } finally {
-      await longActivity.context.close();
     }
 
     for (const viewport of viewports) {
@@ -640,31 +511,5 @@ test('Wave C route matrix covers author, purchases, seller forms, admin, order a
     await sellerSession.context.close();
     await adminSession.context.close();
     await finalAdminSession.context.close();
-  }
-});
-
-test('Wave C bid confirmation stays transactional and accessible', async ({
-  browser,
-}) => {
-  test.setTimeout(120_000);
-  const fixture = await createAuctionFixture();
-  const { context, page } = await authenticatedPage(browser, fixture.buyerA);
-
-  try {
-    await page.setViewportSize(viewports[0]);
-    await page.goto(`/product/${fixture.product.publicId}`);
-    await openBidDialog(page);
-    await page.getByLabel('Ваша ставка, BYN').fill('11');
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('Ставка необратима.')).toBeVisible();
-    await capture(
-      page,
-      'bid-dialog',
-      'buyer',
-      'confirmation-open',
-      viewports[0],
-    );
-  } finally {
-    await context.close();
   }
 });

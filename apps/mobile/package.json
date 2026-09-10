@@ -66,7 +66,6 @@
     "web": "pnpm --filter @bidplace/design-tokens build && expo start --web",
     "test:e2e-fence": "node e2e/test-e2e-fence.mjs",
     "test:e2e": "playwright test",
-    "test:e2e:auction": "playwright test auction-creation.spec.ts auction-bidding.spec.ts auction-closing.spec.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

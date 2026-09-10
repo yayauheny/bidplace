@@ -9,14 +9,13 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  AuctionCardGrid,
   MotionPressable,
   PageState,
   PrimaryButton,
   ResilientRemoteImage,
-  toAuctionCardItem,
 } from '../../components/ui';
 import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
@@ -58,7 +57,6 @@ export function PublicSellerScreen({
   });
   const firstPage = query.data?.pages[0];
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
-  const items = works.map(toAuctionCardItem);
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
 
@@ -273,11 +271,11 @@ export function PublicSellerScreen({
                 </AppText>
               ))}
             </View>
-          ) : items.length === 0 ? (
+          ) : works.length === 0 ? (
             <PageState title="У автора пока нет опубликованных работ" />
           ) : (
             <>
-              <AuctionCardGrid items={items} />
+              <WorkCoverCardGrid items={works} />
               {query.hasNextPage ? (
                 <PrimaryButton
                   label="Смотреть все"

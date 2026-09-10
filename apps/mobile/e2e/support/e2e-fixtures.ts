@@ -59,6 +59,61 @@ function uniqueEmail(prefix: string, suffix: string): string {
   return `${prefix}.${suffix}@e2e.test`;
 }
 
+async function attachPublishedProductRevision(
+  prisma: PrismaClient,
+  product: {
+    id: string;
+    categoryId: string | null;
+    title: string | null;
+    story: string | null;
+    technique: string | null;
+    materials: string | null;
+    dimensions: string | null;
+    year: number | null;
+    condition: string | null;
+    uniqueness: string | null;
+    provenance: string | null;
+    city: string | null;
+    packaging: string | null;
+    deliveryInfo: string | null;
+    images: Array<{ id: string }>;
+  },
+): Promise<void> {
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: 'APPROVED',
+      categoryId: product.categoryId,
+      title: product.title,
+      story: product.story,
+      technique: product.technique,
+      materials: product.materials,
+      dimensions: product.dimensions,
+      year: product.year,
+      condition: product.condition,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      packaging: product.packaging,
+      deliveryInfo: product.deliveryInfo,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: revision.id,
+    },
+  });
+}
+
 async function createUser(
   prisma: PrismaClient,
   email: string,
@@ -129,6 +184,8 @@ export async function createAuctionFixture(options?: {
       sellerType: 'creator',
       fullName: sellerName,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -172,7 +229,9 @@ export async function createAuctionFixture(options?: {
           },
         },
       },
+      include: { images: { orderBy: { position: 'asc' } } },
     });
+    await attachPublishedProductRevision(prisma, product);
     const listing = await prisma.listing.create({
       data: {
         productId: product.id,
@@ -264,6 +323,8 @@ export async function createSellerFixture(
       sellerType: 'creator',
       fullName: `E2E Seller ${suffix}`,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -329,6 +390,8 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
       sellerType: 'creator',
       fullName: sellerName,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),

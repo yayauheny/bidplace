@@ -1,10 +1,5 @@
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 
-import {
-  toAuctionCardItem,
-  type AuctionCardItem,
-} from '../../components/ui/auction-card-item';
-
 export function toProductScreenModel(detail: PortfolioWorkDetailResponse): {
   product: {
     id: string;
@@ -28,7 +23,7 @@ export function toProductScreenModel(detail: PortfolioWorkDetailResponse): {
     instagramUrl: string | null;
     websiteUrl: string | null;
   };
-  relatedItems: AuctionCardItem[];
+  relatedWorks: PortfolioWorkDetailResponse['relatedWorks'];
 } {
   return {
     product: {
@@ -53,6 +48,6 @@ export function toProductScreenModel(detail: PortfolioWorkDetailResponse): {
       instagramUrl: detail.author.instagramUrl,
       websiteUrl: detail.author.websiteUrl,
     },
-    relatedItems: detail.relatedWorks.map(toAuctionCardItem),
+    relatedWorks: detail.relatedWorks,
   };
 }

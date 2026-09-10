@@ -1,1 +1,0 @@
-export { AuctionCardGrid } from './AuctionCard';

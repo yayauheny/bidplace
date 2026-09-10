@@ -8,12 +8,11 @@ import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  AuctionCardGrid,
   CreatorCardGrid,
   PageState,
   PrimaryButton,
-  toAuctionCardItem,
 } from '../../components/ui';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
 
 export function HomeScreen() {
@@ -25,7 +24,7 @@ export function HomeScreen() {
   });
   const loading = home.isLoading;
   const failed = home.isError;
-  const workItems = (home.data?.newWorks ?? []).map(toAuctionCardItem);
+  const workItems = home.data?.newWorks ?? [];
   const sellerItems = (home.data?.newAuthors ?? []).map((author) => ({
     sellerProfile: author,
   }));
@@ -58,7 +57,7 @@ export function HomeScreen() {
             <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
               Новые работы
             </AppText>
-            <AuctionCardGrid items={workItems} />
+            <WorkCoverCardGrid items={workItems} />
             <PrimaryButton
               label="Смотреть все"
               width="full"

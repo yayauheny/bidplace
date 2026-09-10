@@ -37,9 +37,11 @@ freeze SHA `598d869` while P1–P6 removal executes; target state is portfolio-n
   (`DEC-085`). Route screens remain responsible for their own scroll/content.
 - `packages/design-tokens` exports one Figma-measured `designTokens` map
   (`figmaTokens` is the same object). `apps/mobile/src/components/figma/` is the
-  production primitive set. `components/ui` wraps those masters; `AuctionCard`
-  renders `WorkCoverCard` in `mode="portfolio"`. Commerce player/bid/header
-  modules may still exist on disk but are not exported into screens.
+  production primitive set. `components/ui` wraps shared masters such as
+  `Button` and `ImagePlaceholder`. Public grids call `WorkCoverCard` /
+  `WorkCoverCardGrid` directly; there is no `AuctionCard` wrapper and no
+  commerce overlay mode on the card. Nest commerce modules may still exist
+  behind `COMMERCE_ENABLED` until P2–P3.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
   metadata, ownership, checksum and deterministic object key. Local/test default

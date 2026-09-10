@@ -4,6 +4,35 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-10 — P1 client without commerce vocabulary
+
+- `Implemented`: Home, Works, Search, Author and Work render
+  `WorkCoverCard` / `WorkCoverCardGrid` with title, `@author` and frost only.
+  `AuctionCard`, `toAuctionCardItem` and `listing: null` adapters are gone.
+  Evidence: `apps/mobile/src/components/figma/WorkCoverCard.tsx`,
+  `WorkCoverCardGrid.tsx`, `work-cover-fields.ts`,
+  `apps/mobile/src/features/home/home-screen.tsx`,
+  `features/products/product-list-screen.tsx`,
+  `features/products/product-screen.tsx`,
+  `features/search/search-screen.tsx`,
+  `features/sellers/public-seller-screen.tsx`.
+- `Implemented`: unreachable commerce routes `/orders`, `/listings/new`,
+  `/me/activity` and `/order/[publicId]` deleted; `SlideToBid`,
+  `AuctionPlayer`, listing-draft and the commerce-unavailable stub removed from
+  the default mobile tree. Account menu no longer exposes «Покупки» / «Сделки».
+- `Implemented`: dedicated auction Playwright specs and `test:e2e:auction`
+  removed from the active tree; remaining specs assert the absence of bid
+  chrome. Analytics event name `listing_viewed` is unchanged (P2 contract).
+- `Partial`: Nest commerce modules, `packages/contracts`, `packages/api-client`,
+  `COMMERCE_ENABLED` and Prisma commerce models remain until P2–P4.
+- `Verified`: 215 mobile unit tests, mobile typecheck and lint. Browser smoke
+  on Works → Work → Author shows cover title/`@author` only (no BYN/bid chrome);
+  `/orders`, `/listings/new` and `/me/activity` render Expo unmatched, not
+  «Раздел недоступен». Home still 500 on this machine until
+  `curator_selections` exists — that is a local DB gap, not a P1 client change.
+- Residual risk: unmatched `/orders` and `/listings/new` must stay unmatched,
+  not a «Раздел недоступен» stub.
+
 ## 2026-09-10 — Commerce v1 archive and P0 removal graph
 
 - `Implemented`: portfolio backend wave committed at `598d869` and frozen under
@@ -16,7 +45,7 @@ acceptance target; retained native branches are compatibility code only.
   `docs/product/12-DECISION-LOG.md`.
 - `Partial`: remote push and branch protection for archive refs not verified in
   this session; local refs and zip backup exist.
-- `Not implemented`: P1–P6 commerce removal from `main`; Prisma model drops;
+- `Not implemented`: P2–P6 commerce removal from `main`; Prisma model drops;
   post-MVP design capture cleanup; Git history rewrite.
 - Residual risk: staging/production migration state unknown — blocker before P4.
 

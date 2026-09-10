@@ -3,8 +3,7 @@ import { resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { designTokens } from '@bidplace/design-tokens';
-
+import { PAYMENT_DELIVERY_STUB } from '../src/features/products/payment-delivery-stub';
 import { authenticatedPage } from './support/auth-session';
 import {
   createAdminModerationFixture,
@@ -13,112 +12,61 @@ import {
 
 const screenshotDir = resolve('/private/tmp', 'bidplace-wave-a-screenshots');
 
-test('product detail changes structure at the product action breakpoints', async ({
+async function assertNoHorizontalOverflow(page: {
+  evaluate: (fn: () => { documentWidth: number; viewportWidth: number }) => Promise<{
+    documentWidth: number;
+    viewportWidth: number;
+  }>;
+}) {
+  const viewportMetrics = await page.evaluate(() => ({
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+  expect(viewportMetrics.documentWidth).toBeLessThanOrEqual(
+    viewportMetrics.viewportWidth,
+  );
+}
+
+test('product detail stays portfolio-only across product action widths', async ({
   browser,
 }) => {
   const fixture = await createAuctionFixture();
   const { context, page } = await authenticatedPage(browser, fixture.buyerA);
 
   try {
-    for (const width of [899, 900, 1024, 1025, 1440, 390]) {
+    for (const width of [1440, 1024, 390]) {
       const height = width === 390 ? 844 : 900;
       await page.setViewportSize({ width, height });
       await page.goto(`/product/${fixture.product.publicId}`);
 
-      const image = page.locator(
-        `img[alt="Изображение предмета: ${fixture.product.title}"]`,
-      );
+      const image = page.locator(`img[alt="${fixture.product.title}"]`);
       await expect(image).toBeVisible();
-      const imageBox = await image.first().boundingBox();
-      expect(imageBox).not.toBeNull();
-      const expectedImageSize =
-        width >= designTokens.breakpoint.productHeroThreeColumn
-          ? { width: 360, height: 514 }
-          : width >= designTokens.breakpoint.productDetailWide
-            ? { width: 440, height: 550 }
-            : { width: 300, height: 375 };
-      expect(imageBox!.width).toBe(expectedImageSize.width);
-      expect(imageBox!.height).toBe(expectedImageSize.height);
+      await expect(
+        page.getByText(fixture.product.title, { exact: true }).first(),
+      ).toBeVisible();
+      await expect(page.getByText(PAYMENT_DELIVERY_STUB)).toBeVisible();
+      await expect(page.getByText('Ставка', { exact: true })).toHaveCount(0);
+      await expect(page.getByText(/BYN/)).toHaveCount(0);
+      await expect(
+        page.getByRole('button', { name: 'Сделать ставку' }),
+      ).toHaveCount(0);
+      await expect(page.getByTestId('product-sticky-auction-player')).toHaveCount(
+        0,
+      );
+      await expect(page.getByTestId('mobile-bottom-action-bar')).toHaveCount(0);
+      await assertNoHorizontalOverflow(page);
 
-      const title = page
-        .getByText(fixture.product.title, { exact: true })
-        .first();
-      const status = page.getByLabel(/Торги\. Торги идут\./).first();
-      const currentPriceLabel = page
-        .getByText('Ставка', { exact: true })
-        .first();
-      const currentPrice = page.getByText('10 BYN', { exact: true }).first();
-      await expect(title).toBeVisible();
-      await expect(status).toBeVisible();
-      await expect(currentPriceLabel).toBeVisible();
-      await expect(currentPrice).toBeVisible();
-
-      const assertInViewport = async (locator: typeof title) => {
-        const box = await locator.boundingBox();
-        expect(box).not.toBeNull();
-        expect(box!.y).toBeGreaterThanOrEqual(0);
-        expect(box!.y + box!.height).toBeLessThanOrEqual(height);
-      };
-
-      if (width === 390) {
-        await assertInViewport(title);
-        const viewportMetrics = await page.evaluate(() => ({
-          documentWidth: document.documentElement.scrollWidth,
-          viewportWidth: window.innerWidth,
-        }));
-        expect(viewportMetrics.documentWidth).toBeLessThanOrEqual(
-          viewportMetrics.viewportWidth,
-        );
-      }
-
-      const dock = page.getByTestId('mobile-bottom-action-bar');
-      if (width < 900) {
-        await expect(dock).toBeVisible();
-        await expect(
-          dock.getByRole('button', { name: 'Сделать ставку' }),
-        ).toBeVisible();
-        await expect(
-          page.getByRole('button', { name: 'Поставить' }),
-        ).toHaveCount(0);
-        const dockBox = await dock.boundingBox();
-        expect(dockBox).not.toBeNull();
-        expect(dockBox!.height).toBeGreaterThanOrEqual(44);
-        expect(dockBox!.height).toBeLessThanOrEqual(64);
-      } else {
-        await expect(dock).toHaveCount(0);
-        await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
-
-        for (const locator of [
-          title,
-          status,
-          currentPriceLabel,
-          currentPrice,
-          page.getByText('До завершения', { exact: true }).first(),
-          page.getByRole('button', { name: 'Поставить' }),
-        ]) {
-          if (width >= designTokens.breakpoint.productHeroThreeColumn) {
-            await expect(locator).toBeVisible();
-          } else {
-            await expect(locator).toBeVisible();
-          }
-        }
-      }
-
-      if ([1440, 1024, 390].includes(width)) {
-        await mkdir(screenshotDir, { recursive: true });
-        await page.screenshot({
-          path: resolve(screenshotDir, `product-buyer-${width}.png`),
-        });
-      }
+      await mkdir(screenshotDir, { recursive: true });
+      await page.screenshot({
+        path: resolve(screenshotDir, `product-buyer-${width}.png`),
+      });
     }
   } finally {
     await context.close();
   }
 });
 
-test('admin product detail preserves the no-bidding state at product-wide widths', async ({
-  browser,
-}) => {
+test('admin product detail has no bidding chrome', async ({ browser }) => {
   const auction = await createAuctionFixture();
   const adminFixture = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(
@@ -132,30 +80,15 @@ test('admin product detail preserves the no-bidding state at product-wide widths
       await page.setViewportSize({ width, height });
       await page.goto(`/product/${auction.product.publicId}`);
 
-      const title = page
-        .getByText(auction.product.title, { exact: true })
-        .first();
-      const status = page.getByLabel(/Торги\. Торги идут\./).first();
-      const currentPriceLabel = page
-        .getByText('Ставка', { exact: true })
-        .first();
-      const currentPrice = page.getByText('10 BYN', { exact: true }).first();
-      await expect(title).toBeVisible();
-      await expect(status).toBeVisible();
-      await expect(currentPriceLabel).toBeVisible();
-      await expect(currentPrice).toBeVisible();
+      await expect(
+        page.getByText(auction.product.title, { exact: true }).first(),
+      ).toBeVisible();
       await expect(page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await expect(
         page.getByRole('button', { name: 'Сделать ставку' }),
       ).toHaveCount(0);
       await expect(page.getByTestId('mobile-bottom-action-bar')).toHaveCount(0);
-      const viewportMetrics = await page.evaluate(() => ({
-        documentWidth: document.documentElement.scrollWidth,
-        viewportWidth: window.innerWidth,
-      }));
-      expect(viewportMetrics.documentWidth).toBeLessThanOrEqual(
-        viewportMetrics.viewportWidth,
-      );
+      await assertNoHorizontalOverflow(page);
       await mkdir(screenshotDir, { recursive: true });
       await page.screenshot({
         path: resolve(screenshotDir, `product-admin-${width}.png`),
@@ -174,13 +107,7 @@ test('auth forms stay scrollable at narrow viewport and enlarged scale', async (
 
   await expect(page.getByText('Регистрация', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Пароль')).toBeVisible();
-  const initialMetrics = await page.evaluate(() => ({
-    documentWidth: document.documentElement.scrollWidth,
-    viewportWidth: window.innerWidth,
-  }));
-  expect(initialMetrics.documentWidth).toBeLessThanOrEqual(
-    initialMetrics.viewportWidth,
-  );
+  await assertNoHorizontalOverflow(page);
   await page.getByRole('button', { name: 'Создать аккаунт' }).click();
   await expect(page.getByText('Введите имя', { exact: true })).toBeVisible();
   await expect(

@@ -1,13 +1,12 @@
-# commerce removal graph (P0)
+# commerce removal graph (P0–P1)
 
 Date: 2026-09-10  
-Status: Inventory complete — **no code deleted**  
+Status: P0 inventory complete; **P1 client removal executed in active `main`**  
 Owner decision: `DEC-087`  
 Archive SHA: `598d8696295d18d32956da7dd366dc19464cc366`  
 Proposal: [`2026-09-10-portfolio-simplification-and-commerce-archive.md`](2026-09-10-portfolio-simplification-and-commerce-archive.md)
 
-This document is the file-level dependency map required before P1–P6 execution.
-Each phase below lists entry criteria, primary files and exit checks. Prisma model
+This document is the file-level dependency map for P1–P6. Prisma model
 removal is **P4 only** after the database decision matrix is closed.
 
 ## Database decision matrix
@@ -24,7 +23,11 @@ portfolio baseline — never edit already-applied migration files.
 
 ## P1 — Client portfolio-native
 
-**Remove or rename:** auction vocabulary on public surfaces. **Keep:** `WorkCoverCard`
+**Status: done (2026-09-10).** Public screens import `WorkCoverCard` /
+`WorkCoverCardGrid` only. Commerce routes and bid primitives are gone from the
+default mobile tree. Contracts, Nest, `COMMERCE_ENABLED`, and Prisma remain for P2–P4.
+
+**Removed:** auction vocabulary on public surfaces. **Kept:** `WorkCoverCard`
 as the card master.
 
 ### Adapters and cards
@@ -81,7 +84,7 @@ as the card master.
 - `apps/mobile/e2e/wave-b-route-states.spec.ts` (partial)
 - `apps/mobile/e2e/support/auction-actions.ts`
 
-**P1 exit:** public screens import no `Auction*` adapter; no reachable commerce routes
+**P1 exit (met):** public screens import no `Auction*` adapter; no reachable commerce routes
 in default mobile build.
 
 ## P2 — Contracts and API client
@@ -236,6 +239,6 @@ Replace removed suites with portfolio boundary tests:
 - [x] Zip backup outside repo
 - [x] `DEC-087` recorded
 - [x] File-level removal graph exists
+- [x] P1 client portfolio-native executed
 - [ ] Remote archive refs pushed and protected
 - [ ] Staging/prod DB inventory confirmed
-- [ ] P1 execution started

@@ -1,8 +1,6 @@
 export * from './AppIcon';
 export * from './AppDialog';
 export * from './AppText';
-export * from './auction-card-item';
-export * from './AuctionCard';
 export * from './CreatorCard';
 export * from './Button';
 export * from './FormSection';
@@ -11,8 +9,6 @@ export * from './PageState';
 export * from './ImagePlaceholder';
 export * from './MotionPressable';
 export * from './ProductGallery';
-export { parseProductTabParam } from './product-tabs';
-export type { ProductTabId } from './product-tabs';
 export * from './ResilientRemoteImage';
 export * from './Separator';
 export * from './Skeleton';

@@ -13,6 +13,7 @@ export { FigmaTextField } from './FigmaTextField';
 export { FloatingDock } from './FloatingDock';
 export { OverlayDimmer } from './OverlayDimmer';
 export { WorkCoverCard } from './WorkCoverCard';
+export { WorkCoverCardGrid } from './WorkCoverCardGrid';
 export {
   figmaDeferredIconNames,
   figmaIconNames,
@@ -23,4 +24,4 @@ export {
   type FigmaButtonVariant,
 } from './figma-button-style';
 export { figmaDockItems, figmaDeferredDockItemIds } from './floating-dock';
-export { getWorkCoverOverlay, type WorkCoverMode } from './work-cover-fields';
+export { getWorkCoverOverlay } from './work-cover-fields';

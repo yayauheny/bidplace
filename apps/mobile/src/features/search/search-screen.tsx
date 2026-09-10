@@ -6,11 +6,10 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  AuctionCardGrid,
   CreatorCardGrid,
   PageState,
-  toAuctionCardItem,
 } from '../../components/ui';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
 
 export function SearchScreen({ query }: { query: string }) {
@@ -25,7 +24,7 @@ export function SearchScreen({ query }: { query: string }) {
     queryFn: () => api.portfolio.listAuthors({ q: query, limit: 8 }),
     enabled: Boolean(query),
   });
-  const productItems = (works.data?.works ?? []).map(toAuctionCardItem);
+  const productItems = works.data?.works ?? [];
   const sellerItems = (authors.data?.authors ?? []).map((item) => ({
     sellerProfile: item.author,
   }));
@@ -56,7 +55,7 @@ export function SearchScreen({ query }: { query: string }) {
             {productItems.length > 0 ? (
               <View style={{ gap: designTokens.space.x3 }}>
                 <AppText role="label">Работы</AppText>
-                <AuctionCardGrid items={productItems} />
+                <WorkCoverCardGrid items={productItems} />
               </View>
             ) : null}
             {sellerItems.length > 0 ? (

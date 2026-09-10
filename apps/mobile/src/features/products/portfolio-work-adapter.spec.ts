@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 
-import { toAuctionCardItem } from '../../components/ui/auction-card-item';
 import { toProductScreenModel } from './portfolio-work-adapter';
 
 const work = {
@@ -63,12 +62,7 @@ describe('portfolio work adapter', () => {
     expect(model.product.title).toBe('Work');
     expect(model.product.city).toBe('Minsk');
     expect(model.sellerProfile.slug).toBe('author');
-    expect(toAuctionCardItem(related)).toEqual({
-      product: related.work,
-      sellerProfile: related.author,
-      listing: null,
-    });
-    expect(model.relatedItems).toHaveLength(1);
-    expect(model.relatedItems[0]?.product.publicId).toBe('portfolio02');
+    expect(model.relatedWorks).toHaveLength(1);
+    expect(model.relatedWorks[0]?.work.publicId).toBe('portfolio02');
   });
 });

@@ -38,12 +38,12 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
         await page.getByRole('button', { name: 'Меню' }).click();
         return page
           .locator('#mobile-menu-panel')
-          .getByRole('link', { name: 'Аукционы', exact: true });
+          .getByRole('link', { name: 'Работы', exact: true });
       };
       const worksLink = isMobile
         ? await openMobileMenu()
-        : (await page.getByRole('button', { name: 'Аукционы' }).click(),
-          page.getByRole('link', { name: 'Аукционы', exact: true }));
+        : (await page.getByRole('button', { name: 'Работы' }).click(),
+          page.getByRole('link', { name: 'Работы', exact: true }));
       await worksLink.click();
       await expect(page).toHaveURL(/\/works$/);
       await expect(
@@ -54,8 +54,8 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
       await page.goto('/');
       const keyboardWorksLink = isMobile
         ? await openMobileMenu()
-        : (await page.getByRole('button', { name: 'Аукционы' }).click(),
-          page.getByRole('link', { name: 'Аукционы', exact: true }));
+        : (await page.getByRole('button', { name: 'Работы' }).click(),
+          page.getByRole('link', { name: 'Работы', exact: true }));
       await keyboardWorksLink.focus();
       await expect
         .poll(() =>
@@ -140,7 +140,7 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
                 const requestPath = new URL(requestUrl, window.location.origin)
                   .pathname;
                 if (
-                  !['/api/products', '/api/discovery/home'].includes(
+                  !['/api/works', '/api/portfolio/home'].includes(
                     requestPath,
                   )
                 ) {
@@ -152,10 +152,14 @@ test('captures Wave B shared focus, motion, state and target hit-area evidence',
                   );
                 }
                 const responseBody =
-                  requestPath === '/api/discovery/home'
-                    ? { topAuctions: [], newWorks: [], creators: [] }
+                  requestPath === '/api/portfolio/home'
+                    ? {
+                        curatorSelection: null,
+                        newWorks: [],
+                        newAuthors: [],
+                      }
                     : {
-                        products: [],
+                        works: [],
                         pagination: { page: 1, limit: 20, total: 0 },
                       };
                 return new Response(

@@ -20,7 +20,6 @@ import {
 } from './media-recovery';
 
 export type ResilientRemoteImageComponent =
-  | 'AuctionCard'
   | 'CreatorCard'
   | 'CreationStep'
   | 'ProductGallery'

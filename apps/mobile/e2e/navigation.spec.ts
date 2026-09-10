@@ -23,10 +23,10 @@ test('desktop header keeps the active home link and discovery menu visible', asy
   await expect(homeLink).toHaveAttribute('href', '/');
   await expect(homeLink).not.toHaveAttribute('aria-selected');
   await expect(homeLink).toHaveCSS('min-height', '44px');
-  await page.getByRole('button', { name: 'Аукционы' }).click();
+  await page.getByRole('button', { name: 'Работы' }).click();
   const discoveryMenu = page.locator('#discovery-menu-dropdown');
   await expect(
-    discoveryMenu.getByRole('link', { name: 'Аукционы' }),
+    discoveryMenu.getByRole('link', { name: 'Работы' }),
   ).toBeVisible();
   await expect(
     discoveryMenu.getByRole('link', { name: 'Авторы' }),
@@ -45,7 +45,7 @@ test('guest navigation exposes public discovery without seller actions', async (
   await expect(
     page.getByRole('link', { name: 'bidplace — на главную' }),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Аукционы' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Работы' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Покупки' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Добавить работу' })).toHaveCount(
     0,
@@ -94,7 +94,7 @@ test('mobile guest menu and search use canonical open states', async ({
   expect(menuBox!.width).toBe(288);
   expect(menuBox!.x).toBeGreaterThanOrEqual(16);
   expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(304);
-  await expect(menu.getByRole('link', { name: 'Аукционы' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Работы' })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Авторы' })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Войти' })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -143,14 +143,14 @@ test('approved seller navigation exposes the cabinet and create action', async (
   try {
     await page.setViewportSize({ width: 1025, height: 900 });
     await page.goto(`/product/${fixture.product.publicId}`);
-    await page.getByRole('button', { name: 'Аукционы' }).click();
-    await expect(page.getByRole('link', { name: 'Аукционы' })).toBeVisible();
+    await page.getByRole('button', { name: 'Работы' }).click();
+    await expect(page.getByRole('link', { name: 'Работы' })).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Добавить работу' }),
     ).toBeVisible();
 
     const discoveryMenu = page.locator('#discovery-menu-dropdown');
-    for (const label of ['Аукционы', 'Авторы']) {
+    for (const label of ['Работы', 'Авторы']) {
       const link = discoveryMenu.getByRole('link', { name: label });
       await link.focus();
       await expect(link).toBeFocused();
@@ -239,7 +239,7 @@ test('mobile menu uses the shared overlay layer and viewport inset', async ({
     expect(menuBox!.x).toBeGreaterThanOrEqual(8);
     expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(382);
 
-    await menu.getByRole('link', { name: 'Аукционы' }).click();
+    await menu.getByRole('link', { name: 'Работы' }).click();
     await expect(page).toHaveURL(/\/works$/);
     await expect(menu).toHaveCount(0);
   } finally {
@@ -255,10 +255,10 @@ test('product author link opens the public seller profile', async ({
 
   try {
     const detailResponse = await context.request.get(
-      `${e2eApiBaseURL}/api/products/${fixture.product.publicId}`,
+      `${e2eApiBaseURL}/api/works/${fixture.product.publicId}`,
     );
     const detail = await detailResponse.json();
-    const seller = detail.sellerProfile as { slug: string; fullName: string };
+    const seller = detail.author as { slug: string; fullName: string };
     await page.goto(`/product/${fixture.product.publicId}`);
     await page
       .getByRole('link', {
@@ -267,7 +267,7 @@ test('product author link opens the public seller profile', async ({
       .click();
     await expect(page).toHaveURL(new RegExp(`/seller/${seller.slug}$`));
     await expect(
-      page.getByRole('heading', { name: seller.fullName }),
+      page.getByText(seller.fullName, { exact: true }).first(),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: new RegExp(fixture.product.title) }),

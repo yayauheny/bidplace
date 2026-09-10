@@ -34,8 +34,9 @@ the exact node `621:19476`
 atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
 runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and
 200 px bottom corners. `apps/mobile/src/components/ui` wraps those masters
-(`Button`, `TextField`, `ImagePlaceholder`, `AuctionCard` → `WorkCoverCard`
-portfolio mode).
+(`Button`, `TextField`, `ImagePlaceholder`). Public grids call `WorkCoverCard`
+directly; there is no `AuctionCard` runtime wrapper and no commerce overlay
+mode.
 
 `AppShell` is a centered 390 column plus `FloatingDock` (Главная / Поиск /
 Добавить / Профиль, no cart). Wide windows keep the same column. 1024/1440
@@ -330,8 +331,8 @@ Shared masters:
 - `FigmaButton` — solid / outline / ghost / muted, hover / pressed / disabled;
 - `FigmaTextField` — empty, hover, filled, focus, error, success, disabled;
 - `FigmaChip` — non-interactive tags (`onLight` / `onDark`);
-- `WorkCoverCard` — 264×352 cover; commerce price/timer/status exist as slots
-  and stay off unless `mode="commerce"`;
+- `WorkCoverCard` — 264×352 cover; title, `@author` and frost only (no price,
+  timer or sale-status slots in the active component);
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;
 - `FloatingDock` — Главная / Поиск / Добавить / Профиль; cart is not an item.
 

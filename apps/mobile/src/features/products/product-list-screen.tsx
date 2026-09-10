@@ -8,11 +8,10 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell, FilterMenu } from '../../components/layout';
 import {
   AppText,
-  AuctionCard,
   PageState,
   SecondaryButton,
-  toAuctionCardItem,
 } from '../../components/ui';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
 import { CatalogCardSkeleton } from './CatalogCardSkeleton';
 import {
@@ -75,13 +74,7 @@ export function ProductListScreen({
       />
     );
   } else {
-    content = (
-      <View style={{ gap: designTokens.space.sectionGap }}>
-        {query.data.works.map((item) => (
-          <AuctionCard key={item.work.publicId} item={toAuctionCardItem(item)} />
-        ))}
-      </View>
-    );
+    content = <WorkCoverCardGrid items={query.data.works} />;
   }
 
   return (

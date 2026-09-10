@@ -1,29 +1,21 @@
 import { expect, test } from '@playwright/test';
 
+import { authenticatedPage } from './support/auth-session';
 import {
-  createAuctionFixture,
   createAdminModerationFixture,
   createBuyerFixture,
 } from './support/e2e-fixtures';
-import { authenticatedPage } from './support/auth-session';
 import { e2eApiBaseURL } from './support/e2e-env';
 
 const apiBaseURL = e2eApiBaseURL;
 
-test('authenticated buyer receives private responses and truthful empty activity', async ({
+test('authenticated user can open account menu and log out', async ({
   browser,
 }) => {
   const { buyer } = await createBuyerFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
 
   try {
-    const activity = await context.request.get(`${apiBaseURL}/api/me/activity`);
-    expect(activity.status()).toBe(200);
-    expect((await activity.json()).activity).toEqual([]);
-
-    await page.goto('/me/activity');
-    await expect(page.getByText('Пока нет торгов')).toBeVisible();
-
     await page.goto('/');
     await page.getByRole('button', { name: /Открыть меню аккаунта/ }).click();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
@@ -92,24 +84,9 @@ test('admin reviews and approves pending seller and product', async ({
 }) => {
   test.setTimeout(120_000);
   const fixture = await createAdminModerationFixture();
-  const auction = await createAuctionFixture();
   const { context, page } = await authenticatedPage(browser, fixture.admin);
 
   try {
-    const activityResponse = await context.request.get(
-      `${apiBaseURL}/api/me/activity`,
-    );
-    expect(activityResponse.status()).toBe(403);
-
-    const bidResponse = await context.request.post(
-      `${apiBaseURL}/api/listings/${auction.listing.id}/bids`,
-      {
-        headers: { 'Idempotency-Key': `admin-${auction.listing.id}` },
-        data: { amount: 11 },
-      },
-    );
-    expect(bidResponse.status()).toBe(403);
-
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/admin');
     const accountTrigger = page.getByRole('button', {
@@ -240,44 +217,6 @@ test('admin reviews and approves pending seller and product', async ({
         )?.status;
       })
       .toBe('CHANGES_REQUESTED');
-  } finally {
-    await context.close();
-  }
-});
-
-test('scheduled listings block moderation and bids before lifecycle activation', async ({
-  browser,
-}) => {
-  const adminFixture = await createAdminModerationFixture();
-  const auction = await createAuctionFixture({ live: false });
-  const { context } = await authenticatedPage(browser, adminFixture.admin);
-
-  try {
-    const sellerResponse = await context.request.patch(
-      `${apiBaseURL}/api/admin/seller-profiles/${auction.sellerProfileId}/status`,
-      { data: { status: 'SUSPENDED', reason: 'Проверка scheduled-лота' } },
-    );
-    expect(sellerResponse.status()).toBe(409);
-
-    const productResponse = await context.request.patch(
-      `${apiBaseURL}/api/admin/products/${auction.product.id}/status`,
-      {
-        data: {
-          status: 'CHANGES_REQUESTED',
-          reason: 'Проверка scheduled-лота',
-        },
-      },
-    );
-    expect(productResponse.status()).toBe(409);
-
-    const bidResponse = await context.request.post(
-      `${apiBaseURL}/api/listings/${auction.listing.id}/bids`,
-      {
-        headers: { 'Idempotency-Key': `scheduled-${auction.listing.id}` },
-        data: { amount: 11 },
-      },
-    );
-    expect(bidResponse.status()).toBe(403);
   } finally {
     await context.close();
   }
