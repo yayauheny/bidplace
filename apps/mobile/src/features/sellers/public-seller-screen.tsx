@@ -33,7 +33,7 @@ export function PublicSellerScreen({
   sort = 'newest',
   tab,
 }: {
-  slug: string;
+  slug?: string;
   sort?: 'newest' | 'oldest';
   tab?: string | string[];
 }) {
@@ -45,7 +45,7 @@ export function PublicSellerScreen({
     queryKey: ['public-author', slug, { sort }],
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
-      api.portfolio.getAuthor(slug, {
+      api.portfolio.getAuthor(slug!, {
         sort,
         page: pageParam,
         limit: 20,

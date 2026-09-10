@@ -8,6 +8,17 @@ export function parseWorkTabParam(
   return candidate === 'story' ? 'story' : 'details';
 }
 
+export function shouldDropWorkTabParam(
+  rawTab: string | readonly string[] | undefined,
+  hasStory: boolean,
+): boolean {
+  const candidate = Array.isArray(rawTab) ? rawTab[0] : rawTab;
+  if (!candidate) return false;
+  if (candidate === 'story') return !hasStory;
+  if (candidate === 'details') return false;
+  return true;
+}
+
 export function relatedWorksExcludingCurrent(
   items: ReadonlyArray<{
     work: {

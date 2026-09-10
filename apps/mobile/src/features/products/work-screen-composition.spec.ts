@@ -3,15 +3,35 @@ import { describe, expect, it } from 'vitest';
 import {
   parseWorkTabParam,
   relatedWorksExcludingCurrent,
+  shouldDropWorkTabParam,
 } from './work-screen-composition';
 
 describe('work screen composition', () => {
-  it('keeps story tab only when requested and excludes the current work', () => {
+  it('keeps story tab when the work has a story', () => {
+    expect(shouldDropWorkTabParam('story', true)).toBe(false);
     expect(parseWorkTabParam('story')).toBe('story');
-    expect(parseWorkTabParam('details')).toBe('details');
+  });
+
+  it('drops story tab when the work has no story', () => {
+    expect(shouldDropWorkTabParam('story', false)).toBe(true);
+    expect(parseWorkTabParam('story')).toBe('story');
+  });
+
+  it('does not drop tab when it is absent', () => {
+    expect(shouldDropWorkTabParam(undefined, false)).toBe(false);
+    expect(shouldDropWorkTabParam(undefined, true)).toBe(false);
+    expect(parseWorkTabParam(undefined)).toBe('details');
+  });
+
+  it('drops unknown tab values', () => {
+    expect(shouldDropWorkTabParam('bids', true)).toBe(true);
+    expect(shouldDropWorkTabParam(['story', 'details'], false)).toBe(true);
     expect(parseWorkTabParam('bids')).toBe('details');
-    expect(
-      relatedWorksExcludingCurrent(
+    expect(parseWorkTabParam('details')).toBe('details');
+  });
+
+  it('excludes the current work from related works', () => {
+    expect(relatedWorksExcludingCurrent(
         [
           {
             work: {

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { type Href, useRouter } from 'expo-router';
 import { View, ScrollView } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -24,29 +25,46 @@ import { publicShareUrl } from '../../lib/public-share-url';
 import { useTrackListingView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
-import { relatedWorksExcludingCurrent } from './work-screen-composition';
+import {
+  relatedWorksExcludingCurrent,
+  shouldDropWorkTabParam,
+} from './work-screen-composition';
 
 export function ProductScreen({
   publicId,
+  tabParam,
   activeTab = 'details',
   onTabChange,
 }: {
-  publicId: string;
+  publicId?: string;
+  tabParam?: string | string[];
   activeTab?: WorkContentTabId;
   onTabChange?: (tab: WorkContentTabId) => void;
 }) {
   const api = useApiClient();
+  const router = useRouter();
   const [shareOpen, setShareOpen] = useState(false);
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
-    queryFn: () => api.portfolio.getWork(publicId),
+    queryFn: () => api.portfolio.getWork(publicId as string),
     retry: retryTransientPublicQuery,
+    enabled: Boolean(publicId),
   });
 
+  useEffect(() => {
+    if (!query.data || !publicId) return;
+    const hasStory = Boolean(visibleWorkStory(query.data.work.story));
+    if (!shouldDropWorkTabParam(tabParam, hasStory)) return;
+    router.replace({
+      pathname: '/product/[publicId]',
+      params: { publicId },
+    } as Href);
+  }, [query.data, publicId, tabParam, router]);
+
   useTrackListingView({
-    productPublicId: publicId,
+    productPublicId: publicId!,
     sellerProfileId: query.data?.author.id,
-    enabled: Boolean(query.data),
+    enabled: Boolean(query.data && publicId),
   });
 
   if (query.isLoading) {
