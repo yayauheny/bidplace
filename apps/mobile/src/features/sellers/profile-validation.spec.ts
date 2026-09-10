@@ -57,16 +57,19 @@ describe('seller profile field validation', () => {
         handoffContactValue: '@creator_name',
       }).city,
     ).toBe('Укажите город');
+  });
+
+  it('allows empty public social links', () => {
     expect(
       getProfileFieldErrors({
         city: 'Минск',
-        socialLink: 'https://example.com/creator',
+        socialLink: '',
         telegramUrl: '',
         instagramUrl: '',
         websiteUrl: '',
         handoffContactType: 'TELEGRAM',
         handoffContactValue: '@creator_name',
-      }).city,
-    ).toBeUndefined();
+      }),
+    ).toEqual({});
   });
 });

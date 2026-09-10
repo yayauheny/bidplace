@@ -36,6 +36,7 @@ describe('shared contracts', () => {
       materials: null,
       dimensions: null,
       year: null,
+      uniqueness: null,
       images: [
         {
           id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
@@ -82,6 +83,27 @@ describe('shared contracts', () => {
       achievements: [],
       sharePath: '/authors/author',
     };
+    expect(
+      portfolioWorkDetailResponseSchema.parse({
+        work: publicWork,
+        author: publicAuthor,
+        relatedWorks: [],
+      }).work.uniqueness,
+    ).toBeNull();
+    expect(
+      portfolioWorkDetailResponseSchema.parse({
+        work: { ...publicWork, uniqueness: 'Единственный экземпляр' },
+        author: publicAuthor,
+        relatedWorks: [],
+      }).work.uniqueness,
+    ).toBe('Единственный экземпляр');
+    expect(
+      portfolioWorkDetailResponseSchema.safeParse({
+        work: { ...publicWork, uniqueness: '' },
+        author: publicAuthor,
+        relatedWorks: [],
+      }).success,
+    ).toBe(false);
     expect(
       portfolioWorkDetailResponseSchema.parse({
         work: publicWork,
@@ -280,6 +302,12 @@ describe('shared contracts', () => {
     expect(
       sellerProfileCreateRequestSchema.safeParse({
         ...base,
+        socialLink: undefined,
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
         city: undefined,
       }).success,
     ).toBe(false);
@@ -313,6 +341,45 @@ describe('shared contracts', () => {
       handoffContactValue: '@creator_name',
     });
     expect(parsed.success).toBe(expected);
+  });
+
+  it('accepts each structured public link independently and rejects empty strings', () => {
+    const base = {
+      slug: 'creator',
+      sellerType: 'creator' as const,
+      discipline: 'Керамика',
+      fullName: 'Creator',
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'About creator',
+      handoffContactType: 'TELEGRAM' as const,
+      handoffContactValue: '@creator_name',
+    };
+
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
+        telegramUrl: 'https://t.me/creator_name',
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
+        instagramUrl: 'https://instagram.com/creator',
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
+        websiteUrl: 'https://creator.example.com',
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProfileCreateRequestSchema.safeParse({
+        ...base,
+        socialLink: '',
+      }).success,
+    ).toBe(false);
   });
 
   it('still accepts Telegram and Instagram handle forms on private handoff', () => {

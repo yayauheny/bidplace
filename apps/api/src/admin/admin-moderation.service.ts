@@ -358,7 +358,7 @@ export class AdminModerationService {
     country: string;
     city: string | null;
     practice: string | null;
-    socialLink: string;
+    socialLink: string | null;
     telegramUrl: string | null;
     instagramUrl: string | null;
     websiteUrl: string | null;
@@ -396,7 +396,6 @@ export class AdminModerationService {
     if (
       !sellerProfile.fullName ||
       !sellerProfile.city ||
-      !sellerProfile.socialLink ||
       !sellerProfile.shortDescription ||
       !profilePhotoMimeType ||
       !profilePhotoByteLength ||

@@ -63,7 +63,6 @@ export function SellerProfileFormSteps({
   fields,
   profile,
   fieldErrors,
-  hasPublicLink,
   handoffContactError,
   update,
 }: {
@@ -73,7 +72,6 @@ export function SellerProfileFormSteps({
   fields: ProfileFields;
   profile?: SellerProfileForDisplay | null;
   fieldErrors: ProfileFieldErrors;
-  hasPublicLink: boolean;
   handoffContactError: string | undefined;
   update: (key: keyof ProfileFields, value: string) => void;
 }) {
@@ -183,17 +181,11 @@ export function SellerProfileFormSteps({
             label="Основная публичная ссылка"
             value={fields.socialLink}
             onChangeText={(value) => update('socialLink', value)}
-            placeholder="Одна ссылка обязательна"
+            placeholder="HTTPS-ссылка, если есть"
             autoCapitalize="none"
             editable={editable}
-            required
             error={fieldErrors.socialLink}
           />
-          {!hasPublicLink ? (
-            <AppText role="bodySmall" tone="danger">
-              Добавьте хотя бы одну публичную ссылку.
-            </AppText>
-          ) : null}
         </FormSection>
       )}
 

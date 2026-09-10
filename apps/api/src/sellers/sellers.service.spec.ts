@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { publicSellerQuerySchema } from '@bidplace/contracts';
 
 import { countPublicSellerStatuses, SellersService } from './sellers.service';
 import { publicSellerProfileSelect } from './seller-profile.mapper';
@@ -915,10 +916,33 @@ describe('SellersService', () => {
     expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
   });
 
-  it('rejects submitting a profile revision without a public social link', async () => {
+  it('submits a profile revision without public social links', async () => {
+    const ownerProfile = {
+      id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+      userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      slug: 'seller-slug',
+      fullName: 'Seller',
+      sellerType: 'creator',
+      discipline: 'Керамика',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: null,
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Description',
+      handoffContactType: 'TELEGRAM',
+      handoffContactValue: '@seller',
+      handoffInitiator: 'BUYER_CONTACTS_SELLER',
+      status: 'APPROVED',
+      createdAt: new Date('2026-07-24T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-24T00:00:00.000Z'),
+    };
     const tx = {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
+          ...ownerProfile,
           status: 'APPROVED',
           editingRevision: {
             id: 'revision-id',
@@ -936,6 +960,8 @@ describe('SellersService', () => {
             profilePhotoObjectKey: 'seller-photo:profile-id',
           },
         }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(ownerProfile),
+        update: vi.fn(),
       },
       sellerProfileRevision: { update: vi.fn() },
     };
@@ -951,10 +977,15 @@ describe('SellersService', () => {
       imageStore as never,
     );
 
-    await expect(service.submitProfileRevision('owner-id')).rejects.toThrow(
-      'Author profile is missing required fields',
+    await expect(service.submitProfileRevision('owner-id')).resolves.toEqual(
+      expect.objectContaining({
+        sellerProfile: expect.objectContaining({ socialLink: null }),
+      }),
     );
-    expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: expect.objectContaining({ status: 'PENDING_REVIEW' }),
+    });
   });
 
   it('does not delete an achievement object still referenced by another revision', async () => {
@@ -1083,5 +1114,32 @@ describe('SellersService', () => {
     expect(prisma.product.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.auditEvent.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.product.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('pages public authors in PostgreSQL with a stable name sort', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      sellerProfile: { findMany: vi.fn() },
+    };
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      imageStore as never,
+    );
+
+    await service.listPublic(
+      publicSellerQuerySchema.parse({
+        page: 2,
+        limit: 5,
+        sort: 'name',
+      }),
+    );
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: unknown };
+    const pageQueryText = String(pageQuery.sql ?? pageQuery);
+    expect(pageQueryText).toContain('LIMIT');
+    expect(pageQueryText).toContain('OFFSET');
+    expect(pageQueryText).toContain('full_name');
+    expect(prisma.sellerProfile.findMany).not.toHaveBeenCalled();
   });
 });

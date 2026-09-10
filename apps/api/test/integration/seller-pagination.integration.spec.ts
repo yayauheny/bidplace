@@ -20,6 +20,7 @@ async function reset() {
   await prisma.productRevision.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
   await prisma.category.deleteMany();

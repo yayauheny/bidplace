@@ -46,6 +46,11 @@ import {
   publicProductContentSql,
 } from '../products/public-visibility';
 import {
+  publicAuthorCte,
+  publicAuthorOrderBy,
+  type PublicAuthorPageRow,
+} from './sellers-catalog.query';
+import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
   sellerProfileOwnerSelect,
@@ -89,7 +94,6 @@ function assertProfileRevisionReadyToSubmit(revision: {
     !revision.fullName ||
     !revision.country ||
     !revision.city ||
-    !revision.socialLink ||
     !revision.shortDescription ||
     !revision.profilePhotoMimeType ||
     !revision.profilePhotoByteLength ||
@@ -254,7 +258,7 @@ export class SellersService {
             country: input.country,
             city: input.city,
             practice: input.practice ?? null,
-            socialLink: input.socialLink,
+            socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
@@ -296,7 +300,7 @@ export class SellersService {
             country: input.country,
             city: input.city,
             practice: input.practice ?? null,
-            socialLink: input.socialLink,
+            socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
@@ -952,82 +956,47 @@ export class SellersService {
     query: PublicSellerQuery,
     options: { requireCity?: boolean } = {},
   ) {
-    const searchWhere = query.q
-      ? {
-          OR: [
-            { fullName: { contains: query.q, mode: 'insensitive' as const } },
-            { slug: { contains: query.q, mode: 'insensitive' as const } },
-            {
-              shortDescription: {
-                contains: query.q,
-                mode: 'insensitive' as const,
-              },
-            },
-          ],
-        }
-      : {};
-    const where = {
-      status: 'APPROVED' as const,
-      ...(query.tag
-        ? {
-            discipline: {
-              contains: query.tag,
-              mode: 'insensitive' as const,
-            },
-          }
-        : {}),
-      ...(query.city
-        ? {
-            city: {
-              equals: query.city,
-              mode: 'insensitive' as const,
-            },
-          }
-        : options.requireCity
-          ? { city: publicAuthorCityWhere }
-          : {}),
-      ...searchWhere,
-    };
+    const cte = publicAuthorCte(query, options);
+    const pageRows = await this.prisma.$queryRaw<PublicAuthorPageRow[]>(
+      Prisma.sql`${cte}
+        SELECT "id", COUNT(*) OVER()::int AS "total"
+        FROM filtered
+        ORDER BY ${Prisma.raw(publicAuthorOrderBy(query.sort))}
+        LIMIT ${query.limit}
+        OFFSET ${(query.page - 1) * query.limit}`,
+    );
+    const total = pageRows.length
+      ? Number(pageRows[0]!.total)
+      : Number(
+          (
+            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
+              Prisma.sql`${cte}
+                SELECT COUNT(*)::int AS "total"
+                FROM filtered`,
+            )
+          )[0]?.total ?? 0,
+        );
+
+    if (!pageRows.length) {
+      return publicSellerListResponseSchema.parse({
+        sellers: [],
+        pagination: { page: query.page, limit: query.limit, total },
+      });
+    }
+
     const sellers = await this.prisma.sellerProfile.findMany({
-      where,
+      where: { id: { in: pageRows.map((row) => row.id) } },
       select: {
         ...publicSellerProfileSelect,
-        products: {
-          where: publicCatalogProductWhere,
-          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-          take: 1,
-          select: { createdAt: true },
-        },
         _count: {
           select: { products: { where: publicCatalogProductWhere } },
         },
       },
     });
-
-    const visibleSellers = options.requireCity
-      ? sellers.filter((seller) => Boolean(seller.city?.trim()))
-      : sellers;
-    const sortedSellers = [...visibleSellers].sort((left, right) => {
-      if (query.sort === 'activity') {
-        const leftCreatedAt = left.products[0]?.createdAt.getTime() ?? 0;
-        const rightCreatedAt = right.products[0]?.createdAt.getTime() ?? 0;
-
-        return (
-          rightCreatedAt - leftCreatedAt ||
-          left.fullName.localeCompare(right.fullName) ||
-          left.id.localeCompare(right.id)
-        );
-      }
-
-      return (
-        left.fullName.localeCompare(right.fullName) ||
-        left.id.localeCompare(right.id)
-      );
-    });
-    const pagedSellers = sortedSellers.slice(
-      (query.page - 1) * query.limit,
-      query.page * query.limit,
-    );
+    const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
+    const pagedSellers = pageRows
+      .map((row) => sellersById.get(row.id))
+      .filter((seller): seller is (typeof sellers)[number] => Boolean(seller));
 
     return publicSellerListResponseSchema.parse({
       sellers: pagedSellers.map((seller) => ({
@@ -1037,7 +1006,7 @@ export class SellersService {
       pagination: {
         page: query.page,
         limit: query.limit,
-        total: visibleSellers.length,
+        total,
       },
     });
   }

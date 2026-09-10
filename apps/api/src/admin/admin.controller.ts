@@ -1,5 +1,7 @@
 import {
   adminAnalyticsQuerySchema,
+  adminCuratorSelectionRequestSchema,
+  adminCuratorSelectionResponseSchema,
   adminEmergencyCancelRequestSchema,
   adminListingsNeedingOrderResponseSchema,
   adminOkResponseSchema,
@@ -18,10 +20,12 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -42,6 +46,7 @@ import {
   sellerProfileResponseSelect,
   toSellerProfileResponse,
 } from '../sellers/seller-profile.mapper';
+import { PortfolioService } from '../portfolio/portfolio.service';
 import { AdminGuard } from './admin.guard';
 import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminListingEmergencyService } from './admin-listing-emergency.service';
@@ -84,6 +89,7 @@ export class AdminController {
     private readonly analytics: AdminAnalyticsService,
     private readonly users: AdminUserService,
     private readonly listingEmergency: AdminListingEmergencyService,
+    private readonly portfolio: PortfolioService,
     private readonly clock: Clock,
   ) {}
 
@@ -266,6 +272,26 @@ export class AdminController {
         id,
         parseBody(adminUserRevokeSessionsRequestSchema, body),
       ),
+    );
+  }
+
+  @Put('curator-selection')
+  async setCuratorSelection(
+    @CurrentUser() auth: { sub: string },
+    @Body() body: unknown,
+  ) {
+    return adminCuratorSelectionResponseSchema.parse(
+      await this.portfolio.setCuratorSelection(
+        parseBody(adminCuratorSelectionRequestSchema, body).publicId,
+        auth.sub,
+      ),
+    );
+  }
+
+  @Delete('curator-selection')
+  async clearCuratorSelection() {
+    return adminOkResponseSchema.parse(
+      await this.portfolio.clearCuratorSelection(),
     );
   }
 

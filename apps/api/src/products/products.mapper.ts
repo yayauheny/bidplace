@@ -30,6 +30,7 @@ export const productRevisionGallerySelect = {
   materials: true,
   dimensions: true,
   year: true,
+  uniqueness: true,
   images: {
     orderBy: { position: 'asc' as const },
     select: productRevisionImageSelect,

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 
 import { imageKey } from './image-key';
 import { PostgresImageStore } from './postgres-image-store';
@@ -14,6 +15,14 @@ describe('PostgresImageStore', () => {
       findUnique: vi.fn(),
     },
     sellerProfile: {
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    sellerProfileRevision: {
+      update: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    sellerProfileRevisionAchievement: {
       update: vi.fn(),
       findUnique: vi.fn(),
     },
@@ -60,6 +69,63 @@ describe('PostgresImageStore', () => {
     });
   });
 
+  it('stores revision and achievement bytes with mime, length and checksum', async () => {
+    const bytes = Uint8Array.from([9, 8, 7]);
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+
+    await store.put(imageKey.sellerProfileRevision('revision-id'), {
+      bytes,
+      mimeType: 'image/png',
+    });
+    await store.put(imageKey.sellerAchievement('achievement-id'), {
+      bytes,
+      mimeType: 'image/jpeg',
+    });
+
+    expect(prisma.sellerProfileRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: {
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: 3,
+        profilePhotoChecksum: checksum,
+        profilePhotoData: bytes,
+      },
+    });
+    expect(prisma.sellerProfileRevisionAchievement.update).toHaveBeenCalledWith({
+      where: { id: 'achievement-id' },
+      data: {
+        mimeType: 'image/jpeg',
+        byteLength: 3,
+        checksum,
+        data: bytes,
+      },
+    });
+  });
+
+  it('replaces revision photo bytes on a second put', async () => {
+    const first = Uint8Array.from([1, 2]);
+    const second = Uint8Array.from([3, 4, 5]);
+
+    await store.put(imageKey.sellerProfileRevision('revision-id'), {
+      bytes: first,
+      mimeType: 'image/png',
+    });
+    await store.put(imageKey.sellerProfileRevision('revision-id'), {
+      bytes: second,
+      mimeType: 'image/jpeg',
+    });
+
+    expect(prisma.sellerProfileRevision.update).toHaveBeenLastCalledWith({
+      where: { id: 'revision-id' },
+      data: {
+        profilePhotoMimeType: 'image/jpeg',
+        profilePhotoByteLength: 3,
+        profilePhotoChecksum: createHash('sha256').update(second).digest('hex'),
+        profilePhotoData: second,
+      },
+    });
+  });
+
   it('reads product-image bytes from ProductImage', async () => {
     prisma.productImage.findUnique.mockResolvedValue({
       data: Uint8Array.from([7, 8]),
@@ -71,6 +137,30 @@ describe('PostgresImageStore', () => {
     expect(result).toEqual({
       bytes: Uint8Array.from([7, 8]),
       mimeType: 'image/png',
+    });
+  });
+
+  it('reads revision and achievement bytes', async () => {
+    prisma.sellerProfileRevision.findUnique.mockResolvedValue({
+      profilePhotoData: Uint8Array.from([1, 2]),
+      profilePhotoMimeType: 'image/png',
+    });
+    prisma.sellerProfileRevisionAchievement.findUnique.mockResolvedValue({
+      data: Uint8Array.from([3, 4]),
+      mimeType: 'image/jpeg',
+    });
+
+    await expect(
+      store.get(imageKey.sellerProfileRevision('revision-id')),
+    ).resolves.toEqual({
+      bytes: Uint8Array.from([1, 2]),
+      mimeType: 'image/png',
+    });
+    await expect(
+      store.get(imageKey.sellerAchievement('achievement-id')),
+    ).resolves.toEqual({
+      bytes: Uint8Array.from([3, 4]),
+      mimeType: 'image/jpeg',
     });
   });
 
@@ -90,21 +180,21 @@ describe('PostgresImageStore', () => {
     });
   });
 
-  it('fails closed for new profile revision and achievement object keys', async () => {
-    await expect(
-      store.put(imageKey.sellerProfileRevision('revision-id'), {
-        bytes: Uint8Array.from([1]),
-        mimeType: 'image/png',
-      }),
-    ).rejects.toThrow('Revision media requires S3 image storage');
-    await expect(
-      store.delete(imageKey.sellerAchievement('achievement-id')),
-    ).rejects.toThrow('Revision media requires S3 image storage');
-    await expect(
-      store.get(imageKey.sellerProfileRevision('revision-id')),
-    ).resolves.toBeNull();
-    await expect(
-      store.get(imageKey.sellerAchievement('achievement-id')),
-    ).resolves.toBeNull();
+  it('clears revision photo bytes and no-ops missing achievement rows', async () => {
+    prisma.sellerProfileRevisionAchievement.findUnique.mockResolvedValue(null);
+
+    await store.delete(imageKey.sellerProfileRevision('revision-id'));
+    await store.delete(imageKey.sellerAchievement('missing-id'));
+
+    expect(prisma.sellerProfileRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: {
+        profilePhotoMimeType: null,
+        profilePhotoByteLength: null,
+        profilePhotoChecksum: null,
+        profilePhotoData: null,
+      },
+    });
+    expect(prisma.sellerProfileRevisionAchievement.update).not.toHaveBeenCalled();
   });
 });

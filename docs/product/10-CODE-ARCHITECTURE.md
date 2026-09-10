@@ -25,8 +25,9 @@
   application projections. It delegates persistence to Product/Seller services and
   validates all public responses with `packages/contracts`; its DTOs never expose
   commerce fields. Canonical share paths are relative (`/works/{publicId}`,
-  `/authors/{slug}`). `socialLink` is owner/persistence-only and is omitted from
-  portfolio public author DTOs.
+  `/authors/{slug}`). `socialLink` is optional on create/submit/approval, stored
+  nullable, owner/persistence-only, and omitted from portfolio public author DTOs.
+  Private handoff stays required on the owner profile and is never public.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the phone column
   (`maxWidth: 390`) and `FloatingDock`. Pen `AppHeader` is not on the render path
@@ -38,13 +39,13 @@
   modules may still exist on disk but are not exported into screens.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
-  metadata, ownership, checksum and deterministic object key. `PostgresImageStore`
-  still stores first-application seller photos (`seller-photo:{profileId}`) and
-  legacy product/creation-step bytes; `get` of `seller-profile-revision` and
-  `seller-achievement` keys returns `null` (HTTP 404), while `put`/`delete`
-  throw `RevisionMediaStorageError` (HTTP 503). Object bytes are deleted after
-  the metadata transaction commits. `MEDIA_STORAGE_PROVIDER=s3` holds revision
-  media.
+  metadata, ownership, checksum and deterministic object key. Local/test default
+  `PostgresImageStore` stores product, creation-step, first-application seller
+  photo (`seller-photo:{profileId}`), revision photo
+  (`seller-profile-revision:{id}`) and achievement (`seller-achievement:{id}`)
+  bytes in BYTEA columns, keeping mime/length/checksum metadata consistent on
+  put. Production still requires `MEDIA_STORAGE_PROVIDER=s3`; S3 atomicity and
+  MinIO-as-local-default remain later work.
   Local Compose runs MinIO on `9000`/`9001` with bucket `bidplace-media`.
   Production configuration fails closed without complete S3 settings.
   `scripts/ops/backfill-media-to-s3.mjs` is dry-run by default and validates
@@ -55,7 +56,7 @@
 - `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
-- `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
+- `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. `socialLink` is optional/nullable; empty strings are rejected. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
 - `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
@@ -65,16 +66,23 @@
 ```text
 SellerProfile
   ├─ SellerProfileRevision[]
-  │    └─ SellerProfileRevisionAchievement[] (text/date; revision scoped)
+  │    └─ SellerProfileRevisionAchievement[] (text/date; optional BYTEA)
   └─ Product
        ├─ ProductRevision[]
        │    └─ ProductRevisionImage[]
        ├─ ProductImage[] (legacy metadata)
+       ├─ CuratorSelection? (single home slot pointer)
        └─ Listing[]
             ├─ AuctionRules
             ├─ Bid[]
             └─ Order[]
 ```
+
+`SellerProfile.socialLink` and `SellerProfileRevision.socialLink` are nullable.
+`CuratorSelection` is a unique `slot` (`home`) pointing at one Product; Home
+`curatorSelection` is returned only when that Work and author pass public
+visibility SQL. Admin `PUT`/`DELETE /api/admin/curator-selection` write the
+pointer. Production seed does not create a selection.
 
 `Product` and `Order` use immutable 11-character cryptographically random public IDs; internal writes use UUIDs. MVP has only `ListingType.AUCTION` and currency `BYN`. PostgreSQL enforces one active (`SCHEDULED`/`LIVE`) Listing per Product and one non-cancelled Order per Listing with partial unique indexes.
 
@@ -124,8 +132,13 @@ SellerProfile
   on disconnect.
 - Public discovery is split by contract: portfolio Work catalog uses a PostgreSQL CTE
   over approved products and `product_revision_images` of `published_revision_id`,
-  without a Listing join. Seller directory queries expose `q`, pagination and
-  `activity`/`name` sort and require a non-null city for public authors.
+  without a Listing join. Author `getAuthor` forwards `q`/`category`/`materials`
+  into that catalog query. Seller directory `listPublic` pages with
+  `COUNT`/`ORDER BY`/`LIMIT`/`OFFSET` in PostgreSQL: `name` is `full_name, id`;
+  `activity`/`added` is latest public product `created_at, id`. Public authors
+  still require a trimmed city. Portfolio Work DTOs include nullable
+  `uniqueness` from the published revision; clients join `sharePath` to the
+  current origin instead of inventing `/product/` URLs.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 

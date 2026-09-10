@@ -875,6 +875,7 @@ export class ProductsService {
         materials: published.materials,
         dimensions: published.dimensions,
         year: published.year,
+        uniqueness: published.uniqueness?.trim() || null,
         images: toImageContracts(images),
         publishedAt: product.publishedAt.toISOString(),
       },

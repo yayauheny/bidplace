@@ -153,6 +153,20 @@ export const adminEmergencyCancelRequestSchema = z
 
 export const adminOkResponseSchema = z.object({ ok: z.literal(true) }).strict();
 
+export const adminCuratorSelectionRequestSchema = z
+  .object({
+    publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+  })
+  .strict();
+
+export const adminCuratorSelectionResponseSchema = z
+  .object({
+    publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    productId: uuidSchema,
+    selectedAt: isoDateTimeSchema,
+  })
+  .strict();
+
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminSellerProfileSchema = sellerProfileSchema
   .extend({
@@ -216,4 +230,10 @@ export type AdminUserRevokeSessionsRequest = z.infer<
 >;
 export type AdminEmergencyCancelRequest = z.infer<
   typeof adminEmergencyCancelRequestSchema
+>;
+export type AdminCuratorSelectionRequest = z.infer<
+  typeof adminCuratorSelectionRequestSchema
+>;
+export type AdminCuratorSelectionResponse = z.infer<
+  typeof adminCuratorSelectionResponseSchema
 >;

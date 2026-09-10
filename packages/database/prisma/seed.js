@@ -60,6 +60,91 @@ function readSeedProductImage(fileName) {
   };
 }
 
+async function attachSellerProfileRevision(profile, extras = {}) {
+  const status = profile.status === 'APPROVED' ? 'APPROVED' : 'PENDING_REVIEW';
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status,
+      slug: profile.slug,
+      discipline: profile.discipline,
+      fullName: profile.fullName,
+      country: profile.country,
+      city: profile.city,
+      practice: profile.practice,
+      socialLink: profile.socialLink,
+      telegramUrl: profile.telegramUrl,
+      instagramUrl: profile.instagramUrl,
+      websiteUrl: profile.websiteUrl,
+      shortDescription: profile.shortDescription,
+      profilePhotoMimeType: profile.profilePhotoMimeType,
+      profilePhotoByteLength: profile.profilePhotoByteLength,
+      profilePhotoChecksum: profile.profilePhotoChecksum,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: profile.profilePhotoData,
+      submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+      reviewedAt:
+        status === 'APPROVED' ? new Date('2026-01-02T00:00:00.000Z') : null,
+      achievements: extras.achievements
+        ? { create: extras.achievements }
+        : undefined,
+    },
+  });
+
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      editingRevisionId: revision.id,
+      publishedRevisionId: status === 'APPROVED' ? revision.id : null,
+    },
+  });
+}
+
+async function attachProductRevision(productId, published) {
+  const product = await prisma.product.findUniqueOrThrow({
+    where: { id: productId },
+    include: { images: { orderBy: { position: 'asc' } } },
+  });
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: published ? 'APPROVED' : 'PENDING_REVIEW',
+      categoryId: product.categoryId,
+      title: product.title,
+      story: product.story,
+      technique: product.technique,
+      materials: product.materials,
+      dimensions: product.dimensions,
+      weight: product.weight,
+      year: product.year,
+      condition: product.condition,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      packaging: product.packaging,
+      deliveryInfo: product.deliveryInfo,
+      creationIntro: product.creationIntro,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: published ? revision.id : null,
+    },
+  });
+}
+
 function readSeedSellerProfileImage(fileName) {
   const data = readFileSync(join(sellerProfileFixturesDirectory, fileName));
 
@@ -115,7 +200,7 @@ async function createProductWithImages({
 }) {
   const image = readSeedProductImage(imageFileName);
 
-  return prisma.product.create({
+  const product = await prisma.product.create({
     data: {
       publicId,
       sellerProfileId,
@@ -162,6 +247,9 @@ async function createProductWithImages({
       },
     },
   });
+
+  await attachProductRevision(product.id, status === 'APPROVED');
+  return product;
 }
 
 async function main() {
@@ -177,6 +265,15 @@ async function main() {
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
+  await prisma.sellerProfile.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
+  await prisma.sellerProfileRevision.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
@@ -236,9 +333,12 @@ async function main() {
       userId: seller.id,
       slug: 'anna-morozova',
       sellerType: 'creator',
-      discipline: 'Керамика',
+      discipline: 'Керамика, скульптура',
       fullName: 'Анна Морозова',
       country: 'BY',
+      city: 'Минск',
+      practice:
+        'Работаю с глиной и глазурью в небольшой минской мастерской. Предметы собираю вручную небольшими сериями и единственными экземплярами.',
       socialLink: 'https://example.com/anna-morozova',
       telegramUrl: 'https://t.me/anna_morozova',
       instagramUrl: 'https://instagram.com/anna_morozova',
@@ -257,6 +357,20 @@ async function main() {
       status: 'APPROVED',
     },
   });
+  await attachSellerProfileRevision(sellerProfile, {
+    achievements: [
+      {
+        position: 0,
+        occurredAt: new Date('2024-09-01T00:00:00.000Z'),
+        body: 'Персональная выставка «Тёплый ритм» в Минске.',
+      },
+      {
+        position: 1,
+        occurredAt: new Date('2025-03-15T00:00:00.000Z'),
+        body: 'Групповой показ керамики в мастерской на Октябрьской.',
+      },
+    ],
+  });
 
   const pendingSellerProfile = await prisma.sellerProfile.create({
     data: {
@@ -266,6 +380,7 @@ async function main() {
       discipline: 'Живопись',
       fullName: 'Заявка на проверку',
       country: 'BY',
+      city: 'Минск',
       socialLink: 'https://example.com/pending-seller',
       shortDescription: 'Профиль продавца для проверки очереди модерации.',
       profilePhotoMimeType: 'image/png',
@@ -280,14 +395,16 @@ async function main() {
       status: 'PENDING_REVIEW',
     },
   });
+  await attachSellerProfileRevision(pendingSellerProfile);
 
   const additionalDemoCreators = [
     {
       email: 'irina-levchenko@bidplace.test',
       slug: 'irina-levchenko',
       fullName: 'Ирина Левченко',
-      discipline: 'Керамика',
+      discipline: 'Керамика, глазурь',
       description: 'Создаёт тихие предметы из глины для повседневных ритуалов.',
+      practice: 'Леплю небольшие сосуды и оставляю следы руки на поверхности.',
       handle: '@irina_levchenko',
       photoFileName: 'irina-levchenko.png',
     },
@@ -295,8 +412,9 @@ async function main() {
       email: 'pavel-sokolov@bidplace.test',
       slug: 'pavel-sokolov',
       fullName: 'Павел Соколов',
-      discipline: 'Предметный дизайн',
+      discipline: 'Предметный дизайн, дерево',
       description: 'Исследует честные материалы и простые формы для дома.',
+      practice: 'Собираю предметы из дерева и стекла без декоративного шума.',
       handle: '@pavel_sokolov',
       photoFileName: 'pavel-sokolov.png',
     },
@@ -304,9 +422,10 @@ async function main() {
       email: 'olga-vlasova@bidplace.test',
       slug: 'olga-vlasova',
       fullName: 'Ольга Власова',
-      discipline: 'Текстиль',
+      discipline: 'Текстиль, вышивка',
       description:
         'Собирает фактуры и цвет в небольшие авторские текстильные серии.',
+      practice: 'Соединяю лён, нить и аппликацию в небольших сериях.',
       handle: '@olga_vlasova',
       photoFileName: 'olga-vlasova.png',
     },
@@ -314,8 +433,9 @@ async function main() {
       email: 'mark-volkov@bidplace.test',
       slug: 'mark-volkov',
       fullName: 'Марк Волков',
-      discipline: 'Графика',
+      discipline: 'Графика, печать',
       description: 'Работает с линией, бумагой и ручной печатью.',
+      practice: 'Печатаю листы вручную и оставляю бумаге живую фактуру.',
       handle: '@mark_volkov',
       photoFileName: 'mark-volkov.png',
     },
@@ -323,8 +443,9 @@ async function main() {
       email: 'lena-kravets@bidplace.test',
       slug: 'lena-kravets',
       fullName: 'Лена Кравец',
-      discipline: 'Авторские объекты',
+      discipline: 'Скульптура, объекты',
       description: 'Создаёт небольшие объекты на стыке скульптуры и быта.',
+      practice: 'Собираю объекты из глины и найденных материалов.',
       handle: '@lena_kravets',
       photoFileName: 'lena-kravets.png',
     },
@@ -332,8 +453,9 @@ async function main() {
       email: 'nikita-orlov@bidplace.test',
       slug: 'nikita-orlov',
       fullName: 'Никита Орлов',
-      discipline: 'Керамика',
+      discipline: 'Керамика, глазурь',
       description: 'Сочетает ручную лепку с графичными глазурными акцентами.',
+      practice: 'Сочетаю лепку и графичные глазурные акценты.',
       handle: '@nikita_orlov',
       photoFileName: 'nikita-orlov.png',
     },
@@ -341,8 +463,9 @@ async function main() {
       email: 'svetlana-gromova@bidplace.test',
       slug: 'svetlana-gromova',
       fullName: 'Светлана Громова',
-      discipline: 'Смешанная техника',
+      discipline: 'Смешанная техника, объекты',
       description: 'Соединяет найденные материалы, цвет и ручную сборку.',
+      practice: 'Соединяю найденные материалы, цвет и ручную сборку.',
       handle: '@svetlana_gromova',
       photoFileName: 'svetlana-gromova.png',
     },
@@ -375,6 +498,8 @@ async function main() {
           discipline: creator.discipline,
           fullName: creator.fullName,
           country: 'BY',
+          city: 'Минск',
+          practice: creator.practice,
           socialLink: website,
           telegramUrl: `https://t.me/${creator.handle.slice(1)}`,
           websiteUrl: website,
@@ -390,6 +515,9 @@ async function main() {
         },
       });
     }),
+  );
+  await Promise.all(
+    additionalDemoProfiles.map((profile) => attachSellerProfileRevision(profile)),
   );
 
   const now = new Date();
@@ -825,6 +953,15 @@ async function main() {
       userId: buyer.id,
       rulesVersion: 'MVP_RULES_V1',
       acceptedAt: new Date(now.getTime() - 60_000),
+    },
+  });
+
+  await prisma.curatorSelection.create({
+    data: {
+      slot: 'home',
+      productId: scheduledProduct.id,
+      selectedAt: new Date('2026-09-01T00:00:00.000Z'),
+      selectedByUserId: admin.id,
     },
   });
 

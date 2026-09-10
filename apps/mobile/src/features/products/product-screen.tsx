@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import * as ExpoLinking from 'expo-linking';
 import { Link, type Href } from 'expo-router';
 import {
   Platform,
@@ -8,6 +7,7 @@ import {
   Share,
   View,
 } from 'react-native';
+import * as ExpoLinking from 'expo-linking';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -25,6 +25,7 @@ import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { useTrackListingView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
+import { canonicalShareUrl } from '../../lib/canonical-share-url';
 import { toProductScreenModel } from './portfolio-work-adapter';
 import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
 
@@ -56,10 +57,14 @@ export function ProductScreen({
   });
 
   const shareProduct = async () => {
-    const productUrl =
-      Platform.OS === 'web' && typeof window !== 'undefined'
-        ? new URL(`/product/${publicId}`, window.location.origin).toString()
-        : ExpoLinking.createURL(`/product/${publicId}`);
+    if (!query.data) {
+      return;
+    }
+    const productUrl = canonicalShareUrl(
+      query.data.work.sharePath,
+      undefined,
+      ExpoLinking.createURL,
+    );
 
     try {
       if (Platform.OS === 'web') {

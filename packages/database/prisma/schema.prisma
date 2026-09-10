@@ -101,6 +101,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   termsAcceptances   TermsAcceptance[]
   auditEvents       AuditEvent[]          @relation("AuditActor")
+  curatorSelections CuratorSelection[]    @relation("CuratorSelectionActor")
 
   @@map("users")
 }
@@ -120,7 +121,7 @@ model SellerProfile {
   profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)
   profilePhotoObjectKey String?            @map("profile_photo_object_key") @db.VarChar(255)
   profilePhotoData    Bytes               @map("profile_photo_data")
-  socialLink          String              @map("social_link") @db.VarChar(255)
+  socialLink          String?             @map("social_link") @db.VarChar(255)
   telegramUrl         String?             @map("telegram_url") @db.VarChar(255)
   instagramUrl        String?             @map("instagram_url") @db.VarChar(255)
   websiteUrl          String?             @map("website_url") @db.VarChar(255)
@@ -153,7 +154,7 @@ model SellerProfileRevision {
   country         String              @db.VarChar(80)
   city            String?             @db.VarChar(160)
   practice        String?             @db.Text
-  socialLink      String              @map("social_link") @db.VarChar(255)
+  socialLink      String?             @map("social_link") @db.VarChar(255)
   telegramUrl     String?             @map("telegram_url") @db.VarChar(255)
   instagramUrl    String?             @map("instagram_url") @db.VarChar(255)
   websiteUrl      String?             @map("website_url") @db.VarChar(255)
@@ -162,6 +163,7 @@ model SellerProfileRevision {
   profilePhotoByteLength Int?          @map("profile_photo_byte_length")
   profilePhotoChecksum String?         @map("profile_photo_checksum") @db.Char(64)
   profilePhotoObjectKey String?        @map("profile_photo_object_key") @db.VarChar(255)
+  profilePhotoData Bytes?              @map("profile_photo_data")
   submittedAt     DateTime?           @map("submitted_at")
   reviewedAt      DateTime?           @map("reviewed_at")
   createdAt       DateTime            @default(now()) @map("created_at")
@@ -187,6 +189,7 @@ model SellerProfileRevisionAchievement {
   byteLength  Int?                  @map("byte_length")
   checksum    String?               @db.Char(64)
   objectKey   String?               @map("object_key") @db.VarChar(255)
+  data        Bytes?
   createdAt   DateTime              @default(now()) @map("created_at")
   revision    SellerProfileRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
@@ -238,6 +241,7 @@ model Product {
   revisions       ProductRevision[] @relation("ProductRevisions")
   editingRevision ProductRevision? @relation("ProductEditingRevision", fields: [editingRevisionId], references: [id], onDelete: Restrict)
   publishedRevision ProductRevision? @relation("ProductPublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
+  curatorSelection  CuratorSelection?
 
   @@index([sellerProfileId, status])
   @@map("products")
@@ -523,4 +527,16 @@ model AcquisitionAttribution {
   @@index([source, capturedAt])
   @@index([capturedAt])
   @@map("acquisition_attributions")
+}
+
+model CuratorSelection {
+  id               String   @id @default(uuid()) @db.Uuid
+  slot             String   @unique @db.VarChar(32)
+  productId        String   @unique @map("product_id") @db.Uuid
+  selectedAt       DateTime @map("selected_at")
+  selectedByUserId String?  @map("selected_by_user_id") @db.Uuid
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  selectedBy       User?    @relation("CuratorSelectionActor", fields: [selectedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("curator_selections")
 }

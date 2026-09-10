@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-06
+Последнее обновление: 2026-09-09
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1722,4 +1722,27 @@ to code.
 
 Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
 capability is enabled with matching frames.
+
+## DEC-086 — Opening of the week is a server-owned editorial selection
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder correction that skipping Home «Открытие недели» was a
+mistake
+Revises: `DEC-085` only for `Открытие недели`. Search overlay, catalog tabs
+Аукционы/Анонсы/Архив, cart and Geist font files stay deferred.
+
+### Decision
+
+Home may show `Открытие недели` when a durable server-owned editorial pointer
+selects a published, publicly visible Work and author. Local/test seed may
+include one deterministic example. Production does not invent a selection.
+Missing, hidden, rejected or unpublished pointers resolve to `null` and the
+section is omitted. Newest-work, random pick and client hardcoded `publicId`
+are forbidden.
+
+### Revisit when
+
+Home UI implements the section from an approved capture, or editorial workflow
+needs a non-admin operator tool.
 

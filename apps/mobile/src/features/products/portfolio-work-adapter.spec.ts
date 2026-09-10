@@ -14,6 +14,7 @@ const work = {
   materials: 'Clay',
   dimensions: null,
   year: 2024,
+  uniqueness: 'Единственный экземпляр',
   images: [
     {
       id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',

@@ -101,6 +101,10 @@ export class HttpTestClient {
     return this.request(path, { method: 'PATCH', body });
   }
 
+  put(path: string, body?: HttpRequestInit['body']): Promise<Response> {
+    return this.request(path, { method: 'PUT', body });
+  }
+
   delete(path: string): Promise<Response> {
     return this.request(path, { method: 'DELETE' });
   }

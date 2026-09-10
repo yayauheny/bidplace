@@ -117,7 +117,7 @@ export function SellerProfileScreen() {
       discipline: profile.discipline,
       country: profile.country,
       city: profile.city ?? '',
-      socialLink: profile.socialLink,
+      socialLink: profile.socialLink ?? '',
       telegramUrl: profile.telegramUrl ?? '',
       instagramUrl: profile.instagramUrl ?? '',
       websiteUrl: profile.websiteUrl ?? '',
@@ -156,11 +156,7 @@ export function SellerProfileScreen() {
         discipline: fields.discipline,
         country: fields.country,
         city: fields.city.trim(),
-        socialLink:
-          fields.socialLink.trim() ||
-          fields.websiteUrl.trim() ||
-          fields.telegramUrl.trim() ||
-          fields.instagramUrl.trim(),
+        socialLink: fields.socialLink.trim() || null,
         telegramUrl: fields.telegramUrl.trim() || null,
         instagramUrl: fields.instagramUrl.trim() || null,
         websiteUrl: fields.websiteUrl.trim() || null,
@@ -266,12 +262,6 @@ export function SellerProfileScreen() {
   const update = (key: keyof ProfileFields, value: string) =>
     setFields((current) => ({ ...current, [key]: value }));
 
-  const hasPublicLink = Boolean(
-    fields.socialLink.trim() ||
-    fields.telegramUrl.trim() ||
-    fields.instagramUrl.trim() ||
-    fields.websiteUrl.trim(),
-  );
   const fieldErrors = getProfileFieldErrors(fields);
   const handoffContactError = getHandoffContactError(
     fields.handoffContactType,
@@ -292,7 +282,6 @@ export function SellerProfileScreen() {
     fields.discipline.trim() && fields.shortDescription.trim(),
   );
   const canContinueFromLinks =
-    hasPublicLink &&
     !fieldErrors.socialLink &&
     !fieldErrors.telegramUrl &&
     !fieldErrors.instagramUrl &&
@@ -406,7 +395,6 @@ export function SellerProfileScreen() {
             fields={fields}
             profile={profileForSteps}
             fieldErrors={fieldErrors}
-            hasPublicLink={hasPublicLink}
             handoffContactError={handoffContactError}
             update={update}
           />
@@ -419,7 +407,6 @@ export function SellerProfileScreen() {
             fields={fields}
             profile={profileForSteps}
             fieldErrors={fieldErrors}
-            hasPublicLink={hasPublicLink}
             handoffContactError={handoffContactError}
             update={update}
           />

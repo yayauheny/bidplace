@@ -71,6 +71,59 @@ acceptance target; retained native branches are compatibility code only.
 - `Verified`: 249 mobile unit tests, mobile typecheck and lint pass. Browser
   matched comparison and physical iOS/Android acceptance remain pending.
 
+## 2026-09-09 — Backend without design (seed, media, socials, filters, editorial)
+
+- `Implemented`: local/test demo seed writes `city`, published
+  `SellerProfileRevision` / `ProductRevision` / `ProductRevisionImage`, Anna
+  practice plus two text achievements, and a `CuratorSelection` slot `home`
+  on `seedSched01`. Pending author/work stay unpublished. Evidence:
+  `packages/database/prisma/seed.js`,
+  `apps/api/test/integration/seed-contract.integration.spec.ts`.
+- `Implemented`: `PostgresImageStore` put/get/delete for
+  `seller-profile-revision` and `seller-achievement` BYTEA
+  (`SellerProfileRevision.profilePhotoData`,
+  `SellerProfileRevisionAchievement.data`). Intentional HTTP 503 for those keys
+  is removed. Production still requires `MEDIA_STORAGE_PROVIDER=s3`. Evidence:
+  `apps/api/src/core/image-store/postgres-image-store.ts`,
+  `postgres-image-store.spec.ts`,
+  `apps/api/test/integration/portfolio-published-revision.integration.spec.ts`.
+- `Implemented`: `socialLink` is nullable/optional on contracts, Prisma,
+  create, submit and admin approval. Empty string is rejected. Private handoff
+  stays required and is omitted from portfolio author/application JSON. Mobile
+  validation no longer requires a public link; payload sends `null` not `''`.
+  Evidence: `packages/contracts/src/seller-profile.ts`,
+  `apps/api/src/sellers/sellers.service.ts`,
+  `apps/api/src/admin/admin-moderation.service.ts`,
+  `apps/mobile/src/features/sellers/seller-profile-screen.tsx`,
+  `apps/api/test/integration/optional-socials.integration.spec.ts`.
+- `Implemented`: `PortfolioService.getAuthor` forwards `q`/`category`/`materials`.
+  `SellersService.listPublic` pages in SQL with stable `full_name,id` and
+  latest-public-product `created_at,id` sorts. Evidence:
+  `apps/api/src/sellers/sellers-catalog.query.ts`,
+  `apps/api/test/integration/portfolio-filters.integration.spec.ts`.
+- `Implemented`: portfolio Work DTO includes nullable `uniqueness` from the
+  published revision. Work/author share uses API `sharePath` via
+  `canonicalShareUrl`. Related works already omit the current Work. No Details
+  тираж block and no Home «Открытие недели» UI. Evidence:
+  `packages/contracts/src/portfolio.ts`,
+  `apps/api/src/products/products.service.ts`,
+  `apps/mobile/src/lib/canonical-share-url.ts`.
+- `Implemented`: `CuratorSelection` table; `GET /api/portfolio/home` returns
+  `curatorSelection` only when the pointed Work/author are publicly visible,
+  otherwise `null`. Admin `PUT`/`DELETE /api/admin/curator-selection` under
+  `AdminGuard`. Evidence: `apps/api/src/portfolio/portfolio.service.ts`,
+  `apps/api/src/admin/admin.controller.ts`,
+  `apps/api/test/integration/curator-selection.integration.spec.ts`.
+- `Partial`: Home screen still does not render Opening of the week.
+  Figma/glass/search overlay remain out of this wave.
+- `Not implemented`: S3 revision atomicity; MinIO as local default;
+  Expo admin curator UI.
+- Checks: `pnpm verify` passed on 2026-09-09 (typecheck 7/7, lint 2/2, API unit
+  388, contracts 31, integration 102, build 7/7). Mobile vitest 233/233.
+  `git diff --name-only -- '*.pen'` empty.
+- Docs: RFC §5 `DEC-086`; architecture Postgres revision bytes, nullable
+  `socialLink`, curator pointer. Design status unchanged.
+
 ## 2026-09-09 — Cover frost / author atmosphere / token rebuild
 
 - `Partial`: cover overlays frost the artwork (`CoverFrost`); author profile

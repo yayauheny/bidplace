@@ -37,6 +37,7 @@ export const portfolioWorkSchema = z
     materials: publicText.nullable(),
     dimensions: publicText.nullable(),
     year: z.number().int().nullable(),
+    uniqueness: z.string().trim().min(1).nullable(),
     images: z.array(productImageSchema).nonempty(),
     publishedAt: z.string().datetime(),
     sharePath: z.string().regex(/^\/works\/[A-Za-z0-9_-]{11}$/),

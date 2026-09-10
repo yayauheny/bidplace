@@ -210,24 +210,41 @@ describe('portfolio published revision HTTP transport', () => {
       400,
     );
 
+    const uploaded = await owner.post(
+      '/author/application/achievements',
+      (() => {
+        const form = new FormData();
+        form.set('body', 'Show');
+        form.append(
+          'image',
+          new Blob([permissionImage], { type: 'image/png' }),
+          'show.png',
+        );
+        return form;
+      })(),
+    );
+    expect(uploaded.status).toBe(201);
+    const uploadedId = (
+      (await uploaded.json()) as { achievement: { id: string } }
+    ).achievement.id;
+    const ownerImage = await owner.get(
+      `/author-achievements/${uploadedId}/image`,
+    );
+    expect(ownerImage.status).toBe(200);
+    expect(ownerImage.headers.get('content-type')).toMatch(/image\/png/);
+    expect(Buffer.from(await ownerImage.arrayBuffer()).subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
     expect(
-      (
-        await owner.post('/author/application/achievements', (() => {
-          const form = new FormData();
-          form.set('body', 'Show');
-          form.append(
-            'image',
-            new Blob([permissionImage], { type: 'image/png' }),
-            'show.png',
-          );
-          return form;
-        })())
-      ).status,
-    ).toBe(503);
+      (await guest.get(`/author-achievements/${uploadedId}/image`)).status,
+    ).toBe(404);
+    expect(
+      (await stranger.get(`/author-achievements/${uploadedId}/image`)).status,
+    ).toBe(404);
 
     const created = await owner.post('/author/application/achievements', (() => {
       const form = new FormData();
-      form.set('body', 'Show');
+      form.set('body', 'Show text only');
       return form;
     })());
     expect(created.status).toBe(201);
@@ -269,7 +286,7 @@ describe('portfolio published revision HTTP transport', () => {
       new Blob([nextPhoto], { type: 'image/png' }),
       'next.png',
     );
-    expect((await owner.patch('/seller/profile', photoForm)).status).toBe(503);
+    expect((await owner.patch('/seller/profile', photoForm)).status).toBe(200);
 
     const textForm = new FormData();
     textForm.set('fullName', 'Pending name author');
@@ -280,9 +297,12 @@ describe('portfolio published revision HTTP transport', () => {
     expect(Buffer.from(await publicPhoto.arrayBuffer())).toEqual(permissionImage);
 
     const ownerPhoto = await owner.get('/author/application/photo');
-    expect([200, 404]).toContain(ownerPhoto.status);
-    if (ownerPhoto.status === 200) {
-      expect(Buffer.from(await ownerPhoto.arrayBuffer())).toEqual(permissionImage);
-    }
+    expect(ownerPhoto.status).toBe(200);
+    const ownerPhotoBytes = Buffer.from(await ownerPhoto.arrayBuffer());
+    expect(ownerPhoto.headers.get('content-type')).toMatch(/image\/png/);
+    expect(ownerPhotoBytes.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect(ownerPhotoBytes).not.toEqual(permissionImage);
   });
 });

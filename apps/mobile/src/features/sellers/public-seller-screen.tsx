@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Platform, ScrollView, View } from 'react-native';
+import * as ExpoLinking from 'expo-linking';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
@@ -20,6 +21,7 @@ import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
 import { getApiAssetUrl } from '../../lib/environment';
+import { canonicalShareUrl } from '../../lib/canonical-share-url';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
@@ -74,13 +76,16 @@ export function PublicSellerScreen({
     if (
       Platform.OS !== 'web' ||
       typeof window === 'undefined' ||
-      !navigator.clipboard
+      !navigator.clipboard ||
+      !author
     ) {
       setCopyState('error');
       return;
     }
     void navigator.clipboard
-      .writeText(new URL(`/seller/${slug}`, window.location.origin).toString())
+      .writeText(
+        canonicalShareUrl(author.sharePath, undefined, ExpoLinking.createURL),
+      )
       .then(() => setCopyState('success'))
       .catch(() => setCopyState('error'));
   };

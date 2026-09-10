@@ -18,6 +18,7 @@ async function reset() {
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();

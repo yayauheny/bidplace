@@ -214,6 +214,7 @@ export async function resetPermissionFixture(
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
   await prisma.product.updateMany({
     data: { editingRevisionId: null, publishedRevisionId: null },
   });

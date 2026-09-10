@@ -10,16 +10,20 @@ import {
   type PortfolioWorksQuery,
   type PortfolioAchievementWriteRequest,
 } from '@bidplace/contracts';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { PrismaService } from '../core/database';
 import { ProductsService } from '../products/products.service';
 import { SellersService } from '../sellers/sellers.service';
+
+const HOME_CURATOR_SLOT = 'home';
 
 @Injectable()
 export class PortfolioService {
   constructor(
     private readonly products: ProductsService,
     private readonly sellers: SellersService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async listWorks(query: PortfolioWorksQuery) {
@@ -89,6 +93,9 @@ export class PortfolioService {
     const works = await this.products.listPortfolio({
       page: query.page,
       limit: query.limit,
+      q: query.q,
+      category: query.category,
+      materials: query.materials,
       sort: query.sort,
       author: slug,
     });
@@ -101,15 +108,76 @@ export class PortfolioService {
   }
 
   async home() {
-    const [works, authors] = await Promise.all([
+    const [works, authors, selection] = await Promise.all([
       this.listWorks({ page: 1, limit: 6, sort: 'newest' }),
       this.listAuthors({ page: 1, limit: 6, sort: 'added' }),
+      this.prisma.curatorSelection.findUnique({
+        where: { slot: HOME_CURATOR_SLOT },
+        select: { productId: true },
+      }),
     ]);
+    let curatorSelection = null;
+    if (selection) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: selection.productId },
+        select: { publicId: true },
+      });
+      if (product) {
+        try {
+          curatorSelection = toPortfolioWorkItem(
+            await this.products.getPortfolio(product.publicId),
+          );
+        } catch (error) {
+          if (!(error instanceof NotFoundException)) {
+            throw error;
+          }
+        }
+      }
+    }
     return portfolioHomeResponseSchema.parse({
-      curatorSelection: null,
+      curatorSelection,
       newWorks: works.works,
       newAuthors: authors.authors.map((item) => item.author),
     });
+  }
+
+  async setCuratorSelection(publicId: string, actorUserId: string) {
+    let item;
+    try {
+      item = await this.products.getPortfolio(publicId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new ConflictException('Work is not publicly visible');
+      }
+      throw error;
+    }
+    const selectedAt = new Date();
+    await this.prisma.curatorSelection.upsert({
+      where: { slot: HOME_CURATOR_SLOT },
+      create: {
+        slot: HOME_CURATOR_SLOT,
+        productId: item.product.id,
+        selectedAt,
+        selectedByUserId: actorUserId,
+      },
+      update: {
+        productId: item.product.id,
+        selectedAt,
+        selectedByUserId: actorUserId,
+      },
+    });
+    return {
+      publicId: item.product.publicId,
+      productId: item.product.id,
+      selectedAt: selectedAt.toISOString(),
+    };
+  }
+
+  async clearCuratorSelection() {
+    await this.prisma.curatorSelection.deleteMany({
+      where: { slot: HOME_CURATOR_SLOT },
+    });
+    return { ok: true as const };
   }
 
   async getApplication(userId: string) {
@@ -180,6 +248,7 @@ function toPortfolioWorkItem(item: {
     materials: string | null;
     dimensions: string | null;
     year: number | null;
+    uniqueness?: string | null;
     images: Array<unknown>;
     publishedAt: string;
   };
@@ -197,6 +266,7 @@ function toPortfolioWorkItem(item: {
       materials: product.materials,
       dimensions: product.dimensions,
       year: product.year,
+      uniqueness: product.uniqueness?.trim() || null,
       images: product.images,
       publishedAt: product.publishedAt,
       sharePath: `/works/${product.publicId}`,

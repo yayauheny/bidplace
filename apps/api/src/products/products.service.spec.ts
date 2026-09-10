@@ -68,6 +68,7 @@ function publishedRevisionGallery() {
     materials: approvedProduct.materials,
     dimensions: approvedProduct.dimensions,
     year: approvedProduct.year,
+    uniqueness: approvedProduct.uniqueness,
     images: [
       {
         position: 0,
