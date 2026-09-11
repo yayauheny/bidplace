@@ -4,6 +4,14 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Dock viewport white-strip fix
+
+- `Needs verification`: removed the fixed 96px bottom reserve from
+  `apps/mobile/src/components/layout/AppShell.tsx`; the scroll viewport now
+  extends behind the floating glass dock instead of ending above a white strip.
+- Screen compositions and glass tokens are unchanged. Browser visual acceptance
+  is delegated to the founder at their request; no new tests were added.
+
 ## 2026-09-11 — Unified glass dock without icon halo
 
 - `Corrected`: shared phone dock is one 232×64 glass capsule (Главная / Поиск /

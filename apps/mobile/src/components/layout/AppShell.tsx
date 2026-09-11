@@ -38,7 +38,6 @@ export function AppShell({
             maxWidth: designTokens.layout.phoneWidth,
             minWidth: 0,
             overflow: 'visible',
-            paddingBottom: hideDock ? 0 : designTokens.size.dockReserve,
           }}
         >
           {children}

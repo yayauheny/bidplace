@@ -4,6 +4,14 @@
 
 Общий статус: **Figma phone cutover Partial for MVP public/author screens**
 
+## 2026-09-11 — Dock viewport white-strip fix
+
+- `Needs verification`: removed the fixed 96px bottom reserve from
+  `apps/mobile/src/components/layout/AppShell.tsx`; the scroll viewport now
+  extends behind the floating glass dock instead of ending above a white strip.
+- Screen compositions and glass tokens are unchanged. Browser visual acceptance
+  is delegated to the founder at their request; no new tests were added.
+
 ## 2026-09-11 — Unified web glass dock without icon halo
 
 - `Corrected`: production dock is one 232×64 `FigmaGlassSurface` capsule
