@@ -1,80 +1,55 @@
-import { type ReactNode } from 'react';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { getApiAssetUrl } from '../../lib/environment';
-import { coverFrostSpec } from './cover-frost-style';
-import { webBackdropBlur } from './web-backdrop';
+import { coverFrostSpec, type CoverFrostPlacement } from './cover-frost-style';
 
 export function CoverFrost({
   imageUrl,
-  children,
+  placement,
 }: {
   imageUrl: string;
-  children: ReactNode;
+  placement: CoverFrostPlacement;
 }) {
-  const platform = Platform.OS === 'web' ? 'web' : 'native';
-  const spec = coverFrostSpec(platform);
-  const overlayGradient = `linear-gradient(to bottom, ${spec.gradientStart}, ${spec.gradientEnd})`;
-
+  const spec = coverFrostSpec(placement);
   return (
-    <View style={{ alignSelf: 'stretch' }}>
-      <View
-        aria-hidden
+    <View
+      aria-hidden
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      testID="figma-cover-frost"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        [spec.top ? 'top' : 'bottom']: 0,
+        height: `${spec.heightPercent}%`,
+        overflow: 'hidden',
+      }}
+    >
+      <Image
         accessible={false}
-        importantForAccessibility="no-hide-descendants"
-        testID="figma-cover-frost"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            pointerEvents: 'none',
-            overflow: 'hidden',
-            borderTopLeftRadius: spec.topRadius,
-            borderTopRightRadius: spec.topRadius,
-          },
-          spec.usesBackdropSampling ? webBackdropBlur(spec.runtimeBlur) : null,
-        ]}
-      >
-        {spec.usesDecorativeArtworkFallback ? (
-          <Image
-            accessible={false}
-            source={{ uri: getApiAssetUrl(imageUrl) }}
-            blurRadius={spec.runtimeBlur}
-            contentFit="cover"
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              aspectRatio: spec.artworkAspectRatio,
-            }}
-          />
-        ) : null}
-        {Platform.OS === 'web' ? (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundImage: overlayGradient,
-              } as ViewStyle,
-            ]}
-          />
-        ) : (
-          <LinearGradient
-            colors={[spec.gradientStart, spec.gradientEnd]}
-            style={StyleSheet.absoluteFill}
-          />
-        )}
-      </View>
-      <View
+        source={{ uri: getApiAssetUrl(imageUrl) }}
+        blurRadius={spec.runtimeBlur}
+        contentFit="cover"
         style={{
-          padding: spec.contentPadding,
-          gap: spec.contentGap,
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          [spec.top ? 'top' : 'bottom']: 0,
+          aspectRatio: spec.artworkAspectRatio,
         }}
-      >
-        {children}
-      </View>
+      />
+      <LinearGradient
+        colors={
+          spec.top
+            ? [spec.gradientEnd, spec.gradientStart]
+            : [spec.gradientStart, spec.gradientEnd]
+        }
+        style={StyleSheet.absoluteFill}
+      />
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Platform, Text, View, type ViewStyle } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -35,8 +35,12 @@ export function WorkCoverCard({
         accessibilityLabel={workCoverAccessibilityLabel(overlay)}
         preset="card"
         style={{
+          ...(Platform.OS === 'web'
+            ? ({ containerType: 'inline-size' } as ViewStyle)
+            : null),
           width: '100%',
-          aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+          aspectRatio:
+            figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
           overflow: 'hidden',
           borderRadius: figmaTokens.radius.cover,
           backgroundColor: figmaTokens.color.mutedFill,
@@ -56,8 +60,14 @@ export function WorkCoverCard({
           }}
           contentFit="cover"
         />
+        <CoverFrost imageUrl={imageUrl} placement="workBottom" />
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <CoverFrost imageUrl={imageUrl}>
+          <View
+            style={{
+              padding: figmaTokens.space.coverPad,
+              gap: figmaTokens.space.coverGap,
+            }}
+          >
             <View style={{ gap: figmaTokens.space.coverBlockGap }}>
               <Text
                 numberOfLines={2}
@@ -79,7 +89,7 @@ export function WorkCoverCard({
             >
               <FigmaChip label={`@${overlay.authorSlug}`} tone="onDark" />
             </View>
-          </CoverFrost>
+          </View>
         </View>
       </MotionPressable>
     </Link>

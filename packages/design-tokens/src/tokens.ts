@@ -136,6 +136,9 @@ export const designTokens = {
     dockIcon: 24,
     coverWidth: 264,
     coverHeight: 352,
+    workFrostHeight: 125,
+    authorTopFrostHeight: 56,
+    authorBottomFrostHeight: 77,
     listCoverHeight: 488,
     avatar: 112,
     identityAvatar: 84,
@@ -353,6 +356,7 @@ export const designTokens = {
     dockNativeIntensity: 30,
     dockAndroidReductionFactor: 5,
     overlay: 30,
+    authorTopOverlay: 20,
     atmosphere: 40,
   },
   opacity: {

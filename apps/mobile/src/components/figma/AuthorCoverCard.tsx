@@ -1,6 +1,5 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Platform, Text, View, type ViewStyle } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -30,8 +29,12 @@ export function AuthorCoverCard({
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
         style={{
+          ...(Platform.OS === 'web'
+            ? ({ containerType: 'inline-size' } as ViewStyle)
+            : null),
           width: '100%',
-          aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+          aspectRatio:
+            figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
           overflow: 'hidden',
           borderRadius: figmaTokens.radius.authorCover,
           backgroundColor: figmaTokens.color.mutedFill,
@@ -52,8 +55,9 @@ export function AuthorCoverCard({
           }}
           contentFit="cover"
         />
-        <LinearGradient
-          colors={[figmaTokens.color.overlayScrim, 'rgba(0, 0, 0, 0)']}
+        <CoverFrost imageUrl={imageUrl} placement="authorTop" />
+        <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
+        <View
           style={{
             alignSelf: 'stretch',
             paddingTop: 20,
@@ -73,8 +77,13 @@ export function AuthorCoverCard({
           >
             {content.fullName}
           </Text>
-        </LinearGradient>
-        <CoverFrost imageUrl={imageUrl}>
+        </View>
+        <View
+          style={{
+            padding: figmaTokens.space.coverPad,
+            gap: figmaTokens.space.coverGap,
+          }}
+        >
           <Text
             style={[
               { color: figmaTokens.color.white },
@@ -96,7 +105,7 @@ export function AuthorCoverCard({
               ))}
             </View>
           ) : null}
-        </CoverFrost>
+        </View>
       </MotionPressable>
     </Link>
   );

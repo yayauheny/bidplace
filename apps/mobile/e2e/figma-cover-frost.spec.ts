@@ -80,10 +80,9 @@ test('cover frost samples the real artwork once on web', async ({ page }) => {
     const style = getComputedStyle(element);
     return {
       ariaHidden: element.getAttribute('aria-hidden'),
-      backdropFilter:
-        style.backdropFilter ||
-        (style as CSSStyleDeclaration & { webkitBackdropFilter?: string })
-          .webkitBackdropFilter,
+      blurLayers: [...element.children].filter((child) =>
+        getComputedStyle(child).backdropFilter.startsWith('blur('),
+      ).length,
       imageCount: element.querySelectorAll('img').length,
       pointerEvents: style.pointerEvents,
     };
@@ -91,20 +90,22 @@ test('cover frost samples the real artwork once on web', async ({ page }) => {
 
   expect(implementation).toEqual({
     ariaHidden: 'true',
-    backdropFilter: 'blur(30px)',
+    blurLayers: 6,
     imageCount: 0,
     pointerEvents: 'none',
   });
 
   const withBlur = await frost.screenshot();
   await frost.evaluate((element) => {
-    const htmlElement = element as HTMLElement;
-    htmlElement.style.backdropFilter = 'none';
-    (
-      htmlElement.style as CSSStyleDeclaration & {
-        webkitBackdropFilter?: string;
-      }
-    ).webkitBackdropFilter = 'none';
+    for (const child of element.children) {
+      const layer = child as HTMLElement;
+      layer.style.backdropFilter = 'none';
+      (
+        layer.style as CSSStyleDeclaration & {
+          webkitBackdropFilter?: string;
+        }
+      ).webkitBackdropFilter = 'none';
+    }
   });
   const withoutBlur = await frost.screenshot();
 
