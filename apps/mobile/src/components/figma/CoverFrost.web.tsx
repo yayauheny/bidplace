@@ -2,8 +2,7 @@ import type { CSSProperties } from 'react';
 
 import {
   coverFrostBlur,
-  coverFrostLevels,
-  coverFrostMask,
+  coverFrostBlurMask,
   coverFrostSpec,
   type CoverFrostPlacement,
 } from './cover-frost-style';
@@ -22,6 +21,9 @@ export function CoverFrost({
   placement: CoverFrostPlacement;
 }) {
   const spec = coverFrostSpec(placement);
+  const blur = coverFrostBlur(spec.runtimeBlur);
+  const mask = coverFrostBlurMask(spec.top);
+
   return (
     <div
       data-testid="figma-cover-frost"
@@ -36,29 +38,22 @@ export function CoverFrost({
         height: `${spec.heightPercent}%`,
       }}
     >
-      {coverFrostLevels.map((level, index) => {
-        const blur = coverFrostBlur(spec.runtimeBlur, level);
-        const mask = coverFrostMask(index, spec.top);
-        return (
-          <div
-            key={level}
-            style={
-              {
-                position: 'absolute',
-                inset: 0,
-                backdropFilter: blur,
-                WebkitBackdropFilter: blur,
-                maskImage: mask,
-                WebkitMaskImage: mask,
-                maskRepeat: 'no-repeat',
-                WebkitMaskRepeat: 'no-repeat',
-                maskSize: '100% 100%',
-                WebkitMaskSize: '100% 100%',
-              } satisfies FrostLayerStyle
-            }
-          />
-        );
-      })}
+      <div
+        style={
+          {
+            position: 'absolute',
+            inset: 0,
+            backdropFilter: blur,
+            WebkitBackdropFilter: blur,
+            maskImage: mask,
+            WebkitMaskImage: mask,
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskSize: '100% 100%',
+            WebkitMaskSize: '100% 100%',
+          } satisfies FrostLayerStyle
+        }
+      />
       <div
         style={{
           position: 'absolute',

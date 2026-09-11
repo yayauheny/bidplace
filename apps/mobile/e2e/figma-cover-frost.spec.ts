@@ -114,7 +114,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
 
   expect(workMetrics).toMatchObject({
     ariaHidden: 'true',
-    blurLayers: 6,
+    blurLayers: 1,
     imageCount: 0,
     pointerEvents: 'none',
     borderRadius: '0px',
@@ -122,10 +122,17 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(workMetrics.heightRatio).toBeCloseTo(125 / 352, 2);
   expect(authorTopMetrics.heightRatio).toBeCloseTo(56 / 352, 2);
   expect(authorBottomMetrics.heightRatio).toBeCloseTo(77 / 352, 2);
-  expect(workMetrics.innerBlurPx).toBeLessThan(workMetrics.outerBlurPx);
   expect(workMetrics.outerBlurPx).toBeCloseTo(30, 1);
   expect(authorTopMetrics.outerBlurPx).toBeCloseTo(20, 1);
   expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(30, 1);
+  expect(workMetrics.maskImage).toContain('linear-gradient');
+
+  const workCard = workFrost.locator('..');
+  const authorCard = authorTop.locator('..');
+  expect(await workCard.boundingBox()).toMatchObject({ width: 366, height: 488 });
+  expect(await authorCard.boundingBox()).toMatchObject({ width: 366, height: 488 });
+  await expect(workCard).toHaveCSS('border-radius', '24px');
+  await expect(authorCard).toHaveCSS('border-radius', '28px');
 
   const withBlur = await workFrost.screenshot();
   await workFrost.evaluate((element) => {
@@ -169,8 +176,8 @@ async function readFrost(locator: Locator) {
       pointerEvents: style.pointerEvents,
       borderRadius: style.borderRadius,
       heightRatio: frostBox.height / cardBox.height,
-      innerBlurPx: blurPx(blurLayers[0]!),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
+      maskImage: getComputedStyle(blurLayers[0]!).maskImage,
     };
   });
 }

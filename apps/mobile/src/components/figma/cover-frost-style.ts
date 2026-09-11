@@ -25,23 +25,11 @@ export function coverFrostSpec(placement: CoverFrostPlacement) {
   };
 }
 
-// Each stop is a blur band. Adjacent layers cross-fade so the outer edge
-// does not stack every backdrop-filter at full strength.
-export const coverFrostLevels = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1];
-
-export function coverFrostMask(index: number, top: boolean) {
-  const level = coverFrostLevels[index];
-  const previous = coverFrostLevels[index - 1] ?? 0;
-  const next = coverFrostLevels[index + 1];
-  const side = top ? 'top' : 'bottom';
-
-  if (next === undefined) {
-    return `linear-gradient(to ${side}, transparent ${previous * 100}%, black ${level * 100}%)`;
-  }
-
-  return `linear-gradient(to ${side}, transparent ${previous * 100}%, black ${level * 100}%, transparent ${next * 100}%)`;
+export function coverFrostBlur(runtimeBlur: number) {
+  return `blur(${runtimeBlur}px)`;
 }
 
-export function coverFrostBlur(runtimeBlur: number, level: number) {
-  return `blur(${runtimeBlur * level}px)`;
+// One ramp: Figma 0→radius along the overlay. Stacked bands read as stripes.
+export function coverFrostBlurMask(top: boolean) {
+  return `linear-gradient(to ${top ? 'top' : 'bottom'}, transparent, black)`;
 }

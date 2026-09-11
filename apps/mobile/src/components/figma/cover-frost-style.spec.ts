@@ -4,7 +4,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
   coverFrostBlur,
-  coverFrostMask,
+  coverFrostBlurMask,
   coverFrostSpec,
 } from './cover-frost-style';
 
@@ -25,25 +25,19 @@ describe('Cover frost', () => {
     },
   );
 
-  it('cross-fades adjacent blur bands instead of stacking them to the edge', () => {
-    expect(coverFrostMask(0, false)).toBe(
-      'linear-gradient(to bottom, transparent 0%, black 3.125%, transparent 6.25%)',
+  it('uses one smooth ramp instead of repeating blur bands', () => {
+    expect(coverFrostBlurMask(false)).toBe(
+      'linear-gradient(to bottom, transparent, black)',
     );
-    expect(coverFrostMask(5, false)).toBe(
-      'linear-gradient(to bottom, transparent 50%, black 100%)',
-    );
-    expect(coverFrostMask(0, true)).toBe(
-      'linear-gradient(to top, transparent 0%, black 3.125%, transparent 6.25%)',
+    expect(coverFrostBlurMask(true)).toBe(
+      'linear-gradient(to top, transparent, black)',
     );
   });
 
-  it('keeps the documented runtime blur in px, not a viewport-scaled radius', () => {
-    expect(coverFrostBlur(figmaTokens.blur.overlay, 1)).toBe('blur(30px)');
-    expect(coverFrostBlur(figmaTokens.blur.authorTopOverlay, 1)).toBe(
+  it('keeps the documented runtime blur in px', () => {
+    expect(coverFrostBlur(figmaTokens.blur.overlay)).toBe('blur(30px)');
+    expect(coverFrostBlur(figmaTokens.blur.authorTopOverlay)).toBe(
       'blur(20px)',
-    );
-    expect(coverFrostBlur(figmaTokens.blur.overlay, 1 / 32)).toBe(
-      'blur(0.9375px)',
     );
   });
 });

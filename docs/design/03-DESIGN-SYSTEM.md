@@ -26,16 +26,17 @@ is taken from the Figma overlay frames, not from overlay text: work bottom
 (`874:5543`). Overlay frames have no corner radius; the card clips 24/28.
 Work cards keep title and `@author` at the bottom and omit price. Author cards
 put the name in the top zone and handle/tags in the bottom zone. On web,
-`CoverFrost` samples the sharp artwork once through six masked
-`backdrop-filter` bands that cross-fade from 0 to the runtime radius (30 px
-bottom, 20 px author top — half of Figma 60 / 40). It must not render a second
-filtered image or keep every band opaque to the outer edge. Native uses one
+`CoverFrost` samples the sharp artwork once through one
+`backdrop-filter` whose mask ramps from transparent at the inner edge to
+opaque at the outer edge (runtime 30 px bottom, 20 px author top — half of
+Figma 60 / 40). It must not render a second filtered image or stacked blur
+bands. Native uses one
 pointer-inert, accessibility-hidden `expo-image` duplicate inside the same
 region only as retained compatibility behavior; it is not a visual acceptance
 target. Both paths add the captured transparent-to-`#292929` 70% gradient on
 bottom overlays and transparent-to-black 70% on the author top overlay.
-Figma's progressive background blur has no exact CSS equivalent; the layered
-bands are the documented approximation, not pixel equality. Author pages use
+Figma's progressive background blur has no exact CSS equivalent; the masked
+ramp is the documented approximation, not pixel equality. Author pages use
 the exact node `621:19476`
 atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
 runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and
