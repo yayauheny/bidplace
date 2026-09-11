@@ -1787,3 +1787,30 @@ product lines.
 Commerce contract, legal/domain gate, UX and release gates are approved for a
 new wave; then port deliberate concepts from the archive into `commerce-v2`.
 
+## DEC-088 — MVP dock is one four-item glass capsule
+
+Date: 2026-09-11
+Status: Confirmed
+Source: explicit founder instruction during Figma phone UI correction
+Revises: visual variant choice under `DEC-085` only. Does not reopen search
+overlay, cart, or 1024/1440 compositions.
+
+### Decision
+
+Production phone navigation is **one** 232×64 glass capsule with four items:
+logo (Home), search, plus (Add), profile. Search is an item inside that
+capsule. Figma first-fold split chrome (`Frame 182` + `Frame 46` 64×64 search
+FAB) and the long-Home five-icon pill (`436:1366`, 288×64 with cart) are unused
+variants, not separate production components. Cart stays deferred.
+
+### Why
+
+Handoff captures show two dock layouts. Implementing both would create two
+shells. The founder selected the unified capsule already described in
+`02-USER-FLOWS-AND-SCREENS.md` (Home, Search, Add, Profile).
+
+### Revisit when
+
+Search overlay, cart, or a designer-approved second dock layout is in scope.
+
+

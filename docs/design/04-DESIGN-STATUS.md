@@ -2,7 +2,25 @@
 
 Последнее обновление: 2026-09-11
 
-Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
+Общий статус: **Figma phone cutover Partial for MVP public/author screens**
+
+## 2026-09-11 — Unified web glass dock without icon halo
+
+- `Corrected`: production dock is one 232×64 `FigmaGlassSurface` capsule
+  (Главная / Поиск / Добавить / Профиль). Search stays inside the capsule.
+  Figma first-fold `Frame 46` search FAB and the five-icon cart pill are unused
+  variants (`DEC-088`).
+- `Corrected`: web glass stacking puts live `backdrop-filter: blur(6px)` on an
+  empty backdrop sibling. Icons are not filtered into a halo. Idle / pressed /
+  focus add no fill, `filter`, or `box-shadow`. Evidence:
+  `FigmaGlassSurface.web.tsx`, `FloatingDockFrame.web.tsx`,
+  `apps/mobile/global.css`, `floating-dock.ts`,
+  `apps/mobile/e2e/figma-glass-dock.spec.ts`.
+- CSS-property-only dock tests are not sufficient for `Implemented`. Visual
+  acceptance is the 390 Expo Web dock over white `/login` and over live
+  content/stripe, plus the focused Playwright stack/blur checks.
+- Public Home / Works / Author / Work screen compositions are unchanged.
+- No `.pen` file changed.
 
 ## 2026-09-11 — DEC-087 public copy and work_viewed
 

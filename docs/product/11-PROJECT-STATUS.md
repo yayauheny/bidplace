@@ -4,6 +4,24 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Unified glass dock without icon halo
+
+- `Corrected`: shared phone dock is one 232×64 glass capsule (Главная / Поиск /
+  Добавить / Профиль). Search is inside the capsule; Figma `Frame 46` search
+  FAB and the 288×64 cart pill are unused variants (`DEC-088`).
+- `Corrected`: web `FigmaGlassSurface` keeps `backdrop-filter: blur(6px)` on an
+  empty layer so icons are not sampled into a halo. Fill remains
+  `rgba(255,255,255,.6)`, stroke 0.5px, no shadow/filter on idle/pressed/focus.
+  Evidence: `apps/mobile/src/components/figma/FigmaGlassSurface.web.tsx`,
+  `FloatingDockFrame.web.tsx`, `FloatingDock.tsx`, `floating-dock.ts`,
+  `apps/mobile/global.css`, `apps/mobile/e2e/figma-glass-dock.spec.ts`.
+- `Verified` on Expo Web 390×844: `/login` (white) and striped content behind
+  the dock; one `[data-testid=figma-floating-dock]`; four labels; live blur
+  changes pixels. Native iOS/Android is not an acceptance target.
+- Screen compositions (Home/Work/Author/Search) are unchanged. Seed/e2e catalog
+  data was not part of this commit.
+- `git diff --name-only -- '*.pen'` empty.
+
 ## 2026-09-11 — Portfolio demo seed
 
 - `Implemented`: guarded demo seed is a portfolio catalog, not an auction

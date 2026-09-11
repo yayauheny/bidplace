@@ -10,14 +10,11 @@ import type { View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
-type DockCssProperties = CSSProperties & {
-  '--figma-dock-background': string;
-  '--figma-dock-blur': string;
-  '--figma-dock-border-start': string;
-  '--figma-dock-border-end': string;
+import { FigmaGlassSurface } from './FigmaGlassSurface';
+
+type DockLayerStyle = CSSProperties & {
   '--figma-dock-gap': string;
   '--figma-dock-padding': string;
-  '--figma-dock-radius': string;
 };
 
 export function FloatingDockFrame({
@@ -38,27 +35,23 @@ export function FloatingDockFrame({
     return null;
   }
 
-  const glassStyle: DockCssProperties = {
-    '--figma-dock-background': figmaTokens.color.glass,
-    '--figma-dock-blur': `${figmaTokens.blur.dock}px`,
-    '--figma-dock-border-start': figmaTokens.color.glassBorder,
-    '--figma-dock-border-end': figmaTokens.color.glassBorderEnd,
+  const layerStyle: DockLayerStyle = {
+    bottom,
     '--figma-dock-gap': `${figmaTokens.space.dockGap}px`,
     '--figma-dock-padding': `${figmaTokens.space.dockPad}px`,
-    '--figma-dock-radius': `${figmaTokens.radius.dock}px`,
   };
 
   return createPortal(
-    <div className="figma-dock-layer" style={{ bottom }}>
-      <div
-        className="figma-dock-glass"
-        data-testid="figma-floating-dock"
-        role="tablist"
-        aria-label="Основная навигация"
-        style={glassStyle}
+    <div className="figma-dock-layer" style={layerStyle}>
+      <FigmaGlassSurface
+        preset="navigation"
+        testID="figma-floating-dock"
+        accessibilityRole="tablist"
+        accessibilityLabel="Основная навигация"
+        contentClassName="figma-dock-items"
       >
         {children}
-      </div>
+      </FigmaGlassSurface>
     </div>,
     webHost,
   );

@@ -27,6 +27,11 @@ Runtime: Expo phone column ~390, tokens in `packages/design-tokens`
   `mode="portfolio"`.
 - Icons `google`, `ai-magic`, `shopping-basket-01`.
 - Geist named on some Figma frames; runtime keeps bundled Inter.
+- Home first-fold split chrome: `Frame 46` 64×64 search FAB (`456:8265`) beside
+  a 232×64 pill without search. Production uses one 232×64 capsule with search
+  inside (`DEC-088`).
+- Long Home five-icon pill `436:1366` (288×64, includes cart). Cart stays
+  deferred; width stays 232.
 
 ## Local Metro / tokens
 

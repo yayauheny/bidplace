@@ -23,5 +23,10 @@ export {
   figmaButtonVariants,
   type FigmaButtonVariant,
 } from './figma-button-style';
-export { figmaDockItems, figmaDeferredDockItemIds } from './floating-dock';
+export {
+  figmaDeferredDockItemIds,
+  figmaDockItems,
+  figmaDockSurfaceSize,
+  figmaUnusedDockVariantIds,
+} from './floating-dock';
 export { getWorkCoverOverlay } from './work-cover-fields';

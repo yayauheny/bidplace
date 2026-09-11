@@ -1,7 +1,7 @@
 # bidplace — план реализации Figma-компонентов
 
-Последнее обновление: 2026-09-10
-Статус: **Active; C0 handoff integrity complete**
+Последнее обновление: 2026-09-11
+Статус: **Active; C0 complete; C2 dock stacking corrected**
 
 ## 1. Цель и граница
 
@@ -102,7 +102,7 @@ native не являются release target и отдельно не прове�
 
 ### C2 — glass, blur и media surfaces
 
-Статус: **Partial; C2a–C2e primitives and web sampling complete**
+Статус: **Partial; C2a–C2e primitives complete; web dock stacking corrected**
 
 Источники: dock `Frame 34`, creator `621:19475`, work/author cover nodes,
 overlay `526:13880`.
@@ -110,7 +110,8 @@ overlay `526:13880`.
 Целевые masters:
 
 - `FigmaGlassSurface` — общая fill/stroke/background-blur оболочка;
-- `FloatingDock` — уже реализован, остаётся acceptance baseline;
+- `FloatingDock` — один 232×64 capsule (logo / search / plus / profile);
+  split search FAB и 5-icon cart pill не production;
 - `CoverFrost` — реальный frosted artwork overlay;
 - `AuthorAtmosphere` — 485×485 duplicate avatar, opacity 0.5, blur 40,
   scrim и корректный crop;
@@ -131,6 +132,8 @@ overlay `526:13880`.
   avatar + fallback descendants из accessibility tree.
 - [x] Ограничить dock press 80 мс без fill/shadow и сохранить pill-shaped
   keyboard focus без квадратной подсветки вокруг иконки.
+- [x] Вынести web dock glass в `FigmaGlassSurface`: пустой backdrop-слой с
+  `blur(6px)`, stroke и иконки раздельно; один capsule без search FAB.
 - [x] Ограничить большие blur layers и исключить их из accessibility tree.
 - [x] Добавить missing/error fallback из vector node `874:5454` без подмены
   artwork или растрового upscale.
@@ -269,7 +272,7 @@ identity `874:5591`.
 
 | Роль | Состояние на 2026-09-10 |
 |---|---|
-| FloatingDock | implemented and pixel-probed |
+| FloatingDock | corrected web stacking; 4-item capsule, no FAB |
 | FigmaIcon / Button / TextField / Chip | partial; dedicated captures now available |
 | CoverFrost / AuthorAtmosphere | web contract verified; matched browser-image QA remains |
 | WorkCoverCard / AuthorCoverCard | partial; content helpers tested, visual matrix incomplete |

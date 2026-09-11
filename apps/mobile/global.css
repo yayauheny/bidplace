@@ -30,7 +30,9 @@ textarea:focus-visible,
 /*
  * RN-web Views use overflow:hidden and often sit under a white SafeArea
  * stacking context, so style.backdropFilter never samples page content.
- * The dock is portaled to document.body and styled here as real CSS.
+ * Glass surfaces that must sample the moving page are portaled to
+ * document.body. Backdrop blur lives on an empty sibling so icons are
+ * not filtered into a halo.
  */
 .figma-dock-layer {
   position: fixed;
@@ -42,33 +44,38 @@ textarea:focus-visible,
   pointer-events: none;
 }
 
-.figma-dock-glass {
+.figma-glass {
   position: relative;
-  pointer-events: auto;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--figma-dock-gap);
-  padding: var(--figma-dock-padding);
   overflow: hidden;
-  border-radius: var(--figma-dock-radius);
-  background: var(--figma-dock-background);
-  -webkit-backdrop-filter: blur(var(--figma-dock-blur));
-  backdrop-filter: blur(var(--figma-dock-blur));
+  border-radius: var(--figma-glass-radius);
+  pointer-events: auto;
+  filter: none;
+  box-shadow: none;
 }
 
-.figma-dock-glass::before {
+.figma-glass-backdrop {
   position: absolute;
   inset: 0;
-  padding: 0.5px;
-  border-radius: inherit;
-  background: linear-gradient(
-    var(--figma-dock-border-start),
-    var(--figma-dock-border-end)
-  );
-  content: '';
+  z-index: 0;
   pointer-events: none;
+  border-radius: inherit;
+  background: var(--figma-glass-background);
+  -webkit-backdrop-filter: blur(var(--figma-glass-blur));
+  backdrop-filter: blur(var(--figma-glass-blur));
+}
+
+.figma-glass-stroke {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: var(--figma-glass-stroke-width);
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    var(--figma-glass-border-start),
+    var(--figma-glass-border-end)
+  );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -77,4 +84,20 @@ textarea:focus-visible,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+}
+
+.figma-glass-content {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  filter: none;
+  box-shadow: none;
+}
+
+.figma-dock-items {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--figma-dock-gap);
+  padding: var(--figma-dock-padding);
 }

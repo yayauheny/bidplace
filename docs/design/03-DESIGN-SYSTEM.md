@@ -1,6 +1,6 @@
 # bidplace — дизайн-система
 
-Последнее обновление: 2026-09-10
+Последнее обновление: 2026-09-11
 
 Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
 
@@ -42,17 +42,21 @@ mode.
 Добавить / Профиль, no cart). Wide windows keep the same column. 1024/1440
 compositions are out of this wave.
 
-`FloatingDock` reproduces Figma `Frame 34` as one platform-aware primitive:
-36px items contain 24px icons with 6px padding, the row uses 20px gaps and
-14px outer padding, and the surface has radius 200, white at 60%, a 0.5px
-`#DEDEDE → #F3F3F3` gradient stroke and 6px background blur. It has no drop
-shadow. Web portals the dock to `document.body` so `backdrop-filter` samples
-the moving page. Native wraps the app content in `BlurTargetView` and uses
-`expo-blur` plus the same translucent fill and gradient stroke. Reduced-motion
-does not disable blur because blur is a static surface property. Dock controls
-keep a pill-shaped keyboard focus outline and use only a subtle 82% opacity
-press response over 80 ms; they do not add a selected fill, filter or shadow.
-Reduced motion removes that opacity transition.
+`FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
+Профиль. Search is an item inside that capsule. Figma first-fold `Frame 46`
+(64×64 search FAB) and the five-icon cart pill (`436:1366`, 288×64) are unused
+variants, not production components (`DEC-088`). 36px items contain 24px icons
+with 6px padding, the row uses 20px gaps and 14px outer padding, and the
+surface has radius 200, white at 60%, a 0.5px `#DEDEDE → #F3F3F3` gradient
+stroke and 6px background blur. It has no drop shadow. Web portals the dock to
+`document.body` and uses shared `FigmaGlassSurface`: an empty backdrop layer
+holds `backdrop-filter`, the stroke is a sibling, and icons sit in an isolated
+content layer so they are not sampled into a halo. Native wraps the app content
+in `BlurTargetView` and uses `expo-blur` plus the same translucent fill and
+gradient stroke. Reduced-motion does not disable blur because blur is a static
+surface property. Dock controls keep a pill-shaped keyboard focus outline and
+use only a subtle 82% opacity press response over 80 ms; they do not add a
+selected fill, filter or shadow. Reduced motion removes that opacity transition.
 
 Runtime type is bundled Inter. Figma names Geist on some frames; files are not
 in the app.
@@ -334,7 +338,8 @@ Shared masters:
 - `WorkCoverCard` — 264×352 cover; title, `@author` and frost only (no price,
   timer or sale-status slots in the active component);
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;
-- `FloatingDock` — Главная / Поиск / Добавить / Профиль; cart is not an item.
+- `FloatingDock` — Главная / Поиск / Добавить / Профиль in one capsule; cart
+  and the split search FAB are not items.
 
 Deferred Figma pieces kept in the registry only: Google icon, AI magic icon,
 cart/basket icon, sale badges, prices and timers. Public and author MVP screens

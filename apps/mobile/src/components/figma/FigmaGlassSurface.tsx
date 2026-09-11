@@ -5,6 +5,7 @@ import {
   Platform,
   StyleSheet,
   View,
+  type AccessibilityRole,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -23,18 +24,24 @@ export function FigmaGlassSurface({
   style,
   contentStyle,
   testID,
+  accessibilityRole,
+  accessibilityLabel,
 }: {
   children: ReactNode;
   preset?: FigmaGlassSurfacePreset;
   blurTarget?: RefObject<View | null>;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
+  contentClassName?: string;
   testID?: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityLabel?: string;
 }) {
   const spec = figmaGlassSurfaceSpec(preset);
 
   return (
     <LinearGradient
+      testID={testID}
       colors={[spec.borderStart, spec.borderEnd]}
       style={[
         styles.border,
@@ -43,8 +50,8 @@ export function FigmaGlassSurface({
       ]}
     >
       <BlurView
-        testID={testID}
         accessible={false}
+        importantForAccessibility="no-hide-descendants"
         blurTarget={blurTarget}
         blurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
         blurReductionFactor={figmaTokens.blur.dockAndroidReductionFactor}
@@ -66,7 +73,13 @@ export function FigmaGlassSurface({
           style={[StyleSheet.absoluteFill, { backgroundColor: spec.background }]}
         />
       </BlurView>
-      <View style={contentStyle}>{children}</View>
+      <View
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
+        style={contentStyle}
+      >
+        {children}
+      </View>
     </LinearGradient>
   );
 }

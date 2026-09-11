@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { Image } from 'expo-image';
 import { Link, type Href, usePathname, useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { Platform, type View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -119,6 +119,9 @@ function DockItem({
         borderRadius: figmaTokens.radius.pill,
         alignItems: 'center',
         justifyContent: 'center',
+        ...(Platform.OS === 'web'
+          ? ({ boxShadow: 'none', filter: 'none' } as ViewStyle)
+          : null),
       }}
     >
       {item.icon === 'logo' ? (

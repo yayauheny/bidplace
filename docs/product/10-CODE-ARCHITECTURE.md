@@ -204,9 +204,11 @@ persistence behavior, not live HTTP.
 
 The phone shell owns the floating-glass sampling boundary. `AppShell` wraps
 route content in `expo-blur` `BlurTargetView`; the platform-specific
-`FloatingDockFrame` uses that target on Android and a body portal with CSS
-`backdrop-filter` on web. Route screens provide navigation content only and do
-not implement their own dock blur, fill, border or elevation.
+`FloatingDockFrame` uses that target on Android and a `document.body` portal to
+shared `FigmaGlassSurface` on web. Web glass keeps `backdrop-filter` on an empty
+backdrop sibling so icons are not sampled into a halo. Route screens provide
+navigation content only and do not implement their own dock blur, fill, border
+or elevation.
 
 The API currently assumes a single HTTP replica. The pilot deployment must enforce one API replica via Docker Compose (`docker compose --profile app`). Commerce scheduler/realtime scaling notes apply only if commerce is restored from archive. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
 
