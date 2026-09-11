@@ -16,6 +16,7 @@ export function AuthorAtmosphere({
 
   return (
     <View
+      testID="author-atmosphere"
       aria-hidden
       accessible={false}
       importantForAccessibility="no-hide-descendants"

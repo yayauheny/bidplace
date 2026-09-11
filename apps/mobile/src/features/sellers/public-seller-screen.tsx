@@ -125,18 +125,18 @@ export function PublicSellerScreen({
   return (
     <AppShell>
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
-        <AuthorAtmosphere
-          imageUrl={author.profilePhotoUrl}
-          fullName={author.fullName}
-        />
         <ScrollView
+          testID="creator-scroll"
           contentContainerStyle={{
             paddingBottom: designTokens.space.x5,
             overflow: 'visible',
           }}
-          style={{ overflow: 'visible' }}
           showsVerticalScrollIndicator={false}
         >
+          <AuthorAtmosphere
+            imageUrl={author.profilePhotoUrl}
+            fullName={author.fullName}
+          />
           <View
             style={{
               alignItems: 'center',
