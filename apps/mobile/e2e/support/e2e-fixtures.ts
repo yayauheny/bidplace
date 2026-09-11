@@ -33,10 +33,10 @@ export type AuctionFixture = {
 };
 
 const seededDemoProductIds = [
-  'seedSched01',
-  'seedLive002',
-  'seedEnded03',
-  'seedVase004',
+  'seedAnna001',
+  'seedAnna002',
+  'seedAnna003',
+  'seedAnna004',
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {
@@ -150,15 +150,15 @@ export async function createAuctionFixture(options?: {
     uniqueEmail('seller', suffix),
     `seller-${suffix}`,
   );
-  const buyerA = await createUser(
+  const visitorA = await createUser(
     prisma,
-    uniqueEmail('buyer-a', suffix),
-    `buyer-a-${suffix}`,
+    uniqueEmail('visitor-a', suffix),
+    `visitor-a-${suffix}`,
   );
-  const buyerB = await createUser(
+  const visitorB = await createUser(
     prisma,
-    uniqueEmail('buyer-b', suffix),
-    `buyer-b-${suffix}`,
+    uniqueEmail('visitor-b', suffix),
+    `visitor-b-${suffix}`,
   );
   const category = await prisma.category.findUniqueOrThrow({
     where: { slug: 'e2e-art' },
@@ -191,8 +191,8 @@ export async function createAuctionFixture(options?: {
       status: 'APPROVED',
     },
   });
-  const title = options?.title ?? `E2E Auction ${suffix}`;
-  const createPublishedAuction = async (productTitle: string) => {
+  const title = options?.title ?? `E2E Work ${suffix}`;
+  const createPublishedWork = async (productTitle: string) => {
     const product = await prisma.product.create({
       data: {
         publicId: randomUUID().replace(/-/g, '').slice(0, 11),
@@ -204,12 +204,9 @@ export async function createAuctionFixture(options?: {
         materials: 'Paper, ink',
         dimensions: '30x40',
         year: 2026,
-        condition: 'New',
         uniqueness: 'One',
         provenance: 'E2E fixture',
         city: 'Minsk',
-        packaging: 'Protective archival packaging',
-        deliveryInfo: 'Pickup',
         status: 'APPROVED',
         publishedAt: now,
         images: {
@@ -227,10 +224,10 @@ export async function createAuctionFixture(options?: {
     await attachPublishedProductRevision(prisma, product);
     return { product };
   };
-  const { product } = await createPublishedAuction(title);
+  const { product } = await createPublishedWork(title);
 
   for (const additionalTitle of options?.additionalTitles ?? []) {
-    await createPublishedAuction(additionalTitle);
+    await createPublishedWork(additionalTitle);
   }
 
   await prisma.$disconnect();
@@ -243,8 +240,8 @@ export async function createAuctionFixture(options?: {
       fullName: sellerName,
       privateContact,
     },
-    buyerA,
-    buyerB,
+    buyerA: visitorA,
+    buyerB: visitorB,
     product: { id: product.id, publicId: product.publicId, title },
   };
 }
@@ -378,8 +375,6 @@ export async function createAdminModerationFixture(): Promise<AdminModerationFix
       uniqueness: 'One',
       provenance: 'E2E fixture',
       city: 'Minsk',
-      packaging: 'Protective archival packaging',
-      deliveryInfo: 'Pickup',
       status: 'PENDING_REVIEW',
       images: {
         create: {

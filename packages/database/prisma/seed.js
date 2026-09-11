@@ -119,12 +119,9 @@ async function attachProductRevision(productId, published) {
       dimensions: product.dimensions,
       weight: product.weight,
       year: product.year,
-      condition: product.condition,
       uniqueness: product.uniqueness,
       provenance: product.provenance,
       city: product.city,
-      packaging: product.packaging,
-      deliveryInfo: product.deliveryInfo,
       creationIntro: product.creationIntro,
       images: {
         create: product.images.map((image, position) => ({
@@ -165,18 +162,15 @@ async function createProductWithImages({
   materials,
   dimensions,
   year,
-  condition,
   uniqueness,
   provenance,
   city,
-  packaging,
-  deliveryInfo,
   publishedAt,
   imageFileName,
   creationSteps = [
     [
       'Замысел',
-      'Работа начинается с наблюдения за формой и светом.',
+      'Работа начинается с наблюдения за формой, светом и тем, как предмет будет жить в доме.',
       'painted-planter.png',
     ],
     [
@@ -190,8 +184,8 @@ async function createProductWithImages({
       'handmade-mug.png',
     ],
     [
-      'Финальный предмет',
-      'После обработки предмет готовится к передаче новому владельцу.',
+      'Готовая работа',
+      'После обработки предмет остаётся законченным экземпляром в мастерской автора.',
       'handmade-vase.png',
     ],
   ],
@@ -210,12 +204,9 @@ async function createProductWithImages({
       materials,
       dimensions,
       year,
-      condition,
       uniqueness,
       provenance,
       city,
-      packaging,
-      deliveryInfo,
       creationIntro:
         'История предмета — от первого замысла до готовой работы в мастерской автора.',
       publishedAt,
@@ -229,11 +220,11 @@ async function createProductWithImages({
         ],
       },
       creationSteps: {
-        create: creationSteps.map(([title, body, fileName], position) => {
+        create: creationSteps.map(([stepTitle, body, fileName], position) => {
           const stepImage = readSeedProductImage(fileName);
           return {
             position,
-            title,
+            title: stepTitle,
             body,
             mimeType: stepImage.mimeType,
             byteLength: stepImage.byteLength,
@@ -273,21 +264,38 @@ async function main() {
   });
   await prisma.productRevision.deleteMany();
   await prisma.sellerProfileRevision.deleteMany();
+  await prisma.productCreationStep.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
-  const category = await prisma.category.create({
-    data: {
-      slug: 'art-object',
-      name: 'Авторская керамика',
-      description: 'Предметы, созданные и предложенные авторами напрямую.',
-    },
-  });
+  const [ceramics, textile, wood] = await Promise.all([
+    prisma.category.create({
+      data: {
+        slug: 'ceramics',
+        name: 'Авторская керамика',
+        description: 'Предметы из глины, созданные авторами вручную.',
+      },
+    }),
+    prisma.category.create({
+      data: {
+        slug: 'textile',
+        name: 'Текстиль',
+        description: 'Авторские текстильные работы и небольшие серии.',
+      },
+    }),
+    prisma.category.create({
+      data: {
+        slug: 'wood',
+        name: 'Дерево и предмет',
+        description: 'Предметный дизайн из дерева, стекла и смешанных материалов.',
+      },
+    }),
+  ]);
 
-  const [admin, seller, buyer, pendingSeller] = await Promise.all([
+  const [admin, seller, visitor, pendingSeller] = await Promise.all([
     prisma.user.create({
       data: {
         email: adminEmail,
@@ -309,10 +317,10 @@ async function main() {
     }),
     prisma.user.create({
       data: {
-        email: 'buyer@bidplace.test',
+        email: 'visitor@bidplace.test',
         passwordHash: adminPasswordHash,
         phone: null,
-        displayName: 'Тестовый покупатель',
+        displayName: 'Тестовый посетитель',
         emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
       },
     }),
@@ -381,7 +389,7 @@ async function main() {
       country: 'BY',
       city: 'Минск',
       socialLink: 'https://example.com/pending-seller',
-      shortDescription: 'Профиль продавца для проверки очереди модерации.',
+      shortDescription: 'Заявка автора для проверки очереди модерации.',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: seedPhotoBuffer.byteLength,
       profilePhotoChecksum: createHash('sha256')
@@ -520,106 +528,83 @@ async function main() {
   );
 
   const now = new Date();
-  const [scheduledProduct, liveProduct, endedProduct, vaseProduct] =
-    await Promise.all([
-      createProductWithImages({
-        publicId: 'seedSched01',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Кашпо «Тёплый ритм»',
-        story:
-          'Небольшое кашпо, расписанное вручную по мотивам летнего света и движения листьев.',
-        technique: 'Ручная роспись акрилом по керамике',
-        materials: 'Керамика, акрил, защитный лак',
-        dimensions: '17 × 17 × 17 см',
-        year: 2025,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создано Анной Морозовой в её минской мастерской и впервые предлагается на bidplace.',
-        city: 'Минск',
-        packaging:
-          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
-        publishedAt: now,
-        imageFileName: 'painted-planter.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedLive002',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Стакан для кистей «Голубая комета»',
-        story:
-          'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
-        technique: 'Лепка вручную, глазурование',
-        materials: 'Керамика, цветная глазурь',
-        dimensions: '14 × 14 × 12 см',
-        year: 2026,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Слеплен и покрыт глазурью Анной Морозовой. Продаётся напрямую из мастерской автора.',
-        city: 'Минск',
-        packaging:
-          'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
-        publishedAt: now,
-        imageFileName: 'ceramic-brush-holder.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedEnded03',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Чашка «Ты мне»',
-        story:
-          'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
-        technique: 'Лепка вручную, цветная глазурь',
-        materials: 'Шамотная глина, глазурь',
-        dimensions: '12 × 9 × 10 см',
-        year: 2025,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создана Анной Морозовой в Минске; это первая публичная публикация предмета.',
-        city: 'Минск',
-        packaging:
-          'Чашка упаковывается в бумагу и амортизирующий материал, затем фиксируется в жёсткой коробке.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
-        publishedAt: now,
-        imageFileName: 'handmade-mug.png',
-      }),
-      createProductWithImages({
-        publicId: 'seedVase004',
-        sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
-        title: 'Ваза «Северный сад»',
-        story:
-          'Небольшая ваза с мягкой неровностью формы и светлой поверхностью, которая хорошо ловит утренний свет.',
-        technique: 'Ручная лепка, матовая глазурь',
-        materials: 'Шамотная глина, матовая глазурь',
-        dimensions: '16 × 16 × 22 см',
-        year: 2026,
-        condition: 'Новое',
-        uniqueness: 'Единственный экземпляр',
-        provenance:
-          'Создана Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
-        city: 'Минск',
-        packaging:
-          'Ваза оборачивается мягким защитным материалом и фиксируется внутри усиленной коробки.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
-        publishedAt: now,
-        imageFileName: 'handmade-vase.png',
-      }),
-    ]);
+  const [annaPlanter] = await Promise.all([
+    createProductWithImages({
+      publicId: 'seedAnna001',
+      sellerProfileId: sellerProfile.id,
+      categoryId: ceramics.id,
+      title: 'Кашпо «Тёплый ритм»',
+      story:
+        'Замысел появился из летнего света и движения листьев.\n\nФорму собрала вручную в мастерской, оставляя следы пальцев на глине.\n\nРоспись нанесла короткими жестами и закрепила поверхность лаком.',
+      technique: 'Ручная роспись акрилом по керамике',
+      materials: 'Керамика, акрил, защитный лак',
+      dimensions: '17 × 17 × 17 см',
+      year: 2025,
+      uniqueness: 'Единственный экземпляр',
+      provenance:
+        'Создано Анной Морозовой в её минской мастерской.',
+      city: 'Минск',
+      publishedAt: now,
+      imageFileName: 'painted-planter.png',
+    }),
+    createProductWithImages({
+      publicId: 'seedAnna002',
+      sellerProfileId: sellerProfile.id,
+      categoryId: ceramics.id,
+      title: 'Стакан для кистей «Голубая комета»',
+      story:
+        'Фактурный стакан для кистей с отверстиями разного размера: предмет для мастерской, который меняется вместе с набором инструментов.',
+      technique: 'Лепка вручную, глазурование',
+      materials: 'Керамика, цветная глазурь',
+      dimensions: '14 × 14 × 12 см',
+      year: 2026,
+      uniqueness: 'Единственный экземпляр',
+      provenance: 'Слеплен и покрыт глазурью Анной Морозовой.',
+      city: 'Минск',
+      publishedAt: now,
+      imageFileName: 'ceramic-brush-holder.png',
+    }),
+    createProductWithImages({
+      publicId: 'seedAnna003',
+      sellerProfileId: sellerProfile.id,
+      categoryId: ceramics.id,
+      title: 'Чашка «Ты мне»',
+      story:
+        'Чашка с неровным силуэтом и цветными знаками, сделанная для медленного утреннего кофе.',
+      technique: 'Лепка вручную, цветная глазурь',
+      materials: 'Шамотная глина, глазурь',
+      dimensions: '12 × 9 × 10 см',
+      year: 2025,
+      uniqueness: 'Единственный экземпляр',
+      provenance: 'Создана Анной Морозовой в Минске.',
+      city: 'Минск',
+      publishedAt: now,
+      imageFileName: 'handmade-mug.png',
+    }),
+    createProductWithImages({
+      publicId: 'seedAnna004',
+      sellerProfileId: sellerProfile.id,
+      categoryId: ceramics.id,
+      title: 'Ваза «Северный сад»',
+      story:
+        'Небольшая ваза с мягкой неровностью формы и светлой поверхностью, которая хорошо ловит утренний свет.',
+      technique: 'Ручная лепка, матовая глазурь',
+      materials: 'Шамотная глина, матовая глазурь',
+      dimensions: '16 × 16 × 22 см',
+      year: 2026,
+      uniqueness: 'Единственный экземпляр',
+      provenance: 'Создана Анной Морозовой в минской мастерской.',
+      city: 'Минск',
+      publishedAt: now,
+      imageFileName: 'handmade-vase.png',
+    }),
+  ]);
 
   await Promise.all(
     [
       {
         publicId: 'seedAnna005',
+        categoryId: wood.id,
         title: 'Скульптура «Тихая форма»',
         story:
           'Небольшой авторский объект с мягким силуэтом для полки или рабочего стола.',
@@ -632,6 +617,7 @@ async function main() {
       },
       {
         publicId: 'seedAnna006',
+        categoryId: ceramics.id,
         title: 'Чаша «Медленный круг»',
         story:
           'Невысокая чаша с живой кромкой для спокойных домашних ритуалов.',
@@ -644,6 +630,7 @@ async function main() {
       },
       {
         publicId: 'seedAnna007',
+        categoryId: textile.id,
         title: 'Текстильная панель «След дождя»',
         story:
           'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
@@ -656,6 +643,7 @@ async function main() {
       },
       {
         publicId: 'seedAnna008',
+        categoryId: textile.id,
         title: 'Графический лист «Линия света»',
         story:
           'Небольшой лист ручной печати с точной линией и живой фактурой бумаги.',
@@ -670,22 +658,16 @@ async function main() {
       createProductWithImages({
         publicId: fixture.publicId,
         sellerProfileId: sellerProfile.id,
-        categoryId: category.id,
+        categoryId: fixture.categoryId,
         title: fixture.title,
         story: fixture.story,
         technique: fixture.technique,
         materials: fixture.materials,
         dimensions: fixture.dimensions,
         year: fixture.year,
-        condition: 'Новое',
         uniqueness: fixture.uniqueness,
-        provenance:
-          'Создано Анной Морозовой в минской мастерской и впервые предлагается на bidplace.',
+        provenance: 'Создано Анной Морозовой в минской мастерской.',
         city: 'Минск',
-        packaging:
-          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
-        deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: fixture.imageFileName,
       }),
@@ -695,8 +677,9 @@ async function main() {
   await Promise.all(
     [
       {
-        publicId: 'seedIrina05',
+        publicId: 'seedIrina01',
         profileIndex: 0,
+        categoryId: ceramics.id,
         title: 'Чаша «Тёплая линия»',
         story: 'Небольшая чаша с мягким силуэтом для ежедневных ритуалов.',
         technique: 'Ручная лепка, прозрачная глазурь',
@@ -705,8 +688,9 @@ async function main() {
         imageFileName: 'ceramic-bowl.png',
       },
       {
-        publicId: 'seedPavel06',
+        publicId: 'seedPavel01',
         profileIndex: 1,
+        categoryId: wood.id,
         title: 'Лампа «Тихий круг»',
         story:
           'Предметный светильник из дерева и матового стекла для спокойного интерьера.',
@@ -716,8 +700,9 @@ async function main() {
         imageFileName: 'studio-lamp.png',
       },
       {
-        publicId: 'seedOlga007',
+        publicId: 'seedOlga001',
         profileIndex: 2,
+        categoryId: textile.id,
         title: 'Текстильная композиция «След света»',
         story:
           'Фактурная работа из ткани и нитей, собранная вручную в одном экземпляре.',
@@ -727,8 +712,9 @@ async function main() {
         imageFileName: 'textile-composition.png',
       },
       {
-        publicId: 'seedMark008',
+        publicId: 'seedMark001',
         profileIndex: 3,
+        categoryId: textile.id,
         title: 'Графический лист «Ночная карта»',
         story: 'Ручная печать с точной линией и живой фактурой бумаги.',
         technique: 'Линогравюра, ручная печать',
@@ -736,24 +722,53 @@ async function main() {
         uniqueness: 'Ограниченный тираж',
         imageFileName: 'linocut-print.png',
       },
+      {
+        publicId: 'seedLena001',
+        profileIndex: 4,
+        categoryId: wood.id,
+        title: 'Объект «Тихая полка»',
+        story: 'Небольшой скульптурный объект на стыке быта и пластики.',
+        technique: 'Сборка, ручная обработка',
+        materials: 'Дерево, найденные материалы',
+        uniqueness: 'Единственный экземпляр',
+        imageFileName: 'wooden-sculpture.png',
+      },
+      {
+        publicId: 'seedNikt001',
+        profileIndex: 5,
+        categoryId: ceramics.id,
+        title: 'Сосуд «Графичный край»',
+        story: 'Лепка с графичными глазурными акцентами для повседневного стола.',
+        technique: 'Ручная лепка, цветная глазурь',
+        materials: 'Глина, глазурь',
+        uniqueness: 'Единственный экземпляр',
+        imageFileName: 'handmade-mug.png',
+      },
+      {
+        publicId: 'seedSvet001',
+        profileIndex: 6,
+        categoryId: textile.id,
+        title: 'Композиция «Собранный свет»',
+        story: 'Смешанная техника: ткань, цвет и ручная сборка в одном экземпляре.',
+        technique: 'Аппликация, ручная сборка',
+        materials: 'Лён, нить, найденные материалы',
+        uniqueness: 'Единственный экземпляр',
+        imageFileName: 'textile-composition.png',
+      },
     ].map((fixture) =>
       createProductWithImages({
         publicId: fixture.publicId,
         sellerProfileId: additionalDemoProfiles[fixture.profileIndex].id,
-        categoryId: category.id,
+        categoryId: fixture.categoryId,
         title: fixture.title,
         story: fixture.story,
         technique: fixture.technique,
         materials: fixture.materials,
         dimensions: '30 × 30 см',
         year: 2026,
-        condition: 'Новое',
         uniqueness: fixture.uniqueness,
         provenance: 'Создано автором для локального демо bidplace.',
         city: 'Минск',
-        packaging:
-          'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
-        deliveryInfo: 'Передача по договорённости с автором.',
         publishedAt: now,
         imageFileName: fixture.imageFileName,
       }),
@@ -763,19 +778,16 @@ async function main() {
   await createProductWithImages({
     publicId: 'seedPend004',
     sellerProfileId: pendingSellerProfile.id,
-    categoryId: category.id,
+    categoryId: ceramics.id,
     title: 'Этюд «Тихий свет»',
-    story: 'Предмет ожидает проверки перед публикацией.',
+    story: 'Работа ожидает проверки перед публикацией.',
     technique: 'Ручная роспись',
     materials: 'Керамика, глазурь',
     dimensions: '20 × 20 × 18 см',
     year: 2026,
-    condition: 'Новое',
     uniqueness: 'Единственный экземпляр',
     provenance: 'Создано автором для локальной проверки модерации.',
     city: 'Минск',
-    packaging: 'Работа будет защищена и зафиксирована в транспортной коробке.',
-    deliveryInfo: 'Передача после одобрения.',
     publishedAt: null,
     imageFileName: 'painted-planter.png',
     status: 'PENDING_REVIEW',
@@ -783,7 +795,7 @@ async function main() {
 
   await prisma.termsAcceptance.create({
     data: {
-      userId: buyer.id,
+      userId: visitor.id,
       rulesVersion: 'MVP_RULES_V1',
       acceptedAt: new Date(now.getTime() - 60_000),
     },
@@ -792,14 +804,14 @@ async function main() {
   await prisma.curatorSelection.create({
     data: {
       slot: 'home',
-      productId: scheduledProduct.id,
+      productId: annaPlanter.id,
       selectedAt: new Date('2026-09-01T00:00:00.000Z'),
       selectedByUserId: admin.id,
     },
   });
 
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, and public portfolio works without listings, bids, or orders.',
+    'Seeded deterministic local/test admin, visitor, eight approved author profiles, and public portfolio works without listings, bids, or orders.',
   );
 }
 

@@ -46,20 +46,55 @@ describe('demo seed executable contract', () => {
   it('creates published portfolio works without listings, bids, or orders', async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
 
-    const [listings, bids, orders, approvedAuthors, publishedWorks] =
-      await Promise.all([
-        prisma.listing.count(),
-        prisma.bid.count(),
-        prisma.order.count(),
-        prisma.sellerProfile.count({ where: { status: 'APPROVED' } }),
-        prisma.product.count({ where: { status: 'APPROVED' } }),
-      ]);
+    const [
+      listings,
+      bids,
+      orders,
+      approvedAuthors,
+      publishedWorks,
+      categories,
+      creationSteps,
+      visitor,
+      buyer,
+    ] = await Promise.all([
+      prisma.listing.count(),
+      prisma.bid.count(),
+      prisma.order.count(),
+      prisma.sellerProfile.count({ where: { status: 'APPROVED' } }),
+      prisma.product.count({ where: { status: 'APPROVED' } }),
+      prisma.category.count(),
+      prisma.productCreationStep.count(),
+      prisma.user.count({ where: { email: 'visitor@bidplace.test' } }),
+      prisma.user.count({ where: { email: 'buyer@bidplace.test' } }),
+    ]);
 
     expect(listings).toBe(0);
     expect(bids).toBe(0);
     expect(orders).toBe(0);
     expect(approvedAuthors).toBe(8);
-    expect(publishedWorks).toBe(12);
+    expect(publishedWorks).toBe(15);
+    expect(categories).toBe(3);
+    expect(creationSteps).toBe(64);
+    expect(visitor).toBe(1);
+    expect(buyer).toBe(0);
+
+    const emptyAuthors = await prisma.sellerProfile.count({
+      where: {
+        status: 'APPROVED',
+        products: { none: { status: 'APPROVED' } },
+      },
+    });
+    expect(emptyAuthors).toBe(0);
+
+    const annaPlanter = await prisma.product.findUniqueOrThrow({
+      where: { publicId: 'seedAnna001' },
+      include: { creationSteps: true },
+    });
+    expect(annaPlanter.packaging).toBeNull();
+    expect(annaPlanter.deliveryInfo).toBeNull();
+    expect(annaPlanter.condition).toBeNull();
+    expect(annaPlanter.creationIntro).toBeTruthy();
+    expect(annaPlanter.creationSteps).toHaveLength(4);
   });
 
   it.each([
@@ -122,7 +157,7 @@ describe('demo seed public portfolio HTTP', () => {
     expect(home.newAuthors.length).toBeGreaterThan(0);
     expect(home.newWorks[0]?.work.images[0]?.id).toBeTruthy();
     expect(home.newWorks[0]?.work.images[0]?.url).toMatch(/^\/api\/images\//);
-    expect(home.curatorSelection?.work.publicId).toBe('seedSched01');
+    expect(home.curatorSelection?.work.publicId).toBe('seedAnna001');
 
     const authorsResponse = await guest.get('/authors?limit=20');
     expect(authorsResponse.status).toBe(200);
@@ -142,8 +177,8 @@ describe('demo seed public portfolio HTTP', () => {
       works: Array<{ work: { publicId: string } }>;
       pagination: { total: number };
     };
-    expect(works.pagination.total).toBe(12);
-    expect(works.works).toHaveLength(12);
+    expect(works.pagination.total).toBe(15);
+    expect(works.works).toHaveLength(15);
     expect(works.works.map((item) => item.work.publicId)).not.toContain(
       'seedPend004',
     );
@@ -164,7 +199,7 @@ describe('demo seed public portfolio HTTP', () => {
     expect(JSON.stringify(anna)).not.toMatch(/handoff/i);
     expect(JSON.stringify(anna)).not.toContain('socialLink');
 
-    const workResponse = await guest.get('/works/seedSched01');
+    const workResponse = await guest.get('/works/seedAnna001');
     expect(workResponse.status).toBe(200);
     const work = (await workResponse.json()) as {
       work: {
@@ -175,13 +210,13 @@ describe('demo seed public portfolio HTTP', () => {
       };
       relatedWorks: Array<{ work: { publicId: string } }>;
     };
-    expect(work.work.publicId).toBe('seedSched01');
+    expect(work.work.publicId).toBe('seedAnna001');
     expect(work.work.uniqueness).toBe('Единственный экземпляр');
-    expect(work.work.sharePath).toBe('/works/seedSched01');
+    expect(work.work.sharePath).toBe('/works/seedAnna001');
     expect(work.work.images[0]?.id).toBeTruthy();
     expect(work.work.images[0]?.url).toMatch(/^\/api\/images\//);
     expect(
       work.relatedWorks.map((item) => item.work.publicId),
-    ).not.toContain('seedSched01');
+    ).not.toContain('seedAnna001');
   });
 });

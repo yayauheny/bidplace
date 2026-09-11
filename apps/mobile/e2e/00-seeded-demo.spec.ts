@@ -4,10 +4,10 @@ import { e2eApiBaseURL } from './support/e2e-env';
 
 const apiBaseURL = e2eApiBaseURL;
 const seededWorkIds = [
-  'seedSched01',
-  'seedLive002',
-  'seedEnded03',
-  'seedVase004',
+  'seedAnna001',
+  'seedAnna002',
+  'seedAnna003',
+  'seedAnna004',
 ] as const;
 
 test('demo seed exposes published portfolio works and real media', async ({
@@ -94,7 +94,7 @@ test('demo seed exposes published portfolio works and real media', async ({
       )
       .toBeGreaterThan(0);
 
-    await page.goto(`/product/${item.work.publicId}`);
+    await page.goto(`/works/${item.work.publicId}`);
     const galleryImage = page.locator(`img[alt="${item.work.title}"]`).first();
     await expect(galleryImage).toBeVisible();
     await expect

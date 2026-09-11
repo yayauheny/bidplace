@@ -4,6 +4,33 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Portfolio demo seed
+
+- `Implemented`: guarded demo seed is a portfolio catalog, not an auction
+  fixture. Eight approved authors each have ≥1 published work (15
+  `APPROVED` works), categories are ceramics / textile / wood, and
+  listings/bids/orders stay at 0. Public IDs are `seedAnna001`–
+  `seedAnna008`, `seedIrina01`, `seedPavel01`, `seedOlga001`,
+  `seedMark001`, `seedLena001`, `seedNikt001`, `seedSvet001`. Pending
+  author/work remain unpublished (`seedPend004`). Evidence:
+  `packages/database/prisma/seed.js`,
+  `apps/api/test/integration/seed-contract.integration.spec.ts`.
+- `Implemented`: seeded works omit packaging, delivery and condition. Each
+  work has `story`, `creationIntro` and four `creationSteps` with process
+  photos so admin/seller can inspect creation stages. Public Work still
+  renders `story` as «История» (RFC §11); process-step UI on the public
+  page is unchanged. Evidence: `packages/database/prisma/seed.js`.
+- `Implemented`: logged-in demo visitor is `visitor@bidplace.test`
+  («Тестовый посетитель»), not `buyer@bidplace.test`. Seed, e2e and
+  `.env.example` require `SEED_ADMIN_PASSWORD` (Argon2-hashed at seed
+  time), not `SEED_ADMIN_PASSWORD_HASH`. Evidence: `.env.example`,
+  `README.md`, `apps/mobile/e2e/wave-c-screen-acceptance.spec.ts`,
+  `apps/mobile/e2e/support/e2e-fixtures.ts`.
+- `Implemented`: `CuratorSelection` slot `home` points at `seedAnna001`.
+  Home UI still does not render it; seed-contract HTTP reads it.
+- Hide-work UI, Work logistics editor, public creation-step layout, P4
+  Prisma drops and GitHub archive rulesets stay out of this seed package.
+
 ## 2026-09-11 — DEC-087 review blockers
 
 - `Implemented`: owner Work writes no longer consult `product.listings`.
@@ -72,7 +99,7 @@ acceptance target; retained native branches are compatibility code only.
   P4/reseed). `git diff --name-only -- '*.pen'` empty.
 - `Verified` in Expo web: Works intro «Работы избранных авторов. Всё, что
   вы видите, создано вручную.»; Authors intro «Авторы, чьи работы
-  опубликованы на bidplace.»; Work detail `seedVase004` has no bid/лот
+  опубликованы на bidplace.»; Work detail `seedAnna004` has no bid/лот
   chrome and ingested `work_viewed` (historical `listing_viewed` rows
   remain, not summed). Reset-password form copy is «для входа в аккаунт».
   Phone shell does not render desktop `AccountMenu` (`breakpoint.mobileHeader`
@@ -339,7 +366,7 @@ Local commits on `feature/figma-component-library` (no remote push):
 - `Implemented`: local/test demo seed writes `city`, published
   `SellerProfileRevision` / `ProductRevision` / `ProductRevisionImage`, Anna
   practice plus two text achievements, and a `CuratorSelection` slot `home`
-  on `seedSched01`. Pending author/work stay unpublished. Evidence:
+  on `seedAnna001`. Pending author/work stay unpublished. Evidence:
   `packages/database/prisma/seed.js`,
   `apps/api/test/integration/seed-contract.integration.spec.ts`.
 - `Implemented`: `PostgresImageStore` put/get/delete for
@@ -1452,7 +1479,7 @@ verification.
 
 ## Local seed password handling — 2026-07-30
 
-- `Implemented`: `packages/database/prisma/seed.js` now accepts the local-only `SEED_ADMIN_PASSWORD`, hashes it with Argon2 before creating the deterministic admin, seller and buyer records, and never writes the plaintext password to the database. Runtime login continues to verify the submitted password against `User.passwordHash` through `apps/api/src/auth/password-hasher.service.ts`.
+- `Implemented`: `packages/database/prisma/seed.js` now accepts the local-only `SEED_ADMIN_PASSWORD`, hashes it with Argon2 before creating the deterministic admin, seller and visitor records, and never writes the plaintext password to the database. Runtime login continues to verify the submitted password against `User.passwordHash` through `apps/api/src/auth/password-hasher.service.ts`.
 - The previous `SEED_ADMIN_PASSWORD_HASH` variable is no longer read by the seed. A local database reset must provide `SEED_ADMIN_PASSWORD` and rerun the guarded demo seed.
 
 ## Visual polish — 2026-07-30
@@ -1486,7 +1513,7 @@ verification.
 | Lifecycle and Order              | `apps/api/src/lifecycle`, `apps/api/src/orders`, `apps/api/src/orders/order-snapshot.ts`, `apps/api/test/integration/order-mutations.integration.spec.ts`, `apps/api/test/integration/order-replacement.integration.spec.ts`: scheduler activation/closing, deterministic winner, atomic Order foundation, role-gated seller handoff, manual admin cancellation/replacement, immutable snapshots and append-only audit. PostgreSQL tests cover terminal repeats, unauthorized actions, ranked replacement and one-active-Order behavior.                                                                                                                                                                        |
 | Email verification and rules     | `apps/api/src/otp`, `apps/api/src/auth`, `apps/api/src/core/rules.ts`: hashed one-time OTP, expiry, retry/cooldown/rate limiting, production SMTP transport via nodemailer, versioned service-rules text and test-only bypass validation. Password recovery: `apps/api/src/password-reset`, `PasswordResetToken`, neutral forgot + session-invalidating reset.                                                                                                                                                                                                                                                                                                                                                  |
 | Public and realtime API          | `packages/contracts`, `packages/api-client`, `apps/api/src/products/public-visibility.ts`, `apps/api/src/realtime`: public Product, Bid history, media and socket joins share approved Product/SellerProfile gates; projections exclude seller internal identifiers and buyer PII; sockets are origin allow-listed, credential-free, IP rate-limited and room-capped; mobile uses HTTP as canonical snapshot and refetches on reconnect/events.                                                                                                                                                                                                                                                                 |
-| Local reset and seed             | The reset guard is present. The deterministic local/test-only seed creates four approved demo Products with local PNG fixtures (three auction states plus a second scheduled vase), eight approved creator profiles with local profile photos, plus pending seller/product moderation fixtures. Bid/Order fixtures require an explicit local/test profile and fail closed in production-like environments; `apps/api/test/integration/seed-contract.integration.spec.ts` verifies current price, bid count, winner and Order consistency. The dedicated `test:e2e-fence` guard and disposable guarded seed smoke pass; the public catalog includes the four approved Products and excludes the pending Product. |
+| Local reset and seed             | The reset guard is present. The deterministic local/test-only seed creates fifteen approved demo works with local PNG fixtures (no listings/bids/orders), eight approved creator profiles with local profile photos, a visitor account, plus pending author/work moderation fixtures. Bid/Order rows are not seeded; `apps/api/test/integration/seed-contract.integration.spec.ts` verifies published-work counts, share paths and empty commerce tables. The dedicated `test:e2e-fence` guard and disposable guarded seed smoke pass; the public catalog includes the fifteen approved works and excludes the pending work. |
 | Prisma generated client          | `packages/database` generates its custom Prisma Client before build. The generated directory is intentionally ignored and is not part of the source baseline.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## Partial / needs verification

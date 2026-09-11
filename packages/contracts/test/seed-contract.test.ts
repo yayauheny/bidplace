@@ -6,7 +6,7 @@ describe('Product public ID contract', () => {
   it('accepts the deterministic local fixture ID shape', () => {
     const result = productSchema.safeParse({
       id: '00000000-0000-4000-8000-000000000000',
-      publicId: 'seedSched01',
+      publicId: 'seedAnna001',
       sellerProfileId: '00000000-0000-4000-8000-000000000001',
       categoryId: null,
       title: null,

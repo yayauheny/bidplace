@@ -159,7 +159,7 @@ Docker Compose поднимает PostgreSQL локально на `5432`.
 
 Backend использует `DATABASE_URL` из корневого `.env`.
 
-Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD_HASH`. Они задаются локально (через `.env`), сырой пароль в Git не хранится. Реальные production credentials не должны использоваться.
+Для воспроизводимого local/test seed нужны `SEED_ADMIN_EMAIL` и `SEED_ADMIN_PASSWORD`. Они задаются локально (через `.env`); seed хеширует пароль Argon2 перед записью. Реальные production credentials не должны использоваться.
 
 **Внимание**: команда удаляет все данные из настроенной базы. Запуск разрешён только для disposable local DB. Точная команда:
 
@@ -167,7 +167,7 @@ Backend использует `DATABASE_URL` из корневого `.env`.
 ALLOW_DESTRUCTIVE_DEMO_SEED=true pnpm db:reset:demo
 ```
 
-Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
+Seed создаёт admin, visitor (`visitor@bidplace.test`), восемь одобренных авторов и пятнадцать опубликованных работ без listings, bids и orders. У каждой работы есть история создания (`story`, `creationIntro` и четыре `creationSteps`).
 
 Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Перед typecheck или build database package выполните `pnpm --filter @bidplace/database generate`; database build выполняет генерацию автоматически.
 

@@ -12,18 +12,21 @@ const targetWidths = process.env.WAVE2_VIEWPORT
   ? [Number(process.env.WAVE2_VIEWPORT)]
   : [1440, 1024, 390];
 const seededProducts = [
-  { publicId: 'seedSched01', title: 'Кашпо «Тёплый ритм»' },
-  { publicId: 'seedLive002', title: 'Стакан для кистей «Голубая комета»' },
-  { publicId: 'seedEnded03', title: 'Чашка «Ты мне»' },
-  { publicId: 'seedVase004', title: 'Ваза «Северный сад»' },
-  { publicId: 'seedIrina05', title: 'Чаша «Тёплая линия»' },
-  { publicId: 'seedPavel06', title: 'Лампа «Тихий круг»' },
-  { publicId: 'seedOlga007', title: 'Текстильная композиция «След света»' },
-  { publicId: 'seedMark008', title: 'Графический лист «Ночная карта»' },
+  { publicId: 'seedAnna001', title: 'Кашпо «Тёплый ритм»' },
+  { publicId: 'seedAnna002', title: 'Стакан для кистей «Голубая комета»' },
+  { publicId: 'seedAnna003', title: 'Чашка «Ты мне»' },
+  { publicId: 'seedAnna004', title: 'Ваза «Северный сад»' },
+  { publicId: 'seedIrina01', title: 'Чаша «Тёплая линия»' },
+  { publicId: 'seedPavel01', title: 'Лампа «Тихий круг»' },
+  { publicId: 'seedOlga001', title: 'Текстильная композиция «След света»' },
+  { publicId: 'seedMark001', title: 'Графический лист «Ночная карта»' },
   { publicId: 'seedAnna005', title: 'Скульптура «Тихая форма»' },
   { publicId: 'seedAnna006', title: 'Чаша «Медленный круг»' },
   { publicId: 'seedAnna007', title: 'Текстильная панель «След дождя»' },
   { publicId: 'seedAnna008', title: 'Графический лист «Линия света»' },
+  { publicId: 'seedLena001', title: 'Объект «Тихая полка»' },
+  { publicId: 'seedNikt001', title: 'Сосуд «Графичный край»' },
+  { publicId: 'seedSvet001', title: 'Композиция «Собранный свет»' },
 ] as const;
 
 test('captures Wave 2 layouts at target widths', async ({ browser }) => {
@@ -270,7 +273,7 @@ test('captures Wave 2 layouts at target widths', async ({ browser }) => {
       });
       await failedPage.close();
 
-      await page.goto('/product/seedLive002');
+      await page.goto('/works/seedAnna002');
       await expect(
         page.getByText('Стакан для кистей «Голубая комета»').first(),
       ).toBeVisible();

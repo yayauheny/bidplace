@@ -62,7 +62,7 @@ test('core public routes do not emit legacy React Native Web warnings', async ({
     '/works',
     '/authors',
     '/seller/anna-morozova',
-    '/product/seedLive002',
+    '/works/seedAnna002',
   ]) {
     await page.goto(route);
     await expect(page.getByTestId('app-shell-content')).toBeVisible();

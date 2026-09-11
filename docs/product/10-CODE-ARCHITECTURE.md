@@ -75,10 +75,11 @@ refs are still the merge gate.
   local/test seed. As of 2026-09-10 the tree contains **17** migration directories
   through `20260909120000_portfolio_media_socials_curator`; the earlier “single
   unreleased baseline migration” wording below is stale and must be reconciled with
-  deployment inventory before schema cleanup. Bid/Order demo fixtures may run only
+  deployment inventory before schema cleanup. The destructive demo seed may run only
   with `NODE_ENV=development|test`, `APP_ENV=local` and
   `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes,
-  and an API PostgreSQL integration test verifies the seeded auction invariants.
+  and an API PostgreSQL integration test verifies the seeded portfolio catalog
+  (zero listings/bids/orders).
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Socket.IO and `@nestjs/schedule` are not in the default API process. Listing
   close cron and realtime rooms exist only in the commerce archive.

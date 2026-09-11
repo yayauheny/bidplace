@@ -20,4 +20,4 @@ The fourth public catalog image is a ceramic vase downloaded from Unsplash and c
 - `product-images/textile-composition.png` — https://images.unsplash.com/photo-1718049942873-58bd663206dc
 - `product-images/linocut-print.png` — https://images.unsplash.com/photo-1436918898788-ebce04d38e46
 
-The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged. The additional product images are mapped one-to-one to the four extra seeded listings so the discovery grid does not repeat its first-row artwork.
+The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged. The additional product images are reused across published demo works so every approved author has at least one work and the discovery grid is not limited to a single discipline.

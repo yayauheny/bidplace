@@ -24,9 +24,9 @@ const screenshotDir = resolve(
   'bidplace-wave-c-screenshots',
   evidenceCommit,
 );
-const seededBuyer = {
+const seededVisitor = {
   id: '',
-  email: 'buyer@bidplace.test',
+  email: 'visitor@bidplace.test',
   password: 'password123',
 };
 const seededAdmin = {
@@ -100,7 +100,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
 }) => {
   test.setTimeout(120_000);
   await prioritizeSeededDemoProducts();
-  const { context, page } = await authenticatedPage(browser, seededBuyer);
+  const { context, page } = await authenticatedPage(browser, seededVisitor);
 
   try {
     for (const viewport of viewports) {
@@ -109,7 +109,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       const cards = page.locator('a[href^="/product/"]');
       await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3);
       const seededCards = page.locator(
-        'a[href="/product/seedSched01"], a[href="/product/seedLive002"], a[href="/product/seedEnded03"], a[href="/product/seedVase004"]',
+        'a[href="/product/seedAnna001"], a[href="/product/seedAnna002"], a[href="/product/seedAnna003"], a[href="/product/seedAnna004"]',
       );
       await expect(seededCards).toHaveCount(4);
       const expectedColumns = getCatalogColumnCount(viewport.width);
@@ -126,7 +126,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
         'Стакан для кистей «Голубая комета»',
       );
       await assertNoHorizontalOverflow(page);
-      await capture(page, 'catalog', 'buyer', 'loaded', viewport);
+      await capture(page, 'catalog', 'visitor', 'loaded', viewport);
     }
 
     for (const viewport of viewports) {
@@ -145,7 +145,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       });
       await expect(loadingPage.getByRole('progressbar')).toHaveCount(1);
       await loadingNavigation;
-      await capture(loadingPage, 'home', 'buyer', 'loading', viewport);
+      await capture(loadingPage, 'home', 'visitor', 'loading', viewport);
       await loadingPage.close();
 
       const failedPage = await context.newPage();
@@ -161,7 +161,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
       await expect(
         failedPage.getByLabel(/Изображение недоступно/).first(),
       ).toBeVisible();
-      await capture(failedPage, 'catalog', 'buyer', 'failed-media', viewport);
+      await capture(failedPage, 'catalog', 'visitor', 'failed-media', viewport);
       await failedPage.close();
     }
 
@@ -197,7 +197,7 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
         await session.page.setViewportSize(viewports[2]);
         await session.page.goto('/works');
         await expect(
-          session.page.locator('a[href="/product/seedLive002"]'),
+          session.page.locator('a[href="/product/seedAnna002"]'),
         ).toBeVisible();
         if (session.role === 'approved-seller') {
           await expect(
@@ -226,59 +226,59 @@ test('Wave C catalog matrix covers columns, media and fallback states', async ({
   }
 });
 
-test('Wave C product stays portfolio-only for buyer and admin', async ({
+test('Wave C product stays portfolio-only for visitor and admin', async ({
   browser,
 }) => {
   test.setTimeout(120_000);
-  const buyer = await authenticatedPage(browser, seededBuyer);
+  const visitor = await authenticatedPage(browser, seededVisitor);
   const admin = await authenticatedPage(browser, seededAdmin);
 
   try {
     for (const viewport of viewports) {
-      await buyer.page.setViewportSize(viewport);
-      await buyer.page.goto('/product/seedLive002');
+      await visitor.page.setViewportSize(viewport);
+      await visitor.page.goto('/works/seedAnna002');
       await expect(
-        buyer.page.getByText('Стакан для кистей «Голубая комета»').first(),
+        visitor.page.getByText('Стакан для кистей «Голубая комета»').first(),
       ).toBeVisible();
-      await expect(buyer.page.getByText(/75\s*BYN/)).toHaveCount(0);
-      await expect(buyer.page.getByLabel(/Торги/)).toHaveCount(0);
+      await expect(visitor.page.getByText(/75\s*BYN/)).toHaveCount(0);
+      await expect(visitor.page.getByLabel(/Торги/)).toHaveCount(0);
       await expect(
-        buyer.page.getByTestId('product-sticky-auction-player'),
+        visitor.page.getByTestId('product-sticky-auction-player'),
       ).toHaveCount(0);
-      await expect(buyer.page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
+      await expect(visitor.page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await assertLoadedImage(
-        buyer.page,
+        visitor.page,
         'Стакан для кистей «Голубая комета»',
       );
       if (viewport.width === 390) {
         await assertInFirstViewport(
-          buyer.page,
-          buyer.page.getByText('Стакан для кистей «Голубая комета»').first(),
+          visitor.page,
+          visitor.page.getByText('Стакан для кистей «Голубая комета»').first(),
           viewport,
         );
         await expect(
-          buyer.page.getByTestId('mobile-bottom-action-bar'),
+          visitor.page.getByTestId('mobile-bottom-action-bar'),
         ).toHaveCount(0);
         await capture(
-          buyer.page,
-          'product-seedLive002',
-          'buyer',
+          visitor.page,
+          'works-seedAnna002',
+          'visitor',
           'loaded-mobile',
           viewport,
         );
       } else {
         await capture(
-          buyer.page,
-          'product-seedLive002',
-          'buyer',
+          visitor.page,
+          'works-seedAnna002',
+          'visitor',
           'loaded',
           viewport,
         );
       }
-      await assertNoHorizontalOverflow(buyer.page);
+      await assertNoHorizontalOverflow(visitor.page);
 
       await admin.page.setViewportSize(viewport);
-      await admin.page.goto('/product/seedLive002');
+      await admin.page.goto('/works/seedAnna002');
       await expect(admin.page.getByLabel('Ваша ставка, BYN')).toHaveCount(0);
       await expect(
         admin.page.getByTestId('mobile-bottom-action-bar'),
@@ -286,14 +286,14 @@ test('Wave C product stays portfolio-only for buyer and admin', async ({
       await assertNoHorizontalOverflow(admin.page);
       await capture(
         admin.page,
-        'product-seedLive002',
+        'works-seedAnna002',
         'admin',
         'restricted',
         viewport,
       );
     }
   } finally {
-    await buyer.context.close();
+    await visitor.context.close();
     await admin.context.close();
   }
 });
