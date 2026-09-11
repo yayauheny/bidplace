@@ -1,5 +1,10 @@
 import type { CSSProperties, ReactNode, RefObject } from 'react';
-import type { StyleProp, View, ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  type StyleProp,
+  type View,
+  type ViewStyle,
+} from 'react-native';
 
 import {
   figmaGlassSurfaceSpec,
@@ -43,7 +48,7 @@ export function FigmaGlassSurface({
     '--figma-glass-border-end': spec.borderEnd,
     '--figma-glass-radius': `${spec.borderRadius}px`,
     '--figma-glass-stroke-width': `${spec.borderWidth}px`,
-    ...(plainStyle(style) ?? {}),
+    ...(flattenWebViewStyle(style) ?? {}),
   };
 
   return (
@@ -64,7 +69,7 @@ export function FigmaGlassSurface({
           .join(' ')}
         role={accessibilityRole}
         aria-label={accessibilityLabel}
-        style={plainStyle(contentStyle)}
+        style={flattenWebViewStyle(contentStyle)}
       >
         {children}
       </div>
@@ -72,12 +77,8 @@ export function FigmaGlassSurface({
   );
 }
 
-function plainStyle(
+export function flattenWebViewStyle(
   style?: StyleProp<ViewStyle>,
 ): CSSProperties | undefined {
-  if (!style || typeof style !== 'object' || Array.isArray(style)) {
-    return undefined;
-  }
-
-  return style as CSSProperties;
+  return StyleSheet.flatten(style) as CSSProperties | undefined;
 }

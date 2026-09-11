@@ -18,6 +18,8 @@ acceptance target; retained native branches are compatibility code only.
 - `Verified` on Expo Web 390×844: `/login` (white) and striped content behind
   the dock; one `[data-testid=figma-floating-dock]`; four labels; live blur
   changes pixels. Native iOS/Android is not an acceptance target.
+- `Corrected after review`: the shared web glass surface preserves object,
+  array and registered React Native styles through `StyleSheet.flatten`.
 - Screen compositions (Home/Work/Author/Search) are unchanged. Seed/e2e catalog
   data was not part of this commit.
 - `git diff --name-only -- '*.pen'` empty.

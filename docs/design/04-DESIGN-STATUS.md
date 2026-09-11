@@ -19,6 +19,9 @@
 - CSS-property-only dock tests are not sufficient for `Implemented`. Visual
   acceptance is the 390 Expo Web dock over white `/login` and over live
   content/stripe, plus the focused Playwright stack/blur checks.
+- `Corrected after review`: the web glass master now flattens every supported
+  React Native `StyleProp` shape instead of silently dropping style arrays.
+  Evidence: `FigmaGlassSurface.web.spec.ts`.
 - Public Home / Works / Author / Work screen compositions are unchanged.
 - No `.pen` file changed.
 
