@@ -228,3 +228,6 @@ browser suite starts real API and Expo web servers against isolated
 `bidplace_e2e`; PostgreSQL integration uses per-suite schemas. Current
 implementation status and external founder/device/10-user gates are owned by
 `11-PROJECT-STATUS.md`.
+
+Only the focused route renders its dock (`AppShell` uses Expo Router
+`useIsFocused`); retained stack screens must not leave body portals mounted.

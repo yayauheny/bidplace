@@ -1,4 +1,5 @@
 import { type ReactNode, useRef } from 'react';
+import { useIsFocused } from 'expo-router';
 import { BlurTargetView } from 'expo-blur';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ export function AppShell({
   hideDock?: boolean;
 }) {
   const dockBlurTarget = useRef<View | null>(null);
+  const isFocused = useIsFocused();
 
   return (
     <OverlayHost>
@@ -42,7 +44,9 @@ export function AppShell({
         >
           {children}
         </BlurTargetView>
-        {hideDock ? null : <FloatingDock blurTarget={dockBlurTarget} />}
+        {!hideDock && isFocused ? (
+          <FloatingDock blurTarget={dockBlurTarget} />
+        ) : null}
       </SafeAreaView>
     </OverlayHost>
   );

@@ -354,3 +354,6 @@ licensed Geist file is added. Do not substitute a system font.
 в `apps/mobile/src/components/figma` and wrappers in `components/ui`. There is
 no nested Figma token object. Figma is the production visual source (`DEC-085`);
 the protected `.pen` file is historical and unused at runtime.
+
+Only the focused route renders its dock (`AppShell` uses Expo Router
+`useIsFocused`); retained stack screens must not leave body portals mounted.

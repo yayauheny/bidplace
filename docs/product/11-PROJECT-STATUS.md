@@ -4,6 +4,16 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Focused-route dock ownership
+
+- `Implemented`: `AppShell.tsx` renders `FloatingDock` only while its route is
+  focused, using Expo Router `useIsFocused`. Retained stack screens no longer
+  leave body portals above the active screen. The earlier blur-layer change
+  alone did not fix the reported halo.
+- Browser reproduction found two docks after Home → Add → Login. After the
+  fix, Login → Home → Add → Login → Home keeps one dock; screenshots show
+  no icon halo on Login and live translucent glass on Home.
+
 ## 2026-09-11 — Dock post-click halo correction
 
 - `Needs verification`: `FigmaGlassSurface.web.tsx` and `global.css` now put
