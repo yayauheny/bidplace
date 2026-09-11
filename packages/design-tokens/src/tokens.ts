@@ -300,6 +300,12 @@ export const designTokens = {
       letterSpacing: -1.12,
       fontWeight: '600' as const,
     },
+    identityRowHandle: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 25,
+      fontWeight: '600' as const,
+    },
   },
   motion: {
     instant: 80,

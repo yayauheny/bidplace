@@ -60,11 +60,11 @@ export function PublicAuthorsScreen({
     );
   } else {
     content = (
-      <CreatorCardGrid
-        items={result.data.authors.map((item) => ({
-          sellerProfile: item.author,
-        }))}
-      />
+        <CreatorCardGrid
+          items={result.data.authors.map((item) => ({
+            sellerProfile: item.author,
+          }))}
+        />
     );
   }
 

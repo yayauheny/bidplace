@@ -4,10 +4,18 @@ import { Text, View } from 'react-native';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { useReducedMotion } from '../../lib/reduced-motion';
 import { MotionPressable } from '../ui/MotionPressable';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
 import { CoverFrost } from './CoverFrost';
+import {
+  authorCoverNameZoneStyle,
+  coverArtworkFrameStyle,
+  coverCardFrameStyle,
+  coverChipRowStyle,
+  coverOverlayPadStyle,
+} from './cover-card-style';
 import {
   authorCoverAccessibilityLabel,
   getAuthorCoverContent,
@@ -21,6 +29,7 @@ export function AuthorCoverCard({
   imageUrl,
 }: AuthorCoverInput & { imageUrl: string }) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
+  const reducedMotion = useReducedMotion();
 
   return (
     <Link href={`/seller/${slug}`} asChild>
@@ -29,80 +38,70 @@ export function AuthorCoverCard({
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
         style={{
-          width: '100%',
-          aspectRatio:
-            figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
-          overflow: 'hidden',
-          borderRadius: figmaTokens.radius.authorCover,
-          backgroundColor: figmaTokens.color.mutedFill,
+          ...coverCardFrameStyle('author'),
           justifyContent: 'space-between',
         }}
       >
-        <ResilientRemoteImage
-          uri={getApiAssetUrl(imageUrl)}
-          component="AuthorCoverCard"
-          accessibilityLabel={`Фото автора ${fullName}`}
-          fallbackLabel={`Фото автора недоступно: ${fullName}`}
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-          }}
-          contentFit="cover"
-        />
-        <CoverFrost imageUrl={imageUrl} placement="authorTop" />
-        <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
-        <View
-          style={{
-            alignSelf: 'stretch',
-            paddingTop: 20,
-            paddingBottom: 12,
-            paddingHorizontal: figmaTokens.space.coverPad,
-          }}
-        >
-          <Text
-            numberOfLines={2}
-            style={[
-              {
-                color: figmaTokens.color.white,
-                textAlign: 'center',
-              },
-              figmaTokens.typography.authorName,
-            ]}
-          >
-            {content.fullName}
-          </Text>
-        </View>
-        <View
-          style={{
-            padding: figmaTokens.space.coverPad,
-            gap: figmaTokens.space.coverGap,
-          }}
-        >
-          <Text
-            style={[
-              { color: figmaTokens.color.white },
-              figmaTokens.typography.authorHandle,
-            ]}
-          >
-            {content.handle}
-          </Text>
-          {content.tags.length > 0 ? (
+        {({ hovered, focused }) => (
+          <>
             <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'nowrap',
-                gap: figmaTokens.space.chipGap,
-              }}
+              style={coverArtworkFrameStyle(
+                !reducedMotion && (hovered || focused),
+              )}
             >
-              {content.tags.map((tag) => (
-                <FigmaChip key={tag} label={tag} tone="onDark" />
-              ))}
+              <ResilientRemoteImage
+                uri={getApiAssetUrl(imageUrl)}
+                component="AuthorCoverCard"
+                accessibilityLabel={`Фото автора ${fullName}`}
+                fallbackLabel={`Фото автора недоступно: ${fullName}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                }}
+                contentFit="cover"
+              />
             </View>
-          ) : null}
-        </View>
+            <CoverFrost imageUrl={imageUrl} placement="authorTop" />
+            <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
+            <View pointerEvents="none" style={authorCoverNameZoneStyle()}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  {
+                    color: figmaTokens.color.white,
+                    textAlign: 'center',
+                  },
+                  figmaTokens.typography.authorName,
+                ]}
+              >
+                {content.fullName}
+              </Text>
+            </View>
+            <View pointerEvents="none" style={coverOverlayPadStyle()}>
+              <Text
+                numberOfLines={1}
+                style={[
+                  { color: figmaTokens.color.white },
+                  figmaTokens.typography.authorHandle,
+                ]}
+              >
+                {content.handle}
+              </Text>
+              {content.tags.length > 0 ? (
+                <View style={coverChipRowStyle()}>
+                  {content.tags.map((tag) => (
+                    <View key={tag} style={{ flexShrink: 0 }}>
+                      <FigmaChip label={tag} tone="onDark" />
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          </>
+        )}
       </MotionPressable>
     </Link>
   );

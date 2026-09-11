@@ -4,10 +4,17 @@ import { Text, View } from 'react-native';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
+import { useReducedMotion } from '../../lib/reduced-motion';
 import { MotionPressable } from '../ui/MotionPressable';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
 import { CoverFrost } from './CoverFrost';
+import {
+  coverArtworkFrameStyle,
+  coverCardFrameStyle,
+  coverChipRowStyle,
+  coverOverlayPadStyle,
+} from './cover-card-style';
 import {
   getWorkCoverOverlay,
   workCoverAccessibilityLabel,
@@ -27,6 +34,7 @@ export function WorkCoverCard({
   authorSlug: string;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
+  const reducedMotion = useReducedMotion();
 
   return (
     <Link href={href} asChild>
@@ -34,60 +42,59 @@ export function WorkCoverCard({
         accessibilityRole="link"
         accessibilityLabel={workCoverAccessibilityLabel(overlay)}
         preset="card"
-        style={{
-          width: '100%',
-          aspectRatio:
-            figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
-          overflow: 'hidden',
-          borderRadius: figmaTokens.radius.cover,
-          backgroundColor: figmaTokens.color.mutedFill,
-        }}
+        style={coverCardFrameStyle('work')}
       >
-        <ResilientRemoteImage
-          uri={getApiAssetUrl(imageUrl)}
-          component="WorkCoverCard"
-          accessibilityLabel={imageLabel}
-          fallbackLabel={`Изображение недоступно: ${overlay.title}`}
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-          }}
-          contentFit="cover"
-        />
-        <CoverFrost imageUrl={imageUrl} placement="workBottom" />
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <View
-            style={{
-              padding: figmaTokens.space.coverPad,
-              gap: figmaTokens.space.coverGap,
-            }}
-          >
-            <View style={{ gap: figmaTokens.space.coverBlockGap }}>
-              <Text
-                numberOfLines={2}
-                style={[
-                  { color: figmaTokens.color.white },
-                  figmaTokens.typography.coverTitle,
-                ]}
-              >
-                {overlay.title}
-              </Text>
-            </View>
+        {({ hovered, focused }) => (
+          <>
             <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: figmaTokens.space.chipGap,
-              }}
+              style={coverArtworkFrameStyle(
+                !reducedMotion && (hovered || focused),
+              )}
             >
-              <FigmaChip label={`@${overlay.authorSlug}`} tone="onDark" />
+              <ResilientRemoteImage
+                uri={getApiAssetUrl(imageUrl)}
+                component="WorkCoverCard"
+                accessibilityLabel={imageLabel}
+                fallbackLabel={`Изображение недоступно: ${overlay.title}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                }}
+                contentFit="cover"
+              />
             </View>
-          </View>
-        </View>
+            <CoverFrost imageUrl={imageUrl} placement="workBottom" />
+            <View
+              pointerEvents="none"
+              style={{ flex: 1, justifyContent: 'flex-end' }}
+            >
+              <View style={coverOverlayPadStyle()}>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    {
+                      color: figmaTokens.color.white,
+                    },
+                    figmaTokens.typography.coverTitle,
+                  ]}
+                >
+                  {overlay.title}
+                </Text>
+                <View style={coverChipRowStyle()}>
+                  <View style={{ flexShrink: 0 }}>
+                    <FigmaChip
+                      label={`@${overlay.authorSlug}`}
+                      tone="onDark"
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
       </MotionPressable>
     </Link>
   );

@@ -3,6 +3,7 @@ import {
   useState,
   type ComponentProps,
   type ElementRef,
+  type ReactNode,
 } from 'react';
 import {
   Platform,
@@ -25,7 +26,13 @@ export type MotionPressableState = PressableStateCallbackType & {
   hovered: boolean;
 };
 
-type MotionPressableProps = Omit<ComponentProps<typeof Pressable>, 'style'> & {
+type MotionPressableProps = Omit<
+  ComponentProps<typeof Pressable>,
+  'style' | 'children'
+> & {
+  children?:
+    | ReactNode
+    | ((state: MotionPressableState) => ReactNode);
   interactionStyle?: (state: MotionPressableState) => StyleProp<ViewStyle>;
   preset?: MotionPressablePreset;
   style?:
@@ -46,6 +53,7 @@ export const MotionPressable = forwardRef<
     onHoverIn,
     onHoverOut,
     style,
+    children,
     ...props
   },
   ref,
@@ -68,6 +76,12 @@ export const MotionPressable = forwardRef<
     <Pressable
       {...props}
       ref={ref}
+      children={
+        typeof children === 'function'
+          ? (pressState) =>
+              children({ ...pressState, focused, hovered })
+          : children
+      }
       disabled={disabled}
       onBlur={(event) => {
         setFocused(false);
