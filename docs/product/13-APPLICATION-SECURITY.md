@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-09-06
+Последнее обновление: 2026-09-11
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -33,14 +33,14 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Lookup user by email | Implemented | `admin-user.service.ts` |
 | Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
 | Revoke all sessions (`sessionVersion++`) | Implemented | same |
-| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
-| Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
+| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Not implemented in default boot | Removed with P3 (`admin-listing-emergency.service.ts`); Prisma listing rows remain until P4 |
+| Needs-order queue + manual Order create | Not implemented in default boot | Removed with P3; no Recovery tab in the default mobile tree |
 | **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
 
-**Pros:** founder can stop abuse without schema churn; guards prevent admin lockout.  
-**Cons:** listing emergency cancel still requires listing UUID in UI; no bulk actions.  
-**Revisit when:** pilot volume needs search-by-public-id or automated stuck-queue rules.
+**Pros:** founder can stop account abuse without schema churn; guards prevent admin lockout.  
+**Cons:** no bulk user actions.  
+**Revisit when:** commerce is restored from archive, or pilot volume needs search-by-public-id.
 
 ## 4. Media upload defense
 
@@ -55,7 +55,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 
 | Control | Status | Detail |
 | --- | --- | --- |
-| Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
+| Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock (`product.listings` fail-closed until P4) + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
 | Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
@@ -78,12 +78,12 @@ Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `selle
 | Register / login | IP-scoped limits | Implemented (`auth.controller.ts`) |
 | OTP send | IP + user | Implemented (`otp.service.ts`) |
 | Forgot / reset password | IP + email bucket | Implemented (`password-reset.controller.ts`) |
-| Bid place | User + listing resource | Implemented (`bids.controller.ts`) |
+| Bid place | User + listing resource | Not implemented in default boot (`POST /api/listings/:id/bids` unmatched 404) |
 | Image upload | User, 10/min | Implemented (`images.controller.ts`) |
 | Forgot password response | Always `{ ok: true }` | Implemented |
 
 **Pros:** raises cost of spray attacks without changing product contracts.  
-**Cons:** in-memory limits assume single API replica (same as scheduler note in architecture).  
+**Cons:** in-memory limits assume a single API replica.  
 **Revisit when:** multi-instance deployment or shared Redis rate-limit store.
 
 ## 6. Decision table (summary)

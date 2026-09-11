@@ -4,14 +4,42 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Morning smoke and residual cleanup
+
+- `Implemented`: desktop create CTA renamed off listing vocabulary.
+  `CreateWorkAction`, `canShowDesktopCreateWork`, `createWorkActionStyle` /
+  `createWorkActionInteractionStyle`. Href remains `/products/new`; visible
+  copy «Создать»; a11y «Добавить работу». Evidence:
+  `apps/mobile/src/components/layout/CreateWorkAction.tsx`,
+  `header-chrome.ts`, `header-layout.ts`, `AppHeader.tsx`.
+- `Implemented`: `13-APPLICATION-SECURITY.md` (2026-09-11) no longer treats
+  listing emergency cancel, needs-order recovery, or bid-place rate-limit as
+  live default-boot controls. User lookup / ban / revoke stay Implemented.
+  Media `product.listings` write-guard stays fail-closed until P4.
+- `Verified`: Compose Postgres healthy; `GET /api/health/ready` 200;
+  `GET /api/portfolio/home` 200 with keys `curatorSelection`, `newWorks`,
+  `newAuthors` and no listing/price/bid/order JSON keys. Expo web `:8081`
+  Home shows work and author sections without BYN/bid chrome; the same
+  cover card opens work detail (`/product/:publicId`, `/works/:id` redirect).
+  No schema migrate was required.
+- `Not implemented`: P4 Prisma `Listing`/`Bid`/`Order` drops remain blocked
+  on staging/prod inventory. Archive `archive/commerce-v1` and tag
+  `commerce-v1-pre-portfolio` remain local; push is operator-only.
+- Analytics ingest still accepts `listing_viewed` / `bid_rejected`. Bid
+  error codes stay on `apiErrorCodeSchema` for ingest.
+- `Verified`: mobile typecheck, lint, and 11 `header-chrome` /
+  `header-layout` tests. `git diff --name-only -- '*.pen'` empty. No Prisma
+  schema or migration edits.
+
 ## 2026-09-11 — Morning handoff (P3–P6 local, P4 blocked)
 
-Operator-only, not done in this session:
+Operator-only remaining after morning smoke:
 
 - Push and protect `archive/commerce-v1` and tag `commerce-v1-pre-portfolio`.
-- Smoke Home against a running API after `pnpm db:migrate`.
 - Fill staging/prod migration inventory, then P4 Prisma drops. Do not rewrite
   applied migrations.
+
+Home HTTP/browser smoke is recorded in the section above.
 
 Local commits on `feature/figma-component-library` (no remote push):
 `41867fb` P1, `a2b6827` P2, `7c6b187` P3, `ab0a7c0` Nest-only contracts,
@@ -28,10 +56,10 @@ Local commits on `feature/figma-component-library` (no remote push):
   `docs/audits/2026-09-10-commerce-removal-graph.md` and
   `docs/design/04-DESIGN-STATUS.md` record P3/P5/P6. Persistence diagram
   unchanged. `05-MVP-RFC.md` and `12-DECISION-LOG.md` not rewritten.
-- Residual: `CreateListingAction` still names listing but routes to
-  `/products/new`. Analytics ingest still accepts `listing_viewed` /
+- Residual: analytics ingest still accepts `listing_viewed` /
   `bid_rejected`. Bid error codes stay on `apiErrorCodeSchema` for ingest.
-  Empty `(seller)/listings` directory removed if present.
+  Empty `(seller)/listings` directory removed if present. Create CTA naming
+  was cleaned in the morning smoke pass (`CreateWorkAction`).
 - `Verified`: `git diff --name-only -- '*.pen'` empty. No Prisma schema or
   migration edits. api typecheck, lint, 283 unit tests, 70 integration tests.
 

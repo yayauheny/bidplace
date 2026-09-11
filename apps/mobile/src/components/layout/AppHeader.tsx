@@ -7,13 +7,13 @@ import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { AccountMenu } from './AccountMenu';
 import { BrandLogo } from './BrandLogo';
-import { CreateListingAction } from './CreateListingAction';
+import { CreateWorkAction } from './CreateWorkAction';
 import { DiscoveryMenu } from './DiscoveryMenu';
 import { HeaderNavigationLink } from './HeaderNavigationLink';
 import { HeaderSearch } from './HeaderSearch';
 import { MobileHeader } from './MobileHeader';
 import {
-  canShowDesktopCreateListing,
+  canShowDesktopCreateWork,
   getDiscoveryLabel,
   getHeaderSearchPlaceholder,
   isAuthorsRoute,
@@ -42,7 +42,7 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
   }
   const desktop = width >= designTokens.breakpoint.compactHeader;
   const searchInline = width >= designTokens.breakpoint.headerSearchInline;
-  const canCreate = canShowDesktopCreateListing({
+  const canCreate = canShowDesktopCreateWork({
     isAdmin: auth.isAdmin,
     sellerStatus: capability.status,
   });
@@ -113,7 +113,7 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
         {desktop && searchInline ? (
           <View style={desktopActionsRowStyle()}>
             {canCreate ? (
-              <CreateListingAction
+              <CreateWorkAction
                 isAdmin={auth.isAdmin}
                 sellerStatus={capability.status}
               />
@@ -123,7 +123,7 @@ export function AppHeader({ ambient = false }: { ambient?: boolean }) {
         ) : (
           <>
             {canCreate ? (
-              <CreateListingAction
+              <CreateWorkAction
                 isAdmin={auth.isAdmin}
                 sellerStatus={capability.status}
               />

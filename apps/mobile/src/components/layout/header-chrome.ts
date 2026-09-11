@@ -21,7 +21,7 @@ export function getHeaderSearchPlaceholder(pathname: string): string {
     : 'Найти предмет или автора';
 }
 
-export function canShowDesktopCreateListing({
+export function canShowDesktopCreateWork({
   isAdmin,
   sellerStatus,
 }: {

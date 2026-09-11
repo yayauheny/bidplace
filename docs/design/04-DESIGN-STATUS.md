@@ -4,6 +4,14 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-11 — Create CTA naming (no visual change)
+
+- `Implemented`: header desktop create control is `CreateWorkAction` with
+  `canShowDesktopCreateWork` and `createWorkAction*` layout helpers. Route
+  `/products/new`, label «Создать», a11y «Добавить работу» are unchanged.
+- Public Home / Works / Author / Work screens are unchanged from P1.
+- No `.pen` file changed.
+
 ## 2026-09-11 — P3 admin analytics without commerce metrics
 
 - `Implemented`: admin analytics overview cards are users, creators and works.

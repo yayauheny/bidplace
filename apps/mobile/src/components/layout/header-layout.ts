@@ -180,7 +180,7 @@ export function headerSearchInputStyle(): TextStyle {
   };
 }
 
-export function createListingActionStyle(): ViewStyle {
+export function createWorkActionStyle(): ViewStyle {
   return {
     minHeight: designTokens.size.buttonCompact,
     justifyContent: 'center',
@@ -190,7 +190,7 @@ export function createListingActionStyle(): ViewStyle {
   };
 }
 
-export function createListingActionInteractionStyle(): ({
+export function createWorkActionInteractionStyle(): ({
   hovered,
   pressed,
 }: {

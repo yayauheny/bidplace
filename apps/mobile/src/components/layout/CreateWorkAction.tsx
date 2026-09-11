@@ -4,19 +4,19 @@ import { AppText, MotionPressable } from '../ui';
 import { designTokens } from '@bidplace/design-tokens';
 
 import {
-  createListingActionInteractionStyle,
-  createListingActionStyle,
+  createWorkActionInteractionStyle,
+  createWorkActionStyle,
 } from './header-layout';
-import { canShowDesktopCreateListing } from './header-chrome';
+import { canShowDesktopCreateWork } from './header-chrome';
 
-export function CreateListingAction({
+export function CreateWorkAction({
   isAdmin,
   sellerStatus,
 }: {
   isAdmin: boolean;
   sellerStatus: SellerStatus | null;
 }) {
-  const canCreate = canShowDesktopCreateListing({ isAdmin, sellerStatus });
+  const canCreate = canShowDesktopCreateWork({ isAdmin, sellerStatus });
   if (!canCreate) return null;
 
   return (
@@ -25,8 +25,8 @@ export function CreateListingAction({
         accessibilityRole="link"
         accessibilityLabel="Добавить работу"
         preset="primaryAction"
-        style={createListingActionStyle()}
-        interactionStyle={createListingActionInteractionStyle()}
+        style={createWorkActionStyle()}
+        interactionStyle={createWorkActionInteractionStyle()}
       >
         <AppText
           role="button"
@@ -39,4 +39,3 @@ export function CreateListingAction({
     </Link>
   );
 }
-
