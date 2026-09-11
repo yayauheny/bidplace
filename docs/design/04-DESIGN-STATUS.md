@@ -1,5 +1,14 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-11 — Card geometry and filter stacking checkpoint
+
+- `Partial`: C3 geometry verified at 390 (366×488, radii 24/28); temporary
+  catalog identity preview removed. Full matched typography/imagery remains open.
+- `Implemented`: FilterMenu uses the existing OverlayPortal; selection above
+  cards, Escape/focus return and outside dismissal pass the browser regression.
+- Cover frost remains an approximation. See `01-BLUR-CHECKPOINT.md` under
+  `docs/tasks/2026-09-11-figma-mvp-components/` for verification and remaining work.
+
 ## 2026-09-11 — Author atmosphere scroll correction
 
 - `Partial`: profile atmosphere now belongs to the scroll content. Removed the

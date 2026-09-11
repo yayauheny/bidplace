@@ -1,5 +1,13 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-11 — Author atmosphere scroll correction
+
+- `Partial`: profile atmosphere now belongs to the scroll content. Removed the
+  viewport overflow override that disabled web scrolling. Live 390px check:
+  320px scroll moves the atmosphere by 320px; focused browser regression passes.
+  Full C5 hero composition and exact cover frost parity remain open.
+  See `docs/tasks/2026-09-11-figma-mvp-components/01-BLUR-CHECKPOINT.md`.
+
 Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
@@ -10,8 +18,8 @@ acceptance target; retained native branches are compatibility code only.
   a 12 px inner rounded rect. Regions match Figma overlay frames: work bottom
   125/352 (`874:5459`), author top 56/352 (`874:5541`), author bottom 77/352
   (`874:5543`). Work overlay has no price; title stays at the bottom. Author
-  name stays in the top zone. Web uses six cross-faded backdrop-filter bands
-  (runtime 30 px bottom / 20 px author top) instead of one full-strength blur.
+  name stays in the top zone. Web uses one masked backdrop-filter ramp
+  (runtime 30 px bottom / 20 px author top) instead of stacked blur bands.
   Native keeps uniform blur inside those regions only as compatibility code.
   Evidence: `apps/mobile/src/components/figma/CoverFrost.web.tsx`,
   `CoverFrost.tsx`, `cover-frost-style.ts`, `WorkCoverCard.tsx`,

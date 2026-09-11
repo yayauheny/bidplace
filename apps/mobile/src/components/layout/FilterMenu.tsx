@@ -4,8 +4,12 @@ import { Platform, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppIcon, AppText, MotionPressable } from '../ui';
-import { assignFocusableAnchorRef, type FocusableAnchor } from './focusable-anchor';
+import {
+  assignFocusableAnchorRef,
+  type FocusableAnchor,
+} from './focusable-anchor';
 import { useDismissibleOverlay } from './use-dismissible-overlay';
+import { OverlayPortal } from './OverlayHost';
 
 type FilterMenuOption = { value: string; label: string };
 
@@ -33,6 +37,7 @@ export function FilterMenu({
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<FocusableAnchor | null>(null);
   const menuId = `filter-menu-${variant}-${useId()}`;
+  const panelId = `${menuId}-panel`;
 
   const selectedLabel =
     options.find((option) => option.value === value)?.label ?? null;
@@ -44,9 +49,8 @@ export function FilterMenu({
     onClose: () => setOpen(false),
     restoreFocus: () => triggerRef.current?.focus?.(),
     getSurfaces: () => [
-      Platform.OS === 'web'
-        ? document.getElementById(menuId)
-        : null,
+      Platform.OS === 'web' ? document.getElementById(menuId) : null,
+      Platform.OS === 'web' ? document.getElementById(panelId) : null,
     ],
   });
 
@@ -112,76 +116,90 @@ export function FilterMenu({
       </MotionPressable>
 
       {open ? (
-        <View
-          accessibilityRole="menu"
-          style={{
-            position: 'absolute',
-            top: dropdownTop,
-            ...(dropdownAlign === 'right' ? { right: 0 } : { left: 0 }),
-            zIndex: designTokens.layer.popover,
-            minWidth: resolvedDropdownMinWidth,
-            gap: designTokens.space.x1,
-            borderWidth: 1,
-            borderColor: designTokens.color.border,
-            borderRadius: 16,
-            backgroundColor: designTokens.color.surface,
-            padding: 10,
-            ...designTokens.elevation.floating,
-          }}
+        <OverlayPortal
+          anchorRef={triggerRef}
+          placement={dropdownAlign === 'right' ? 'bottom-end' : 'bottom-start'}
+          width={resolvedDropdownMinWidth}
         >
-          {showAllItem ? (
-            <MotionPressable
-              accessibilityRole="menuitem"
-              accessibilityLabel={`${label}: все`}
-              onPress={() => {
-                onSelect(undefined);
-                setOpen(false);
-              }}
-              preset="button"
-              style={{
-                minHeight: designTokens.size.touch,
-                justifyContent: 'center',
-                borderRadius: designTokens.radius.small,
-                paddingHorizontal: designTokens.space.x2,
-              }}
-              interactionStyle={({ hovered, pressed }) => ({
-                backgroundColor:
-                  hovered || pressed ? designTokens.color.surfaceStrong : 'transparent',
-              })}
-            >
-              <AppText role="label">{allLabel}</AppText>
-            </MotionPressable>
-          ) : null}
+          <View
+            nativeID={panelId}
+            accessibilityRole="menu"
+            style={{
+              ...(Platform.OS === 'web'
+                ? {}
+                : {
+                    position: 'absolute',
+                    top: dropdownTop,
+                    ...(dropdownAlign === 'right' ? { right: 0 } : { left: 0 }),
+                  }),
+              zIndex: designTokens.layer.popover,
+              minWidth: resolvedDropdownMinWidth,
+              gap: designTokens.space.x1,
+              borderWidth: 1,
+              borderColor: designTokens.color.border,
+              borderRadius: 16,
+              backgroundColor: designTokens.color.surface,
+              padding: 10,
+              ...designTokens.elevation.floating,
+            }}
+          >
+            {showAllItem ? (
+              <MotionPressable
+                accessibilityRole="menuitem"
+                accessibilityLabel={`${label}: все`}
+                onPress={() => {
+                  onSelect(undefined);
+                  setOpen(false);
+                }}
+                preset="button"
+                style={{
+                  minHeight: designTokens.size.touch,
+                  justifyContent: 'center',
+                  borderRadius: designTokens.radius.small,
+                  paddingHorizontal: designTokens.space.x2,
+                }}
+                interactionStyle={({ hovered, pressed }) => ({
+                  backgroundColor:
+                    hovered || pressed
+                      ? designTokens.color.surfaceStrong
+                      : 'transparent',
+                })}
+              >
+                <AppText role="label">{allLabel}</AppText>
+              </MotionPressable>
+            ) : null}
 
-          {options.map((option) => (
-            <MotionPressable
-              key={option.value}
-              accessibilityRole="menuitem"
-              accessibilityLabel={option.label}
-              onPress={() => {
-                onSelect(option.value);
-                setOpen(false);
-              }}
-              preset="button"
-              style={{
-                minHeight: designTokens.size.touch,
-                justifyContent: 'center',
-                borderRadius: designTokens.radius.small,
-                paddingHorizontal: designTokens.space.x2,
-              }}
-              interactionStyle={({ hovered, pressed }) => ({
-                backgroundColor:
-                  hovered || pressed ? designTokens.color.surfaceStrong : 'transparent',
-              })}
-            >
-              <AppText role="label" numberOfLines={1}>
-                {option.label}
-              </AppText>
-            </MotionPressable>
-          ))}
-        </View>
+            {options.map((option) => (
+              <MotionPressable
+                key={option.value}
+                accessibilityRole="menuitem"
+                accessibilityLabel={option.label}
+                onPress={() => {
+                  onSelect(option.value);
+                  setOpen(false);
+                }}
+                preset="button"
+                style={{
+                  minHeight: designTokens.size.touch,
+                  justifyContent: 'center',
+                  borderRadius: designTokens.radius.small,
+                  paddingHorizontal: designTokens.space.x2,
+                }}
+                interactionStyle={({ hovered, pressed }) => ({
+                  backgroundColor:
+                    hovered || pressed
+                      ? designTokens.color.surfaceStrong
+                      : 'transparent',
+                })}
+              >
+                <AppText role="label" numberOfLines={1}>
+                  {option.label}
+                </AppText>
+              </MotionPressable>
+            ))}
+          </View>
+        </OverlayPortal>
       ) : null}
     </View>
   );
 }
-

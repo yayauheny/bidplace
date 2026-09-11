@@ -18,14 +18,26 @@ uncommitted CORS, C3 and single-ramp changes.
 - C5 remains open: current hero lacks the captured logo/top spacing and social
   group composition. This checkpoint does not claim full profile parity.
 
+## Reviewed follow-up packages
+
+- C3 geometry saved separately: 366×488 at 390 viewport, radii 24/28,
+  single-row tags and photo-only hover; temporary identity preview removed.
+- Single masked frost saved separately as the smooth approximation. Figma
+  equality remains open; no stronger claim follows from passing DOM checks.
+- FilterMenu uses the existing OverlayPortal above cards. Its portal panel is
+  included in outside-click detection. Browser check covers selection, URL,
+  Escape/focus return and outside dismissal.
+- Checks: mobile typecheck/lint, 11 focused unit tests, 3 focused browser tests,
+  Expo web export. Database and existing CORS modifications were not changed.
+
 ## Pending sequence
 
 1. Cover frost: existing uncommitted single masked 30/20px blur is an
    approximation. Opacity cross-fade is not a variable blur radius. Do not mark
    pixel-match or progressive rendering implemented on that basis.
-2. C3: review existing geometry/hover changes, remove the temporary
-   AuthorIdentity catalog preview after verification, commit as its own package.
-3. C4: filter stacking/click behavior, independent of blur.
+2. C3: final matched reference imagery/typography comparison, especially Geist
+   versus the currently approved Inter runtime. Geometry is verified separately.
+3. C4: complete filter design composition if required; stacking/click defect fixed.
 4. C5: compose the hero against the local captures, then compare the atmosphere
    in that final geometry. Keep the single shared atmosphere master.
 
