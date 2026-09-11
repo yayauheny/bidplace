@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Platform, Text, View, type ViewStyle } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -29,9 +29,6 @@ export function AuthorCoverCard({
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
         style={{
-          ...(Platform.OS === 'web'
-            ? ({ containerType: 'inline-size' } as ViewStyle)
-            : null),
           width: '100%',
           aspectRatio:
             figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,

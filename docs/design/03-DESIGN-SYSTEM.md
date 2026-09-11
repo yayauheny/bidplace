@@ -20,16 +20,22 @@ production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `FigmaChoiceChip`, `FigmaIcon`, `FigmaIconButton`, `FigmaGlassSurface`,
 `FigmaImagePlaceholder`, `OverlayDimmer`, `WorkCoverCard`, `AuthorCoverCard`,
 `AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`. Cover
-overlays frost the artwork instead of painting an opaque gradient. On web,
-`CoverFrost` samples the single sharp artwork behind it with
-`backdrop-filter: blur(30px)`; it must not render a second filtered image. Native
-uses one pointer-inert, accessibility-hidden `expo-image` duplicate with the
-same bottom-aligned crop only as retained compatibility behavior; it is not a
-separate product target. Both paths add the captured transparent-to-
-`#292929` 70% gradient and 12 px top corners from nodes `874:5459`, `874:5474`
-and `874:5543`. Figma's 0→60 progressive background blur has no exact CSS or
-React Native equivalent; the runtime 30 px uniform blur is the documented
-dynamic-media approximation, not a claim of pixel equality. Author pages use
+overlays frost the artwork instead of painting an opaque gradient. Frost height
+is taken from the Figma overlay frames, not from overlay text: work bottom
+125/352 (`874:5459`), author top 56/352 (`874:5541`), author bottom 77/352
+(`874:5543`). Overlay frames have no corner radius; the card clips 24/28.
+Work cards keep title and `@author` at the bottom and omit price. Author cards
+put the name in the top zone and handle/tags in the bottom zone. On web,
+`CoverFrost` samples the sharp artwork once through six masked
+`backdrop-filter` bands that cross-fade from 0 to the runtime radius (30 px
+bottom, 20 px author top — half of Figma 60 / 40). It must not render a second
+filtered image or keep every band opaque to the outer edge. Native uses one
+pointer-inert, accessibility-hidden `expo-image` duplicate inside the same
+region only as retained compatibility behavior; it is not a visual acceptance
+target. Both paths add the captured transparent-to-`#292929` 70% gradient on
+bottom overlays and transparent-to-black 70% on the author top overlay.
+Figma's progressive background blur has no exact CSS equivalent; the layered
+bands are the documented approximation, not pixel equality. Author pages use
 the exact node `621:19476`
 atmosphere behind identity: a 485×485 duplicate photo at x=-47/y=-36, 40 px
 runtime blur (Figma layer radius 80), 40% white wash, 50% layer opacity and

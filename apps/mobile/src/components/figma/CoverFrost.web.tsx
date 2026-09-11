@@ -1,11 +1,19 @@
-import { figmaTokens } from '@bidplace/design-tokens';
+import type { CSSProperties } from 'react';
 
 import {
+  coverFrostBlur,
   coverFrostLevels,
   coverFrostMask,
   coverFrostSpec,
   type CoverFrostPlacement,
 } from './cover-frost-style';
+
+type FrostLayerStyle = CSSProperties & {
+  WebkitBackdropFilter?: string;
+  WebkitMaskImage?: string;
+  WebkitMaskRepeat?: string;
+  WebkitMaskSize?: string;
+};
 
 export function CoverFrost({
   placement,
@@ -29,19 +37,25 @@ export function CoverFrost({
       }}
     >
       {coverFrostLevels.map((level, index) => {
-        const blur = `blur(${((spec.runtimeBlur * level) / figmaTokens.size.coverWidth) * 100}cqw)`;
+        const blur = coverFrostBlur(spec.runtimeBlur, level);
         const mask = coverFrostMask(index, spec.top);
         return (
           <div
             key={level}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backdropFilter: blur,
-              WebkitBackdropFilter: blur,
-              maskImage: mask,
-              WebkitMaskImage: mask,
-            }}
+            style={
+              {
+                position: 'absolute',
+                inset: 0,
+                backdropFilter: blur,
+                WebkitBackdropFilter: blur,
+                maskImage: mask,
+                WebkitMaskImage: mask,
+                maskRepeat: 'no-repeat',
+                WebkitMaskRepeat: 'no-repeat',
+                maskSize: '100% 100%',
+                WebkitMaskSize: '100% 100%',
+              } satisfies FrostLayerStyle
+            }
           />
         );
       })}

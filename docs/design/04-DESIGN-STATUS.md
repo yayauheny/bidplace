@@ -4,6 +4,21 @@
 
 Общий статус: **Figma phone cutover Partial for MVP public/author screens**
 
+## 2026-09-11 — Progressive cover frost regions
+
+- `Corrected`: `CoverFrost` is no longer a text-hugging rounded overlay.
+  Work cards use a bottom-only 125/352 frost without price; author cards use
+  separate 56/352 top and 77/352 bottom frosts. Overlay frames have no 12 px
+  inner radius; 24/28 clipping stays on the card.
+- `Corrected`: web frost approximates Figma 0→60 / 40→0 progressive background
+  blur with six cross-faded `backdrop-filter` bands (runtime 30 px bottom,
+  20 px author top). Native keeps a uniform blur inside the same region as
+  compatibility code only. Evidence: `CoverFrost.web.tsx`, `CoverFrost.tsx`,
+  `cover-frost-style.ts`, `WorkCoverCard.tsx`, `AuthorCoverCard.tsx`,
+  `apps/mobile/e2e/figma-cover-frost.spec.ts`.
+- Matched browser-image equality with Figma remains an approximation. No `.pen`
+  file changed.
+
 ## 2026-09-11 — Focused-route dock ownership
 
 - `Implemented`: `AppShell.tsx` renders `FloatingDock` only while its route is

@@ -51,6 +51,10 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.radius.button).toBe(80);
     expect(designTokens.radius.cover).toBe(24);
     expect(designTokens.size.coverWidth).toBe(264);
+    expect(designTokens.size.workFrostHeight).toBe(125);
+    expect(designTokens.size.authorTopFrostHeight).toBe(56);
+    expect(designTokens.size.authorBottomFrostHeight).toBe(77);
+    expect(designTokens.blur.authorTopOverlay).toBe(20);
     expect(designTokens.size.icon).toBe(18);
     expect(designTokens.layout.phoneWidth).toBe(390);
     expect(designTokens.opacity.disabled).toBe(0.5);
@@ -65,9 +69,7 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.space.atmosphereOffset).toBe(36);
     expect(designTokens.color.glass).toBe('rgba(255, 255, 255, 0.60)');
     expect(designTokens.color.glassChip).toBe('rgba(255, 255, 255, 0.70)');
-    expect(designTokens.color.atmosphereWash).toBe(
-      'rgba(255, 255, 255, 0.40)',
-    );
+    expect(designTokens.color.atmosphereWash).toBe('rgba(255, 255, 255, 0.40)');
   });
 
   it('keeps one phone column instead of desktop header chrome', () => {

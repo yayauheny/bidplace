@@ -4,6 +4,22 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Progressive cover frost regions
+
+- `Corrected`: work and author cover frost no longer hugs overlay text or uses
+  a 12 px inner rounded rect. Regions match Figma overlay frames: work bottom
+  125/352 (`874:5459`), author top 56/352 (`874:5541`), author bottom 77/352
+  (`874:5543`). Work overlay has no price; title stays at the bottom. Author
+  name stays in the top zone. Web uses six cross-faded backdrop-filter bands
+  (runtime 30 px bottom / 20 px author top) instead of one full-strength blur.
+  Native keeps uniform blur inside those regions only as compatibility code.
+  Evidence: `apps/mobile/src/components/figma/CoverFrost.web.tsx`,
+  `CoverFrost.tsx`, `cover-frost-style.ts`, `WorkCoverCard.tsx`,
+  `AuthorCoverCard.tsx`, `cover-frost-style.spec.ts`,
+  `apps/mobile/e2e/figma-cover-frost.spec.ts`.
+- Figma progressive blur still has no exact CSS equivalent; this is a
+  documented approximation, not pixel equality.
+
 ## 2026-09-11 — Focused-route dock ownership
 
 - `Implemented`: `AppShell.tsx` renders `FloatingDock` only while its route is
