@@ -17,9 +17,18 @@ acceptance target; retained native branches are compatibility code only.
   `product-write-guard.spec.ts`,
   `apps/api/test/integration/product-write-atomicity.integration.spec.ts`.
 - `Implemented`: `pnpm ops:commerce-inventory` reports Listing/Bid/Order
-  counts and applied `_prisma_migrations`; `--apply` sets `SCHEDULED`/`LIVE`
-  to `CANCELLED` with `closedAt` (not `ENDED`). Local Compose inventory is
-  the operator path for staging/prod. Prisma models stay until P4.
+  counts, applied `_prisma_migrations`, and a copy-paste `confirmTarget`
+  fingerprint. `--apply` is fail-closed without `--expected-active=N`
+  matching the preflight count and `--confirm-target` matching
+  `host:port/database?schema`. Production/staging `APP_ENV` or a
+  non-loopback host also require `--confirm-env` equal to `APP_ENV`;
+  remote + `APP_ENV=local` is refused. Cancel writes `CANCELLED` +
+  `closedAt` and per-listing `AuditEvent` rows in one serializable
+  transaction, then asserts the updated count. Evidence:
+  `scripts/ops/commerce-inventory.mjs`,
+  `scripts/ops/lib/commerce-inventory.mjs`,
+  `apps/api/test/integration/commerce-inventory.integration.spec.ts`.
+  Prisma models stay until P4.
 - `Implemented`: demo seed and e2e `createAuctionFixture` no longer create
   Listing/Bid/Order rows. Evidence: `packages/database/prisma/seed.js`,
   `apps/mobile/e2e/support/e2e-fixtures.ts`.
@@ -49,11 +58,17 @@ acceptance target; retained native branches are compatibility code only.
   not authenticated — this remains the merge gate, not a code blocker.
 - `Not implemented`: P4 Prisma `Listing`/`Bid`/`Order` drops; staging/prod
   inventory matrix still operator-owned.
+- `Partial`: Work editor still shows «Упаковка» and «Передача или доставка»
+  and the draft screen still submits those fields. RFC §10 excludes
+  packaging/delivery/sale flow from Work creation. Author-profile private
+  handoff contact stays allowed. Follow-up portfolio-cleanup, not this
+  cutover package. Evidence: `product-draft-about.tsx`,
+  `product-draft-screen.tsx`, `docs/product/05-MVP-RFC.md` §10.
 - `Verified`: contracts 24, api-client 3, api unit 282, mobile unit 206,
-  api integration 71 (17 files). Typecheck contracts/api-client/api/mobile.
+  api integration 76 (18 files). Typecheck contracts/api-client/api/mobile.
   Lint api and mobile without auto-fix. Local `pnpm ops:commerce-inventory`
-  showed 0 `SCHEDULED`/`LIVE` rows (ENDED leftovers remain until P4/reseed).
-  `git diff --name-only -- '*.pen'` empty.
+  dry-run remains the operator inventory path (ENDED leftovers remain until
+  P4/reseed). `git diff --name-only -- '*.pen'` empty.
 - `Verified` in Expo web: Works intro «Работы избранных авторов. Всё, что
   вы видите, создано вручную.»; Authors intro «Авторы, чьи работы
   опубликованы на bidplace.»; Work detail `seedVase004` has no bid/лот

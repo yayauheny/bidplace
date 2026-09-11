@@ -33,7 +33,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Lookup user by email | Implemented | `admin-user.service.ts` |
 | Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
 | Revoke all sessions (`sessionVersion++`) | Implemented | same |
-| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Not implemented in default boot | Removed with P3 (`admin-listing-emergency.service.ts`); Prisma listing rows remain until P4 |
+| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Not implemented in default boot | Removed with P3 (`admin-listing-emergency.service.ts`). Leftover `SCHEDULED`/`LIVE` rows are neutralized only by the operator script `pnpm ops:commerce-inventory -- --apply --expected-active=N --confirm-target=<fingerprint>` (plus `--confirm-env` on production/staging or non-loopback hosts). Cancel + per-listing `AuditEvent` run in one serializable transaction. Evidence: `scripts/ops/commerce-inventory.mjs`, `apps/api/test/integration/commerce-inventory.integration.spec.ts`. Prisma listing rows remain until P4 |
 | Needs-order queue + manual Order create | Not implemented in default boot | Removed with P3; no Recovery tab in the default mobile tree |
 | **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
@@ -129,3 +129,4 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 
 - **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
 - **Multi-instance rate limits:** in-memory upload/auth limits remain single-replica until a shared store is chosen (**DEC-069**).
+- **Leftover commerce neutralize:** `scripts/ops/commerce-inventory.mjs --apply` is an operator cutover tool, not a restored default-boot listing emergency control. It does not replace admin user ban/revoke.

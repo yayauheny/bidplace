@@ -13,7 +13,7 @@ removal is **P4 only** after the database decision matrix is closed.
 
 | Environment | Migration state | Retained commerce data | Decision |
 | --- | --- | --- | --- |
-| Local dev / test (Compose Postgres on `127.0.0.1:5432`) | Forward chain applied via `pnpm db:migrate` in dev/test | Neutralize leftover `SCHEDULED`/`LIVE` with `pnpm ops:commerce-inventory --apply` (`CANCELLED`). Seed no longer inserts Listing/Bid/Order. | Safe to reset locally; do not infer prod path |
+| Local dev / test (Compose Postgres on `127.0.0.1:5432`) | Forward chain applied via `pnpm db:migrate` in dev/test | Neutralize leftover `SCHEDULED`/`LIVE` with `pnpm ops:commerce-inventory -- --apply --expected-active=N --confirm-target=<fingerprint>` (`CANCELLED` + listing `AuditEvent` in one transaction). Seed no longer inserts Listing/Bid/Order. | Safe to reset locally; do not infer prod path |
 | Staging | **Unknown** — operator confirmation required | **Unknown** | **Blocker** for P4 drops |
 | Production-like / pilot | **Unknown** — operator confirmation required | **Unknown** | **Blocker** for P4 drops |
 
@@ -177,7 +177,7 @@ From [`packages/database/prisma/schema.prisma`](../../packages/database/prisma/s
 ### Seed / demo
 
 - `packages/database/prisma/seed.js` — authors + works only; wipe still deletes leftover Listing/Bid/Order
-- `scripts/ops/commerce-inventory.mjs` — read-only counts; `--apply` cancels `SCHEDULED`/`LIVE`
+- `scripts/ops/commerce-inventory.mjs` — dry-run counts + fingerprint; `--apply` requires `--expected-active` and `--confirm-target` (plus `--confirm-env` outside loopback), then cancels `SCHEDULED`/`LIVE` with listing audits in one serializable transaction
 - `apps/mobile/e2e/support/e2e-fixtures.ts` — published works only
 - `apps/api/test/integration/auction/fixtures.ts` — leftover test helper paths if present
 - `apps/api/test/integration/order-fixtures.ts`

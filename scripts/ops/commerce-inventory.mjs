@@ -2,6 +2,17 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  applyCancellation,
+  assertApplyGuards,
+  collectInventory,
+  envConfirmationRequired,
+  parseDatabaseTarget,
+  parseExpectedActive,
+  parseInventoryArgs,
+  readConnectedDatabase,
+} from './lib/commerce-inventory.mjs';
+
 const require = createRequire(import.meta.url);
 const { PrismaClient } = require(
   join(
@@ -11,10 +22,16 @@ const { PrismaClient } = require(
 );
 
 const databaseUrl = process.env.DATABASE_URL;
-const apply = process.argv.includes('--apply');
-
 if (!databaseUrl) {
   console.error('Set DATABASE_URL before running commerce inventory.');
+  process.exit(1);
+}
+
+let flags;
+try {
+  flags = parseInventoryArgs(process.argv.slice(2));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : 'Invalid arguments');
   process.exit(1);
 }
 
@@ -22,61 +39,66 @@ const prisma = new PrismaClient({
   datasources: { db: { url: databaseUrl } },
 });
 
-async function countBy(model, field) {
-  const rows = await model.groupBy({
-    by: [field],
-    _count: { _all: true },
-  });
-  return Object.fromEntries(
-    rows.map((row) => [String(row[field]), row._count._all]),
-  );
-}
-
 async function main() {
-  const [migrations, listingsByStatus, bids, ordersByStatus, activeListings] =
-    await Promise.all([
-      prisma.$queryRaw`
-        SELECT migration_name, finished_at
-        FROM "_prisma_migrations"
-        ORDER BY finished_at ASC NULLS LAST, migration_name ASC
-      `,
-      countBy(prisma.listing, 'status'),
-      prisma.bid.count(),
-      countBy(prisma.order, 'status'),
-      prisma.listing.findMany({
-        where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-        select: { id: true, status: true, productId: true },
-      }),
-    ]);
-
-  const inventory = {
-    migrations: migrations.map((row) => row.migration_name),
-    listingsByStatus,
-    bids,
-    ordersByStatus,
-    activeListings: activeListings.length,
+  const fingerprint = parseDatabaseTarget(databaseUrl);
+  const connectedDatabase = await readConnectedDatabase(prisma);
+  if (connectedDatabase !== fingerprint.database) {
+    throw new Error(
+      `Connected database "${connectedDatabase}" does not match DATABASE_URL database "${fingerprint.database}"`,
+    );
+  }
+  const appEnv = process.env.APP_ENV ?? '';
+  const inventory = await collectInventory(prisma);
+  const target = {
+    ...fingerprint,
+    connectedDatabase,
+    appEnv,
+    envConfirmationRequired: envConfirmationRequired(
+      appEnv,
+      fingerprint.hostname,
+    ),
   };
 
-  console.log(JSON.stringify(inventory, null, 2));
-
-  if (!apply) {
+  if (!flags.apply) {
     console.log(
-      'Read-only inventory. Re-run with --apply to set SCHEDULED/LIVE listings to CANCELLED.',
+      JSON.stringify(
+        {
+          mode: 'dry-run',
+          target,
+          inventory,
+        },
+        null,
+        2,
+      ),
+    );
+    console.error(
+      'Read-only inventory. Re-run with --apply --expected-active=N --confirm-target=<fingerprint> (and --confirm-env when required).',
     );
     return;
   }
 
-  const closedAt = new Date();
-  const updated = await prisma.listing.updateMany({
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    data: { status: 'CANCELLED', closedAt },
+  const expectedActive = parseExpectedActive(flags.expectedActive);
+  assertApplyGuards({
+    expectedActive,
+    confirmTarget: flags.confirmTarget,
+    confirmEnv: flags.confirmEnv,
+    fingerprint,
+    connectedDatabase,
+    preflightCount: inventory.activeListings,
+    appEnv,
   });
+
+  const applied = await applyCancellation(prisma, expectedActive);
   console.log(
-    JSON.stringify({
-      applied: true,
-      cancelled: updated.count,
-      closedAt: closedAt.toISOString(),
-    }),
+    JSON.stringify(
+      {
+        applied: true,
+        confirmTarget: fingerprint.confirmTarget,
+        ...applied,
+      },
+      null,
+      2,
+    ),
   );
 }
 
