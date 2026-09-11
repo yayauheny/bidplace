@@ -30,6 +30,20 @@ let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 let inventoryLib: {
   COMMERCE_INVENTORY_CANCEL_REASON: string;
+  parseDatabaseTarget: (databaseUrl: string) => {
+    hostname: string;
+    port: string;
+    database: string;
+    schema: string;
+    confirmTarget: string;
+  };
+  quoteShellArg: (value: string) => string;
+  formatApplyHint: (input: {
+    expectedActive: number;
+    confirmTarget: string;
+    confirmEnv?: string;
+    envConfirmationRequired: boolean;
+  }) => string;
   assertApplyGuards: (input: {
     expectedActive: number;
     confirmTarget: string | undefined;
@@ -218,8 +232,24 @@ describe('commerce inventory operator script', () => {
     expect(body.mode).toBe('dry-run');
     expect(body.inventory?.activeListings).toBe(2);
     expect(body.target?.confirmTarget).toMatch(
-      /^127\.0\.0\.1:5432\/[^?]+\?schema=itest_/,
+      /^127\.0\.0\.1:5432\/[^/]+\/itest_[A-Za-z0-9]+$/,
     );
+    expect(body.target?.confirmTarget).not.toContain('?');
+    expect(body.target?.confirmTarget).not.toContain('*');
+    expect(String(result.stderr)).toContain(
+      `--confirm-target=${inventoryLib.quoteShellArg(body.target!.confirmTarget)}`,
+    );
+    const zshProbe = spawnSync(
+      'zsh',
+      ['-fc', `command true --confirm-target=${body.target?.confirmTarget}`],
+      { encoding: 'utf8' },
+    );
+    if (zshProbe.error && 'code' in zshProbe.error && zshProbe.error.code === 'ENOENT') {
+      expect(body.target?.confirmTarget.includes('?')).toBe(false);
+    } else {
+      expect(zshProbe.status).toBe(0);
+      expect(String(zshProbe.stderr)).not.toMatch(/no matches found/);
+    }
     expect(await listingStatuses()).toEqual({
       [created.scheduledId]: 'SCHEDULED',
       [created.liveId]: 'LIVE',
@@ -249,7 +279,7 @@ describe('commerce inventory operator script', () => {
     const wrongTarget = runInventory([
       '--apply',
       '--expected-active=2',
-      '--confirm-target=example.test:5432/wrong?schema=public',
+      '--confirm-target=example.test:5432/wrong/public',
     ]);
     expect(wrongTarget.status).not.toBe(0);
     expect(String(wrongTarget.stderr)).toContain('--confirm-target does not match');
@@ -343,13 +373,30 @@ describe('commerce inventory operator script', () => {
     ).toBe(0);
   });
 
+  it('builds a shell-safe confirmTarget from DATABASE_URL', () => {
+    expect(
+      inventoryLib.parseDatabaseTarget(
+        'postgresql://auction:auction@127.0.0.1:5432/bidplace?schema=public',
+      ).confirmTarget,
+    ).toBe('127.0.0.1:5432/bidplace/public');
+    expect(
+      inventoryLib.formatApplyHint({
+        expectedActive: 3,
+        confirmTarget: '127.0.0.1:5432/bidplace/public',
+        envConfirmationRequired: false,
+      }),
+    ).toBe(
+      "Read-only inventory. Re-run with --apply --expected-active=3 --confirm-target='127.0.0.1:5432/bidplace/public'.",
+    );
+  });
+
   it('refuses remote hosts unless APP_ENV is production or staging', () => {
     const fingerprint = {
       hostname: 'db.example.test',
       port: '5432',
       database: 'bidplace',
       schema: 'public',
-      confirmTarget: 'db.example.test:5432/bidplace?schema=public',
+      confirmTarget: 'db.example.test:5432/bidplace/public',
     };
 
     expect(() =>

@@ -1,6 +1,7 @@
 const ACTIVE_LISTING_STATUSES = ['SCHEDULED', 'LIVE'];
 const SENSITIVE_APP_ENVS = new Set(['production', 'staging']);
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
+const FINGERPRINT_TOKEN = /^[A-Za-z0-9._:-]+$/;
 
 export const COMMERCE_INVENTORY_CANCEL_REASON =
   'DEC-087 leftover commerce neutralize';
@@ -70,14 +71,47 @@ export function parseDatabaseTarget(databaseUrl) {
   const hostname = url.hostname.replace(/^\[|\]$/g, '');
   const port = url.port || '5432';
   const schema = url.searchParams.get('schema') || 'public';
+  assertFingerprintToken(hostname, 'hostname');
+  assertFingerprintToken(port, 'port');
+  assertFingerprintToken(database, 'database');
+  assertFingerprintToken(schema, 'schema');
 
   return {
     hostname,
     port,
     database,
     schema,
-    confirmTarget: `${hostname}:${port}/${database}?schema=${schema}`,
+    confirmTarget: `${hostname}:${port}/${database}/${schema}`,
   };
+}
+
+export function quoteShellArg(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+export function formatApplyHint({
+  expectedActive,
+  confirmTarget,
+  confirmEnv,
+  envConfirmationRequired,
+}) {
+  const flags = [
+    '--apply',
+    `--expected-active=${expectedActive}`,
+    `--confirm-target=${quoteShellArg(confirmTarget)}`,
+  ];
+  if (envConfirmationRequired) {
+    flags.push(`--confirm-env=${quoteShellArg(confirmEnv || 'APP_ENV')}`);
+  }
+  return `Read-only inventory. Re-run with ${flags.join(' ')}.`;
+}
+
+function assertFingerprintToken(value, label) {
+  if (!FINGERPRINT_TOKEN.test(value)) {
+    throw new Error(
+      `${label} ${JSON.stringify(value)} cannot be used in confirmTarget`,
+    );
+  }
 }
 
 export function isLoopbackHostname(hostname) {
@@ -105,7 +139,7 @@ export function assertApplyGuards({
 
   if (!confirmTarget) {
     throw new Error(
-      `Pass --confirm-target=${fingerprint.confirmTarget} from the dry-run fingerprint`,
+      `Pass --confirm-target=${quoteShellArg(fingerprint.confirmTarget)} from the dry-run fingerprint`,
     );
   }
 

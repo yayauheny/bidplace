@@ -7,6 +7,7 @@ import {
   assertApplyGuards,
   collectInventory,
   envConfirmationRequired,
+  formatApplyHint,
   parseDatabaseTarget,
   parseExpectedActive,
   parseInventoryArgs,
@@ -72,7 +73,12 @@ async function main() {
       ),
     );
     console.error(
-      'Read-only inventory. Re-run with --apply --expected-active=N --confirm-target=<fingerprint> (and --confirm-env when required).',
+      formatApplyHint({
+        expectedActive: inventory.activeListings,
+        confirmTarget: fingerprint.confirmTarget,
+        confirmEnv: appEnv,
+        envConfirmationRequired: target.envConfirmationRequired,
+      }),
     );
     return;
   }

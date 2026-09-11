@@ -20,7 +20,8 @@ acceptance target; retained native branches are compatibility code only.
   counts, applied `_prisma_migrations`, and a copy-paste `confirmTarget`
   fingerprint. `--apply` is fail-closed without `--expected-active=N`
   matching the preflight count and `--confirm-target` matching
-  `host:port/database?schema`. Production/staging `APP_ENV` or a
+  `host:port/database/schema` (no `?`, so zsh can pass it unquoted).
+  Dry-run stderr prints a complete quoted apply command. Production/staging `APP_ENV` or a
   non-loopback host also require `--confirm-env` equal to `APP_ENV`;
   remote + `APP_ENV=local` is refused. Cancel writes `CANCELLED` +
   `closedAt` and per-listing `AuditEvent` rows in one serializable
