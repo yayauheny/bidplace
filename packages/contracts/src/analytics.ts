@@ -1,14 +1,11 @@
 import { z } from 'zod';
 
-import { apiErrorCodeSchema } from './error';
 import { isoDateTimeSchema, uuidSchema } from './primitives';
 
 export const ANALYTICS_EVENT_NAMES = [
-  'listing_viewed',
+  'work_viewed',
   'seller_viewed',
   'registration_started',
-  'bid_cta_clicked',
-  'bid_rejected',
 ] as const;
 
 export const analyticsEventNameSchema = z.enum(ANALYTICS_EVENT_NAMES);
@@ -37,10 +34,9 @@ export const analyticsAttributionSchema = z
 
 export type AnalyticsAttribution = z.infer<typeof analyticsAttributionSchema>;
 
-export const listingViewedPropertiesSchema = z
+export const workViewedPropertiesSchema = z
   .object({
     productPublicId: z.string().trim().min(1).max(16),
-    listingId: uuidSchema.optional(),
     sellerProfileId: uuidSchema.optional(),
   })
   .strict();
@@ -54,26 +50,11 @@ export const sellerViewedPropertiesSchema = z
 
 export const registrationStartedPropertiesSchema = z.object({}).strict();
 
-export const bidCtaClickedPropertiesSchema = z
-  .object({
-    listingId: uuidSchema,
-    productPublicId: z.string().trim().min(1).max(16).optional(),
-  })
-  .strict();
-
-export const bidRejectedPropertiesSchema = z
-  .object({
-    listingId: uuidSchema,
-    errorCode: apiErrorCodeSchema,
-    productPublicId: z.string().trim().min(1).max(16).optional(),
-  })
-  .strict();
-
 export const analyticsEventInputSchema = z.discriminatedUnion('name', [
   z
     .object({
-      name: z.literal('listing_viewed'),
-      properties: listingViewedPropertiesSchema,
+      name: z.literal('work_viewed'),
+      properties: workViewedPropertiesSchema,
       clientCapturedAt: isoDateTimeSchema.optional(),
     })
     .strict(),
@@ -88,20 +69,6 @@ export const analyticsEventInputSchema = z.discriminatedUnion('name', [
     .object({
       name: z.literal('registration_started'),
       properties: registrationStartedPropertiesSchema.default({}),
-      clientCapturedAt: isoDateTimeSchema.optional(),
-    })
-    .strict(),
-  z
-    .object({
-      name: z.literal('bid_cta_clicked'),
-      properties: bidCtaClickedPropertiesSchema,
-      clientCapturedAt: isoDateTimeSchema.optional(),
-    })
-    .strict(),
-  z
-    .object({
-      name: z.literal('bid_rejected'),
-      properties: bidRejectedPropertiesSchema,
       clientCapturedAt: isoDateTimeSchema.optional(),
     })
     .strict(),
@@ -210,7 +177,7 @@ export const adminAnalyticsOverviewSchema = z
       .strict(),
     visitorFunnel: z
       .object({
-        listingViewed: metricCountSchema,
+        workViewed: metricCountSchema,
       })
       .strict(),
     sellerFunnel: z
@@ -226,7 +193,7 @@ export const adminAnalyticsOverviewSchema = z
         .object({
           date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           newUsers: z.number().int().nonnegative(),
-          listingViews: z.number().int().nonnegative(),
+          workViews: z.number().int().nonnegative(),
           newSellers: z.number().int().nonnegative(),
           newWorks: z.number().int().nonnegative(),
         })

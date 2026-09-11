@@ -13,6 +13,7 @@ import {
   PageState,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
+import { AUTHORS_CATALOG_INTRO } from '../../lib/portfolio-copy';
 
 type AuthorSort = PortfolioAuthorsQuery['sort'];
 
@@ -83,8 +84,7 @@ export function PublicAuthorsScreen({
             {query ? `Авторы: ${query}` : 'Креативные и проверенные авторы на Bidplace'}
           </AppText>
           <AppText role="bodySmall" tone="secondary">
-            Покупайте самые эксклюзивные коллекции наших избранных авторов, все
-            увиденное вами это исключительно ручная работа
+            {AUTHORS_CATALOG_INTRO}
           </AppText>
         </View>
         <View style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>

@@ -311,7 +311,7 @@ describe('Product write atomicity against PostgreSQL', () => {
     expect(Buffer.from(after[0]!.data)).toEqual(Buffer.from(before[0]!.data));
   });
 
-  it('keeps a late creation-story write from landing after a Listing lock', async () => {
+  it('lets a leftover SCHEDULED Listing land without blocking a concurrent creation-story write', async () => {
     const { owner, product } = await createSubmitReadyProduct();
     const { products } = createServices();
     const startsAt = new Date('2026-09-07T10:00:00.000Z');
@@ -339,15 +339,15 @@ describe('Product write atomicity against PostgreSQL', () => {
         {
           id: product.creationSteps[0]!.id,
           title: 'Changed',
-          body: 'Should not persist',
+          body: 'Should persist',
         },
       ],
     });
     await waitThenRelease(release);
 
-    await expect(storyPromise).rejects.toThrow(
-      'Product is locked by an active Listing',
-    );
+    await expect(storyPromise).resolves.toMatchObject({
+      creation: { intro: 'Late story' },
+    });
     await finished;
 
     const step = await prisma.productCreationStep.findUniqueOrThrow({
@@ -358,9 +358,9 @@ describe('Product write atomicity against PostgreSQL', () => {
       where: { id: product.id },
       select: { creationIntro: true },
     });
-    expect(step.title).toBe('Sketch');
-    expect(step.body).toBe('First step');
-    expect(persisted.creationIntro).toBeNull();
+    expect(step.title).toBe('Changed');
+    expect(step.body).toBe('Should persist');
+    expect(persisted.creationIntro).toBe('Late story');
   });
 
   it('lets a rejected Product stay editable and resubmit on the same id', async () => {

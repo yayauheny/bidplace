@@ -18,6 +18,7 @@ import {
   toPortfolioWorksListQuery,
   type PortfolioCatalogSort,
 } from './portfolio-works-query';
+import { WORKS_CATALOG_INTRO } from '../../lib/portfolio-copy';
 
 const sortOptions: Array<{ value: PortfolioCatalogSort; label: string }> = [
   { value: 'newest', label: 'Сначала новые' },
@@ -92,8 +93,7 @@ export function ProductListScreen({
         <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">{title}</AppText>
           <AppText role="bodySmall" tone="secondary">
-            Покупайте самые эксклюзивные коллекции наших избранных авторов, все
-            увиденное вами это исключительно ручная работа
+            {WORKS_CATALOG_INTRO}
           </AppText>
         </View>
         <View

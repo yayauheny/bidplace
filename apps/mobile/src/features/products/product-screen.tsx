@@ -21,7 +21,7 @@ import {
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { useTrackListingView } from '../../lib/analytics/use-track-views';
+import { useTrackWorkView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { canonicalShareUrl } from '../../lib/canonical-share-url';
@@ -47,7 +47,7 @@ export function ProductScreen({
     retry: retryTransientPublicQuery,
   });
 
-  useTrackListingView({
+  useTrackWorkView({
     productPublicId: publicId,
     sellerProfileId: query.data?.author.id,
     enabled: Boolean(query.data),

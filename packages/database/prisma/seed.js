@@ -1,4 +1,4 @@
-const { Prisma, PrismaClient } = require('../dist');
+const { PrismaClient } = require('../dist');
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
@@ -13,12 +13,11 @@ const demoSeedAllowed =
 
 if (!demoSeedAllowed) {
   throw new Error(
-    'Refusing demo-bid seed outside an explicitly allowed local/test profile (NODE_ENV=development|test, APP_ENV=local, ALLOW_DESTRUCTIVE_DEMO_SEED=true)',
+    'Refusing demo seed outside an explicitly allowed local/test profile (NODE_ENV=development|test, APP_ENV=local, ALLOW_DESTRUCTIVE_DEMO_SEED=true)',
   );
 }
 
 const prisma = new PrismaClient();
-const money = (value) => new Prisma.Decimal(value);
 const seedPhotoBuffer = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0nM9sAAAAASUVORK5CYII=',
   'base64',
@@ -542,7 +541,7 @@ async function main() {
         packaging:
           'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
         deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: 'painted-planter.png',
       }),
@@ -565,7 +564,7 @@ async function main() {
         packaging:
           'Предмет фиксируется в коробке без контакта с внешними стенками и защищается мягким наполнителем.',
         deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: 'ceramic-brush-holder.png',
       }),
@@ -583,12 +582,12 @@ async function main() {
         condition: 'Новое',
         uniqueness: 'Единственный экземпляр',
         provenance:
-          'Создана Анной Морозовой в Минске; это первая публичная продажа предмета.',
+          'Создана Анной Морозовой в Минске; это первая публичная публикация предмета.',
         city: 'Минск',
         packaging:
           'Чашка упаковывается в бумагу и амортизирующий материал, затем фиксируется в жёсткой коробке.',
         deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: 'handmade-mug.png',
       }),
@@ -611,13 +610,13 @@ async function main() {
         packaging:
           'Ваза оборачивается мягким защитным материалом и фиксируется внутри усиленной коробки.',
         deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: 'handmade-vase.png',
       }),
     ]);
 
-  const additionalAnnaProducts = await Promise.all(
+  await Promise.all(
     [
       {
         publicId: 'seedAnna005',
@@ -629,8 +628,6 @@ async function main() {
         dimensions: '18 × 12 × 24 см',
         year: 2026,
         uniqueness: 'Единственный экземпляр',
-        price: '1900.00',
-        listingStatus: 'LIVE',
         imageFileName: 'wooden-sculpture.png',
       },
       {
@@ -643,8 +640,6 @@ async function main() {
         dimensions: '20 × 20 × 8 см',
         year: 2026,
         uniqueness: 'Единственный экземпляр',
-        price: '780.00',
-        listingStatus: 'SCHEDULED',
         imageFileName: 'ceramic-bowl.png',
       },
       {
@@ -657,8 +652,6 @@ async function main() {
         dimensions: '42 × 32 см',
         year: 2025,
         uniqueness: 'Единственный экземпляр',
-        price: '1480.00',
-        listingStatus: 'ENDED',
         imageFileName: 'textile-composition.png',
       },
       {
@@ -671,8 +664,6 @@ async function main() {
         dimensions: '30 × 30 см',
         year: 2026,
         uniqueness: 'Ограниченный тираж',
-        price: '510.00',
-        listingStatus: 'SCHEDULED',
         imageFileName: 'linocut-print.png',
       },
     ].map((fixture) =>
@@ -694,14 +685,14 @@ async function main() {
         packaging:
           'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
         deliveryInfo:
-          'Самовывоз в Минске или доставка по Беларуси по договорённости после покупки.',
+          'Самовывоз в Минске или доставка по Беларуси по договорённости с автором.',
         publishedAt: now,
         imageFileName: fixture.imageFileName,
-      }).then((product) => ({ product, fixture })),
+      }),
     ),
   );
 
-  const additionalDemoProducts = await Promise.all(
+  await Promise.all(
     [
       {
         publicId: 'seedIrina05',
@@ -711,8 +702,6 @@ async function main() {
         technique: 'Ручная лепка, прозрачная глазурь',
         materials: 'Глина, глазурь',
         uniqueness: 'Единственный экземпляр',
-        price: '640.00',
-        listingStatus: 'SCHEDULED',
         imageFileName: 'ceramic-bowl.png',
       },
       {
@@ -724,8 +713,6 @@ async function main() {
         technique: 'Ручная сборка, шлифовка',
         materials: 'Дерево, стекло',
         uniqueness: 'Малая серия',
-        price: '920.00',
-        listingStatus: 'LIVE',
         imageFileName: 'studio-lamp.png',
       },
       {
@@ -737,8 +724,6 @@ async function main() {
         technique: 'Аппликация, ручная вышивка',
         materials: 'Лён, хлопок, нить',
         uniqueness: 'Единственный экземпляр',
-        price: '1 480.00',
-        listingStatus: 'SCHEDULED',
         imageFileName: 'textile-composition.png',
       },
       {
@@ -749,8 +734,6 @@ async function main() {
         technique: 'Линогравюра, ручная печать',
         materials: 'Бумага, типографская краска',
         uniqueness: 'Ограниченный тираж',
-        price: '510.00',
-        listingStatus: 'SCHEDULED',
         imageFileName: 'linocut-print.png',
       },
     ].map((fixture) =>
@@ -770,69 +753,12 @@ async function main() {
         city: 'Минск',
         packaging:
           'Работа упаковывается автором с учётом материала и защищается от движения внутри коробки.',
-        deliveryInfo: 'Передача после завершения торгов по договорённости.',
+        deliveryInfo: 'Передача по договорённости с автором.',
         publishedAt: now,
         imageFileName: fixture.imageFileName,
-      }).then((product) => ({ product, fixture })),
+      }),
     ),
   );
-
-  await Promise.all([
-    ...additionalAnnaProducts.map(({ product, fixture }, index) => {
-      const startsAt =
-        fixture.listingStatus === 'LIVE'
-          ? new Date(now.getTime() - 1_800_000)
-          : fixture.listingStatus === 'ENDED'
-            ? new Date(now.getTime() - 10_800_000)
-            : new Date(now.getTime() + (index + 5) * 3_600_000);
-      const endsAt =
-        fixture.listingStatus === 'ENDED'
-          ? new Date(now.getTime() - 3_600_000)
-          : new Date(now.getTime() + (index + 6) * 3_600_000);
-
-      return prisma.listing.create({
-        data: {
-          productId: product.id,
-          status: fixture.listingStatus,
-          startsAt,
-          originalEndsAt: endsAt,
-          endsAt,
-          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
-          currentPrice: money(fixture.price),
-          auctionRules: {
-            create: { startPrice: money(fixture.price) },
-          },
-        },
-      });
-    }),
-    ...additionalDemoProducts.map(({ product, fixture }, index) => {
-      const startsAt =
-        fixture.listingStatus === 'LIVE'
-          ? new Date(now.getTime() - 3_600_000)
-          : fixture.listingStatus === 'ENDED'
-            ? new Date(now.getTime() - 7_200_000)
-            : new Date(now.getTime() + (index + 2) * 3_600_000);
-      const endsAt =
-        fixture.listingStatus === 'ENDED'
-          ? new Date(now.getTime() - 3_600_000)
-          : new Date(now.getTime() + (index + 3) * 3_600_000);
-
-      return prisma.listing.create({
-        data: {
-          productId: product.id,
-          status: fixture.listingStatus,
-          startsAt,
-          originalEndsAt: endsAt,
-          endsAt,
-          closedAt: fixture.listingStatus === 'ENDED' ? endsAt : null,
-          currentPrice: money(fixture.price.replace(' ', '')),
-          auctionRules: {
-            create: { startPrice: money(fixture.price.replace(' ', '')) },
-          },
-        },
-      });
-    }),
-  ]);
 
   await createProductWithImages({
     publicId: 'seedPend004',
@@ -855,99 +781,6 @@ async function main() {
     status: 'PENDING_REVIEW',
   });
 
-  const scheduled = await prisma.listing.create({
-    data: {
-      productId: scheduledProduct.id,
-      status: 'SCHEDULED',
-      startsAt: new Date(now.getTime() + 3_600_000),
-      originalEndsAt: new Date(now.getTime() + 7_200_000),
-      endsAt: new Date(now.getTime() + 7_200_000),
-      currentPrice: money('50.00'),
-      auctionRules: {
-        create: { startPrice: money('50.00') },
-      },
-    },
-  });
-
-  const live = await prisma.listing.create({
-    data: {
-      productId: liveProduct.id,
-      status: 'LIVE',
-      startsAt: new Date(now.getTime() - 3_600_000),
-      originalEndsAt: new Date(now.getTime() + 3_600_000),
-      endsAt: new Date(now.getTime() + 3_600_000),
-      currentPrice: money('75.00'),
-      bidCount: 1,
-      auctionRules: {
-        create: { startPrice: money('50.00') },
-      },
-    },
-  });
-
-  const ended = await prisma.listing.create({
-    data: {
-      productId: endedProduct.id,
-      status: 'ENDED',
-      startsAt: new Date(now.getTime() - 7_200_000),
-      originalEndsAt: new Date(now.getTime() - 3_600_000),
-      endsAt: new Date(now.getTime() - 3_600_000),
-      closedAt: new Date(now.getTime() - 3_600_000),
-      currentPrice: money('120.00'),
-      bidCount: 1,
-      auctionRules: {
-        create: { startPrice: money('100.00') },
-      },
-    },
-  });
-
-  const vase = await prisma.listing.create({
-    data: {
-      productId: vaseProduct.id,
-      status: 'SCHEDULED',
-      startsAt: new Date(now.getTime() + 10_800_000),
-      originalEndsAt: new Date(now.getTime() + 14_400_000),
-      endsAt: new Date(now.getTime() + 14_400_000),
-      currentPrice: money('90.00'),
-      auctionRules: {
-        create: { startPrice: money('90.00') },
-      },
-    },
-  });
-
-  const liveBid = await prisma.bid.create({
-    data: {
-      listingId: live.id,
-      bidderUserId: buyer.id,
-      idempotencyKey: 'seed-live-bid',
-      amount: money('75.00'),
-    },
-  });
-
-  const endedBid = await prisma.bid.create({
-    data: {
-      listingId: ended.id,
-      bidderUserId: buyer.id,
-      idempotencyKey: 'seed-ended-bid',
-      amount: money('120.00'),
-    },
-  });
-
-  await prisma.order.create({
-    data: {
-      publicId: 'seedOrder01',
-      listingId: ended.id,
-      sellerId: seller.id,
-      buyerId: buyer.id,
-      sourceBidId: endedBid.id,
-      finalAmount: money('120.00'),
-      contactDueAt: new Date(now.getTime() + 82_800_000),
-      sellerHandoffType: 'TELEGRAM',
-      sellerHandoffValue: '@localseller',
-      buyerEmailAtClose: buyer.email,
-      handoffInitiator: 'BUYER_CONTACTS_SELLER',
-    },
-  });
-
   await prisma.termsAcceptance.create({
     data: {
       userId: buyer.id,
@@ -965,12 +798,8 @@ async function main() {
     },
   });
 
-  void scheduled;
-  void liveBid;
-  void vase;
-
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, twelve public products, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, and public portfolio works without listings, bids, or orders.',
   );
 }
 

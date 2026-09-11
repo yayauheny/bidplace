@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
+  ANALYTICS_EVENT_NAMES,
+  analyticsIngestRequestSchema,
   ApiErrorCode,
   apiErrorResponseSchema,
   isEditableProductStatus,
@@ -430,5 +432,53 @@ describe('shared contracts', () => {
         creationSteps: [],
       }).success,
     ).toBe(false);
+  });
+  it('accepts work_viewed ingest and rejects leftover commerce event names', () => {
+    const anonymousId = '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1';
+    const listingId = '6c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1';
+    expect([...ANALYTICS_EVENT_NAMES].sort()).toEqual([
+      'registration_started',
+      'seller_viewed',
+      'work_viewed',
+    ]);
+    expect(
+      analyticsIngestRequestSchema.safeParse({
+        anonymousId,
+        environment: 'test',
+        events: [
+          {
+            name: 'work_viewed',
+            properties: { productPublicId: 'portfolio01' },
+          },
+        ],
+      }).success,
+    ).toBe(true);
+    const formerCommercePayloads = [
+      {
+        name: 'listing_viewed',
+        properties: { productPublicId: 'portfolio01', listingId },
+      },
+      {
+        name: 'bid_cta_clicked',
+        properties: { listingId, productPublicId: 'portfolio01' },
+      },
+      {
+        name: 'bid_rejected',
+        properties: {
+          listingId,
+          productPublicId: 'portfolio01',
+          errorCode: 'bid_below_minimum',
+        },
+      },
+    ] as const;
+    for (const event of formerCommercePayloads) {
+      expect(
+        analyticsIngestRequestSchema.safeParse({
+          anonymousId,
+          environment: 'test',
+          events: [event],
+        }).success,
+      ).toBe(false);
+    }
   });
 });

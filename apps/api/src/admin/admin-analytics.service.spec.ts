@@ -77,6 +77,24 @@ describe('AdminAnalyticsService', () => {
     ]);
     expect(overview.acquisition.visitorToSignupRate).toBe(0.5);
     expect(overview.growth).toHaveLength(8);
+    expect(overview.visitorFunnel.workViewed.value).toBe(7);
+    expect(overview.visitorFunnel.workViewed.definition).toContain(
+      'work_viewed',
+    );
+    expect(prisma.analyticsEvent.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ eventName: 'work_viewed' }),
+      }),
+    );
+    expect(prisma.analyticsEvent.count.mock.calls).not.toEqual(
+      expect.arrayContaining([
+        [
+          expect.objectContaining({
+            where: expect.objectContaining({ eventName: 'listing_viewed' }),
+          }),
+        ],
+      ]),
+    );
     expect(overview).not.toHaveProperty('marketplace');
     expect(overview).not.toHaveProperty('buyerFunnel');
   });

@@ -105,9 +105,6 @@ export function assertProductImagesMutable(
     throw new ForbiddenException('Product is not owned by user');
   }
   assertApprovedSeller(product.sellerProfile.status as SellerStatus);
-  if (product.listings.length > 0) {
-    throw new ConflictException('Product is locked by an active Listing');
-  }
 
   const publishedRevisionId = product.publishedRevisionId;
   const editingRevisionId = product.editingRevisionId;
@@ -144,9 +141,6 @@ export async function ensureAuthorEditingRevision(
     editingRevisionId != null;
 
   if (canForkPublished) {
-    if (product.listings.length > 0) {
-      throw new ConflictException('Product is locked by an active Listing');
-    }
     if (editingRevisionId === publishedRevisionId) {
       return forkPublishedRevision(tx, product.id, publishedRevisionId);
     }

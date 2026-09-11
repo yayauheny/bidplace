@@ -203,20 +203,21 @@ describe('ProductsService', () => {
     expect(productCreate).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects owner edits when a Product has a scheduled or live Listing', async () => {
+  it('allows owner edits when a leftover scheduled Listing row exists', async () => {
     const { prisma, tx } = createWritePrisma({
       product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
+      responseProduct: {
+        ...approvedProduct,
+        status: 'DRAFT',
+        title: 'Unlocked',
+      },
     });
     const service = new ProductsService(prisma as never, {} as never);
 
     await expect(
-      service.update('owner-id', product.id, { title: 'Locked' }),
-    ).rejects.toThrow('Product is locked by an active Listing');
-    expect(tx.product.updateMany).not.toHaveBeenCalled();
-    expect(prisma.$transaction).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
-    );
+      service.update('owner-id', product.id, { title: 'Unlocked' }),
+    ).resolves.toMatchObject({ product: expect.objectContaining({ title: 'Unlocked' }) });
+    expect(tx.product.updateMany).toHaveBeenCalled();
   });
 
   it('allows the approved owner to edit a rejected Product', async () => {
@@ -701,7 +702,7 @@ describe('ProductsService', () => {
     ).rejects.toThrow('Product is not owned by user');
   });
 
-  it('locks creation-story writes after submit and when a Listing is live', async () => {
+  it('locks creation-story writes after submit but not because of leftover Listing rows', async () => {
     const pending = createWritePrisma({
       product: ownerProduct('PENDING_REVIEW'),
     });
@@ -714,16 +715,19 @@ describe('ProductsService', () => {
     ).rejects.toThrow('Product creation story is locked');
     expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
 
-    const listed = createWritePrisma({
+    const leftoverListing = createWritePrisma({
       product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
     });
+    leftoverListing.tx.productCreationStep.findMany.mockResolvedValue([]);
     await expect(
-      new ProductsService(listed.prisma as never, {} as never).reorderCreationSteps(
-        'owner-id',
-        product.id,
-        [],
-      ),
-    ).rejects.toThrow('Product is locked by an active Listing');
+      new ProductsService(
+        leftoverListing.prisma as never,
+        {} as never,
+      ).replaceCreationStory('owner-id', product.id, {
+        intro: 'Intro',
+        steps: [],
+      }),
+    ).resolves.toBeDefined();
   });
 
   it('replaces creation story only after the in-transaction writable guard', async () => {

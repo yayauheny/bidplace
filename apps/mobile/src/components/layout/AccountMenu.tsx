@@ -31,6 +31,10 @@ import {
 import { logoutAndGoHome } from './header-chrome';
 import { overlayMenuItemStyle, overlayPanelStyle } from './overlay-layout';
 import { useDismissibleOverlay } from './use-dismissible-overlay';
+import {
+  ACCOUNT_AUTHOR_APPLICATION,
+  ACCOUNT_BECOME_AUTHOR,
+} from '../../lib/portfolio-copy';
 
 const menuItemStyle = overlayMenuItemStyle({
   minHeight: 48,
@@ -70,8 +74,8 @@ export function AccountMenu({ desktop = false }: { desktop?: boolean }) {
     : capability.status === 'APPROVED'
       ? 'Кабинет'
       : capability.profile
-        ? 'Заявка продавца'
-        : 'Стать продавцом';
+        ? ACCOUNT_AUTHOR_APPLICATION
+        : ACCOUNT_BECOME_AUTHOR;
   const clearHoverCloseTimer = useCallback(() => {
     if (hoverCloseTimerRef.current === null) return;
     clearTimeout(hoverCloseTimerRef.current);

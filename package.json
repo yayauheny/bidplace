@@ -22,6 +22,7 @@
     "ops:verify-restore": "pnpm --filter @bidplace/database build && node scripts/ops/verify-restore-integrity.mjs",
     "ops:backfill-media": "pnpm --filter @bidplace/database build && node scripts/ops/backfill-media-to-s3.mjs",
     "ops:url-preflight": "pnpm --filter @bidplace/database build && node scripts/ops/url-preflight.mjs",
+    "ops:commerce-inventory": "pnpm --filter @bidplace/database build && node --env-file .env scripts/ops/commerce-inventory.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "turbo clean && rm -rf node_modules",

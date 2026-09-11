@@ -123,7 +123,7 @@ test('pending seller navigation does not expose approved seller actions', async 
     await page.goto('/');
     await page.getByRole('button', { name: /Открыть меню аккаунта/ }).click();
     await expect(
-      page.getByRole('link', { name: 'Заявка продавца' }),
+      page.getByRole('link', { name: 'Заявка автора' }),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Кабинет' })).toHaveCount(0);
     await expect(

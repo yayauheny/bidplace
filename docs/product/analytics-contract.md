@@ -1,7 +1,7 @@
 # bidplace — Analytics contract
 
-Status: Confirmed for MVP foundation  
-Related: `DEC-046`, `DEC-067`
+Status: Confirmed for MVP foundation
+Related: `DEC-046`, `DEC-067`, `DEC-087`
 
 ## Identity
 
@@ -25,17 +25,33 @@ Later visits do not overwrite first-touch.
 
 Product analytics events use `snake_case`.
 
-Socket.IO events (`bid.placed`, …) are a different contract and are not analytics.
+Socket.IO events (`bid.placed`, …) belong to the commerce archive. They are not
+live analytics and are not ingested.
 
-## Current events
+## Current events (live ingest)
 
 | Event | Meaning | Required properties | Source |
 | ----- | ------- | ------------------- | ------ |
-| `listing_viewed` | Opened product detail | `productPublicId`; optional `listingId`, `sellerProfileId` | Mobile detail screen |
+| `work_viewed` | Opened a published Work | `productPublicId`; optional `sellerProfileId` | Work detail (`useTrackWorkView`) |
 | `seller_viewed` | Opened public creator page | `sellerProfileId`; optional `sellerSlug` | Public seller screen |
 | `registration_started` | Opened registration form | (none) | Register form mount |
-| `bid_cta_clicked` | Opened bid participation UI | `listingId`; optional `productPublicId` | Product bid CTA |
-| `bid_rejected` | API rejected a bid attempt | `listingId`, `errorCode`; optional `productPublicId` | Bid mutation error |
+
+`POST /api/analytics/events` **rejects** leftover commerce names
+`listing_viewed`, `bid_cta_clicked`, and `bid_rejected`. Historical rows with
+those names may remain in Postgres; the live admin funnel does not count them.
+
+## Archive-only events (not in live dashboard)
+
+These names were the commerce-v1 funnel. They are not accepted by current ingest
+and are not summed in `GET /api/admin/analytics/overview`.
+
+| Event | Historical meaning |
+| ----- | ------------------ |
+| `listing_viewed` | Opened product detail during listing funnel |
+| `bid_cta_clicked` | Opened bid participation UI |
+| `bid_rejected` | API rejected a bid attempt |
+
+Do not migrate historical `listing_viewed` rows into `work_viewed`.
 
 ## What NOT to track
 

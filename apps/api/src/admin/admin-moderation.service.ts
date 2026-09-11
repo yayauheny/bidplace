@@ -67,24 +67,6 @@ export class AdminModerationService {
         throw new ConflictException('Seller profile transition is not allowed');
       }
 
-      if (input.status === 'SUSPENDED') {
-        const blockingListing = await tx.listing.findFirst({
-          where: {
-            status: { in: ['SCHEDULED', 'LIVE'] },
-            product: { sellerProfileId: sellerProfile.id },
-          },
-          select: { id: true },
-        });
-        if (blockingListing) {
-          this.logger.warn(
-            `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
-          );
-          throw new ConflictException(
-            'Seller cannot be suspended while a scheduled or live listing exists',
-          );
-        }
-      }
-
       if (isRevisionReview) {
         const revisionStatus = input.status as SellerProfileRevisionStatus;
         assertSellerProfileRevisionTransition(
@@ -181,10 +163,6 @@ export class AdminModerationService {
           images: { select: { id: true } },
           editingRevision: {
             include: { images: { select: { imageId: true } } },
-          },
-          listings: {
-            where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-            select: { id: true },
           },
         },
       });

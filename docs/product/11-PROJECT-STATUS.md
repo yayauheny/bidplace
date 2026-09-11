@@ -4,6 +4,68 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — DEC-087 review blockers
+
+- `Implemented`: owner Work writes no longer consult `product.listings`.
+  `writableProductWhere` is editable Product status only. Admin seller
+  suspend is allowed while leftover `SCHEDULED`/`LIVE` rows exist.
+  `hasBlockingListing` is gone from contracts, admin API, and moderation UI.
+  Evidence: `apps/api/src/products/product-write-guard.ts`,
+  `product-revision-write.ts`, `admin-moderation.service.ts`,
+  `packages/contracts/src/admin.ts`,
+  `apps/mobile/src/features/admin/admin-moderation-screen.tsx`,
+  `product-write-guard.spec.ts`,
+  `apps/api/test/integration/product-write-atomicity.integration.spec.ts`.
+- `Implemented`: `pnpm ops:commerce-inventory` reports Listing/Bid/Order
+  counts and applied `_prisma_migrations`; `--apply` sets `SCHEDULED`/`LIVE`
+  to `CANCELLED` with `closedAt` (not `ENDED`). Local Compose inventory is
+  the operator path for staging/prod. Prisma models stay until P4.
+- `Implemented`: demo seed and e2e `createAuctionFixture` no longer create
+  Listing/Bid/Order rows. Evidence: `packages/database/prisma/seed.js`,
+  `apps/mobile/e2e/support/e2e-fixtures.ts`.
+- `Implemented`: public discovery/account copy has no purchase/auction
+  lexicon. Works intro «Работы избранных авторов. Всё, что вы видите,
+  создано вручную.»; authors intro «Авторы, чьи работы опубликованы на
+  bidplace.»; account «Стать автором» / «Заявка автора». Evidence:
+  `apps/mobile/src/lib/portfolio-copy.ts`, `portfolio-copy.spec.ts`,
+  `apps/mobile/e2e/navigation.spec.ts`. Figma works/authors intro still
+  says «Покупайте…» — product contract wins; gap in
+  `docs/design/09-FIGMA-CUTOVER-GAPS.md`.
+- `Implemented`: live analytics ingest accepts `work_viewed` (plus
+  `seller_viewed`, `registration_started`) and rejects `listing_viewed` /
+  `bid_cta_clicked` / `bid_rejected`. Admin funnel counts `work_viewed`
+  only; historical `listing_viewed` rows are not summed. Client:
+  `useTrackWorkView`. Nest `GET/POST /api/auth/rules` and Prisma
+  `TermsAcceptance` remain; the unused bid `EmailRulesGate` and api-client
+  `getRules`/`acceptRules` are deleted. Server rules API is unused by the
+  client until a later legal UX.
+- `Verified`: remote `origin/archive/commerce-v1` and peeled tag
+  `commerce-v1-pre-portfolio^{commit}` equal
+  `598d8696295d18d32956da7dd366dc19464cc366`. Recovery from the remote
+  ref confirmed listings/bids/orders/lifecycle/realtime modules at that
+  SHA. Evidence: `docs/audits/commerce-v1-archive-manifest.md`.
+- `Not implemented`: GitHub rulesets that forbid deletion / force-update /
+  direct push on the archive branch and tag. `gh` is installed locally but
+  not authenticated — this remains the merge gate, not a code blocker.
+- `Not implemented`: P4 Prisma `Listing`/`Bid`/`Order` drops; staging/prod
+  inventory matrix still operator-owned.
+- `Verified`: contracts 24, api-client 3, api unit 282, mobile unit 206,
+  api integration 71 (17 files). Typecheck contracts/api-client/api/mobile.
+  Lint api and mobile without auto-fix. Local `pnpm ops:commerce-inventory`
+  showed 0 `SCHEDULED`/`LIVE` rows (ENDED leftovers remain until P4/reseed).
+  `git diff --name-only -- '*.pen'` empty.
+- `Verified` in Expo web: Works intro «Работы избранных авторов. Всё, что
+  вы видите, создано вручную.»; Authors intro «Авторы, чьи работы
+  опубликованы на bidplace.»; Work detail `seedVase004` has no bid/лот
+  chrome and ingested `work_viewed` (historical `listing_viewed` rows
+  remain, not summed). Reset-password form copy is «для входа в аккаунт».
+  Phone shell does not render desktop `AccountMenu` (`breakpoint.mobileHeader`
+  is 99999); author labels are covered by `portfolio-copy.spec.ts` and e2e
+  `navigation.spec.ts`. Admin suspend-without-lot is covered by API
+  integration, not a logged-in admin browser pass.
+- No `.pen` file changed. `05-MVP-RFC.md` and `12-DECISION-LOG.md` not
+  rewritten.
+
 ## 2026-09-11 — Morning smoke and residual cleanup
 
 - `Implemented`: desktop create CTA renamed off listing vocabulary.
@@ -15,27 +77,27 @@ acceptance target; retained native branches are compatibility code only.
 - `Implemented`: `13-APPLICATION-SECURITY.md` (2026-09-11) no longer treats
   listing emergency cancel, needs-order recovery, or bid-place rate-limit as
   live default-boot controls. User lookup / ban / revoke stay Implemented.
-  Media `product.listings` write-guard stays fail-closed until P4.
+  Listing write-guard removal landed later the same day (section above).
 - `Verified`: Compose Postgres healthy; `GET /api/health/ready` 200;
   `GET /api/portfolio/home` 200 with keys `curatorSelection`, `newWorks`,
   `newAuthors` and no listing/price/bid/order JSON keys. Expo web `:8081`
   Home shows work and author sections without BYN/bid chrome; the same
   cover card opens work detail (`/product/:publicId`, `/works/:id` redirect).
   No schema migrate was required.
-- `Not implemented`: P4 Prisma `Listing`/`Bid`/`Order` drops remain blocked
-  on staging/prod inventory. Archive `archive/commerce-v1` and tag
-  `commerce-v1-pre-portfolio` remain local; push is operator-only.
-- Analytics ingest still accepts `listing_viewed` / `bid_rejected`. Bid
-  error codes stay on `apiErrorCodeSchema` for ingest.
-- `Verified`: mobile typecheck, lint, and 11 `header-chrome` /
+- Archive refs and analytics ingest residuals from this morning pass are
+  superseded by **2026-09-11 — DEC-087 review blockers**.
+- `Verified` at the time: mobile typecheck, lint, and 11 `header-chrome` /
   `header-layout` tests. `git diff --name-only -- '*.pen'` empty. No Prisma
   schema or migration edits.
 
 ## 2026-09-11 — Morning handoff (P3–P6 local, P4 blocked)
 
-Operator-only remaining after morning smoke:
+Operator-only remaining after morning smoke, then closed or narrowed by the
+DEC-087 review-blocker pass:
 
-- Push and protect `archive/commerce-v1` and tag `commerce-v1-pre-portfolio`.
+- Protect `archive/commerce-v1` and tag `commerce-v1-pre-portfolio` with
+  GitHub rulesets (`gh auth` still required). Remote refs already match
+  `598d869`.
 - Fill staging/prod migration inventory, then P4 Prisma drops. Do not rewrite
   applied migrations.
 
@@ -50,16 +112,16 @@ Local commits on `feature/figma-component-library` (no remote push):
 - `Implemented`: leftover `apps/api/src/core/auction` deleted. Unused
   `@nestjs/platform-socket.io`, `@nestjs/schedule`, `@nestjs/websockets` and
   `socket.io` removed from `apps/api/package.json`. Unused public-listing
-  helpers removed from `public-visibility.ts`. Write-guard `product.listings`
-  stays fail-closed until P4.
+  helpers removed from `public-visibility.ts`. Listing write-guard removal
+  landed later the same day (DEC-087 review blockers).
 - `Implemented`: `11-PROJECT-STATUS.md`, `10-CODE-ARCHITECTURE.md`,
   `docs/audits/2026-09-10-commerce-removal-graph.md` and
   `docs/design/04-DESIGN-STATUS.md` record P3/P5/P6. Persistence diagram
   unchanged. `05-MVP-RFC.md` and `12-DECISION-LOG.md` not rewritten.
-- Residual: analytics ingest still accepts `listing_viewed` /
-  `bid_rejected`. Bid error codes stay on `apiErrorCodeSchema` for ingest.
-  Empty `(seller)/listings` directory removed if present. Create CTA naming
-  was cleaned in the morning smoke pass (`CreateWorkAction`).
+- Residual at the time of this pass: analytics ingest still accepted
+  `listing_viewed` / `bid_rejected`. Closed later the same day (DEC-087
+  review blockers). Empty `(seller)/listings` directory removed if present.
+  Create CTA naming was cleaned in the morning smoke pass (`CreateWorkAction`).
 - `Verified`: `git diff --name-only -- '*.pen'` empty. No Prisma schema or
   migration edits. api typecheck, lint, 283 unit tests, 70 integration tests.
 
@@ -101,8 +163,10 @@ Local commits on `feature/figma-component-library` (no remote push):
 - `Implemented`: products HTTP is owner write only; sellers HTTP is owner +
   photo; admin is curator + moderation + users (no ranked bids / needs-order /
   listing emergency). Analytics overview is users/creators/works.
-- `Partial`: Prisma `Listing`/`Bid`/`Order` and `hasBlockingListing` via
-  `product.listings` remain until P4.
+- `Partial` at the time: Prisma `Listing`/`Bid`/`Order` and
+  `hasBlockingListing` via `product.listings` remained. The listing
+  write-lock was removed later the same day (DEC-087 review blockers);
+  Prisma models stay until P4.
 
 ## 2026-09-10 — P2 contracts and api-client without commerce clients
 
@@ -177,9 +241,11 @@ Local commits on `feature/figma-component-library` (no remote push):
   active `main`; file-level removal graph recorded without deleting runtime code.
   Evidence: `docs/audits/2026-09-10-commerce-removal-graph.md`,
   `docs/product/12-DECISION-LOG.md`.
-- `Partial`: remote push and GitHub protection for `archive/commerce-v1` and
-  tag `commerce-v1-pre-portfolio` remain operator-only; local refs and zip
-  backup exist.
+- `Partial` at the time: remote push and GitHub protection for
+  `archive/commerce-v1` and tag `commerce-v1-pre-portfolio` were
+  operator-only. Remote refs were later verified on origin at `598d869`;
+  GitHub rulesets remain the merge gate (DEC-087 review blockers).
+  Local zip backup exists.
 - `Implemented`: P1–P3, Nest-only contract drop, P5 and P6 landed locally
   after this inventory; P4 Prisma model drops remain blocked; Git history
   rewrite is still out of scope.

@@ -64,12 +64,6 @@ const adminProductSelect = {
     },
   },
   sellerProfile: { select: { slug: true, fullName: true, status: true } },
-  listings: {
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    select: { status: true },
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-  },
 } satisfies Prisma.ProductSelect;
 
 @Controller('admin')
@@ -99,29 +93,15 @@ export class AdminController {
       orderBy: { createdAt: 'asc' },
     });
     const ids = sellerProfiles.map(({ id }) => id);
-    const [liveSellerIds, auditEvents] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where: {
-          id: { in: ids },
-          products: {
-            some: {
-              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-            },
-          },
-        },
-        select: { id: true },
-      }),
-      this.prisma.auditEvent.findMany({
-        where: {
-          targetType: 'SELLER_PROFILE',
-          targetId: { in: ids },
-          reason: { not: null },
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { targetId: true, reason: true },
-      }),
-    ]);
-    const liveIds = new Set(liveSellerIds.map(({ id }) => id));
+    const auditEvents = await this.prisma.auditEvent.findMany({
+      where: {
+        targetType: 'SELLER_PROFILE',
+        targetId: { in: ids },
+        reason: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { targetId: true, reason: true },
+    });
     const reasons = new Map<string, string>();
     for (const event of auditEvents) {
       if (event.reason && !reasons.has(event.targetId)) {
@@ -133,7 +113,6 @@ export class AdminController {
       sellerProfiles: sellerProfiles.map((sellerProfile) => ({
         ...toSellerProfileResponse(sellerProfile).sellerProfile,
         lastModerationReason: reasons.get(sellerProfile.id) ?? null,
-        hasBlockingListing: liveIds.has(sellerProfile.id),
       })),
     });
   }
@@ -186,7 +165,6 @@ export class AdminController {
                   }
                 : null,
           })),
-          hasBlockingListing: product.listings.length > 0,
           lastModerationReason: reasons.get(product.id) ?? null,
         };
       }),

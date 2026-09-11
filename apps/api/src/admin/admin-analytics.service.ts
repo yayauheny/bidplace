@@ -93,7 +93,7 @@ export class AdminAnalyticsService {
       activeUsers,
       creators,
       attributions,
-      listingViewed,
+      workViewed,
       sellerProfilesCreated,
       productsCreated,
       productsApproved,
@@ -127,7 +127,7 @@ export class AdminAnalyticsService {
         },
       }),
       this.prisma.analyticsEvent.count({
-        where: { eventName: 'listing_viewed', createdAt: periodFilter },
+        where: { eventName: 'work_viewed', createdAt: periodFilter },
       }),
       this.prisma.sellerProfile.count({
         where: { createdAt: periodFilter },
@@ -184,7 +184,7 @@ export class AdminAnalyticsService {
         select: { createdAt: true },
       }),
       this.prisma.analyticsEvent.findMany({
-        where: { eventName: 'listing_viewed', createdAt: periodFilter },
+        where: { eventName: 'work_viewed', createdAt: periodFilter },
         select: { createdAt: true },
       }),
       this.prisma.sellerProfile.findMany({
@@ -240,7 +240,7 @@ export class AdminAnalyticsService {
         {
           date,
           newUsers: 0,
-          listingViews: 0,
+          workViews: 0,
           newSellers: 0,
           newWorks: 0,
         },
@@ -249,7 +249,7 @@ export class AdminAnalyticsService {
 
     const bump = (
       rows: Array<{ createdAt: Date }>,
-      key: 'newUsers' | 'listingViews' | 'newSellers' | 'newWorks',
+      key: 'newUsers' | 'workViews' | 'newSellers' | 'newWorks',
     ) => {
       for (const row of rows) {
         const bucket = growthMap.get(utcDateKey(row.createdAt));
@@ -260,7 +260,7 @@ export class AdminAnalyticsService {
     };
 
     bump(growthUsers, 'newUsers');
-    bump(growthViews, 'listingViews');
+    bump(growthViews, 'workViews');
     bump(growthSellers, 'newSellers');
     bump(growthWorks, 'newWorks');
 
@@ -296,9 +296,9 @@ export class AdminAnalyticsService {
         visitorToSignupRate: rate(totalSignups, totalVisitors),
       },
       visitorFunnel: {
-        listingViewed: metric(
-          listingViewed,
-          'listing_viewed analytics events in period',
+        workViewed: metric(
+          workViewed,
+          'work_viewed analytics events in period',
           'analytics',
         ),
       },

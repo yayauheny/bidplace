@@ -8,14 +8,12 @@ import {
 import {
   assertProductWritable,
   lockProductRowForUpdate,
-  PRODUCT_EDIT_LOCK_LISTING_STATUSES,
 } from './product-write-guard';
 
 function snapshot(overrides: {
   status?: string;
   userId?: string;
   sellerStatus?: string;
-  listings?: Array<{ id: string }>;
 } = {}) {
   return {
     id: 'product-id',
@@ -24,7 +22,6 @@ function snapshot(overrides: {
       userId: overrides.userId ?? 'owner-id',
       status: overrides.sellerStatus ?? 'APPROVED',
     },
-    listings: overrides.listings ?? [],
   };
 }
 
@@ -49,7 +46,7 @@ describe('product write guard', () => {
   });
 
   it.each(['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'] as const)(
-    'allows owner writes in %s without a blocking Listing',
+    'allows owner writes in %s',
     (status) => {
       expect(() =>
         assertProductWritable(snapshot({ status }), 'owner-id', 'edit'),
@@ -75,15 +72,17 @@ describe('product write guard', () => {
     },
   );
 
-  it('rejects writes when a SCHEDULED or LIVE Listing exists', () => {
-    expect(PRODUCT_EDIT_LOCK_LISTING_STATUSES).toEqual(['SCHEDULED', 'LIVE']);
+  it('does not consult Listing rows when deciding writability', () => {
     expect(() =>
       assertProductWritable(
-        snapshot({ listings: [{ id: 'listing-id' }] }),
+        {
+          ...snapshot(),
+          listings: [{ id: 'listing-id' }],
+        } as ReturnType<typeof snapshot> & { listings: Array<{ id: string }> },
         'owner-id',
         'edit',
       ),
-    ).toThrow('Product is locked by an active Listing');
+    ).not.toThrow();
   });
 
   it('rejects a missing Product, other owner, and unapproved seller', () => {

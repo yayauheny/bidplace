@@ -43,46 +43,23 @@ beforeAll(async () => {
 afterAll(async () => context?.cleanup());
 
 describe('demo seed executable contract', () => {
-  it('creates internally consistent local/test bid and Order fixtures', async () => {
+  it('creates published portfolio works without listings, bids, or orders', async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
 
-    const [live, ended, endedBids, orders, buyer] = await Promise.all([
-      prisma.listing.findFirst({
-        where: { status: 'LIVE' },
-        include: { bids: true },
-      }),
-      prisma.listing.findFirst({
-        where: { status: 'ENDED', product: { publicId: 'seedEnded03' } },
-        include: { bids: true },
-      }),
-      prisma.bid.findMany({
-        where: {
-          listing: {
-            status: 'ENDED',
-            product: { publicId: 'seedEnded03' },
-          },
-        },
-        include: { bidderUser: true },
-      }),
-      prisma.order.findMany({
-        include: { sourceBid: true, buyer: true },
-      }),
-      prisma.user.findUnique({
-        where: { email: 'buyer@bidplace.test' },
-      }),
-    ]);
+    const [listings, bids, orders, approvedAuthors, publishedWorks] =
+      await Promise.all([
+        prisma.listing.count(),
+        prisma.bid.count(),
+        prisma.order.count(),
+        prisma.sellerProfile.count({ where: { status: 'APPROVED' } }),
+        prisma.product.count({ where: { status: 'APPROVED' } }),
+      ]);
 
-    expect(await prisma.bid.count()).toBe(2);
-    expect(live?.currentPrice.toNumber()).toBe(75);
-    expect(live?.bidCount).toBe(1);
-    expect(ended?.currentPrice.toNumber()).toBe(120);
-    expect(ended?.bidCount).toBe(1);
-    expect(endedBids).toHaveLength(1);
-    expect(endedBids[0]?.bidderUserId).toBe(buyer?.id);
-    expect(orders).toHaveLength(1);
-    expect(orders[0]?.buyerId).toBe(buyer?.id);
-    expect(orders[0]?.sourceBidId).toBe(endedBids[0]?.id);
-    expect(orders[0]?.finalAmount.toNumber()).toBe(120);
+    expect(listings).toBe(0);
+    expect(bids).toBe(0);
+    expect(orders).toBe(0);
+    expect(approvedAuthors).toBe(8);
+    expect(publishedWorks).toBe(12);
   });
 
   it.each([
@@ -90,10 +67,10 @@ describe('demo seed executable contract', () => {
     { nodeEnv: 'test', appEnv: 'production' },
     { nodeEnv: 'development', appEnv: 'production' },
   ])(
-    'denies demo bids for production-like profile $nodeEnv/$appEnv before any write',
+    'denies demo seed for production-like profile $nodeEnv/$appEnv before any write',
     ({ nodeEnv, appEnv }) => {
       expect(() => runSeed({ nodeEnv, appEnv })).toThrow(
-        'Refusing demo-bid seed outside an explicitly allowed local/test profile',
+        'Refusing demo seed outside an explicitly allowed local/test profile',
       );
     },
   );

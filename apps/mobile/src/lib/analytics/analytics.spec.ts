@@ -101,7 +101,7 @@ describe('first-touch attribution', () => {
 });
 
 describe('AnalyticsClient track', () => {
-  it('sends bid_rejected with listingId, errorCode and productPublicId', async () => {
+  it('sends work_viewed with productPublicId', async () => {
     const ingest = vi.fn().mockResolvedValue({ accepted: 1 });
 
     const analytics = createAnalytics({
@@ -113,9 +113,7 @@ describe('AnalyticsClient track', () => {
     });
 
     await analytics.init();
-    analytics.track('bid_rejected', {
-      listingId: '33333333-3333-4333-8333-333333333333',
-      errorCode: 'BID_TOO_LOW',
+    analytics.track('work_viewed', {
       productPublicId: 'abcdefghijk',
     });
 
@@ -126,10 +124,8 @@ describe('AnalyticsClient track', () => {
     const payload = ingest.mock.calls[0]?.[0];
     expect(payload.events).toHaveLength(1);
     expect(payload.events[0]).toMatchObject({
-      name: 'bid_rejected',
+      name: 'work_viewed',
       properties: {
-        listingId: '33333333-3333-4333-8333-333333333333',
-        errorCode: 'BID_TOO_LOW',
         productPublicId: 'abcdefghijk',
       },
     });
@@ -139,7 +135,7 @@ describe('AnalyticsClient track', () => {
     expect(payload.appVersion).toBe('1.0.0');
   });
 
-  it('dedupes listing_viewed by productPublicId within a session', async () => {
+  it('dedupes work_viewed by productPublicId within a session', async () => {
     const ingest = vi.fn().mockResolvedValue({ accepted: 1 });
 
     const analytics = createAnalytics({
@@ -150,8 +146,8 @@ describe('AnalyticsClient track', () => {
     });
 
     await analytics.init();
-    analytics.track('listing_viewed', { productPublicId: 'abcdefghijk' });
-    analytics.track('listing_viewed', { productPublicId: 'abcdefghijk' });
+    analytics.track('work_viewed', { productPublicId: 'abcdefghijk' });
+    analytics.track('work_viewed', { productPublicId: 'abcdefghijk' });
 
     await vi.waitFor(() => {
       expect(ingest).toHaveBeenCalled();

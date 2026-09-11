@@ -30,7 +30,6 @@ export type AuctionFixture = {
   buyerA: E2EUser;
   buyerB: E2EUser;
   product: { id: string; publicId: string; title: string };
-  listing: { id: string; startsAt: Date; endsAt: Date };
 };
 
 const seededDemoProductIds = [
@@ -138,8 +137,6 @@ async function createUser(
 }
 
 export async function createAuctionFixture(options?: {
-  live?: boolean;
-  bids?: boolean;
   title?: string;
   additionalTitles?: string[];
 }): Promise<AuctionFixture> {
@@ -148,10 +145,6 @@ export async function createAuctionFixture(options?: {
     datasources: { db: { url: databaseUrl } },
   });
   const now = new Date();
-  const startsAt = new Date(
-    now.getTime() + (options?.live === false ? 30_000 : -5_000),
-  );
-  const endsAt = new Date(now.getTime() + 300_000);
   const seller = await createUser(
     prisma,
     uniqueEmail('seller', suffix),
@@ -206,7 +199,7 @@ export async function createAuctionFixture(options?: {
         sellerProfileId: sellerProfile.id,
         categoryId: category.id,
         title: productTitle,
-        story: 'A real authored item for the auction proof.',
+        story: 'A real authored item for the portfolio proof.',
         technique: 'Mixed media',
         materials: 'Paper, ink',
         dimensions: '30x40',
@@ -232,46 +225,12 @@ export async function createAuctionFixture(options?: {
       include: { images: { orderBy: { position: 'asc' } } },
     });
     await attachPublishedProductRevision(prisma, product);
-    const listing = await prisma.listing.create({
-      data: {
-        productId: product.id,
-        status: options?.live === false ? 'SCHEDULED' : 'LIVE',
-        startsAt,
-        originalEndsAt: endsAt,
-        endsAt,
-        currentPrice: 10,
-        auctionRules: { create: { startPrice: 10 } },
-      },
-    });
-    return { product, listing };
+    return { product };
   };
-  const { product, listing } = await createPublishedAuction(title);
+  const { product } = await createPublishedAuction(title);
 
   for (const additionalTitle of options?.additionalTitles ?? []) {
     await createPublishedAuction(additionalTitle);
-  }
-
-  if (options?.bids) {
-    await prisma.bid.createMany({
-      data: [
-        {
-          listingId: listing.id,
-          bidderUserId: buyerA.id,
-          idempotencyKey: `a-${suffix}`,
-          amount: 11,
-        },
-        {
-          listingId: listing.id,
-          bidderUserId: buyerB.id,
-          idempotencyKey: `b-${suffix}`,
-          amount: 15,
-        },
-      ],
-    });
-    await prisma.listing.update({
-      where: { id: listing.id },
-      data: { currentPrice: 15, bidCount: 2 },
-    });
   }
 
   await prisma.$disconnect();
@@ -287,7 +246,6 @@ export async function createAuctionFixture(options?: {
     buyerA,
     buyerB,
     product: { id: product.id, publicId: product.publicId, title },
-    listing: { id: listing.id, startsAt, endsAt },
   };
 }
 

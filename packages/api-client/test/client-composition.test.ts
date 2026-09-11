@@ -36,6 +36,8 @@ describe('createApiClient composition', () => {
       'listProducts',
       'updateProfile',
     ]);
+    expect(Object.keys(client.auth).sort()).not.toContain('getRules');
+    expect(Object.keys(client.auth).sort()).not.toContain('acceptRules');
     expect(Object.keys(client.admin).sort()).toEqual([
       'clearCuratorSelection',
       'getAnalyticsOverview',

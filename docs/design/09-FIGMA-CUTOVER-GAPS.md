@@ -43,3 +43,17 @@ the previous glass/blur values.
 - Whether create-work should collect `Тираж` as required once Figma labels it.
 - Licensed Geist files.
 - Commerce chrome if `COMMERCE_ENABLED` becomes true.
+
+## 2026-09-11 — Product copy vs Figma works/authors intro
+
+Figma works and authors catalog intros still use «Покупайте самые эксклюзивные…»
+(handoff `design/figma-handoff/portfolio-phone-v1/screens/works/works__default__390x2350__node-526-13248/metadata/source-prompt.md`).
+
+Runtime uses discovery copy from `apps/mobile/src/lib/portfolio-copy.ts`:
+
+- Works: «Работы избранных авторов. Всё, что вы видите, создано вручную.»
+- Authors: «Авторы, чьи работы опубликованы на bidplace.»
+
+`DEC-087`, RFC §14, and the legal checklist win over the Figma string. Do not
+edit the Figma file or `design/pen/bidplace-web-v2.pen` to match production
+in a code task.

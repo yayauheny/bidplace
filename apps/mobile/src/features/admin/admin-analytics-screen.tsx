@@ -97,7 +97,7 @@ function GrowthBars({
     1,
     ...growth.map(
       (day) =>
-        day.newUsers + day.listingViews + day.newWorks + day.newSellers,
+        day.newUsers + day.workViews + day.newWorks + day.newSellers,
     ),
   );
 
@@ -105,7 +105,7 @@ function GrowthBars({
     <View style={{ gap: designTokens.space.x3 }}>
       {growth.slice(-14).map((day) => {
         const total =
-          day.newUsers + day.listingViews + day.newWorks + day.newSellers;
+          day.newUsers + day.workViews + day.newWorks + day.newSellers;
         const widthPercent = Math.max(4, Math.round((total / max) * 100));
         return (
           <View key={day.date} style={{ gap: designTokens.space.x1 }}>
@@ -118,7 +118,7 @@ function GrowthBars({
             >
               <AppText role="label">{day.date}</AppText>
               <AppText role="caption" tone="secondary">
-                users {day.newUsers} · views {day.listingViews} · works{' '}
+                users {day.newUsers} · views {day.workViews} · works{' '}
                 {day.newWorks}
               </AppText>
             </View>
@@ -375,10 +375,10 @@ export function AdminAnalyticsScreen() {
 
       <FormSection
         title="Visitor funnel"
-        description="listing_viewed analytics events in the selected period."
+        description="work_viewed analytics events in the selected period."
       >
         <AppText role="body">
-          {data.visitorFunnel.listingViewed.value} listing viewed
+          {data.visitorFunnel.workViewed.value} work viewed
         </AppText>
       </FormSection>
 

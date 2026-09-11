@@ -13,24 +13,14 @@ import { Prisma } from '@bidplace/database';
 
 import { assertApprovedSeller } from '../sellers/seller-capability';
 
-export const PRODUCT_EDIT_LOCK_LISTING_STATUSES = ['SCHEDULED', 'LIVE'] as const;
-
 export const productWriteGuardSelect = {
   id: true,
   status: true,
   sellerProfile: { select: { userId: true, status: true } },
-  listings: {
-    where: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
-    select: { id: true },
-    take: 1,
-  },
 } satisfies Prisma.ProductSelect;
 
 export const writableProductWhere = {
   status: { in: [...EDITABLE_PRODUCT_STATUSES] },
-  listings: {
-    none: { status: { in: [...PRODUCT_EDIT_LOCK_LISTING_STATUSES] } },
-  },
 } satisfies Prisma.ProductWhereInput;
 
 export type ProductWriteGuardKind =
@@ -43,7 +33,6 @@ export type ProductWriteGuardSnapshot = {
   id: string;
   status: string;
   sellerProfile: { userId: string; status: string };
-  listings: Array<{ id: string }>;
 };
 
 export async function lockProductRowForUpdate(
@@ -75,10 +64,6 @@ export function assertProductWritable<T extends ProductWriteGuardSnapshot>(
 
   if (!isEditableProductStatus(product.status as ProductStatus)) {
     throw productWriteLockedError(kind);
-  }
-
-  if (product.listings.length > 0) {
-    throw new ConflictException('Product is locked by an active Listing');
   }
 }
 

@@ -127,7 +127,6 @@ export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
 export const adminSellerProfileSchema = sellerProfileSchema
   .extend({
     lastModerationReason: z.string().nullable(),
-    hasBlockingListing: z.boolean(),
   })
   .strict();
 export const adminSellerProfilesResponseSchema = z
@@ -144,7 +143,6 @@ export const adminProductSchema = productSchema
       .strict(),
     creationIntro: z.string().trim().min(1).nullable(),
     creationSteps: z.array(creationStepSchema),
-    hasBlockingListing: z.boolean(),
     lastModerationReason: z.string().nullable(),
   })
   .strict();

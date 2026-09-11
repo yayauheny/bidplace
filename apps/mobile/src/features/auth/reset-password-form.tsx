@@ -10,10 +10,8 @@ import { AppText, PrimaryButton, TextButton, TextField } from '../../components/
 import { getErrorCode, getUserFacingErrorMessage } from '../../lib/errors';
 import { useApiClient } from '../../providers/api-provider';
 import { AuthCard } from './auth-card';
-import {
-  resetPasswordFormSchema,
-  type ResetPasswordFormValues,
-} from './schemas';
+import { resetPasswordFormSchema, type ResetPasswordFormValues } from './schemas';
+import { RESET_PASSWORD_SUCCESS_DESCRIPTION } from '../../lib/portfolio-copy';
 
 export function ResetPasswordForm({ token }: { token: string | null }) {
   const api = useApiClient();
@@ -63,7 +61,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     return (
       <AuthCard
         title="Пароль обновлён"
-        description="Войдите с новым паролем, чтобы продолжить работу с аукционами."
+        description={RESET_PASSWORD_SUCCESS_DESCRIPTION}
       >
         <PrimaryButton label="Перейти ко входу" onPress={() => router.replace('/login')} />
       </AuthCard>

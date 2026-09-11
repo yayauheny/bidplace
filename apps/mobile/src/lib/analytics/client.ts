@@ -62,8 +62,8 @@ function dedupeEntityId(
   name: AnalyticsEventName,
   properties: TrackPropertiesByName[AnalyticsEventName],
 ): string | null {
-  if (name === 'listing_viewed') {
-    return (properties as TrackPropertiesByName['listing_viewed'])
+  if (name === 'work_viewed') {
+    return (properties as TrackPropertiesByName['work_viewed'])
       .productPublicId;
   }
   if (name === 'seller_viewed') {

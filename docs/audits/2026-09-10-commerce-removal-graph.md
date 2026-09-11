@@ -1,9 +1,9 @@
 # commerce removal graph (P0–P6)
 
-Date: 2026-09-11  
-Status: P0–P3, Nest-only contract drop, P5 and P6 executed locally; **P4 blocked**  
-Owner decision: `DEC-087`  
-Archive SHA: `598d8696295d18d32956da7dd366dc19464cc366`  
+Date: 2026-09-11
+Status: P0–P3, Nest-only contract drop, P5, P6, and DEC-087 review blockers executed locally; **P4 blocked**; archive refs on origin; **GitHub rulesets pending**
+Owner decision: `DEC-087`
+Archive SHA: `598d8696295d18d32956da7dd366dc19464cc366`
 Proposal: [`2026-09-10-portfolio-simplification-and-commerce-archive.md`](2026-09-10-portfolio-simplification-and-commerce-archive.md)
 
 This document is the file-level dependency map for P1–P6. Prisma model
@@ -13,7 +13,7 @@ removal is **P4 only** after the database decision matrix is closed.
 
 | Environment | Migration state | Retained commerce data | Decision |
 | --- | --- | --- | --- |
-| Local dev / test (Compose Postgres on `127.0.0.1:5432`) | Forward chain applied via `pnpm db:migrate` in dev/test | Demo Bid/Order fixtures allowed only with `ALLOW_DESTRUCTIVE_DEMO_SEED=true` | Safe to reset locally; do not infer prod path |
+| Local dev / test (Compose Postgres on `127.0.0.1:5432`) | Forward chain applied via `pnpm db:migrate` in dev/test | Neutralize leftover `SCHEDULED`/`LIVE` with `pnpm ops:commerce-inventory --apply` (`CANCELLED`). Seed no longer inserts Listing/Bid/Order. | Safe to reset locally; do not infer prod path |
 | Staging | **Unknown** — operator confirmation required | **Unknown** | **Blocker** for P4 drops |
 | Production-like / pilot | **Unknown** — operator confirmation required | **Unknown** | **Blocker** for P4 drops |
 
@@ -176,8 +176,10 @@ From [`packages/database/prisma/schema.prisma`](../../packages/database/prisma/s
 
 ### Seed / demo
 
-- `packages/database/prisma/seed.js` — auction demo fixtures
-- `apps/api/test/integration/auction/fixtures.ts`
+- `packages/database/prisma/seed.js` — authors + works only; wipe still deletes leftover Listing/Bid/Order
+- `scripts/ops/commerce-inventory.mjs` — read-only counts; `--apply` cancels `SCHEDULED`/`LIVE`
+- `apps/mobile/e2e/support/e2e-fixtures.ts` — published works only
+- `apps/api/test/integration/auction/fixtures.ts` — leftover test helper paths if present
 - `apps/api/test/integration/order-fixtures.ts`
 
 **P4 exit:** fresh DB and each supported existing DB reach portfolio schema through
@@ -205,20 +207,34 @@ tested upgrade or baseline procedure.
 | `createListingsClient` | Absent |
 | `/api/orders` | Unmatched 404; docs updated |
 | `RealtimeModule` | Absent from `AppModule`; named only in negative tests |
-| `listing.join` / `product.listings` | Kept in write-guard / admin moderation until P4 |
+| `listing.join` / `product.listings` | Prisma relation remains until P4; **runtime write-guard and admin suspend no longer read it** |
 | `apps/api/src/core/auction` | Deleted |
 
 - `10-CODE-ARCHITECTURE.md` default boot updated; **persistence diagram unchanged**
 - `04-DESIGN-STATUS.md` records admin analytics without commerce metrics
 - `git diff --name-only -- '*.pen'` must stay empty
 
+## Review blockers (2026-09-11)
+
+Closed without waiting for P4:
+
+- Listing write-lock and `hasBlockingListing` removed from active API/admin/UI
+- Seed and e2e fixtures no longer insert commerce rows
+- Public copy without purchase/auction lexicon
+- Live ingest `work_viewed`; leftover `listing_viewed` / `bid_*` rejected
+- Bid-only `EmailRulesGate` and api-client rules methods deleted
+
+Still out of this merge: Prisma model drops; GitHub rulesets; legal wiring of
+`/auth/rules`.
+
+
 ## Shared infrastructure — verify before delete
 
 | Area | Keep if used by portfolio |
 | --- | --- |
-| `apps/api/src/core/rules-acceptance.ts` | May shrink when bid rules gate removed |
-| `packages/contracts/src/rules.ts` | Bid acceptance — portfolio may drop buyer bid flow |
-| Analytics admin aggregates | Trim commerce metrics or gate behind archive job |
+| `apps/api/src/core/rules-acceptance.ts` | Keep — Nest `GET/POST /api/auth/rules` + `TermsAcceptance` until legal UX |
+| `packages/contracts/src/rules.ts` | Keep — versioned acceptance contract; api-client methods removed |
+| Analytics admin aggregates | Live dashboard counts `work_viewed` only; commerce events are archive-only |
 | `Product` / revision model | **Keep** — portfolio core |
 | Handoff fields on `SellerProfile` | **Keep** — private author contact, not commerce sale |
 
@@ -235,5 +251,7 @@ tested upgrade or baseline procedure.
 - [x] Nest-only commerce Zod dropped
 - [x] P5 negative HTTP/boot tests
 - [x] P6 docs/cruft (persistence diagram unchanged until P4)
-- [ ] Remote archive refs pushed and protected (operator-only)
+- [x] Remote archive refs exist on origin at `598d869` (branch + peeled tag)
+- [x] Remote recovery drill (checkout commerce modules at archive SHA)
+- [ ] GitHub rulesets protecting archive branch + tag (operator `gh auth`)
 - [ ] Staging/prod DB inventory confirmed

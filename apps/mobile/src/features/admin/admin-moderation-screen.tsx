@@ -197,15 +197,15 @@ export function AdminModerationScreen() {
     { title: string; description: string; label: string }
   > = {
     'seller-suspend': {
-      title: 'Приостановить продавца?',
+      title: 'Приостановить автора?',
       description:
-        'Продавец потеряет возможность работать с профилем в текущем статусе.',
+        'Автор потеряет возможность работать с профилем в текущем статусе.',
       label: 'Приостановить',
     },
     'product-changes': {
-      title: 'Запросить изменения по предмету?',
+      title: 'Запросить изменения по работе?',
       description:
-        'Предмет будет снят с публикации. Автор сможет внести правки и повторно отправить его на модерацию.',
+        'Работа будет снята с публикации. Автор сможет внести правки и повторно отправить её на модерацию.',
       label: 'Запросить изменения',
     },
   };
@@ -214,7 +214,7 @@ export function AdminModerationScreen() {
     <FormPageShell>
       <PageHeader
         title="Модерация"
-        description="Проверка продавцов и предметов перед публикацией."
+        description="Проверка авторов и работ перед публикацией."
       />
       <SecondaryButton
         label="Аналитика"
@@ -304,14 +304,14 @@ export function AdminModerationScreen() {
                 status={presentEnum(
                   seller.status,
                   sellerStatusLabels,
-                  'Неизвестный статус продавца',
+                  'Неизвестный статус автора',
                 )}
               >
                 <AppText role="bodySmall" tone="secondary">
                   {presentEnum(
                     seller.sellerType,
                     sellerTypeLabels,
-                    'Неизвестный тип продавца',
+                    'Неизвестный тип автора',
                   )}{' '}
                   · {seller.slug} · {seller.country}
                 </AppText>
@@ -333,21 +333,13 @@ export function AdminModerationScreen() {
                   />
                 ) : null}
                 <DestructiveButton
-                  disabled={
-                    seller.status === 'SUSPENDED' || seller.hasBlockingListing
-                  }
+                  disabled={seller.status === 'SUSPENDED'}
                   label="Приостановить"
                   loading={sellerStatus.isPending}
                   onPress={() =>
                     openConfirmation({ kind: 'seller-suspend', id: seller.id })
                   }
                 />
-                {seller.hasBlockingListing ? (
-                  <AppText role="bodySmall" tone="secondary">
-                    Запланированный или активный лот: приостановка продавца
-                    недоступна до завершения торгов.
-                  </AppText>
-                ) : null}
               </ModerationCard>
             ))}
             {visibleSellers?.length === 0 ? (
@@ -357,8 +349,8 @@ export function AdminModerationScreen() {
             ) : null}
             {sellerStatus.isError ? (
               <AppText role="bodySmall" tone="danger">
-                Не удалось приостановить продавца. Проверьте причину и состояние
-                активных торгов.
+                Не удалось приостановить автора. Проверьте причину и повторите
+                попытку.
               </AppText>
             ) : null}
           </FormSection>
@@ -378,7 +370,7 @@ export function AdminModerationScreen() {
                   status={presentEnum(
                     product.status,
                     productStatusLabels,
-                    'Неизвестный статус предмета',
+                    'Неизвестный статус работы',
                   )}
                 >
                   {product.images[0] ? (
@@ -459,12 +451,6 @@ export function AdminModerationScreen() {
                       Последняя причина: {product.lastModerationReason}
                     </AppText>
                   ) : null}
-                  {product.hasBlockingListing ? (
-                    <AppText role="bodySmall" tone="secondary">
-                      Запланированный или активный лот: обычное снятие с
-                      публикации недоступно.
-                    </AppText>
-                  ) : null}
                   {product.status === 'PENDING_REVIEW' ? (
                     <PrimaryButton
                       label="Одобрить"
@@ -486,9 +472,7 @@ export function AdminModerationScreen() {
                   ) : null}
                   <DestructiveButton
                     disabled={
-                      !['APPROVED', 'PENDING_REVIEW'].includes(
-                        product.status,
-                      ) || product.hasBlockingListing
+                      !['APPROVED', 'PENDING_REVIEW'].includes(product.status)
                     }
                     label="Запросить изменения"
                     loading={productStatus.isPending}
@@ -510,8 +494,8 @@ export function AdminModerationScreen() {
             {productStatus.isError ? (
               <AppText role="bodySmall" tone="danger">
                 {productAction === 'APPROVED'
-                  ? 'Не удалось одобрить предмет. Проверьте, одобрен ли автор и заполнены ли обязательные поля.'
-                  : 'Не удалось запросить изменения по предмету. Проверьте причину и состояние активных торгов.'}
+                  ? 'Не удалось одобрить работу. Проверьте, одобрен ли автор и заполнены ли обязательные поля.'
+                  : 'Не удалось запросить изменения по работе. Проверьте причину и повторите попытку.'}
               </AppText>
             ) : null}
           </FormSection>

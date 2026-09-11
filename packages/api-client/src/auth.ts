@@ -1,5 +1,4 @@
 import {
-  acceptRulesRequestSchema,
   authResponseSchema,
   emailOtpVerifyRequestSchema,
   forgotPasswordRequestSchema,
@@ -7,7 +6,6 @@ import {
   meResponseSchema,
   registerRequestSchema,
   resetPasswordRequestSchema,
-  serviceRulesResponseSchema,
   type LoginRequest,
   type RegisterRequest,
 } from '@bidplace/contracts';
@@ -36,15 +34,6 @@ export function createAuthClient(context: RequestContext) {
     },
     me() {
       return requestJson(context, '/api/auth/me', meResponseSchema);
-    },
-    getRules() {
-      return requestJson(context, '/api/auth/rules', serviceRulesResponseSchema);
-    },
-    acceptRules(input: { rulesVersion: string }) {
-      return requestJson(context, '/api/auth/rules/accept', authResponseSchema, {
-        method: 'POST',
-        body: acceptRulesRequestSchema.parse(input),
-      });
     },
     logout() {
       return requestJson(context, '/api/auth/logout', logoutResponseSchema, {

@@ -2,9 +2,12 @@
 
 Последнее обновление: 2026-09-11
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
-Transitional note (`DEC-087`): P1–P3, Nest-only contract drop, and P5 are in this
-branch. P4 Prisma `Listing`/`Bid`/`Order` drops remain blocked on staging/prod
-inventory. Commerce v1 remains recoverable from archive SHA `598d869`.
+Transitional note (`DEC-087`): P1–P3, Nest-only contract drop, P5, and the
+2026-09-11 review-blocker pass (listing write-guard removed from runtime;
+live ingest is `work_viewed`) are in this branch. P4 Prisma `Listing`/`Bid`/`Order`
+drops remain blocked on staging/prod inventory. Commerce v1 remains recoverable
+from origin `archive/commerce-v1` at SHA `598d869`. GitHub rulesets for those
+refs are still the merge gate.
 
 ## Applications and shared boundaries
 
@@ -159,15 +162,17 @@ pointer. Production seed does not create a selection.
 ## Integrity and privacy
 
 Commerce bid/order HTTP, Socket.IO rooms and listing lifecycle cron are absent
-from default boot (`DEC-087`). Prisma `Listing`/`Bid`/`Order` and write-guard
-`product.listings` checks remain until P4. The bullets that describe bid
-placement, buyer activity and listing close are archive/P4 leftover persistence
-behavior, not live HTTP.
+from default boot (`DEC-087`). Prisma `Listing`/`Bid`/`Order` remain until P4.
+Owner product writes do **not** fail closed on leftover listing rows; runtime
+guards use editable Product status and ownership only. The bullets that describe
+bid placement, buyer activity and listing close are archive/P4 leftover
+persistence behavior, not live HTTP.
 
 - Buyer Activity (`GET /api/me/activity`) is unmatched 404 in default boot.
 - Bid, soft-close and listing-lifecycle rules live in the commerce archive, not
-  in default `apps/api/src`. Bid error codes remain on `apiErrorCodeSchema` so
-  analytics ingest can still accept historical `bid_rejected` events.
+  in default `apps/api/src`. Bid error codes remain on `apiErrorCodeSchema` for
+  other API surfaces; live analytics ingest no longer accepts `bid_*` or
+  `listing_viewed` events.
 - HTTP errors use one response shape `{ status, code, message, details? }` from
   `ApiExceptionFilter`. Category codes (`bad_request`, `conflict`, …) remain the
   default for plain Nest exceptions. Clients branch on `code`, not `message`.
@@ -178,14 +183,15 @@ behavior, not live HTTP.
 - Product image reorder mutates only `ProductRevisionImage` rows of the editing
   revision and must include every editing-revision image id exactly once.
   `ProductImage.position` uniqueness still guards storage slots, not gallery order.
-  Owner product writes still fail closed when a SCHEDULED or LIVE listing row
-  exists (`product.listings`), until P4 drops those models.
+  Leftover `SCHEDULED`/`LIVE` listing rows do not lock owner Work edits, images,
+  or creation-story writes.
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
   sequential bounded normalize to canonical bytes outside the DB transaction, and
-  a short Read Committed transaction that locks the Product row, re-checks owner, editable status, blocking
-  Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
+  a short Read Committed transaction that locks the Product row, re-checks owner,
+  editable status and capacity then persists via `ImageStore.put`
+  (`PostgresImageStore` today). Reads use metadata/authz first,
   then `ImageStore.get`. Per-user upload rate limits apply. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - `ImageStore` selects PostgreSQL for legacy/backfill compatibility or an

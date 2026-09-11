@@ -675,8 +675,8 @@ describe('ImagesService', () => {
     );
   });
 
-  it('locks image writes when a scheduled or live Listing exists', async () => {
-    const { prisma } = createPrismaForAdd({
+  it('does not lock image writes when a leftover scheduled Listing row exists', async () => {
+    const { prisma, tx, create } = createPrismaForAdd({
       product: {
         ...createApprovedProduct([]),
         listings: [{ id: 'listing-id' }],
@@ -687,13 +687,14 @@ describe('ImagesService', () => {
       createImageStoreMock() as never,
     );
 
-    await expect(
-      service.add('owner-id', 'product-id', [
-        { buffer: Buffer.from([1]), mimetype: 'image/png' },
-      ]),
-    ).rejects.toThrow('Product is locked by an active Listing');
-    expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    await service.add('owner-id', 'product-id', [
+      { buffer: Buffer.from([1]), mimetype: 'image/png' },
+    ]);
+
+    expect(validateAndNormalizeProductImageUploads).toHaveBeenCalledTimes(1);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalled();
+    expect(tx.product.findUnique).toHaveBeenCalled();
   });
 
   it('repeats the writable guard inside the persistence transaction', async () => {

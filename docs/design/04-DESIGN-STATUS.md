@@ -4,6 +4,20 @@
 
 Общий статус: **Figma phone cutover Implemented for MVP public/author screens**
 
+## 2026-09-11 — DEC-087 public copy and work_viewed
+
+- `Implemented`: Works and Authors catalog intros, account author labels, and
+  reset-password success copy are discovery/account language without
+  purchase/auction lexicon. Evidence: `apps/mobile/src/lib/portfolio-copy.ts`.
+- Figma works/authors intro still uses «Покупайте самые эксклюзивные…».
+  Product contract (`DEC-087`) wins; the visual file is not edited. Gap:
+  [`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
+- `Implemented`: Work detail records `work_viewed`, not `listing_viewed`.
+  Admin analytics visitor funnel is `workViewed`.
+- Admin moderation copy uses автор / работа; leftover listing lock copy is
+  gone.
+- No `.pen` file changed.
+
 ## 2026-09-11 — Create CTA naming (no visual change)
 
 - `Implemented`: header desktop create control is `CreateWorkAction` with
@@ -16,7 +30,8 @@
 
 - `Implemented`: admin analytics overview cards are users, creators and works.
   Bid/order/listing recovery metrics are gone from the default screen. Ingest
-  still records `listing_viewed` as the work-view event name.
+  later the same day switched the live work-view name to `work_viewed`
+  (see DEC-087 section above).
   Evidence: `apps/mobile/src/features/admin/admin-analytics-screen.tsx`,
   `apps/api/src/admin/admin-analytics.service.ts`.
 - Public Home / Works / Author / Work screens are unchanged from P1.
