@@ -54,11 +54,6 @@ export function FigmaGlassSurface({
   return (
     <div className="figma-glass" data-testid={testID} style={glassStyle}>
       <div
-        className="figma-glass-backdrop"
-        data-testid="figma-glass-backdrop"
-        aria-hidden="true"
-      />
-      <div
         className="figma-glass-stroke"
         data-testid="figma-glass-stroke"
         aria-hidden="true"

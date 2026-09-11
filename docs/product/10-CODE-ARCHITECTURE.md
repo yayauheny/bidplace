@@ -205,8 +205,8 @@ persistence behavior, not live HTTP.
 The phone shell owns the floating-glass sampling boundary. `AppShell` wraps
 route content in `expo-blur` `BlurTargetView`; the platform-specific
 `FloatingDockFrame` uses that target on Android and a `document.body` portal to
-shared `FigmaGlassSurface` on web. Web glass keeps `backdrop-filter` on an empty
-backdrop sibling so icons are not sampled into a halo. Route screens provide
+shared `FigmaGlassSurface` on web. Web glass keeps `backdrop-filter` and its translucent fill on the glass root;
+stroke and icon descendants paint above its backdrop. Route screens provide
 navigation content only and do not implement their own dock blur, fill, border
 or elevation.
 

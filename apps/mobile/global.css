@@ -31,8 +31,8 @@ textarea:focus-visible,
  * RN-web Views use overflow:hidden and often sit under a white SafeArea
  * stacking context, so style.backdropFilter never samples page content.
  * Glass surfaces that must sample the moving page are portaled to
- * document.body. Backdrop blur lives on an empty sibling so icons are
- * not filtered into a halo.
+ * document.body. The glass root owns backdrop blur; its descendants
+ * are painted above that backdrop, including during opacity transitions.
  */
 .figma-dock-layer {
   position: fixed;
@@ -52,14 +52,6 @@ textarea:focus-visible,
   pointer-events: auto;
   filter: none;
   box-shadow: none;
-}
-
-.figma-glass-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
   background: var(--figma-glass-background);
   -webkit-backdrop-filter: blur(var(--figma-glass-blur));
   backdrop-filter: blur(var(--figma-glass-blur));

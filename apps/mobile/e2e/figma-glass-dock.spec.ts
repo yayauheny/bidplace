@@ -20,10 +20,10 @@ test('floating dock is one glass capsule with live blur and no icon halo', async
   expect(chrome.portaledToBody).toBe(true);
   expect(chrome.dockFilter).toBe('none');
   expect(chrome.dockBoxShadow).toBe('none');
-  expect(chrome.dockBackdropFilter).toBe('none');
+  expect(chrome.dockBackdropFilter).toBe('blur(6px)');
   expect(chrome.backdropFilter).toBe('blur(6px)');
   expect(chrome.backdropBackground).toBe('rgba(255, 255, 255, 0.6)');
-  expect(chrome.backdropChildCount).toBe(0);
+  expect(chrome.backdropChildCount).toBe(2);
   expect(chrome.strokeBackgroundImage).toContain('rgb(222, 222, 222)');
   expect(chrome.strokeBackgroundImage).toContain('rgb(243, 243, 243)');
   expect(chrome.contentChildCount).toBe(4);
@@ -76,7 +76,7 @@ test('floating dock is one glass capsule with live blur and no icon halo', async
   await page.mouse.up();
   await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
 
-  await expectLiveBlur(dock, dock.getByTestId('figma-glass-backdrop'));
+  await expectLiveBlur(dock, dock);
 });
 
 test('dock glass samples page content without a split search FAB', async ({
@@ -97,17 +97,17 @@ test('dock glass samples page content without a split search FAB', async ({
   expect(chrome.height).toBe(64);
   expect(chrome.labels).toEqual(['Главная', 'Поиск', 'Добавить', 'Профиль']);
   expect(chrome.fabCount).toBe(0);
-  expect(chrome.dockBackdropFilter).toBe('none');
+  expect(chrome.dockBackdropFilter).toBe('blur(6px)');
   expect(chrome.backdropFilter).toBe('blur(6px)');
-  expect(chrome.backdropChildCount).toBe(0);
+  expect(chrome.backdropChildCount).toBe(2);
 
-  await expectLiveBlur(dock, dock.getByTestId('figma-glass-backdrop'));
+  await expectLiveBlur(dock, dock);
 });
 
 async function readDockChrome(dock: Locator) {
   return dock.evaluate((element) => {
     const style = getComputedStyle(element);
-    const backdrop = element.querySelector('[data-testid="figma-glass-backdrop"]');
+    const backdrop = element;
     const stroke = element.querySelector('[data-testid="figma-glass-stroke"]');
     const content = element.querySelector('.figma-glass-content');
     const bounds = element.getBoundingClientRect();

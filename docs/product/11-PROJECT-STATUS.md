@@ -4,6 +4,14 @@ Current release target clarification: the phone UI is delivered through Expo
 Web in browsers. Native iOS/Android applications are not a release or visual
 acceptance target; retained native branches are compatibility code only.
 
+## 2026-09-11 — Dock post-click halo correction
+
+- `Needs verification`: `FigmaGlassSurface.web.tsx` and `global.css` now put
+  backdrop blur on the glass root instead of an overlapping empty sibling.
+  The stroke and controls are descendants above that backdrop. Opacity feedback
+  and keyboard focus remain unchanged. Existing dock checks follow the new DOM.
+- Browser acceptance after repeated navigation remains with the founder.
+
 ## 2026-09-11 — Dock viewport white-strip fix
 
 - `Needs verification`: removed the fixed 96px bottom reserve from

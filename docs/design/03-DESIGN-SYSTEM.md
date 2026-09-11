@@ -49,9 +49,9 @@ variants, not production components (`DEC-088`). 36px items contain 24px icons
 with 6px padding, the row uses 20px gaps and 14px outer padding, and the
 surface has radius 200, white at 60%, a 0.5px `#DEDEDE → #F3F3F3` gradient
 stroke and 6px background blur. It has no drop shadow. Web portals the dock to
-`document.body` and uses shared `FigmaGlassSurface`: an empty backdrop layer
-holds `backdrop-filter`, the stroke is a sibling, and icons sit in an isolated
-content layer so they are not sampled into a halo. Native wraps the app content
+`document.body` and uses shared `FigmaGlassSurface`: the glass root
+holds `backdrop-filter` and the translucent fill; stroke and icon content are
+descendants painted above its backdrop, including during press transitions. Native wraps the app content
 in `BlurTargetView` and uses `expo-blur` plus the same translucent fill and
 gradient stroke. Reduced-motion does not disable blur because blur is a static
 surface property. Dock controls keep a pill-shaped keyboard focus outline and
