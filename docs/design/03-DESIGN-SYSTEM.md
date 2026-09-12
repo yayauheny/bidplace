@@ -70,6 +70,14 @@ in the app.
 
 Skipped nodes and unused variants: [`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
 
+Author profile atmosphere belongs to the clipped header only. It retains the
+485×485 shape from `621:19476`, offset −47/−36 and bottom radii 200; tabs and
+content below have a white canvas across the phone width, with 12px content
+gutters. Social links use one 80%-white `FigmaGlassSurface` control group
+(36px controls, 28px icons, 8px horizontal / 6px vertical padding and 12px gaps);
+the existing copy action has its own group. Logo/avatar spacing is derived
+from the local `621:19475` export.
+
 ## Historical Pen extraction
 
 The remainder of this document records Pen v2 measurements used before the

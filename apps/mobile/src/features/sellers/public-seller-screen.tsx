@@ -18,7 +18,8 @@ import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
+import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
+import { BrandLogo } from '../../components/layout/BrandLogo';
 import { getApiAssetUrl } from '../../lib/environment';
 import { canonicalShareUrl } from '../../lib/canonical-share-url';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
@@ -102,7 +103,10 @@ export function PublicSellerScreen({
   ) {
     return (
       <AppShell>
-        <PageState title="Автор не найден" message="Профиль больше недоступен." />
+        <PageState
+          title="Автор не найден"
+          message="Профиль больше недоступен."
+        />
       </AppShell>
     );
   }
@@ -133,161 +137,233 @@ export function PublicSellerScreen({
           }}
           showsVerticalScrollIndicator={false}
         >
-          <AuthorAtmosphere
-            imageUrl={author.profilePhotoUrl}
-            fullName={author.fullName}
-          />
           <View
+            testID="author-header"
             style={{
-              alignItems: 'center',
-              gap: 18,
-              paddingHorizontal: designTokens.space.pageGutter,
-              paddingTop: 40,
-              zIndex: 1,
+              overflow: 'hidden',
+              paddingBottom: designTokens.space.authorHeaderBottom,
             }}
           >
-          <ResilientRemoteImage
-            uri={getApiAssetUrl(author.profilePhotoUrl)}
-            component="AuthorPhoto"
-            accessibilityLabel={`Фото автора ${author.fullName}`}
-            fallbackLabel={`Фото автора недоступно: ${author.fullName}`}
-            style={{
-              width: designTokens.size.avatar,
-              height: designTokens.size.avatar,
-              borderRadius: designTokens.radius.avatar,
-            }}
-            contentFit="cover"
-          />
-          <View style={{ alignItems: 'center' }}>
-            <AppText role="identityHandle">@{author.slug}</AppText>
+            <AuthorAtmosphere
+              imageUrl={author.profilePhotoUrl}
+              fullName={author.fullName}
+            />
             <View
               style={{
-                flexDirection: 'row',
                 alignItems: 'center',
-                gap: designTokens.space.x2,
+                gap: designTokens.space.authorSectionGap,
+                paddingHorizontal: designTokens.space.pageGutter,
+                paddingTop: designTokens.space.authorLogoTop,
+                zIndex: 1,
               }}
             >
-              <AppText role="label">{author.fullName}</AppText>
               <View
                 style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: designTokens.color.ink,
+                  marginBottom:
+                    designTokens.space.authorLogoGap -
+                    designTokens.space.authorSectionGap,
                 }}
-              />
-              <AppText role="label">{author.city}</AppText>
-            </View>
-          </View>
-          {tags.length > 0 ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: designTokens.space.chipGap,
-              }}
-            >
-              {tags.map((tag) => (
-                <FigmaChip key={tag} label={tag} tone="onGlass" />
-              ))}
-            </View>
-          ) : null}
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {author.telegramUrl ? (
-              <CreatorSocialLink
-                href={author.telegramUrl}
-                icon="send"
-                label="Telegram автора"
-              />
-            ) : null}
-            {author.instagramUrl ? (
-              <CreatorSocialLink
-                href={author.instagramUrl}
-                icon="instagram"
-                label="Instagram автора"
-              />
-            ) : null}
-            {author.websiteUrl ? (
-              <CreatorSocialLink
-                href={author.websiteUrl}
-                icon="globe"
-                label="Сайт автора"
-              />
-            ) : null}
-            <MotionPressable
-              accessibilityRole="button"
-              accessibilityLabel="Скопировать ссылку на профиль"
-              onPress={copyProfileLink}
-              preset="icon"
-              style={figmaGlassCircleStyle()}
-            >
-              <FigmaIcon name="copy" />
-            </MotionPressable>
-          </View>
-          {copyState === 'success' ? (
-            <AppText role="caption" tone="success">
-              Ссылка скопирована.
-            </AppText>
-          ) : null}
-        </View>
-
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: 12,
-            marginTop: 24,
-            marginHorizontal: designTokens.space.pageGutter,
-            borderBottomWidth: 1,
-            borderBottomColor: designTokens.color.divider,
-          }}
-        >
-          <AuthorTabButton
-            label={`Работы ${firstPage.pagination.total}`}
-            selected={tab === 'works'}
-            onPress={() => setTab('works')}
-          />
-          <AuthorTabButton
-            label="Об авторе"
-            selected={tab === 'about'}
-            onPress={() => setTab('about')}
-          />
-        </View>
-
-        <View
-          style={{
-            paddingHorizontal: designTokens.space.pageGutter,
-            paddingTop: designTokens.space.sectionGap,
-            gap: designTokens.space.sectionGap,
-          }}
-        >
-          {tab === 'about' ? (
-            <View style={{ gap: designTokens.space.x4 }}>
-              <AppText role="body">{author.shortDescription}</AppText>
-              {author.achievements.map((item) => (
-                <AppText key={item.id} role="bodySmall" tone="secondary">
-                  {item.body}
-                </AppText>
-              ))}
-            </View>
-          ) : works.length === 0 ? (
-            <PageState title="У автора пока нет опубликованных работ" />
-          ) : (
-            <>
-              <WorkCoverCardGrid items={works} />
-              {query.hasNextPage ? (
-                <PrimaryButton
-                  label="Смотреть все"
-                  width="full"
-                  loading={query.isFetchingNextPage}
-                  onPress={() => void query.fetchNextPage()}
+              >
+                <BrandLogo />
+              </View>
+              <View
+                style={{
+                  alignItems: 'center',
+                  gap: designTokens.space.authorIdentityGap,
+                }}
+              >
+                <ResilientRemoteImage
+                  uri={getApiAssetUrl(author.profilePhotoUrl)}
+                  component="AuthorPhoto"
+                  accessibilityLabel={`Фото автора ${author.fullName}`}
+                  fallbackLabel={`Фото автора недоступно: ${author.fullName}`}
+                  style={{
+                    width: designTokens.size.avatar,
+                    height: designTokens.size.avatar,
+                    borderRadius: designTokens.radius.avatar,
+                  }}
+                  contentFit="cover"
                 />
+                <View style={{ alignItems: 'center' }}>
+                  <AppText role="identityHandle">@{author.slug}</AppText>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: designTokens.space.x2,
+                    }}
+                  >
+                    <AppText role="label">{author.fullName}</AppText>
+                    <View
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: designTokens.color.ink,
+                      }}
+                    />
+                    <AppText role="label">{author.city}</AppText>
+                  </View>
+                </View>
+              </View>
+              {tags.length > 0 ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: designTokens.space.chipGap,
+                  }}
+                >
+                  {tags.map((tag) => (
+                    <FigmaChip key={tag} label={tag} tone="onGlass" />
+                  ))}
+                </View>
               ) : null}
-            </>
-          )}
-        </View>
-      </ScrollView>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: designTokens.space.socialGroupGap,
+                }}
+              >
+                {author.telegramUrl ||
+                author.instagramUrl ||
+                author.websiteUrl ? (
+                  <FigmaGlassSurface
+                    preset="controlGroup"
+                    testID="author-social-group"
+                    contentStyle={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: designTokens.space.socialGroupGap,
+                      paddingLeft: designTokens.space.socialGroupX,
+                      paddingRight: designTokens.space.socialGroupX,
+                      paddingTop: designTokens.space.socialGroupY,
+                      paddingBottom: designTokens.space.socialGroupY,
+                    }}
+                  >
+                    {author.telegramUrl ? (
+                      <CreatorSocialLink
+                        grouped
+                        href={author.telegramUrl}
+                        icon="send"
+                        label="Telegram автора"
+                      />
+                    ) : null}
+                    {author.instagramUrl ? (
+                      <CreatorSocialLink
+                        grouped
+                        href={author.instagramUrl}
+                        icon="instagram"
+                        label="Instagram автора"
+                      />
+                    ) : null}
+                    {author.websiteUrl ? (
+                      <CreatorSocialLink
+                        grouped
+                        href={author.websiteUrl}
+                        icon="globe"
+                        label="Сайт автора"
+                      />
+                    ) : null}
+                  </FigmaGlassSurface>
+                ) : null}
+                <FigmaGlassSurface
+                  preset="controlGroup"
+                  testID="author-share-group"
+                  contentStyle={{
+                    paddingLeft: designTokens.space.identityGap,
+                    paddingRight: designTokens.space.identityGap,
+                    paddingTop: designTokens.space.socialGroupY,
+                    paddingBottom: designTokens.space.socialGroupY,
+                  }}
+                >
+                  <MotionPressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Скопировать ссылку на профиль"
+                    onPress={copyProfileLink}
+                    preset="icon"
+                    style={{
+                      width: designTokens.size.control,
+                      height: designTokens.size.control,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: designTokens.radius.pill,
+                    }}
+                  >
+                    <FigmaIcon
+                      name="copy"
+                      size={designTokens.size.socialGroupIcon}
+                    />
+                  </MotionPressable>
+                </FigmaGlassSurface>
+              </View>
+              {copyState === 'success' ? (
+                <AppText role="caption" tone="success">
+                  Ссылка скопирована.
+                </AppText>
+              ) : null}
+            </View>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: designTokens.color.canvas,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 12,
+              paddingHorizontal: designTokens.space.pageGutter,
+              borderBottomWidth: 1,
+              borderBottomColor: designTokens.color.divider,
+            }}
+          >
+            <AuthorTabButton
+              label={`Работы ${firstPage.pagination.total}`}
+              selected={tab === 'works'}
+              onPress={() => setTab('works')}
+            />
+            <AuthorTabButton
+              label="Об авторе"
+              selected={tab === 'about'}
+              onPress={() => setTab('about')}
+            />
+          </View>
+
+          <View
+            testID="author-content"
+            style={{
+              backgroundColor: designTokens.color.canvas,
+              paddingHorizontal: designTokens.space.pageGutter,
+              paddingTop: designTokens.space.sectionGap,
+              gap: designTokens.space.sectionGap,
+            }}
+          >
+            {tab === 'about' ? (
+              <View style={{ gap: designTokens.space.x4 }}>
+                <AppText role="body">{author.shortDescription}</AppText>
+                {author.achievements.map((item) => (
+                  <AppText key={item.id} role="bodySmall" tone="secondary">
+                    {item.body}
+                  </AppText>
+                ))}
+              </View>
+            ) : works.length === 0 ? (
+              <PageState title="У автора пока нет опубликованных работ" />
+            ) : (
+              <>
+                <WorkCoverCardGrid items={works} />
+                {query.hasNextPage ? (
+                  <PrimaryButton
+                    label="Смотреть все"
+                    width="full"
+                    loading={query.isFetchingNextPage}
+                    onPress={() => void query.fetchNextPage()}
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
+        </ScrollView>
       </View>
     </AppShell>
   );
@@ -314,10 +390,7 @@ function AuthorTabButton({
         borderBottomColor: selected ? designTokens.color.ink : 'transparent',
       }}
     >
-      <AppText
-        role="label"
-        style={{ color: selected ? '#191919' : '#373737' }}
-      >
+      <AppText role="label" style={{ color: selected ? '#191919' : '#373737' }}>
         {label}
       </AppText>
     </MotionPressable>

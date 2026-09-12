@@ -231,3 +231,7 @@ implementation status and external founder/device/10-user gates are owned by
 
 Only the focused route renders its dock (`AppShell` uses Expo Router
 `useIsFocused`); retained stack screens must not leave body portals mounted.
+
+Author profile visual ownership: `public-seller-screen.tsx` confines
+`AuthorAtmosphere` to its header; tabs and profile content are white siblings.
+Social controls reuse `FigmaGlassSurface` and grouped `CreatorSocialLink`.

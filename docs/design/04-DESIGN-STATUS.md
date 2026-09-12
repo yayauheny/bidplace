@@ -1,5 +1,19 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-12 — Author header surface boundary
+
+- `Partial`: `public-seller-screen.tsx` confines `AuthorAtmosphere` to the
+  header, restores the logo and avatar spacing, and renders full-width white
+  tabs and content with the existing 12px work gutters. The 485×485 background,
+  offset −47/−36 and 200px bottom radii from `621:19476` remain unchanged.
+- Social links share one `FigmaGlassSurface` control group; the existing copy
+  action has a separate group. `CreatorSocialLink` supports transparent grouped
+  controls while preserving standalone callers. No likes, VK or archive added.
+- Typecheck, targeted lint, existing author-tab test and Expo web export pass.
+  Browser checks on the built web app confirm grouped horizontal controls,
+  white Works/About content and 12px gutters. Full page fidelity and founder
+  acceptance remain pending.
+
 ## 2026-09-11 — Card geometry and filter stacking checkpoint
 
 - `Partial`: C3 geometry verified at 390 (366×488, radii 24/28); temporary

@@ -10,12 +10,14 @@ export type CreatorSocialLinkProps = {
   href: string;
   icon: 'send' | 'instagram' | 'globe';
   label: string;
+  grouped?: boolean;
 };
 
 export function CreatorSocialLink({
   href,
   icon,
   label,
+  grouped = false,
 }: CreatorSocialLinkProps) {
   return (
     <Link href={href as Href} target="_blank" asChild>
@@ -23,14 +25,31 @@ export function CreatorSocialLink({
         accessibilityRole="link"
         accessibilityLabel={label}
         preset="icon"
-        style={figmaGlassCircleStyle()}
+        style={
+          grouped
+            ? {
+                width: figmaTokens.size.control,
+                height: figmaTokens.size.control,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: figmaTokens.radius.pill,
+              }
+            : figmaGlassCircleStyle()
+        }
       >
         {icon === 'send' ? (
-          <FigmaIcon name="telegram" />
+          <FigmaIcon
+            name="telegram"
+            size={
+              grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+            }
+          />
         ) : (
           <AppIcon
             name={icon}
-            size={figmaTokens.size.icon}
+            size={
+              grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+            }
             color={figmaTokens.color.ink}
           />
         )}
