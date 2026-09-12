@@ -35,6 +35,7 @@
     "nativewind": "4.2.1",
     "nullthrows": "^1.1.1",
     "postcss-value-parser": "^4.2.0",
+    "qrcode": "1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "7.81.0",
@@ -51,7 +52,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
+    "@types/qrcode": "1.5.5",
     "@types/react": "~18.3.18",
+    "jsqr": "1.4.0",
     "prettier-plugin-tailwindcss": "0.5.11",
     "tailwindcss": "3.4.17",
     "typescript": "~6.0.3"

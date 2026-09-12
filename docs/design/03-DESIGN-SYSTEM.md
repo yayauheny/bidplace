@@ -4,6 +4,13 @@
 
 Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
 
+## Author share sheet
+
+`AppDialog` supports a bottom sheet presentation, capped at the 390px phone
+width, with 20px top corners and the existing focus/dismissal behavior.
+The modal token is 50, above the web dock layer 40. `AuthorShare` uses a 164px
+QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
+
 ## Author profile detail sizing
 
 Profile-specific typography lives in `packages/design-tokens`: handle 24/29,

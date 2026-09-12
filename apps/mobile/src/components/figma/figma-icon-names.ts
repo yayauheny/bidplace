@@ -11,6 +11,7 @@ export const figmaIconNames = [
   'plus',
   'minus',
   'copy',
+  'share-04',
   'qr-code-01',
   'lock-keyhole',
   'clock-04',

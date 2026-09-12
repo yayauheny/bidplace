@@ -132,10 +132,12 @@ export const designTokens = {
     avatar: 100,
     social: 30,
     achievement: 18.82,
+    shareSheet: 20,
     statusDot: 20,
   },
   size: {
     achievementWidth: 266,
+    shareQr: 164,
     touch: 44,
     input: 52,
     control: 36,
@@ -394,7 +396,7 @@ export const designTokens = {
       boxShadow: '0 10px 24px rgba(17, 17, 17, 0.12)',
     },
   },
-  layer: { content: 0, chrome: 10, popover: 20, modal: 30 },
+  layer: { content: 0, chrome: 10, popover: 20, modal: 50 },
   focus: { width: 2, offset: 2 },
   blur: {
     dock: 6,

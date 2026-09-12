@@ -1,5 +1,21 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-12 — Author filters and share sheet
+
+- `Implemented` on web: `use-author-works.ts` applies category selection through
+  `portfolio.getAuthor`, with separate pagination/cache keys and an unchanged
+  total count. Empty and failed category results remain inside the author page.
+- `Implemented` on web: `AuthorShare.tsx` opens an `AppDialog` sheet, generates
+  QR locally with `qrcode`, downloads SVG and copies the canonical author URL.
+  Dialog modal layer is above the dock; Escape restores trigger focus.
+- Mobile typecheck, targeted ESLint, four test files (six tests), and Expo web
+  export pass. Browser confirmed empty/populated category switching, copy,
+  modal stacking, Escape and focus return. QR round-trip decoding is covered
+  by `author-qr.spec.ts`; jsqr is a development-only decoder.
+- Whole author-screen parity remains `Partial`: native sharing, downloaded
+  file handling and the complete responsive/achievement visual matrix need
+  verification. Existing API contracts and publication visibility are unchanged.
+
 ## 2026-09-12 — Author profile details
 
 - `Partial`: profile typography, 35px discipline chips, separate work count and

@@ -4,6 +4,13 @@
 Статус: Confirmed product/UI scope for Figma phone cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
+## Author category and sharing interactions
+
+Works offers server category chips and `Все` to clear the filter. The author
+header/count stay visible during category loading, error and empty states.
+Share opens a bottom sheet with QR, SVG download and canonical-link copy;
+Escape/outside click closes it and focus returns to the trigger.
+
 ## 1. Источник и граница
 
 Новый оригинальный Figma-файл `NM63j9lwRMqpo2HvAiYNll` — read-only visual target

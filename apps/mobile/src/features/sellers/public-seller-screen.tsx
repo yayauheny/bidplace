@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Platform, ScrollView, View } from 'react-native';
-import * as ExpoLinking from 'expo-linking';
+import { ScrollView, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
@@ -17,15 +16,17 @@ import {
 import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { FigmaChip } from '../../components/figma/FigmaChip';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canonicalShareUrl } from '../../lib/canonical-share-url';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { CreatorSocialLink } from './CreatorSocialLink';
+
+import { AuthorShare } from './AuthorShare';
+import { useAuthorWorks } from './use-author-works';
+import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 
 import { AuthorAbout } from './AuthorAbout';
 
@@ -58,8 +59,13 @@ export function PublicSellerScreen({
     enabled: Boolean(slug),
     retry: retryTransientPublicQuery,
   });
+  const { category, setCategory, categories, filtered } = useAuthorWorks(
+    slug,
+    sort,
+  );
+  const workQuery = category ? filtered : query;
   const firstPage = query.data?.pages[0];
-  const works = query.data?.pages.flatMap((page) => page.works) ?? [];
+  const works = workQuery.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
 
@@ -68,28 +74,6 @@ export function PublicSellerScreen({
     sellerSlug: author?.slug ?? slug,
     enabled: Boolean(firstPage && sellerProfileId),
   });
-
-  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  );
-
-  const copyProfileLink = () => {
-    if (
-      Platform.OS !== 'web' ||
-      typeof window === 'undefined' ||
-      !navigator.clipboard ||
-      !author
-    ) {
-      setCopyState('error');
-      return;
-    }
-    void navigator.clipboard
-      .writeText(
-        canonicalShareUrl(author.sharePath, undefined, ExpoLinking.createURL),
-      )
-      .then(() => setCopyState('success'))
-      .catch(() => setCopyState('error'));
-  };
 
   if (query.isLoading) {
     return (
@@ -134,7 +118,10 @@ export function PublicSellerScreen({
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom: tab === 'about' ? designTokens.size.dockReserve : designTokens.space.x5,
+            paddingBottom:
+              tab === 'about'
+                ? designTokens.size.dockReserve
+                : designTokens.space.x5,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
@@ -186,8 +173,12 @@ export function PublicSellerScreen({
                   }}
                   contentFit="cover"
                 />
-                <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>
-                  <AppText role="profileHandle" style={{ textAlign: 'center' }}>@{author.slug}</AppText>
+                <View
+                  style={{ alignItems: 'center', gap: designTokens.space.x1 }}
+                >
+                  <AppText role="profileHandle" style={{ textAlign: 'center' }}>
+                    @{author.slug}
+                  </AppText>
                   <View
                     style={{
                       flexDirection: 'row',
@@ -197,7 +188,12 @@ export function PublicSellerScreen({
                       justifyContent: 'center',
                     }}
                   >
-                    <AppText role="profileMetadata" style={{ textAlign: 'center' }}>{author.fullName}</AppText>
+                    <AppText
+                      role="profileMetadata"
+                      style={{ textAlign: 'center' }}
+                    >
+                      {author.fullName}
+                    </AppText>
                     <View
                       style={{
                         width: 4,
@@ -217,11 +213,18 @@ export function PublicSellerScreen({
                     flexWrap: 'wrap',
                     justifyContent: 'center',
                     gap: designTokens.space.authorChipGap,
-                    marginBottom: designTokens.space.socialGroupGap - designTokens.space.authorSectionGap,
+                    marginBottom:
+                      designTokens.space.socialGroupGap -
+                      designTokens.space.authorSectionGap,
                   }}
                 >
                   {tags.map((tag) => (
-                    <FigmaChip key={tag} label={tag} tone="onGlass" size="profile" />
+                    <FigmaChip
+                      key={tag}
+                      label={tag}
+                      tone="onGlass"
+                      size="profile"
+                    />
                   ))}
                 </View>
               ) : null}
@@ -273,41 +276,8 @@ export function PublicSellerScreen({
                     ) : null}
                   </FigmaGlassSurface>
                 ) : null}
-                <FigmaGlassSurface
-                  preset="controlGroup"
-                  testID="author-share-group"
-                  contentStyle={{
-                    paddingLeft: designTokens.space.identityGap,
-                    paddingRight: designTokens.space.identityGap,
-                    paddingTop: designTokens.space.socialGroupY,
-                    paddingBottom: designTokens.space.socialGroupY,
-                  }}
-                >
-                  <MotionPressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Скопировать ссылку на профиль"
-                    onPress={copyProfileLink}
-                    preset="icon"
-                    style={{
-                      width: designTokens.size.control,
-                      height: designTokens.size.control,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: designTokens.radius.pill,
-                    }}
-                  >
-                    <FigmaIcon
-                      name="copy"
-                      size={designTokens.size.socialGroupIcon}
-                    />
-                  </MotionPressable>
-                </FigmaGlassSurface>
+                <AuthorShare sharePath={author.sharePath} slug={author.slug} />
               </View>
-              {copyState !== 'idle' ? (
-                <AppText role="caption" accessibilityLiveRegion="polite" tone={copyState === 'success' ? 'success' : 'danger'}>
-                  {copyState === 'success' ? 'Ссылка скопирована.' : 'Не удалось скопировать ссылку. Попробуйте ещё раз.'}
-                </AppText>
-              ) : null}
             </View>
           </View>
 
@@ -340,23 +310,66 @@ export function PublicSellerScreen({
             style={{
               backgroundColor: designTokens.color.canvas,
               paddingHorizontal: designTokens.space.pageGutter,
-              paddingTop: tab === 'about' ? designTokens.space.authorHeaderBottom : designTokens.space.sectionGap,
+              paddingTop:
+                tab === 'about'
+                  ? designTokens.space.authorHeaderBottom
+                  : designTokens.space.sectionGap,
               gap: designTokens.space.sectionGap,
             }}
           >
+            {tab === 'works' ? (
+              categories.isError ? (
+                <PrimaryButton
+                  label="Повторить загрузку категорий"
+                  onPress={() => void categories.refetch()}
+                />
+              ) : (
+                <ScrollView
+                  horizontal
+                  contentContainerStyle={{ gap: designTokens.space.x2 }}
+                >
+                  <FigmaChoiceChip
+                    label="Все"
+                    selected={!category}
+                    onPress={() => setCategory(undefined)}
+                  />
+                  {categories.data?.categories.map((item) => (
+                    <FigmaChoiceChip
+                      key={item.id}
+                      label={item.name}
+                      selected={category === item.id}
+                      onPress={() => setCategory(item.id)}
+                    />
+                  ))}
+                </ScrollView>
+              )
+            ) : null}
             {tab === 'about' ? (
               <AuthorAbout author={author} />
+            ) : workQuery.isLoading ? (
+              <PageState title="Загружаем работы…" loading />
+            ) : workQuery.isError ? (
+              <PageState
+                title="Не удалось загрузить работы"
+                retry={() => void workQuery.refetch()}
+              />
             ) : works.length === 0 ? (
-              <PageState title="У автора пока нет опубликованных работ" />
+              <PageState
+                title={
+                  category
+                    ? 'В этой категории пока нет работ'
+                    : 'У автора пока нет опубликованных работ'
+                }
+              />
             ) : (
               <>
                 <WorkCoverCardGrid items={works} />
-                {query.hasNextPage ? (
+                {workQuery.hasNextPage ? (
                   <PrimaryButton
                     label="Смотреть все"
                     width="full"
-                    loading={query.isFetchingNextPage}
-                    onPress={() => void query.fetchNextPage()}
+                    loading={workQuery.isFetchingNextPage}
+                    onPress={() => void workQuery.fetchNextPage()}
                   />
                 ) : null}
               </>
