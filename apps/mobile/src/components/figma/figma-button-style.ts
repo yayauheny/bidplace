@@ -13,6 +13,7 @@ export type FigmaButtonInteraction = 'idle' | 'hover' | 'pressed' | 'disabled';
 export function figmaButtonStyle(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
+  size: 'regular' | 'large' = 'regular',
 ) {
   const disabled = interaction === 'disabled';
   const hovered = interaction === 'hover';
@@ -23,7 +24,10 @@ export function figmaButtonStyle(
     pressed && (variant === 'ghost' || variant === 'muted');
 
   return {
-    minHeight: insetPressedSurface ? 42 : figmaTokens.size.button,
+    minHeight:
+      (size === 'large'
+        ? figmaTokens.size.buttonLarge
+        : figmaTokens.size.button) - (insetPressedSurface ? 2 : 0),
     margin: insetPressedSurface ? 1 : 0,
     paddingHorizontal: figmaTokens.space.buttonX,
     paddingVertical: figmaTokens.space.buttonY,
@@ -37,7 +41,9 @@ export function figmaButtonStyle(
           ? figmaTokens.color.solidDisabled
           : fill,
     opacity: disabled ? 0.5 : 1,
-    boxShadow: showRing ? `0px 0px 0px 2px ${figmaTokens.color.pressRing}` : undefined,
+    boxShadow: showRing
+      ? `0px 0px 0px 2px ${figmaTokens.color.pressRing}`
+      : undefined,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   };
@@ -70,7 +76,9 @@ function buttonFill(variant: FigmaButtonVariant, active: boolean) {
     case 'ghost':
       return active ? figmaTokens.color.ghostHover : figmaTokens.color.canvas;
     case 'muted':
-      return active ? figmaTokens.color.mutedHover : figmaTokens.color.mutedFill;
+      return active
+        ? figmaTokens.color.mutedHover
+        : figmaTokens.color.mutedFill;
   }
 }
 

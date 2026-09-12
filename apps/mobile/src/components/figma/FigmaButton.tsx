@@ -25,6 +25,7 @@ export function FigmaButton({
   iconPosition = 'left',
   accessibilityHint,
   width = 'content',
+  size = 'regular',
 }: {
   label: string;
   onPress: () => void;
@@ -35,6 +36,7 @@ export function FigmaButton({
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
+  size?: 'regular' | 'large';
 }) {
   const inactive = disabled || loading;
   const textColor = figmaButtonLabelColor(variant);
@@ -56,6 +58,7 @@ export function FigmaButton({
         figmaButtonStyle(
           variant,
           resolveInteraction({ inactive, hovered, pressed }),
+          size,
         ),
       ]}
     >

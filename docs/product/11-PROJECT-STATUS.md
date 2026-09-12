@@ -1,5 +1,19 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-12 — Author visual polish
+
+- `Implemented`: `CreatorSocialLink` uses the Hugeicons Instagram glyph,
+  replacing the camera substitute. Shared `FigmaButton` supports a 56px large
+  size, used by the QR-sheet actions; the default remains 44px. Category and
+  achievement strips hide the horizontal scrollbar while retaining scrolling.
+- Checks: mobile typecheck, targeted ESLint, eight existing tests and Expo web
+  export pass. Browser checked 390px QR sheet (measured button height 56px),
+  1024/1440px author layout (390px content, no document overflow). A prior
+  320px check confirmed name/tag wrapping without document overflow.
+- `Needs verification`: the embedded browser did not emit a download event
+  after the QR download click; file saving is not claimed as verified. Populated
+  achievement media and the complete accessibility matrix remain unchecked.
+
 ## 2026-09-12 — Author filters and share sheet
 
 - `Implemented` on web: `use-author-works.ts` applies category selection through

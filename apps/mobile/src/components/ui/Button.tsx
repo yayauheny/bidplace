@@ -6,6 +6,7 @@ import { type FigmaIconName } from '../figma/figma-icon-names';
 
 type ButtonProps = {
   label: string;
+  size?: 'regular' | 'large';
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;

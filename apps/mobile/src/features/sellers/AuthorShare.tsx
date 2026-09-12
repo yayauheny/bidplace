@@ -137,6 +137,7 @@ function AuthorShareContent({
       {Platform.OS === 'web' ? (
         <PrimaryButton
           label="Скачать QR"
+          size="large"
           icon="qr-code-01"
           width="full"
           disabled={!qr}
@@ -144,6 +145,7 @@ function AuthorShareContent({
         />
       ) : null}
       <SecondaryButton
+        size="large"
         label={
           Platform.OS === 'web' ? 'Копировать ссылку' : 'Поделиться ссылкой'
         }

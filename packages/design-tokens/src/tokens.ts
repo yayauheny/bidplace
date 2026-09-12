@@ -142,6 +142,7 @@ export const designTokens = {
     input: 52,
     control: 36,
     button: 44,
+    buttonLarge: 56,
     buttonCompact: 40,
     choiceChip: 38,
     buttonIconFrame: 26,

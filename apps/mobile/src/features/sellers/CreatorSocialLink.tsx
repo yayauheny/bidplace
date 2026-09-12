@@ -37,9 +37,9 @@ export function CreatorSocialLink({
             : figmaGlassCircleStyle()
         }
       >
-        {icon === 'send' ? (
+        {icon === 'send' || icon === 'instagram' ? (
           <FigmaIcon
-            name="telegram"
+            name={icon === 'send' ? 'telegram' : 'instagram'}
             size={
               grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
             }

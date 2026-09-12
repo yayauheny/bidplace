@@ -22,6 +22,7 @@ describe('Figma icon registry', () => {
       'lock-keyhole',
       'clock-04',
       'telegram',
+      'instagram',
       'google',
       'eye-off',
       'view',

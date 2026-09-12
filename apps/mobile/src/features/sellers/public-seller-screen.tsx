@@ -326,6 +326,7 @@ export function PublicSellerScreen({
               ) : (
                 <ScrollView
                   horizontal
+                  showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: designTokens.space.x2 }}
                 >
                   <FigmaChoiceChip

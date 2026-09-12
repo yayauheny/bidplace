@@ -4,6 +4,12 @@
 
 Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
 
+## Share action sizing and social glyphs
+
+`FigmaButton` has regular (44px) and large (56px) sizes. Only share-sheet
+actions opt into large, matching exported node `597:19053`. Author Instagram
+uses the Hugeicons Instagram glyph through `FigmaIcon`, not a camera symbol.
+
 ## Author share sheet
 
 `AppDialog` supports a bottom sheet presentation, capped at the 390px phone
