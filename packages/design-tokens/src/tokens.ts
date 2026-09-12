@@ -101,6 +101,10 @@ export const designTokens = {
     authorIdentityGap: 6,
     authorSectionGap: 18,
     authorHeaderBottom: 40,
+    authorAboutGap: 26,
+    authorChipX: 16,
+    authorChipY: 5,
+    authorChipGap: 10,
     socialGroupX: 8,
     socialGroupY: 6,
     socialGroupGap: 12,
@@ -127,9 +131,11 @@ export const designTokens = {
     dock: 200,
     avatar: 100,
     social: 30,
+    achievement: 18.82,
     statusDot: 20,
   },
   size: {
+    achievementWidth: 266,
     touch: 44,
     input: 52,
     control: 36,
@@ -301,6 +307,30 @@ export const designTokens = {
       fontSize: 18,
       lineHeight: 20,
       fontWeight: '600' as const,
+    },
+    profileHandle: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 24, lineHeight: 29,
+      letterSpacing: -0.72, fontWeight: '600' as const,
+    },
+    profileMetadata: {
+      fontFamily: 'Inter_500Medium', fontSize: 18, lineHeight: 24,
+      letterSpacing: -0.18, fontWeight: '500' as const,
+    },
+    profileChip: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 23,
+      letterSpacing: -0.16, fontWeight: '500' as const,
+    },
+    profileTab: {
+      fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 19,
+      fontWeight: '500' as const,
+    },
+    profileHeading: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 17, lineHeight: 21,
+      letterSpacing: -0.34, fontWeight: '600' as const,
+    },
+    achievementDate: {
+      fontFamily: 'Inter_500Medium', fontSize: 17, lineHeight: 24,
+      letterSpacing: -0.51, fontWeight: '500' as const,
     },
     identityHandle: {
       fontFamily: 'Inter_600SemiBold',

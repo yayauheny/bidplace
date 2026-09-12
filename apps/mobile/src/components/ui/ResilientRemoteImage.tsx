@@ -25,6 +25,7 @@ export type ResilientRemoteImageComponent =
   | 'ProductGallery'
   | 'ProductAuthor'
   | 'AuthorPhoto'
+  | 'AuthorAchievement'
   | 'WorkCoverCard'
   | 'AuthorCoverCard'
   | 'AuthorIdentity'

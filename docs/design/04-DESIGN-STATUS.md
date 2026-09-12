@@ -1,5 +1,18 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-12 — Author profile details
+
+- `Partial`: profile typography, 35px discipline chips, separate work count and
+  2px active-tab underline follow local Figma `621:19475`. `AuthorAbout.tsx`
+  renders biography, optional practice and achievement dates/photos from the
+  existing portfolio API. Text content reserves dock clearance; work gutters
+  and header atmosphere remain unchanged. Copy failures are now visible.
+- Checks: mobile typecheck, targeted ESLint, existing public-seller-tabs test
+  and Expo web export passed. Browser checked Works/About with real author
+  data; populated achievement media and full responsive/accessibility parity
+  still need visual verification. Share/QR and category filters remain gaps;
+  no archive, likes or unsupported social controls were added.
+
 ## 2026-09-12 — Author header surface boundary
 
 - `Partial`: `public-seller-screen.tsx` confines `AuthorAtmosphere` to the

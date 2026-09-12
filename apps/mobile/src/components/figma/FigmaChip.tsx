@@ -11,15 +11,20 @@ import {
 export function FigmaChip({
   label,
   tone = 'onLight',
+  size = 'compact',
 }: {
   label: string;
   tone?: FigmaChipTone;
+  size?: 'compact' | 'profile';
 }) {
   return (
-    <View style={figmaChipStyle(tone)}>
+    <View style={[figmaChipStyle(tone), size === 'profile' && {
+      paddingHorizontal: figmaTokens.space.authorChipX,
+      paddingVertical: figmaTokens.space.authorChipY,
+    }]}>
       <Text
         numberOfLines={1}
-        style={[{ color: figmaChipTextColor(tone) }, figmaTokens.typography.chip]}
+        style={[{ color: figmaChipTextColor(tone) }, size === 'profile' ? figmaTokens.typography.profileChip : figmaTokens.typography.chip]}
       >
         {label}
       </Text>

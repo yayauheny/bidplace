@@ -27,6 +27,8 @@ import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { CreatorSocialLink } from './CreatorSocialLink';
 
+import { AuthorAbout } from './AuthorAbout';
+
 import { type AuthorPublicTab } from './author-public-tabs';
 
 export function PublicSellerScreen({
@@ -132,7 +134,7 @@ export function PublicSellerScreen({
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
-            paddingBottom: designTokens.space.x5,
+            paddingBottom: tab === 'about' ? designTokens.size.dockReserve : designTokens.space.x5,
             overflow: 'visible',
           }}
           showsVerticalScrollIndicator={false}
@@ -184,16 +186,18 @@ export function PublicSellerScreen({
                   }}
                   contentFit="cover"
                 />
-                <View style={{ alignItems: 'center' }}>
-                  <AppText role="identityHandle">@{author.slug}</AppText>
+                <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>
+                  <AppText role="profileHandle" style={{ textAlign: 'center' }}>@{author.slug}</AppText>
                   <View
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: designTokens.space.x2,
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
                     }}
                   >
-                    <AppText role="label">{author.fullName}</AppText>
+                    <AppText role="profileMetadata" style={{ textAlign: 'center' }}>{author.fullName}</AppText>
                     <View
                       style={{
                         width: 4,
@@ -202,7 +206,7 @@ export function PublicSellerScreen({
                         backgroundColor: designTokens.color.ink,
                       }}
                     />
-                    <AppText role="label">{author.city}</AppText>
+                    <AppText role="profileMetadata">{author.city}</AppText>
                   </View>
                 </View>
               </View>
@@ -212,11 +216,12 @@ export function PublicSellerScreen({
                     flexDirection: 'row',
                     flexWrap: 'wrap',
                     justifyContent: 'center',
-                    gap: designTokens.space.chipGap,
+                    gap: designTokens.space.authorChipGap,
+                    marginBottom: designTokens.space.socialGroupGap - designTokens.space.authorSectionGap,
                   }}
                 >
                   {tags.map((tag) => (
-                    <FigmaChip key={tag} label={tag} tone="onGlass" />
+                    <FigmaChip key={tag} label={tag} tone="onGlass" size="profile" />
                   ))}
                 </View>
               ) : null}
@@ -298,9 +303,9 @@ export function PublicSellerScreen({
                   </MotionPressable>
                 </FigmaGlassSurface>
               </View>
-              {copyState === 'success' ? (
-                <AppText role="caption" tone="success">
-                  Ссылка скопирована.
+              {copyState !== 'idle' ? (
+                <AppText role="caption" accessibilityLiveRegion="polite" tone={copyState === 'success' ? 'success' : 'danger'}>
+                  {copyState === 'success' ? 'Ссылка скопирована.' : 'Не удалось скопировать ссылку. Попробуйте ещё раз.'}
                 </AppText>
               ) : null}
             </View>
@@ -318,7 +323,8 @@ export function PublicSellerScreen({
             }}
           >
             <AuthorTabButton
-              label={`Работы ${firstPage.pagination.total}`}
+              label="Работы"
+              count={firstPage.pagination.total}
               selected={tab === 'works'}
               onPress={() => setTab('works')}
             />
@@ -334,19 +340,12 @@ export function PublicSellerScreen({
             style={{
               backgroundColor: designTokens.color.canvas,
               paddingHorizontal: designTokens.space.pageGutter,
-              paddingTop: designTokens.space.sectionGap,
+              paddingTop: tab === 'about' ? designTokens.space.authorHeaderBottom : designTokens.space.sectionGap,
               gap: designTokens.space.sectionGap,
             }}
           >
             {tab === 'about' ? (
-              <View style={{ gap: designTokens.space.x4 }}>
-                <AppText role="body">{author.shortDescription}</AppText>
-                {author.achievements.map((item) => (
-                  <AppText key={item.id} role="bodySmall" tone="secondary">
-                    {item.body}
-                  </AppText>
-                ))}
-              </View>
+              <AuthorAbout author={author} />
             ) : works.length === 0 ? (
               <PageState title="У автора пока нет опубликованных работ" />
             ) : (
@@ -371,10 +370,12 @@ export function PublicSellerScreen({
 
 function AuthorTabButton({
   label,
+  count,
   selected,
   onPress,
 }: {
   label: string;
+  count?: number;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -386,13 +387,17 @@ function AuthorTabButton({
       preset="button"
       style={{
         paddingBottom: 4,
-        borderBottomWidth: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: designTokens.space.x1,
+        borderBottomWidth: 2,
         borderBottomColor: selected ? designTokens.color.ink : 'transparent',
       }}
     >
-      <AppText role="label" style={{ color: selected ? '#191919' : '#373737' }}>
+      <AppText role="profileTab" tone={selected ? 'default' : 'secondary'}>
         {label}
       </AppText>
+      {count !== undefined ? <AppText role="caption">{count}</AppText> : null}
     </MotionPressable>
   );
 }

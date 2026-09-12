@@ -4,6 +4,14 @@
 
 Статус: **Figma phone runtime (`DEC-085`); Pen measurements below are historical**
 
+## Author profile detail sizing
+
+Profile-specific typography lives in `packages/design-tokens`: handle 24/29,
+metadata 18/24, chips 16/23, tabs 16/19 and About headings 17/21.
+`FigmaChip` profile size uses 16px horizontal padding and a 35px total height.
+About sections use an 8px heading/body gap and 26px section gap; achievement
+images use a 266px-wide 3:4 frame with 18.82px radius, matching `621:19475`.
+
 ## Current runtime
 
 One token layer: `packages/design-tokens` `designTokens` (aliases `figmaTokens`).
