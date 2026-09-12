@@ -1,7 +1,12 @@
 # bidplace — план реализации Figma-компонентов
 
 Последнее обновление: 2026-09-11
-Статус: **Active; C0 complete; C2 dock stacking corrected**
+Статус: **Historical component inventory; remaining execution uses the 2026-09-12 handoff pack**
+
+Актуальные узкие задачи и правила визуальной приёмки:
+[figma finish](../tasks/2026-09-12-figma-finish/00-INDEX.md).
+Старые checkbox ниже не являются доказательством отсутствующего компонента: сначала
+проверять текущий код и последние записи в design/product status.
 
 ## 1. Цель и граница
 
@@ -302,7 +307,15 @@ Do not guess and stop only the affected component when one of these is required:
 
 ## 6. Resume protocol
 
-After each component package, update its checkbox/status here and add one short
-entry to `docs/design/04-DESIGN-STATUS.md`. A new task resumes from the first
-unchecked package, reads the listed node IDs, and does not reopen completed
-screen composition or POST_MVP scope.
+Use `docs/tasks/2026-09-12-figma-finish/00-INDEX.md` for the active task order.
+Before resuming, inspect current code and the latest status entries; historical
+checkboxes below are not an instruction to recreate existing components.
+Update design/product status after each bounded task and keep POST_MVP excluded.
+
+
+### 2026-09-12 — Work masters delivered
+
+WorkGallery, FigmaTabs and WorkFactsList are now used by ProductScreen.
+390px real-data composition and keyboard tabs checked; the full multi-image,
+responsive and state visual matrix remains Partial. Shared ShareSheet is already
+used by work and author; saved PNG acceptance remains Needs verification.
