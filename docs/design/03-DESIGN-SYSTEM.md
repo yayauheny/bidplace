@@ -10,11 +10,11 @@
 actions opt into large, matching exported node `597:19053`. Author Instagram
 uses the Hugeicons Instagram glyph through `FigmaIcon`, not a camera symbol.
 
-## Author share sheet
+## Public share sheet
 
 `AppDialog` supports a bottom sheet presentation, capped at the 390px phone
 width, with 20px top corners and the existing focus/dismissal behavior.
-The modal token is 50, above the web dock layer 40. `AuthorShare` uses a 164px
+The modal token is 50, above the web dock layer 40. `ShareSheet` uses a 164px
 QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
 
 ## Author profile detail sizing
@@ -393,3 +393,6 @@ the protected `.pen` file is historical and unused at runtime.
 
 Only the focused route renders its dock (`AppShell` uses Expo Router
 `useIsFocused`); retained stack screens must not leave body portals mounted.
+
+Shared `ShareSheet` renders real PNG QR for validated public author/work paths.
+It uses the 50% modal dimmer, large buttons and AppDialog dismissal/focus behavior.

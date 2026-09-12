@@ -186,6 +186,10 @@ identity `874:5591`.
 
 ### C5 — creator profile components
 
+Status 2026-09-12: creator header/about/socials and shared web ShareSheet are
+implemented; compact scrolled header and full visual acceptance remain open.
+ShareSheet now serves Author and Work, uses validated paths, PNG and HTTP copy.
+
 Источники: creator about/works/default/scrolled packages, share sheet
 `526:13756`, achievements `742:20510`.
 

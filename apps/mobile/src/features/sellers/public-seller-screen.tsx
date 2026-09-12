@@ -276,7 +276,7 @@ export function PublicSellerScreen({
                     ) : null}
                   </FigmaGlassSurface>
                 ) : null}
-                <AuthorShare sharePath={author.sharePath} slug={author.slug} />
+                <AuthorShare sharePath={author.sharePath} />
               </View>
             </View>
           </View>

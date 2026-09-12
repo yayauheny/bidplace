@@ -30,3 +30,5 @@ export {
   figmaUnusedDockVariantIds,
 } from './floating-dock';
 export { getWorkCoverOverlay } from './work-cover-fields';
+
+export { ShareSheet } from './ShareSheet';

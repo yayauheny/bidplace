@@ -100,7 +100,7 @@ export function AppDialog({
           style={{
             position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
-            backgroundColor: designTokens.color.overlay,
+            backgroundColor: presentation === 'sheet' ? designTokens.color.modalDimmer : designTokens.color.overlay,
             zIndex: designTokens.layer.modal,
           }}
         />

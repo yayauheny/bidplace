@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, type Href } from 'expo-router';
-import {
-  Platform,
-  ScrollView,
-  Share,
-  View,
-} from 'react-native';
-import * as ExpoLinking from 'expo-linking';
+import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -24,7 +18,7 @@ import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
-import { canonicalShareUrl } from '../../lib/canonical-share-url';
+import { ShareSheet } from '../../components/figma/ShareSheet';
 import { toProductScreenModel } from './portfolio-work-adapter';
 import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
 
@@ -32,15 +26,9 @@ type DetailItem = { label: string; value: string };
 
 export { PAYMENT_DELIVERY_STUB };
 
-export function ProductScreen({
-  publicId,
-}: {
-  publicId: string;
-}) {
+export function ProductScreen({ publicId }: { publicId: string }) {
   const api = useApiClient();
-  const [shareState, setShareState] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  );
+  const [shareOpen, setShareOpen] = useState(false);
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
     queryFn: () => api.portfolio.getWork(publicId),
@@ -52,55 +40,6 @@ export function ProductScreen({
     sellerProfileId: query.data?.author.id,
     enabled: Boolean(query.data),
   });
-
-  const shareProduct = async () => {
-    if (!query.data) {
-      return;
-    }
-    const productUrl = canonicalShareUrl(
-      query.data.work.sharePath,
-      undefined,
-      ExpoLinking.createURL,
-    );
-
-    try {
-      if (Platform.OS === 'web') {
-        const shareNavigator = navigator as Navigator & {
-          share?: (data: { url: string }) => Promise<void>;
-        };
-        if (shareNavigator.share) {
-          await shareNavigator.share({ url: productUrl });
-        } else {
-          let copied = false;
-          if (navigator.clipboard) {
-            try {
-              await navigator.clipboard.writeText(productUrl);
-              copied = true;
-            } catch {
-              copied = false;
-            }
-          }
-          if (!copied) {
-            const input = document.createElement('textarea');
-            input.value = productUrl;
-            input.setAttribute('readonly', '');
-            input.style.position = 'fixed';
-            input.style.opacity = '0';
-            document.body.appendChild(input);
-            input.select();
-            copied = document.execCommand('copy');
-            input.remove();
-          }
-          if (!copied) throw new Error('Sharing is unavailable');
-        }
-      } else {
-        await Share.share({ message: productUrl });
-      }
-      setShareState('success');
-    } catch {
-      setShareState('error');
-    }
-  };
 
   if (query.isLoading) {
     return (
@@ -219,7 +158,7 @@ export function ProductScreen({
             <MotionPressable
               accessibilityRole="button"
               accessibilityLabel="Поделиться работой"
-              onPress={() => void shareProduct()}
+              onPress={() => setShareOpen(true)}
               preset="button"
               style={{
                 minHeight: designTokens.size.touch,
@@ -233,13 +172,7 @@ export function ProductScreen({
               }}
             >
               <FigmaIcon name="copy" />
-              <AppText role="button">
-                {shareState === 'success'
-                  ? 'Ссылка скопирована'
-                  : shareState === 'error'
-                    ? 'Не удалось поделиться'
-                    : 'Поделиться'}
-              </AppText>
+              <AppText role="button">Поделиться</AppText>
             </MotionPressable>
           </View>
           {relatedWorks.length > 0 ? (
@@ -250,6 +183,11 @@ export function ProductScreen({
           ) : null}
         </View>
       </ScrollView>
+      <ShareSheet
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        sharePath={query.data.work.sharePath}
+      />
     </AppShell>
   );
 }

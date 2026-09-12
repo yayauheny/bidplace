@@ -1,5 +1,16 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-12 — Shared public ShareSheet
+
+- `Implemented` on web: `components/figma/ShareSheet.tsx` replaces separate
+  author/work share flows. Paths are validated against public contract schemas;
+  QR preview/download is PNG, filenames are derived from the validated path,
+  temporary object URLs are revoked, and HTTP clipboard fallback reports failure.
+  Sheet dimmer now uses the existing 50% Figma token.
+- Checks: mobile typecheck, targeted lint, 11 focused tests, Expo web export;
+  browser confirmed Work sharePath and PNG preview. Embedded-browser download
+  events remain unavailable, so saved-file acceptance is `Needs verification`.
+
 ## 2026-09-12 — Author visual polish
 
 - `Implemented`: `CreatorSocialLink` uses the Hugeicons Instagram glyph,
