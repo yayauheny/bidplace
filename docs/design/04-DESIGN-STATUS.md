@@ -1,5 +1,19 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-12 — Work page composition
+
+- `Implemented` on web: `product-screen.tsx` now composes shared `WorkGallery`,
+  `FigmaTabs`, and `WorkFactsList`: 3:4 gallery with 20px bottom corners,
+  20/24 title, optional Story tab, 14/20 facts, and related work cards.
+  Public API data, author navigation and the RFC payment/delivery stub remain
+  authoritative; no commerce controls or author cards were added to related works.
+- Checks: mobile typecheck, targeted ESLint, five focused tests and Expo web
+  export pass. Browser verified the 390px work page and keyboard tab navigation
+  with URL state. CSS tab line-height is explicitly expressed in pixels.
+- Full screen parity is `Partial`: multi-image gallery, missing-story browser
+  states and the complete responsive/accessibility matrix still need visual
+  acceptance. Local public samples have one image and populated stories.
+
 ## 2026-09-12 — Shared public ShareSheet
 
 - `Implemented` on web: `components/figma/ShareSheet.tsx` replaces separate

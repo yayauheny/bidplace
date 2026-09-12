@@ -32,3 +32,7 @@ export {
 export { getWorkCoverOverlay } from './work-cover-fields';
 
 export { ShareSheet } from './ShareSheet';
+
+export { FigmaTabs } from './FigmaTabs';
+export { WorkGallery } from './WorkGallery';
+export { WorkFactsList } from './WorkFactsList';

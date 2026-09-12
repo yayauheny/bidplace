@@ -133,6 +133,7 @@ export const designTokens = {
     social: 30,
     achievement: 18.82,
     shareSheet: 20,
+    workGallery: 20,
     statusDot: 20,
   },
   size: {
@@ -310,6 +311,10 @@ export const designTokens = {
       fontSize: 18,
       lineHeight: 20,
       fontWeight: '600' as const,
+    },
+    workTitle: {
+      fontFamily: 'Inter_600SemiBold', fontSize: 20, lineHeight: 24,
+      letterSpacing: -0.4, fontWeight: '600' as const,
     },
     profileHandle: {
       fontFamily: 'Inter_600SemiBold', fontSize: 24, lineHeight: 29,

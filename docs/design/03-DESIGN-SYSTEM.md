@@ -396,3 +396,15 @@ Only the focused route renders its dock (`AppShell` uses Expo Router
 
 Shared `ShareSheet` renders real PNG QR for validated public author/work paths.
 It uses the 50% modal dimmer, large buttons and AppDialog dismissal/focus behavior.
+
+
+### Work page masters (2026-09-12)
+
+`WorkGallery` owns portrait paging, image fallback, page indicators and accessible
+previous/next controls. `radius.workGallery` is 20px on the bottom corners only.
+`FigmaTabs` owns the shared 16/19 tab geometry and keyboard navigation on web;
+its DOM line-height must use px, unlike React Native's numeric line-height.
+`WorkFactsList` renders existing public metadata with 14/20 typography and 20px
+row gaps. `typography.workTitle` is Inter 600, 20/24, tracking -0.4px.
+Sources: work nodes `745:21209` and `745:20634`. Screens retain queries and URL
+state. These masters do not implement auction prices, bids or delivery behavior.
