@@ -1,9 +1,14 @@
 import { useLocalSearchParams } from 'expo-router';
-import type { PortfolioAuthorsQuery } from '@bidplace/contracts';
+
 import { PublicAuthorsScreen } from '../../features/sellers/public-authors-screen';
+import { toPortfolioAuthorsRouteState } from '../../features/sellers/portfolio-authors-query';
 
 export default function AuthorsRoute() {
-  const params = useLocalSearchParams<{ sort?: PortfolioAuthorsQuery['sort'] }>();
-  const sort = params.sort === 'name' ? 'name' : 'added';
-  return <PublicAuthorsScreen sort={sort} />;
+  const params = useLocalSearchParams<{
+    q?: string | string[];
+    tag?: string | string[];
+    city?: string | string[];
+    sort?: string | string[];
+  }>();
+  return <PublicAuthorsScreen state={toPortfolioAuthorsRouteState(params)} />;
 }
