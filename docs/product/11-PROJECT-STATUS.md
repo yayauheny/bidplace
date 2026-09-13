@@ -1,5 +1,27 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Figma comparison fixtures (data only)
+
+- `Implemented`: local/test-only demo author `vex` (`Илья Васильев`) carries
+  exact Creator/Home/Work-card texts and copied handoff rasters for visual
+  comparison inputs. Public IDs `figVexWk001`–`figVexWk004`. Home
+  `curatorSelection` is pointed at `figVexWk001`. Commerce leftovers (prices,
+  timers, bids, sale badges) are not stored.
+- `Implemented`: `pnpm db:sync-figma-comparison` is an idempotent targeted
+  upsert of that slug and those public IDs. It refuses the shared `bidplace`
+  database and production-like env, prints the disposable database name
+  before writes, and does not `deleteMany` Users, Sellers, or Products.
+  Ordinary `pnpm db:seed` is unchanged and still destructive.
+- This does **not** claim visual parity with Figma. It only makes the public
+  comparison inputs identical. Evidence:
+  `packages/database/prisma/fixtures/figma-comparison/`,
+  `sync-figma-comparison-fixture.js`,
+  `apps/api/test/integration/figma-comparison-fixture.integration.spec.ts`.
+- Dirty Anna portraits/copy from the `fix/work-final` working tree are
+  archived as non-parity candidates in
+  `packages/database/prisma/fixtures/non-parity-anna-candidates/` and are
+  not mixed into `vex`.
+
 ## 2026-09-13 — Figma stabilization matrix complete
 
 - `Implemented`: the Chromium + WebKit stabilization matrix is green in one
