@@ -6,7 +6,10 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
 import { coverChipRowStyle } from './cover-card-style';
-import { getAuthorCoverContent, type AuthorCoverInput } from './author-cover-fields';
+import {
+  getAuthorCoverContent,
+  type AuthorCoverInput,
+} from './author-cover-fields';
 
 export function AuthorIdentity({
   fullName,
@@ -62,7 +65,7 @@ export function AuthorIdentity({
           <View style={coverChipRowStyle()}>
             {content.tags.map((tag) => (
               <View key={tag} style={{ flexShrink: 0 }}>
-                <FigmaChip label={tag} tone="onLight" />
+                <FigmaChip label={tag} tone="tinted" />
               </View>
             ))}
           </View>

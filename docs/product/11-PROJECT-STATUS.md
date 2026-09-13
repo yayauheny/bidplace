@@ -1,3 +1,14 @@
+## 2026-09-13 — CORS origin allowlist review
+
+- `Corrected`: `CORS_ORIGIN` accepts only `http`/`https` browser origins
+  (scheme + host[:port]). Paths, query, hash, userinfo, and other schemes fail
+  env parse. A trailing `/` is stored as `url.origin` so it matches the browser
+  `Origin` header. Evidence: `canonicalizeCorsOrigin` in
+  `apps/api/src/core/config/env.ts`, `apps/api/src/core/config/env.spec.ts`.
+- Password-reset email fallback still uses the first allowlist origin when
+  `PASSWORD_RESET_URL_BASE` is unset; production already requires that base.
+  Session cookies and `credentials: true` are unchanged.
+
 ## 2026-09-13 — Author achievement presentation
 
 `Implemented`: `AuthorAbout` renders existing achievement photos or a text-only card, with UTC month/year via `achievement-date.ts` (2 focused tests). No data/API/RFC contract changes. Mobile typecheck, targeted lint, token build and web export pass. Full author visual/accessibility matrix remains `Partial`. Next scope: `docs/tasks/2026-09-12-figma-finish/CONTINUE.md`.
@@ -14,6 +25,18 @@
   `apps/mobile/e2e/product-layout.spec.ts`.
 
 # bidplace — текущий статус проекта
+
+## 2026-09-13 — Cover cards hug-frost, chip geometry, tracking
+
+- `Implemented`: `CoverFrost` fills a text-hugging overlay zone in
+  `WorkCoverCard`/`AuthorCoverCard` (web and native); compact `FigmaChip` is
+  24px with `chipX` 9 / `chipY` 3; cover typography tokens carry Figma tracking;
+  `AuthorIdentity` uses the `tinted` chip tone. Removed unused
+  `workFrostHeight`/`authorTopFrostHeight`/`authorBottomFrostHeight` tokens.
+  Tests: `cover-frost-style.spec.ts`, `figma-chip-style.spec.ts`,
+  `visual-token.spec.ts`, `e2e/figma-cover-frost.spec.ts` (zone heights 78/56/76).
+  Mobile typecheck, ESLint and vitest pass; the e2e spec is updated but was not
+  run in this session (`Needs verification`).
 
 ## 2026-09-13 — Author avatar crop and works gap
 

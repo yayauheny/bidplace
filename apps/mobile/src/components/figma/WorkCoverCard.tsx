@@ -13,6 +13,7 @@ import {
   coverArtworkFrameStyle,
   coverCardFrameStyle,
   coverChipRowStyle,
+  coverFrostZoneStyle,
   coverOverlayPadStyle,
 } from './cover-card-style';
 import {
@@ -66,29 +67,31 @@ export function WorkCoverCard({
                 contentFit="cover"
               />
             </View>
-            <CoverFrost imageUrl={imageUrl} placement="workBottom" />
             <View
               pointerEvents="none"
               style={{ flex: 1, justifyContent: 'flex-end' }}
             >
-              <View style={coverOverlayPadStyle()}>
-                <Text
-                  numberOfLines={2}
-                  style={[
-                    {
-                      color: figmaTokens.color.white,
-                    },
-                    figmaTokens.typography.coverTitle,
-                  ]}
-                >
-                  {overlay.title}
-                </Text>
-                <View style={coverChipRowStyle()}>
-                  <View style={{ flexShrink: 0 }}>
-                    <FigmaChip
-                      label={`@${overlay.authorSlug}`}
-                      tone="onDark"
-                    />
+              <View style={coverFrostZoneStyle()}>
+                <CoverFrost imageUrl={imageUrl} placement="workBottom" />
+                <View style={coverOverlayPadStyle()}>
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      {
+                        color: figmaTokens.color.white,
+                      },
+                      figmaTokens.typography.coverTitle,
+                    ]}
+                  >
+                    {overlay.title}
+                  </Text>
+                  <View style={coverChipRowStyle()}>
+                    <View style={{ flexShrink: 0 }}>
+                      <FigmaChip
+                        label={`@${overlay.authorSlug}`}
+                        tone="onDark"
+                      />
+                    </View>
                   </View>
                 </View>
               </View>

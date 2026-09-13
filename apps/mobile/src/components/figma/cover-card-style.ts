@@ -48,14 +48,20 @@ export function coverChipRowStyle(): ViewStyle {
   };
 }
 
-export function authorCoverNameZoneStyle(): ViewStyle {
+// Overlay zone: hugs its text; `CoverFrost` fills it absolutely.
+export function coverFrostZoneStyle(): ViewStyle {
   return {
     alignSelf: 'stretch',
-    height: figmaTokens.size.authorTopFrostHeight,
+    position: 'relative',
+  };
+}
+
+// Figma `874:5541`: 20/12/12 padding around the 24px name = 56 total.
+export function authorCoverNameZoneStyle(): ViewStyle {
+  return {
     paddingTop: figmaTokens.space.x5,
     paddingBottom: figmaTokens.space.coverPad,
     paddingHorizontal: figmaTokens.space.coverPad,
-    justifyContent: 'center',
     alignItems: 'center',
   };
 }

@@ -26,7 +26,12 @@ QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
 Profile-specific typography lives in `packages/design-tokens`: handle 24/29,
 metadata 18/24, chips 16/23, tabs 16/19 and About headings 17/21.
 `FigmaChip` profile size uses 16px horizontal padding and a 35px total height.
-The `onGlass` tone is 80% white with the shared `glassBorder`; the `work` size
+Compact chips are 24px tall: Figma pads 10/4 with an inside 1px stroke, so the
+tokens are `chipX` 9 / `chipY` 3 plus the 1px border. Cover typography carries
+the Figma tracking: `coverTitle` -0.36, `authorName` -0.66, `authorHandle`
+-0.18, `chip` -0.13, `identityRowHandle` -0.24. The `tinted` tone reuses the
+cover chip fill (black 15% + `chipOutline`) with ink text for `AuthorIdentity`
+(`874:5596`). The `onGlass` tone is 80% white with the shared `glassBorder`; the `work` size
 (work page `745:21232`) is 14/17 medium `textSubdued` text, 12/5 padding and a
 29px total height with a 6px chip gap. The work author line uses `workAuthor`
 16/19 regular in `textSubdued` (#565656), matching `745:21229`.
@@ -49,10 +54,14 @@ production masters: `FigmaButton`, `FigmaTextField`, `FigmaChip`,
 `FigmaChoiceChip`, `FigmaIcon`, `FigmaIconButton`, `FigmaGlassSurface`,
 `FigmaImagePlaceholder`, `OverlayDimmer`, `WorkCoverCard`, `AuthorCoverCard`,
 `AuthorIdentity`, `CoverFrost`, `AuthorAtmosphere`, `FloatingDock`. Cover
-overlays frost the artwork instead of painting an opaque gradient. Frost height
-is taken from the Figma overlay frames, not from overlay text: work bottom
-125/352 (`874:5459`), author top 56/352 (`874:5541`), author bottom 77/352
-(`874:5543`). Overlay frames have no corner radius; the card clips 24/28.
+overlays frost the artwork instead of painting an opaque gradient. The frost
+fills the overlay zone, and the zone hugs its text exactly like the Figma
+auto-layout frames: `874:5459` is 125 with a two-line title plus price,
+`745:20736` is 102 with a one-line title, and `621:19888` stays 124 on the 366
+card. The frost therefore never scales with the card width; without a price row
+the runtime zones are 12 + title + 8 + 24 + 12 (work) and 20 + 24 + 12 = 56 /
+12 + 20 + 8 + 24 + 12 = 76 (author). Overlay frames have no visible corner
+radius; the card clips 24/28.
 Work cards keep title and `@author` at the bottom and omit price. Author cards
 put the name in the top zone and handle/tags in the bottom zone. On web,
 `CoverFrost` samples the sharp artwork once through one

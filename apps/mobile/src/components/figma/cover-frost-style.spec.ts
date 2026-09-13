@@ -10,18 +10,20 @@ import {
 
 describe('Cover frost', () => {
   it.each([
-    ['workBottom', 125, 30, false],
-    ['authorBottom', 77, 30, false],
-    ['authorTop', 56, 20, true],
+    ['workBottom', 30, false, figmaTokens.color.overlay],
+    ['authorBottom', 30, false, figmaTokens.color.overlay],
+    ['authorTop', 20, true, figmaTokens.color.overlayScrim],
   ] as const)(
-    'preserves the Figma region for %s independently of text',
-    (placement, height, blur, top) => {
-      expect(coverFrostSpec(placement)).toMatchObject({
-        heightPercent: (height / 352) * 100,
+    'fills the text-hugging overlay zone for %s without a fixed height',
+    (placement, blur, top, gradientEnd) => {
+      const spec = coverFrostSpec(placement);
+      expect(spec).toMatchObject({
         runtimeBlur: blur,
         top,
+        gradientEnd,
         artworkAspectRatio: 0.75,
       });
+      expect(spec).not.toHaveProperty('heightPercent');
     },
   );
 

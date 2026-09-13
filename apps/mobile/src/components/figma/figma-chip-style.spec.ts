@@ -26,6 +26,19 @@ describe('Figma chip styles', () => {
     expect(figmaChipTextColor('onDark')).toBe(figmaTokens.color.white);
   });
 
+  it('tints identity chips like cover chips but keeps ink text', () => {
+    expect(figmaChipStyle('tinted')).toEqual(figmaChipStyle('onDark'));
+    expect(figmaChipTextColor('tinted')).toBe(figmaTokens.color.ink);
+  });
+
+  it('reserves the last Figma padding pixel for the 1px border', () => {
+    expect(figmaChipStyle('onDark')).toMatchObject({
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+      borderWidth: 1,
+    });
+  });
+
   it('uses 80% white glass with the shared glass border on author atmosphere', () => {
     expect(figmaChipStyle('onGlass')).toMatchObject({
       backgroundColor: figmaTokens.color.glassStrong,

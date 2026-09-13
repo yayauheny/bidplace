@@ -2,17 +2,14 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 export type CoverFrostPlacement = 'workBottom' | 'authorBottom' | 'authorTop';
 
+// The frost fills the overlay zone that hugs its text (Figma auto-layout:
+// `874:5459` 125 with a two-line title and price, `745:20736` 102 with one
+// line, `621:19888` 124 on the 366 card). It never scales with the card.
 export function coverFrostSpec(placement: CoverFrostPlacement) {
   const top = placement === 'authorTop';
-  const height = top
-    ? figmaTokens.size.authorTopFrostHeight
-    : placement === 'workBottom'
-      ? figmaTokens.size.workFrostHeight
-      : figmaTokens.size.authorBottomFrostHeight;
 
   return {
     top,
-    heightPercent: (height / figmaTokens.size.coverHeight) * 100,
     runtimeBlur: top
       ? figmaTokens.blur.authorTopOverlay
       : figmaTokens.blur.overlay,

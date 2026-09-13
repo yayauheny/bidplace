@@ -20,14 +20,7 @@ export function CoverFrost({
       importantForAccessibility="no-hide-descendants"
       pointerEvents="none"
       testID="figma-cover-frost"
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        [spec.top ? 'top' : 'bottom']: 0,
-        height: `${spec.heightPercent}%`,
-        overflow: 'hidden',
-      }}
+      style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}
     >
       <Image
         accessible={false}

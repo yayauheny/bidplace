@@ -14,6 +14,7 @@ import {
   coverArtworkFrameStyle,
   coverCardFrameStyle,
   coverChipRowStyle,
+  coverFrostZoneStyle,
   coverOverlayPadStyle,
 } from './cover-card-style';
 import {
@@ -64,41 +65,45 @@ export function AuthorCoverCard({
                 contentFit="cover"
               />
             </View>
-            <CoverFrost imageUrl={imageUrl} placement="authorTop" />
-            <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
-            <View pointerEvents="none" style={authorCoverNameZoneStyle()}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  {
-                    color: figmaTokens.color.white,
-                    textAlign: 'center',
-                  },
-                  figmaTokens.typography.authorName,
-                ]}
-              >
-                {content.fullName}
-              </Text>
+            <View pointerEvents="none" style={coverFrostZoneStyle()}>
+              <CoverFrost imageUrl={imageUrl} placement="authorTop" />
+              <View style={authorCoverNameZoneStyle()}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    {
+                      color: figmaTokens.color.white,
+                      textAlign: 'center',
+                    },
+                    figmaTokens.typography.authorName,
+                  ]}
+                >
+                  {content.fullName}
+                </Text>
+              </View>
             </View>
-            <View pointerEvents="none" style={coverOverlayPadStyle()}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  { color: figmaTokens.color.white },
-                  figmaTokens.typography.authorHandle,
-                ]}
-              >
-                {content.handle}
-              </Text>
-              {content.tags.length > 0 ? (
-                <View style={coverChipRowStyle()}>
-                  {content.tags.map((tag) => (
-                    <View key={tag} style={{ flexShrink: 0 }}>
-                      <FigmaChip label={tag} tone="onDark" />
-                    </View>
-                  ))}
-                </View>
-              ) : null}
+            <View pointerEvents="none" style={coverFrostZoneStyle()}>
+              <CoverFrost imageUrl={imageUrl} placement="authorBottom" />
+              <View style={coverOverlayPadStyle()}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    { color: figmaTokens.color.white },
+                    figmaTokens.typography.authorHandle,
+                  ]}
+                >
+                  {content.handle}
+                </Text>
+                {content.tags.length > 0 ? (
+                  <View style={coverChipRowStyle()}>
+                    {content.tags.map((tag) => (
+                      <View key={tag} style={{ flexShrink: 0 }}>
+                        <FigmaChip label={tag} tone="onDark" />
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
             </View>
           </>
         )}

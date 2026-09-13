@@ -51,9 +51,6 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.radius.button).toBe(80);
     expect(designTokens.radius.cover).toBe(24);
     expect(designTokens.size.coverWidth).toBe(264);
-    expect(designTokens.size.workFrostHeight).toBe(125);
-    expect(designTokens.size.authorTopFrostHeight).toBe(56);
-    expect(designTokens.size.authorBottomFrostHeight).toBe(77);
     expect(designTokens.blur.authorTopOverlay).toBe(20);
     expect(designTokens.size.icon).toBe(18);
     expect(designTokens.layout.phoneWidth).toBe(390);

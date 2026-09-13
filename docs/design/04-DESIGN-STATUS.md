@@ -4,6 +4,22 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Cover cards: text-hugging frost, 24px chips, tracking
+
+- `Implemented`: `CoverFrost` now fills a zone that hugs the overlay text
+  (`coverFrostZoneStyle`) instead of a fixed 125/56/77 share of the card, which
+  matches the Figma auto-layout frames (`874:5459` 125, `745:20736` 102,
+  `621:19888` 124 on 366) and stops the frost from growing to 173px on the 366
+  author-page card. Compact chips are 24px (`chipX` 9 / `chipY` 3 + 1px border),
+  cover typography has the Figma tracking, `AuthorIdentity` chips use the new
+  `tinted` tone (`874:5596`).
+- Evidence on the Figma sample photo (Dalí, 264 px): runtime title 18/22 −0.36,
+  chip 24 h, author card top 56 / bottom 76, chip «Керамика» 83.2×24 against
+  Figma 83×24. Files: `artifacts/figma-qa/04-cards/04-cards-runtime-*.png`.
+- Remaining `Partial`: gradient chip stroke is a flat 16% white border; frost on
+  native is still the retained `expo-image` duplicate; extreme data cases (C5)
+  are not screenshot-verified.
+
 ## 2026-09-13 — Author avatar crop and works gap
 
 - `Implemented`: the 112px hero avatar crops from the top (`contentPosition="top"`,

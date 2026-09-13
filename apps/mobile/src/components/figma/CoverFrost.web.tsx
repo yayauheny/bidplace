@@ -32,10 +32,7 @@ export function CoverFrost({
       style={{
         position: 'absolute',
         pointerEvents: 'none',
-        left: 0,
-        right: 0,
-        [spec.top ? 'top' : 'bottom']: 0,
-        height: `${spec.heightPercent}%`,
+        inset: 0,
       }}
     >
       <div

@@ -119,18 +119,29 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
     pointerEvents: 'none',
     borderRadius: '0px',
   });
-  expect(workMetrics.heightRatio).toBeCloseTo(125 / 352, 2);
-  expect(authorTopMetrics.heightRatio).toBeCloseTo(56 / 352, 2);
-  expect(authorBottomMetrics.heightRatio).toBeCloseTo(77 / 352, 2);
+  // Frost hugs the overlay text like the Figma auto-layout frames: one-line
+  // title + chip = 12 + 22 + 8 + 24 + 12; author top = 20 + 24 + 12.
+  expect(workMetrics.fillsZone).toBe(true);
+  expect(authorTopMetrics.fillsZone).toBe(true);
+  expect(authorBottomMetrics.fillsZone).toBe(true);
+  expect(workMetrics.zoneHeight).toBe(78);
+  expect(authorTopMetrics.zoneHeight).toBe(56);
+  expect(authorBottomMetrics.zoneHeight).toBe(76);
   expect(workMetrics.outerBlurPx).toBeCloseTo(30, 1);
   expect(authorTopMetrics.outerBlurPx).toBeCloseTo(20, 1);
   expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(30, 1);
   expect(workMetrics.maskImage).toContain('linear-gradient');
 
-  const workCard = workFrost.locator('..');
-  const authorCard = authorTop.locator('..');
-  expect(await workCard.boundingBox()).toMatchObject({ width: 366, height: 488 });
-  expect(await authorCard.boundingBox()).toMatchObject({ width: 366, height: 488 });
+  const workCard = page.locator('a[href^="/product/"]').first();
+  const authorCard = page.locator('a[href^="/seller/"]').first();
+  expect(await workCard.boundingBox()).toMatchObject({
+    width: 366,
+    height: 488,
+  });
+  expect(await authorCard.boundingBox()).toMatchObject({
+    width: 366,
+    height: 488,
+  });
   await expect(workCard).toHaveCSS('border-radius', '24px');
   await expect(authorCard).toHaveCSS('border-radius', '28px');
 
@@ -154,12 +165,12 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
 async function readFrost(locator: Locator) {
   return locator.evaluate((element) => {
     const style = getComputedStyle(element);
-    const card = element.parentElement;
-    if (!card) {
-      throw new Error('Cover frost must sit on the card');
+    const zone = element.parentElement;
+    if (!zone) {
+      throw new Error('Cover frost must sit inside an overlay zone');
     }
     const frostBox = element.getBoundingClientRect();
-    const cardBox = card.getBoundingClientRect();
+    const zoneBox = zone.getBoundingClientRect();
     const blurLayers = [...element.children].filter((child) =>
       getComputedStyle(child).backdropFilter.startsWith('blur('),
     );
@@ -175,7 +186,11 @@ async function readFrost(locator: Locator) {
       imageCount: element.querySelectorAll('img').length,
       pointerEvents: style.pointerEvents,
       borderRadius: style.borderRadius,
-      heightRatio: frostBox.height / cardBox.height,
+      fillsZone:
+        Math.abs(frostBox.height - zoneBox.height) < 0.5 &&
+        Math.abs(frostBox.width - zoneBox.width) < 0.5 &&
+        Math.abs(frostBox.top - zoneBox.top) < 0.5,
+      zoneHeight: Math.round(zoneBox.height),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
       maskImage: getComputedStyle(blurLayers[0]!).maskImage,
     };

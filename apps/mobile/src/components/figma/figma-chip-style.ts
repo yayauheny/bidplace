@@ -1,6 +1,7 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
-export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass';
+// `tinted`: the cover chip fill with ink text on a light surface (`874:5596`).
+export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass' | 'tinted';
 export type FigmaChipSize = 'compact' | 'profile' | 'work';
 
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
@@ -17,7 +18,7 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
     };
   }
 
-  if (tone === 'onDark') {
+  if (tone === 'onDark' || tone === 'tinted') {
     return {
       paddingHorizontal: figmaTokens.space.chipX,
       paddingVertical: figmaTokens.space.chipY,
