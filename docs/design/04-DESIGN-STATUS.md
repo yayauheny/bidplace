@@ -4,6 +4,22 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Work page spacing, chips and «Смотреть все»
+
+- `Implemented` against `745:20634` / `745:21209` by DOM measurement at 390:
+  share capsule 20px from the right edge; author line 16/19 in #565656 with an
+  18px arrow; title block → chips 12px; work chips 80% white, glass border,
+  14/17, 29px tall, 6px gap; tabs → panel 24px; panel bottom padding 20px so
+  the related heading sits 60px below the last text; related row bleeds to
+  the right edge; outline «Смотреть все» (44px, right arrow) opens the author.
+  Evidence: `artifacts/figma-qa/03-work/work-after-top-390.png`,
+  `work-after-related-390.png`; gap table in
+  `docs/tasks/2026-09-12-figma-finish/14-COMPLETION-MAP.md` §3.1.
+- Gallery arrows are a deliberate keyboard/pointer addition absent from the
+  static Figma frame (W16); not counted as a mismatch.
+- Whole-screen status stays `Partial`: error/broken-media captures, 200% zoom,
+  reduced motion, Back/Forward tab restoration remain open.
+
 ## 2026-09-13 — Work page heading semantics and visual evidence
 
 - `Implemented`: the Work title remains the page `h1`; «Другие работы автора»

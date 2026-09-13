@@ -83,7 +83,7 @@ export function WorkGallery({
             style={{
               position: 'absolute',
               top: designTokens.space.x3,
-              right: designTokens.space.x3,
+              right: designTokens.space.x5,
             }}
           >
             {action}

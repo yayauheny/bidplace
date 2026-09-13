@@ -26,6 +26,10 @@ QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
 Profile-specific typography lives in `packages/design-tokens`: handle 24/29,
 metadata 18/24, chips 16/23, tabs 16/19 and About headings 17/21.
 `FigmaChip` profile size uses 16px horizontal padding and a 35px total height.
+The `onGlass` tone is 80% white with the shared `glassBorder`; the `work` size
+(work page `745:21232`) is 14/17 medium `textSubdued` text, 12/5 padding and a
+29px total height with a 6px chip gap. The work author line uses `workAuthor`
+16/19 regular in `textSubdued` (#565656), matching `745:21229`.
 About sections use an 8px heading/body gap and 26px section gap; achievement
 images use a 266px-wide 3:4 frame with 18.82px radius, matching `621:19475`.
 
@@ -374,7 +378,8 @@ Shared masters:
 - `FigmaIcon` — Hugeicons stroke-rounded, Figma layer names;
 - `FigmaButton` — solid / outline / ghost / muted, hover / pressed / disabled;
 - `FigmaTextField` — empty, hover, filled, focus, error, success, disabled;
-- `FigmaChip` — non-interactive tags (`onLight` / `onDark`);
+- `FigmaChip` — non-interactive tags (`onLight` / `onDark` / `onGlass`; sizes
+  `compact` / `profile` / `work`);
 - `WorkCoverCard` — 264×352 cover; title, `@author` and frost only (no price,
   timer or sale-status slots in the active component);
 - `AuthorCoverCard` / `AuthorIdentity` — author photo, handle, chips;

@@ -15,6 +15,18 @@
 
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Public work Figma spacing and «Смотреть все»
+
+- `Implemented`: work page spacing, author line, work chips and related row
+  now follow `745:20634` (see `docs/design/04-DESIGN-STATUS.md`); a new outline
+  «Смотреть все» button navigates to the existing public author route. No API,
+  visibility, commerce or analytics behavior changed. Shared changes:
+  `FigmaChip` `work` size, `workAuthor`/`workChip` typography, `textSubdued`
+  colour and `workChip*` spacing tokens in `packages/design-tokens`.
+- Evidence: `artifacts/figma-qa/03-work/`, `figma-chip-style.spec.ts`. Mobile
+  typecheck, ESLint, vitest and web export pass. Work screen stays `Partial`
+  per `docs/tasks/2026-09-12-figma-finish/14-COMPLETION-MAP.md`.
+
 ## 2026-09-13 — Public work missing vs load error
 
 - `Implemented`: `resolvePublicWorkPageState` keeps a deleted or unpublished

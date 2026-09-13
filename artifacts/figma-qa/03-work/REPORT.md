@@ -11,6 +11,13 @@ Status: `Partial` visual acceptance. Source nodes: `745:21209`, `745:20634`,
 | Related heading | `745:21259` | 20/24 presentation retained; semantic level corrected to `h2` below the Work `h1`. |
 | Empty Story | RFC §11 | `seedAnna002?tab=story` removes the invalid query and opens Details without an empty tab. |
 
+Spacing pass (same day, after `917b704`), DOM-measured at 390 on `seedAnna001`:
+share capsule right edge 370 (Figma `621:19450` 370); author line 16/19 #565656
+at y 590; chips 29 px tall, gap 6, row at 621 (Figma `745:21231` formula
+558+24+8+19+12); tabs 725, panel 775 (+24), related heading 995 (+20 padding
++40 gap), cards 1039, «Смотреть все» 168×44 at 1411. Screens:
+[top after](work-after-top-390.png), [related after](work-after-related-390.png).
+
 Browser evidence:
 
 - [two-image gallery, 390](work-multi-390.png)

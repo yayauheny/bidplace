@@ -1,10 +1,11 @@
 import { Text, View } from 'react-native';
 
-import { figmaTokens } from '@bidplace/design-tokens';
-
 import {
+  figmaChipSizeStyle,
   figmaChipStyle,
   figmaChipTextColor,
+  figmaChipTypography,
+  type FigmaChipSize,
   type FigmaChipTone,
 } from './figma-chip-style';
 
@@ -15,27 +16,15 @@ export function FigmaChip({
 }: {
   label: string;
   tone?: FigmaChipTone;
-  size?: 'compact' | 'profile';
+  size?: FigmaChipSize;
 }) {
   return (
-    <View
-      style={[
-        figmaChipStyle(tone),
-        size === 'profile' && {
-          paddingHorizontal: figmaTokens.space.authorChipX,
-          backgroundColor: figmaTokens.color.glassStrong,
-          borderColor: figmaTokens.color.glassBorder,
-          paddingVertical: figmaTokens.space.authorChipY,
-        },
-      ]}
-    >
+    <View style={[figmaChipStyle(tone), figmaChipSizeStyle(size)]}>
       <Text
         numberOfLines={1}
         style={[
-          { color: figmaChipTextColor(tone) },
-          size === 'profile'
-            ? figmaTokens.typography.profileChip
-            : figmaTokens.typography.chip,
+          { color: figmaChipTextColor(tone, size) },
+          figmaChipTypography(size),
         ]}
       >
         {label}

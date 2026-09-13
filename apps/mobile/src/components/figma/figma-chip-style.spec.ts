@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
-import { figmaChipStyle, figmaChipTextColor } from './figma-chip-style';
+import {
+  figmaChipSizeStyle,
+  figmaChipStyle,
+  figmaChipTextColor,
+  figmaChipTypography,
+} from './figma-chip-style';
 
 describe('Figma chip styles', () => {
   it('uses a muted fill on light surfaces', () => {
@@ -21,11 +26,25 @@ describe('Figma chip styles', () => {
     expect(figmaChipTextColor('onDark')).toBe(figmaTokens.color.white);
   });
 
-  it('uses frosted white glass on author atmosphere', () => {
+  it('uses 80% white glass with the shared glass border on author atmosphere', () => {
     expect(figmaChipStyle('onGlass')).toMatchObject({
-      backgroundColor: figmaTokens.color.glassChip,
-      borderColor: figmaTokens.color.white,
+      backgroundColor: figmaTokens.color.glassStrong,
+      borderColor: figmaTokens.color.glassBorder,
     });
     expect(figmaChipTextColor('onGlass')).toBe(figmaTokens.color.ink);
+  });
+
+  it('renders work chips with subdued text and work paddings', () => {
+    expect(figmaChipSizeStyle('work')).toEqual({
+      paddingHorizontal: figmaTokens.space.workChipX,
+      paddingVertical: figmaTokens.space.workChipY,
+    });
+    expect(figmaChipTypography('work')).toBe(figmaTokens.typography.workChip);
+    expect(figmaChipTextColor('onGlass', 'work')).toBe(
+      figmaTokens.color.textSubdued,
+    );
+    expect(figmaChipTextColor('onGlass', 'profile')).toBe(
+      figmaTokens.color.ink,
+    );
   });
 });

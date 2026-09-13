@@ -1,6 +1,7 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
 export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass';
+export type FigmaChipSize = 'compact' | 'profile' | 'work';
 
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   if (tone === 'onGlass') {
@@ -8,9 +9,9 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
       paddingHorizontal: figmaTokens.space.chipX,
       paddingVertical: figmaTokens.space.chipY,
       borderRadius: figmaTokens.radius.chip,
-      backgroundColor: figmaTokens.color.glassChip,
+      backgroundColor: figmaTokens.color.glassStrong,
       borderWidth: 1,
-      borderColor: figmaTokens.color.white,
+      borderColor: figmaTokens.color.glassBorder,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     };
@@ -41,6 +42,33 @@ export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   };
 }
 
-export function figmaChipTextColor(tone: FigmaChipTone) {
-  return tone === 'onDark' ? figmaTokens.color.white : figmaTokens.color.ink;
+export function figmaChipSizeStyle(size: FigmaChipSize) {
+  if (size === 'profile') {
+    return {
+      paddingHorizontal: figmaTokens.space.authorChipX,
+      paddingVertical: figmaTokens.space.authorChipY,
+    };
+  }
+  if (size === 'work') {
+    return {
+      paddingHorizontal: figmaTokens.space.workChipX,
+      paddingVertical: figmaTokens.space.workChipY,
+    };
+  }
+  return {};
+}
+
+export function figmaChipTypography(size: FigmaChipSize) {
+  if (size === 'profile') return figmaTokens.typography.profileChip;
+  if (size === 'work') return figmaTokens.typography.workChip;
+  return figmaTokens.typography.chip;
+}
+
+export function figmaChipTextColor(
+  tone: FigmaChipTone,
+  size: FigmaChipSize = 'compact',
+) {
+  if (tone === 'onDark') return figmaTokens.color.white;
+  if (size === 'work') return figmaTokens.color.textSubdued;
+  return figmaTokens.color.ink;
 }

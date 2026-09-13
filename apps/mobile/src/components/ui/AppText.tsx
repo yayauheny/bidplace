@@ -5,12 +5,20 @@ import { designTokens, type TextRole } from '@bidplace/design-tokens';
 
 type AppTextProps = PropsWithChildren<Omit<TextProps, 'role'>> & {
   role?: TextRole;
-  tone?: 'default' | 'secondary' | 'muted' | 'accent' | 'danger' | 'success';
+  tone?:
+    | 'default'
+    | 'secondary'
+    | 'subdued'
+    | 'muted'
+    | 'accent'
+    | 'danger'
+    | 'success';
 };
 
 const toneColors = {
   default: designTokens.color.ink,
   secondary: designTokens.color.textSecondary,
+  subdued: designTokens.color.textSubdued,
   muted: designTokens.color.textMuted,
   accent: designTokens.color.ink,
   danger: designTokens.color.danger,
@@ -26,7 +34,11 @@ export function AppText({
   return (
     <Text
       {...props}
-      style={[designTokens.typography[role], { color: toneColors[tone] }, style]}
+      style={[
+        designTokens.typography[role],
+        { color: toneColors[tone] },
+        style,
+      ]}
     />
   );
 }

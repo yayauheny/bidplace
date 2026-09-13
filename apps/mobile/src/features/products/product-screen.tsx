@@ -9,6 +9,7 @@ import { AppText, MotionPressable, PageState } from '../../components/ui';
 import { WorkGallery } from '../../components/figma/WorkGallery';
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { WorkFactsList } from '../../components/figma/WorkFactsList';
+import { FigmaButton } from '../../components/figma/FigmaButton';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
 import { FigmaChip } from '../../components/figma/FigmaChip';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
@@ -122,7 +123,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             gap: designTokens.space.x10,
           }}
         >
-          <View style={{ gap: designTokens.space.x4 }}>
+          <View style={{ gap: designTokens.space.x3 }}>
             <View style={{ gap: designTokens.space.x2 }}>
               <AppText role="workTitle" accessibilityRole="header">
                 {work.title}
@@ -146,13 +147,16 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   }}
                 >
                   <AppText
-                    role="body"
-                    tone="secondary"
+                    role="workAuthor"
+                    tone="subdued"
                     style={{ flexShrink: 1 }}
                   >
                     {author.fullName}
                   </AppText>
-                  <FigmaIcon name="arrow-right-01" />
+                  <FigmaIcon
+                    name="arrow-right-01"
+                    color={designTokens.color.textSubdued}
+                  />
                 </MotionPressable>
               </Link>
             </View>
@@ -160,15 +164,15 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               style={{
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                gap: designTokens.space.chipGap,
+                gap: designTokens.space.workChipGap,
               }}
             >
               {chips.map((chip) => (
-                <FigmaChip key={chip} label={chip} tone="onLight" />
+                <FigmaChip key={chip} label={chip} tone="onGlass" size="work" />
               ))}
             </View>
           </View>
-          <View style={{ gap: designTokens.space.x4 }}>
+          <View style={{ gap: designTokens.space.x6 }}>
             <FigmaTabs
               tabs={workTabs(work.story)}
               value={tab}
@@ -180,6 +184,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               nativeID={panelId}
               role="tabpanel"
               aria-labelledby={`${panelId}-${tab}`}
+              style={{ paddingBottom: designTokens.space.sectionGap }}
             >
               {tab === 'story' ? (
                 <AppText role="bodySmall">{work.story}</AppText>
@@ -202,7 +207,11 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: designTokens.space.x3 }}
+                style={{ marginRight: -designTokens.space.pageGutter }}
+                contentContainerStyle={{
+                  gap: designTokens.space.x3,
+                  paddingRight: designTokens.space.pageGutter,
+                }}
               >
                 {related.map((item) => (
                   <View
@@ -219,6 +228,19 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                   </View>
                 ))}
               </ScrollView>
+              <FigmaButton
+                label="Смотреть все"
+                variant="outline"
+                icon="arrow-right-01"
+                iconPosition="right"
+                accessibilityHint={`Открыть все работы автора ${author.fullName}`}
+                onPress={() =>
+                  router.push({
+                    pathname: '/seller/[slug]',
+                    params: { slug: author.slug },
+                  } as Href)
+                }
+              />
             </View>
           ) : null}
         </View>
