@@ -49,9 +49,14 @@
 - `Not implemented` here: mobile UI, Figma comparison fixtures, legal/auth
   email-verification enforcement, Prisma P4 commerce-table drop, and any
   write-mode leftover cancellation.
-- `Needs verification`: `pnpm verify` plus inventory tests on this branch;
-  leftover inventory on staging/production must be run separately against
-  those databases.
+- `Implemented` on the backend graph of this branch: database/contracts/
+  api-client/API typecheck, lint, unit, integration and build. API unit
+  282/282, contracts 25/25, api-client 3/3, API integration 74/74 across
+  18 files, inventory unit 11/11. `prisma validate` passed; the two new
+  migrations contain no `DROP TABLE`/`DROP COLUMN`.
+- `Needs verification`: full `pnpm verify` still fails at unchanged
+  `apps/mobile` typecheck because this package does not include the later
+  mobile PR. Leftover inventory on staging/production was not run.
 
 ## 2026-09-08 — First MVP scope changed to public portfolio
 
