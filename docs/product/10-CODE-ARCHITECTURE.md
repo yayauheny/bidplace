@@ -85,7 +85,12 @@ refs are still the merge gate.
   with `NODE_ENV=development|test`, `APP_ENV=local` and
   `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes,
   and an API PostgreSQL integration test verifies the seeded portfolio catalog
-  (zero listings/bids/orders).
+  (zero listings/bids/orders). A separate targeted sync
+  (`prisma/sync-figma-comparison-fixture.js`) upserts only the local/test
+  Figma comparison author `vex` and its known public IDs onto an explicitly
+  disposable preview/test database. It requires
+  `ALLOW_FIGMA_COMPARISON_FIXTURE=true`, prints the database name before
+  writes, and never `deleteMany` Users, Sellers, or Products.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Socket.IO and `@nestjs/schedule` are not in the default API process. Listing
   close cron and realtime rooms exist only in the commerce archive.
