@@ -53,3 +53,5 @@
 - `16-H1-compact-header.md` — H1: scroll-linked compact-шапка автора (исследование, данные, критерии, статус).
 - `17-H2-font-weight.md` — H2: гипотеза утолщения текста (faux bold), доказательство и фикс.
 - `18-H3-native-frost.md` — H3: native frost — отложено, скоуп только mobile web.
+- `19-S4-MOBILE-WEB-HANDOFF.md` — короткий handoff простой модели: завершить
+  визуальный S4 auth на 390 и выполнить финальный gate без чужого dirty tree.
