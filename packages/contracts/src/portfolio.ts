@@ -19,8 +19,10 @@ export const portfolioWorkSchema = z
     materials: publicText.nullable(),
     dimensions: publicText.nullable(),
     year: z.number().int().nullable(),
+    uniqueness: z.string().trim().min(1).nullable(),
     images: z.array(productImageSchema).nonempty(),
     publishedAt: z.string().datetime(),
+    sharePath: z.string().regex(/^\/works\/[A-Za-z0-9_-]{11}$/),
   })
   .strict();
 
@@ -49,6 +51,7 @@ export const portfolioAuthorSchema = z
         })
         .strict(),
     ),
+    sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
   })
   .strict();
 
@@ -68,6 +71,7 @@ export const portfolioWorksQuerySchema = paginationQuerySchema
   .extend({
     q: z.string().trim().min(1).max(120).optional(),
     category: uuidSchema.optional(),
+    author: z.string().trim().min(1).max(120).optional(),
     materials: z
       .preprocess(
         (value) =>
@@ -111,6 +115,14 @@ export const portfolioAuthorsResponseSchema = z
         .strict(),
     ),
     pagination: paginationMetaSchema,
+  })
+  .strict();
+
+export const portfolioDiscoveryFacetsResponseSchema = z
+  .object({
+    materials: z.array(publicText),
+    cities: z.array(publicText),
+    tags: z.array(publicText),
   })
   .strict();
 
@@ -204,4 +216,7 @@ export type PortfolioAchievementWriteRequest = z.infer<
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
+>;
+export type PortfolioDiscoveryFacetsResponse = z.output<
+  typeof portfolioDiscoveryFacetsResponseSchema
 >;

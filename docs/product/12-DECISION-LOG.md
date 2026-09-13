@@ -1679,3 +1679,127 @@ Commerce tests могут явно включать capability в изолиро
 ### Revisit when
 
 Commerce contract, документы, UX и release gates утверждены и проверены отдельно.
+
+## DEC-085 — Figma is the production visual source; Pen file stays historical
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder cutover plan for phone UI
+Revises: `DEC-062` / `DEC-063` **runtime** role only. The `.pen` file remains
+protected historical source on disk and must not be edited, deleted, or adapted
+to code.
+
+### Decision
+
+- Production visual source for First MVP phone UI is the read-only Figma inspect
+  copy `uMo04w9bgrchWXXDgO4W62`. Canonical origin file `NM63j9lwRMqpo2HvAiYNll`
+  stays read-only.
+- Runtime has one token layer (`packages/design-tokens` `designTokens`) measured
+  from Figma. Nested `designTokens.figma` is not a second system.
+- Pen primitives (`AppHeader`, Pen buttons/fields, auction player, slide-to-bid)
+  are removed from the render path. `design/pen/bidplace-web-v2.pen` stays in git
+  as protected history.
+- Layout is phone-only (~390). Wide windows keep a centered 390 column. 1024/1440
+  compositions are out of this wave.
+- Search overlay, `Открытие недели`, catalog tabs Аукционы/Анонсы/Архив, cart and
+  Geist font files are deferred. Work shows an `Оплата и доставка` unavailable
+  stub.
+
+### Revisit when
+
+Desktop/tablet Figma compositions exist, search overlay is in scope, or commerce
+capability is enabled with matching frames.
+
+## DEC-086 — Opening of the week is a server-owned editorial selection
+
+Date: 2026-09-09
+Status: Confirmed
+Source: explicit founder correction that skipping Home «Открытие недели» was a
+mistake
+Revises: `DEC-085` only for `Открытие недели`. Search overlay, catalog tabs
+Аукционы/Анонсы/Архив, cart and Geist font files stay deferred.
+
+### Decision
+
+Home may show `Открытие недели` when a durable server-owned editorial pointer
+selects a published, publicly visible Work and author. Local/test seed may
+include one deterministic example. Production does not invent a selection.
+Missing, hidden, rejected or unpublished pointers resolve to `null` and the
+section is omitted. Newest-work, random pick and client hardcoded `publicId`
+are forbidden.
+
+### Revisit when
+
+Home UI implements the section from an approved capture, or editorial workflow
+needs a non-admin operator tool.
+
+## DEC-087 — Commerce v1 archived; active main becomes portfolio-native
+
+Date: 2026-09-10
+Status: Confirmed
+Source: explicit founder decision after
+`docs/audits/2026-09-10-portfolio-simplification-and-commerce-archive.md`
+Revises: retention clause of `DEC-084` only. Does not reopen `DEC-082`, `DEC-083`,
+`DEC-085`, or `DEC-086`.
+
+### Decision
+
+- First public MVP stays portfolio-only with **no displayed price**, sale status,
+  timer, bid, order or purchase CTA.
+- The last verified full commerce-v1 implementation is frozen at
+  `598d8696295d18d32956da7dd366dc19464cc366` under protected refs
+  `archive/commerce-v1` and annotated tag `commerce-v1-pre-portfolio`.
+  Manifest: `docs/audits/commerce-v1-archive-manifest.md`.
+- Do not develop on the archive branch and do not merge it wholesale back into
+  `main`. Future `commerce-v2` starts from then-current `main` and uses the
+  archive as reference material only.
+- After archive recovery verification, physically remove commerce application
+  code from `main` in small reviewed commits (P1–P6 in the removal graph). This
+  is a separate execution track from Git-history or storage cleanup.
+- Do **not** remove Prisma commerce models or edit applied migrations until a
+  verified database inventory exists for every supported environment.
+- Do **not** rewrite Git history or introduce Git LFS as part of source cleanup.
+- Commerce is deferred and may be redesigned; it is not `Rejected`.
+
+### Why
+
+Portfolio MVP is already the public product contract. Keeping commerce modules,
+adapters and schema in the active tree preserves naming drift, test burden and
+accidental re-exposure risk even with `COMMERCE_ENABLED=false`. A protected
+archive preserves the exact prior implementation without maintaining two active
+product lines.
+
+### Revisit when
+
+Commerce contract, legal/domain gate, UX and release gates are approved for a
+new wave; then port deliberate concepts from the archive into `commerce-v2`.
+
+## DEC-089 — Discovery facets are derived from public server data
+
+Date: 2026-09-13
+Status: Confirmed
+Source: explicit founder choice during the mobile-web discovery launch pass
+
+### Decision
+
+Works material options and Authors city/direction options are returned by
+`GET /api/portfolio/facets`. Values are normalized, deduplicated and sorted on
+the server from currently public authors and published Work revisions only.
+The client must not invent Figma/static fallback options. Each stored Work
+material string is one canonical facet value; delimiters are not guessed.
+
+The accepted Figma Work card remains title + author. RFC §6 “brief facts” is a
+documented product/design ambiguity and does not authorize adding unapproved
+fields or changing the Figma master during this implementation.
+
+### Why
+
+Server ownership keeps available filters aligned with public visibility and
+prevents stale, fake or private values from entering discovery. Preserving the
+accepted card avoids resolving an incomplete visual contract by invention.
+
+### Revisit when
+
+The domain gains structured multi-material data, or an approved Figma/card
+contract defines which brief facts must be visible.
+

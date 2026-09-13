@@ -26,6 +26,11 @@ export class PortfolioController {
     return this.portfolio.home();
   }
 
+  @Get('portfolio/facets')
+  facets() {
+    return this.portfolio.facets();
+  }
+
   @Get('works')
   listWorks(@Query() query: unknown) {
     return this.portfolio.listWorks(

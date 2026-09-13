@@ -3,6 +3,8 @@ import {
   type CreationStoryWriteRequest,
   publicProductDetailResponseSchema,
   productListResponseSchema,
+  type PortfolioWorksQuery,
+  type ProductStatus,
   type PublicDiscoveryQuery,
   type ProductWriteRequest,
   type SellerStatus,
@@ -18,17 +20,24 @@ import {
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
+  portfolioCatalogProductSelect,
   productImageMetadataSelect,
   productSelect,
   publicCatalogProductSelect,
   toContractProduct,
   toCreationStepContract,
+  toImageContracts,
   toProductResponse,
+  toRevisionGalleryImages,
+  type PortfolioCatalogProductRecord,
 } from './products.mapper';
 import {
+  portfolioCatalogCte,
+  portfolioCatalogOrderBy,
   publicCatalogCte,
   publicCatalogOrderBy,
   type PublicCatalogPageRow,
+  type PublicWorkFacetRow,
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
 import {
@@ -37,7 +46,10 @@ import {
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
-import { publicDirectProductWhere } from './public-visibility';
+import {
+  portfolioDirectProductWhere,
+  publicDirectProductWhere,
+} from './public-visibility';
 import { assertProductRevisionTransition } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import {
@@ -439,6 +451,67 @@ export class ProductsService {
     });
   }
 
+  async hide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'ARCHIVED');
+  }
+
+  async unhide(userId: string, id: string) {
+    return this.setAuthorVisibility(userId, id, 'APPROVED');
+  }
+
+  private async setAuthorVisibility(
+    userId: string,
+    id: string,
+    nextStatus: 'APPROVED' | 'ARCHIVED',
+  ) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      await lockProductRowForUpdate(tx, id);
+      const product = await tx.product.findUnique({
+        where: { id },
+        select: {
+          ...productWriteGuardSelect,
+          publishedRevisionId: true,
+        },
+      });
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
+      }
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      assertProductRevisionTransition(
+        'author',
+        product.status as ProductStatus,
+        nextStatus,
+      );
+      if (product.publishedRevisionId == null) {
+        throw new ConflictException('Product has no published revision');
+      }
+
+      await tx.product.update({
+        where: { id },
+        data: { status: nextStatus },
+      });
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: userId,
+          targetType: 'PRODUCT',
+          targetId: id,
+          oldStatus: product.status,
+          newStatus: nextStatus,
+          reason: null,
+        },
+      });
+
+      const updated = await tx.product.findUniqueOrThrow({
+        where: { id },
+        select: productSelect,
+      });
+      return toProductResponse(updated);
+    });
+  }
+
   async replaceCreationStory(
     userId: string,
     productId: string,
@@ -726,6 +799,135 @@ export class ProductsService {
     };
   }
 
+  async getPortfolio(publicId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        publicId,
+        ...portfolioDirectProductWhere,
+      },
+      select: portfolioCatalogProductSelect,
+    });
+    if (!product) {
+      throw new NotFoundException('Work not found');
+    }
+    const item = this.toPortfolioItem(product);
+    if (!item) {
+      throw new NotFoundException('Work not found');
+    }
+    return item;
+  }
+
+  async listPortfolio(query: PortfolioWorksQuery) {
+    const { products, pagination } = await this.loadPortfolioCatalogPage(query);
+    return {
+      items: products.flatMap((product) => {
+        const item = this.toPortfolioItem(product);
+        return item ? [item] : [];
+      }),
+      pagination,
+    };
+  }
+
+  async listPortfolioMaterialFacets() {
+    const cte = portfolioCatalogCte({
+      page: 1,
+      limit: 1,
+      sort: 'newest',
+    });
+    const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
+      Prisma.sql`${cte}
+        SELECT "materials"
+        FROM filtered
+        WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`,
+    );
+    return rows.flatMap((row) =>
+      row.materials?.trim() ? [row.materials.trim()] : [],
+    );
+  }
+
+  private async loadPortfolioCatalogPage(query: PortfolioWorksQuery) {
+    const cte = portfolioCatalogCte(query);
+    const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
+      Prisma.sql`${cte}
+        SELECT "id", COUNT(*) OVER()::int AS "total"
+        FROM filtered p
+        ORDER BY ${Prisma.raw(portfolioCatalogOrderBy(query.sort))}
+        LIMIT ${query.limit}
+        OFFSET ${(query.page - 1) * query.limit}`,
+    );
+
+    const total = pageRows.length
+      ? Number(pageRows[0]!.total)
+      : Number(
+          (
+            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
+              Prisma.sql`${cte}
+                SELECT COUNT(*)::int AS "total"
+                FROM filtered`,
+            )
+          )[0]?.total ?? 0,
+        );
+
+    if (!pageRows.length) {
+      return {
+        products: [] as PortfolioCatalogProductRecord[],
+        pagination: { page: query.page, limit: query.limit, total },
+      };
+    }
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: pageRows.map((row) => row.id) } },
+      select: portfolioCatalogProductSelect,
+    });
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
+    );
+    const pagedProducts = pageRows
+      .map((row) => productsById.get(row.id))
+      .filter(
+        (product): product is PortfolioCatalogProductRecord =>
+          product !== undefined,
+      );
+
+    return {
+      products: pagedProducts,
+      pagination: { page: query.page, limit: query.limit, total },
+    };
+  }
+
+  toPortfolioItem(product: PortfolioCatalogProductRecord) {
+    const published = product.publishedRevision;
+    const images = toRevisionGalleryImages(published);
+    if (
+      !published?.title ||
+      !published.categoryId ||
+      !product.publishedAt ||
+      !product.sellerProfile.city?.trim() ||
+      !images ||
+      images.length === 0
+    ) {
+      return null;
+    }
+
+    return {
+      product: {
+        id: product.id,
+        publicId: product.publicId,
+        title: published.title,
+        story: published.story,
+        categoryId: published.categoryId,
+        technique: published.technique,
+        materials: published.materials,
+        dimensions: published.dimensions,
+        year: published.year,
+        uniqueness: published.uniqueness?.trim() || null,
+        images: toImageContracts(images),
+        publishedAt: product.publishedAt.toISOString(),
+      },
+      sellerProfile: toPublicSellerProfile(product.sellerProfile),
+    };
+  }
+
   toPublicProduct(
     product: Awaited<ReturnType<PrismaService['product']['findFirst']>> &
       object,
@@ -740,7 +942,7 @@ export class ProductsService {
         country: string;
         city: string | null;
         practice: string | null;
-        socialLink: string;
+        socialLink: string | null;
         telegramUrl: string | null;
         instagramUrl: string | null;
         websiteUrl: string | null;

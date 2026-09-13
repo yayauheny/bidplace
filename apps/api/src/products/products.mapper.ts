@@ -3,15 +3,39 @@ import { type Prisma } from '@bidplace/database';
 
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 
-export const productImageMetadataSelect = {
+export const productImageBlobSelect = {
   id: true,
-  position: true,
   mimeType: true,
   byteLength: true,
   checksum: true,
   width: true,
   height: true,
 } satisfies Prisma.ProductImageSelect;
+
+export const productImageMetadataSelect = {
+  ...productImageBlobSelect,
+  position: true,
+} satisfies Prisma.ProductImageSelect;
+
+export const productRevisionImageSelect = {
+  position: true,
+  image: { select: productImageBlobSelect },
+} satisfies Prisma.ProductRevisionImageSelect;
+
+export const productRevisionGallerySelect = {
+  title: true,
+  story: true,
+  categoryId: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  year: true,
+  uniqueness: true,
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productRevisionImageSelect,
+  },
+} satisfies Prisma.ProductRevisionSelect;
 
 export const productSelect = {
   id: true,
@@ -46,6 +70,46 @@ export const productSelect = {
 export type ProductRecord = Prisma.ProductGetPayload<{
   select: typeof productSelect;
 }>;
+
+type GalleryImage = {
+  id: string;
+  position: number;
+  mimeType: string;
+  byteLength: number;
+  checksum: string;
+  width: number | null;
+  height: number | null;
+};
+
+type RevisionGallery = {
+  images: Array<{
+    position: number;
+    image: Omit<GalleryImage, 'position'>;
+  }>;
+};
+
+export function toImageContracts(images: readonly GalleryImage[]) {
+  return images.map((image) => ({
+    id: image.id,
+    position: image.position,
+    url: `/api/images/${image.id}`,
+    mimeType: image.mimeType,
+    byteLength: image.byteLength,
+    checksum: image.checksum,
+    width: image.width ?? null,
+    height: image.height ?? null,
+  }));
+}
+
+export function toRevisionGalleryImages(
+  revision: RevisionGallery | null | undefined,
+) {
+  if (!revision) return null;
+  return revision.images.map(({ position, image }) => ({
+    ...image,
+    position,
+  }));
+}
 
 export function toContractProduct(product: ProductRecord): Product {
   return {
@@ -118,6 +182,15 @@ export const publicCatalogProductSelect = {
     select: productImageMetadataSelect,
   },
 } satisfies Prisma.ProductSelect;
+
+export const portfolioCatalogProductSelect = {
+  ...publicCatalogProductSelect,
+  publishedRevision: { select: productRevisionGallerySelect },
+} satisfies Prisma.ProductSelect;
+
+export type PortfolioCatalogProductRecord = Prisma.ProductGetPayload<{
+  select: typeof portfolioCatalogProductSelect;
+}>;
 
 export function toCreationStepContract(step: {
   id: string;

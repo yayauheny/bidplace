@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-14
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## Applications and shared boundaries
@@ -14,10 +14,13 @@
   commerce admin actions, lifecycle and Socket.IO consume the same boundary.
   `apps/api/src/discovery` delegates to Product/Seller services and portfolio
   discovery no longer requires a `Listing` to make an approved Work public.
-- `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author and author
-  application projections. It delegates persistence to Product/Seller services and
-  validates all public responses with `packages/contracts`; its DTOs never expose
-  commerce fields.
+- `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author, facets and
+  author application projections. Public Work/Author catalog reads use the published
+  `ProductRevision` projection (`listPortfolio` / `getPortfolio`), not Listing
+  membership. `GET /api/portfolio/home` returns a server-owned curator selection
+  (`CuratorSelection` slot `home`) or `null`. Portfolio DTOs never expose commerce
+  fields. Listing, Bid, Order, Discovery, Activity and Socket.IO commerce modules
+  remain in the default API boot graph until a later removal PR.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
@@ -37,7 +40,7 @@
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
-- `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
+- `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed still creates auction fixtures and one home `CuratorSelection` on a published public Work. `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
 
@@ -51,6 +54,7 @@ SellerProfile
        ├─ ProductRevision[]
        │    └─ ProductRevisionImage[]
        ├─ ProductImage[] (legacy metadata)
+       ├─ CuratorSelection? (home editorial pointer)
        └─ Listing[]
             ├─ AuctionRules
             ├─ Bid[]

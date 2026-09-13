@@ -78,6 +78,13 @@ describe('demo seed executable contract', () => {
     expect(orders[0]?.buyerId).toBe(buyer?.id);
     expect(orders[0]?.sourceBidId).toBe(endedBids[0]?.id);
     expect(orders[0]?.finalAmount.toNumber()).toBe(120);
+    const curator = await prisma.curatorSelection.findUnique({
+      where: { slot: 'home' },
+      include: { product: { select: { publicId: true, status: true } } },
+    });
+    expect(curator?.product.publicId).toBe('seedLive002');
+    expect(curator?.product.status).toBe('APPROVED');
+    expect(await prisma.productRevision.count()).toBeGreaterThan(0);
   });
 
   it.each([

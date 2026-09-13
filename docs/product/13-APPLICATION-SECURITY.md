@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-09-06
+Последнее обновление: 2026-09-14
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -35,6 +35,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Revoke all sessions (`sessionVersion++`) | Implemented | same |
 | Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
 | Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
+| Read-only leftover commerce inventory | Implemented | `scripts/ops/commerce-inventory.mjs`; refuses `--apply`; no secret URLs in report |
 | **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
 

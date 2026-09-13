@@ -97,6 +97,7 @@ async function attachProductRevision(
       editingRevisionId: revision.id,
       publishedRevisionId:
         input.status === 'APPROVED' ? revision.id : null,
+      ...(input.status === 'APPROVED' ? { publishedAt: fixtureDate } : {}),
     },
   });
 }
@@ -115,6 +116,8 @@ async function createSeller(
       sellerType: 'creator',
       fullName: `Wave 3 ${status}`,
       country: 'BY',
+      city: 'Minsk',
+      discipline: 'Автор',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: permissionImage.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -210,6 +213,7 @@ export async function resetPermissionFixture(
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
   await prisma.product.updateMany({
     data: { editingRevisionId: null, publishedRevisionId: null },
   });

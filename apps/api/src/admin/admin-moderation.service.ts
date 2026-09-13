@@ -245,6 +245,7 @@ export class AdminModerationService {
                   status:
                     product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
                   publishedRevisionId: editingRevision.id,
+                  publishedAt: product.publishedAt ?? new Date(),
                 },
               })
             : product.status === 'PENDING_REVIEW'
@@ -358,7 +359,7 @@ export class AdminModerationService {
     country: string;
     city: string | null;
     practice: string | null;
-    socialLink: string;
+    socialLink: string | null;
     telegramUrl: string | null;
     instagramUrl: string | null;
     websiteUrl: string | null;

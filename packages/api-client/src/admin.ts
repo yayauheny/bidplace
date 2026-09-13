@@ -2,6 +2,8 @@ import {
   adminAnalyticsOverviewSchema,
   adminAnalyticsQuerySchema,
   adminCreateListingOrderResponseSchema,
+  adminCuratorSelectionRequestSchema,
+  adminCuratorSelectionResponseSchema,
   adminEmergencyCancelRequestSchema,
   adminListingsNeedingOrderResponseSchema,
   adminOkResponseSchema,
@@ -132,6 +134,25 @@ export function createAdminClient(context: RequestContext) {
           method: 'POST',
           body: adminUserRevokeSessionsRequestSchema.parse(input),
         },
+      );
+    },
+    setCuratorSelection(publicId: string) {
+      return requestJson(
+        context,
+        '/api/admin/curator-selection',
+        adminCuratorSelectionResponseSchema,
+        {
+          method: 'PUT',
+          body: adminCuratorSelectionRequestSchema.parse({ publicId }),
+        },
+      );
+    },
+    clearCuratorSelection() {
+      return requestJson(
+        context,
+        '/api/admin/curator-selection',
+        adminOkResponseSchema,
+        { method: 'DELETE' },
       );
     },
     emergencyCancelListing(

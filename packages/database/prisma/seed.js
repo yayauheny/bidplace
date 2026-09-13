@@ -115,7 +115,7 @@ async function createProductWithImages({
 }) {
   const image = readSeedProductImage(imageFileName);
 
-  return prisma.product.create({
+  const product = await prisma.product.create({
     data: {
       publicId,
       sellerProfileId,
@@ -162,6 +162,49 @@ async function createProductWithImages({
       },
     },
   });
+
+  await attachProductRevision(product.id, status === 'APPROVED');
+  return product;
+}
+
+async function attachProductRevision(productId, published) {
+  const product = await prisma.product.findUniqueOrThrow({
+    where: { id: productId },
+    include: { images: { orderBy: { position: 'asc' } } },
+  });
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status: published ? 'APPROVED' : 'PENDING_REVIEW',
+      categoryId: product.categoryId,
+      title: product.title,
+      story: product.story,
+      technique: product.technique,
+      materials: product.materials,
+      dimensions: product.dimensions,
+      weight: product.weight,
+      year: product.year,
+      uniqueness: product.uniqueness,
+      provenance: product.provenance,
+      city: product.city,
+      creationIntro: product.creationIntro,
+      images: {
+        create: product.images.map((image, position) => ({
+          imageId: image.id,
+          position,
+        })),
+      },
+    },
+  });
+
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId: revision.id,
+      publishedRevisionId: published ? revision.id : null,
+    },
+  });
 }
 
 async function main() {
@@ -177,6 +220,16 @@ async function main() {
   await prisma.bid.deleteMany();
   await prisma.auctionRules.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.curatorSelection.deleteMany();
+  await prisma.sellerProfile.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.product.updateMany({
+    data: { editingRevisionId: null, publishedRevisionId: null },
+  });
+  await prisma.productRevision.deleteMany();
+  await prisma.sellerProfileRevision.deleteMany();
+  await prisma.productCreationStep.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.product.deleteMany();
   await prisma.sellerProfile.deleteMany();
@@ -239,6 +292,7 @@ async function main() {
       discipline: 'Керамика',
       fullName: 'Анна Морозова',
       country: 'BY',
+      city: 'Минск',
       socialLink: 'https://example.com/anna-morozova',
       telegramUrl: 'https://t.me/anna_morozova',
       instagramUrl: 'https://instagram.com/anna_morozova',
@@ -375,6 +429,7 @@ async function main() {
           discipline: creator.discipline,
           fullName: creator.fullName,
           country: 'BY',
+          city: 'Минск',
           socialLink: website,
           telegramUrl: `https://t.me/${creator.handle.slice(1)}`,
           websiteUrl: website,
@@ -828,12 +883,21 @@ async function main() {
     },
   });
 
+  await prisma.curatorSelection.create({
+    data: {
+      slot: 'home',
+      productId: liveProduct.id,
+      selectedAt: now,
+      selectedByUserId: admin.id,
+    },
+  });
+
   void scheduled;
   void liveBid;
   void vase;
 
   console.log(
-    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, twelve public products, and scheduled/live/ended Product Listings in BYN.',
+    'Seeded deterministic local/test admin, buyer, eight approved creator profiles, twelve public products, scheduled/live/ended Product Listings in BYN, and one home curator selection.',
   );
 }
 

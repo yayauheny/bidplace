@@ -3,6 +3,7 @@ import {
   publicSellerDetailResponseSchema,
   sellerProductDetailResponseSchema,
   sellerProductListResponseSchema,
+  type PortfolioAuthorsQuery,
   type PublicSellerQuery,
   type PublicSellerWorksQuery,
   type SellerProfileCreateRequest,
@@ -34,9 +35,17 @@ import {
 } from '../products/products.mapper';
 import { ProductsService } from '../products/products.service';
 import {
+  portfolioCatalogProductWhere,
+  publicAuthorCityWhere,
   publicCatalogProductWhere,
   publicProductContentSql,
 } from '../products/public-visibility';
+import {
+  publicAuthorCte,
+  publicAuthorOrderBy,
+  type PublicAuthorFacetRow,
+  type PublicAuthorPageRow,
+} from './sellers-catalog.query';
 import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
@@ -765,6 +774,97 @@ export class SellersService {
       statusCounts,
       pagination: { page: query.page, limit: query.limit, total },
     });
+  }
+
+  async listPortfolioAuthors(
+    query: PortfolioAuthorsQuery,
+    options: { requireCity?: boolean } = {},
+  ) {
+    const cte = publicAuthorCte(query, options);
+    const pageRows = await this.prisma.$queryRaw<PublicAuthorPageRow[]>(
+      Prisma.sql`${cte}
+        SELECT "id", COUNT(*) OVER()::int AS "total"
+        FROM filtered
+        ORDER BY ${Prisma.raw(publicAuthorOrderBy(query.sort))}
+        LIMIT ${query.limit}
+        OFFSET ${(query.page - 1) * query.limit}`,
+    );
+    const total = pageRows.length
+      ? Number(pageRows[0]!.total)
+      : Number(
+          (
+            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
+              Prisma.sql`${cte}
+                SELECT COUNT(*)::int AS "total"
+                FROM filtered`,
+            )
+          )[0]?.total ?? 0,
+        );
+
+    if (!pageRows.length) {
+      return {
+        sellers: [],
+        pagination: { page: query.page, limit: query.limit, total },
+      };
+    }
+
+    const sellers = await this.prisma.sellerProfile.findMany({
+      where: { id: { in: pageRows.map((row) => row.id) } },
+      select: {
+        ...publicSellerProfileSelect,
+        _count: {
+          select: { products: { where: portfolioCatalogProductWhere } },
+        },
+      },
+    });
+    const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
+    const pagedSellers = pageRows
+      .map((row) => sellersById.get(row.id))
+      .filter((seller): seller is (typeof sellers)[number] => Boolean(seller));
+
+    return {
+      sellers: pagedSellers.map((seller) => ({
+        sellerProfile: toPublicSellerProfile(seller),
+        workCount: seller._count.products,
+      })),
+      pagination: {
+        page: query.page,
+        limit: query.limit,
+        total,
+      },
+    };
+  }
+
+  async listPublicFacets() {
+    const cte = publicAuthorCte(
+      { page: 1, limit: 1, sort: 'added' },
+      { requireCity: true },
+    );
+    return this.prisma.$queryRaw<PublicAuthorFacetRow[]>(
+      Prisma.sql`${cte}
+        SELECT "city", "discipline"
+        FROM filtered`,
+    );
+  }
+
+  async getApprovedPublicAuthor(
+    slug: string,
+    options: { requireCity?: boolean } = {},
+  ) {
+    const sellerProfile = await this.prisma.sellerProfile.findFirst({
+      where: {
+        slug,
+        status: 'APPROVED',
+        ...(options.requireCity ? { city: publicAuthorCityWhere } : {}),
+      },
+      select: publicSellerProfileSelect,
+    });
+    if (!sellerProfile || (options.requireCity && !sellerProfile.city?.trim())) {
+      return null;
+    }
+    return {
+      sellerProfile: toPublicSellerProfile(sellerProfile),
+    };
   }
 
   async getPhoto(slug: string, userId?: string, role?: string) {

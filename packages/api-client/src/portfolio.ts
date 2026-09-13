@@ -4,6 +4,7 @@ import {
   portfolioAuthorsResponseSchema,
   portfolioAuthorApplicationResponseSchema,
   portfolioCabinetWorksResponseSchema,
+  portfolioDiscoveryFacetsResponseSchema,
   portfolioHomeResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksQuerySchema,
@@ -33,6 +34,13 @@ export function createPortfolioClient(context: RequestContext) {
         context,
         `/api/works/${publicId}`,
         portfolioWorkDetailResponseSchema,
+      );
+    },
+    facets() {
+      return requestJson(
+        context,
+        '/api/portfolio/facets',
+        portfolioDiscoveryFacetsResponseSchema,
       );
     },
     listAuthors(query?: Partial<PortfolioAuthorsQuery>) {

@@ -1,5 +1,43 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Portfolio foundation staged beside commerce runtime
+
+- `Implemented`: portfolio backend foundation on the existing commerce runtime.
+  Public catalog reads for `GET /api/works`, `GET /api/works/:publicId`,
+  `GET /api/authors`, `GET /api/authors/:slug` and `GET /api/portfolio/home` use
+  the published `ProductRevision` projection (`ProductsService.listPortfolio` /
+  `getPortfolio`, `apps/api/src/products/products-catalog.query.ts`).
+  `GET /api/portfolio/facets` returns normalized public materials, cities and
+  tags (`DEC-089`). Home curator selection is server-owned (`DEC-086`) via
+  `PUT`/`DELETE /api/admin/curator-selection` with 401/403/409 and unpublished
+  pointers resolving to `null`. Public product-image GET continues to 404 for
+  draft/unpublished revision bytes. Additive Prisma migrations
+  `20260909010000_add_profile_revision_media` and
+  `20260909120000_portfolio_media_socials_curator` add revision photo/achievement
+  bytes and `curator_selections`. Local seed keeps listings and adds one home
+  curator row on `seedLive002`. New portfolio contracts (`uniqueness`,
+  `sharePath`, facets) sit beside unchanged Listing/Bid/Order/discovery
+  contracts and api-client methods. Coverage: API unit (`portfolio.service.spec.ts`),
+  contracts facets/work isolation, integration
+  `curator-selection`, `portfolio-filters`, `portfolio-published-revision`,
+  `commerce-inventory`, plus existing commerce HTTP suites.
+- `Partial`: mobile still consumes the current main commerce/portfolio client
+  surface. Mobile migration is a separate PR B and is not in this branch
+  (`apps/mobile` unchanged).
+- `Planned`: commerce runtime removal (Nest modules, routes, Socket.IO/schedule
+  deps, `COMMERCE_ENABLED` teardown) is PR C after PR B and a verified inventory.
+  `DEC-087` remains the accepted direction; this branch does **not** remove
+  commerce application code. Listing emergency, bids, orders and discovery stay
+  Implemented on the current boot path.
+- `Implemented` (ops, read-only): `scripts/ops/commerce-inventory.mjs` reports
+  leftover listing/bid/order counts and decision ids without `--apply`. Unit:
+  `scripts/ops/lib/commerce-inventory.spec.mjs`. Integration:
+  `apps/api/test/integration/commerce-inventory.integration.spec.ts`.
+- `Confirmed product lineage`: `DEC-085` (Figma production visual source; Pen
+  historical) is recorded so `DEC-086` has a previous decision record. `DEC-087`
+  and `DEC-089` are appended without rewriting the decision text. `DEC-088`
+  (mobile dock) is not part of this backend foundation PR.
+
 ## 2026-09-08 — First MVP scope changed to public portfolio
 
 - `Confirmed product`: `DEC-082`–`DEC-084` replace the first public release target

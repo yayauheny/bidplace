@@ -51,6 +51,18 @@ export class ProductsController {
     return this.products.submit(auth.sub, id);
   }
 
+  @Post(':id/hide')
+  @UseGuards(BearerAuthGuard)
+  hide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.products.hide(auth.sub, id);
+  }
+
+  @Post(':id/unhide')
+  @UseGuards(BearerAuthGuard)
+  unhide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.products.unhide(auth.sub, id);
+  }
+
   @Patch(':id')
   @UseGuards(BearerAuthGuard)
   update(
