@@ -12,6 +12,7 @@ import {
   nextCatalogPage,
   uniqueCatalogItems,
 } from './catalog-pagination';
+import { AUTHOR_SORT_OPTIONS } from '../sellers/author-sort';
 
 describe('catalog URL query mappers', () => {
   it('normalizes works params and rejects invalid UUID filters', () => {
@@ -52,6 +53,13 @@ describe('catalog URL query mappers', () => {
       city: 'Минск',
       sort: 'added',
     });
+  });
+
+  it('exposes RFC date-added semantics on the authors sort option', () => {
+    expect(AUTHOR_SORT_OPTIONS).toEqual([
+      { value: 'added', label: 'По дате добавления' },
+      { value: 'name', label: 'По имени' },
+    ]);
   });
 });
 

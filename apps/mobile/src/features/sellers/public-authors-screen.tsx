@@ -23,13 +23,9 @@ import {
 import { useApiClient } from '../../providers/api-provider';
 import { AUTHORS_CATALOG_INTRO } from '../../lib/portfolio-copy';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
+import { AUTHOR_SORT_OPTIONS } from './author-sort';
 import type { PortfolioAuthorsRouteState } from './portfolio-authors-query';
 import { usePortfolioAuthors } from './use-portfolio-authors';
-
-const authorSortOptions = [
-  { value: 'added', label: 'По активности' },
-  { value: 'name', label: 'По имени' },
-] as const;
 
 export function PublicAuthorsScreen({
   state,
@@ -161,7 +157,7 @@ export function PublicAuthorsScreen({
       <FilterSortSheet
         open={sortOpen}
         value={state.sort}
-        options={authorSortOptions}
+        options={AUTHOR_SORT_OPTIONS}
         onClose={() => setSortOpen(false)}
         onSelect={(sort) => {
           router.setParams({

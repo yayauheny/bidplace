@@ -2,19 +2,35 @@
 
 Source: Figma `597:19045`, 390×388 bottom sheet.
 
-- Figma: 164×164 QR, 14 px composition gap, 56 px primary/ghost actions,
-  8 px action gap, 20 px top radius.
-- Runtime 390: dialog `390×376`, QR `164×164`, document width `390/390`.
-- Runtime 1024/1440: dialog width `390`, centered at `x=317/525`; horizontal
-  overflow `0`.
-- PNG download: browser `download` event received,
-  `bidplace-seedAnna001.png`, 12,835 bytes.
-- Keyboard: initial focus on close; repeated Tab stayed inside dialog; Escape
-  closed it and returned focus to `Поделиться работой`.
-- Edge states: 60-character public slug generated QR without overflow; invalid
-  `/admin` rendered `Публичная ссылка недоступна`; oversized QR payload rendered
-  the visible retry/error composition.
+## Evidence in git
 
-Status: **Implemented** for the existing work/author ShareSheet contract.
-The Figma node does not define bespoke error illustrations, so runtime uses the
-shared text/retry state inside the fixed QR square.
+| File | What this pass can claim |
+|---|---|
+| `runtime/share-390.png` | Historical 390 composition from `54681ba` |
+| `runtime/share-1024.png` | Historical 1024 centered sheet from `54681ba` |
+| `runtime/share-1440.png` | Historical 1440 centered sheet from `54681ba` |
+| `runtime/share-qr-error-390.png` | Historical mocked QR-error composition from `54681ba` |
+| `runtime/share-work-chromium-390.png` | This pass: work ShareSheet after Playwright download + Escape |
+| `runtime/share-work-webkit-390.png` | Same path on WebKit |
+
+No `share-author-390`, `share-long-url-390`, or invalid-path PNG is in git.
+Those names are not evidence.
+
+## This pass (`fix/figma-stabilization`)
+
+- Playwright Chromium and WebKit on `/product/{publicId}` at 390: dialog
+  focused inside `[role="dialog"]`; `Скачать QR` fired a `download` event
+  with `bidplace-*.png`; Escape closed the sheet and returned focus to
+  `Поделиться работой`.
+- Author ShareSheet, long-URL composition, and QR-error UI were **not**
+  re-run as Playwright this pass. Invalid public paths stay rejected by
+  `publicShareTarget` in `public-share.spec.ts` (`/admin`, off-origin,
+  short work ids). The historical `runtime/share-qr-error-390.png` is the
+  QR-error picture in git.
+- Ordinary Chrome/Safari “Save as” outside Playwright was not re-tested.
+
+Status: **Implemented** for the work ShareSheet Playwright path above.
+Author sheet remains the shared component from `48c38b7`, without a new
+author PNG. Ordinary-browser file save stays **Partial**. The Figma node
+does not define bespoke error illustrations; runtime uses the shared
+text/retry state inside the fixed QR square.

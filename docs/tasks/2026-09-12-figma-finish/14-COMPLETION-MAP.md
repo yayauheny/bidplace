@@ -25,9 +25,9 @@
 | Страница автора: полная шапка, атмосфера, чипы, соцсети, tabs, категории, About, достижения | 02 | Да (`bf0eb81`, `3b3ccae`, `f2d05c8` + motion recapture) | Technical pass A3/A4; founder Accepted не возвращён (`artifacts/figma-qa/02-author/motion/`) | About не deep-linkable (граница) |
 | Страница работы: галерея, share, tabs, facts, related, 404 | 03 | Да (`c0b2a46`, `917b704`, `c490bd2`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: error, broken media, zoom 200 %, reduced motion, dock) | W16 стрелки галереи — решение основателя |
 | Cover cards 264×352 / 366×488 (work, author), AuthorIdentity | 04 | Да (`d97446a`, S8 в `72429bd`) | Accepted web; native `Needs verification` | Native frost — `18-H3-native-frost.md` (отложено, скоуп mobile web) |
-| ShareSheet | 05 | Да (`48c38b7`) | Partial | Реальное сохранение PNG в обычном браузере, security review |
-| Фильтры и сортировка | 06 / S7 | Да (`6729763`, `172404e`) | Accepted 390 mobile web (`artifacts/figma-qa/discovery/REPORT.md`) | Native/desktop вне scope |
-| Главная | 07 | Да (`8886f06`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: overflow, dock, error) | section→section 40 без узла Figma (граница); 1024/1440 вне скоупа |
+| ShareSheet | 05 | Да (`48c38b7`, Playwright download this pass) | Partial for ordinary-browser Save As; Playwright Chromium/WebKit download + Escape pass (`artifacts/figma-qa/S1/REPORT.md`) | Ordinary Chrome/Safari file save, security review |
+| Фильтры и сортировка | 06 / S7 | Да (`6729763`, `172404e`) | Accepted 390 mobile web (`artifacts/figma-qa/discovery/REPORT.md`) | Native/desktop вне scope; discovery-launch 12→15 remainder is a stale assertion |
+| Главная | 07 | Да (`8886f06`, `04289fe`) | Implemented opening + catalog states (`artifacts/figma-qa/home/REPORT.md`); 13-acceptance overflow/dock still stands | section→section 40 без узла Figma (граница); fan `436:1320` out |
 | Каталоги и Search | S2 / discovery | Да (`6729763`, `172404e`, `fcdedb2`) | Accepted 390 mobile web (`artifacts/figma-qa/discovery/REPORT.md`) | Work-card brief facts conflict remains documented; Figma overlay excluded |
 | Auth, заявка, создание работы | 08–12 | — | — | См. соответствующие package reports |
 | Независимая приёмка | 13 | — | Выполнена для 02/03/04/07 (`artifacts/figma-qa/13-acceptance/REPORT.md`) | S1/S2/S4/S7/S8 — параллельный пакет |

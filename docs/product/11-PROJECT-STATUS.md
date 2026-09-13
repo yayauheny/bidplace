@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Figma stabilization integration
+
+- Cherry-picks of author-header motion (`67f6824` → `b82b014`) and Home
+  opening (`04289fe` → `664bd81`) on `70c5fd5`. No API/seed/env/CORS change.
+- `Implemented`: Authors sort option `added` is labeled «По дате добавления»
+  (RFC §6). Server order remains `latest_product_at` (pre-existing).
+- A3/A4 stay **technical pass / founder Accepted withdrawn** after the motion
+  recapture. Home opening stays **Implemented** from `curatorSelection` only.
+- S1 evidence list now matches files in git; Playwright Chromium/WebKit
+  work-sheet download + Escape passed. Author/long-url PNGs are not
+  claimed. Ordinary-browser Save As remains `Partial`.
+- Discovery REPORT no longer claims 12→15 remainder, Authors/Search
+  pagination, or `pnpm verify` numbers from an earlier machine.
+- `Verified` on this worktree: `pnpm verify` typecheck 7/7, lint 2/2, API
+  unit 282, contracts 25, client 3, integration 78, build 7/7; mobile tests
+  248/248; Expo web export; Playwright matrix in
+  `artifacts/figma-qa/stabilization/REPORT.md`.
+
 ## 2026-09-13 — Home opening of the week
 
 - `Implemented`: Home renders «Открытие недели» from
@@ -25,7 +43,7 @@
 
 - `Implemented` at 390: `/works` has URL-owned query/category/material,
   newest/oldest sort and deduplicated server pagination; `/authors` has
-  query/direction/city, activity/name sort and server pagination. Both compose
+  query/direction/city, date-added/name sort and server pagination. Both compose
   the accepted S7 sheets with local draft values committed only on Apply/Reset.
 - `Implemented`: `/search?q=` renders real, independently retryable and
   paginated Work/Author states instead of stub copy.
@@ -36,9 +54,8 @@
 - `Partial` against RFC §6 only: the accepted Figma Work card remains title +
   author and does not render unspecified “brief facts”; the contract/design
   ambiguity is recorded without inventing a visual.
-- `Verified`: `pnpm verify` passed (typecheck 7/7, lint 2/2, API unit 297,
-  contracts 25, client 3, integration 79, build 7/7); mobile tests 239/239 and
-  focused 390 Playwright 3/3 passed. Evidence:
+- Historical `70c5fd5` verify counts are superseded by the 2026-09-13
+  stabilization pass above. Evidence:
   `artifacts/figma-qa/discovery/REPORT.md`.
 
 ## 2026-09-13 — S4 mobile-web auth composition
@@ -133,14 +150,10 @@
 
 ## 2026-09-13 — CORS origin allowlist review
 
-- `Corrected`: `CORS_ORIGIN` accepts only `http`/`https` browser origins
-  (scheme + host[:port]). Paths, query, hash, userinfo, and other schemes fail
-  env parse. A trailing `/` is stored as `url.origin` so it matches the browser
-  `Origin` header. Evidence: `canonicalizeCorsOrigin` in
-  `apps/api/src/core/config/env.ts`, `apps/api/src/core/config/env.spec.ts`.
-- Password-reset email fallback still uses the first allowlist origin when
-  `PASSWORD_RESET_URL_BASE` is unset; production already requires that base.
-  Session cookies and `credentials: true` are unchanged.
+- `Needs verification` (dirty checkout on `fix/work-final` only; **not** in
+  `fix/figma-stabilization` / `70c5fd5`): uncommitted
+  `canonicalizeCorsOrigin` would accept only `http`/`https` browser origins.
+  This integration branch does not contain that code.
 
 ## 2026-09-13 — Author achievement presentation
 
@@ -787,8 +800,9 @@ Local commits on `feature/figma-component-library` (no remote push):
   `AdminGuard`. Evidence: `apps/api/src/portfolio/portfolio.service.ts`,
   `apps/api/src/admin/admin.controller.ts`,
   `apps/api/test/integration/curator-selection.integration.spec.ts`.
-- `Partial`: Home screen still does not render Opening of the week.
-  Figma/glass/search overlay remain out of this wave.
+- Superseded 2026-09-13: Home now renders Opening of the week from
+  `curatorSelection` only. See the Home opening and Figma stabilization
+  entries above. Figma fan/stack and search overlay remain out.
 - `Not implemented`: S3 revision atomicity; MinIO as local default;
   Expo admin curator UI.
 - Checks: `pnpm verify` passed on 2026-09-09 (typecheck 7/7, lint 2/2, API unit

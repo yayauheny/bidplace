@@ -1,5 +1,15 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Figma stabilization statuses
+
+- A3 compact motion and A4 state matrix: **technical pass**, founder
+  `Accepted` remains withdrawn (`artifacts/figma-qa/02-author/motion/`).
+- Home opening / selected / null / loading / empty / error: **Implemented**
+  for mobile web (`artifacts/figma-qa/home/REPORT.md`); re-passed Chromium
+  and WebKit in this integration.
+- Discovery REPORT and S1 REPORT were narrowed to files and specs that exist
+  in this tree. Authors sort label is «По дате добавления».
+
 ## 2026-09-13 — Home opening of the week and Figma composition
 
 - `Implemented` at 390: Home reads `GET /api/portfolio/home` `curatorSelection`
@@ -36,9 +46,11 @@
   loading/error/empty states; Search exposes independent Work/Author
   loading/result/empty/retry/pagination states without adding the excluded
   Figma live-search overlay.
-- `Verified` at 390 with reduced motion: combined filters, URL persistence
-  through Back, sort, pagination deduplication, no horizontal overflow and
-  Search result/empty/retry. Evidence:
+- `Verified` at 390: Works filters + URL + Back; Authors filters + name
+  sort + URL; Search result/empty/retry (`discovery-launch.spec.ts`, always
+  reduced motion). Works newest/oldest, Authors «По дате добавления», and
+  Search partial error also passed Chromium/WebKit in
+  `e2e/figma-stabilization.spec.ts`. Evidence:
   `artifacts/figma-qa/discovery/REPORT.md`.
 - `Partial`: Work cards preserve the accepted title + author master. RFC §6
   “brief facts” has no approved card composition and remains documented rather
@@ -117,9 +129,11 @@
 - `Implemented`: `ShareSheet` matches Figma `597:19045` with a fixed 164px QR
   square, 56px actions, 8px action gap and a ghost copy action; the public URL
   appears only as a selectable fallback after clipboard failure.
-- 390/1024/1440 screenshots, long/invalid/QR-error states, real PNG download,
-  focus trap, Escape and focus return pass. Evidence:
-  `artifacts/figma-qa/S1/REPORT.md`.
+- Git evidence: `runtime/share-{390,1024,1440,qr-error-390}.png` plus this
+  pass `runtime/share-work-{chromium,webkit}-390.png`. Playwright download,
+  focus inside the dialog, Escape and focus return passed. Author/long-url
+  PNGs are not in git and are not claimed. Ordinary-browser Save As stays
+  `Partial`. Evidence: `artifacts/figma-qa/S1/REPORT.md`.
 
 ## 2026-09-13 — Author compact header motion reopened (A3/A4)
 
@@ -138,8 +152,6 @@
 
 `Implemented` for the Frame 219 achievement block: 266 px items, 16 px gap, 3:4 photos with radius 20, marker/line above month and year, and centered text-only cards. Browser checked on Anna at :8083 with both variants and horizontal scrolling; screenshots in `artifacts/figma-qa/02-author/achievements-*.jpg`. Overall author parity remains `Partial`; see the continuation task.
 
-# bidplace — статус дизайна и UI-реализации
-
 ## 2026-09-13 — Author state matrix
 
 - `Implemented`: the full-header handle is one 24/29 line with an ellipsis
@@ -148,7 +160,8 @@
   `artifacts/figma-qa/02-author/matrix/`: long handle (full + compact), 0 and 2
   socials, no achievements, 1024/1440 centered column without overflow. Compact
   header geometry matches `526:14482` (row y 44, tabs y 186).
-- Open: A3 compact transition smoothness, A5 font weight hypothesis.
+- A3/A4 status is the later motion entry above, not this older “Open: A3”
+  line. A5 is closed by H2.
 
 ## 2026-09-13 — Home composition against `436:1137`
 
