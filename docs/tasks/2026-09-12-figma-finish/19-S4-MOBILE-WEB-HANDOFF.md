@@ -1,5 +1,8 @@
 # S4 handoff — auth forms and final gate
 
+Status: completed as mobile-web UI; registration completion remains `Partial`
+because the confirmed runtime redirects immediately.
+
 ## Current scope
 
 Founder decision: accept **mobile web at 390 px only**. Do not spend time on

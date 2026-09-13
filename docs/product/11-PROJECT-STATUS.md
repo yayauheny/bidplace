@@ -1,5 +1,16 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — S4 mobile-web auth composition
+
+- `Implemented`: existing login, registration, forgot-password and reset
+  behavior is presented with the accepted phone fields, headings and actions
+  at 390. User-facing required-phone text is localized in the form without
+  changing its validation rule.
+- `Partial`: the Figma registration-complete frame is not reachable under the
+  current immediate-login redirect contract. No API, schema, redirect,
+  analytics or permission behavior changed. Evidence:
+  `artifacts/figma-qa/S4/REPORT.md`.
+
 ## 2026-09-13 — S2 public works catalog
 
 - `Implemented` at 390 mobile web: `/works` keeps the existing public query and

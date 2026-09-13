@@ -63,7 +63,11 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         title="Пароль обновлён"
         description={RESET_PASSWORD_SUCCESS_DESCRIPTION}
       >
-        <PrimaryButton label="Перейти ко входу" onPress={() => router.replace('/login')} />
+        <PrimaryButton
+          label="Перейти ко входу"
+          width="full"
+          onPress={() => router.replace('/login')}
+        />
       </AuthCard>
     );
   }
@@ -113,6 +117,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         ) : null}
         <PrimaryButton
           label="Сохранить пароль"
+          width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />

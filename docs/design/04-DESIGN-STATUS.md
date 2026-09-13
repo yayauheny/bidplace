@@ -1,5 +1,15 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — S4 auth forms at 390
+
+- `Implemented`: mobile-web login, registration, forgot-password and
+  invalid-reset compositions use shared fields/buttons, 24/29 headings,
+  localized visible errors and full-width actions. Login fits at `390×667`
+  without overflow or dock overlap.
+- `Partial`: Figma registration-complete has no matching runtime state because
+  the confirmed flow authenticates and redirects immediately; S4 does not
+  change auth behavior. Evidence: `artifacts/figma-qa/S4/REPORT.md`.
+
 ## 2026-09-13 — S2 works catalog at 390
 
 - `Implemented` for mobile web: `/works` matches Figma `526:13248` in header,

@@ -7,9 +7,10 @@ import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
   PrimaryButton,
-  TextButton,
   TextField,
 } from '../../components/ui';
+import { FigmaButton } from '../../components/figma/FigmaButton';
+import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { getUserFacingErrorMessage } from '../../lib/errors';
@@ -50,16 +51,14 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
       <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
         <PrimaryButton
           label="Перейти дальше"
+          width="full"
           onPress={() => router.replace(redirectTo as Href)}
         />
       </AuthCard>
     );
   return (
-    <AuthCard
-      title="Вход на Bidplace"
-      description="Войдите по email и паролю, чтобы открыть профиль автора и добавлять работы."
-    >
-      <View style={{ gap: designTokens.space.x3 }}>
+    <AuthCard title="Вход на Bidplace">
+      <View style={{ gap: designTokens.space.identityGap }}>
         <Controller
           control={form.control}
           name="email"
@@ -76,22 +75,39 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
             />
           )}
         />
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <TextField
-              label="Пароль"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={field.onBlur}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              secureTextEntry
-              error={form.formState.errors.password?.message}
-            />
-          )}
-        />
+        <View style={{ gap: designTokens.space.authorIdentityGap }}>
+          <Controller
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <TextField
+                label="Пароль"
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                secureTextEntry
+                error={form.formState.errors.password?.message}
+              />
+            )}
+          />
+          <Link
+            href={{
+              pathname: '/forgot-password',
+              params: redirectTo !== '/' ? { redirectTo } : undefined,
+            }}
+            asChild
+          >
+            <MotionPressable
+              accessibilityRole="link"
+              accessibilityLabel="Забыли пароль?"
+              onPress={() => undefined}
+            >
+              <AppText role="fieldError">Забыли пароль?</AppText>
+            </MotionPressable>
+          </Link>
+        </View>
         {submitError ? (
           <AppText
             role="bodySmall"
@@ -103,18 +119,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
         ) : null}
         <PrimaryButton
           label="Войти"
+          width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
-        <Link
-          href={{
-            pathname: '/forgot-password',
-            params: redirectTo !== '/' ? { redirectTo } : undefined,
-          }}
-          asChild
-        >
-          <TextButton label="Забыли пароль?" onPress={() => undefined} />
-        </Link>
         <Link
           href={{
             pathname: '/register',
@@ -122,8 +130,10 @@ export function LoginForm({ redirectTo = '/' }: AuthFormProps) {
           }}
           asChild
         >
-          <TextButton
-            label="Нет аккаунта? Создать аккаунт"
+          <FigmaButton
+            label="Регистрация"
+            variant="outline"
+            width="full"
             onPress={() => undefined}
           />
         </Link>
@@ -173,15 +183,13 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
       <AuthCard title="Вы уже вошли" description="Перейдите к следующему шагу.">
         <PrimaryButton
           label="Перейти дальше"
+          width="full"
           onPress={() => router.replace(redirectTo as Href)}
         />
       </AuthCard>
     );
   return (
-    <AuthCard
-      title="Регистрация"
-      description="Создайте аккаунт, чтобы подать заявку автора и публиковать работы."
-    >
+    <AuthCard title="Регистрация">
       <View style={{ gap: designTokens.space.x3 }}>
         <Controller
           control={form.control}
@@ -226,7 +234,9 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
               placeholder="+375..."
               autoComplete="tel"
               keyboardType="phone-pad"
-              error={form.formState.errors.phone?.message}
+              error={
+                form.formState.errors.phone ? 'Введите телефон' : undefined
+              }
             />
           )}
         />
@@ -257,6 +267,7 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
         ) : null}
         <PrimaryButton
           label="Создать аккаунт"
+          width="full"
           loading={form.formState.isSubmitting}
           onPress={submit}
         />
@@ -267,8 +278,10 @@ export function RegisterForm({ redirectTo = '/' }: AuthFormProps) {
           }}
           asChild
         >
-          <TextButton
-            label="Уже есть аккаунт? Войти"
+          <FigmaButton
+            label="Войти"
+            variant="outline"
+            width="full"
             onPress={() => undefined}
           />
         </Link>
