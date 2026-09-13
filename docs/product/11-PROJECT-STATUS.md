@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Web typography: font synthesis disabled
+
+- `Implemented` (web): `apps/mobile/global.css` sets `html { font-synthesis:
+  none }` so WebKit no longer fakes bold on top of per-weight Inter families
+  registered by expo-font. Proven with raster ink probes before/after in
+  `artifacts/figma-qa/typography/`; Chromium rendering is unchanged. No
+  token, native or data changes. Task file:
+  `docs/tasks/2026-09-12-figma-finish/17-H2-font-weight.md`.
+
+## 2026-09-13 — S8 chip stroke on web
+
+- `Implemented`: web cover/identity chips render the Figma gradient stroke
+  without changing the native API or cover-card masters. 264/366 card geometry,
+  clipping and responsive overflow pass.
+- Missing-media behavior is accessible and keeps card geometry, but remains
+  `Partial` visually because no Figma state exists. Evidence:
+  `FigmaChip.web.tsx`, `figma-chip-style.ts`,
+  `artifacts/figma-qa/S8/REPORT.md`.
+
 ## 2026-09-13 — S1 public share sheet
 
 - `Implemented`: existing public author/work links generate a downloadable PNG

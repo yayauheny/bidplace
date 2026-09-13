@@ -18,6 +18,8 @@ export function FigmaChip({
   tone?: FigmaChipTone;
   size?: FigmaChipSize;
 }) {
+  // Retained native compatibility: React Native has no mask-composite
+  // gradient stroke, so native keeps the existing flat border.
   return (
     <View style={[figmaChipStyle(tone), figmaChipSizeStyle(size)]}>
       <Text

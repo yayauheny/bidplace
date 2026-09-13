@@ -1,5 +1,28 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Faux bold on WebKit removed (H2, map A5)
+
+- `Implemented` (web): the text-weight hypothesis is proven for WebKit/iOS
+  Safari and closed. expo-font registers every weight family with the default
+  `font-weight: normal` descriptor; styles request 600, so WebKit synthesized
+  bold over the real SemiBold file (raster ink 6747 vs 5688 for «Анна
+  Морозова» 24/600, heavier than real Bold 6283). Chromium was unaffected.
+  `global.css` now sets `html { font-synthesis: none }`; after the change the
+  WebKit row equals the real SemiBold (5688) and 500-weight rows are unchanged.
+  Evidence: `artifacts/figma-qa/typography/faux-bold-rows-webkit-390@2x.png`
+  (before, rows A–F), `faux-bold-rows-webkit-after-390@2x.png`,
+  `author-webkit-after-390.png`;
+  task file `docs/tasks/2026-09-12-figma-finish/17-H2-font-weight.md`.
+
+## 2026-09-13 — S8 web chip gradient
+
+- `Implemented`: web `FigmaChip` uses a mask-composite white→grey gradient
+  stroke for `onDark`/`tinted`; native retains the flat-border compatibility
+  master. Compact chip geometry remains 24 px on 264×352 and 366×488 cards.
+- `Partial`: dark/light artwork, long-handle clipping and missing-media runtime
+  are captured, but Figma has no missing-media card state. Evidence:
+  `artifacts/figma-qa/S8/REPORT.md`.
+
 ## 2026-09-13 — S1 ShareSheet Figma acceptance
 
 - `Implemented`: `ShareSheet` matches Figma `597:19045` with a fixed 164px QR

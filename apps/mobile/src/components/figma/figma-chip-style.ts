@@ -4,6 +4,15 @@ import { figmaTokens } from '@bidplace/design-tokens';
 export type FigmaChipTone = 'onLight' | 'onDark' | 'onGlass' | 'tinted';
 export type FigmaChipSize = 'compact' | 'profile' | 'work';
 
+export const figmaChipGradientStroke = {
+  start: 'rgba(255, 255, 255, 0.16)',
+  end: 'rgba(153, 153, 153, 0.16)',
+} as const;
+
+export function figmaChipUsesGradientStroke(tone: FigmaChipTone) {
+  return tone === 'onDark' || tone === 'tinted';
+}
+
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   if (tone === 'onGlass') {
     return {

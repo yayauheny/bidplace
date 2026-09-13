@@ -1,3 +1,12 @@
+## Web chip gradient stroke
+
+`FigmaChip.web.tsx` is the web master for `onDark` and `tinted` chip strokes.
+It paints the captured white-16% → grey-16% gradient in a 1px absolute layer
+and removes the center with `mask-composite: exclude`; content and background
+remain in the shared chip API. `FigmaChip.tsx` is the native-compatible master
+and intentionally keeps the flat border because React Native has no equivalent
+mask composition.
+
 ## 2026-09-13 — Achievement tokens
 
 Frame 219 uses `achievement` radius 20, `achievementDate` Inter Medium 18/24, and `achievementStatement` Inter Medium 20/28. Text-only cards use the existing surfaceMuted token and a minimum 3:4 height, expanding for long accessible text.
@@ -106,7 +115,12 @@ use only a subtle 82% opacity press response over 80 ms; they do not add a
 selected fill, filter or shadow. Reduced motion removes that opacity transition.
 
 Runtime type is bundled Inter. Figma names Geist on some frames; files are not
-in the app.
+in the app. On web each weight is its own `@font-face` family
+(`Inter_600SemiBold`) registered by expo-font without a `font-weight`
+descriptor, so `global.css` sets `html { font-synthesis: none }`: the file is
+already the intended weight and browsers must not add faux bold on top of it
+(WebKit did, +19 % ink at 24/600). Typography tokens keep `fontWeight` for
+native semantics; no italic faces exist.
 
 Skipped nodes and unused variants: [`09-FIGMA-CUTOVER-GAPS.md`](09-FIGMA-CUTOVER-GAPS.md).
 
