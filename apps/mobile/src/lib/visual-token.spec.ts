@@ -83,6 +83,23 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.typography.nav.fontFamily).toBe('Inter_500Medium');
   });
 
+  it('keeps author tab tracking and count from Figma 621:19524 / 621:19525', () => {
+    expect(designTokens.typography.profileTab).toMatchObject({
+      fontFamily: 'Inter_500Medium',
+      fontSize: 16,
+      lineHeight: 19,
+      letterSpacing: -0.32,
+      fontWeight: '500',
+    });
+    expect(designTokens.typography.profileTabCount).toMatchObject({
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      lineHeight: 14,
+      letterSpacing: -0.24,
+      fontWeight: '400',
+    });
+  });
+
   it('uses the measured media interaction timing', () => {
     expect(designTokens.motion.media).toBe(300);
     expect(designTokens.motion.easing).toBe('cubic-bezier(0, 0, 0.2, 1)');

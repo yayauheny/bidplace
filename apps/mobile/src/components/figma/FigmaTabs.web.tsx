@@ -51,11 +51,15 @@ export function FigmaTabs({
           style={{
             ...designTokens.typography.profileTab,
             lineHeight: `${designTokens.typography.profileTab.lineHeight}px`,
+            letterSpacing: `${designTokens.typography.profileTab.letterSpacing}px`,
             color:
               value === tab.value
                 ? designTokens.color.ink
                 : designTokens.color.textSecondary,
-            padding: '0 0 4px',
+            padding:
+              tab.count !== undefined
+                ? `0 ${designTokens.space.x5}px ${designTokens.space.x1}px 0`
+                : `0 0 ${designTokens.space.x1}px`,
             background: 'transparent',
             border: 0,
             borderBottom: `2px solid ${value === tab.value ? designTokens.color.ink : 'transparent'}`,
@@ -64,12 +68,25 @@ export function FigmaTabs({
             flexShrink: 0,
           }}
         >
-          {tab.label}
-          {tab.count !== undefined ? (
-            <sup style={{ marginLeft: designTokens.space.x1, fontSize: 12 }}>
-              {tab.count}
-            </sup>
-          ) : null}
+          <span style={{ position: 'relative' }}>
+            {tab.label}
+            {tab.count !== undefined ? (
+              <span
+                data-testid="figma-tab-count"
+                style={{
+                  ...designTokens.typography.profileTabCount,
+                  lineHeight: `${designTokens.typography.profileTabCount.lineHeight}px`,
+                  letterSpacing: `${designTokens.typography.profileTabCount.letterSpacing}px`,
+                  position: 'absolute',
+                  top: 0,
+                  left: '100%',
+                  marginLeft: designTokens.space.x1,
+                }}
+              >
+                {tab.count}
+              </span>
+            ) : null}
+          </span>
         </button>
       ))}
     </div>
