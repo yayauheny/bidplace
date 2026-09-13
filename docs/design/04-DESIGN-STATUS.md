@@ -1,5 +1,19 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Acceptance sweep, mobile web scope
+
+- Founder decision 2026-09-13: implementation and acceptance cover mobile web
+  (390) only; native iOS/Android and 1024/1440 are not acceptance targets.
+- `Implemented` / visually accepted at 390 for Work, Author, Home and web cover
+  cards after an independent pass: no horizontal overflow, error + retry
+  states, broken gallery media, zoom 200 % with reduced motion, content ending
+  above the dock, tab URL state (Work), compact header (Author). Report and
+  screenshots: `artifacts/figma-qa/13-acceptance/REPORT.md`.
+- `Needs verification`: native cover frost
+  (`docs/tasks/2026-09-12-figma-finish/18-H3-native-frost.md`).
+- Open founder decisions: gallery arrows (W16); author About tab without URL
+  state. Parallel package S1/S2/S4/S7/S8 is tracked separately.
+
 ## 2026-09-13 — Faux bold on WebKit removed (H2, map A5)
 
 - `Implemented` (web): the text-weight hypothesis is proven for WebKit/iOS

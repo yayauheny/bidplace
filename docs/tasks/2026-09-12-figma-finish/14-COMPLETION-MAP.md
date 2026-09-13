@@ -22,14 +22,14 @@
 
 | Область | Task | Technical pass | Visual accepted | Что осталось |
 |---|---|---|---|---|
-| Страница автора: полная шапка, атмосфера, чипы, соцсети, tabs, категории, About, достижения | 02 | Да (`bf0eb81`, `3b3ccae`) | Partial | Матрица состояний §3.2, кадрирование аватара сверху (незакоммичено), плавность compact-перехода |
-| Страница работы: галерея, share, tabs, facts, related, 404 | 03 | Да (`c0b2a46`, `917b704`) | Partial | Точные отступы и стили §3.1, кнопка «Смотреть все», состояния ошибки/медиа, zoom 200 %, reduced motion |
-| Cover cards 264×352 / 366×488 (work, author), AuthorIdentity | 04 | Да (существующие masters + hug-frost) | Partial | C5 крайние данные §3.3; gradient stroke чипов остаётся плоским 16 % |
+| Страница автора: полная шапка, атмосфера, чипы, соцсети, tabs, категории, About, достижения | 02 | Да (`bf0eb81`, `3b3ccae`, `f2d05c8`) | Accepted 390 mobile web (`artifacts/figma-qa/13-acceptance/REPORT.md`) | Compact-ник при 3 соцсетях ограничен данными; About не deep-linkable (граница) |
+| Страница работы: галерея, share, tabs, facts, related, 404 | 03 | Да (`c0b2a46`, `917b704`, `c490bd2`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: error, broken media, zoom 200 %, reduced motion, dock) | W16 стрелки галереи — решение основателя |
+| Cover cards 264×352 / 366×488 (work, author), AuthorIdentity | 04 | Да (`d97446a`, S8 в `72429bd`) | Accepted web; native `Needs verification` | Native frost — `18-H3-native-frost.md` (отложено, скоуп mobile web) |
 | ShareSheet | 05 | Да (`48c38b7`) | Partial | Реальное сохранение PNG в обычном браузере, security review |
 | Фильтры и сортировка | 06 | — | — | Отдельный пакет, не в этой карте |
-| Главная | 07 | Да (composition) | Partial | Логотип/заголовок/ритм совпадают с `436:1137`; section→section 40 без узла; 1024/1440 не сняты |
+| Главная | 07 | Да (`8886f06`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: overflow, dock, error) | section→section 40 без узла Figma (граница); 1024/1440 вне скоупа |
 | Каталоги, auth, заявка, создание работы | 08–12 | — | — | После принятия 06 |
-| Независимая приёмка | 13 | — | — | Финальный проход |
+| Независимая приёмка | 13 | — | Выполнена для 02/03/04/07 (`artifacts/figma-qa/13-acceptance/REPORT.md`) | S1/S2/S4/S7/S8 — параллельный пакет |
 
 ## 3. Расхождения по элементам
 

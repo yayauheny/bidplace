@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Portfolio screens accepted for mobile web
+
+- Scope decision (founder, 2026-09-13): the portfolio MVP is delivered and
+  accepted as mobile web only; native builds and desktop widths are outside
+  the current acceptance gate.
+- `Implemented` at 390: public Work (`/product/[publicId]`), public Author
+  (`/seller/[slug]`), Home (`/`) and web cover cards pass the independent
+  sweep — overflow, error/retry, missing media, zoom 200 %, reduced motion,
+  dock reserve, tab URL state. Evidence:
+  `artifacts/figma-qa/13-acceptance/REPORT.md`,
+  `docs/tasks/2026-09-12-figma-finish/14-COMPLETION-MAP.md` §2.
+- `Needs verification`: native `CoverFrost` parity (task file
+  `18-H3-native-frost.md`). No RFC gaps introduced; gallery arrows (W16) and
+  the local-state About tab are recorded as boundaries awaiting a founder
+  decision, not contract changes.
+
 ## 2026-09-13 — Web typography: font synthesis disabled
 
 - `Implemented` (web): `apps/mobile/global.css` sets `html { font-synthesis:
