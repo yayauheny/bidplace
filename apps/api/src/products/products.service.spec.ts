@@ -1,14 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { publicDiscoveryQuerySchema } from '@bidplace/contracts';
+import { portfolioWorksQuerySchema } from '@bidplace/contracts';
 
 import { ProductsService } from './products.service';
 import {
   publicCatalogProductWhere,
   publicProductContentWhere,
-  selectPublicListing,
 } from './public-visibility';
-import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
-import { productImageMetadataSelect } from './products.mapper';
 
 const product = {
   id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -58,6 +55,33 @@ const approvedProduct = {
   ],
 };
 
+function publishedRevisionGallery() {
+  const image = approvedProduct.images[0]!;
+  return {
+    title: approvedProduct.title,
+    story: approvedProduct.story,
+    categoryId: approvedProduct.categoryId,
+    technique: approvedProduct.technique,
+    materials: approvedProduct.materials,
+    dimensions: approvedProduct.dimensions,
+    year: approvedProduct.year,
+    uniqueness: approvedProduct.uniqueness,
+    images: [
+      {
+        position: 0,
+        image: {
+          id: image.id,
+          mimeType: image.mimeType,
+          byteLength: image.byteLength,
+          checksum: image.checksum,
+          width: image.width,
+          height: image.height,
+        },
+      },
+    ],
+  };
+}
+
 function createWritePrisma(options: {
   product: Record<string, unknown> | null;
   responseProduct?: Record<string, unknown>;
@@ -73,6 +97,7 @@ function createWritePrisma(options: {
       findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue(options.responseProduct ?? options.product),
+      update: vi.fn().mockResolvedValue(options.responseProduct ?? options.product),
       updateMany: vi.fn().mockResolvedValue({
         count: options.updateManyCount ?? 1,
       }),
@@ -125,6 +150,7 @@ describe('ProductsService', () => {
   it('keeps public portfolio visibility independent from listings', () => {
     expect(publicCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
+      city: { not: '' },
     });
     expect(publicCatalogProductWhere).not.toHaveProperty('listings');
     expect(publicCatalogProductWhere).toEqual(
@@ -133,21 +159,6 @@ describe('ProductsService', () => {
     expect(publicProductContentWhere).toHaveProperty('publishedRevisionId', {
       not: null,
     });
-  });
-
-  it('selects a live listing over an older ended listing', () => {
-    const ended = {
-      id: 'ended',
-      status: 'ENDED' as const,
-      createdAt: new Date('2026-07-01'),
-    };
-    const live = {
-      id: 'live',
-      status: 'LIVE' as const,
-      createdAt: new Date('2026-07-02'),
-    };
-
-    expect(selectPublicListing([ended, live])?.id).toBe('live');
   });
 
   it('retries a Product public ID collision without exposing the database error', async () => {
@@ -192,20 +203,21 @@ describe('ProductsService', () => {
     expect(productCreate).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects owner edits when a Product has a scheduled or live Listing', async () => {
+  it('allows owner edits when a leftover scheduled Listing row exists', async () => {
     const { prisma, tx } = createWritePrisma({
       product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
+      responseProduct: {
+        ...approvedProduct,
+        status: 'DRAFT',
+        title: 'Unlocked',
+      },
     });
     const service = new ProductsService(prisma as never, {} as never);
 
     await expect(
-      service.update('owner-id', product.id, { title: 'Locked' }),
-    ).rejects.toThrow('Product is locked by an active Listing');
-    expect(tx.product.updateMany).not.toHaveBeenCalled();
-    expect(prisma.$transaction).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
-    );
+      service.update('owner-id', product.id, { title: 'Unlocked' }),
+    ).resolves.toMatchObject({ product: expect.objectContaining({ title: 'Unlocked' }) });
+    expect(tx.product.updateMany).toHaveBeenCalled();
   });
 
   it('allows the approved owner to edit a rejected Product', async () => {
@@ -233,20 +245,263 @@ describe('ProductsService', () => {
         data: { title: 'Corrected title' },
       }),
     );
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: { title: 'Corrected title' },
+    });
   });
 
-  it('keeps approved and pending-review Products locked for owner edits', async () => {
-    for (const status of ['APPROVED', 'PENDING_REVIEW', 'ARCHIVED'] as const) {
-      const { prisma, tx } = createWritePrisma({
-        product: ownerProduct(status),
-      });
-      const service = new ProductsService(prisma as never, {} as never);
+  it('keeps pending-review Products locked for owner edits', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('PENDING_REVIEW'),
+    });
+    const service = new ProductsService(prisma as never, {} as never);
 
-      await expect(
-        service.update('owner-id', product.id, { title: 'Locked' }),
-      ).rejects.toThrow('Product cannot be edited');
-      expect(tx.product.updateMany).not.toHaveBeenCalled();
-    }
+    await expect(
+      service.update('owner-id', product.id, { title: 'Locked' }),
+    ).rejects.toThrow('Product cannot be edited');
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not fork an approved Work when the PATCH body is empty', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: {
+        ...ownerProduct('APPROVED'),
+        publishedRevisionId: 'revision-published',
+        editingRevisionId: 'revision-published',
+      },
+      responseProduct: approvedProduct,
+      extraTx: {
+        productRevision: {
+          create: vi.fn(),
+          update: vi.fn(),
+        },
+      },
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await service.update('owner-id', product.id, {});
+
+    expect(tx.productRevision.create).not.toHaveBeenCalled();
+    expect(tx.productRevision.update).not.toHaveBeenCalled();
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects hide and unhide for another user', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: {
+        ...ownerProduct('APPROVED'),
+        publishedRevisionId: 'revision-published',
+        sellerProfile: { userId: 'other-id', status: 'APPROVED' },
+      },
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await expect(service.hide('owner-id', product.id)).rejects.toThrow(
+      'Product is not owned by user',
+    );
+    await expect(service.unhide('owner-id', product.id)).rejects.toThrow(
+      'Product is not owned by user',
+    );
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('hides an approved Work from the public catalog without dropping its published revision', async () => {
+    const current = {
+      ...ownerProduct('APPROVED'),
+      publishedRevisionId: 'revision-published',
+    };
+    const hidden = { ...approvedProduct, status: 'ARCHIVED' as const };
+    const { prisma, tx } = createWritePrisma({
+      product: current,
+      responseProduct: hidden,
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const result = await service.hide('owner-id', product.id);
+
+    expect(result.product.status).toBe('ARCHIVED');
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { id: product.id },
+      data: { status: 'ARCHIVED' },
+    });
+  });
+
+  it('unhides an archived Work only when a published revision exists', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: {
+        ...ownerProduct('ARCHIVED'),
+        publishedRevisionId: null,
+      },
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await expect(service.unhide('owner-id', product.id)).rejects.toThrow(
+      'Product has no published revision',
+    );
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('hides an approved Work only when a published revision exists', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: ownerProduct('APPROVED'),
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await expect(service.hide('owner-id', product.id)).rejects.toThrow(
+      'Product has no published revision',
+    );
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it('projects public products from the published gallery even when live images exist', () => {
+    const catalogProduct = {
+      ...approvedProduct,
+      status: 'APPROVED' as const,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      editingRevisionId: null,
+      publishedRevisionId: 'revision-published',
+      sellerProfile: {
+        id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+        slug: 'seller-slug',
+        sellerType: 'creator' as const,
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        city: 'Минск',
+        practice: null,
+        socialLink: 'https://example.com/seller',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Short',
+      },
+      publishedRevision: null,
+    };
+    const service = new ProductsService({} as never, {} as never);
+
+    expect(service.toPortfolioItem(catalogProduct as never)).toBeNull();
+  });
+
+  it('omits portfolio items whose author city is blank', () => {
+    const catalogProduct = {
+      ...approvedProduct,
+      status: 'APPROVED' as const,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      editingRevisionId: null,
+      publishedRevisionId: 'revision-published',
+      sellerProfile: {
+        id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+        slug: 'seller-slug',
+        sellerType: 'creator' as const,
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        city: '   ',
+        practice: null,
+        socialLink: 'https://example.com/seller',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Short',
+      },
+      publishedRevision: {
+        title: 'Предмет',
+        story: null,
+        categoryId: approvedProduct.categoryId,
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        images: [
+          {
+            position: 0,
+            image: {
+              id: approvedProduct.images[0]!.id,
+              mimeType: 'image/png',
+              byteLength: 10,
+              checksum: 'a'.repeat(64),
+              width: 1200,
+              height: 1600,
+            },
+          },
+        ],
+      },
+    };
+    const service = new ProductsService({} as never, {} as never);
+
+    expect(service.toPortfolioItem(catalogProduct as never)).toBeNull();
+  });
+
+  it('lists RFC-minimal portfolio works from the published revision without a story', async () => {
+    const catalogProduct = {
+      ...approvedProduct,
+      status: 'APPROVED' as const,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      story: null,
+      uniqueness: null,
+      provenance: null,
+      city: null,
+      deliveryInfo: null,
+      sellerProfile: {
+        id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+        slug: 'seller-slug',
+        sellerType: 'creator' as const,
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        city: 'Минск',
+        practice: null,
+        socialLink: 'https://example.com/seller',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Short',
+      },
+      publishedRevision: {
+        title: 'Предмет',
+        story: null,
+        categoryId: approvedProduct.categoryId,
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        images: [
+          {
+            position: 0,
+            image: {
+              id: approvedProduct.images[0]!.id,
+              mimeType: 'image/png',
+              byteLength: 10,
+              checksum: 'a'.repeat(64),
+              width: 1200,
+              height: 1600,
+            },
+          },
+        ],
+      },
+    };
+    const prisma = {
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValue([{ id: product.id, total: 1 }]),
+      product: {
+        findMany: vi.fn().mockResolvedValue([catalogProduct]),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const result = await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ sort: 'newest' }),
+    );
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.product.story).toBeNull();
+    expect(result.items[0]?.product.images[0]?.id).toBe(
+      approvedProduct.images[0]!.id,
+    );
   });
 
   it('copies a published Product into an editing revision without changing its public fields', async () => {
@@ -307,18 +562,20 @@ describe('ProductsService', () => {
 
     expect(result.product.title).toBe(approvedProduct.title);
     expect(tx.product.updateMany).not.toHaveBeenCalled();
-    expect(tx.productRevision.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        productId: product.id,
-        version: 2,
-        status: 'DRAFT',
-        images: {
-          createMany: {
-            data: [{ imageId: approvedProduct.images[0]!.id, position: 0 }],
+    expect(tx.productRevision.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          productId: product.id,
+          version: 2,
+          status: 'DRAFT',
+          images: {
+            createMany: {
+              data: [{ imageId: approvedProduct.images[0]!.id, position: 0 }],
+            },
           },
-        },
+        }),
       }),
-    });
+    );
     expect(tx.productRevision.update).toHaveBeenCalledWith({
       where: { id: 'revision-editing' },
       data: { title: 'Исправленное название' },
@@ -445,7 +702,7 @@ describe('ProductsService', () => {
     ).rejects.toThrow('Product is not owned by user');
   });
 
-  it('locks creation-story writes after submit and when a Listing is live', async () => {
+  it('locks creation-story writes after submit but not because of leftover Listing rows', async () => {
     const pending = createWritePrisma({
       product: ownerProduct('PENDING_REVIEW'),
     });
@@ -458,16 +715,19 @@ describe('ProductsService', () => {
     ).rejects.toThrow('Product creation story is locked');
     expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
 
-    const listed = createWritePrisma({
+    const leftoverListing = createWritePrisma({
       product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
     });
+    leftoverListing.tx.productCreationStep.findMany.mockResolvedValue([]);
     await expect(
-      new ProductsService(listed.prisma as never, {} as never).reorderCreationSteps(
-        'owner-id',
-        product.id,
-        [],
-      ),
-    ).rejects.toThrow('Product is locked by an active Listing');
+      new ProductsService(
+        leftoverListing.prisma as never,
+        {} as never,
+      ).replaceCreationStory('owner-id', product.id, {
+        intro: 'Intro',
+        steps: [],
+      }),
+    ).resolves.toBeDefined();
   });
 
   it('replaces creation story only after the in-transaction writable guard', async () => {
@@ -492,56 +752,12 @@ describe('ProductsService', () => {
     );
   });
 
-  it('uses a narrow seller select for public Product queries', async () => {
-    const publicProduct = {
-      ...approvedProduct,
-      status: 'APPROVED' as const,
-      publishedAt: null,
-    };
-    const prisma = {
-      product: {
-        findFirst: vi.fn().mockResolvedValue({
-          ...publicProduct,
-          sellerProfile: {
-            id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
-            slug: 'seller-slug',
-            sellerType: 'creator',
-            discipline: 'Керамика',
-            fullName: 'Seller',
-            country: 'BY',
-            socialLink: 'https://example.com/seller',
-            shortDescription: 'Short',
-          },
-          creationSteps: [],
-          listings: [],
-        }),
-      },
-    };
-    const service = new ProductsService(prisma as never, {} as never);
-
-    await service.getPublic('public-id');
-
-    expect(prisma.product.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        include: expect.objectContaining({
-          sellerProfile: {
-            select: publicSellerProfileSelect,
-          },
-          images: {
-            orderBy: { position: 'asc' },
-            select: productImageMetadataSelect,
-          },
-        }),
-      }),
-    );
-    expect(productImageMetadataSelect).not.toHaveProperty('data');
-  });
-
-  it('paginates public catalog rows before hydrating narrow image metadata', async () => {
+  it('paginates portfolio catalog rows before hydrating published images', async () => {
     const publicProduct = {
       ...approvedProduct,
       status: 'APPROVED' as const,
       publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      publishedRevision: publishedRevisionGallery(),
       sellerProfile: {
         id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
         slug: 'seller-slug',
@@ -549,43 +765,23 @@ describe('ProductsService', () => {
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
+        city: 'Минск',
         socialLink: 'https://example.com/seller',
         shortDescription: 'Short',
       },
-      listings: [
-        {
-          id: 'c0d82a10-3170-49eb-904f-a8bc87d311a7',
-          productId: product.id,
-          status: 'LIVE' as const,
-          startsAt: new Date('2026-07-19T00:00:00.000Z'),
-          originalEndsAt: new Date('2026-07-20T00:00:00.000Z'),
-          endsAt: new Date('2026-07-20T00:00:00.000Z'),
-          currentPrice: { toNumber: () => 10 },
-          bidCount: 1,
-          closedAt: null,
-          createdAt: new Date('2026-07-19T00:00:00.000Z'),
-          updatedAt: new Date('2026-07-19T00:00:00.000Z'),
-          auctionRules: { startPrice: { toNumber: () => 5 } },
-        },
-      ],
     };
     const prisma = {
       $queryRaw: vi
         .fn()
-        .mockResolvedValue([])
-        .mockResolvedValueOnce([{ id: product.id, total: 2 }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]),
+        .mockResolvedValueOnce([{ id: product.id, total: 2 }]),
       product: {
         findMany: vi.fn().mockResolvedValue([publicProduct]),
       },
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({ limit: 1, sort: 'endingSoon' }),
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ limit: 1, sort: 'newest' }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
@@ -594,28 +790,23 @@ describe('ProductsService', () => {
     expect(pageQueryText).not.toContain('status_rank');
     expect(pageQueryText).not.toContain('"listings"');
     expect(pageQueryText).toContain('NULLIF(BTRIM(p."title"), \'\')');
-    expect(pageQueryText).toContain('FROM "product_images"');
+    expect(pageQueryText).toContain('FROM "product_revision_images"');
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: [product.id] } },
-        select: expect.objectContaining({
-          images: expect.objectContaining({
-            select: expect.not.objectContaining({ data: expect.anything() }),
-          }),
-        }),
       }),
     );
   });
 
-  it('orders newest public works by publishedAt in the database query', async () => {
+  it('orders newest portfolio works by publishedAt in the database query', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([]),
       product: { findMany: vi.fn() },
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({ sort: 'newest' }),
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ sort: 'newest' }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
@@ -623,23 +814,22 @@ describe('ProductsService', () => {
     expect(prisma.product.findMany).not.toHaveBeenCalled();
   });
 
-  it('applies confirmed author and uniqueness discovery filters in SQL', async () => {
+  it('applies confirmed author filters in SQL', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([]),
       product: { findMany: vi.fn() },
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({
         author: 'marina-k',
-        uniqueness: 'One',
       }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
-    expect(pageQueryText).toContain('p."uniqueness"');
+    expect(pageQueryText).not.toContain('p."uniqueness"');
   });
 });

@@ -20,24 +20,12 @@ import { parseBody } from '../core/validation';
 import { RateLimit } from '../core/rate-limit/rate-limit.decorator';
 import { RateLimitGuard } from '../core/rate-limit/rate-limit.guard';
 import {
+  acceptSupportedUploadMimeType,
   getImageCacheControl,
   productImageUploadLimits,
-  supportedImageMimeTypes,
   type RawImageUpload,
 } from './image-policy';
 import { ImagesService } from './images.service';
-
-function acceptSupportedUploadMimeType(
-  mimetype: string,
-  done: (error: Error | null, accept: boolean) => void,
-): void {
-  if (supportedImageMimeTypes.includes(mimetype as never)) {
-    done(null, true);
-    return;
-  }
-
-  done(new BadRequestException('Unsupported image type'), false);
-}
 
 @Controller()
 export class ImagesController {

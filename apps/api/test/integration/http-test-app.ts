@@ -21,7 +21,6 @@ export async function createHttpTestApp(
   process.env.TRUST_PROXY = 'true';
   process.env.JWT_SECRET = 'wave-3-http-test-secret';
   process.env.TEST_EMAIL_BYPASS = 'false';
-  process.env.COMMERCE_ENABLED = 'true';
 
   const { AppModule } = await import('../../src/app.module');
   const serverEnv = loadServerEnv();
@@ -98,6 +97,10 @@ export class HttpTestClient {
 
   patch(path: string, body?: HttpRequestInit['body']): Promise<Response> {
     return this.request(path, { method: 'PATCH', body });
+  }
+
+  put(path: string, body?: HttpRequestInit['body']): Promise<Response> {
+    return this.request(path, { method: 'PUT', body });
   }
 
   delete(path: string): Promise<Response> {

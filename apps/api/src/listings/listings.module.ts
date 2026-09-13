@@ -1,2 +1,0 @@
-import { Module } from '@nestjs/common'; import { AuthModule } from '../auth'; import { CommerceCapabilityModule } from '../core/commerce'; import { DatabaseModule } from '../core/database'; import { ListingsController } from './listings.controller'; import { ListingsService } from './listings.service';
-@Module({ imports: [AuthModule, CommerceCapabilityModule, DatabaseModule], controllers: [ListingsController], providers: [ListingsService], exports: [ListingsService] }) export class ListingsModule {}

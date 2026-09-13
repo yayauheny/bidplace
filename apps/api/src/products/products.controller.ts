@@ -1,19 +1,16 @@
 import {
   Body,
   Controller,
-  Get,
   Param,
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   productWriteRequestSchema,
   creationStepOrderRequestSchema,
   creationStoryWriteRequestSchema,
-  publicDiscoveryQuerySchema,
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
@@ -23,18 +20,6 @@ import { ProductsService } from './products.service';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
-
-  @Get()
-  list(@Query() query: unknown) {
-    return this.products.listPublic(
-      parseBody(publicDiscoveryQuerySchema, query),
-    );
-  }
-
-  @Get(':publicId')
-  get(@Param('publicId') publicId: string) {
-    return this.products.getPublic(publicId);
-  }
 
   @Post()
   @UseGuards(BearerAuthGuard)
@@ -49,6 +34,18 @@ export class ProductsController {
   @UseGuards(BearerAuthGuard)
   submit(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.products.submit(auth.sub, id);
+  }
+
+  @Post(':id/hide')
+  @UseGuards(BearerAuthGuard)
+  hide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.products.hide(auth.sub, id);
+  }
+
+  @Post(':id/unhide')
+  @UseGuards(BearerAuthGuard)
+  unhide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+    return this.products.unhide(auth.sub, id);
   }
 
   @Patch(':id')

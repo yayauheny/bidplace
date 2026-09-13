@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 
 import { PrismaService } from '../database';
 import { parseImageKey } from './image-key';
@@ -11,13 +12,28 @@ import {
 type ImageStoragePayload = {
   data: Uint8Array<ArrayBuffer>;
   mimeType: string;
+  byteLength: number;
+  checksum: string;
 };
 
 function storagePayload(object: ImageObject): ImageStoragePayload {
+  const data = Uint8Array.from(object.bytes) as Uint8Array<ArrayBuffer>;
   return {
-    data: Uint8Array.from(object.bytes) as Uint8Array<ArrayBuffer>,
+    data,
     mimeType: object.mimeType,
+    byteLength: data.byteLength,
+    checksum: createHash('sha256').update(data).digest('hex'),
   };
+}
+
+function storedObject(
+  data: Uint8Array | null | undefined,
+  mimeType: string | null | undefined,
+): ImageObject | null {
+  if (!data?.byteLength || !mimeType) {
+    return null;
+  }
+  return { bytes: data, mimeType };
 }
 
 @Injectable()
@@ -39,13 +55,19 @@ export class PostgresImageStore extends ImageStore {
       case 'product-image':
         await db.productImage.update({
           where: { id: parsed.id },
-          data: payload,
+          data: {
+            data: payload.data,
+            mimeType: payload.mimeType,
+          },
         });
         return;
       case 'creation-step':
         await db.productCreationStep.update({
           where: { id: parsed.id },
-          data: payload,
+          data: {
+            data: payload.data,
+            mimeType: payload.mimeType,
+          },
         });
         return;
       case 'seller-photo':
@@ -54,6 +76,28 @@ export class PostgresImageStore extends ImageStore {
           data: {
             profilePhotoMimeType: payload.mimeType,
             profilePhotoData: payload.data,
+          },
+        });
+        return;
+      case 'seller-profile-revision':
+        await db.sellerProfileRevision.update({
+          where: { id: parsed.id },
+          data: {
+            profilePhotoMimeType: payload.mimeType,
+            profilePhotoByteLength: payload.byteLength,
+            profilePhotoChecksum: payload.checksum,
+            profilePhotoData: payload.data,
+          },
+        });
+        return;
+      case 'seller-achievement':
+        await db.sellerProfileRevisionAchievement.update({
+          where: { id: parsed.id },
+          data: {
+            mimeType: payload.mimeType,
+            byteLength: payload.byteLength,
+            checksum: payload.checksum,
+            data: payload.data,
           },
         });
         return;
@@ -69,30 +113,14 @@ export class PostgresImageStore extends ImageStore {
           where: { id: parsed.id },
           select: { data: true, mimeType: true },
         });
-
-        if (!image) {
-          return null;
-        }
-
-        return {
-          bytes: image.data,
-          mimeType: image.mimeType,
-        };
+        return storedObject(image?.data, image?.mimeType);
       }
       case 'creation-step': {
         const step = await this.prisma.productCreationStep.findUnique({
           where: { id: parsed.id },
           select: { data: true, mimeType: true },
         });
-
-        if (!step?.data || !step.mimeType) {
-          return null;
-        }
-
-        return {
-          bytes: step.data,
-          mimeType: step.mimeType,
-        };
+        return storedObject(step?.data, step?.mimeType);
       }
       case 'seller-photo': {
         const profile = await this.prisma.sellerProfile.findUnique({
@@ -102,15 +130,31 @@ export class PostgresImageStore extends ImageStore {
             profilePhotoMimeType: true,
           },
         });
-
-        if (!profile) {
-          return null;
-        }
-
-        return {
-          bytes: profile.profilePhotoData,
-          mimeType: profile.profilePhotoMimeType,
-        };
+        return storedObject(
+          profile?.profilePhotoData,
+          profile?.profilePhotoMimeType,
+        );
+      }
+      case 'seller-profile-revision': {
+        const revision = await this.prisma.sellerProfileRevision.findUnique({
+          where: { id: parsed.id },
+          select: {
+            profilePhotoData: true,
+            profilePhotoMimeType: true,
+          },
+        });
+        return storedObject(
+          revision?.profilePhotoData,
+          revision?.profilePhotoMimeType,
+        );
+      }
+      case 'seller-achievement': {
+        const achievement =
+          await this.prisma.sellerProfileRevisionAchievement.findUnique({
+            where: { id: parsed.id },
+            select: { data: true, mimeType: true },
+          });
+        return storedObject(achievement?.data, achievement?.mimeType);
       }
     }
   }
@@ -123,6 +167,37 @@ export class PostgresImageStore extends ImageStore {
       case 'product-image':
       case 'seller-photo':
         return;
+      case 'seller-profile-revision':
+        await db.sellerProfileRevision.update({
+          where: { id: parsed.id },
+          data: {
+            profilePhotoMimeType: null,
+            profilePhotoByteLength: null,
+            profilePhotoChecksum: null,
+            profilePhotoData: null,
+          },
+        });
+        return;
+      case 'seller-achievement': {
+        const achievement =
+          await db.sellerProfileRevisionAchievement.findUnique({
+            where: { id: parsed.id },
+            select: { id: true },
+          });
+        if (!achievement) {
+          return;
+        }
+        await db.sellerProfileRevisionAchievement.update({
+          where: { id: parsed.id },
+          data: {
+            mimeType: null,
+            byteLength: null,
+            checksum: null,
+            data: null,
+          },
+        });
+        return;
+      }
       case 'creation-step':
         await db.productCreationStep.update({
           where: { id: parsed.id },

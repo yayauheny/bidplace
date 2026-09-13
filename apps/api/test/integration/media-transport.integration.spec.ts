@@ -52,23 +52,47 @@ describe('public media transport over HTTP and PostgreSQL', () => {
         status: 'DRAFT',
       },
     });
-    await prisma.productImage.createMany({
-      data: Array.from(
-        { length: productImageUploadLimits.maxFiles },
-        (_, position) => ({
-          productId: product.id,
-          position,
-          mimeType: 'image/png',
-          byteLength: permissionImage.byteLength,
-          data: permissionImage,
-          checksum: position.toString().padStart(64, '0'),
+    const images = await Promise.all(
+      Array.from({ length: productImageUploadLimits.maxFiles }, (_, position) =>
+        prisma.productImage.create({
+          data: {
+            productId: product.id,
+            position,
+            mimeType: 'image/png',
+            byteLength: permissionImage.byteLength,
+            data: permissionImage,
+            checksum: position.toString().padStart(64, '0'),
+          },
         }),
       ),
+    );
+    const revision = await prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 1,
+        status: 'DRAFT',
+        title: 'Capacity test',
+        images: {
+          create: images.map((image, position) => ({
+            imageId: image.id,
+            position,
+          })),
+        },
+      },
+      select: { id: true },
     });
-    const images = new ImagesService(prisma as never);
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { editingRevisionId: revision.id },
+    });
+    const service = new ImagesService(prisma as never, {
+      put: async () => undefined,
+      get: async () => null,
+      delete: async () => undefined,
+    } as never);
 
     await expect(
-      images.add(fixture.sellers.approved.id, product.id, [
+      service.add(fixture.sellers.approved.id, product.id, [
         { buffer: permissionImage, mimetype: 'image/png' },
       ]),
     ).rejects.toThrow(
@@ -90,11 +114,6 @@ describe('public media transport over HTTP and PostgreSQL', () => {
       select: { id: true },
     });
 
-    await prisma.listing.update({
-      where: { id: fixture.approvedListingId },
-      data: { status: 'SCHEDULED' },
-    });
-
     const guest = new HttpTestClient(
       http.baseUrl,
       'http://localhost:8081',
@@ -106,21 +125,14 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     expect(imageResponse.headers.get('cache-control')).toBe(
       'public, max-age=31536000, immutable',
     );
-    expect(
-      (await guest.get(`/listings/${fixture.approvedListingId}/bids`)).status,
-    ).toBe(200);
-    expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
-      200,
-    );
+    expect((await guest.get(`/authors/${seller.slug}`)).status).toBe(200);
 
     const photoResponse = await guest.get(`/sellers/${seller.slug}/photo`);
     await expectImageResponse(photoResponse);
     expect(photoResponse.headers.get('cache-control')).toBe(
       'public, max-age=0, must-revalidate',
     );
-    expect((await guest.get(`/sellers/${seller.slug}/detail`)).status).toBe(
-      200,
-    );
+    expect((await guest.get(`/authors/${seller.slug}`)).status).toBe(200);
 
     await prisma.sellerProfile.update({
       where: { id: fixture.sellers.approved.profileId },
@@ -128,8 +140,6 @@ describe('public media transport over HTTP and PostgreSQL', () => {
     });
 
     expect((await guest.get(`/images/${productImage.id}`)).status).toBe(404);
-    expect(
-      (await guest.get(`/listings/${fixture.approvedListingId}/bids`)).status,
-    ).toBe(404);
+    expect((await guest.get(`/authors/${seller.slug}`)).status).toBe(404);
   });
 });

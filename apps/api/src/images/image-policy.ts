@@ -20,6 +20,18 @@ const supportedImageMimeTypes = [
 
 export { supportedImageMimeTypes };
 
+export function acceptSupportedUploadMimeType(
+  mimetype: string,
+  done: (error: Error | null, accept: boolean) => void,
+): void {
+  if (supportedImageMimeTypes.includes(mimetype as never)) {
+    done(null, true);
+    return;
+  }
+
+  done(new BadRequestException('Unsupported image type'), false);
+}
+
 export type SupportedImageMimeType = (typeof supportedImageMimeTypes)[number];
 
 export type RawImageUpload = {

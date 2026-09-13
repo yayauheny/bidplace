@@ -67,24 +67,6 @@ export class AdminModerationService {
         throw new ConflictException('Seller profile transition is not allowed');
       }
 
-      if (input.status === 'SUSPENDED') {
-        const blockingListing = await tx.listing.findFirst({
-          where: {
-            status: { in: ['SCHEDULED', 'LIVE'] },
-            product: { sellerProfileId: sellerProfile.id },
-          },
-          select: { id: true },
-        });
-        if (blockingListing) {
-          this.logger.warn(
-            `Blocked seller status transition target=${sellerProfile.id} from=${sellerProfile.status} to=${input.status} because a scheduled or live listing exists`,
-          );
-          throw new ConflictException(
-            'Seller cannot be suspended while a scheduled or live listing exists',
-          );
-        }
-      }
-
       if (isRevisionReview) {
         const revisionStatus = input.status as SellerProfileRevisionStatus;
         assertSellerProfileRevisionTransition(
@@ -92,12 +74,10 @@ export class AdminModerationService {
           editingRevision.status,
           revisionStatus,
         );
-        if (input.status === 'APPROVED') {
-          this.assertSellerApprovalRequirements({
-            ...editingRevision,
-            profilePhotoData: sellerProfile.profilePhotoData,
-          });
-        }
+        const approvedPhoto =
+          input.status === 'APPROVED'
+            ? this.requiredApprovedSellerPhoto(editingRevision)
+            : null;
 
         await tx.sellerProfileRevision.update({
           where: { id: editingRevision.id },
@@ -105,11 +85,12 @@ export class AdminModerationService {
         });
 
         const updated =
-          input.status === 'APPROVED'
+          input.status === 'APPROVED' && approvedPhoto
             ? await tx.sellerProfile.update({
                 where: { id: sellerProfileId },
                 data: {
                   ...this.publishedSellerProfileData(editingRevision),
+                  ...approvedPhoto,
                   status:
                     sellerProfile.status === 'PENDING_REVIEW'
                       ? 'APPROVED'
@@ -144,7 +125,7 @@ export class AdminModerationService {
       }
 
       if (input.status === 'APPROVED') {
-        this.assertSellerApprovalRequirements(sellerProfile);
+        this.requiredApprovedSellerPhoto(sellerProfile);
       }
 
       const updated = await tx.sellerProfile.update({
@@ -182,10 +163,6 @@ export class AdminModerationService {
           images: { select: { id: true } },
           editingRevision: {
             include: { images: { select: { imageId: true } } },
-          },
-          listings: {
-            where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-            select: { id: true },
           },
         },
       });
@@ -245,6 +222,7 @@ export class AdminModerationService {
                   status:
                     product.status === 'ARCHIVED' ? 'ARCHIVED' : 'APPROVED',
                   publishedRevisionId: editingRevision.id,
+                  publishedAt: product.publishedAt ?? new Date(),
                 },
               })
             : product.status === 'PENDING_REVIEW'
@@ -358,7 +336,7 @@ export class AdminModerationService {
     country: string;
     city: string | null;
     practice: string | null;
-    socialLink: string;
+    socialLink: string | null;
     telegramUrl: string | null;
     instagramUrl: string | null;
     websiteUrl: string | null;
@@ -379,20 +357,28 @@ export class AdminModerationService {
     };
   }
 
-  private assertSellerApprovalRequirements(sellerProfile: {
+  private requiredApprovedSellerPhoto(sellerProfile: {
     fullName: string | null;
     city: string | null;
     socialLink: string | null;
     shortDescription: string | null;
-    profilePhotoData: Uint8Array | null;
+    profilePhotoMimeType?: string | null;
+    profilePhotoByteLength?: number | null;
+    profilePhotoChecksum?: string | null;
+    profilePhotoObjectKey?: string | null;
   }) {
+    const profilePhotoMimeType = sellerProfile.profilePhotoMimeType ?? null;
+    const profilePhotoByteLength = sellerProfile.profilePhotoByteLength ?? null;
+    const profilePhotoChecksum = sellerProfile.profilePhotoChecksum ?? null;
+    const profilePhotoObjectKey = sellerProfile.profilePhotoObjectKey ?? null;
     if (
       !sellerProfile.fullName ||
       !sellerProfile.city ||
-      !sellerProfile.socialLink ||
       !sellerProfile.shortDescription ||
-      !sellerProfile.profilePhotoData ||
-      sellerProfile.profilePhotoData.byteLength < 1
+      !profilePhotoMimeType ||
+      !profilePhotoByteLength ||
+      !profilePhotoChecksum ||
+      !profilePhotoObjectKey
     ) {
       this.logger.warn(
         'Blocked seller approval because required fields are missing',
@@ -401,6 +387,13 @@ export class AdminModerationService {
         'Seller profile does not meet approval requirements',
       );
     }
+
+    return {
+      profilePhotoMimeType,
+      profilePhotoByteLength,
+      profilePhotoChecksum,
+      profilePhotoObjectKey,
+    };
   }
 
   private assertProductApprovalRequirements(product: {

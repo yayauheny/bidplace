@@ -39,7 +39,7 @@ describe('AnalyticsService', () => {
       environment: 'local',
       events: [
         {
-          name: 'listing_viewed',
+          name: 'work_viewed',
           properties: { productPublicId: 'P1' },
         },
       ],
@@ -81,7 +81,7 @@ describe('AnalyticsService', () => {
         },
         events: [
           {
-            name: 'listing_viewed',
+            name: 'work_viewed',
             properties: { productPublicId: 'P1' },
           },
         ],
@@ -103,7 +103,7 @@ describe('AnalyticsService', () => {
     expect(prisma.analyticsEvent.createMany).toHaveBeenCalledWith({
       data: [
         expect.objectContaining({
-          eventName: 'listing_viewed',
+          eventName: 'work_viewed',
           anonymousId,
           userId,
           environment: 'local',

@@ -78,21 +78,6 @@ describe('resolveServerEnvFilePath', () => {
 });
 
 describe('NODE_ENV × APP_ENV matrix', () => {
-  it('defaults COMMERCE_ENABLED to false', () => {
-    stubMissingEnvFile();
-
-    expect(loadServerEnv(localEnv).COMMERCE_ENABLED).toBe(false);
-  });
-
-  it('accepts an explicit COMMERCE_ENABLED opt-in', () => {
-    stubMissingEnvFile();
-
-    expect(
-      loadServerEnv({ ...localEnv, COMMERCE_ENABLED: 'true' })
-        .COMMERCE_ENABLED,
-    ).toBe(true);
-  });
-
   it('defaults media storage to the legacy provider outside production', () => {
     stubMissingEnvFile();
 

@@ -32,6 +32,10 @@ describe('AdminModerationService', () => {
       instagramUrl: null,
       websiteUrl: null,
       shortDescription: 'Updated description',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: 1,
+      profilePhotoChecksum: 'a'.repeat(64),
+      profilePhotoObjectKey: 'seller-profile-revision:revision-id',
     };
     const sellerProfile = {
       id: 'seller-id',
@@ -73,7 +77,6 @@ describe('AdminModerationService', () => {
       status: 'APPROVED',
       sellerProfile: { status: 'APPROVED' },
       images: [{ id: 'image-id' }],
-      listings: [],
       editingRevision: {
         id: 'revision-editing',
         status: 'PENDING_REVIEW',
@@ -108,10 +111,6 @@ describe('AdminModerationService', () => {
         images: { select: { id: true } },
         editingRevision: {
           include: { images: { select: { imageId: true } } },
-        },
-        listings: {
-          where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-          select: { id: true },
         },
       },
     });
@@ -151,7 +150,6 @@ describe('AdminModerationService', () => {
       status: 'PENDING_REVIEW',
       sellerProfile: { status: 'APPROVED' },
       images: [{ id: 'image-id' }],
-      listings: [],
       editingRevision,
     };
     const tx = {
@@ -179,6 +177,7 @@ describe('AdminModerationService', () => {
         status: 'APPROVED',
         publishedRevisionId: 'revision-editing',
         title: 'Approved title',
+        publishedAt: expect.any(Date),
       }),
     });
   });
@@ -192,7 +191,7 @@ describe('AdminModerationService', () => {
           status: 'REJECTED',
           sellerProfile: { status: 'APPROVED' },
           images: [{ id: 'image-id' }],
-          listings: [],
+          editingRevision: undefined,
         }),
         update: vi.fn(),
       },
@@ -209,42 +208,21 @@ describe('AdminModerationService', () => {
     expect(tx.auditEvent.create).not.toHaveBeenCalled();
   });
 
-  it('blocks a limiting product action while its listing is scheduled or LIVE', async () => {
-    const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
-      product: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'product-id',
-          status: 'APPROVED',
-          sellerProfile: { status: 'APPROVED' },
-          images: [{ id: 'image-id' }],
-          listings: [{ id: 'listing-id', status: 'SCHEDULED' }],
-        }),
-      },
+  it('allows seller suspension while leftover scheduled listings exist', async () => {
+    const updated = {
+      id: 'seller-id',
+      status: 'SUSPENDED',
     };
-    const service = new AdminModerationService(transactionPrisma(tx) as never);
-
-    await expect(
-      service.updateProductStatus('admin-id', 'product-id', {
-        status: 'CHANGES_REQUESTED',
-        reason: 'Нужна правка',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('blocks seller suspension while one of its listings is LIVE', async () => {
     const tx = {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'seller-id',
           status: 'APPROVED',
+          editingRevision: null,
         }),
+        update: vi.fn().mockResolvedValue(updated),
       },
-      listing: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValue({ id: 'listing-id', status: 'SCHEDULED' }),
-      },
+      auditEvent: { create: vi.fn() },
     };
     const service = new AdminModerationService(transactionPrisma(tx) as never);
 
@@ -253,6 +231,55 @@ describe('AdminModerationService', () => {
         status: 'SUSPENDED',
         reason: 'Нужна проверка',
       }),
+    ).resolves.toEqual(updated);
+    expect(tx.sellerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'seller-id' },
+      data: { status: 'SUSPENDED' },
+      select: sellerProfileResponseSelect,
+    });
+    expect(tx.auditEvent.create).toHaveBeenCalled();
+  });
+
+  it('blocks profile approval when the editing revision has no photo', async () => {
+    const revision = {
+      id: 'revision-id',
+      status: 'PENDING_REVIEW',
+      slug: 'updated-author',
+      discipline: 'Painting',
+      fullName: 'Updated author',
+      country: 'BY',
+      city: 'Minsk',
+      practice: null,
+      socialLink: 'https://example.com',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Updated description',
+      profilePhotoMimeType: null,
+      profilePhotoByteLength: null,
+      profilePhotoChecksum: null,
+      profilePhotoObjectKey: null,
+    };
+    const tx = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-id',
+          status: 'APPROVED',
+          editingRevision: revision,
+        }),
+        update: vi.fn(),
+      },
+      sellerProfileRevision: { update: vi.fn() },
+      auditEvent: { create: vi.fn() },
+    };
+    const service = new AdminModerationService(transactionPrisma(tx) as never);
+
+    await expect(
+      service.updateSellerStatus('admin-id', 'seller-id', {
+        status: 'APPROVED',
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
+    expect(tx.sellerProfile.update).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevision.update).not.toHaveBeenCalled();
   });
 });

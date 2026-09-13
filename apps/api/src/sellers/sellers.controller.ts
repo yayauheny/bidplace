@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Res,
   UploadedFiles,
   UseGuards,
@@ -15,18 +14,17 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
-  publicSellerQuerySchema,
-  publicSellerWorksQuerySchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
 
 import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import { parseBody } from '../core/validation';
 import {
+  acceptSupportedUploadMimeType,
   getImageCacheControl,
   productImageUploadLimits,
-  supportedImageMimeTypes,
   type RawImageUpload,
   validateProductImageUploads,
 } from '../images/image-policy';
@@ -43,7 +41,13 @@ export class SellersController {
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -51,7 +55,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async create(
@@ -73,7 +77,13 @@ export class SellersController {
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:profile-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -81,7 +91,7 @@ export class SellersController {
         files: 1,
       },
       fileFilter: (_request, file, done) =>
-        done(null, supportedImageMimeTypes.includes(file.mimetype as never)),
+        acceptSupportedUploadMimeType(file.mimetype, done),
     }),
   )
   async update(
@@ -112,19 +122,6 @@ export class SellersController {
   @UseGuards(BearerAuthGuard)
   getProduct(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.sellers.getProduct(auth.sub, id);
-  }
-
-  @Get('sellers')
-  listPublic(@Query() query: unknown) {
-    return this.sellers.listPublic(parseBody(publicSellerQuerySchema, query));
-  }
-
-  @Get('sellers/:slug/detail')
-  getPublic(@Param('slug') slug: string, @Query() query: unknown) {
-    return this.sellers.getPublic(
-      slug,
-      parseBody(publicSellerWorksQuerySchema, query),
-    );
   }
 
   @Get('sellers/:slug/photo')

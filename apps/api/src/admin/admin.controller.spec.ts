@@ -12,8 +12,9 @@ describe('AdminController Product approval', () => {
     };
     const controller = new AdminController(
       prisma as never,
-      {} as never,
       moderation as never,
+      {} as never,
+      {} as never,
       {} as never,
       { now: () => new Date() },
     );

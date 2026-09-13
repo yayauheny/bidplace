@@ -1,10 +1,8 @@
 import {
   adminAnalyticsQuerySchema,
-  adminEmergencyCancelRequestSchema,
-  adminListingsNeedingOrderResponseSchema,
+  adminCuratorSelectionRequestSchema,
+  adminCuratorSelectionResponseSchema,
   adminOkResponseSchema,
-  adminOrderCancellationRequestSchema,
-  adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
   adminProductsResponseSchema,
   adminSellerProfilesResponseSchema,
@@ -18,10 +16,12 @@ import {
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -29,10 +29,8 @@ import { type Prisma } from '@bidplace/database';
 
 import { BearerAuthGuard, CurrentUser } from '../auth';
 import { PrismaService } from '../core/database';
-import { CommerceEnabledGuard } from '../core/commerce';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
-import { OrdersService } from '../orders/orders.service';
 import {
   productSelect,
   toContractProduct,
@@ -42,9 +40,9 @@ import {
   sellerProfileResponseSelect,
   toSellerProfileResponse,
 } from '../sellers/seller-profile.mapper';
+import { PortfolioService } from '../portfolio/portfolio.service';
 import { AdminGuard } from './admin.guard';
 import { AdminAnalyticsService } from './admin-analytics.service';
-import { AdminListingEmergencyService } from './admin-listing-emergency.service';
 import { AdminModerationService } from './admin-moderation.service';
 import { AdminUserService } from './admin-user.service';
 
@@ -66,12 +64,6 @@ const adminProductSelect = {
     },
   },
   sellerProfile: { select: { slug: true, fullName: true, status: true } },
-  listings: {
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    select: { status: true },
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-  },
 } satisfies Prisma.ProductSelect;
 
 @Controller('admin')
@@ -79,11 +71,10 @@ const adminProductSelect = {
 export class AdminController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly orders: OrdersService,
     private readonly moderation: AdminModerationService,
     private readonly analytics: AdminAnalyticsService,
     private readonly users: AdminUserService,
-    private readonly listingEmergency: AdminListingEmergencyService,
+    private readonly portfolio: PortfolioService,
     private readonly clock: Clock,
   ) {}
 
@@ -102,29 +93,15 @@ export class AdminController {
       orderBy: { createdAt: 'asc' },
     });
     const ids = sellerProfiles.map(({ id }) => id);
-    const [liveSellerIds, auditEvents] = await Promise.all([
-      this.prisma.sellerProfile.findMany({
-        where: {
-          id: { in: ids },
-          products: {
-            some: {
-              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
-            },
-          },
-        },
-        select: { id: true },
-      }),
-      this.prisma.auditEvent.findMany({
-        where: {
-          targetType: 'SELLER_PROFILE',
-          targetId: { in: ids },
-          reason: { not: null },
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { targetId: true, reason: true },
-      }),
-    ]);
-    const liveIds = new Set(liveSellerIds.map(({ id }) => id));
+    const auditEvents = await this.prisma.auditEvent.findMany({
+      where: {
+        targetType: 'SELLER_PROFILE',
+        targetId: { in: ids },
+        reason: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { targetId: true, reason: true },
+    });
     const reasons = new Map<string, string>();
     for (const event of auditEvents) {
       if (event.reason && !reasons.has(event.targetId)) {
@@ -136,7 +113,6 @@ export class AdminController {
       sellerProfiles: sellerProfiles.map((sellerProfile) => ({
         ...toSellerProfileResponse(sellerProfile).sellerProfile,
         lastModerationReason: reasons.get(sellerProfile.id) ?? null,
-        hasBlockingListing: liveIds.has(sellerProfile.id),
       })),
     });
   }
@@ -189,7 +165,6 @@ export class AdminController {
                   }
                 : null,
           })),
-          hasBlockingListing: product.listings.length > 0,
           lastModerationReason: reasons.get(product.id) ?? null,
         };
       }),
@@ -269,79 +244,23 @@ export class AdminController {
     );
   }
 
-  @Get('listings/needs-order')
-  @UseGuards(CommerceEnabledGuard)
-  async listListingsNeedingOrder(@CurrentUser() auth: { role: string }) {
-    return adminListingsNeedingOrderResponseSchema.parse(
-      await this.orders.listEndedWithoutOrder(auth.role),
-    );
-  }
-
-  @Get('listings/:listingId/bids')
-  @UseGuards(CommerceEnabledGuard)
-  listRankedBids(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('listingId') listingId: string,
-  ) {
-    return this.orders.listRankedBids(auth.sub, auth.role, listingId);
-  }
-
-  @Post('listings/:listingId/emergency-cancel')
-  @UseGuards(CommerceEnabledGuard)
-  async emergencyCancelListing(
+  @Put('curator-selection')
+  async setCuratorSelection(
     @CurrentUser() auth: { sub: string },
-    @Param('listingId') listingId: string,
     @Body() body: unknown,
   ) {
-    return adminOkResponseSchema.parse(
-      await this.listingEmergency.emergencyCancel(
+    return adminCuratorSelectionResponseSchema.parse(
+      await this.portfolio.setCuratorSelection(
+        parseBody(adminCuratorSelectionRequestSchema, body).publicId,
         auth.sub,
-        listingId,
-        parseBody(adminEmergencyCancelRequestSchema, body),
       ),
     );
   }
 
-  @Post('listings/:listingId/create-order')
-  @UseGuards(CommerceEnabledGuard)
-  createOrderForEndedListing(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('listingId') listingId: string,
-  ) {
-    return this.orders.createOrderForEndedListing(
-      auth.sub,
-      auth.role,
-      listingId,
-    );
-  }
-
-  @Post('orders/:publicId/cancel')
-  @UseGuards(CommerceEnabledGuard)
-  cancelOrder(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('publicId') publicId: string,
-    @Body() body: unknown,
-  ) {
-    return this.orders.cancel(
-      auth.sub,
-      auth.role,
-      publicId,
-      parseBody(adminOrderCancellationRequestSchema, body),
-    );
-  }
-
-  @Post('orders/:publicId/replacement')
-  @UseGuards(CommerceEnabledGuard)
-  replaceOrder(
-    @CurrentUser() auth: { sub: string; role: string },
-    @Param('publicId') publicId: string,
-    @Body() body: unknown,
-  ) {
-    return this.orders.replace(
-      auth.sub,
-      auth.role,
-      publicId,
-      parseBody(adminOrderReplacementRequestSchema, body),
+  @Delete('curator-selection')
+  async clearCuratorSelection() {
+    return adminOkResponseSchema.parse(
+      await this.portfolio.clearCuratorSelection(),
     );
   }
 }

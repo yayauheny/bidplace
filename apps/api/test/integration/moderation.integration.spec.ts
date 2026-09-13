@@ -321,7 +321,7 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     ]);
   });
 
-  it('preserves moderation locks for scheduled listings and product audit transitions', async () => {
+  it('allows seller suspension while a leftover scheduled listing exists', async () => {
     const fixture = await createPermissionFixture(prisma);
     const { admin, adminClient } = await adminAndApplicant(fixture);
 
@@ -330,22 +330,39 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       data: { status: 'SCHEDULED' },
     });
 
-    const sellerBefore = await permissionState(prisma);
     expect(
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.approved.profileId}/status`,
           {
             status: 'SUSPENDED',
-            reason: 'Attempted suspension during auction',
+            reason: 'Need a review of the author profile',
           },
         )
       ).status,
-    ).toBe(409);
-    expect(await permissionState(prisma)).toEqual(sellerBefore);
+    ).toBe(200);
+    expect(
+      await prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.approved.profileId },
+      }),
+    ).toMatchObject({ status: 'SUSPENDED' });
     expect(
       await auditFor('SELLER_PROFILE', fixture.sellers.approved.profileId),
-    ).toHaveLength(0);
+    ).toEqual([
+      {
+        actorUserId: admin.id,
+        targetType: 'SELLER_PROFILE',
+        targetId: fixture.sellers.approved.profileId,
+        oldStatus: 'APPROVED',
+        newStatus: 'SUSPENDED',
+        reason: 'Need a review of the author profile',
+      },
+    ]);
+  });
+
+  it('preserves product audit transitions', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const { admin, adminClient } = await adminAndApplicant(fixture);
 
     await prisma.product.update({
       where: { id: fixture.approvedDraftProductId },

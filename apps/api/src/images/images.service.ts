@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { type Prisma } from '@bidplace/database';
@@ -17,14 +18,27 @@ import {
 } from './image-policy';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import {
+  assertProductImagesMutable,
+  ensureAuthorEditingRevision,
+  type AuthorEditingProduct,
+} from '../products/product-revision-write';
+import {
   assertProductWritable,
   lockProductRowForUpdate,
   productWriteGuardSelect,
   type ProductWriteGuardKind,
 } from '../products/product-write-guard';
 
+type GalleryImageRow = {
+  id: string;
+  position: number;
+  byteLength: number;
+};
+
 @Injectable()
 export class ImagesService {
+  private readonly logger = new Logger(ImagesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageStore: ImageStore,
@@ -35,14 +49,10 @@ export class ImagesService {
     productId: string,
     files: readonly RawImageUpload[],
   ) {
-    const product = await this.requireEditableOwner(
+    const product = await this.requireMutableGalleryOwner(
       this.prisma,
       userId,
       productId,
-      {
-        position: true,
-        byteLength: true,
-      },
     );
 
     assertProductImageCapacity(
@@ -58,14 +68,10 @@ export class ImagesService {
     );
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const freshProduct = await this.requireWritableOwnerInTx(
+      const freshProduct = await this.requireWritableGalleryOwnerInTx(
         tx,
         userId,
         productId,
-        {
-          position: true,
-          byteLength: true,
-        },
       );
 
       assertProductImageCapacity(
@@ -73,13 +79,18 @@ export class ImagesService {
         validated.map((file) => ({ byteLength: file.buffer.byteLength })),
       );
 
-      const start = freshProduct.images.length;
+      const aggregated = await tx.productImage.aggregate({
+        where: { productId },
+        _max: { position: true },
+      });
+      const storageStart = (aggregated._max.position ?? -1) + 1;
+      const galleryStart = freshProduct.images.length;
 
       for (const [index, file] of validated.entries()) {
         const row = await tx.productImage.create({
           data: {
             productId,
-            position: start + index,
+            position: storageStart + index,
             mimeType: file.mimeType,
             byteLength: file.buffer.byteLength,
             data: emptyImageBytes,
@@ -103,14 +114,11 @@ export class ImagesService {
           },
           tx,
         );
-        if (!freshProduct.editingRevisionId) {
-          throw new ConflictException('Product editing revision is missing');
-        }
         await tx.productRevisionImage.create({
           data: {
             revisionId: freshProduct.editingRevisionId,
             imageId: row.id,
-            position: start + index,
+            position: galleryStart + index,
           },
         });
       }
@@ -120,146 +128,92 @@ export class ImagesService {
   }
 
   async remove(userId: string, productId: string, imageId: string) {
-    const product = await this.requireEditableOwner(
+    const product = await this.requireMutableGalleryOwner(
       this.prisma,
       userId,
       productId,
-      {
-        id: true,
-        position: true,
-      },
     );
 
     if (!product.images.some((image) => image.id === imageId)) {
       throw new NotFoundException('Image not found');
     }
 
-    await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
-        id: true,
-        position: true,
-      });
-      if (!locked.images.some((image) => image.id === imageId)) {
-        throw new NotFoundException('Image not found');
-      }
-      if (!locked.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
-      }
-      const remaining = await tx.productImage.findMany({
-        where: { productId, id: { not: imageId } },
-        select: { id: true },
-        orderBy: { position: 'asc' },
-      });
+    const objectKeyToDelete = await runReadCommittedTransaction(
+      this.prisma,
+      async (tx) => {
+        const locked = await this.requireWritableGalleryOwnerInTx(
+          tx,
+          userId,
+          productId,
+        );
+        if (!locked.images.some((image) => image.id === imageId)) {
+          throw new NotFoundException('Image not found');
+        }
 
-      await tx.productRevisionImage.deleteMany({
-        where: {
-          revisionId: locked.editingRevisionId,
-          imageId,
-        },
-      });
-      const revisionReferences = await tx.productRevisionImage.count({
-        where: { imageId },
-      });
-      const remainingRevisionImages =
-        await tx.productRevisionImage.findMany({
-          where: { revisionId: locked.editingRevisionId },
-          select: { imageId: true },
-          orderBy: { position: 'asc' },
+        await tx.productRevisionImage.deleteMany({
+          where: {
+            revisionId: locked.editingRevisionId,
+            imageId,
+          },
         });
-      if (revisionReferences === 0) {
-        await this.imageStore.delete(imageKey.productImage(imageId), tx);
-        await tx.productImage.delete({ where: { id: imageId } });
-        const temporaryBase = remaining.length + 1;
-
-        await Promise.all(
-          remaining.map((image, index) =>
-            tx.productImage.update({
-              where: { id: image.id },
-              data: { position: temporaryBase + index },
-            }),
-          ),
+        const revisionReferences = await tx.productRevisionImage.count({
+          where: { imageId },
+        });
+        const remainingRevisionImages = await tx.productRevisionImage.findMany(
+          {
+            where: { revisionId: locked.editingRevisionId },
+            select: { imageId: true },
+            orderBy: { position: 'asc' },
+          },
         );
+        let deletedKey: string | null = null;
+        if (revisionReferences === 0) {
+          await tx.productImage.delete({ where: { id: imageId } });
+          deletedKey = imageKey.productImage(imageId);
+        }
 
-        await Promise.all(
-          remaining.map((image, index) =>
-            tx.productImage.update({
-              where: { id: image.id },
-              data: { position: index },
-            }),
-          ),
+        await this.reindexRevisionImages(
+          tx,
+          locked.editingRevisionId,
+          remainingRevisionImages.map((image) => image.imageId),
+        );
+        return deletedKey;
+      },
+    );
+    if (objectKeyToDelete) {
+      try {
+        await this.imageStore.delete(objectKeyToDelete);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete unreferenced product image ${objectKeyToDelete}`,
+          error instanceof Error ? error.stack : undefined,
         );
       }
-
-      await this.reindexRevisionImages(
-        tx,
-        locked.editingRevisionId,
-        remainingRevisionImages.map((image) => image.imageId),
-      );
-    });
+    }
 
     return { ok: true as const };
   }
 
   async reorder(userId: string, productId: string, imageIds: string[]) {
-    const product = await this.requireEditableOwner(
+    const product = await this.requireMutableGalleryOwner(
       this.prisma,
       userId,
       productId,
-      { id: true },
     );
 
-    const knownIds = new Set(product.images.map((image) => image.id));
-    if (
-      imageIds.length !== knownIds.size ||
-      new Set(imageIds).size !== imageIds.length ||
-      imageIds.some((id) => !knownIds.has(id))
-    ) {
-      throw new BadRequestException(
-        'Image order must include every Product image exactly once',
-      );
-    }
+    this.assertEditingRevisionOrder(product.images, imageIds);
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
-        id: true,
-      });
-      const knownLockedIds = new Set(locked.images.map((image) => image.id));
-      if (
-        imageIds.length !== knownLockedIds.size ||
-        new Set(imageIds).size !== imageIds.length ||
-        imageIds.some((id) => !knownLockedIds.has(id))
-      ) {
-        throw new BadRequestException(
-          'Image order must include every Product image exactly once',
-        );
-      }
-      if (!locked.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
-      }
-      const temporaryBase = locked.images.length;
-
-      await Promise.all(
-        imageIds.map((id, index) =>
-          tx.productImage.update({
-            where: { id },
-            data: { position: temporaryBase + index },
-          }),
-        ),
+      const locked = await this.requireWritableGalleryOwnerInTx(
+        tx,
+        userId,
+        productId,
       );
-
+      this.assertEditingRevisionOrder(locked.images, imageIds);
       await this.reindexRevisionImages(
         tx,
         locked.editingRevisionId,
         imageIds,
-      );
-
-      await Promise.all(
-        imageIds.map((id, index) =>
-          tx.productImage.update({
-            where: { id },
-            data: { position: index },
-          }),
-        ),
       );
     });
 
@@ -420,6 +374,22 @@ export class ImagesService {
     };
   }
 
+  private assertEditingRevisionOrder(
+    images: readonly { id: string }[],
+    imageIds: string[],
+  ) {
+    const knownIds = new Set(images.map((image) => image.id));
+    if (
+      imageIds.length !== knownIds.size ||
+      new Set(imageIds).size !== imageIds.length ||
+      imageIds.some((id) => !knownIds.has(id))
+    ) {
+      throw new BadRequestException(
+        'Image order must include every editing revision image exactly once',
+      );
+    }
+  }
+
   private async requireWritableOwnerInTx(
     tx: Prisma.TransactionClient,
     userId: string,
@@ -428,6 +398,42 @@ export class ImagesService {
   ) {
     await lockProductRowForUpdate(tx, productId);
     return this.requireEditableOwner(tx, userId, productId, imageSelect);
+  }
+
+  private async requireWritableGalleryOwnerInTx(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    productId: string,
+  ) {
+    await lockProductRowForUpdate(tx, productId);
+    const product = await this.requireMutableGalleryOwner(tx, userId, productId);
+    const editingRevisionId = await ensureAuthorEditingRevision(
+      tx,
+      product,
+      userId,
+      'images',
+    );
+    if (editingRevisionId === product.editingRevisionId) {
+      return product;
+    }
+
+    const revisionImages = await tx.productRevisionImage.findMany({
+      where: { revisionId: editingRevisionId },
+      orderBy: { position: 'asc' },
+      select: {
+        position: true,
+        image: { select: { id: true, byteLength: true } },
+      },
+    });
+    return {
+      ...product,
+      editingRevisionId,
+      images: revisionImages.map(({ position, image }) => ({
+        id: image.id,
+        position,
+        byteLength: image.byteLength,
+      })),
+    };
   }
 
   private async reindexRevisionImages(
@@ -473,5 +479,45 @@ export class ImagesService {
 
     assertProductWritable(product, userId, kind);
     return product;
+  }
+
+  private async requireMutableGalleryOwner(
+    client: Pick<Prisma.TransactionClient, 'product'>,
+    userId: string,
+    productId: string,
+  ): Promise<AuthorEditingProduct & { images: GalleryImageRow[]; editingRevisionId: string }> {
+    const product = await client.product.findUnique({
+      where: { id: productId },
+      select: {
+        ...productWriteGuardSelect,
+        editingRevisionId: true,
+        publishedRevisionId: true,
+        editingRevision: {
+          select: {
+            images: {
+              orderBy: { position: 'asc' as const },
+              select: {
+                position: true,
+                image: { select: { id: true, byteLength: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    assertProductImagesMutable(product, userId);
+    if (!product.editingRevisionId) {
+      throw new ConflictException('Product editing revision is missing');
+    }
+
+    return {
+      ...product,
+      editingRevisionId: product.editingRevisionId,
+      images: (product.editingRevision?.images ?? []).map(({ position, image }) => ({
+        id: image.id,
+        position,
+        byteLength: image.byteLength,
+      })),
+    };
   }
 }
