@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { FilterOptionRow } from './FilterOptionRow';
 import { FilterSheet } from './FilterSheet';
 
@@ -16,6 +18,12 @@ export function FilterSortSheet({
   onClose: () => void;
   title?: string;
 }) {
+  const [draftValue, setDraftValue] = useState(value);
+
+  useEffect(() => {
+    if (open) setDraftValue(value);
+  }, [open, value]);
+
   return (
     <FilterSheet
       open={open}
@@ -23,7 +31,10 @@ export function FilterSortSheet({
       title={title}
       primaryAction={{
         label: 'Применить',
-        onPress: onClose,
+        onPress: () => {
+          onSelect(draftValue);
+          onClose();
+        },
       }}
     >
       {options.map((option) => (
@@ -31,8 +42,8 @@ export function FilterSortSheet({
           key={option.value}
           label={option.label}
           mode="radio"
-          selected={option.value === value}
-          onPress={() => onSelect(option.value)}
+          selected={option.value === draftValue}
+          onPress={() => setDraftValue(option.value)}
         />
       ))}
     </FilterSheet>
