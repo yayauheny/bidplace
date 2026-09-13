@@ -115,6 +115,8 @@ export const designTokens = {
     socialGroupX: 8,
     socialGroupY: 6,
     socialGroupGap: 12,
+    filterOptionY: 9,
+    headerIconHitSlop: 9,
   },
   radius: {
     small: 12,
@@ -142,6 +144,9 @@ export const designTokens = {
     shareSheet: 20,
     workGallery: 20,
     statusDot: 20,
+    filterSort: 14,
+    filterCheckbox: 6,
+    filterRadio: 20,
   },
   size: {
     achievementWidth: 266,
@@ -174,6 +179,10 @@ export const designTokens = {
     dockIconHit: 44,
     phoneWidth: 390,
     dockReserve: 96,
+    filterSortBar: 43,
+    filterSortPill: 42,
+    filterOption: 20,
+    filterOptionRow: 38,
   },
   typography: {
     display: {

@@ -1,5 +1,15 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — S7 mobile-web filters and sorting
+
+- `Implemented` at 390: shared filter/sort bar, full-height filter sheet,
+  section row, search field, radio/checkbox option row, sticky action and sort
+  sheet match the Figma phone nodes. Keyboard focus trap/return, Escape,
+  Enter/Space selection, empty search and checked semantics pass.
+- Production catalog wiring is intentionally deferred to S2/S3. Android, iOS
+  and desktop web are outside the current founder-approved acceptance scope.
+  Evidence: `artifacts/figma-qa/S7/REPORT.md`.
+
 ## 2026-09-13 — Acceptance sweep, mobile web scope
 
 - Founder decision 2026-09-13: implementation and acceptance cover mobile web

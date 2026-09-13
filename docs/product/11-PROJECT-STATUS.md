@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — S7 standalone mobile-web filter masters
+
+- `Implemented`: reusable phone-web filter/sort controls are exported from
+  `components/figma`, including accessible sheets, search, radio/checkbox
+  options and sticky actions. A temporary isolated consumer verified the
+  states and was removed after capture.
+- No API, query, route contract or catalog behavior changed. S2/S3 wiring is a
+  separate task; native and desktop acceptance are out of scope. Evidence:
+  `artifacts/figma-qa/S7/REPORT.md`.
+
 ## 2026-09-13 — Portfolio screens accepted for mobile web
 
 - Scope decision (founder, 2026-09-13): the portfolio MVP is delivered and

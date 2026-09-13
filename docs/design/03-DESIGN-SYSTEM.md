@@ -1,3 +1,14 @@
+## Mobile-web filter masters
+
+Phone-web catalog filters use one exported component family:
+`FilterSortBar`, `FilterSheet`, `FilterSheetSectionRow`, `FilterSearchField`,
+`FilterOptionRow`, `FilterSheetActionRow`, and `FilterSortSheet`.
+`FilterSheet` owns the 390 px full-height panel, keyboard focus lifecycle and
+sticky primary action. Option rows own radio/checkbox semantics; screens supply
+only values and callbacks. `filterControl` reuses `FigmaGlassSurface` instead
+of introducing a second glass implementation. Product-screen wiring remains
+outside the master.
+
 ## Web chip gradient stroke
 
 `FigmaChip.web.tsx` is the web master for `onDark` and `tinted` chip strokes.

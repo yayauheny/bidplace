@@ -32,6 +32,14 @@ export {
 export { getWorkCoverOverlay } from './work-cover-fields';
 
 export { ShareSheet } from './ShareSheet';
+export { FilterSortBar } from './FilterSortBar';
+export { FilterSheet } from './FilterSheet';
+export { FilterSheetSectionRow } from './FilterSheetSectionRow';
+export { FilterOptionRow } from './FilterOptionRow';
+export { FilterSearchField } from './FilterSearchField';
+export { FilterSheetActionRow } from './FilterSheetActionRow';
+export { FilterSortSheet } from './FilterSortSheet';
+export type { FilterOptionMode } from './filter-option-style';
 
 export { FigmaTabs } from './FigmaTabs';
 export { WorkGallery } from './WorkGallery';
