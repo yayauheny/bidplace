@@ -4,6 +4,14 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Author avatar crop and works gap
+
+- `Implemented`: the 112px hero avatar crops from the top (`contentPosition="top"`,
+  `621:19825`), and the works panel uses the 18px `authorSectionGap` so the first
+  366×488 card starts at y 562 like the founder HTML export (was 564). Verified by
+  DOM measurement on Anna at 390. Author screen remains `Partial`; open rows are
+  listed in `docs/tasks/2026-09-12-figma-finish/14-COMPLETION-MAP.md` §3.2.
+
 ## 2026-09-13 — Work page spacing, chips and «Смотреть все»
 
 - `Implemented` against `745:20634` / `745:21209` by DOM measurement at 390:

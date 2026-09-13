@@ -81,6 +81,7 @@ export function CreatorHero({
                 borderRadius: designTokens.radius.avatar,
               }}
               contentFit="cover"
+              contentPosition="top"
             />
           </View>
           <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>

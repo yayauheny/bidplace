@@ -15,6 +15,12 @@
 
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Author avatar crop and works gap
+
+- `Implemented`: `CreatorHero` avatar crops from the top and the author works
+  panel gap is 18px (`public-seller-screen.tsx`). No data or API change. Mobile
+  typecheck and ESLint pass. Author screen stays `Partial` (see completion map).
+
 ## 2026-09-13 — Public work Figma spacing and «Смотреть все»
 
 - `Implemented`: work page spacing, author line, work chips and related row

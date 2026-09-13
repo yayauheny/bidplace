@@ -139,7 +139,7 @@ export function PublicSellerScreen({
                 tab === 'about'
                   ? designTokens.space.authorHeaderBottom
                   : designTokens.space.sectionGap,
-              gap: designTokens.space.sectionGap,
+              gap: designTokens.space.authorSectionGap,
             }}
           >
             {tab === 'works' ? (
