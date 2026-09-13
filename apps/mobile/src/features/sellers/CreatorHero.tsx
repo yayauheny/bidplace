@@ -57,14 +57,14 @@ export function CreatorHero({
           style={{
             visibility: compact ? 'hidden' : 'visible',
             marginBottom:
-              designTokens.space.logoGap -
-              designTokens.space.authorSectionGap,
+              designTokens.space.logoGap - designTokens.space.authorSectionGap,
           }}
         >
           <BrandLogo profile />
         </View>
         <View
           style={{
+            alignSelf: 'stretch',
             alignItems: 'center',
             gap: designTokens.space.authorIdentityGap,
           }}
@@ -84,10 +84,17 @@ export function CreatorHero({
               contentPosition="top"
             />
           </View>
-          <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>
-            <View testID="creator-handle">
+          <View
+            style={{
+              alignSelf: 'stretch',
+              alignItems: 'center',
+              gap: designTokens.space.x1,
+            }}
+          >
+            <View testID="creator-handle" style={{ alignSelf: 'stretch' }}>
               <AppText
                 role="profileHandle"
+                numberOfLines={1}
                 style={{ textAlign: 'center', flexShrink: 1 }}
               >
                 @{profile.slug}

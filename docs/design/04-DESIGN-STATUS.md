@@ -4,6 +4,16 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Author state matrix
+
+- `Implemented`: the full-header handle is one 24/29 line with an ellipsis
+  (`CreatorHero`, identity block stretched to the 366 column); previously a long
+  slug wrapped to two lines. Captured via API patching in
+  `artifacts/figma-qa/02-author/matrix/`: long handle (full + compact), 0 and 2
+  socials, no achievements, 1024/1440 centered column without overflow. Compact
+  header geometry matches `526:14482` (row y 44, tabs y 186).
+- Open: A3 compact transition smoothness, A5 font weight hypothesis.
+
 ## 2026-09-13 — Home composition against `436:1137`
 
 - `Implemented`: logo 42×32 at y 60 (`logoTop`/`logoGap`, shared with the

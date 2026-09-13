@@ -26,6 +26,14 @@
 
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Author handle truncation and state matrix
+
+- `Implemented`: `CreatorHero` handle is single-line with ellipsis in the full
+  header; state matrix (long handle, 0/2 socials, no achievements, 1024/1440)
+  captured in `artifacts/figma-qa/02-author/matrix/`. `e2e/figma-cover-frost.spec.ts`
+  passes against the preview stand. Parallel task prompts for remaining screens:
+  `docs/tasks/2026-09-12-figma-finish/15-PARALLEL-TASKS.md`.
+
 ## 2026-09-13 — Home composition
 
 - `Implemented`: `home-screen.tsx` uses the shared logo rhythm (`logoTop`,
