@@ -21,7 +21,7 @@ export function getHeaderSearchPlaceholder(pathname: string): string {
     : 'Найти предмет или автора';
 }
 
-export function canShowDesktopCreateListing({
+export function canShowDesktopCreateWork({
   isAdmin,
   sellerStatus,
 }: {
@@ -30,6 +30,8 @@ export function canShowDesktopCreateListing({
 }): boolean {
   return !isAdmin && sellerStatus === 'APPROVED';
 }
+
+export const canShowDesktopCreateListing = canShowDesktopCreateWork;
 
 export function getMobileCreateHref({
   isAuthenticated,

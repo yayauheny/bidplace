@@ -28,7 +28,6 @@ export function SelectableRow({
           <SecondaryButton
             key={option.value}
             label={`${value === option.value ? '✓ ' : ''}${option.label}`}
-            compact
             disabled={disabled}
             onPress={() => onChange(option.value)}
           />

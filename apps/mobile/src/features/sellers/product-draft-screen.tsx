@@ -487,17 +487,6 @@ export function ProductDraftScreen({
             label="Обновить"
             onPress={() => void productDetail.refetch()}
           />
-          {productStatus === 'APPROVED' ? (
-            <PrimaryButton
-              label="Создать аукцион"
-              onPress={() =>
-                router.push({
-                  pathname: '/(seller)/listings/new',
-                  params: { productId: existingProduct.id },
-                })
-              }
-            />
-          ) : null}
           {productStatus !== 'APPROVED' && editable ? (
             <PrimaryButton
               label={submitLabel}

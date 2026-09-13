@@ -16,7 +16,7 @@ describe('product media geometry', () => {
   it('accepts fixed gallery widths without changing the ratio', () => {
     expect(productMediaStyle(440)).toMatchObject({
       width: 440,
-      aspectRatio: 4 / 5,
+      aspectRatio: designTokens.ratio.productPortrait,
     });
   });
 });

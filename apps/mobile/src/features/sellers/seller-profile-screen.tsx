@@ -392,16 +392,6 @@ export function SellerProfileScreen() {
           width="block"
         />
 
-        {profile ? (
-          <Link href="/orders" asChild>
-            <SecondaryButton
-              label="Сделки"
-              width="block"
-              onPress={() => undefined}
-            />
-          </Link>
-        ) : null}
-
         {profile?.status === 'APPROVED' ? (
           <Link href="/products/new" asChild>
             <PrimaryButton

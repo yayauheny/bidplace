@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { designTokens } from '@bidplace/design-tokens';
 
 import {
-  createListingActionStyle,
+  createWorkActionStyle,
   headerClusterWidth,
   headerInnerLayoutStyle,
   headerSearchContainerStyle,
@@ -19,8 +19,8 @@ describe('header-layout', () => {
     expect(discoveryMenuDesktopRadius).toBe(22);
   });
 
-  it('keeps create listing action style stable', () => {
-    const style = createListingActionStyle();
+  it('keeps create work action style stable', () => {
+    const style = createWorkActionStyle();
     expect(style.minHeight).toBe(designTokens.size.buttonCompact);
     expect(style.borderRadius).toBe(designTokens.radius.pill);
     expect(style.backgroundColor).toBe(designTokens.color.action);
