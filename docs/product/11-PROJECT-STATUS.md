@@ -94,16 +94,21 @@
   `public-share.ts`, `public-share.spec.ts`,
   `artifacts/figma-qa/S1/REPORT.md`.
 
-## 2026-09-13 — Author compact header follows scroll
+## 2026-09-13 — Author compact header motion reopened
 
-- `Implemented` (mobile web): the author page sticky header interpolates
-  avatar/handle/actions/atmosphere from the scroll offset instead of toggling
-  at a threshold; fade groups are `creator-fade-*` testIDs. No data, route or
-  permission changes. Evidence: `apps/mobile/src/features/sellers/
-  CreatorHeader.web.tsx`, `CreatorHero.tsx`,
-  `artifacts/figma-qa/02-author/compact/`, `docs/design/04-DESIGN-STATUS.md`.
-- Native header (`CreatorHeader.tsx`) is unchanged and not in the current
-  acceptance scope.
+- Previous A3/A4 `Accepted` remains withdrawn. The first scroll-linked
+  implementation could bind once at mount to a not-yet-scrollable inner node,
+  compact type stayed 24/600 scaled to 16, and three socials stole compact
+  handle width.
+- `Implemented` (mobile web): capture-phase scroll on the labeled
+  `creator-scroll` boundary; expanded `profileHandle` vs compact
+  `profileHandleCompact` without glyph scale; compact composition uses at
+  most two public socials plus one Share. Chromium/WebKit 390×860 and
+  390×844 matrix plus delayed-content binding pass. Evidence:
+  `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
+  `e2e/author-header-motion.spec.ts`,
+  `artifacts/figma-qa/02-author/motion/REPORT.md`.
+- Native header is unchanged. No API, seed, route or permission change.
 
 ## 2026-09-13 — CORS origin allowlist review
 
