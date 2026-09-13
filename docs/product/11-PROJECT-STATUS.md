@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Mobile-web Figma staged on portfolio foundation
+
+- `Implemented` (mobile-web 390 only): `apps/mobile` and `packages/design-tokens`
+  now render the Figma public surfaces on top of PR A portfolio APIs
+  (`api.portfolio.home|listWorks|getWork|listAuthors|getAuthor|facets`).
+  Dock is the `DEC-088` 232×64 four-item capsule. Auction/listing/order/activity
+  screens and `socket.io-client` are removed from mobile runtime. Public cards
+  stay title + `@author`. Home opening reads server `curatorSelection`.
+  Coverage: mobile unit (`vitest`) and the Playwright stabilization gate
+  (`figma-stabilization`, `home-figma`, `discovery-launch`,
+  `author-header-motion`, `product-layout`, `auth-layout`, `figma-cover-frost`).
+  Create-work and application specs stay pointed at the unchanged PR A wizards.
+- `Partial`: native iOS/Android visual parity, 1024/1440, RFC §10 create-work
+  rewrite and launch-ready are not in this branch.
+- `Unchanged`: Nest commerce modules, Listing/Bid/Order contracts, Prisma
+  commerce tables and `COMMERCE_ENABLED` remain from PR A until PR C.
+- `Confirmed`: `DEC-088` is recorded here; `DEC-085`/`086`/`087`/`089` stay
+  owned by PR A and are not duplicated.
+
 ## 2026-09-14 — Portfolio foundation staged beside commerce runtime
 
 - `Implemented`: portfolio backend foundation on the existing commerce runtime.
