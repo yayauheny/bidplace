@@ -1,3 +1,7 @@
+## 2026-09-13 — Author achievements
+
+`Implemented` for the Frame 219 achievement block: 266 px items, 16 px gap, 3:4 photos with radius 20, marker/line above month and year, and centered text-only cards. Browser checked on Anna at :8083 with both variants and horizontal scrolling; screenshots in `artifacts/figma-qa/02-author/achievements-*.jpg`. Overall author parity remains `Partial`; see the continuation task.
+
 # bidplace — статус дизайна и UI-реализации
 
 ## 2026-09-13 — Author final composition pass

@@ -5,6 +5,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { formatAchievementDate } from './achievement-date';
 
 export function AuthorAbout({
   author,
@@ -25,49 +26,43 @@ export function AuthorAbout({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: designTokens.space.sectionGap }}
+            contentContainerStyle={{ gap: designTokens.space.x4 }}
           >
             {author.achievements.map((item) => (
               <View
                 key={item.id}
                 style={{
                   width: designTokens.size.achievementWidth,
-                  gap: designTokens.space.x7,
+                  gap: designTokens.space.x3,
                 }}
               >
                 {item.occurredAt ? (
-                  <View style={{ position: 'relative' }}>
+                  <View style={{ gap: designTokens.space.x1 }}>
                     <View
                       aria-hidden
-                      style={{
-                        position: 'absolute',
-                        top: 34,
-                        left: 0,
-                        right: -designTokens.space.sectionGap,
-                        height: 1,
-                        backgroundColor: designTokens.color.divider,
-                      }}
-                    />
-                    <View
-                      aria-hidden
-                      style={{
-                        position: 'absolute',
-                        top: 24,
-                        left: '50%',
-                        height: 20,
-                        width: 1,
-                        backgroundColor: designTokens.color.divider,
-                      }}
-                    />
-                    <AppText
-                      role="achievementDate"
-                      style={{ textAlign: 'center' }}
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
                     >
-                      {new Intl.DateTimeFormat('ru-RU', {
-                        month: '2-digit',
-                        year: 'numeric',
-                        timeZone: 'UTC',
-                      }).format(new Date(item.occurredAt))}
+                      <View
+                        style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 7,
+                          borderWidth: 2,
+                          borderColor: '#565656',
+                          backgroundColor: designTokens.color.surface,
+                        }}
+                      />
+                      <View
+                        style={{
+                          flex: 1,
+                          height: 2,
+                          borderRadius: 6,
+                          backgroundColor: '#565656',
+                        }}
+                      />
+                    </View>
+                    <AppText role="achievementDate">
+                      {formatAchievementDate(item.occurredAt)}
                     </AppText>
                   </View>
                 ) : null}
@@ -84,8 +79,28 @@ export function AuthorAbout({
                         borderRadius: designTokens.radius.achievement,
                       }}
                     />
+                  ) : (
+                    <View
+                      style={{
+                        width: '100%',
+                        minHeight: (designTokens.size.achievementWidth * 4) / 3,
+                        padding: designTokens.space.x3,
+                        borderRadius: designTokens.radius.achievement,
+                        backgroundColor: designTokens.color.surfaceMuted,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <AppText
+                        role="achievementStatement"
+                        style={{ textAlign: 'center' }}
+                      >
+                        {item.body}
+                      </AppText>
+                    </View>
+                  )}
+                  {item.image ? (
+                    <AppText role="bodySmall">{item.body}</AppText>
                   ) : null}
-                  <AppText role="bodySmall">{item.body}</AppText>
                 </View>
               </View>
             ))}

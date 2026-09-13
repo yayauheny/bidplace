@@ -133,7 +133,7 @@ export const designTokens = {
     dock: 200,
     avatar: 100,
     social: 30,
-    achievement: 18.82,
+    achievement: 20,
     shareSheet: 20,
     workGallery: 20,
     statusDot: 20,
@@ -357,11 +357,16 @@ export const designTokens = {
       letterSpacing: -0.34,
       fontWeight: '600' as const,
     },
+    achievementStatement: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 20,
+      lineHeight: 28,
+      fontWeight: '500' as const,
+    },
     achievementDate: {
       fontFamily: 'Inter_500Medium',
-      fontSize: 17,
+      fontSize: 18,
       lineHeight: 24,
-      letterSpacing: -0.51,
       fontWeight: '500' as const,
     },
     identityHandle: {

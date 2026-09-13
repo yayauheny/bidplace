@@ -1,3 +1,7 @@
+## 2026-09-13 — Author achievement presentation
+
+`Implemented`: `AuthorAbout` renders existing achievement photos or a text-only card, with UTC month/year via `achievement-date.ts` (2 focused tests). No data/API/RFC contract changes. Mobile typecheck, targeted lint, token build and web export pass. Full author visual/accessibility matrix remains `Partial`. Next scope: `docs/tasks/2026-09-12-figma-finish/CONTINUE.md`.
+
 # bidplace — текущий статус проекта
 
 ## 2026-09-13 — Author final composition pass

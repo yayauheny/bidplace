@@ -1,3 +1,7 @@
+## 2026-09-13 — Achievement tokens
+
+Frame 219 uses `achievement` radius 20, `achievementDate` Inter Medium 18/24, and `achievementStatement` Inter Medium 20/28. Text-only cards use the existing surfaceMuted token and a minimum 3:4 height, expanding for long accessible text.
+
 # bidplace — дизайн-система
 
 Последнее обновление: 2026-09-11
