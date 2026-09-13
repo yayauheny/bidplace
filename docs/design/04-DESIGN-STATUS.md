@@ -1,5 +1,19 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Figma visual parity measurements
+
+- Author tabs: **Implemented** Medium 16/19 −0.32 and Regular 12/14 −0.24
+  count. Item height stays 25. Chromium and WebKit computed styles match.
+  Evidence: `artifacts/figma-qa/parity/REPORT.md` and contact sheets.
+- Dock 232×64, atmosphere 485×485, Work cards 264×352 / 366×488, and frost
+  hug-without-price were already correct. They were not shrunk or restyled
+  from screenshot feel.
+- Full-page raster inequality vs Figma remains **expected**: Figma still
+  paints Archive / commerce chrome; engine blur rasters differ. Geometry and
+  the two tab type roles are the comparison source.
+- Keyboard, 200% zoom, and reduced-motion recaptures passed on the
+  comparison stand. Stabilization Playwright matrix is still **38/38**.
+
 ## 2026-09-13 — Figma stabilization statuses
 
 - Stabilization Playwright matrix: **38/38** Chromium + WebKit in one clean

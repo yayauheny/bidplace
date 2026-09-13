@@ -1,0 +1,112 @@
+{
+  "measured": {
+    "dpr": 1,
+    "viewport": {
+      "width": 390,
+      "height": 860
+    },
+    "scrollTop": 573,
+    "progress": null,
+    "dock": {
+      "box": {
+        "x": 79,
+        "y": 784,
+        "width": 232,
+        "height": 64
+      },
+      "padding": "0px",
+      "gap": "20px",
+      "radius": "200px",
+      "background": "rgba(255, 255, 255, 0.6)",
+      "backdrop": "blur(6px)",
+      "filter": "none",
+      "boxShadow": "none"
+    },
+    "atmosphere": {
+      "box": null,
+      "wash": null
+    },
+    "frost": {
+      "box": {
+        "x": 126,
+        "y": -140,
+        "width": 264,
+        "height": 100
+      },
+      "backdrop": "blur(30px)"
+    },
+    "avatar": null,
+    "worksTab": null,
+    "tabCount": null,
+    "cards": [
+      {
+        "x": 126,
+        "y": -392,
+        "width": 264,
+        "height": 352
+      },
+      {
+        "x": 12,
+        "y": 49,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 557,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 1065,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 1573,
+        "width": 366,
+        "height": 488
+      }
+    ],
+    "openingCard": {
+      "x": 126,
+      "y": -392,
+      "width": 264,
+      "height": 352
+    },
+    "newWorksHeading": {
+      "fontFamily": "Inter_600SemiBold",
+      "fontSize": "24px",
+      "fontWeight": "600",
+      "lineHeight": "29px",
+      "letterSpacing": "-0.72px",
+      "box": {
+        "x": 12,
+        "y": 0,
+        "width": 366,
+        "height": 29
+      }
+    },
+    "firstNewWorkCard": {
+      "x": 12,
+      "y": 49,
+      "width": 366,
+      "height": 488
+    }
+  },
+  "compare": {
+    "width": 390,
+    "height": 860,
+    "maxDelta": 255,
+    "meanDelta": 66.12,
+    "hotRatio": 0.846
+  },
+  "figmaBox": {
+    "x": 0,
+    "y": 1643,
+    "width": 390,
+    "height": 860
+  }
+}
