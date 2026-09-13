@@ -1,5 +1,13 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — S2 public works catalog
+
+- `Implemented` at 390 mobile web: `/works` keeps the existing public query and
+  navigation contracts while matching the Figma catalog composition. Loading,
+  empty, retryable error, one-work and long-title behavior are verified.
+- No API, auth, seed or product contract changed. S7 filter integration remains
+  a separate task. Evidence: `artifacts/figma-qa/S2/REPORT.md`.
+
 ## 2026-09-13 — S7 standalone mobile-web filter masters
 
 - `Implemented`: reusable phone-web filter/sort controls are exported from

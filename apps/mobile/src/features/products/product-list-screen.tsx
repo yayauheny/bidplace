@@ -85,12 +85,16 @@ export function ProductListScreen({
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x10,
-          paddingBottom: designTokens.space.x5,
-          gap: designTokens.space.sectionGap,
+          paddingBottom: designTokens.size.dockReserve,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ gap: designTokens.space.x2 }}>
+        <View
+          style={{
+            gap: designTokens.space.x2,
+            marginBottom: designTokens.space.x10,
+          }}
+        >
           <AppText role="screenTitle">{title}</AppText>
           <AppText role="bodySmall" tone="secondary">
             {WORKS_CATALOG_INTRO}
@@ -98,22 +102,31 @@ export function ProductListScreen({
         </View>
         <View
           style={{
+            marginHorizontal: -designTokens.space.pageGutter,
+            marginBottom: designTokens.space.authorSectionGap,
+            paddingHorizontal: designTokens.space.pageGutter,
             borderBottomWidth: 1,
             borderBottomColor: designTokens.color.divider,
-            paddingBottom: 4,
-            alignSelf: 'flex-start',
           }}
         >
-          <AppText role="label">Все работы</AppText>
-          <View
-            style={{
-              height: 2,
-              backgroundColor: designTokens.color.ink,
-              marginTop: 4,
-            }}
-          />
+          <View style={{ alignSelf: 'flex-start' }}>
+            <AppText role="profileTab">Все работы</AppText>
+            <View
+              style={{
+                height: 2,
+                backgroundColor: designTokens.color.ink,
+                marginTop: designTokens.space.x1,
+              }}
+            />
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: designTokens.space.x3 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: designTokens.space.x3,
+            marginBottom: designTokens.space.x8,
+          }}
+        >
           <SecondaryButton
             label="Фильтры"
             icon="filter-horizontal"

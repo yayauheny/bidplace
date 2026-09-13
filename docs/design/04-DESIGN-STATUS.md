@@ -1,5 +1,14 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — S2 works catalog at 390
+
+- `Implemented` for mobile web: `/works` matches Figma `526:13248` in header,
+  active-tab divider, control rhythm, 366×488 card geometry, 20 px grid gaps
+  and dock reserve. Loading, empty, retryable error, one-item and long-title
+  states are captured in `artifacts/figma-qa/S2/REPORT.md`.
+- S7 filter wiring remains intentionally deferred; native and desktop web are
+  outside the current scope.
+
 ## 2026-09-13 — S7 mobile-web filters and sorting
 
 - `Implemented` at 390: shared filter/sort bar, full-height filter sheet,
