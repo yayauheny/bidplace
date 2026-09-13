@@ -7,7 +7,10 @@ Runtime: Expo phone column ~390, tokens in `packages/design-tokens`
 ## Skipped Figma nodes
 
 - Page `Структура` moodboards and competitor dumps.
-- Home «Открытие недели» and «Активные торги».
+- Home «Активные торги» and the first-fold commerce rail.
+- Home Figma editorial copy that is not in `GET /api/portfolio/home`
+  («Выбор куратора», curator blurb).
+- Home «Новые работы» fan/stack (`436:1320`); runtime uses the Work cover master.
 - Catalog tabs `Аукционы` / `Анонсы` / `Архив` and price filter.
 - Dock cart / `shopping-basket-01`.
 - Search overlay (categories / authors / works). `/search` is a stub.
@@ -21,7 +24,8 @@ Runtime: Expo phone column ~390, tokens in `packages/design-tokens`
 
 ## Unused Figma variants still in code
 
-- `FigmaButton` `muted` (screens use solid / outline / ghost).
+- `FigmaButton` `muted` is used on Home opening «Смотреть профиль»; other
+  screens still prefer solid / outline / ghost.
 - `FigmaTextField` extra interaction states not all wired on every form.
 - `WorkCoverCard` commerce overlay (`price` / `timer` / `status`) hidden in
   `mode="portfolio"`.
@@ -43,7 +47,8 @@ the previous glass/blur values.
 
 ## Deferred product questions
 
-- When to restore `Открытие недели` with a real editorial pick.
+- Whether opening needs a dedicated editorial text field beyond the Work/author
+  DTO (`DEC-086` already owns the selection pointer).
 - Search overlay API shape and filters.
 - Whether create-work should collect `Тираж` as required once Figma labels it.
 - Licensed Geist files.
