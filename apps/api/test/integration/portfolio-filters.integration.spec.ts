@@ -103,6 +103,77 @@ async function publishWork(
 }
 
 describe('portfolio catalog SQL filters and pagination', () => {
+  it('returns normalized facets from public authors and published works only', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.approved.profileId },
+      data: { city: 'Минск', discipline: 'Живопись' },
+    });
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.otherApproved.profileId },
+      data: { city: 'Гродно', discipline: 'Керамика' },
+    });
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.pending.profileId },
+      data: { city: 'Секретный город', discipline: 'Секрет' },
+    });
+    const publicWork = await publishWork({
+      sellerProfileId: fixture.sellers.approved.profileId,
+      categoryId: fixture.categoryId,
+      publicId: 'facetPub001',
+      title: 'Public canvas one',
+      materials: 'Холст',
+      publishedAt: new Date('2026-09-01T00:00:00.000Z'),
+    });
+    await prisma.product.update({
+      where: { id: publicWork.id },
+      data: { materials: 'Непубличный черновик' },
+    });
+    await publishWork({
+      sellerProfileId: fixture.sellers.approved.profileId,
+      categoryId: fixture.categoryId,
+      publicId: 'facetPub002',
+      title: 'Public canvas two',
+      materials: ' холст ',
+      publishedAt: new Date('2026-09-02T00:00:00.000Z'),
+    });
+    await publishWork({
+      sellerProfileId: fixture.sellers.pending.profileId,
+      categoryId: fixture.categoryId,
+      publicId: 'facetSec001',
+      title: 'Non-public material',
+      materials: 'Секрет',
+      publishedAt: new Date('2026-09-03T00:00:00.000Z'),
+    });
+
+    const response = await guest.get('/portfolio/facets');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      materials: ['Холст'],
+      cities: ['Гродно', 'Минск'],
+      tags: ['Живопись', 'Керамика'],
+    });
+    const publishedFilter = await guest.get('/works?materials=Холст');
+    const draftFilter = await guest.get(
+      '/works?materials=Непубличный%20черновик',
+    );
+    expect(
+      (
+        (await publishedFilter.json()) as {
+          works: Array<{ work: { publicId: string } }>;
+        }
+      ).works.map((item) => item.work.publicId),
+    ).toEqual(['facetPub002', 'facetPub001']);
+    expect(
+      (
+        (await draftFilter.json()) as {
+          works: Array<{ work: { publicId: string } }>;
+        }
+      ).works,
+    ).toEqual([]);
+  });
+
   it.each([
     {
       name: 'q',

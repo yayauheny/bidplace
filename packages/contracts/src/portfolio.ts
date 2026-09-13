@@ -128,6 +128,14 @@ export const portfolioAuthorsResponseSchema = z
   })
   .strict();
 
+export const portfolioDiscoveryFacetsResponseSchema = z
+  .object({
+    materials: z.array(publicText),
+    cities: z.array(publicText),
+    tags: z.array(publicText),
+  })
+  .strict();
+
 export const portfolioAuthorDetailResponseSchema = z
   .object({
     author: portfolioAuthorSchema,
@@ -218,6 +226,9 @@ export type PortfolioAchievementWriteRequest = z.infer<
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
+>;
+export type PortfolioDiscoveryFacetsResponse = z.output<
+  typeof portfolioDiscoveryFacetsResponseSchema
 >;
 export type PortfolioWorkDetailResponse = z.infer<
   typeof portfolioWorkDetailResponseSchema

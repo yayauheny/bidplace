@@ -10,6 +10,7 @@ import {
   listingStatusSchema,
   productWriteRequestSchema,
   portfolioAuthorsQuerySchema,
+  portfolioDiscoveryFacetsResponseSchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
   portfolioAuthorApplicationResponseSchema,
@@ -19,6 +20,35 @@ import {
 } from '../src';
 
 describe('shared contracts', () => {
+  it('keeps discovery facets strict, non-empty, and normalized', () => {
+    expect(
+      portfolioDiscoveryFacetsResponseSchema.parse({
+        materials: [' Холст '],
+        cities: ['Минск'],
+        tags: ['Живопись'],
+      }),
+    ).toEqual({
+      materials: ['Холст'],
+      cities: ['Минск'],
+      tags: ['Живопись'],
+    });
+    expect(
+      portfolioDiscoveryFacetsResponseSchema.safeParse({
+        materials: [''],
+        cities: [],
+        tags: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      portfolioDiscoveryFacetsResponseSchema.safeParse({
+        materials: [],
+        cities: [],
+        tags: [],
+        privateTag: ['draft'],
+      }).success,
+    ).toBe(false);
+  });
+
   it('keeps portfolio public work responses free of commerce fields', () => {
     const work = {
       id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',

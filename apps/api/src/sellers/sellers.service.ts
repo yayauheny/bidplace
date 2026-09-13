@@ -43,6 +43,7 @@ import {
 import {
   publicAuthorCte,
   publicAuthorOrderBy,
+  type PublicAuthorFacetRow,
   type PublicAuthorPageRow,
 } from './sellers-catalog.query';
 import {
@@ -925,6 +926,18 @@ export class SellersService {
         total,
       },
     };
+  }
+
+  async listPublicFacets() {
+    const cte = publicAuthorCte(
+      { page: 1, limit: 1, sort: 'added' },
+      { requireCity: true },
+    );
+    return this.prisma.$queryRaw<PublicAuthorFacetRow[]>(
+      Prisma.sql`${cte}
+        SELECT "city", "discipline"
+        FROM filtered`,
+    );
   }
 
   async getApprovedPublicAuthor(

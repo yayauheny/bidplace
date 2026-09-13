@@ -4,6 +4,7 @@ import { Prisma } from '@bidplace/database';
 import { publicProductContentSql } from './public-visibility';
 
 export type PublicCatalogPageRow = { id: string; total: number | bigint };
+export type PublicWorkFacetRow = { materials: string | null };
 
 export function escapeLikePattern(value: string): string {
   return value
@@ -27,15 +28,17 @@ export function publicCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
   if (query.q) {
     const pattern = `%${escapeLikePattern(query.q)}%`;
     filters.push(Prisma.sql`(
-      p."title" ILIKE ${pattern} ESCAPE '\\'
-      OR p."story" ILIKE ${pattern} ESCAPE '\\'
-      OR p."materials" ILIKE ${pattern} ESCAPE '\\'
+      published."title" ILIKE ${pattern} ESCAPE '\\'
+      OR published."story" ILIKE ${pattern} ESCAPE '\\'
+      OR published."materials" ILIKE ${pattern} ESCAPE '\\'
       OR sp."full_name" ILIKE ${pattern} ESCAPE '\\'
     )`);
   }
 
   if (query.category) {
-    filters.push(Prisma.sql`p."category_id" = CAST(${query.category} AS uuid)`);
+    filters.push(
+      Prisma.sql`published."category_id" = CAST(${query.category} AS uuid)`,
+    );
   }
 
   if (query.author) {
@@ -44,13 +47,22 @@ export function publicCatalogCte(query: PortfolioWorksQuery): Prisma.Sql {
 
   for (const material of query.materials ?? []) {
     const pattern = `%${escapeLikePattern(material)}%`;
-    filters.push(Prisma.sql`p."materials" ILIKE ${pattern} ESCAPE '\\'`);
+    filters.push(
+      Prisma.sql`published."materials" ILIKE ${pattern} ESCAPE '\\'`,
+    );
   }
 
   return Prisma.sql`WITH filtered AS (
-    SELECT p."id", p."category_id", p."seller_profile_id", p."materials", p."published_at"
+    SELECT
+      p."id",
+      published."category_id",
+      p."seller_profile_id",
+      published."materials",
+      p."published_at"
     FROM "products" p
     INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
+    INNER JOIN "product_revisions" published
+      ON published."id" = p."published_revision_id"
     WHERE sp."status" = 'APPROVED'
       AND ${publicProductContentSql}
       AND ${Prisma.join(filters, ' AND ')}

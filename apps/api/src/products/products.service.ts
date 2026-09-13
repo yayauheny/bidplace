@@ -30,6 +30,7 @@ import {
   publicCatalogCte,
   publicCatalogOrderBy,
   type PublicCatalogPageRow,
+  type PublicWorkFacetRow,
 } from './products-catalog.query';
 import { missingProductApprovalFields } from './product-requirements';
 import {
@@ -625,6 +626,23 @@ export class ProductsService {
       }),
       pagination,
     };
+  }
+
+  async listPortfolioMaterialFacets() {
+    const cte = publicCatalogCte({
+      page: 1,
+      limit: 1,
+      sort: 'newest',
+    });
+    const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
+      Prisma.sql`${cte}
+        SELECT "materials"
+        FROM filtered
+        WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`,
+    );
+    return rows.flatMap((row) =>
+      row.materials?.trim() ? [row.materials.trim()] : [],
+    );
   }
 
   private async loadCatalogPage(query: PortfolioWorksQuery) {

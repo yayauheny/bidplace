@@ -3,6 +3,7 @@ import {
   portfolioAuthorsResponseSchema,
   portfolioAuthorApplicationResponseSchema,
   portfolioCabinetWorksResponseSchema,
+  portfolioDiscoveryFacetsResponseSchema,
   portfolioHomeResponseSchema,
   portfolioWorkDetailResponseSchema,
   portfolioWorksResponseSchema,
@@ -73,6 +74,20 @@ export class PortfolioService {
     return portfolioAuthorsResponseSchema.parse({
       authors,
       pagination: response.pagination,
+    });
+  }
+
+  async facets() {
+    const [materials, authors] = await Promise.all([
+      this.products.listPortfolioMaterialFacets(),
+      this.sellers.listPublicFacets(),
+    ]);
+    return portfolioDiscoveryFacetsResponseSchema.parse({
+      materials: normalizeFacetValues(materials),
+      cities: normalizeFacetValues(authors.map((author) => author.city)),
+      tags: normalizeFacetValues(
+        authors.map((author) => author.discipline),
+      ),
     });
   }
 
@@ -227,6 +242,23 @@ export class PortfolioService {
   unhideWork(userId: string, productId: string) {
     return this.products.unhide(userId, productId);
   }
+}
+
+function normalizeFacetValues(values: Array<string | null>) {
+  const valuesByKey = new Map<string, string>();
+  for (const value of values) {
+    const normalized = value?.trim();
+    if (!normalized) continue;
+    const key = normalized.toLocaleLowerCase('ru-RU');
+    if (!valuesByKey.has(key)) {
+      valuesByKey.set(key, normalized);
+    }
+  }
+  return [...valuesByKey.values()].sort(
+    (left, right) =>
+      left.localeCompare(right, 'ru-RU', { sensitivity: 'base' }) ||
+      left.localeCompare(right),
+  );
 }
 
 function toPortfolioWorkItem(item: {

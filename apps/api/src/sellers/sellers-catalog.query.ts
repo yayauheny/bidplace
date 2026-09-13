@@ -5,6 +5,10 @@ import { escapeLikePattern } from '../products/products-catalog.query';
 import { publicProductContentSql } from '../products/public-visibility';
 
 export type PublicAuthorPageRow = { id: string; total: number | bigint };
+export type PublicAuthorFacetRow = {
+  city: string | null;
+  discipline: string;
+};
 
 export function publicAuthorOrderBy(
   sort: PortfolioAuthorsQuery['sort'],
@@ -49,6 +53,8 @@ export function publicAuthorCte(
     SELECT
       author."id",
       author."full_name",
+      author."city",
+      author."discipline",
       (
         SELECT p."created_at"
         FROM "products" p
