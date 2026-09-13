@@ -388,7 +388,15 @@ export const designTokens = {
       fontFamily: 'Inter_500Medium',
       fontSize: 16,
       lineHeight: 19,
+      letterSpacing: -0.32,
       fontWeight: '500' as const,
+    },
+    profileTabCount: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      lineHeight: 14,
+      letterSpacing: -0.24,
+      fontWeight: '400' as const,
     },
     profileHeading: {
       fontFamily: 'Inter_600SemiBold',
