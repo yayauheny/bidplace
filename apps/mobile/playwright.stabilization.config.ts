@@ -1,11 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-// Leftover specs after auction and superseded Pen/header deletion.
-// This is not a native or desktop acceptance gate. The official
-// mobile-web 390 gate is playwright.stabilization.config.ts.
-
-const apiPort = process.env.E2E_API_PORT ?? '3001';
-const webPort = process.env.E2E_WEB_PORT ?? '8081';
+const apiPort = process.env.E2E_API_PORT ?? '3003';
+const webPort = process.env.E2E_WEB_PORT ?? '8093';
 const apiBaseURL = `http://localhost:${apiPort}`;
 const webBaseURL = `http://localhost:${webPort}`;
 const databaseUrl =
@@ -14,8 +10,22 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: [
+    'figma-stabilization.spec.ts',
+    'home-figma.spec.ts',
+    'discovery-launch.spec.ts',
+    'author-header-motion.spec.ts',
+    'product-layout.spec.ts',
+    'auth-layout.spec.ts',
+    'figma-cover-frost.spec.ts',
+  ],
+  timeout: 90_000,
   globalTimeout: 12 * 60_000,
   workers: 1,
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
   use: {
     baseURL: webBaseURL,
     trace: 'retain-on-failure',
