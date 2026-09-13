@@ -1,5 +1,58 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — PR A: portfolio backend and commerce runtime off
+
+- `Implemented`: default Nest boot is portfolio-native (`DEC-087`).
+  `AppModule` composes health, auth, analytics ingest, owner product write,
+  owner seller profile, images, admin curator/moderation/users and
+  `PortfolioModule`. Listing, bid, order, discovery, activity, lifecycle and
+  realtime modules are absent. `COMMERCE_ENABLED` is gone. Evidence:
+  `apps/api/src/app.module.ts`, `app.module.spec.ts`,
+  `apps/api/test/integration/commerce-removed-routes.integration.spec.ts`.
+- `Implemented`: public catalog and Work detail read `publishedRevision`
+  fields and `product_revision_images`. Evidence:
+  `apps/api/src/products/products-catalog.query.ts`,
+  `apps/api/src/portfolio/portfolio.service.ts`,
+  `apps/api/test/integration/portfolio-published-revision.integration.spec.ts`.
+- `Implemented`: public media routes authorize published/public pointers
+  before returning bytes; draft and unpublished revision media 404 for guests.
+  Evidence: `apps/api/src/images/images.service.ts`,
+  `apps/api/test/integration/media-transport.integration.spec.ts`.
+- `Implemented`: server-owned Home `curatorSelection` (`DEC-086`). Missing,
+  hidden, rejected or unpublished pointers resolve to `null`. Admin
+  `PUT`/`DELETE /api/admin/curator-selection` return 401/403/409 as specified.
+  Evidence: `apps/api/src/admin/admin.controller.ts`,
+  `apps/api/test/integration/curator-selection.integration.spec.ts`.
+- `Implemented`: `GET /api/portfolio/facets` returns normalized public
+  materials, cities and tags from published/public rows only (`DEC-089`).
+  Evidence: `apps/api/src/portfolio/portfolio.service.ts`,
+  `apps/api/test/integration/portfolio-filters.integration.spec.ts`.
+- `Implemented`: additive Prisma migrations
+  `20260909010000_add_profile_revision_media` and
+  `20260909120000_portfolio_media_socials_curator` add revision media
+  metadata, nullable `social_link` and `curator_selections`. Listing/Bid/Order
+  tables remain. Evidence: `packages/database/prisma/schema.prisma`,
+  `packages/database/prisma/migrations/`.
+- `Implemented`: `pnpm ops:commerce-inventory` is read-only. It prints
+  environment, database name, listing totals by status including
+  `SCHEDULED`/`LIVE`, and leftover ids that need a founder decision. It
+  refuses unknown env, ambiguous target, `--apply` and any write flag, and
+  never prints connection strings or credentials. This is **not** a
+  staging/production dry-run. Evidence:
+  `scripts/ops/commerce-inventory.mjs`,
+  `scripts/ops/lib/commerce-inventory.mjs`,
+  `scripts/ops/lib/commerce-inventory.spec.mjs`,
+  `apps/api/test/integration/commerce-inventory.integration.spec.ts`.
+- `Partial`: RFC §10 owner Work create/edit still persists optional
+  `packaging` and `deliveryInfo`. Those fields were not removed in this
+  backend package.
+- `Not implemented` here: mobile UI, Figma comparison fixtures, legal/auth
+  email-verification enforcement, Prisma P4 commerce-table drop, and any
+  write-mode leftover cancellation.
+- `Needs verification`: `pnpm verify` plus inventory tests on this branch;
+  leftover inventory on staging/production must be run separately against
+  those databases.
+
 ## 2026-09-08 — First MVP scope changed to public portfolio
 
 - `Confirmed product`: `DEC-082`–`DEC-084` replace the first public release target

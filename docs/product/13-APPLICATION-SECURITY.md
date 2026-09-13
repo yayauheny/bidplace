@@ -1,6 +1,6 @@
 # bidplace — application security (engineering)
 
-Последнее обновление: 2026-09-06
+Последнее обновление: 2026-09-14
 Статус: Confirmed (engineering owner)
 
 ## 1. Purpose and non-goals
@@ -33,14 +33,14 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Lookup user by email | Implemented | `admin-user.service.ts` |
 | Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
 | Revoke all sessions (`sessionVersion++`) | Implemented | same |
-| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
-| Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
+| Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Not implemented in default boot | Removed with commerce runtime. Leftover `SCHEDULED`/`LIVE` rows are reported by read-only `pnpm ops:commerce-inventory`; that command does not cancel or update rows. Prisma listing tables remain until P4 |
+| Needs-order queue + manual Order create | Not implemented in default boot | Removed with commerce runtime; no Recovery HTTP in default boot |
 | **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
 | Revoke audit uses stable labels `session` / `revoked` | Implemented | `admin-user.service.ts` |
 
-**Pros:** founder can stop abuse without schema churn; guards prevent admin lockout.  
-**Cons:** listing emergency cancel still requires listing UUID in UI; no bulk actions.  
-**Revisit when:** pilot volume needs search-by-public-id or automated stuck-queue rules.
+**Pros:** founder can stop account abuse without schema churn; guards prevent admin lockout.  
+**Cons:** leftover commerce rows are inventoried, not neutralized, until a verified staging/production inventory and a later founder decision.  
+**Revisit when:** commerce is restored from archive, or leftover rows are authorized for a separate write-mode cutover.
 
 ## 4. Media upload defense
 
@@ -55,11 +55,11 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 
 | Control | Status | Detail |
 | --- | --- | --- |
-| Authz before decode | Implemented | `ImagesService` runs owner + editable product + listing lock + `assertApprovedSeller` before Sharp; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
+| Authz before decode | Implemented | `ImagesService` runs owner + editable product + `assertApprovedSeller` before Sharp; leftover Listing rows do not lock writes; the persist TX repeats that guard under `SELECT … FOR UPDATE` |
 | Static images only | Implemented | Reject `image/gif` and animated WebP/PNG (`pages`/`frames`/`delay`) |
 | Pixel budgets | Implemented | Max edge **4096px**, max **16_777_216** pixels (`productImagePixelBudgets`) |
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
-| Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
+| Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
 | Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
 | Canonical storage | Partial | S3-compatible `ImageStore` is required in production; live object-store drill remains pending |
@@ -78,7 +78,7 @@ Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `selle
 | Register / login | IP-scoped limits | Implemented (`auth.controller.ts`) |
 | OTP send | IP + user | Implemented (`otp.service.ts`) |
 | Forgot / reset password | IP + email bucket | Implemented (`password-reset.controller.ts`) |
-| Bid place | User + listing resource | Implemented (`bids.controller.ts`) |
+| Bid place | User + listing resource | Not implemented in default boot (`POST /api/listings/:id/bids` unmatched 404) |
 | Image upload | User, 10/min | Implemented (`images.controller.ts`) |
 | Forgot password response | Always `{ ok: true }` | Implemented |
 
@@ -129,3 +129,4 @@ Coverage: `env-profile.spec.ts`, `env.spec.ts` matrix, `rules.spec.ts`, `local-m
 
 - **Backup encryption at rest:** `BACKUP_GPG_RECIPIENT` is supported by `scripts/ops/backup-db.sh`; production key management and rotation are not automated yet. See [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md).
 - **Multi-instance rate limits:** in-memory upload/auth limits remain single-replica until a shared store is chosen (**DEC-069**).
+- **Leftover commerce inventory:** `scripts/ops/commerce-inventory.mjs` is read-only. It does not cancel listings and does not replace admin user ban/revoke. Staging/production inventory must be run against those databases separately.

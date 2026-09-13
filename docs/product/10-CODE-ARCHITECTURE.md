@@ -1,24 +1,34 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-09
+Последнее обновление: 2026-09-14
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
+Transitional note (`DEC-087`): default Nest boot is portfolio-native. P4 Prisma
+`Listing`/`Bid`/`Order` drops remain blocked on a verified inventory of every
+supported environment. Commerce v1 remains recoverable from origin
+`archive/commerce-v1` at SHA `598d869`.
 
 ## Applications and shared boundaries
 
-- `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
+- `apps/api` is the authoritative NestJS HTTP process. Default boot has no
+  scheduler and no Socket.IO adapter. Controllers parse shared Zod contracts;
+  services own business rules and Prisma transactions.
 - First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating Bid/Order business facts. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`.
 - HTTP requests receive `X-Request-Id` (incoming or generated) for correlation in logs and error responses.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
-- `apps/api/src/core/commerce` owns the fail-closed commerce capability. Its typed
-  `COMMERCE_ENABLED` configuration defaults to `false`; commerce HTTP controllers,
-  commerce admin actions, lifecycle and Socket.IO consume the same boundary.
-  `apps/api/src/discovery` delegates to Product/Seller services and portfolio
-  discovery no longer requires a `Listing` to make an approved Work public.
-- `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author and author
-  application projections. It delegates persistence to Product/Seller services and
-  validates all public responses with `packages/contracts`; its DTOs never expose
-  commerce fields.
-- `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
+- Default `AppModule` composes health, auth, analytics ingest, owner product
+  write, owner seller profile + photo, images, admin curator/moderation/users,
+  and `PortfolioModule`. Listing, bid, order, discovery, activity and realtime
+  HTTP is unmatched Nest 404. `COMMERCE_ENABLED` is gone; flipping an env flag
+  cannot resurrect commerce modules.
+- `apps/api/src/portfolio` owns Home, Work, Author and author application
+  projections. Public catalog and Work detail read `publishedRevision` fields
+  and `product_revision_images`. DTOs never expose listing, price, bid or order
+  fields. `GET /api/portfolio/home` returns a server-owned `curatorSelection` or
+  `null` (`DEC-086`). `GET /api/portfolio/facets` returns public materials,
+  cities and tags (`DEC-089`). `socialLink` is optional/nullable and omitted
+  from public author DTOs. Private handoff stays owner-only.
+- `apps/mobile` is an Expo Router client. React Query holds server state. The
+  default API client does not open Socket.IO; Nest does not register a gateway.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/
@@ -35,33 +45,58 @@
 - `apps/mobile/src/components/layout/OverlayHost.tsx` owns the web-only overlay boundary for AppShell descendants. Desktop account dropdowns are portaled into the shared host and positioned from trigger rectangles; ordinary page content keeps the lower semantic layer.
 - `apps/mobile/src/components/layout/index.ts` is the shared public barrel for shell/header/overlay primitives and discovery `FilterMenu` (single dismiss + focus-return contract). Pure helpers such as `account-menu-hover.ts`, `header-chrome.ts`, `dismissible-overlay.ts` and `focusable-anchor.ts` stay outside that barrel so Node/Playwright can import them without loading React Native.
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
-- `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
+- `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client`
+  validates responses with those schemas. Default `createApiClient` composes
+  portfolio, auth, owner product write, owner seller profile, categories,
+  images, analytics ingest, and admin moderation/users/curator. Listing, order,
+  bid, activity and discovery clients are not in the default composition.
+  Nest-only listing/bid/order/activity/discovery Zod modules are deleted.
+  Prisma Listing/Order enums stay in `enums.ts` until P4.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
-- `packages/database` owns Prisma schema, the single unreleased baseline migration and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes, and an API PostgreSQL integration test verifies the seeded auction invariants.
+- `packages/database` owns Prisma schema, forward migrations and deterministic
+  local/test seed. Additive migrations through
+  `20260909120000_portfolio_media_socials_curator` add revision media metadata,
+  nullable `social_link` and `curator_selections`. Prisma `Listing`/`Bid`/`Order`
+  tables remain. The destructive demo seed may run only with
+  `NODE_ENV=development|test`, `APP_ENV=local` and
+  `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; it wipes leftover commerce rows and does
+  not recreate them. `pnpm ops:commerce-inventory` is read-only and never
+  cancels listings.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
-- Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
+- Socket.IO adapters and gateways are not registered in default boot.
 
 ## Persistence model
 
 ```text
 SellerProfile
   ├─ SellerProfileRevision[]
-  │    └─ SellerProfileRevisionAchievement[] (text/date; revision scoped)
+  │    └─ SellerProfileRevisionAchievement[] (text/date; optional BYTEA)
   └─ Product
        ├─ ProductRevision[]
        │    └─ ProductRevisionImage[]
        ├─ ProductImage[] (legacy metadata)
+       ├─ CuratorSelection? (single home slot pointer)
        └─ Listing[]
             ├─ AuctionRules
             ├─ Bid[]
             └─ Order[]
 ```
 
-`Product` and `Order` use immutable 11-character cryptographically random public IDs; internal writes use UUIDs. MVP has only `ListingType.AUCTION` and currency `BYN`. PostgreSQL enforces one active (`SCHEDULED`/`LIVE`) Listing per Product and one non-cancelled Order per Listing with partial unique indexes.
+`SellerProfile.socialLink` and `SellerProfileRevision.socialLink` are nullable.
+`CuratorSelection` is a unique `slot` (`home`) pointing at one Product; Home
+`curatorSelection` is returned only when that Work and author pass public
+visibility. Admin `PUT`/`DELETE /api/admin/curator-selection` write the pointer.
+Production seed does not create a selection.
+
+`Product` and leftover `Order` rows use immutable 11-character public IDs;
+internal writes use UUIDs. Prisma still models `ListingType.AUCTION` and
+currency `BYN` until P4. PostgreSQL still enforces one active
+(`SCHEDULED`/`LIVE`) Listing per Product; those tables are leftover storage,
+not default HTTP.
 
 ## Confirmed current MVP implementation boundary
 
-- `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
+- `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions; leftover Listing rows do not lock those writes;
 - SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
 - `Product` is the current persistence name for a Work. `ProductRevision` holds
   mutable public Work content and immutable revision-image membership; a Work points
@@ -85,56 +120,41 @@ SellerProfile
   mandatory for creator-made Product; the current optional field is preserved
   until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version; OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
+- OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`. Nest `GET/POST /api/auth/rules` and Prisma `TermsAcceptance` remain; bid email/rules eligibility is not in default boot;
 - password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
-- active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. New Orders also freeze `snapshotTitle`, `snapshotCurrency` and `snapshotProductPublicId` from the Listing/Product inside the create transaction (`createWinnerOrder` and replacement). `listingId` and `finalAmount` are the Listing identity and price snapshot. `contactDueAt` is computed at create time by the shared 48-hour policy in `orders/order-contact-deadline.ts` for lifecycle close, admin recovery and replacement. Projections prefer frozen deal fields and fall back to live Product/Listing only for historical rows. Buyer, seller and admin receive role-scoped projections, seller actions and admin cancellation/replacement enforce actor role at the service boundary, terminal handoff transitions are not repeatable, and admin cancellation/replacement preserves the original record with append-only audit;
-- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts` and `admin-listing-emergency.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, session revoke, and emergency `SCHEDULED|LIVE → CANCELLED` without bid edits; `AuditTargetType.USER` records user incidents; mobile admin exposes Users and Recovery tabs wired to needs-order API;
-- Order audience is resolved from the Order relation itself: admin sees the full admin projection, the seller sees the seller projection when `order.sellerId === userId`, and the buyer sees the buyer projection when `order.buyerId === userId`. Cancelled Orders stay hidden from buyer and seller projections when historical contacts must remain private. `GET /api/orders` is the seller inbox: session `sellerId` only, `CANCELLED` excluded, page/limit bounded to 100, seller projection, frozen snapshot fields. Inbox and `GET /api/orders/:publicId` hydrate Order snapshot scalars plus `listing.currency` and `product.title`/`publicId`; they do not select `SellerProfile.profilePhotoData`. Bid placement, public Product GET, listing owner reads, winner-order create, admin replacement/recovery and product moderation load `SellerProfile` through `sellerProfileAuthSelect` / `sellerProfileHandoffSelect` (no `profilePhotoData`). Public Product images reuse `productImageMetadataSelect` and do not hydrate `ProductImage.data`. HTTP byte responses stay in the image-store photo/image GET paths. Admin seller approval still reads `profilePhotoData` to check `byteLength`.
-- Public Socket.IO is anonymous but fenced: handshake origins are allow-listed
-  from `CORS_ORIGIN`, public transports do not send credentials, joins reuse the
-  approved Product/SellerProfile Listing predicate, are rate-limited per IP,
-  public rooms are capped per socket, and socket-local room tracking is cleared
-  on disconnect.
-- Public discovery is split by contract: Product catalog queries use a
-  PostgreSQL canonical-listing CTE for server-side filters, status-aware sort,
-  total count and page selection before narrow Prisma hydration; Seller
-  directory queries expose only `q`, pagination and `activity`/`name` sort.
+- Prisma Order handoff snapshots remain until P4; winner-order helpers are not in default boot;
+- admin emergency user controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, and session revoke. Listing emergency cancel and needs-order recovery are not in default boot. Leftover `SCHEDULED`/`LIVE` rows are reported by the read-only `pnpm ops:commerce-inventory` command and are not cancelled by that command;
+- Order snapshot columns remain on Prisma until P4. `GET /api/orders` is unmatched 404. Product image HTTP still uses metadata selects without hydrating `ProductImage.data`. Admin seller approval still reads `profilePhotoData` to check `byteLength`;
+- Public discovery is split by contract: portfolio Work catalog uses a PostgreSQL CTE over approved products and `product_revision_images` of `published_revision_id`, without a Listing join. Seller directory queries expose `q`, pagination and `added`/`name` sort. Public authors still require a trimmed city.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy
 
-- Buyer Activity (`GET /api/me/activity`) is a server-owned exhaustive projection of the latest Bid per Listing plus that buyer's Order. `CONTACTED` and `HANDOFF_FAILED` are first-class activity statuses. Cancelled Orders omit `orderPublicId` so the client cannot open a buyer-forbidden Order; the public Product link remains.
-- Bid placement is server-time, serializable, idempotent by
-  `(bidderUserId, idempotencyKey)`, self-bid protected, email/rules verified and
-  compare-and-update guarded; admin accounts are explicitly denied by the Bids
-  service and have no buyer Activity projection. Public aliases hash
-  `(listingId, bidderUserId)`, remaining stable within one Listing without
-  correlating the user across Listings. Optimistic CAS conflicts retry up to
-  three times with full re-validation before returning `LISTING_CHANGED`.
+Commerce bid/order HTTP, Socket.IO rooms and listing lifecycle cron are absent
+from default boot (`DEC-087`). Prisma `Listing`/`Bid`/`Order` remain until P4.
+Owner product writes do **not** fail closed on leftover listing rows; runtime
+guards use editable Product status and ownership only.
+
+- Buyer Activity (`GET /api/me/activity`) is unmatched 404 in default boot.
+- Bid, soft-close and listing-lifecycle rules live in the commerce archive, not
+  in default `apps/api/src`.
 - HTTP errors use one response shape `{ status, code, message, details? }` from
   `ApiExceptionFilter`. Category codes (`bad_request`, `conflict`, …) remain the
-  default for plain Nest exceptions; bidding emits stable business codes such as
-  `BID_TOO_LOW` via `AppException`. Clients branch on `code`, not `message`.
+  default for plain Nest exceptions. Clients branch on `code`, not `message`.
   Unexpected errors become `internal_error` without leaking internals.
-- The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
-- Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID. Expired LIVE Listings always become `ENDED` in a committed transaction before winner Order creation; Order creation is a separate best-effort transaction (shared `createWinnerOrder` helper) and must not roll back the close. `SCHEDULED` Listings whose `endsAt` has passed become `CANCELLED` with append-only audit (`actorUserId` null, reason `EXPIRED_SCHEDULED_WINDOW`) and `listing.updated`; no Order and no silent +24h (`DEC-073`). Each 30s tick (`waitForCompletion: true`) loads at most `LIFECYCLE_TICK_BATCH_SIZE` (50) listings per activate/cancel/close `findMany`, with stable `orderBy` (`startsAt`/`id` for activate, `endsAt`/`id` for cancel and close); remainder waits for the next tick. Cron activate/cancel/close failures are isolated per Listing. Schedule/activation require seller handoff contact. Admin recovery for `ENDED` + Bids + no Order is list + idempotent create-order only (same Bid ranking as close); no new Listing statuses, queues, or outbox.
-- Public Product, Listing, Bid history, ProductImage and Socket.IO access share
-  approved Product/SellerProfile gates and contain no buyer contacts or seller
-  internal identifiers. Order projections stay role-scoped: buyer sees the
-  seller snapshot only when the handoff initiator is `BUYER_CONTACTS_SELLER`,
-  seller sees the buyer email snapshot, and admin sees the allowed full record.
-- Buyer-facing Order privacy mode can hide seller contacts entirely when the seller chooses `SELLER_CONTACTS_BUYER`; the buyer projection returns `null` contact fields in that mode.
-- Product image reorder uses a two-phase temporary offset inside a transaction
-  so the unique `(productId, position)` constraint never collides during swaps;
-  count/byte capacity is checked transactionally before insert. Listing `SCHEDULE`
-  locks the same Product row before `DRAFT → SCHEDULED`, which is the owner edit lock.
+- Public Work and Author JSON share approved Product/SellerProfile gates and
+  contain no buyer contacts. Prisma Order projections remain until P4 and are
+  not served over HTTP. Public media routes authorize published/public pointers
+  before returning bytes; draft and unpublished revision media 404 for guests.
+- Product image reorder mutates only `ProductRevisionImage` rows of the editing
+  revision. Leftover `SCHEDULED`/`LIVE` listing rows do not lock owner Work
+  edits, images, or creation-story writes.
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
   sequential bounded normalize to canonical bytes outside the DB transaction, and
-  a short Read Committed transaction that locks the Product row, re-checks owner, editable status, blocking
-  Listing and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
+  a short Read Committed transaction that locks the Product row, re-checks owner, editable status and capacity then persists via `ImageStore.put` (`PostgresImageStore` today). Reads use metadata/authz first,
   then `ImageStore.get`. Per-user upload rate limits apply. See
   `13-APPLICATION-SECURITY.md` and `apps/api/src/images/image-policy.ts`.
 - `ImageStore` now selects PostgreSQL only for legacy/backfill compatibility or an
@@ -144,14 +164,19 @@ SellerProfile
 
 ## Runtime topology and extension boundary
 
-The API currently assumes a single scheduler and Socket.IO instance. The pilot deployment must enforce one API replica via Docker Compose (`docker compose --profile app`). Before multi-instance deployment, lifecycle work needs a distributed lock or external queue and realtime needs an adapter. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
+The default API process is a single Nest HTTP replica with no scheduler and no
+Socket.IO adapter. The pilot deployment still enforces one API replica via
+Docker Compose (`docker compose --profile app`). Do not add future sale types,
+payments, delivery or automatic winner replacement until a product decision
+requires them.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
 
 - `pnpm verify` — clean-checkout gate (`db:generate`, typecheck, lint, unit, integration, build);
 - GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml);
 - `GET /api/health` (liveness) and `GET /api/health/ready` (PostgreSQL `SELECT 1`);
-- `scripts/ops/` backup/restore/integrity with `pnpm ops:*` aliases.
+- `scripts/ops/` backup/restore/integrity with `pnpm ops:*` aliases;
+- `pnpm ops:commerce-inventory` — read-only leftover Listing/Bid/Order inventory.
 
 ## Verification
 
