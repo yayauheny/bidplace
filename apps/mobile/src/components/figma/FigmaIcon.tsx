@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { Svg, Circle, Ellipse, Path } from 'react-native-svg';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Platform } from 'react-native';
 import {
@@ -18,6 +20,7 @@ import {
   GoogleIcon,
   Image01Icon,
   InstagramIcon,
+  InternetIcon,
   LockKeyholeIcon,
   MinusSignIcon,
   PlusSignIcon,
@@ -32,10 +35,7 @@ import {
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
-import {
-  type FigmaIconName,
-  figmaIconNames,
-} from './figma-icon-names';
+import { type FigmaIconName, figmaIconNames } from './figma-icon-names';
 import { figmaIconStrokeWidth } from './figma-icon-style';
 
 const icons = {
@@ -57,6 +57,7 @@ const icons = {
   'clock-04': Clock04Icon,
   telegram: TelegramIcon,
   instagram: InstagramIcon,
+  internet: InternetIcon,
   google: GoogleIcon,
   'eye-off': ViewOffIcon,
   view: ViewIcon,
@@ -79,6 +80,29 @@ export function FigmaIcon({
   color?: string;
   label?: string;
 }) {
+  if (name === 'internet') {
+    // Hugeicons RN 1.0.16 drops ellipse nodes; preserve the source glyph.
+    const elements = { circle: Circle, ellipse: Ellipse, path: Path };
+    return (
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        color={color}
+        aria-hidden={!label}
+        accessibilityLabel={label}
+      >
+        {InternetIcon.map(([tag, { key, ...attributes }]) =>
+          createElement(elements[tag as keyof typeof elements], {
+            ...attributes,
+            key,
+            strokeWidth: figmaIconStrokeWidth(name, size),
+          }),
+        )}
+      </Svg>
+    );
+  }
   return (
     <HugeiconsIcon
       icon={icons[name]}

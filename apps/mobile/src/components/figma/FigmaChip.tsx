@@ -18,13 +18,25 @@ export function FigmaChip({
   size?: 'compact' | 'profile';
 }) {
   return (
-    <View style={[figmaChipStyle(tone), size === 'profile' && {
-      paddingHorizontal: figmaTokens.space.authorChipX,
-      paddingVertical: figmaTokens.space.authorChipY,
-    }]}>
+    <View
+      style={[
+        figmaChipStyle(tone),
+        size === 'profile' && {
+          paddingHorizontal: figmaTokens.space.authorChipX,
+          backgroundColor: figmaTokens.color.glassStrong,
+          borderColor: figmaTokens.color.glassBorder,
+          paddingVertical: figmaTokens.space.authorChipY,
+        },
+      ]}
+    >
       <Text
         numberOfLines={1}
-        style={[{ color: figmaChipTextColor(tone) }, size === 'profile' ? figmaTokens.typography.profileChip : figmaTokens.typography.chip]}
+        style={[
+          { color: figmaChipTextColor(tone) },
+          size === 'profile'
+            ? figmaTokens.typography.profileChip
+            : figmaTokens.typography.chip,
+        ]}
       >
         {label}
       </Text>

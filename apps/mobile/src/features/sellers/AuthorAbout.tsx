@@ -36,16 +36,40 @@ export function AuthorAbout({
                 }}
               >
                 {item.occurredAt ? (
-                  <AppText
-                    role="achievementDate"
-                    style={{ textAlign: 'center' }}
-                  >
-                    {new Intl.DateTimeFormat('ru-RU', {
-                      month: '2-digit',
-                      year: 'numeric',
-                      timeZone: 'UTC',
-                    }).format(new Date(item.occurredAt))}
-                  </AppText>
+                  <View style={{ position: 'relative' }}>
+                    <View
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        top: 34,
+                        left: 0,
+                        right: -designTokens.space.sectionGap,
+                        height: 1,
+                        backgroundColor: designTokens.color.divider,
+                      }}
+                    />
+                    <View
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        top: 24,
+                        left: '50%',
+                        height: 20,
+                        width: 1,
+                        backgroundColor: designTokens.color.divider,
+                      }}
+                    />
+                    <AppText
+                      role="achievementDate"
+                      style={{ textAlign: 'center' }}
+                    >
+                      {new Intl.DateTimeFormat('ru-RU', {
+                        month: '2-digit',
+                        year: 'numeric',
+                        timeZone: 'UTC',
+                      }).format(new Date(item.occurredAt))}
+                    </AppText>
+                  </View>
                 ) : null}
                 <View style={{ gap: designTokens.space.x3 }}>
                   {item.image ? (

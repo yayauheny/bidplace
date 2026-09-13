@@ -17,6 +17,7 @@ export const figmaIconNames = [
   'clock-04',
   'telegram',
   'instagram',
+  'internet',
   'google',
   'eye-off',
   'view',

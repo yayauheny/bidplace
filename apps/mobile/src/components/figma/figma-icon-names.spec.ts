@@ -23,6 +23,7 @@ describe('Figma icon registry', () => {
       'clock-04',
       'telegram',
       'instagram',
+      'internet',
       'google',
       'eye-off',
       'view',

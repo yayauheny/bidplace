@@ -7,6 +7,7 @@ export function FigmaTabs({
   onChange,
   label,
   panelId,
+  align = 'start',
 }: FigmaTabsProps) {
   return (
     <div
@@ -14,6 +15,8 @@ export function FigmaTabs({
       aria-label={label}
       style={{
         display: 'flex',
+        justifyContent: align === 'center' ? 'safe center' : 'flex-start',
+        background: designTokens.color.canvas,
         gap: designTokens.space.x2,
         overflowX: 'auto',
         borderBottom: `1px solid ${designTokens.color.divider}`,

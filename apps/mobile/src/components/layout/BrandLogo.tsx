@@ -7,7 +7,7 @@ import { MotionPressable } from '../ui';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const brandLogo = require('../../../assets/branding/bidplace-logo.png');
 
-export function BrandLogo() {
+export function BrandLogo({ profile = false }: { profile?: boolean }) {
   return (
     <Link href="/" asChild>
       <MotionPressable
@@ -26,7 +26,7 @@ export function BrandLogo() {
         <Image
           source={brandLogo}
           contentFit="contain"
-          style={{ width: 38, height: 30 }}
+          style={{ width: profile ? 42 : 38, height: profile ? 32 : 30 }}
         />
       </MotionPressable>
     </Link>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
 
@@ -6,29 +6,17 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import {
-  AppText,
-  MotionPressable,
-  PageState,
-  PrimaryButton,
-  ResilientRemoteImage,
-} from '../../components/ui';
-import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
+import { PageState, PrimaryButton } from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
-import { FigmaChip } from '../../components/figma/FigmaChip';
-import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
-import { BrandLogo } from '../../components/layout/BrandLogo';
-import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
-import { CreatorSocialLink } from './CreatorSocialLink';
 
-import { AuthorShare } from './AuthorShare';
 import { useAuthorWorks } from './use-author-works';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 
 import { AuthorAbout } from './AuthorAbout';
+import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
 
@@ -40,6 +28,7 @@ export function PublicSellerScreen({
   sort?: 'newest' | 'oldest';
 }) {
   const api = useApiClient();
+  const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
   const query = useInfiniteQuery({
     queryKey: ['public-author', slug, { sort }],
@@ -107,11 +96,6 @@ export function PublicSellerScreen({
     );
   }
 
-  const tags = author.discipline
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-
   return (
     <AppShell>
       <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
@@ -126,187 +110,28 @@ export function PublicSellerScreen({
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            testID="author-header"
-            style={{
-              overflow: 'hidden',
-              paddingBottom: designTokens.space.authorHeaderBottom,
-            }}
-          >
-            <AuthorAtmosphere
-              imageUrl={author.profilePhotoUrl}
-              fullName={author.fullName}
-            />
-            <View
-              style={{
-                alignItems: 'center',
-                gap: designTokens.space.authorSectionGap,
-                paddingHorizontal: designTokens.space.pageGutter,
-                paddingTop: designTokens.space.authorLogoTop,
-                zIndex: 1,
-              }}
-            >
-              <View
-                style={{
-                  marginBottom:
-                    designTokens.space.authorLogoGap -
-                    designTokens.space.authorSectionGap,
-                }}
-              >
-                <BrandLogo />
-              </View>
-              <View
-                style={{
-                  alignItems: 'center',
-                  gap: designTokens.space.authorIdentityGap,
-                }}
-              >
-                <ResilientRemoteImage
-                  uri={getApiAssetUrl(author.profilePhotoUrl)}
-                  component="AuthorPhoto"
-                  accessibilityLabel={`Фото автора ${author.fullName}`}
-                  fallbackLabel={`Фото автора недоступно: ${author.fullName}`}
-                  style={{
-                    width: designTokens.size.avatar,
-                    height: designTokens.size.avatar,
-                    borderRadius: designTokens.radius.avatar,
-                  }}
-                  contentFit="cover"
-                />
-                <View
-                  style={{ alignItems: 'center', gap: designTokens.space.x1 }}
-                >
-                  <AppText role="profileHandle" style={{ textAlign: 'center' }}>
-                    @{author.slug}
-                  </AppText>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: designTokens.space.x2,
-                      flexWrap: 'wrap',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AppText
-                      role="profileMetadata"
-                      style={{ textAlign: 'center' }}
-                    >
-                      {author.fullName}
-                    </AppText>
-                    <View
-                      style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: designTokens.color.ink,
-                      }}
-                    />
-                    <AppText role="profileMetadata">{author.city}</AppText>
-                  </View>
-                </View>
-              </View>
-              {tags.length > 0 ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    gap: designTokens.space.authorChipGap,
-                    marginBottom:
-                      designTokens.space.socialGroupGap -
-                      designTokens.space.authorSectionGap,
-                  }}
-                >
-                  {tags.map((tag) => (
-                    <FigmaChip
-                      key={tag}
-                      label={tag}
-                      tone="onGlass"
-                      size="profile"
-                    />
-                  ))}
-                </View>
-              ) : null}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: designTokens.space.socialGroupGap,
-                }}
-              >
-                {author.telegramUrl ||
-                author.instagramUrl ||
-                author.websiteUrl ? (
-                  <FigmaGlassSurface
-                    preset="controlGroup"
-                    testID="author-social-group"
-                    contentStyle={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      gap: designTokens.space.socialGroupGap,
-                      paddingLeft: designTokens.space.socialGroupX,
-                      paddingRight: designTokens.space.socialGroupX,
-                      paddingTop: designTokens.space.socialGroupY,
-                      paddingBottom: designTokens.space.socialGroupY,
-                    }}
-                  >
-                    {author.telegramUrl ? (
-                      <CreatorSocialLink
-                        grouped
-                        href={author.telegramUrl}
-                        icon="send"
-                        label="Telegram автора"
-                      />
-                    ) : null}
-                    {author.instagramUrl ? (
-                      <CreatorSocialLink
-                        grouped
-                        href={author.instagramUrl}
-                        icon="instagram"
-                        label="Instagram автора"
-                      />
-                    ) : null}
-                    {author.websiteUrl ? (
-                      <CreatorSocialLink
-                        grouped
-                        href={author.websiteUrl}
-                        icon="globe"
-                        label="Сайт автора"
-                      />
-                    ) : null}
-                  </FigmaGlassSurface>
-                ) : null}
-                <AuthorShare sharePath={author.sharePath} />
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={{
-              backgroundColor: designTokens.color.canvas,
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 12,
-              paddingHorizontal: designTokens.space.pageGutter,
-              borderBottomWidth: 1,
-              borderBottomColor: designTokens.color.divider,
-            }}
-          >
-            <AuthorTabButton
-              label="Работы"
-              count={firstPage.pagination.total}
-              selected={tab === 'works'}
-              onPress={() => setTab('works')}
-            />
-            <AuthorTabButton
-              label="Об авторе"
-              selected={tab === 'about'}
-              onPress={() => setTab('about')}
-            />
-          </View>
+          <CreatorHeader
+            profile={author}
+            tabs={[
+              {
+                value: 'works',
+                label: 'Работы',
+                count: firstPage.pagination.total,
+              },
+              { value: 'about', label: 'Об авторе' },
+            ]}
+            tab={tab}
+            onTabChange={(value) =>
+              setTab(value === 'about' ? 'about' : 'works')
+            }
+            panelId={panelId}
+          />
 
           <View
             testID="author-content"
+            nativeID={panelId}
+            role="tabpanel"
+            aria-labelledby={`${panelId}-${tab}`}
             style={{
               backgroundColor: designTokens.color.canvas,
               paddingHorizontal: designTokens.space.pageGutter,
@@ -379,39 +204,5 @@ export function PublicSellerScreen({
         </ScrollView>
       </View>
     </AppShell>
-  );
-}
-
-function AuthorTabButton({
-  label,
-  count,
-  selected,
-  onPress,
-}: {
-  label: string;
-  count?: number;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <MotionPressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      preset="button"
-      style={{
-        paddingBottom: 4,
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: designTokens.space.x1,
-        borderBottomWidth: 2,
-        borderBottomColor: selected ? designTokens.color.ink : 'transparent',
-      }}
-    >
-      <AppText role="profileTab" tone={selected ? 'default' : 'secondary'}>
-        {label}
-      </AppText>
-      {count !== undefined ? <AppText role="caption">{count}</AppText> : null}
-    </MotionPressable>
   );
 }

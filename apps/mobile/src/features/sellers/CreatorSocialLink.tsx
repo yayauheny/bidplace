@@ -4,7 +4,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
-import { AppIcon, MotionPressable } from '../../components/ui';
+import { MotionPressable } from '../../components/ui';
 
 export type CreatorSocialLinkProps = {
   href: string;
@@ -37,22 +37,18 @@ export function CreatorSocialLink({
             : figmaGlassCircleStyle()
         }
       >
-        {icon === 'send' || icon === 'instagram' ? (
-          <FigmaIcon
-            name={icon === 'send' ? 'telegram' : 'instagram'}
-            size={
-              grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
-            }
-          />
-        ) : (
-          <AppIcon
-            name={icon}
-            size={
-              grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
-            }
-            color={figmaTokens.color.ink}
-          />
-        )}
+        <FigmaIcon
+          name={
+            icon === 'send'
+              ? 'telegram'
+              : icon === 'globe'
+                ? 'internet'
+                : 'instagram'
+          }
+          size={
+            grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+          }
+        />
       </MotionPressable>
     </Link>
   );

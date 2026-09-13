@@ -5,4 +5,5 @@ export type FigmaTabsProps = {
   onChange: (value: string) => void;
   label: string;
   panelId: string;
+  align?: 'start' | 'center';
 };

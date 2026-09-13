@@ -408,3 +408,15 @@ its DOM line-height must use px, unlike React Native's numeric line-height.
 row gaps. `typography.workTitle` is Inter 600, 20/24, tracking -0.4px.
 Sources: work nodes `745:21209` and `745:20634`. Screens retain queries and URL
 state. These masters do not implement auction prices, bids or delivery behavior.
+
+
+### Author completion pass (2026-09-13)
+
+CreatorHero and CreatorSocialActions own full profile layout. CreatorHeader web
+retains their DOM and pins tabs at186px in compact state; avatar48 at20/44,
+actions right20. Transform duration240ms, zero for reduced motion; motion polish
+is deferred. Full header natural height is retained to avoid scroll jumps.
+AuthorAtmosphere masks the last two blur radii of its parent to transparent,
+preventing the former hard cut before tabs. Profile chips use white80% and
+#DEDEDE border. Internet glyph uses original Hugeicons circle/ellipse/path data
+through react-native-svg because Hugeicons RN1.0.16 omits ellipse elements.

@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Author final composition pass
+
+- `Implemented`: CreatorHero replaces the unused legacy variant; CreatorHeader
+  pins one shared FigmaTabs row and repositions the same avatar/handle/actions.
+  Profile chips now use white80%/grey border; AuthorAtmosphere fades before the
+  content boundary; Internet source glyph includes the ellipse missing in the
+  installed Hugeicons RN renderer. Country labels follow the public RFC.
+- `Partial` visual acceptance: 390/1024/1440 real-data captures and compact scroll
+  checked; full state/zoom/screen-reader matrix and final motion polish remain.
+  Evidence: `artifacts/figma-qa/02-author/REPORT.md`. Typecheck, targeted lint,
+  seven existing tests and Expo web export pass. No API or privacy changes.
+
 ## 2026-09-12 — Work page composition
 
 - `Implemented` on web: `product-screen.tsx` now composes shared `WorkGallery`,

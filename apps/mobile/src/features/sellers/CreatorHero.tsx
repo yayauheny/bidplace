@@ -1,168 +1,148 @@
-import { useState } from 'react';
-
-import { Platform, View } from 'react-native';
-
+import type { ReactNode } from 'react';
+import { View } from 'react-native';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
-
-import {
-  AppIcon,
-  AppText,
-  MotionPressable,
-  ResilientRemoteImage,
-} from '../../components/ui';
+import { AppText, ResilientRemoteImage } from '../../components/ui';
+import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';
+import { FigmaChip } from '../../components/figma/FigmaChip';
+import { BrandLogo } from '../../components/layout/BrandLogo';
 import { getApiAssetUrl } from '../../lib/environment';
-
-import { CreatorSocialLink } from './CreatorSocialLink';
-
+import { CreatorSocialActions } from './CreatorSocialActions';
 export type CreatorHeroProps = {
-  profile: {
-    fullName: string;
-    profilePhotoUrl: string;
-    shortDescription: string;
-    telegramUrl: string | null;
-    instagramUrl: string | null;
-    websiteUrl: string | null;
-  };
-  slug: string;
+  profile: PortfolioWorkDetailResponse['author'];
+  actions: ReactNode;
+  compact?: boolean;
 };
-
-export function CreatorHero({ profile, slug }: CreatorHeroProps) {
-  const [copyState, setCopyState] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  );
-
-  const copyProfileLink = () => {
-    if (
-      Platform.OS !== 'web' ||
-      typeof window === 'undefined' ||
-      !navigator.clipboard
-    ) {
-      setCopyState('error');
-      return;
-    }
-
-    void navigator.clipboard
-      .writeText(new URL(`/seller/${slug}`, window.location.origin).toString())
-      .then(() => setCopyState('success'))
-      .catch(() => setCopyState('error'));
-  };
-
+export function CreatorHero({
+  profile,
+  actions,
+  compact = false,
+}: CreatorHeroProps) {
+  const country = /^[a-z]{2}$/i.test(profile.country)
+    ? new Intl.DisplayNames(['ru'], { type: 'region' }).of(
+        profile.country.toUpperCase(),
+      )
+    : profile.country;
+  const tags = [
+    ...new Set(
+      profile.discipline
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    ),
+  ];
   return (
     <View
+      testID="author-header"
       style={{
-        minHeight: 500,
-        alignItems: 'center',
-        gap: 18,
-        paddingTop: 64,
-        paddingBottom: 72,
-        backgroundColor: 'transparent',
+        overflow: 'hidden',
+        paddingBottom: designTokens.space.authorHeaderBottom,
       }}
     >
-      <ResilientRemoteImage
-        uri={getApiAssetUrl(profile.profilePhotoUrl)}
-        component="AuthorPhoto"
-        accessibilityLabel={`Фото автора ${profile.fullName}`}
-        fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
-        style={{ width: 120, height: 120, borderRadius: 60 }}
-        contentFit="cover"
+      <AuthorAtmosphere
+        imageUrl={profile.profilePhotoUrl}
+        fullName={profile.fullName}
       />
-
-      <View style={{ alignItems: 'center', gap: 6 }}>
-        <AppText
-          accessibilityRole="header"
-          role="display"
-          style={{
-            fontFamily: 'Inter_700Bold',
-            fontSize: 48,
-            lineHeight: 50,
-            letterSpacing: -1,
-            textAlign: 'center',
-          }}
-        >
-          {profile.fullName}
-        </AppText>
-
-        {Platform.OS === 'web' ? (
-          <MotionPressable
-            accessibilityRole="button"
-            accessibilityLabel={`Скопировать ссылку на профиль ${profile.fullName}`}
-            onPress={copyProfileLink}
-            preset="button"
-            style={{
-              minHeight: 28,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: designTokens.space.x2,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: designTokens.color.border,
-              backgroundColor: designTokens.color.surfaceMuted,
-              paddingHorizontal: 9,
-            }}
-          >
-            <AppText role="label" tone="secondary" style={{ fontSize: 15 }}>
-              @{slug}
-            </AppText>
-            <AppIcon name="copy" size={14} color={designTokens.color.ink} />
-          </MotionPressable>
-        ) : (
-          <AppText role="label" tone="secondary">
-            @{slug}
-          </AppText>
-        )}
-
-        {copyState === 'success' ? (
-          <AppText role="caption" tone="success">
-            Ссылка скопирована.
-          </AppText>
-        ) : null}
-
-        {copyState === 'error' ? (
-          <AppText role="caption" tone="danger">
-            Не удалось скопировать ссылку.
-          </AppText>
-        ) : null}
-      </View>
-
       <View
         style={{
-          height: 28,
-          flexDirection: 'row',
           alignItems: 'center',
-          gap: 16,
+          gap: designTokens.space.authorSectionGap,
+          paddingHorizontal: designTokens.space.pageGutter,
+          paddingTop: designTokens.space.authorLogoTop,
+          zIndex: 1,
         }}
       >
-        {profile.telegramUrl ? (
-          <CreatorSocialLink
-            href={profile.telegramUrl}
-            icon="send"
-            label="Telegram автора"
-          />
+        <View
+          aria-hidden={compact}
+          style={{
+            visibility: compact ? 'hidden' : 'visible',
+            marginBottom:
+              designTokens.space.authorLogoGap -
+              designTokens.space.authorSectionGap,
+          }}
+        >
+          <BrandLogo profile />
+        </View>
+        <View
+          style={{
+            alignItems: 'center',
+            gap: designTokens.space.authorIdentityGap,
+          }}
+        >
+          <View testID="creator-avatar">
+            <ResilientRemoteImage
+              uri={getApiAssetUrl(profile.profilePhotoUrl)}
+              component="AuthorPhoto"
+              accessibilityLabel={`Фото автора ${profile.fullName}`}
+              fallbackLabel={`Фото автора недоступно: ${profile.fullName}`}
+              style={{
+                width: designTokens.size.avatar,
+                height: designTokens.size.avatar,
+                borderRadius: designTokens.radius.avatar,
+              }}
+              contentFit="cover"
+            />
+          </View>
+          <View style={{ alignItems: 'center', gap: designTokens.space.x1 }}>
+            <View testID="creator-handle">
+              <AppText
+                role="profileHandle"
+                style={{ textAlign: 'center', flexShrink: 1 }}
+              >
+                @{profile.slug}
+              </AppText>
+            </View>
+            <View
+              aria-hidden={compact}
+              style={{
+                visibility: compact ? 'hidden' : 'visible',
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: designTokens.space.x2,
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+              }}
+            >
+              <AppText role="profileMetadata" style={{ textAlign: 'center' }}>
+                {profile.fullName}
+              </AppText>
+              <View
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: designTokens.color.ink,
+                }}
+              />
+              <AppText role="profileMetadata">
+                {[profile.city, country].filter(Boolean).join(', ')}
+              </AppText>
+            </View>
+          </View>
+        </View>
+        {tags.length > 0 ? (
+          <View
+            aria-hidden={compact}
+            style={{
+              visibility: compact ? 'hidden' : 'visible',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: designTokens.space.authorChipGap,
+              marginBottom:
+                designTokens.space.socialGroupGap -
+                designTokens.space.authorSectionGap,
+            }}
+          >
+            {tags.map((tag) => (
+              <FigmaChip key={tag} label={tag} tone="onGlass" size="profile" />
+            ))}
+          </View>
         ) : null}
-        {profile.instagramUrl ? (
-          <CreatorSocialLink
-            href={profile.instagramUrl}
-            icon="instagram"
-            label="Instagram автора"
-          />
-        ) : null}
-        {profile.websiteUrl ? (
-          <CreatorSocialLink
-            href={profile.websiteUrl}
-            icon="globe"
-            label="Сайт автора"
-          />
-        ) : null}
+        <View testID="creator-actions">
+          <CreatorSocialActions profile={profile} actions={actions} />
+        </View>
       </View>
-
-      <AppText
-        role="body"
-        tone="secondary"
-        style={{ maxWidth: 680, textAlign: 'center' }}
-      >
-        {profile.shortDescription}
-      </AppText>
     </View>
   );
 }
-

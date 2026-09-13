@@ -2,13 +2,23 @@ import { ScrollView } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppText, MotionPressable } from '../ui';
 import type { FigmaTabsProps } from './figma-tabs';
-export function FigmaTabs({ tabs, value, onChange, label }: FigmaTabsProps) {
+export function FigmaTabs({
+  tabs,
+  value,
+  onChange,
+  label,
+  align,
+}: FigmaTabsProps) {
   return (
     <ScrollView
       horizontal
       accessibilityRole="tablist"
       accessibilityLabel={label}
-      contentContainerStyle={{ gap: designTokens.space.x2 }}
+      contentContainerStyle={{
+        gap: designTokens.space.x2,
+        flexGrow: 1,
+        justifyContent: align === 'center' ? 'center' : 'flex-start',
+      }}
     >
       {tabs.map((tab) => (
         <MotionPressable
