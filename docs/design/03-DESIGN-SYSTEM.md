@@ -434,8 +434,14 @@ state. These masters do not implement auction prices, bids or delivery behavior.
 
 CreatorHero and CreatorSocialActions own full profile layout. CreatorHeader web
 retains their DOM and pins tabs at186px in compact state; avatar48 at20/44,
-actions right20. Transform duration240ms, zero for reduced motion; motion polish
-is deferred. Full header natural height is retained to avoid scroll jumps.
+actions right20. The compact transition is scroll-linked, not time-based: one
+`--creator-progress` (0..1 = scrollTop / (heroHeight − 186)) multiplies the
+measured end transforms (translate + scale) of avatar, handle, actions and
+atmosphere, so they follow the finger; the logo, name/city row and profile chips
+fade with `opacity = clamp(0, 1 − 2·progress, 1)` and become `visibility:
+hidden` + `aria-hidden` only at progress 1. No CSS transitions are involved;
+under reduced motion progress snaps to 0 or 1. Full header natural height is
+retained to avoid scroll jumps.
 AuthorAtmosphere masks the last two blur radii of its parent to transparent,
 preventing the former hard cut before tabs. Profile chips use white80% and
 #DEDEDE border. Internet glyph uses original Hugeicons circle/ellipse/path data

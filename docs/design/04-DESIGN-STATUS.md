@@ -1,3 +1,30 @@
+# bidplace — статус дизайна и UI-реализации
+
+## 2026-09-13 — S1 ShareSheet Figma acceptance
+
+- `Implemented`: `ShareSheet` matches Figma `597:19045` with a fixed 164px QR
+  square, 56px actions, 8px action gap and a ghost copy action; the public URL
+  appears only as a selectable fallback after clipboard failure.
+- 390/1024/1440 screenshots, long/invalid/QR-error states, real PNG download,
+  focus trap, Escape and focus return pass. Evidence:
+  `artifacts/figma-qa/S1/REPORT.md`.
+
+## 2026-09-13 — Author compact header follows scroll (H1)
+
+- `Implemented` (mobile web): `CreatorHeader.web.tsx` replaces the
+  IntersectionObserver toggle + 240 ms transition with a scroll-linked
+  `--creator-progress` on the `creator-scroll` port. Measured at 390×860 with
+  offset 264: avatar 112@(139,132) → 96 → 80 → 64 → 48@(20,44) at 0/25/50/75/
+  100 %; tabs 450 → 186 and stay at 186 past 100 %; hero height constant 450;
+  one share button; focus on «Поделиться профилем» kept at compact. Logo,
+  name/city and chips fade to 0 by 50 % and hide at 100 %. Reduced motion:
+  progress is 0 until the threshold, then 1. Frames in
+  `artifacts/figma-qa/02-author/compact/390-*.png` and `390-reduced-*.png`.
+- `Partial`: with three social links the compact handle gets ~54 px of text
+  («@an…»); Figma `526:14482` shows two socials and 122 px. Data-driven, not
+  a layout defect. Native and ≥1024 are out of scope per founder (mobile web
+  only). Task file: `docs/tasks/2026-09-12-figma-finish/16-H1-compact-header.md`.
+
 ## 2026-09-13 — Author achievements
 
 `Implemented` for the Frame 219 achievement block: 266 px items, 16 px gap, 3:4 photos with radius 20, marker/line above month and year, and centered text-only cards. Browser checked on Anna at :8083 with both variants and horizontal scrolling; screenshots in `artifacts/figma-qa/02-author/achievements-*.jpg`. Overall author parity remains `Partial`; see the continuation task.

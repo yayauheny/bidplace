@@ -54,6 +54,7 @@ export function CreatorHero({
       >
         <View
           aria-hidden={compact}
+          testID="creator-fade-logo"
           style={{
             visibility: compact ? 'hidden' : 'visible',
             marginBottom:
@@ -102,6 +103,7 @@ export function CreatorHero({
             </View>
             <View
               aria-hidden={compact}
+              testID="creator-fade-meta"
               style={{
                 visibility: compact ? 'hidden' : 'visible',
                 flexDirection: 'row',
@@ -131,6 +133,7 @@ export function CreatorHero({
         {tags.length > 0 ? (
           <View
             aria-hidden={compact}
+            testID="creator-fade-tags"
             style={{
               visibility: compact ? 'hidden' : 'visible',
               flexDirection: 'row',

@@ -50,3 +50,6 @@
 
 Отдельно **Technical pass** и **Visual accepted**. Второе требует реальных сравнений с Figma, применимых состояний и переходов, включая390/1024/1440px. Нет screenshots — нет Visual accepted. Несовпадение дизайна нельзя закрыть добавлением теста или красивым отчётом.
 - `15-PARALLEL-TASKS.md` — независимые задачи S1–S8 с промптами для параллельных агентов (GPT Sol high).
+- `16-H1-compact-header.md` — H1: scroll-linked compact-шапка автора (исследование, данные, критерии, статус).
+- `17-H2-font-weight.md` — H2: гипотеза утолщения текста (faux bold), доказательство и фикс.
+- `18-H3-native-frost.md` — H3: native frost — отложено, скоуп только mobile web.

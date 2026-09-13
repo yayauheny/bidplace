@@ -1,3 +1,26 @@
+# bidplace — текущий статус проекта
+
+## 2026-09-13 — S1 public share sheet
+
+- `Implemented`: existing public author/work links generate a downloadable PNG
+  QR and copy on the current origin; invalid public paths remain rejected.
+  The bottom sheet traps focus, closes on Escape and restores the opener.
+- No API, route, visibility, auth or analytics contract changed. Evidence:
+  `apps/mobile/src/components/figma/ShareSheet.tsx`,
+  `public-share.ts`, `public-share.spec.ts`,
+  `artifacts/figma-qa/S1/REPORT.md`.
+
+## 2026-09-13 — Author compact header follows scroll
+
+- `Implemented` (mobile web): the author page sticky header interpolates
+  avatar/handle/actions/atmosphere from the scroll offset instead of toggling
+  at a threshold; fade groups are `creator-fade-*` testIDs. No data, route or
+  permission changes. Evidence: `apps/mobile/src/features/sellers/
+  CreatorHeader.web.tsx`, `CreatorHero.tsx`,
+  `artifacts/figma-qa/02-author/compact/`, `docs/design/04-DESIGN-STATUS.md`.
+- Native header (`CreatorHeader.tsx`) is unchanged and not in the current
+  acceptance scope.
+
 ## 2026-09-13 — CORS origin allowlist review
 
 - `Corrected`: `CORS_ORIGIN` accepts only `http`/`https` browser origins
