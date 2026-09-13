@@ -177,3 +177,55 @@ export async function requestJson<T>(
     throw createUnexpectedResponseError(response.status);
   }
 }
+
+export async function requestBlob(
+  context: RequestContext,
+  path: string,
+  options: RequestOptions = {},
+): Promise<Blob> {
+  const url = new URL(`${context.baseUrl}${path}`);
+  const queryString = normalizeQuery(options.query);
+
+  if (queryString) {
+    url.search = queryString.slice(1);
+  }
+
+  const headers = new Headers(options.headers);
+
+  if (context.getAccessToken) {
+    const accessToken = context.getAccessToken();
+
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+  }
+
+  const init: RequestInit = {
+    method: options.method ?? 'GET',
+    headers,
+  };
+
+  if (context.credentials) {
+    init.credentials = context.credentials;
+  }
+
+  let response: Response;
+
+  try {
+    response = await context.fetchImpl(url.toString(), init);
+  } catch {
+    throw createNetworkError();
+  }
+
+  if (!response.ok) {
+    await throwApiClientResponseError(response);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (!contentType.startsWith('image/')) {
+    throw createUnexpectedResponseError(response.status);
+  }
+
+  return response.blob();
+}

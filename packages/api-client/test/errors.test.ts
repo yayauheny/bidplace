@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ApiClientError,
   getApiErrorCode,
-  getBidTooLowMinimum,
   throwApiClientResponseError,
 } from '../src/errors';
 
@@ -16,25 +15,6 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 describe('api-client errors', () => {
-  it('parses BID_TOO_LOW with minimumBid details', async () => {
-    await expect(
-      throwApiClientResponseError(
-        jsonResponse(400, {
-          status: 400,
-          code: ApiErrorCode.BID_TOO_LOW,
-          message: 'Bid must be at least 11.50',
-          details: { minimumBid: '11.50' },
-        }),
-      ),
-    ).rejects.toMatchObject({
-      name: 'ApiClientError',
-      kind: 'bad_request',
-      status: 400,
-      code: ApiErrorCode.BID_TOO_LOW,
-      details: { minimumBid: '11.50' },
-    });
-  });
-
   it('parses PASSWORD_RESET_INVALID as bad_request', async () => {
     await expect(
       throwApiClientResponseError(
@@ -52,16 +32,14 @@ describe('api-client errors', () => {
     });
   });
 
-  it('exposes helpers for code and bid minimum', () => {
-    const error = new ApiClientError('Bid must be at least 11.50', {
-      kind: 'bad_request',
+  it('exposes the helper for API error codes', () => {
+    const error = new ApiClientError('Request validation failed', {
+      kind: 'validation',
       status: 400,
-      code: ApiErrorCode.BID_TOO_LOW,
-      details: { minimumBid: '11.50' },
+      code: ApiErrorCode.VALIDATION_ERROR,
     });
 
-    expect(getApiErrorCode(error)).toBe(ApiErrorCode.BID_TOO_LOW);
-    expect(getBidTooLowMinimum(error)).toBe(11.5);
-    expect(getBidTooLowMinimum(new Error('nope'))).toBeNull();
+    expect(getApiErrorCode(error)).toBe(ApiErrorCode.VALIDATION_ERROR);
+    expect(getApiErrorCode(new Error('nope'))).toBeNull();
   });
 });

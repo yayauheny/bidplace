@@ -139,9 +139,30 @@ export const productResponseSchema = z
   .object({ product: productSchema })
   .strict();
 
+export const sellerProductListResponseSchema = z
+  .object({
+    products: z.array(productSchema),
+  })
+  .strict();
+
+export const sellerProductDetailResponseSchema = z
+  .object({
+    product: productSchema,
+    creationIntro: z.string().trim().min(1).nullable(),
+    creationSteps: z.array(creationStepSchema),
+    lastModerationReason: z.string().nullable(),
+  })
+  .strict();
+
 export type Product = z.infer<typeof productSchema>;
 export type ProductWriteRequest = z.infer<typeof productWriteRequestSchema>;
 export type CreationStep = z.infer<typeof creationStepSchema>;
 export type CreationStoryWriteRequest = z.infer<
   typeof creationStoryWriteRequestSchema
+>;
+export type SellerProductListResponse = z.infer<
+  typeof sellerProductListResponseSchema
+>;
+export type SellerProductDetailResponse = z.infer<
+  typeof sellerProductDetailResponseSchema
 >;
