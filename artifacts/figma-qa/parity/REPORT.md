@@ -4,6 +4,7 @@ Date: 2026-09-13
 Branch: `fix/figma-visual-parity`  
 Base: merge `28da73f` (`1845ab8` stabilization + `57e4f39` comparison fixtures)  
 Typography: `5725bde`  
+Evidence: `702211b`  
 Stand: Expo `http://localhost:8011`, API `:3011`, DB `bidplace_figma_comparison_preview`  
 No `page.route` for this comparison. Viewport 390×860, DPR 1.  
 `document.fonts.ready` and all images complete before each shot.  
