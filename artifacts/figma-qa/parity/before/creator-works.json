@@ -1,0 +1,121 @@
+{
+  "measured": {
+    "dpr": 1,
+    "viewport": {
+      "width": 390,
+      "height": 860
+    },
+    "scrollTop": 0,
+    "progress": 0,
+    "dock": {
+      "box": {
+        "x": 79,
+        "y": 784,
+        "width": 232,
+        "height": 64
+      },
+      "padding": "0px",
+      "gap": "20px",
+      "radius": "200px",
+      "background": "rgba(255, 255, 255, 0.6)",
+      "backdrop": "blur(6px)",
+      "filter": "none",
+      "boxShadow": "none"
+    },
+    "atmosphere": {
+      "box": {
+        "x": -47,
+        "y": -36,
+        "width": 485,
+        "height": 485
+      },
+      "opacity": "0.5",
+      "radius": "200px",
+      "filter": "blur(40px)",
+      "wash": "rgba(255, 255, 255, 0.4)"
+    },
+    "frost": {
+      "box": {
+        "x": 12,
+        "y": 950,
+        "width": 366,
+        "height": 100
+      },
+      "backdrop": "blur(30px)"
+    },
+    "avatar": {
+      "x": 139,
+      "y": 132,
+      "width": 112,
+      "height": 112
+    },
+    "worksTab": {
+      "fontFamily": "Inter_500Medium",
+      "fontSize": "16px",
+      "fontWeight": "500",
+      "lineHeight": "19px",
+      "letterSpacing": "normal",
+      "box": {
+        "x": 115.48,
+        "y": 460,
+        "width": 70.38,
+        "height": 25
+      }
+    },
+    "tabCount": {
+      "fontFamily": "Inter_500Medium",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "lineHeight": "0px",
+      "letterSpacing": "normal",
+      "box": {
+        "x": 177.98,
+        "y": 457,
+        "width": 7.88,
+        "height": 15
+      }
+    },
+    "cards": [
+      {
+        "x": 12,
+        "y": 562,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 1070,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 1578,
+        "width": 366,
+        "height": 488
+      },
+      {
+        "x": 12,
+        "y": 2086,
+        "width": 366,
+        "height": 488
+      }
+    ],
+    "openingCard": null,
+    "newWorksHeading": null,
+    "firstNewWorkCard": null
+  },
+  "compare": {
+    "width": 390,
+    "height": 860,
+    "maxDelta": 249,
+    "meanDelta": 48.8,
+    "hotRatio": 0.519
+  },
+  "figmaBox": {
+    "x": 0,
+    "y": 0,
+    "width": 390,
+    "height": 860
+  }
+}

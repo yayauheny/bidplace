@@ -1,0 +1,68 @@
+[
+  {
+    "engine": "chromium",
+    "afterRight": {
+      "selected": "true",
+      "focused": true
+    },
+    "afterHome": {
+      "selected": "true",
+      "focused": true
+    },
+    "afterEnd": {
+      "selected": "true",
+      "focused": true
+    },
+    "zoomed": {
+      "zoom": "2",
+      "dock": {
+        "width": 390,
+        "height": 128
+      },
+      "tab": {
+        "fontSize": "16px",
+        "letterSpacing": "-0.32px",
+        "lineHeight": "19px"
+      },
+      "count": {
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "letterSpacing": "-0.24px",
+        "lineHeight": "14px"
+      }
+    }
+  },
+  {
+    "engine": "webkit",
+    "afterRight": {
+      "selected": "true",
+      "focused": true
+    },
+    "afterHome": {
+      "selected": "true",
+      "focused": true
+    },
+    "afterEnd": {
+      "selected": "true",
+      "focused": true
+    },
+    "zoomed": {
+      "zoom": "2",
+      "dock": {
+        "width": 390,
+        "height": 128
+      },
+      "tab": {
+        "fontSize": "16px",
+        "letterSpacing": "-0.32px",
+        "lineHeight": "19px"
+      },
+      "count": {
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "letterSpacing": "-0.24px",
+        "lineHeight": "14px"
+      }
+    }
+  }
+]

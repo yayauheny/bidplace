@@ -1,5 +1,31 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Figma visual parity (measured)
+
+- `Implemented`: author tab tracking and count match Figma `621:19524` /
+  `621:19525` (`621:19870` / `621:19871` on Works). `profileTab` is Inter
+  Medium 16/19 −0.32. New `profileTabCount` is Inter Regular 12/14 −0.24.
+  Web tabs keep the 25 px item and place the count absolutely after the
+  label (`FigmaTabs.web.tsx`). Evidence:
+  `apps/mobile/src/lib/visual-token.spec.ts`,
+  `artifacts/figma-qa/parity/REPORT.md`.
+- `Verified` on the comparison stand (Expo `:8011`, API `:3011`, DB
+  `bidplace_figma_comparison_preview`, no `page.route`): Creator Works/About,
+  compact 0/25/50/75/100 and reverse, Work 264×352 and 366×488, Home opening,
+  Home new Works, dock on light/dark/colored art. Viewport 390×860, DPR 1,
+  Chromium + WebKit, normal and reduced motion. Keyboard Arrow/Home/End and
+  zoom 200% keep the same computed type.
+- Git keeps the report, measurement JSON, keyboard/zoom JSON, and four
+  contact sheets. Per-state `figma`/`runtime`/`overlay`/`diff` PNGs are
+  generated temporarily and are not committed.
+- Not a miss, not changed: dock 232×64 / blur 6 / 60% fill; atmosphere
+  485×485 @ (−47, −36); cards 264×352 and 366×488; frost 100 without
+  price/timer. Archive, Likes, VK, cart, prices, timers, and active auctions
+  stay omitted.
+- `Verified`: `pnpm verify` typecheck 7/7, lint 2/2, API unit 282, contracts
+  25, client 3, integration 82 passed / 1 skipped, build 7/7; mobile tests
+  249/249; Expo export; Playwright **38/38**. `main` was not changed.
+
 ## 2026-09-13 — Figma comparison fixtures (data only)
 
 - `Implemented`: local/test-only demo author `vex` (`Илья Васильев`) carries
