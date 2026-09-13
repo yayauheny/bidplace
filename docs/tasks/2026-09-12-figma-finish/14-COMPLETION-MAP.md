@@ -26,9 +26,10 @@
 | Страница работы: галерея, share, tabs, facts, related, 404 | 03 | Да (`c0b2a46`, `917b704`, `c490bd2`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: error, broken media, zoom 200 %, reduced motion, dock) | W16 стрелки галереи — решение основателя |
 | Cover cards 264×352 / 366×488 (work, author), AuthorIdentity | 04 | Да (`d97446a`, S8 в `72429bd`) | Accepted web; native `Needs verification` | Native frost — `18-H3-native-frost.md` (отложено, скоуп mobile web) |
 | ShareSheet | 05 | Да (`48c38b7`) | Partial | Реальное сохранение PNG в обычном браузере, security review |
-| Фильтры и сортировка | 06 | — | — | Отдельный пакет, не в этой карте |
+| Фильтры и сортировка | 06 / S7 | Да (`6729763`, `172404e`) | Accepted 390 mobile web (`artifacts/figma-qa/discovery/REPORT.md`) | Native/desktop вне scope |
 | Главная | 07 | Да (`8886f06`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: overflow, dock, error) | section→section 40 без узла Figma (граница); 1024/1440 вне скоупа |
-| Каталоги, auth, заявка, создание работы | 08–12 | — | — | После принятия 06 |
+| Каталоги и Search | S2 / discovery | Да (`6729763`, `172404e`, `fcdedb2`) | Accepted 390 mobile web (`artifacts/figma-qa/discovery/REPORT.md`) | Work-card brief facts conflict remains documented; Figma overlay excluded |
+| Auth, заявка, создание работы | 08–12 | — | — | См. соответствующие package reports |
 | Независимая приёмка | 13 | — | Выполнена для 02/03/04/07 (`artifacts/figma-qa/13-acceptance/REPORT.md`) | S1/S2/S4/S7/S8 — параллельный пакет |
 
 ## 3. Расхождения по элементам

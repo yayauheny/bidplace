@@ -1,0 +1,165 @@
+import { expect, test } from '@playwright/test';
+
+const apiPort = process.env.E2E_API_PORT ?? '3001';
+const apiBaseURL = `http://localhost:${apiPort}`;
+
+test.beforeEach(async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+});
+
+test('Works keeps filters in the URL and paginates without duplicates', async ({
+  page,
+  request,
+}) => {
+  const worksResponse = await request.get(`${apiBaseURL}/api/works?limit=100`);
+  const worksPayload = (await worksResponse.json()) as {
+    works: Array<{
+      work: {
+        publicId: string;
+        title: string;
+        categoryId: string;
+        materials: string | null;
+      };
+    }>;
+  };
+  const target = worksPayload.works.find((item) => item.work.materials);
+  expect(target).toBeDefined();
+  const categoriesResponse = await request.get(`${apiBaseURL}/api/categories`);
+  const categoriesPayload = (await categoriesResponse.json()) as {
+    categories: Array<{ id: string; name: string }>;
+  };
+  const category = categoriesPayload.categories.find(
+    (item) => item.id === target?.work.categoryId,
+  );
+  expect(category).toBeDefined();
+
+  await page.goto('/works');
+  const workLinks = page.locator('a[href^="/product/"]');
+  await expect(workLinks).toHaveCount(12);
+  await page.getByRole('button', { name: 'Показать ещё' }).click();
+  await expect(workLinks).toHaveCount(15);
+  await expectNoHorizontalOverflow(page);
+  const hrefs = await workLinks.evaluateAll((links) =>
+    links.map((link) => link.getAttribute('href')),
+  );
+  expect(new Set(hrefs).size).toBe(hrefs.length);
+  await page.screenshot({
+    path: '../../artifacts/figma-qa/discovery/works-390.png',
+    fullPage: true,
+  });
+
+  await page.getByRole('button', { name: 'Фильтры' }).click();
+  await page.getByRole('button', { name: /^Категория,/ }).click();
+  await page.getByRole('radio', { name: category!.name }).click();
+  await page.getByRole('button', { name: 'Назад' }).click();
+  await page.getByRole('button', { name: /^Материал,/ }).click();
+  await page.getByRole('radio', { name: target!.work.materials! }).click();
+  await page.getByRole('button', { name: 'Назад' }).click();
+  await page.getByRole('button', { name: 'Применить' }).click();
+
+  await expect(page).toHaveURL(
+    new RegExp(
+      `category=${target!.work.categoryId}.*material=${encodeURIComponent(
+        target!.work.materials!,
+      )}`,
+    ),
+  );
+  await expect(page.getByText(target!.work.title).first()).toBeVisible();
+
+  await page.goto('/authors');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/works\?.*category=.*material=/);
+
+  await page.getByRole('button', { name: /^Фильтры · 2$/ }).click();
+  await page.getByRole('button', { name: 'Сбросить' }).click();
+  await page.getByRole('button', { name: 'Применить' }).click();
+  await expect(page).toHaveURL(/\/works(?:\?sort=newest)?$/);
+});
+
+test('Authors filters and sort are server-backed and URL-owned', async ({
+  page,
+  request,
+}) => {
+  const response = await request.get(`${apiBaseURL}/api/authors?limit=1`);
+  const payload = (await response.json()) as {
+    authors: Array<{
+      author: {
+        fullName: string;
+        discipline: string;
+        city: string;
+      };
+    }>;
+  };
+  const target = payload.authors[0]!.author;
+
+  await page.goto('/authors');
+  await page.getByRole('button', { name: 'Фильтры' }).click();
+  await page.getByRole('button', { name: /^Направление,/ }).click();
+  await page.getByRole('radio', { name: target.discipline }).click();
+  await page.getByRole('button', { name: 'Назад' }).click();
+  await page.getByRole('button', { name: /^Город,/ }).click();
+  await page.getByRole('radio', { name: target.city }).click();
+  await page.getByRole('button', { name: 'Назад' }).click();
+  await page.getByRole('button', { name: 'Применить' }).click();
+  await expect(page).toHaveURL(/\/authors\?.*tag=.*city=/);
+  await expect(page.getByText(target.fullName).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Сортировка' }).click();
+  await page.getByRole('radio', { name: 'По имени' }).click();
+  await page.getByRole('button', { name: 'Применить' }).click();
+  await expect(page).toHaveURL(/\/authors\?.*sort=name/);
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({
+    path: '../../artifacts/figma-qa/discovery/authors-390.png',
+    fullPage: true,
+  });
+});
+
+test('Search renders real independent result, empty, and retry states', async ({
+  page,
+  request,
+}) => {
+  const response = await request.get(`${apiBaseURL}/api/works?limit=1`);
+  const payload = (await response.json()) as {
+    works: Array<{ work: { title: string } }>;
+  };
+  const title = payload.works[0]!.work.title;
+
+  await page.goto(`/search?q=${encodeURIComponent(title)}`);
+  await expect(page.getByRole('heading', { name: 'Работы' })).toBeVisible();
+  await expect(page.getByText(title).first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({
+    path: '../../artifacts/figma-qa/discovery/search-390.png',
+    fullPage: true,
+  });
+
+  await page.goto('/search?q=no-results-zzzz');
+  await expect(
+    page.getByText('Ничего не найдено', { exact: true }),
+  ).toBeVisible();
+
+  await page.route('**/api/works?**', (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'test failure' }),
+    }),
+  );
+  await page.goto(`/search?q=${encodeURIComponent(title)}&failure=1`);
+  await expect(
+    page.getByText('Не удалось загрузить работы', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Повторить' })).toBeVisible();
+});
+
+async function expectNoHorizontalOverflow(
+  page: import('@playwright/test').Page,
+) {
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+}

@@ -1,5 +1,23 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Discovery catalogs and Search at 390
+
+- `Implemented`: accepted S7 filter/sort masters are wired into Works and
+  Authors with search, nested server-owned options, local draft Apply/Reset,
+  active counts and full-height sheets. Sort sheets no longer mutate route
+  state before Apply.
+- `Implemented`: both catalogs expose server pagination and truthful
+  loading/error/empty states; Search exposes independent Work/Author
+  loading/result/empty/retry/pagination states without adding the excluded
+  Figma live-search overlay.
+- `Verified` at 390 with reduced motion: combined filters, URL persistence
+  through Back, sort, pagination deduplication, no horizontal overflow and
+  Search result/empty/retry. Evidence:
+  `artifacts/figma-qa/discovery/REPORT.md`.
+- `Partial`: Work cards preserve the accepted title + author master. RFC §6
+  “brief facts” has no approved card composition and remains documented rather
+  than guessed. Native and desktop remain outside the current acceptance scope.
+
 ## 2026-09-13 — S4 auth forms at 390
 
 - `Implemented`: mobile-web login, registration, forgot-password and

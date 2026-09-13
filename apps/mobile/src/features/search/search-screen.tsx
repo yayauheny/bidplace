@@ -10,11 +10,7 @@ import {
   FilterSearchField,
   WorkCoverCardGrid,
 } from '../../components/figma';
-import {
-  AppText,
-  CreatorCardGrid,
-  PageState,
-} from '../../components/ui';
+import { AppText, CreatorCardGrid, PageState } from '../../components/ui';
 import { usePortfolioWorks } from '../products/use-portfolio-works';
 import { usePortfolioAuthors } from '../sellers/use-portfolio-authors';
 
@@ -169,11 +165,10 @@ function SearchResultSection({
   children: React.ReactNode;
 }) {
   return (
-    <View
-      accessibilityLabel={title}
-      style={{ gap: designTokens.space.x3 }}
-    >
-      <AppText role="sectionTitle">{title}</AppText>
+    <View accessibilityLabel={title} style={{ gap: designTokens.space.x3 }}>
+      <AppText role="sectionTitle" accessibilityRole="header">
+        {title}
+      </AppText>
       {children}
     </View>
   );

@@ -55,7 +55,7 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
 | Author application | Four Figma screens: identity, about, public links, private handoff | Sale language, buyer-visible handoff, achievement photo blocks |
 | Create work | Four Figma screens: photos+title, details, optional story, review | Sale status/time/price, photo-text process steps |
-| Search | Stub copy; optional `?q=` lists | Figma overlay with categories / authors / works |
+| Search | URL-owned `?q=` with independent paginated Work/Author states | Figma live-search overlay |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
 ## 4. Home
@@ -71,6 +71,11 @@ appearance; пока переход по тегу не включён, они с
 
 Кнопка результата использует `работ`, не `лотов`. Unsupported placeholder filters не
 рендерятся. Popularity/price/availability sorting отсутствует.
+
+На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
+после `Применить`; sheet хранит локальный draft до Apply/Reset. `/search?q=`
+показывает независимые loading/result/empty/error/retry/pagination состояния
+работ и авторов. Figma live-search overlay остаётся вне scope.
 
 ## 6. Creator profile
 

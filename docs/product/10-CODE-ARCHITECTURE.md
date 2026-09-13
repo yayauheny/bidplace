@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-11
+Последнее обновление: 2026-09-13
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 Transitional note (`DEC-087`): P1–P3, Nest-only contract drop, P5, and the
 2026-09-11 review-blocker pass (listing write-guard removed from runtime;
@@ -34,6 +34,12 @@ refs are still the merge gate.
   `/authors/{slug}`). `socialLink` is optional on create/submit/approval, stored
   nullable, owner/persistence-only, and omitted from portfolio public author DTOs.
   Private handoff stays required on the owner profile and is never public.
+- `GET /api/portfolio/facets` is the public discovery-option boundary
+  (`DEC-089`). Products and Sellers services select only published/public values;
+  Portfolio normalizes, case-insensitively deduplicates and sorts them before the
+  strict contract response. Mobile catalog URL mappers are the committed source
+  of filter/sort state; React Query infinite hooks own page fetching and
+  cross-page ID deduplication, while sheets keep draft state only until Apply.
 - `apps/mobile` is an Expo Router client. React Query holds server state. The
   default client does not open Socket.IO; Nest does not register a gateway.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the phone column

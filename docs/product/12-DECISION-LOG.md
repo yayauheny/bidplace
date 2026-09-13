@@ -1813,4 +1813,33 @@ shells. The founder selected the unified capsule already described in
 
 Search overlay, cart, or a designer-approved second dock layout is in scope.
 
+## DEC-089 — Discovery facets are derived from public server data
+
+Date: 2026-09-13
+Status: Confirmed
+Source: explicit founder choice during the mobile-web discovery launch pass
+
+### Decision
+
+Works material options and Authors city/direction options are returned by
+`GET /api/portfolio/facets`. Values are normalized, deduplicated and sorted on
+the server from currently public authors and published Work revisions only.
+The client must not invent Figma/static fallback options. Each stored Work
+material string is one canonical facet value; delimiters are not guessed.
+
+The accepted Figma Work card remains title + author. RFC §6 “brief facts” is a
+documented product/design ambiguity and does not authorize adding unapproved
+fields or changing the Figma master during this implementation.
+
+### Why
+
+Server ownership keeps available filters aligned with public visibility and
+prevents stale, fake or private values from entering discovery. Preserving the
+accepted card avoids resolving an incomplete visual contract by invention.
+
+### Revisit when
+
+The domain gains structured multi-material data, or an approved Figma/card
+contract defines which brief facts must be visible.
+
 

@@ -6,8 +6,10 @@ Phone-web catalog filters use one exported component family:
 `FilterSheet` owns the 390 px full-height panel, keyboard focus lifecycle and
 sticky primary action. Option rows own radio/checkbox semantics; screens supply
 only values and callbacks. `filterControl` reuses `FigmaGlassSurface` instead
-of introducing a second glass implementation. Product-screen wiring remains
-outside the master.
+of introducing a second glass implementation. `CatalogFilterSheet` composes
+the shared masters for Works and Authors, keeps search/section values as a local
+draft, and commits route-owned state only on Apply. `FilterSortSheet` follows
+the same draft/Apply contract; dismissing it does not change the URL.
 
 ## Web chip gradient stroke
 

@@ -1,5 +1,25 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Mobile-web discovery launch gate
+
+- `Implemented` at 390: `/works` has URL-owned query/category/material,
+  newest/oldest sort and deduplicated server pagination; `/authors` has
+  query/direction/city, activity/name sort and server pagination. Both compose
+  the accepted S7 sheets with local draft values committed only on Apply/Reset.
+- `Implemented`: `/search?q=` renders real, independently retryable and
+  paginated Work/Author states instead of stub copy.
+- `Implemented`: strict `GET /api/portfolio/facets` returns sorted,
+  case-insensitively deduplicated materials/cities/tags from public authors and
+  published Work revisions only (`DEC-089`). Public catalog text filtering now
+  reads the published revision, not mutable legacy Product text.
+- `Partial` against RFC §6 only: the accepted Figma Work card remains title +
+  author and does not render unspecified “brief facts”; the contract/design
+  ambiguity is recorded without inventing a visual.
+- `Verified`: `pnpm verify` passed (typecheck 7/7, lint 2/2, API unit 297,
+  contracts 25, client 3, integration 79, build 7/7); mobile tests 239/239 and
+  focused 390 Playwright 3/3 passed. Evidence:
+  `artifacts/figma-qa/discovery/REPORT.md`.
+
 ## 2026-09-13 — S4 mobile-web auth composition
 
 - `Implemented`: existing login, registration, forgot-password and reset
