@@ -31,7 +31,9 @@ pnpm db:sync-figma-comparison
 ```
 
 The sync prints the target database **name** before writes and never prints
-URL or password. It upserts only slug `vex` and the four public IDs. It does
-not `deleteMany` Users, Sellers, or Products.
+URL or password. The write function also checks `current_database()` and the
+local/test env triplet, so importing it cannot skip the CLI guard. It upserts
+only slug `vex` and the four public IDs. It does not `deleteMany` Users,
+Sellers, or Products.
 
 Forbidden targets include the shared `bidplace` database.

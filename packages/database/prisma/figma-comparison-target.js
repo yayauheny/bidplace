@@ -69,9 +69,23 @@ function assertFigmaComparisonTarget(databaseUrl, env = process.env) {
   return databaseName;
 }
 
+async function assertConnectedFigmaComparisonTarget(prisma, env = process.env) {
+  assertLocalFigmaComparisonEnv(env);
+  const rows = await prisma.$queryRaw`SELECT current_database() AS name`;
+  const databaseName = rows[0]?.name;
+  if (!isDisposableComparisonDatabaseName(databaseName)) {
+    throw new Error(
+      `Refusing Figma comparison fixture for non-disposable database "${databaseName}"`,
+    );
+  }
+
+  return databaseName;
+}
+
 module.exports = {
   FORBIDDEN_DATABASE_NAMES,
   assertLocalFigmaComparisonEnv,
+  assertConnectedFigmaComparisonTarget,
   assertFigmaComparisonTarget,
   isDisposableComparisonDatabaseName,
   parseDatabaseName,

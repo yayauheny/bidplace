@@ -39,8 +39,17 @@ const {
     works: Array<{ publicId: string; title: string; checksum: string }>;
     achievements: Array<{ body: string; checksum?: string }>;
   };
-  syncFigmaComparisonFixture: (prisma: PrismaClient) => Promise<unknown>;
+  syncFigmaComparisonFixture: (
+    prisma: PrismaClient | { $queryRaw: (...args: unknown[]) => Promise<unknown> },
+    env?: NodeJS.ProcessEnv,
+  ) => Promise<unknown>;
 };
+
+const localFixtureEnv = {
+  NODE_ENV: 'test',
+  APP_ENV: 'local',
+  ALLOW_FIGMA_COMPARISON_FIXTURE: 'true',
+} as const;
 
 const repositoryRoot = resolve(__dirname, '../../../..');
 const seedPath = resolve(repositoryRoot, 'packages/database/prisma/seed.js');
@@ -126,6 +135,42 @@ describe('figma comparison fixture executable guards', () => {
   });
 });
 
+describe('figma comparison fixture programmatic guards', () => {
+  it('refuses production-like profiles before any write', async () => {
+    await expect(
+      syncFigmaComparisonFixture(prisma, {
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        ALLOW_FIGMA_COMPARISON_FIXTURE: 'true',
+      }),
+    ).rejects.toThrow(
+      'Refusing Figma comparison fixture outside an explicitly allowed local/test profile',
+    );
+  });
+
+  it('refuses the shared bidplace database from the connected session', async () => {
+    await expect(
+      syncFigmaComparisonFixture(
+        { $queryRaw: async () => [{ name: 'bidplace' }] },
+        { ...localFixtureEnv },
+      ),
+    ).rejects.toThrow(
+      'Refusing Figma comparison fixture for non-disposable database "bidplace"',
+    );
+  });
+
+  it('refuses bidplace_e2e from the connected session', async () => {
+    await expect(
+      syncFigmaComparisonFixture(
+        { $queryRaw: async () => [{ name: 'bidplace_e2e' }] },
+        { ...localFixtureEnv },
+      ),
+    ).rejects.toThrow(
+      'Refusing Figma comparison fixture for non-disposable database "bidplace_e2e"',
+    );
+  });
+});
+
 describe('figma comparison fixture sync and public HTTP', () => {
   let http: HttpTestApp;
   let guest: HttpTestClient;
@@ -158,7 +203,10 @@ describe('figma comparison fixture sync and public HTTP', () => {
       where: { slug: FIGMA_COMPARISON_SLUG },
       data: { fullName: 'Не должен остаться' },
     });
-    await syncFigmaComparisonFixture(prisma);
+    await syncFigmaComparisonFixture(prisma, {
+      ...process.env,
+      ...localFixtureEnv,
+    });
 
     http = await createHttpTestApp(context.databaseUrl, 'http://localhost:8081');
     guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
@@ -196,7 +244,10 @@ describe('figma comparison fixture sync and public HTTP', () => {
     const approvedBefore = await prisma.sellerProfile.count({
       where: { status: 'APPROVED' },
     });
-    await syncFigmaComparisonFixture(prisma);
+    await syncFigmaComparisonFixture(prisma, {
+      ...process.env,
+      ...localFixtureEnv,
+    });
     expect(
       await prisma.sellerProfile.count({ where: { status: 'APPROVED' } }),
     ).toBe(approvedBefore);

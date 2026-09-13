@@ -3,7 +3,10 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const argon2 = require('argon2');
 
-const { assertFigmaComparisonTarget } = require('./figma-comparison-target');
+const {
+  assertConnectedFigmaComparisonTarget,
+  assertFigmaComparisonTarget,
+} = require('./figma-comparison-target');
 
 const FIGMA_COMPARISON_SLUG = 'vex';
 const FIGMA_COMPARISON_EMAIL = 'vex@bidplace.test';
@@ -491,7 +494,8 @@ async function ensureWork(prisma, sellerProfileId, categoryId, work) {
   return product.id;
 }
 
-async function syncFigmaComparisonFixture(prisma) {
+async function syncFigmaComparisonFixture(prisma, env = process.env) {
+  await assertConnectedFigmaComparisonTarget(prisma, env);
   const photo = loadPngAsset(
     MANIFEST.author.profilePhoto.fileName,
     MANIFEST.author.profilePhoto,
@@ -614,6 +618,7 @@ module.exports = {
   FIGMA_COMPARISON_EMAIL,
   FIGMA_COMPARISON_SLUG,
   MANIFEST,
+  assertConnectedFigmaComparisonTarget,
   assertFigmaComparisonTarget,
   loadPngAsset,
   syncFigmaComparisonFixture,

@@ -37,7 +37,10 @@
   upsert of that slug and those public IDs. It refuses the shared `bidplace`
   database and production-like env, prints the disposable database name
   before writes, and does not `deleteMany` Users, Sellers, or Products.
-  Ordinary `pnpm db:seed` is unchanged and still destructive.
+  `syncFigmaComparisonFixture()` also checks `current_database()` plus the
+  local/test env triplet before any write, so a direct Prisma call cannot
+  bypass the CLI guard. Ordinary `pnpm db:seed` is unchanged and still
+  destructive.
 - This does **not** claim visual parity with Figma. It only makes the public
   comparison inputs identical. Evidence:
   `packages/database/prisma/fixtures/figma-comparison/`,
