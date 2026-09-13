@@ -26,6 +26,15 @@
 
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Home composition
+
+- `Implemented`: `home-screen.tsx` uses the shared logo rhythm (`logoTop`,
+  `logoGap`, renamed from `authorLogoTop`/`authorLogoGap`), centered
+  `sectionTitle` headings (token now 24/29 −0.72), 40px section gap and
+  `dockReserve` bottom padding. Cards still open `/product/:publicId` and
+  `/seller/:slug`. Mobile typecheck, ESLint and vitest pass. Wide (1024/1440)
+  capture `Needs verification`.
+
 ## 2026-09-13 — Cover cards hug-frost, chip geometry, tracking
 
 - `Implemented`: `CoverFrost` fills a text-hugging overlay zone in

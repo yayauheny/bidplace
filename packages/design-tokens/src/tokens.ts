@@ -98,10 +98,10 @@ export const designTokens = {
     sectionGap: 20,
     identityGap: 10,
     atmosphereOffset: 36,
-    authorLogoTop: 54,
+    logoTop: 54,
     creatorCompactTop: 44,
     creatorCompactAtmosphereTop: -340,
-    authorLogoGap: 34,
+    logoGap: 34,
     authorIdentityGap: 6,
     authorSectionGap: 18,
     authorHeaderBottom: 40,
@@ -190,10 +190,12 @@ export const designTokens = {
       letterSpacing: -0.2,
       fontWeight: '500' as const,
     },
+    // Figma home headings `436:1275`: 24/29 semibold, -3% tracking.
     sectionTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 24,
-      lineHeight: 32,
+      lineHeight: 29,
+      letterSpacing: -0.72,
       fontWeight: '600' as const,
     },
     cardTitle: {

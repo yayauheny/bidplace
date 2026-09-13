@@ -48,7 +48,7 @@ export function CreatorHero({
           alignItems: 'center',
           gap: designTokens.space.authorSectionGap,
           paddingHorizontal: designTokens.space.pageGutter,
-          paddingTop: designTokens.space.authorLogoTop,
+          paddingTop: designTokens.space.logoTop,
           zIndex: 1,
         }}
       >
@@ -57,7 +57,7 @@ export function CreatorHero({
           style={{
             visibility: compact ? 'hidden' : 'visible',
             marginBottom:
-              designTokens.space.authorLogoGap -
+              designTokens.space.logoGap -
               designTokens.space.authorSectionGap,
           }}
         >

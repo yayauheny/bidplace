@@ -4,6 +4,18 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Home composition against `436:1137`
+
+- `Implemented`: logo 42×32 at y 60 (`logoTop`/`logoGap`, shared with the
+  author hero), «Новые работы» heading 24/29 −3 % centered at y 132
+  (`sectionTitle` role now carries the Figma line height and tracking), 20px
+  heading→cards→button rhythm, 40px between sections, `dockReserve` bottom
+  padding. Evidence: `artifacts/figma-qa/07-home/`.
+- Open: the Figma home has no vertical section→section value (67 between the
+  excluded rails); 40 is the work-page block gap. «Открытие недели» and
+  «Активные торги» stay out without a product decision. 1024/1440 not
+  re-captured in this pass.
+
 ## 2026-09-13 — Cover cards: text-hugging frost, 24px chips, tracking
 
 - `Implemented`: `CoverFrost` now fills a zone that hugs the overlay text

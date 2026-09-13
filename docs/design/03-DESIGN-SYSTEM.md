@@ -26,7 +26,9 @@ QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
 Profile-specific typography lives in `packages/design-tokens`: handle 24/29,
 metadata 18/24, chips 16/23, tabs 16/19 and About headings 17/21.
 `FigmaChip` profile size uses 16px horizontal padding and a 35px total height.
-Compact chips are 24px tall: Figma pads 10/4 with an inside 1px stroke, so the
+`sectionTitle` is 24/29 semibold with −0.72 tracking (`436:1275`); the brand
+logo sits at `logoTop` 54 (image top 60) with `logoGap` 34 below the 44px link
+on the home and author screens. Compact chips are 24px tall: Figma pads 10/4 with an inside 1px stroke, so the
 tokens are `chipX` 9 / `chipY` 3 plus the 1px border. Cover typography carries
 the Figma tracking: `coverTitle` -0.36, `authorName` -0.66, `authorHandle`
 -0.18, `chip` -0.13, `identityRowHandle` -0.24. The `tinted` tone reuses the
