@@ -16,6 +16,14 @@ test('product composition stays portfolio-only without auction chrome', async ({
 
   await expect(page.getByText(fixture.product.title).first()).toBeVisible();
   await expect(page.getByText(relatedTitle)).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: fixture.product.title }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Другие работы автора' }),
+  ).toBeVisible();
+  await page.getByRole('tab', { name: 'Оплата и доставка' }).click();
+  await expect(page).toHaveURL(/\?tab=delivery$/);
   await expect(page.getByText(PAYMENT_DELIVERY_STUB)).toBeVisible();
   await expect(page.getByText('Ставка', { exact: true })).toHaveCount(0);
   await expect(page.getByText(/BYN/)).toHaveCount(0);
@@ -34,8 +42,9 @@ test('product composition stays portfolio-only without auction chrome', async ({
   );
 
   await page.getByRole('button', { name: 'Поделиться работой' }).click();
+  await page.getByRole('button', { name: 'Копировать ссылку' }).click();
   await expect(
-    page.getByText('Ссылка скопирована', { exact: true }),
+    page.getByText('Ссылка скопирована.', { exact: true }),
   ).toBeVisible();
 
   await expect

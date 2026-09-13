@@ -4,6 +4,17 @@
 
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Work page heading semantics and visual evidence
+
+- `Implemented`: the Work title remains the page `h1`; «Другие работы автора»
+  is now an `h2` rather than a second top-level heading.
+- `Partial` visual acceptance: real preview data verified at 390/1024/1440,
+  including a two-image gallery, no-Story Work, gallery bounds and live label,
+  no document overflow, and a missing Work without retry. Evidence:
+  `artifacts/figma-qa/03-work/REPORT.md`. Network-error/broken-media capture,
+  browser Back/Forward tab restoration, 200% zoom, reduced-motion emulation and
+  physical screen-reader review remain.
+
 ## 2026-09-13 — Author final composition pass
 
 - `Implemented`: CreatorHero replaces the unused legacy variant; CreatorHeader
@@ -28,7 +39,10 @@
   with URL state. CSS tab line-height is explicitly expressed in pixels.
 - Full screen parity is `Partial`: multi-image gallery, missing-story browser
   states and the complete responsive/accessibility matrix still need visual
-  acceptance. Local public samples have one image and populated stories.
+  acceptance. An isolated preview stand on Expo :8083 / API :3002 can show
+  `seedAnna001` with two photos and `seedAnna002` without a Story tab without
+  changing the working database. Deleted/unpublished works must render
+  «Работа не найдена», not the retryable load error.
 
 ## 2026-09-12 — Shared public ShareSheet
 
@@ -670,7 +684,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
 | AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
 | FilterMenu    | shared discovery controls | implemented shared sort/facet control in `components/layout` |
-| ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
+| ProductTabs   | `Jh9jr`  | keyboard tabs and deep links implemented; browser Back history remains partial  |
 | AmbientImageBackground | shared atmosphere | one shell-level image-derived background for Product and Creator; runtime verified |
 
 ## Legacy production state

@@ -2,7 +2,31 @@
 
 `Implemented`: `AuthorAbout` renders existing achievement photos or a text-only card, with UTC month/year via `achievement-date.ts` (2 focused tests). No data/API/RFC contract changes. Mobile typecheck, targeted lint, token build and web export pass. Full author visual/accessibility matrix remains `Partial`. Next scope: `docs/tasks/2026-09-12-figma-finish/CONTINUE.md`.
 
+## 2026-09-13 — Public Work heading hierarchy and browser evidence
+
+- `Implemented`: the related-works section is a level-two heading below the
+  Work title. No API, data visibility, commerce or analytics behavior changed.
+- `Partial` visual acceptance: two-image/no-Story/404 and 390/1024/1440
+  browser states pass; controlled network-error/broken-media, 200% zoom,
+  reduced-motion, browser Back/Forward tab restoration and physical
+  screen-reader checks remain. Evidence:
+  `artifacts/figma-qa/03-work/REPORT.md` and
+  `apps/mobile/e2e/product-layout.spec.ts`.
+
 # bidplace — текущий статус проекта
+
+## 2026-09-13 — Public work missing vs load error
+
+- `Implemented`: `resolvePublicWorkPageState` keeps a deleted or unpublished
+  work on «Работа не найдена» without a retry button. Transient failures still
+  show «Не удалось загрузить работу» with Повторить. Evidence:
+  `apps/mobile/src/features/products/public-work-page-state.ts`,
+  `apps/mobile/src/features/products/product-screen.tsx`,
+  `apps/mobile/src/features/products/public-work-page-state.spec.ts`.
+- Multi-image gallery and a work without story are preview-only on an isolated
+  `bidplace_preview` database / API :3002 / Expo :8083 stand. The working
+  `bidplace` database and API :3001 are not seeded or restarted by that stand.
+  Evidence: `packages/database/prisma/preview-work-states.js`.
 
 ## 2026-09-13 — Author final composition pass
 

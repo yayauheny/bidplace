@@ -19,6 +19,7 @@ import { useTrackWorkView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
+import { resolvePublicWorkPageState } from './public-work-page-state';
 import { resolveWorkTab, workFacts, workTabs } from './work-content';
 
 export { PAYMENT_DELIVERY_STUB };
@@ -48,13 +49,24 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     sellerProfileId: query.data?.author.id,
     enabled: Boolean(query.data),
   });
-  if (query.isLoading)
+  const pageState = resolvePublicWorkPageState(query);
+  if (pageState === 'loading')
     return (
       <AppShell>
         <PageState title="Загружаем работу…" loading />
       </AppShell>
     );
-  if (query.isError || !query.data)
+  if (pageState === 'not_found') {
+    return (
+      <AppShell>
+        <PageState
+          title="Работа не найдена"
+          message="Работа больше недоступна."
+        />
+      </AppShell>
+    );
+  }
+  if (pageState === 'error' || !query.data)
     return (
       <AppShell>
         <PageState
@@ -180,7 +192,11 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           </View>
           {related.length > 0 ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
-              <AppText role="workTitle" accessibilityRole="header">
+              <AppText
+                role="workTitle"
+                accessibilityRole="header"
+                aria-level={2}
+              >
                 Другие работы автора
               </AppText>
               <ScrollView

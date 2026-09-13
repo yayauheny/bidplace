@@ -1,9 +1,10 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { ResilientRemoteImage } from '../ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIconButton } from './FigmaIconButton';
 
 type GalleryImage = { id: string; url: string };
@@ -12,7 +13,7 @@ export function WorkGallery({
   label,
   action,
 }: {
-  images: readonly GalleryImage[];
+  images: readonly [GalleryImage, ...GalleryImage[]];
   label: string;
   action?: ReactNode;
 }) {
@@ -20,9 +21,17 @@ export function WorkGallery({
   const [active, setActive] = useState(0);
   const scroll = useRef<ScrollView>(null);
   const reduced = useReducedMotion();
+  useEffect(() => {
+    const page = Math.min(active, images.length - 1);
+    if (page !== active) {
+      setActive(page);
+      scroll.current?.scrollTo({ x: width * page, animated: false });
+    }
+  }, [active, images.length, width]);
   const show = (index: number) => {
-    setActive(index);
-    scroll.current?.scrollTo({ x: width * index, animated: !reduced });
+    const page = Math.max(0, Math.min(images.length - 1, index));
+    setActive(page);
+    scroll.current?.scrollTo({ x: width * page, animated: !reduced });
   };
   return (
     <View
@@ -91,18 +100,22 @@ export function WorkGallery({
               justifyContent: 'space-between',
             }}
           >
-            <FigmaIconButton
-              icon="arrow-left-01"
-              label="Предыдущее фото"
-              disabled={active === 0}
-              onPress={() => show(active - 1)}
-            />
-            <FigmaIconButton
-              icon="arrow-right-01"
-              label="Следующее фото"
-              disabled={active === images.length - 1}
-              onPress={() => show(active + 1)}
-            />
+            <FigmaGlassSurface preset="controlGroup">
+              <FigmaIconButton
+                icon="arrow-left-01"
+                label="Предыдущее фото"
+                disabled={active === 0}
+                onPress={() => show(active - 1)}
+              />
+            </FigmaGlassSurface>
+            <FigmaGlassSurface preset="controlGroup">
+              <FigmaIconButton
+                icon="arrow-right-01"
+                label="Следующее фото"
+                disabled={active === images.length - 1}
+                onPress={() => show(active + 1)}
+              />
+            </FigmaGlassSurface>
           </View>
         ) : null}
       </View>

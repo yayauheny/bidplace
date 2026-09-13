@@ -1,5 +1,12 @@
 import { Image, type ImageProps } from 'expo-image';
-import { Platform, StyleSheet, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type ImageStyle,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -38,6 +45,7 @@ type ResilientRemoteImageProps = {
   fallbackLabel: string;
   style: StyleProp<ViewStyle>;
   contentFit?: ImageProps['contentFit'];
+  contentPosition?: ImageProps['contentPosition'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
   blurRadius?: number;
@@ -50,6 +58,7 @@ export function ResilientRemoteImage({
   fallbackLabel,
   style,
   contentFit = 'cover',
+  contentPosition,
   transition,
   recyclingKey,
   blurRadius,
@@ -169,10 +178,7 @@ export function ResilientRemoteImage({
         />
         {visibleRecovery.exhausted ? (
           <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
-            <SecondaryButton
-              label="Повторить"
-              onPress={handleManualRetry}
-            />
+            <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>
         ) : null}
       </View>
@@ -185,6 +191,7 @@ export function ResilientRemoteImage({
         key={sourceUri}
         source={{ uri: sourceUri }}
         contentFit={contentFit}
+        contentPosition={contentPosition}
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${visibleRecovery.requestVersion}`}
         accessibilityLabel={accessibilityLabel}
