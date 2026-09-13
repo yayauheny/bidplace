@@ -112,7 +112,7 @@ export function FigmaIcon({
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'
-          ? { 'aria-hidden': 'true' as const }
+          ? { 'aria-hidden': true }
           : { accessible: false })}
     />
   );
