@@ -1,8 +1,4 @@
-import { designTokens } from '@bidplace/design-tokens';
-
-export function getCatalogColumnCount(width: number): 1 | 2 | 3 | 4 {
-  if (width >= designTokens.breakpoint.catalogFourColumn) return 4;
-  if (width >= designTokens.breakpoint.catalogThreeColumn) return 3;
-  if (width >= designTokens.breakpoint.catalogTwoColumn) return 2;
+export function getCatalogColumnCount(width?: number): 1 {
+  void width;
   return 1;
 }
