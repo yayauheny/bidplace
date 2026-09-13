@@ -41,7 +41,7 @@ test('demo seed exposes public portfolio authors, works and media', async ({
   expect(authorPhotoResponse.headers()['content-type']).toMatch(/^image\//);
 
   const worksResponse = await request.get(
-    `${apiBaseURL}/api/works?page=1&limit=20&sort=newest`,
+    `${apiBaseURL}/api/works?page=1&limit=50&sort=newest`,
   );
   expect(worksResponse.ok()).toBeTruthy();
   const worksPayload = (await worksResponse.json()) as {

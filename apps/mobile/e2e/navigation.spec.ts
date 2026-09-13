@@ -16,12 +16,13 @@ test('guest 390 dock is one four-item capsule without auction chrome', async ({
 
   const dock = page.getByTestId('figma-floating-dock');
   await expect(dock).toBeVisible();
+  await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
   const box = await dock.boundingBox();
   expect(box?.width).toBe(232);
   expect(box?.height).toBe(64);
 
   for (const label of dockLabels) {
-    await expect(page.getByLabel(label)).toBeVisible();
+    await expect(dock.getByLabel(label)).toBeVisible();
   }
 
   await expect(page.getByRole('link', { name: 'Аукционы' })).toHaveCount(0);
@@ -36,21 +37,22 @@ test('guest dock search, home, profile and plus stay inside the capsule', async 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
-  await page.getByLabel('Поиск').click();
+  const dock = page.getByTestId('figma-floating-dock');
+  await dock.getByLabel('Поиск').click();
   await expect(page).toHaveURL(/\/search\/?$/);
-  await expect(page.getByLabel('Поиск')).toHaveAttribute(
+  await expect(dock.getByLabel('Поиск')).toHaveAttribute(
     'aria-selected',
     'true',
   );
 
-  await page.getByLabel('Главная').click();
+  await dock.getByLabel('Главная').click();
   await expect(page).toHaveURL(/\/$/);
 
-  await page.getByLabel('Профиль').click();
+  await dock.getByLabel('Профиль').click();
   await expect(page).toHaveURL(/\/login/);
 
   await page.goto('/');
-  await page.getByLabel('Добавить').click();
+  await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
   await expect(page).toHaveURL(/\/login/);
 });
 
@@ -63,7 +65,7 @@ test('pending seller plus opens the application profile, not create-work', async
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByLabel('Добавить').click();
+    await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
     await expect(page).toHaveURL(/\/profile/);
     await expect(page).not.toHaveURL(/\/products\/new/);
   } finally {
@@ -80,7 +82,7 @@ test('approved seller plus opens the existing create-work flow', async ({
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByLabel('Добавить').click();
+    await page.getByTestId('figma-floating-dock').getByLabel('Добавить').click();
     await expect(page).toHaveURL(/\/products\/new/);
   } finally {
     await context.close();
@@ -96,11 +98,12 @@ test('admin dock hides plus and opens admin from profile', async ({
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await expect(page.getByLabel('Главная')).toBeVisible();
-    await expect(page.getByLabel('Поиск')).toBeVisible();
-    await expect(page.getByLabel('Профиль')).toBeVisible();
-    await expect(page.getByLabel('Добавить')).toHaveCount(0);
-    await page.getByLabel('Профиль').click();
+    const dock = page.getByTestId('figma-floating-dock');
+    await expect(dock.getByLabel('Главная')).toBeVisible();
+    await expect(dock.getByLabel('Поиск')).toBeVisible();
+    await expect(dock.getByLabel('Профиль')).toBeVisible();
+    await expect(dock.getByLabel('Добавить')).toHaveCount(0);
+    await dock.getByLabel('Профиль').click();
     await expect(page).toHaveURL(/\/admin/);
   } finally {
     await context.close();
