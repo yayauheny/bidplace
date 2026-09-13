@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Figma stabilization matrix complete
+
+- `Implemented`: the Chromium + WebKit stabilization matrix is green in one
+  clean run (38/38). The five leftover failures were stale or
+  non-deterministic checks, not product regressions.
+- Works pagination in `discovery-launch.spec.ts` now follows live
+  `/api/works` metadata, list growth and unique ids. S4 register in
+  `auth-layout.spec.ts` asserts the stacked phone-column contract
+  (Имя/Email/Телефон/Пароль, no removed intro). Web cover frost keeps
+  size/position/mask/gradient/blur and no inner plate on both engines;
+  blur raster inequality stays Chromium-only.
+- `Verified`: `pnpm verify` typecheck 7/7, lint 2/2, API unit 282,
+  contracts 25, client 3, integration 78, build 7/7; mobile tests
+  248/248; Expo web export; Playwright 38/38. Evidence:
+  `artifacts/figma-qa/stabilization/REPORT.md`.
+
 ## 2026-09-13 — Figma stabilization integration
 
 - Cherry-picks of author-header motion (`67f6824` → `b82b014`) and Home

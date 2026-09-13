@@ -3,6 +3,18 @@ import { expect, test } from '@playwright/test';
 const apiPort = process.env.E2E_API_PORT ?? '3001';
 const apiBaseURL = `http://localhost:${apiPort}`;
 
+type WorksPage = {
+  works: Array<{
+    work: {
+      publicId: string;
+      title: string;
+      categoryId: string;
+      materials: string | null;
+    };
+  }>;
+  pagination: { page: number; limit: number; total: number };
+};
+
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -13,16 +25,7 @@ test('Works keeps filters in the URL and paginates without duplicates', async ({
   request,
 }) => {
   const worksResponse = await request.get(`${apiBaseURL}/api/works?limit=100`);
-  const worksPayload = (await worksResponse.json()) as {
-    works: Array<{
-      work: {
-        publicId: string;
-        title: string;
-        categoryId: string;
-        materials: string | null;
-      };
-    }>;
-  };
+  const worksPayload = (await worksResponse.json()) as WorksPage;
   const target = worksPayload.works.find((item) => item.work.materials);
   expect(target).toBeDefined();
   const categoriesResponse = await request.get(`${apiBaseURL}/api/categories`);
@@ -34,14 +37,51 @@ test('Works keeps filters in the URL and paginates without duplicates', async ({
   );
   expect(category).toBeDefined();
 
+  const firstPageResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/works' && response.ok(),
+  );
   await page.goto('/works');
+  const firstPage = (await (await firstPageResponse).json()) as WorksPage;
+  expect(firstPage.pagination.page).toBe(1);
+  expect(firstPage.pagination.limit).toBeGreaterThan(0);
+  expect(firstPage.works).toHaveLength(
+    Math.min(firstPage.pagination.limit, firstPage.pagination.total),
+  );
+  const hasNextPage =
+    firstPage.pagination.page * firstPage.pagination.limit <
+    firstPage.pagination.total;
+
   const workLinks = page.locator('a[href^="/product/"]');
-  await expect(workLinks).toHaveCount(12);
-  await page.getByRole('button', { name: 'Показать ещё' }).click();
-  await expect(workLinks).toHaveCount(15);
+  await expect(workLinks).toHaveCount(firstPage.works.length);
+  if (hasNextPage) {
+    const nextPageResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        url.pathname === '/api/works' &&
+        url.searchParams.get('page') === '2' &&
+        response.ok()
+      );
+    });
+    await page.getByRole('button', { name: 'Показать ещё' }).click();
+    const nextPage = (await (await nextPageResponse).json()) as WorksPage;
+    await expect(workLinks).toHaveCount(
+      firstPage.works.length + nextPage.works.length,
+    );
+    expect(firstPage.works.length + nextPage.works.length).toBeGreaterThan(
+      firstPage.works.length,
+    );
+  } else {
+    await expect(page.getByRole('button', { name: 'Показать ещё' })).toHaveCount(
+      0,
+    );
+  }
   await expectNoHorizontalOverflow(page);
   const hrefs = await workLinks.evaluateAll((links) =>
     links.map((link) => link.getAttribute('href')),
+  );
+  expect(hrefs.every((href) => typeof href === 'string' && href.length > 0)).toBe(
+    true,
   );
   expect(new Set(hrefs).size).toBe(hrefs.length);
   await page.screenshot({

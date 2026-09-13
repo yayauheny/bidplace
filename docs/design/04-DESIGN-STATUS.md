@@ -2,6 +2,9 @@
 
 ## 2026-09-13 — Figma stabilization statuses
 
+- Stabilization Playwright matrix: **38/38** Chromium + WebKit in one clean
+  run. Leftover 12→15, removed auth intro, and WebKit frost PNG equality
+  were stale or non-deterministic checks; product UI is unchanged.
 - A3 compact motion and A4 state matrix: **technical pass**, founder
   `Accepted` remains withdrawn (`artifacts/figma-qa/02-author/motion/`).
 - Home opening / selected / null / loading / empty / error: **Implemented**
@@ -9,6 +12,7 @@
   and WebKit in this integration.
 - Discovery REPORT and S1 REPORT were narrowed to files and specs that exist
   in this tree. Authors sort label is «По дате добавления».
+- Evidence: `artifacts/figma-qa/stabilization/REPORT.md`.
 
 ## 2026-09-13 — Home opening of the week and Figma composition
 

@@ -22,14 +22,13 @@ Re-checked on `fix/figma-stabilization` against disposable `bidplace_e2e`
 
 | Spec | Covered | Not covered |
 |---|---|---|
-| `e2e/discovery-launch.spec.ts` | Works filters + URL + Back + Reset; Authors filters + name sort + URL; Search result / empty / mocked works 500 retry; always `reducedMotion: reduce`; Chromium and WebKit in this pass | Hardcoded 12→15 remainder; Authors pagination; Search “Показать ещё”; normal motion |
+| `e2e/discovery-launch.spec.ts` | Works filters + URL + Back + Reset; pagination from live `/api/works` metadata, list growth, no duplicate ids; Authors filters + name sort + URL; Search result / empty / mocked works 500 retry; always `reducedMotion: reduce`; Chromium and WebKit | Authors pagination; Search “Показать ещё”; normal motion |
 | `e2e/figma-stabilization.spec.ts` | Works newest/oldest + URL + Back + “Показать ещё” without assuming a remainder of 3; Authors «По дате добавления» visible, «По активности» absent, name sort + URL + Back; Search result / empty / partial works error; Chromium + WebKit, 390 | Authors “Показать ещё” (10 authors < page size); Search “Показать ещё” only clicked when the button exists |
 
-`discovery-launch` Works pagination asserted 12 then 15. On this database
-the first page is 12 and the next page is 17 or 19 remaining items, so that
-hardcoded remainder failed. Pagination itself is not a product regression:
-the stabilization spec saw extra unique `/product/` links after
-«Показать ещё».
+Works pagination now reads the first `/api/works` page the catalog itself
+requested. It asserts `works.length === min(limit, total)`, grows the list
+when `page * limit < total`, and rejects duplicate `/product/` hrefs. It
+does not hardcode 15 or any other remainder.
 
 ## Evidence
 
@@ -43,5 +42,6 @@ the stabilization spec saw extra unique `/product/` links after
 - `pnpm verify`: passed — typecheck 7/7, lint 2/2, API unit 282, contracts
   25, client 3, integration 78, build 7/7 (includes Expo export).
 - `pnpm --filter @bidplace/mobile test`: 248/248.
-- Playwright matrix: see `artifacts/figma-qa/stabilization/REPORT.md`.
+- Playwright matrix: 38/38 Chromium + WebKit in one clean run; see
+  `artifacts/figma-qa/stabilization/REPORT.md`.
 - `.pen` diff: empty.

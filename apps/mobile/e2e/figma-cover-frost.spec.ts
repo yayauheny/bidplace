@@ -1,6 +1,13 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const workImageId = '10000000-0000-4000-8000-000000000001';
+const artifactDir = resolve(
+  __dirname,
+  '../../../artifacts/figma-qa/stabilization',
+);
 
 test('cover frost keeps Figma regions and samples artwork once on web', async ({
   page,
@@ -96,6 +103,7 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
     });
   });
 
+  await mkdir(artifactDir, { recursive: true });
   await page.goto('/');
 
   const workFrost = page.locator('[data-placement="workBottom"]');
@@ -115,9 +123,12 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(workMetrics).toMatchObject({
     ariaHidden: 'true',
     blurLayers: 1,
+    gradientLayers: 1,
     imageCount: 0,
+    innerPlateCount: 0,
     pointerEvents: 'none',
     borderRadius: '0px',
+    position: 'absolute',
   });
   // Frost hugs the overlay text like the Figma auto-layout frames: one-line
   // title + chip = 12 + 22 + 8 + 24 + 12; author top = 20 + 24 + 12.
@@ -131,6 +142,13 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   expect(authorTopMetrics.outerBlurPx).toBeCloseTo(20, 1);
   expect(authorBottomMetrics.outerBlurPx).toBeCloseTo(30, 1);
   expect(workMetrics.maskImage).toContain('linear-gradient');
+  expect(authorTopMetrics.maskImage).toContain('linear-gradient');
+  expect(authorBottomMetrics.maskImage).toContain('linear-gradient');
+  expect(workMetrics.gradientImage).toContain('linear-gradient');
+  expect(authorTopMetrics.gradientImage).toContain('linear-gradient');
+  expect(authorBottomMetrics.gradientImage).toContain('linear-gradient');
+  expect(authorTopMetrics.innerPlateCount).toBe(0);
+  expect(authorBottomMetrics.innerPlateCount).toBe(0);
 
   const workCard = page.locator('a[href^="/product/"]').first();
   const authorCard = page.locator('a[href^="/seller/"]').first();
@@ -145,21 +163,29 @@ test('cover frost keeps Figma regions and samples artwork once on web', async ({
   await expect(workCard).toHaveCSS('border-radius', '24px');
   await expect(authorCard).toHaveCSS('border-radius', '28px');
 
-  const withBlur = await workFrost.screenshot();
-  await workFrost.evaluate((element) => {
-    for (const child of element.children) {
-      const layer = child as HTMLElement;
-      layer.style.backdropFilter = 'none';
-      (
-        layer.style as CSSStyleDeclaration & {
-          webkitBackdropFilter?: string;
-        }
-      ).webkitBackdropFilter = 'none';
-    }
+  const frostShot = await workFrost.screenshot();
+  await workCard.screenshot({
+    path: resolve(artifactDir, `${engine(page)}-cover-frost-390.png`),
   });
-  const withoutBlur = await workFrost.screenshot();
+  expectPngMatchesBox(frostShot, await workFrost.boundingBox(), await deviceScale(page));
 
-  expect(withBlur.equals(withoutBlur)).toBe(false);
+  // Chromium composites backdrop-filter into element screenshots. WebKit does
+  // not, so pixel inequality of blur-on vs blur-off is only deterministic there.
+  if (engine(page) === 'chromium') {
+    await workFrost.evaluate((element) => {
+      for (const child of element.children) {
+        const layer = child as HTMLElement;
+        layer.style.backdropFilter = 'none';
+        (
+          layer.style as CSSStyleDeclaration & {
+            webkitBackdropFilter?: string;
+          }
+        ).webkitBackdropFilter = 'none';
+      }
+    });
+    const withoutBlur = await workFrost.screenshot();
+    expect(frostShot.equals(withoutBlur)).toBe(false);
+  }
 });
 
 async function readFrost(locator: Locator) {
@@ -180,12 +206,29 @@ async function readFrost(locator: Locator) {
       return match ? Number(match[1]) : 0;
     };
 
+    const layers = [...element.children];
+    const gradientLayers = layers.filter((child) =>
+      getComputedStyle(child).backgroundImage.includes('linear-gradient'),
+    );
+    const innerPlates = layers.filter((child) => {
+      const layer = getComputedStyle(child);
+      const radius = Number.parseFloat(layer.borderRadius);
+      const fill = layer.backgroundColor;
+      const isTransparent = fill === 'rgba(0, 0, 0, 0)' || fill === 'transparent';
+      const isGradient = layer.backgroundImage.includes('linear-gradient');
+      const isBlur = layer.backdropFilter.startsWith('blur(');
+      return radius > 0 || (Boolean(fill) && !isTransparent && !isGradient && !isBlur);
+    });
+
     return {
       ariaHidden: element.getAttribute('aria-hidden'),
       blurLayers: blurLayers.length,
+      gradientLayers: gradientLayers.length,
       imageCount: element.querySelectorAll('img').length,
+      innerPlateCount: innerPlates.length,
       pointerEvents: style.pointerEvents,
       borderRadius: style.borderRadius,
+      position: style.position,
       fillsZone:
         Math.abs(frostBox.height - zoneBox.height) < 0.5 &&
         Math.abs(frostBox.width - zoneBox.width) < 0.5 &&
@@ -193,6 +236,34 @@ async function readFrost(locator: Locator) {
       zoneHeight: Math.round(zoneBox.height),
       outerBlurPx: blurPx(blurLayers.at(-1)!),
       maskImage: getComputedStyle(blurLayers[0]!).maskImage,
+      gradientImage: getComputedStyle(gradientLayers[0]!).backgroundImage,
     };
   });
+}
+
+function engine(page: Page) {
+  return page.context().browser()?.browserType().name() ?? 'browser';
+}
+
+async function deviceScale(page: Page) {
+  return page.evaluate(() => window.devicePixelRatio);
+}
+
+function expectPngMatchesBox(
+  png: Buffer,
+  box: { width: number; height: number } | null,
+  scale: number,
+) {
+  expect(box).not.toBeNull();
+  expect(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))).toBe(
+    true,
+  );
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  expect(width).toBeGreaterThan(0);
+  expect(height).toBeGreaterThan(0);
+  expect(Math.abs(width - Math.round(box!.width * scale))).toBeLessThanOrEqual(1);
+  expect(Math.abs(height - Math.round(box!.height * scale))).toBeLessThanOrEqual(
+    1,
+  );
 }
