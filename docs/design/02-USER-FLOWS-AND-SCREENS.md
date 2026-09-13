@@ -47,7 +47,7 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Экран | First MVP | Убирается/откладывается |
 |---|---|---|
 | Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Новые работы, авторы | Открытие недели, активные торги, цены, timers |
+| Home | Открытие недели (optional server selection), новые работы, авторы | Активные торги, цены, timers |
 | Works | Title, intro, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters, live search overlay |
 | Authors | Catalog of published authors | Rating, followers, sales and verified authenticity claims |
 | Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе` | Public `Архив`, cart, like, bell, private states |
@@ -60,8 +60,9 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 
 ## 4. Home
 
-`Открытие недели` не рендерится в этом cutover. Work cards показывают название и
-автора. `Новые работы` и переход к авторам — единственные секции.
+`Открытие недели` рендерится только из `home.curatorSelection` (`DEC-086`).
+Если selection `null` или недоступна, секция отсутствует. Work cards показывают
+название и автора. После работ — `Новые авторы` или короткий переход в `/authors`.
 
 ## 5. Works and Authors discovery
 

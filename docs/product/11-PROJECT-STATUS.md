@@ -1,5 +1,26 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-13 — Home opening of the week
+
+- `Implemented`: Home renders «Открытие недели» from
+  `portfolioHomeResponse.curatorSelection` only. The existing
+  `PortfolioService.home()` contract is unchanged. Null / unavailable
+  selection omits the block; newest/random/hardcoded Work is not used
+  (`DEC-086`, RFC §5).
+- `Implemented`: portfolio opening composition and «Новые работы» from
+  existing `WorkCoverCard` masters; «Новые авторы» or a short `/authors`
+  CTA after works. No prices, timers, sale badges, auctions or cart.
+- Evidence: `apps/mobile/src/features/home/home-screen.tsx`,
+  `home-opening.tsx`, `home-sections.ts`, `home-sections.spec.ts`,
+  `apps/mobile/e2e/home-figma.spec.ts`, `artifacts/figma-qa/home/REPORT.md`.
+- Hidden/rejected/unavailable selections are omitted the same way as null;
+  the existing home contract never returns those Works as `curatorSelection`.
+- `Partial`: Figma fan/stack (`436:1320`) and commerce first-fold remain out.
+  Opening typography is the nearest existing tokens, not a new type role.
+  Native is not in this gate.
+- The earlier claim that Home «Открытие недели» still waits for a product
+  decision is obsolete: `DEC-086` already confirmed the section.
+
 ## 2026-09-13 — Mobile-web discovery launch gate
 
 - `Implemented` at 390: `/works` has URL-owned query/category/material,

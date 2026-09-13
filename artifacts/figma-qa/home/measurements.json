@@ -1,0 +1,50 @@
+{
+  "shell": {
+    "x": 0,
+    "y": 0,
+    "width": 390,
+    "height": 844
+  },
+  "dock": {
+    "x": 79,
+    "y": 768,
+    "width": 232,
+    "height": 64
+  },
+  "opening": {
+    "x": 12,
+    "y": 132,
+    "width": 366,
+    "height": 401
+  },
+  "openingHeading": {
+    "x": 12,
+    "y": 132,
+    "width": 366,
+    "height": 29
+  },
+  "openingAuthor": {
+    "x": 12,
+    "y": 181,
+    "width": 280,
+    "height": 134
+  },
+  "openingWork": {
+    "x": 304,
+    "y": 181,
+    "width": 264,
+    "height": 352
+  },
+  "newWorks": {
+    "x": 12,
+    "y": 573,
+    "width": 366,
+    "height": 601
+  },
+  "newWorksCard": {
+    "x": 12,
+    "y": 622,
+    "width": 366,
+    "height": 488
+  }
+}

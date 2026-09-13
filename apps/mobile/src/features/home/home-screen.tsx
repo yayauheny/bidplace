@@ -14,6 +14,8 @@ import {
 } from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
+import { HomeOpening } from './home-opening';
+import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen() {
   const api = useApiClient();
@@ -24,17 +26,17 @@ export function HomeScreen() {
   });
   const loading = home.isLoading;
   const failed = home.isError;
-  const workItems = home.data?.newWorks ?? [];
-  const sellerItems = (home.data?.newAuthors ?? []).map((author) => ({
+  const plan = homeSectionPlan(home.data);
+  const sellerItems = plan.authors.map((author) => ({
     sellerProfile: author,
   }));
 
   return (
     <AppShell>
       <ScrollView
+        testID="home-scroll"
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
-          // Figma `436:1137`: logo 42×32 at y 60, first heading at y 132.
           paddingTop: designTokens.space.logoTop,
           paddingBottom: designTokens.size.dockReserve,
         }}
@@ -58,12 +60,22 @@ export function HomeScreen() {
               }}
             />
           ) : null}
-          {!loading && !failed && workItems.length > 0 ? (
-            <View style={{ gap: designTokens.space.sectionGap }}>
-              <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
+          {!loading && !failed && plan.opening ? (
+            <HomeOpening selection={plan.opening} />
+          ) : null}
+          {!loading && !failed && plan.showWorks ? (
+            <View
+              nativeID="home-new-works"
+              style={{ gap: designTokens.space.sectionGap }}
+            >
+              <AppText
+                role="sectionTitle"
+                accessibilityRole="header"
+                style={{ textAlign: 'center' }}
+              >
                 Новые работы
               </AppText>
-              <WorkCoverCardGrid items={workItems} />
+              <WorkCoverCardGrid items={plan.works} />
               <PrimaryButton
                 label="Смотреть все"
                 width="full"
@@ -71,10 +83,17 @@ export function HomeScreen() {
               />
             </View>
           ) : null}
-          {!loading && !failed && sellerItems.length > 0 ? (
-            <View style={{ gap: designTokens.space.sectionGap }}>
-              <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
-                Авторы
+          {!loading && !failed && plan.showAuthors ? (
+            <View
+              nativeID="home-new-authors"
+              style={{ gap: designTokens.space.sectionGap }}
+            >
+              <AppText
+                role="sectionTitle"
+                accessibilityRole="header"
+                style={{ textAlign: 'center' }}
+              >
+                Новые авторы
               </AppText>
               <CreatorCardGrid items={sellerItems} />
               <PrimaryButton
@@ -84,10 +103,14 @@ export function HomeScreen() {
               />
             </View>
           ) : null}
-          {!loading &&
-          !failed &&
-          workItems.length === 0 &&
-          sellerItems.length === 0 ? (
+          {!loading && !failed && plan.showAuthorsLink ? (
+            <PrimaryButton
+              label="Все авторы"
+              width="full"
+              onPress={() => router.push('/authors')}
+            />
+          ) : null}
+          {!loading && !failed && plan.showEmpty ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
               <PageState
                 title="Пока здесь тихо"

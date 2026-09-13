@@ -1,5 +1,31 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-13 — Home opening of the week and Figma composition
+
+- `Implemented` at 390: Home reads `GET /api/portfolio/home` `curatorSelection`
+  and renders «Открытие недели» only for that server-owned Work. Null, hidden,
+  rejected or unavailable pointers stay omitted; newest/random/hardcoded picks
+  are not used (`DEC-086`, RFC §5).
+- `Implemented`: portfolio opening composition — heading, author identity,
+  264×352 `WorkCoverCard`, muted profile CTA and peeking horizontal rhythm from
+  `439:4404` / `436:1137`. Editorial Figma copy («Выбор куратора», curator
+  blurb), prices, timers, sale badges, auctions and cart are not rendered.
+- `Implemented`: «Новые работы» keeps the existing Work cover master at
+  366×488 / 20 px gap. «Новые авторы» or a short `/authors` CTA follows RFC §5
+  and is not claimed as Figma parity.
+- `Verified` on mobile web: selected/null, loading, error+retry, works-empty,
+  authors-empty, broken selected media, long title/slug, dock reserve,
+  keyboard, 200% zoom, reduced motion, 390×860, 390×844, 1024 and 1440
+  centered column. Hidden/rejected/unavailable share the null UI because
+  `GET /api/portfolio/home` already returns `curatorSelection: null`.
+  First-fold `home-selected-390-first-fold.png` (390×844) and full-page
+  `home-selected-390-full.png` (390×1911) use the same selected payload.
+  Evidence: `artifacts/figma-qa/home/REPORT.md`.
+- `Partial`: Figma fan/stack of «Новые работы» (`436:1320`) and first-fold
+  commerce rail are not implemented. Opening handle uses `authorName` 22/24
+  semibold vs Figma 22/25 medium; bio uses `textMuted` `#8A8A8A` vs Figma
+  `#6F6F6F`. Native remains outside the current acceptance gate.
+
 ## 2026-09-13 — Discovery catalogs and Search at 390
 
 - `Implemented`: accepted S7 filter/sort masters are wired into Works and
@@ -132,9 +158,10 @@
   heading→cards→button rhythm, 40px between sections, `dockReserve` bottom
   padding. Evidence: `artifacts/figma-qa/07-home/`.
 - Open: the Figma home has no vertical section→section value (67 between the
-  excluded rails); 40 is the work-page block gap. «Открытие недели» and
-  «Активные торги» stay out without a product decision. 1024/1440 not
-  re-captured in this pass.
+  excluded rails); 40 is the work-page block gap. «Активные торги» stay out
+  (`DEC-087`). «Открытие недели» is no longer waiting for a product decision
+  (`DEC-086`); see the 2026-09-13 Home opening entry above. 1024/1440 were
+  re-captured in that later pass.
 
 ## 2026-09-13 — Cover cards: text-hugging frost, 24px chips, tracking
 
@@ -568,8 +595,9 @@
   blur is disabled.
 - Local Expo must rebuild `@bidplace/design-tokens` `dist/` and start Metro with
   `--clear`. `pnpm --filter @bidplace/mobile exec expo start` skips that build.
-- `Not implemented`: login as a sheet over the current page; Home opening-of-week
-  / auctions (product skip list).
+- `Not implemented` as of this date: login as a sheet over the current page;
+  Home auctions. Opening-of-week was later confirmed by `DEC-086` and is
+  implemented in the 2026-09-13 Home opening entry.
 - Figma and `.pen` were not edited.
 
 ## 2026-09-09 — Figma phone cutover (`DEC-085`)
@@ -578,7 +606,8 @@
   single Figma layer in `packages/design-tokens`. Public Home / Works / Authors /
   Author / Work, auth chrome, author application (4 screens) and create-work
   (4 screens) use Figma primitives. Search is a stub. Work shows
-  `PAYMENT_DELIVERY_STUB`. Home does not render «Открытие недели».
+  `PAYMENT_DELIVERY_STUB`. Home opening-of-week was still absent on this date;
+  it is implemented later under `DEC-086`.
 - Evidence: `apps/mobile/src/components/layout/AppShell.tsx`,
   `apps/mobile/src/components/figma/`,
   `apps/mobile/src/features/home/home-screen.tsx`,
@@ -587,8 +616,8 @@
   `docs/design/09-FIGMA-CUTOVER-GAPS.md`.
 - Checks: `pnpm verify` 2026-09-09; browser Home → Works → Work → Author →
   login at ~390. No `.pen` in the diff.
-- `Not implemented`: Figma search overlay, 1024/1440, Geist files, opening-of-week,
-  commerce chrome.
+- `Not implemented` as of this date: Figma search overlay, 1024/1440, Geist
+  files, commerce chrome. Opening-of-week was later confirmed by `DEC-086`.
 - Figma and `.pen` were not edited.
 
 ## 2026-09-09 — Figma component library (hidden commerce slots)
