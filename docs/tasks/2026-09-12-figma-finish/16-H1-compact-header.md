@@ -94,9 +94,15 @@ tabs.getBoundingClientRect().top; // expect 186 at progress 1
 header.style.getPropertyValue('--creator-progress');
 ```
 
-## Статус (2026-09-13)
+## Статус (2026-09-13, обновлено)
 
-Реализовано по варианту A на mobile web. Замеры 390×860, offset 264:
+Прежний founder `Accepted` снят и не возвращён. Technical pass после
+перепривязки: capture-phase scroll на `creator-scroll`, compact handle =
+`profileHandleCompact` 16/500 без `transform:scale`, compact показывает
+максимум 2 public socials + Share. Канон прогона:
+`artifacts/figma-qa/02-author/motion/REPORT.md` (390×860, offset 274).
+
+Исторические замеры 390×860, offset 264 (не канон текущего прогона):
 
 | % | scrollTop | avatar (x,y,w,h) | handle | actions | tabs top | fade opacity |
 |---|---|---|---|---|---|---|
@@ -114,6 +120,6 @@ Hero height 450 на всех кадрах, один share-button, фокус н
 Fade-группы помечены `testID="creator-fade-logo|meta|tags"` (RN Web не
 пробрасывает произвольные `data-*`, `testID` → `data-testid`).
 
-Остаток: при 3 соцсетях compact-ник получает ~54 px текста («@an…»), в Figma
-`526:14482` две соцсети и 122 px — определяется данными, не layout. 1024/1440 и
-native не проверялись: по решению основателя скоуп — только mobile web.
+Compact-ник больше не сжимается третьей соцсетью: слот стабилен (~102 px для
+`@motion-three`; Figma `@vex` = 122 px — другой slug). 1024/1440 и native не
+проверялись: по решению основателя скоуп — только mobile web.

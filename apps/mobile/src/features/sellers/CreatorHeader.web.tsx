@@ -5,13 +5,21 @@ import { useReducedMotion } from '../../lib/reduced-motion';
 import { CreatorHero } from './CreatorHero';
 import { AuthorShare } from './AuthorShare';
 import type { CreatorHeaderProps } from './creator-header';
+import {
+  findScrollBoundary,
+  measureCompactActionsWidth,
+  progressBucket,
+  progressFromScroll,
+  readCurrentScrollTop,
+  scrollTopFromEvent,
+} from './creator-header-motion';
 
 const motionCss = `
 .creator-header {
   --creator-progress: 0;
 }
 .creator-header [data-testid="creator-avatar"],
-.creator-header [data-testid="creator-handle"],
+.creator-header [data-testid="creator-handle-compact"],
 .creator-header [data-testid="creator-actions"],
 .creator-header [data-testid="author-atmosphere"] {
   transform-origin: top left;
@@ -24,12 +32,22 @@ const motionCss = `
     )
     scale(calc(1 + (var(--avatar-scale, 1) - 1) * var(--creator-progress)));
 }
-.creator-header [data-testid="creator-handle"] {
+.creator-header [data-testid="creator-handle-compact"] {
   transform: translate(
-      calc(var(--handle-tx, 0px) * var(--creator-progress)),
-      calc(var(--handle-ty, 0px) * var(--creator-progress))
-    )
-    scale(calc(1 + (var(--handle-scale, 1) - 1) * var(--creator-progress)));
+    calc(var(--handle-tx, 0px) * var(--creator-progress)),
+    calc(var(--handle-ty, 0px) * var(--creator-progress))
+  );
+  max-width: var(--handle-limit);
+  opacity: var(--creator-progress);
+}
+.creator-header [data-testid="creator-handle-compact"] > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.creator-header [data-testid="creator-handle-expanded"] {
+  opacity: calc(1 - var(--creator-progress));
 }
 .creator-header [data-testid="creator-actions"] {
   transform: translate(
@@ -40,23 +58,30 @@ const motionCss = `
 .creator-header [data-testid="author-atmosphere"] {
   transform: translateY(calc(var(--atmosphere-ty, 0px) * var(--creator-progress)));
 }
-.creator-header [data-testid^="creator-fade-"] {
+.creator-header [data-testid^="creator-fade-"],
+.creator-header [data-testid="creator-social-overflow"] {
   opacity: clamp(0, 1 - var(--creator-progress) * 2, 1);
 }
-.creator-header[data-progress="1"] [data-testid="creator-handle"] {
-  width: var(--handle-width);
-}
-.creator-header[data-progress="1"] [data-testid="creator-handle"] > * {
-  max-width: var(--handle-limit);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.creator-header:not([data-progress="0"]) [data-testid^="creator-fade-"] {
+.creator-header:not([data-progress="0"]) [data-testid^="creator-fade-"],
+.creator-header:not([data-progress="0"]) [data-testid="creator-social-overflow"] {
   pointer-events: none;
 }
+.creator-header[data-progress="0"] [data-testid="creator-handle-compact"] {
+  visibility: hidden;
+}
+.creator-header[data-progress="1"] [data-testid="creator-handle-expanded"],
 .creator-header[data-progress="1"] [data-testid^="creator-fade-"] {
   visibility: hidden;
+}
+.creator-header[data-progress="1"] [data-testid="creator-social-overflow"] {
+  visibility: hidden;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  pointer-events: none;
 }
 `;
 
@@ -72,44 +97,22 @@ function box(element: HTMLElement, root: HTMLElement) {
   return { x, y, width: element.offsetWidth, height: element.offsetHeight };
 }
 
-function isScrollable(element: HTMLElement) {
-  const overflowY = getComputedStyle(element).overflowY;
-  return (
-    (overflowY === 'auto' || overflowY === 'scroll') &&
-    element.scrollHeight > element.clientHeight + 1
+function restoreOverflowFocus(root: HTMLElement) {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement)) {
+    return;
+  }
+  const overflow = root.querySelectorAll(
+    '[data-testid="creator-social-overflow"]',
   );
-}
-
-function findScrollPort(): HTMLElement | null {
-  const labeled = document.querySelector('[data-testid="creator-scroll"]');
-  if (!(labeled instanceof HTMLElement)) {
-    return null;
-  }
-  if (isScrollable(labeled)) {
-    return labeled;
-  }
-  const nodes = labeled.querySelectorAll<HTMLElement>('*');
-  for (const node of nodes) {
-    if (isScrollable(node)) {
-      return node;
+  for (const node of overflow) {
+    if (node.contains(active)) {
+      root
+        .querySelector<HTMLElement>('[aria-label="Поделиться профилем"]')
+        ?.focus();
+      return;
     }
   }
-  return labeled;
-}
-
-function progressBucket(progress: number) {
-  if (progress <= 0) {
-    return '0';
-  }
-  if (progress >= 1) {
-    return '1';
-  }
-  return 'mid';
-}
-
-function resolvedProgress(raw: number, reduced: boolean) {
-  const clamped = Math.min(1, Math.max(0, raw));
-  return reduced ? (clamped >= 1 ? 1 : 0) : clamped;
 }
 
 export function CreatorHeader({
@@ -144,7 +147,7 @@ export function CreatorHeader({
         '[data-testid="creator-avatar"]',
       );
       const handle = root.querySelector<HTMLElement>(
-        '[data-testid="creator-handle"]',
+        '[data-testid="creator-handle-compact"]',
       );
       const actions = root.querySelector<HTMLElement>(
         '[data-testid="creator-actions"]',
@@ -154,70 +157,78 @@ export function CreatorHeader({
       }
       const a = box(avatar, root);
       const h = box(handle, root);
-      const c = box(actions, root);
+      const compactActionsWidth = measureCompactActionsWidth(actions);
       const x = designTokens.space.x5;
       const top = shift + designTokens.space.creatorCompactTop;
       const avatarSize = designTokens.size.creatorCompactAvatar;
-      const handleScale =
-        designTokens.typography.profileTab.fontSize /
-        designTokens.typography.profileHandle.fontSize;
       const handleX = x + avatarSize + designTokens.space.x2;
-      const actionsX = root.offsetWidth - x - c.width;
+      const actionsX = root.offsetWidth - x - compactActionsWidth;
       shell.style.setProperty('--avatar-tx', `${x - a.x}px`);
       shell.style.setProperty('--avatar-ty', `${top - a.y}px`);
       shell.style.setProperty('--avatar-scale', String(avatarSize / a.width));
       shell.style.setProperty('--handle-tx', `${handleX - h.x}px`);
       shell.style.setProperty(
         '--handle-ty',
-        `${top + (avatarSize - h.height * handleScale) / 2 - h.y}px`,
+        `${top + (avatarSize - h.height) / 2 - h.y}px`,
       );
-      shell.style.setProperty('--handle-scale', String(handleScale));
-      shell.style.setProperty('--handle-width', `${h.width}px`);
       shell.style.setProperty(
         '--handle-limit',
-        `${Math.max(0, actionsX - designTokens.space.x3 - handleX) / handleScale}px`,
+        `${Math.max(0, actionsX - designTokens.space.x3 - handleX)}px`,
       );
-      shell.style.setProperty('--actions-tx', `${actionsX - c.x}px`);
-      shell.style.setProperty('--actions-ty', `${top - c.y}px`);
+      shell.style.setProperty('--actions-tx', `${actionsX - box(actions, root).x}px`);
+      shell.style.setProperty('--actions-ty', `${top - box(actions, root).y}px`);
       shell.style.setProperty(
         '--atmosphere-ty',
         `${shift + designTokens.space.creatorCompactAtmosphereTop + designTokens.space.atmosphereOffset}px`,
       );
     };
 
-    const applyScroll = (port: HTMLElement) => {
-      const raw =
-        offsetRef.current > 0 ? port.scrollTop / offsetRef.current : 0;
-      const progress = resolvedProgress(raw, reduced);
+    const applyScroll = (scrollTop: number) => {
+      const progress = progressFromScroll(
+        scrollTop,
+        offsetRef.current,
+        reduced,
+      );
       shell.style.setProperty('--creator-progress', String(progress));
       const next = progressBucket(progress);
+      if (next === '1') {
+        restoreOverflowFocus(root);
+      }
       setBucket((current) => (current === next ? current : next));
     };
 
     writeTransforms();
-    const port = findScrollPort();
-    if (port) {
-      applyScroll(port);
+    const boundary = findScrollBoundary(shell);
+    if (boundary) {
+      applyScroll(readCurrentScrollTop(boundary));
     }
 
     const resize = new ResizeObserver(() => {
       writeTransforms();
-      const current = findScrollPort();
+      const current = findScrollBoundary(shell);
       if (current) {
-        applyScroll(current);
+        applyScroll(readCurrentScrollTop(current));
       }
     });
     resize.observe(root);
+    if (boundary) {
+      resize.observe(boundary);
+    }
 
-    if (!port) {
+    if (!boundary) {
       return () => resize.disconnect();
     }
 
-    const onScroll = () => applyScroll(port);
-    port.addEventListener('scroll', onScroll, { passive: true });
+    const onScroll = (event: Event) => {
+      applyScroll(scrollTopFromEvent(event, boundary));
+    };
+    boundary.addEventListener('scroll', onScroll, {
+      capture: true,
+      passive: true,
+    });
     return () => {
       resize.disconnect();
-      port.removeEventListener('scroll', onScroll);
+      boundary.removeEventListener('scroll', onScroll, { capture: true });
     };
   }, [compactHeight, profile.slug, reduced]);
 
@@ -228,6 +239,7 @@ export function CreatorHeader({
         ref={header}
         className="creator-header"
         data-testid="creator-sticky-header"
+        data-scroll-binding="capture-boundary"
         data-compact={bucket === '1'}
         data-progress={bucket}
         style={

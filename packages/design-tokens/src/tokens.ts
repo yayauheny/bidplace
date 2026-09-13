@@ -363,6 +363,13 @@ export const designTokens = {
       letterSpacing: -0.72,
       fontWeight: '600' as const,
     },
+    profileHandleCompact: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 16,
+      lineHeight: 19,
+      letterSpacing: -0.32,
+      fontWeight: '500' as const,
+    },
     profileMetadata: {
       fontFamily: 'Inter_500Medium',
       fontSize: 18,

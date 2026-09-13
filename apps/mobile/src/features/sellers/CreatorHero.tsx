@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
@@ -92,14 +92,34 @@ export function CreatorHero({
               gap: designTokens.space.x1,
             }}
           >
-            <View testID="creator-handle" style={{ alignSelf: 'stretch' }}>
-              <AppText
-                role="profileHandle"
-                numberOfLines={1}
-                style={{ textAlign: 'center', flexShrink: 1 }}
+            <View
+              testID="creator-handle"
+              style={{ alignSelf: 'stretch', position: 'relative' }}
+            >
+              <View
+                testID="creator-handle-expanded"
+                aria-hidden={compact}
+                style={{ alignSelf: 'stretch' }}
               >
-                @{profile.slug}
-              </AppText>
+                <AppText
+                  role="profileHandle"
+                  numberOfLines={1}
+                  style={{ textAlign: 'center', flexShrink: 1 }}
+                >
+                  @{profile.slug}
+                </AppText>
+              </View>
+              {Platform.OS === 'web' ? (
+                <View
+                  testID="creator-handle-compact"
+                  aria-hidden={!compact}
+                  style={{ position: 'absolute', left: 0, top: 0 }}
+                >
+                  <AppText role="profileHandleCompact" numberOfLines={1}>
+                    @{profile.slug}
+                  </AppText>
+                </View>
+              ) : null}
             </View>
             <View
               aria-hidden={compact}
@@ -151,7 +171,11 @@ export function CreatorHero({
           </View>
         ) : null}
         <View testID="creator-actions">
-          <CreatorSocialActions profile={profile} actions={actions} />
+          <CreatorSocialActions
+            profile={profile}
+            actions={actions}
+            compact={compact}
+          />
         </View>
       </View>
     </View>

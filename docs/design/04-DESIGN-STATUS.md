@@ -54,8 +54,10 @@
 - `Implemented` / visually accepted at 390 for Work, Author, Home and web cover
   cards after an independent pass: no horizontal overflow, error + retry
   states, broken gallery media, zoom 200 % with reduced motion, content ending
-  above the dock, tab URL state (Work), compact header (Author). Report and
-  screenshots: `artifacts/figma-qa/13-acceptance/REPORT.md`.
+  above the dock, tab URL state (Work). Author compact header (A3/A4)
+  founder Accepted remains withdrawn after the new technical matrix
+  (`artifacts/figma-qa/02-author/motion/`).
+  Report and screenshots: `artifacts/figma-qa/13-acceptance/REPORT.md`.
 - `Needs verification`: native cover frost
   (`docs/tasks/2026-09-12-figma-finish/18-H3-native-frost.md`).
 - Open founder decisions: gallery arrows (W16); author About tab without URL
@@ -93,21 +95,18 @@
   focus trap, Escape and focus return pass. Evidence:
   `artifacts/figma-qa/S1/REPORT.md`.
 
-## 2026-09-13 — Author compact header follows scroll (H1)
+## 2026-09-13 — Author compact header motion reopened (A3/A4)
 
-- `Implemented` (mobile web): `CreatorHeader.web.tsx` replaces the
-  IntersectionObserver toggle + 240 ms transition with a scroll-linked
-  `--creator-progress` on the `creator-scroll` port. Measured at 390×860 with
-  offset 264: avatar 112@(139,132) → 96 → 80 → 64 → 48@(20,44) at 0/25/50/75/
-  100 %; tabs 450 → 186 and stay at 186 past 100 %; hero height constant 450;
-  one share button; focus on «Поделиться профилем» kept at compact. Logo,
-  name/city and chips fade to 0 by 50 % and hide at 100 %. Reduced motion:
-  progress is 0 until the threshold, then 1. Frames in
-  `artifacts/figma-qa/02-author/compact/390-*.png` and `390-reduced-*.png`.
-- `Partial`: with three social links the compact handle gets ~54 px of text
-  («@an…»); Figma `526:14482` shows two socials and 122 px. Data-driven, not
-  a layout defect. Native and ≥1024 are out of scope per founder (mobile web
-  only). Task file: `docs/tasks/2026-09-12-figma-finish/16-H1-compact-header.md`.
+- Previous H1 `Accepted` for A3 compact motion and A4 state matrix remains
+  withdrawn. Founder visual accept is not re-issued from this pass.
+- `Implemented` (mobile web, new matrix): capture-phase scroll on the labeled
+  `creator-scroll` boundary; compact handle uses `profileHandleCompact`
+  (Inter Medium 16/19, 500, −2%) without glyph scale; compact shows at most
+  two public socials plus one Share. Chromium and WebKit 390×860 / 390×844
+  frames 0/25/50/75/100 + reverse pass. Evidence:
+  `artifacts/figma-qa/02-author/motion/REPORT.md`,
+  `e2e/author-header-motion.spec.ts`.
+- Native header remains out of the current mobile-web scope.
 
 ## 2026-09-13 — Author achievements
 

@@ -4,13 +4,22 @@ import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { CreatorSocialLink } from './CreatorSocialLink';
+import {
+  CREATOR_COMPACT_SOCIAL_LIMIT,
+  CREATOR_SOCIAL_OVERFLOW_TEST_ID,
+  listPublicSocialLinks,
+} from './creator-header-motion';
+
 export function CreatorSocialActions({
   profile,
   actions,
+  compact = false,
 }: {
   profile: PortfolioWorkDetailResponse['author'];
   actions: ReactNode;
+  compact?: boolean;
 }) {
+  const links = listPublicSocialLinks(profile);
   return (
     <View
       style={{
@@ -18,7 +27,7 @@ export function CreatorSocialActions({
         gap: designTokens.space.socialGroupGap,
       }}
     >
-      {profile.telegramUrl || profile.instagramUrl || profile.websiteUrl ? (
+      {links.length > 0 ? (
         <FigmaGlassSurface
           preset="controlGroup"
           testID="author-social-group"
@@ -32,30 +41,31 @@ export function CreatorSocialActions({
             paddingBottom: designTokens.space.socialGroupY,
           }}
         >
-          {profile.telegramUrl ? (
-            <CreatorSocialLink
-              grouped
-              href={profile.telegramUrl}
-              icon="send"
-              label="Telegram автора"
-            />
-          ) : null}
-          {profile.instagramUrl ? (
-            <CreatorSocialLink
-              grouped
-              href={profile.instagramUrl}
-              icon="instagram"
-              label="Instagram автора"
-            />
-          ) : null}
-          {profile.websiteUrl ? (
-            <CreatorSocialLink
-              grouped
-              href={profile.websiteUrl}
-              icon="globe"
-              label="Сайт автора"
-            />
-          ) : null}
+          {links.map((link, index) => {
+            const overflow = index >= CREATOR_COMPACT_SOCIAL_LIMIT;
+            return (
+              <View
+                key={link.key}
+                testID={
+                  overflow
+                    ? CREATOR_SOCIAL_OVERFLOW_TEST_ID
+                    : `creator-social-${link.key}`
+                }
+                aria-hidden={compact && overflow}
+                style={{
+                  width: designTokens.size.control,
+                  height: designTokens.size.control,
+                }}
+              >
+                <CreatorSocialLink
+                  grouped
+                  href={link.href}
+                  icon={link.icon}
+                  label={link.label}
+                />
+              </View>
+            );
+          })}
         </FigmaGlassSurface>
       ) : null}
       {actions}

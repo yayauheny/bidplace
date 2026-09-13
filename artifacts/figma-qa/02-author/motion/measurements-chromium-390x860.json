@@ -1,0 +1,413 @@
+{
+  "offset": 274,
+  "measurements": {
+    "0": {
+      "progress": 0,
+      "binding": "capture-boundary",
+      "bucket": "0",
+      "scrollTop": 0,
+      "avatar": {
+        "x": 139,
+        "y": 132,
+        "width": 112,
+        "height": 112,
+        "top": 132,
+        "right": 251,
+        "bottom": 244,
+        "left": 139
+      },
+      "handle": {
+        "x": 12,
+        "y": 250,
+        "width": 102,
+        "height": 19,
+        "top": 250,
+        "right": 114,
+        "bottom": 269,
+        "left": 12
+      },
+      "expanded": {
+        "x": 12,
+        "y": 250,
+        "width": 366,
+        "height": 29,
+        "top": 250,
+        "right": 378,
+        "bottom": 279,
+        "left": 12
+      },
+      "actions": {
+        "x": 81,
+        "y": 372,
+        "width": 228,
+        "height": 48,
+        "top": 372,
+        "right": 309,
+        "bottom": 420,
+        "left": 81
+      },
+      "tabs": {
+        "x": 0,
+        "y": 460,
+        "width": 390,
+        "height": 26,
+        "top": 460,
+        "right": 390,
+        "bottom": 486,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 0,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": false
+    },
+    "25": {
+      "progress": 0.2518248175182482,
+      "binding": "capture-boundary",
+      "bucket": "mid",
+      "scrollTop": 69,
+      "avatar": {
+        "x": 109.03284454345703,
+        "y": 109.83941650390625,
+        "width": 95.8832015991211,
+        "height": 95.88320922851562,
+        "top": 109.83941650390625,
+        "right": 204.91604614257812,
+        "bottom": 205.72262573242188,
+        "left": 109.03284454345703
+      },
+      "handle": {
+        "x": 28.116788864135742,
+        "y": 201.77554321289062,
+        "width": 102,
+        "height": 19,
+        "top": 201.77554321289062,
+        "right": 130.11678886413574,
+        "bottom": 220.77554321289062,
+        "left": 28.116788864135742
+      },
+      "expanded": {
+        "x": 12,
+        "y": 181,
+        "width": 366,
+        "height": 29,
+        "top": 181,
+        "right": 378,
+        "bottom": 210,
+        "left": 12
+      },
+      "actions": {
+        "x": 108.44890594482422,
+        "y": 289.4014587402344,
+        "width": 228,
+        "height": 48,
+        "top": 289.4014587402344,
+        "right": 336.4489059448242,
+        "bottom": 337.4014587402344,
+        "left": 108.44890594482422
+      },
+      "tabs": {
+        "x": 0,
+        "y": 391,
+        "width": 390,
+        "height": 26,
+        "top": 391,
+        "right": 390,
+        "bottom": 417,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 0,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": true
+    },
+    "50": {
+      "progress": 0.5,
+      "binding": "capture-boundary",
+      "bucket": "mid",
+      "scrollTop": 137,
+      "avatar": {
+        "x": 79.5,
+        "y": 88,
+        "width": 80,
+        "height": 80,
+        "top": 88,
+        "right": 159.5,
+        "bottom": 168,
+        "left": 79.5
+      },
+      "handle": {
+        "x": 44,
+        "y": 154.25,
+        "width": 102,
+        "height": 19,
+        "top": 154.25,
+        "right": 146,
+        "bottom": 173.25,
+        "left": 44
+      },
+      "expanded": {
+        "x": 12,
+        "y": 113,
+        "width": 366,
+        "height": 29,
+        "top": 113,
+        "right": 378,
+        "bottom": 142,
+        "left": 12
+      },
+      "actions": {
+        "x": 135.5,
+        "y": 208,
+        "width": 228,
+        "height": 48,
+        "top": 208,
+        "right": 363.5,
+        "bottom": 256,
+        "left": 135.5
+      },
+      "tabs": {
+        "x": 0,
+        "y": 323,
+        "width": 390,
+        "height": 26,
+        "top": 323,
+        "right": 390,
+        "bottom": 349,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 0,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": true
+    },
+    "75": {
+      "progress": 0.7518248175182481,
+      "binding": "capture-boundary",
+      "bucket": "mid",
+      "scrollTop": 206,
+      "avatar": {
+        "x": 49.53284454345703,
+        "y": 65.83941650390625,
+        "width": 63.883209228515625,
+        "height": 63.883209228515625,
+        "top": 65.83941650390625,
+        "right": 113.41605377197266,
+        "bottom": 129.72262573242188,
+        "left": 49.53284454345703
+      },
+      "handle": {
+        "x": 60.11678695678711,
+        "y": 106.02554321289062,
+        "width": 102,
+        "height": 19,
+        "top": 106.02554321289062,
+        "right": 162.1167869567871,
+        "bottom": 125.02554321289062,
+        "left": 60.11678695678711
+      },
+      "expanded": {
+        "x": 12,
+        "y": 44,
+        "width": 366,
+        "height": 29,
+        "top": 44,
+        "right": 378,
+        "bottom": 73,
+        "left": 12
+      },
+      "actions": {
+        "x": 162.94891357421875,
+        "y": 125.40145874023438,
+        "width": 228,
+        "height": 48,
+        "top": 125.40145874023438,
+        "right": 390.94891357421875,
+        "bottom": 173.40145874023438,
+        "left": 162.94891357421875
+      },
+      "tabs": {
+        "x": 0,
+        "y": 254,
+        "width": 390,
+        "height": 26,
+        "top": 254,
+        "right": 390,
+        "bottom": 280,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 0,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": true
+    },
+    "100": {
+      "progress": 1,
+      "binding": "capture-boundary",
+      "bucket": "1",
+      "scrollTop": 274,
+      "avatar": {
+        "x": 20,
+        "y": 44,
+        "width": 48,
+        "height": 48,
+        "top": 44,
+        "right": 68,
+        "bottom": 92,
+        "left": 20
+      },
+      "handle": {
+        "x": 76,
+        "y": 58.5,
+        "width": 102,
+        "height": 19,
+        "top": 58.5,
+        "right": 178,
+        "bottom": 77.5,
+        "left": 76
+      },
+      "expanded": {
+        "x": 12,
+        "y": -24,
+        "width": 366,
+        "height": 29,
+        "top": -24,
+        "right": 378,
+        "bottom": 5,
+        "left": 12
+      },
+      "actions": {
+        "x": 208,
+        "y": 44,
+        "width": 192,
+        "height": 48,
+        "top": 44,
+        "right": 400,
+        "bottom": 92,
+        "left": 208
+      },
+      "tabs": {
+        "x": 0,
+        "y": 186,
+        "width": 390,
+        "height": 26,
+        "top": 186,
+        "right": 390,
+        "bottom": 212,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 1,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": false
+    },
+    "reverse": {
+      "progress": 0,
+      "binding": "capture-boundary",
+      "bucket": "0",
+      "scrollTop": 0,
+      "avatar": {
+        "x": 139,
+        "y": 132,
+        "width": 112,
+        "height": 112,
+        "top": 132,
+        "right": 251,
+        "bottom": 244,
+        "left": 139
+      },
+      "handle": {
+        "x": 12,
+        "y": 250,
+        "width": 102,
+        "height": 19,
+        "top": 250,
+        "right": 114,
+        "bottom": 269,
+        "left": 12
+      },
+      "expanded": {
+        "x": 12,
+        "y": 250,
+        "width": 366,
+        "height": 29,
+        "top": 250,
+        "right": 378,
+        "bottom": 279,
+        "left": 12
+      },
+      "actions": {
+        "x": 81,
+        "y": 372,
+        "width": 228,
+        "height": 48,
+        "top": 372,
+        "right": 309,
+        "bottom": 420,
+        "left": 81
+      },
+      "tabs": {
+        "x": 0,
+        "y": 460,
+        "width": 390,
+        "height": 26,
+        "top": 460,
+        "right": 390,
+        "bottom": 486,
+        "left": 0
+      },
+      "handleFont": {
+        "fontFamily": "Inter_500Medium",
+        "fontSize": "16px",
+        "fontWeight": "500",
+        "letterSpacing": "-0.32px"
+      },
+      "overflowCount": 1,
+      "overflowHidden": 0,
+      "shareCount": 1,
+      "compactSocialCount": 2,
+      "overflow": false,
+      "overlap": false
+    }
+  }
+}

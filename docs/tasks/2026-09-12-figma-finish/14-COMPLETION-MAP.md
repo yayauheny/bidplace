@@ -22,7 +22,7 @@
 
 | Область | Task | Technical pass | Visual accepted | Что осталось |
 |---|---|---|---|---|
-| Страница автора: полная шапка, атмосфера, чипы, соцсети, tabs, категории, About, достижения | 02 | Да (`bf0eb81`, `3b3ccae`, `f2d05c8`) | Accepted 390 mobile web (`artifacts/figma-qa/13-acceptance/REPORT.md`) | Compact-ник при 3 соцсетях ограничен данными; About не deep-linkable (граница) |
+| Страница автора: полная шапка, атмосфера, чипы, соцсети, tabs, категории, About, достижения | 02 | Да (`bf0eb81`, `3b3ccae`, `f2d05c8` + motion recapture) | Technical pass A3/A4; founder Accepted не возвращён (`artifacts/figma-qa/02-author/motion/`) | About не deep-linkable (граница) |
 | Страница работы: галерея, share, tabs, facts, related, 404 | 03 | Да (`c0b2a46`, `917b704`, `c490bd2`) | Accepted 390 mobile web (`13-acceptance/REPORT.md`: error, broken media, zoom 200 %, reduced motion, dock) | W16 стрелки галереи — решение основателя |
 | Cover cards 264×352 / 366×488 (work, author), AuthorIdentity | 04 | Да (`d97446a`, S8 в `72429bd`) | Accepted web; native `Needs verification` | Native frost — `18-H3-native-frost.md` (отложено, скоуп mobile web) |
 | ShareSheet | 05 | Да (`48c38b7`) | Partial | Реальное сохранение PNG в обычном браузере, security review |
@@ -71,8 +71,8 @@
 |---|---|---|---|
 | A1 | Кадрирование аватара сверху | `621:19825` | ✓ Закрыто: `contentPosition="top"` в `CreatorHero`; DOM `object-position: 50% 0` |
 | A2 | Категории → карточки | `621:19943`→`621:19880` | ✓ Закрыто: карточки на y 562, gap `authorSectionGap` 18 |
-| A3 | Compact header | `526:14482` | ✓ Scroll-linked `--creator-progress` (H1, `16-H1-compact-header.md`): аватар/ник/actions/атмосфера следуют за скроллом, fade логотипа/имени/чипов к 50 %, reduced-motion = 0/1. Кадры `artifacts/figma-qa/02-author/compact/`. Остаток: при 3 соцсетях compact-ник ≈54 px (данные, не layout) |
-| A4 | Матрица состояний | — | ✓ Снято через page.route (`artifacts/figma-qa/02-author/matrix/`): длинный ник — одна строка 24/29 с многоточием в полной шапке (исправлено, было 2 строки) и в compact; 0 соцсетей — одна share-капсула по центру; 2 соцсети; без достижений; 1024/1440 — колонка 390, без overflow. Compact-геометрия совпадает с `526:14482` (ряд y 44, tabs y 186) |
+| A3 | Compact header | `526:14482` | Technical pass, visual Accepted не возвращён. Capture на `creator-scroll` + `profileHandleCompact` 16/500, максимум 2 socials в compact. Матрица: `artifacts/figma-qa/02-author/motion/` |
+| A4 | Матрица состояний | — | Technical pass, visual Accepted не возвращён. 0/2/3 socials, Works↔About, delayed scrollable content, normal/reduced motion, 390×860/844 Chromium/WebKit. |
 | A5 | Гипотеза утолщения текста | — | ✓ Доказана для WebKit/iOS Safari (H2, `17-H2-font-weight.md`): faux bold поверх `Inter_600SemiBold` (+18.6 % чернил), Chromium не затронут. Фикс `html { font-synthesis: none }` в `global.css`; после — ряд A = реальный SemiBold. Снимки `artifacts/figma-qa/typography/` |
 | A6 | Карточки работ 366×488 | `621:19881` | закрываются в 04 (§3.3) |
 
