@@ -140,10 +140,10 @@ test('Authors filters and sort are server-backed and URL-owned', async ({
   await page.goto('/authors');
   await page.getByRole('button', { name: 'Фильтры' }).click();
   await page.getByRole('button', { name: /^Направление,/ }).click();
-  await page.getByRole('radio', { name: target.discipline }).click();
+  await page.getByRole('radio', { name: target.discipline, exact: true }).click();
   await page.getByRole('button', { name: 'Назад' }).click();
   await page.getByRole('button', { name: /^Город,/ }).click();
-  await page.getByRole('radio', { name: target.city }).click();
+  await page.getByRole('radio', { name: target.city, exact: true }).click();
   await page.getByRole('button', { name: 'Назад' }).click();
   await page.getByRole('button', { name: 'Применить' }).click();
   await expect(page).toHaveURL(/\/authors\?.*tag=.*city=/);
