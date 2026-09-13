@@ -21,3 +21,11 @@ The fourth public catalog image is a ceramic vase downloaded from Unsplash and c
 - `product-images/linocut-print.png` — https://images.unsplash.com/photo-1436918898788-ebce04d38e46
 
 The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged. The additional product images are reused across published demo works so every approved author has at least one work and the discovery grid is not limited to a single discipline.
+
+## Figma comparison fixture
+
+`figma-comparison/` is a separate local/test-only author (`vex`) copied from
+read-only handoff rasters. It is applied with
+`pnpm db:sync-figma-comparison` to a disposable preview/test database only.
+It does not replace Anna and is not a visual-parity claim. See
+`figma-comparison/README.md`.
