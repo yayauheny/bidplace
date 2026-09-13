@@ -13,9 +13,9 @@
   `/authors` aliases, S4 auth composition, S7 filter masters, URL-owned Works /
   Authors / Search with server facets and pagination, and web tab
   label/count typography.
-- `Verified` (this branch): mobile typecheck, lint and unit tests. Playwright
-  stabilization (Chromium + WebKit) and leftover e2e are the mobile-web gate;
-  they do not accept native or 1024/1440.
+- `Verified` (this branch): mobile typecheck, lint, unit `60` files / `235`
+  tests, Playwright stabilization Chromium+WebKit `38/38`, leftover Chromium
+  `test:e2e:all` `36/36`. This gate does not accept native or 1024/1440.
 - `Partial`: Figma registration-complete frame has no runtime state because
   login redirects immediately. Author About is not URL-owned. RFC §6 brief
   facts stay unresolved; cards remain title + `@author`.

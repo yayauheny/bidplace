@@ -8,10 +8,12 @@
   Dock is the `DEC-088` 232×64 four-item capsule. Auction/listing/order/activity
   screens and `socket.io-client` are removed from mobile runtime. Public cards
   stay title + `@author`. Home opening reads server `curatorSelection`.
-  Coverage: mobile unit (`vitest`) and the Playwright stabilization gate
-  (`figma-stabilization`, `home-figma`, `discovery-launch`,
-  `author-header-motion`, `product-layout`, `auth-layout`, `figma-cover-frost`).
-  Create-work and application specs stay pointed at the unchanged PR A wizards.
+  Coverage: mobile unit `60` files / `235` tests; Playwright stabilization
+  Chromium+WebKit `38/38` (`figma-stabilization`, `home-figma`,
+  `discovery-launch`, `author-header-motion`, `product-layout`, `auth-layout`,
+  `figma-cover-frost`); leftover Chromium `test:e2e:all` `36/36` including the
+  unchanged PR A create-work and application wizards. Expo web export has no
+  `socket.io-client`. This is not founder Accepted or launch-ready.
 - `Partial`: native iOS/Android visual parity, 1024/1440, RFC §10 create-work
   rewrite and launch-ready are not in this branch.
 - `Unchanged`: Nest commerce modules, Listing/Bid/Order contracts, Prisma
