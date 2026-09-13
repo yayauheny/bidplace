@@ -297,7 +297,7 @@ export function ProductDraftScreen({
 
   if (categories.isLoading || (productId && productDetail.isLoading))
     return (
-      <FormPageShell>
+      <FormPageShell hideDock>
         <PageState title="Загружаем предмет…" loading />
       </FormPageShell>
     );
@@ -307,7 +307,7 @@ export function ProductDraftScreen({
     (productId && (!productDetail.data || !existingProduct))
   )
     return (
-      <FormPageShell>
+      <FormPageShell hideDock>
         <AppText role="sectionTitle">Не удалось загрузить предмет</AppText>
         <SecondaryButton
           label="Повторить"
@@ -398,7 +398,7 @@ export function ProductDraftScreen({
   };
 
   return (
-    <FormPageShell>
+    <FormPageShell hideDock>
       {isCreationFlow ? (
         <FormSection
           title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}

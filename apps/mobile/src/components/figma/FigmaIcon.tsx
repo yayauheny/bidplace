@@ -90,7 +90,7 @@ export function FigmaIcon({
         viewBox="0 0 24 24"
         fill="none"
         color={color}
-        aria-hidden={!label}
+        aria-hidden={label ? undefined : true}
         accessibilityLabel={label}
       >
         {InternetIcon.map(([tag, { key, ...attributes }]) =>
@@ -112,7 +112,7 @@ export function FigmaIcon({
       {...(label
         ? { accessibilityLabel: label }
         : Platform.OS === 'web'
-          ? { 'aria-hidden': true }
+          ? { 'aria-hidden': 'true' as const }
           : { accessible: false })}
     />
   );

@@ -7,16 +7,20 @@ import { AppShell } from './AppShell';
 
 export function FormPageShell({
   children,
+  hideDock = false,
 }: {
   children: ReactNode;
   maxWidth?: number;
+  hideDock?: boolean;
 }) {
   return (
-    <AppShell>
+    <AppShell hideDock={hideDock}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
-          paddingBottom: designTokens.space.x8,
+          paddingBottom: hideDock
+            ? designTokens.space.x8
+            : designTokens.size.dockReserve,
           paddingTop: designTokens.space.x6,
         }}
         keyboardShouldPersistTaps="handled"

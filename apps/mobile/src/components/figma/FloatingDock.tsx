@@ -106,9 +106,12 @@ function DockItem({
 }) {
   const content = (
     <MotionPressable
-      accessibilityRole={href ? 'link' : 'button'}
+      accessibilityRole="tab"
       accessibilityLabel={item.label}
       accessibilityState={{ selected }}
+      {...(Platform.OS === 'web'
+        ? { 'aria-selected': selected ? true : undefined }
+        : {})}
       onPress={onPress}
       preset="dock"
       hitSlop={dockItemHitSlop}

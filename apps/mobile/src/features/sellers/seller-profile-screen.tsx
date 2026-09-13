@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { View } from 'react-native';
+import { Image as LocalPreviewImage, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
@@ -245,7 +244,7 @@ export function SellerProfileScreen() {
   const photoPreview = photoUri;
 
   return (
-    <FormPageShell>
+    <FormPageShell hideDock={!profile}>
       <View style={{ gap: designTokens.space.x5 }}>
         <View style={{ gap: designTokens.space.x2 }}>
           <PageHeader
@@ -288,14 +287,14 @@ export function SellerProfileScreen() {
             >
               {photoPreview && !photoFailed ? (
                 photoBlob ? (
-                  <Image
+                  <LocalPreviewImage
                     source={{ uri: photoPreview }}
+                    resizeMode="cover"
                     style={{
                       width: '100%',
                       aspectRatio: 1,
                       borderRadius: designTokens.radius.image,
                     }}
-                    contentFit="cover"
                     onError={() => setPhotoFailed(true)}
                   />
                 ) : (
