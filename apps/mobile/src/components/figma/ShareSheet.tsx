@@ -7,11 +7,15 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppDialog } from '../ui/AppDialog';
 import { AppText, PrimaryButton, SecondaryButton } from '../ui';
+import { FigmaButton } from './FigmaButton';
 import {
   copyPublicLink,
   downloadQrPng,
   publicShareTarget,
 } from './public-share';
+
+const shareContentGap =
+  designTokens.space.x3 + designTokens.space.x1 / 2; // Figma 597:19045 — 14px.
 
 export function ShareSheet({
   open,
@@ -79,21 +83,32 @@ function ShareContent({ sharePath }: { sharePath: string }) {
       await copyPublicLink(target.url);
       setMessage('Ссылка скопирована.');
     } catch {
-      setMessage('Не удалось скопировать ссылку. Её можно выделить ниже.');
+      setMessage('Не удалось скопировать ссылку. Ссылка доступна ниже.');
     }
   };
   const download = () => {
     if (!qr) return;
     try {
       downloadQrPng(qr, filename);
-      setMessage('QR подготовлен к скачиванию.');
+      setMessage('Скачивание QR началось.');
     } catch {
       setMessage('Не удалось скачать QR. Попробуйте ещё раз.');
     }
   };
   return (
-    <View style={{ gap: designTokens.space.x3 }}>
-      <View style={{ alignItems: 'center' }}>
+    <View style={{ gap: shareContentGap }}>
+      <View
+        style={{
+          width: designTokens.size.shareQr,
+          height: designTokens.size.shareQr,
+          alignSelf: 'center',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          borderRadius: designTokens.radius.shareSheet,
+          backgroundColor: designTokens.color.surfaceMuted,
+        }}
+      >
         {qr ? (
           <Image
             source={{ uri: qr }}
@@ -101,10 +116,20 @@ function ShareContent({ sharePath }: { sharePath: string }) {
             style={{
               width: designTokens.size.shareQr,
               height: designTokens.size.shareQr,
+              borderRadius: designTokens.radius.shareSheet,
             }}
           />
         ) : (
-          <AppText role="bodySmall">{error || 'Создаём QR-код…'}</AppText>
+          <AppText
+            role="bodySmall"
+            tone={error ? 'danger' : 'secondary'}
+            style={{
+              paddingHorizontal: designTokens.space.x4,
+              textAlign: 'center',
+            }}
+          >
+            {error || 'Создаём QR-код…'}
+          </AppText>
         )}
       </View>
       {error ? (
@@ -113,28 +138,45 @@ function ShareContent({ sharePath }: { sharePath: string }) {
           onPress={() => setAttempt(attempt + 1)}
         />
       ) : null}
-      <PrimaryButton
-        label="Скачать QR"
-        size="large"
-        icon="qr-code-01"
-        width="full"
-        disabled={!qr}
-        onPress={download}
-      />
-      <SecondaryButton
-        label="Копировать ссылку"
-        size="large"
-        icon="copy"
-        width="full"
-        onPress={() => void copy()}
-      />
-      <AppText role="caption" selectable style={{ textAlign: 'center' }}>
-        {url}
-      </AppText>
+      <View style={{ gap: designTokens.space.x2 }}>
+        <PrimaryButton
+          label="Скачать QR"
+          size="large"
+          icon="qr-code-01"
+          width="full"
+          disabled={!qr}
+          onPress={download}
+        />
+        <FigmaButton
+          label="Копировать ссылку"
+          variant="ghost"
+          size="large"
+          icon="copy"
+          width="full"
+          onPress={() => void copy()}
+        />
+      </View>
       {message ? (
-        <AppText role="caption" accessibilityLiveRegion="polite">
-          {message}
-        </AppText>
+        <View style={{ gap: designTokens.space.x1 }}>
+          <AppText
+            role="caption"
+            accessibilityLiveRegion="polite"
+            style={{ textAlign: 'center' }}
+          >
+            {message}
+          </AppText>
+          {message.startsWith('Не удалось скопировать') ? (
+            <AppText
+              role="caption"
+              selectable
+              numberOfLines={1}
+              ellipsizeMode="middle"
+              style={{ maxWidth: '100%', textAlign: 'center' }}
+            >
+              {url}
+            </AppText>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
