@@ -23,11 +23,19 @@ describe('SellersService', () => {
 
   it('adds an achievement after locking the editable profile revision', async () => {
     const tx = {
-      $queryRaw: vi.fn().mockResolvedValue([{ id: 'revision-id' }]),
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'CHANGES_REQUESTED',
+          editingRevisionId: 'revision-id',
+          publishedRevisionId: null,
           editingRevision: { id: 'revision-id', status: 'DRAFT' },
+          publishedRevision: null,
         }),
+      },
+      sellerProfileRevision: {
+        create: vi.fn(),
       },
       sellerProfileRevisionAchievement: {
         count: vi.fn().mockResolvedValue(2),
@@ -61,7 +69,8 @@ describe('SellersService', () => {
       },
     });
 
-    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
     expect(tx.sellerProfileRevisionAchievement.count).toHaveBeenCalledWith({
       where: { revisionId: 'revision-id' },
     });
@@ -369,13 +378,14 @@ describe('SellersService', () => {
       updatedAt: now,
     };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'seller-profile-id',
           status: 'APPROVED',
           editingRevisionId: 'published-revision-id',
           publishedRevisionId: 'published-revision-id',
-          editingRevision: { id: 'published-revision-id' },
+          editingRevision: { id: 'published-revision-id', status: 'APPROVED' },
           publishedRevision,
         }),
         update: vi.fn(),
@@ -385,6 +395,9 @@ describe('SellersService', () => {
         create: vi.fn().mockResolvedValue({ id: 'editing-revision-id' }),
         findUniqueOrThrow: vi.fn().mockResolvedValue({ status: 'DRAFT' }),
         update: vi.fn(),
+      },
+      sellerProfileRevisionAchievement: {
+        findMany: vi.fn().mockResolvedValue([]),
       },
     };
     const prisma = {
