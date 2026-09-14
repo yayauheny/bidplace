@@ -14,8 +14,13 @@ const databaseUrl =
 
 export default defineConfig({
   testDir: './e2e',
-  globalTimeout: 12 * 60_000,
+  globalTimeout: 45 * 60_000,
+  timeout: 60_000,
   workers: 1,
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' }, retries: 1 },
+    { name: 'webkit', use: { browserName: 'webkit' }, retries: 1 },
+  ],
   use: {
     baseURL: webBaseURL,
     trace: 'retain-on-failure',

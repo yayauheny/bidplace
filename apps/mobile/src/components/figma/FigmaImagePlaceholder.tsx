@@ -1,4 +1,5 @@
 import { G, Path, Svg, type NumberProp } from 'react-native-svg';
+import { Platform } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -25,9 +26,15 @@ export function FigmaImagePlaceholder({
       width={width}
       height={height}
       viewBox={`0 0 ${figmaImagePlaceholderSpec.width} ${figmaImagePlaceholderSpec.height}`}
-      accessibilityLabel={label}
-      accessibilityRole={label ? 'image' : undefined}
-      accessible={Boolean(label)}
+      {...(Platform.OS === 'web'
+        ? label
+          ? { role: 'img' as const, 'aria-label': label }
+          : { 'aria-hidden': true as const }
+        : {
+            accessibilityLabel: label,
+            accessibilityRole: label ? ('image' as const) : undefined,
+            accessible: Boolean(label),
+          })}
     >
       <G transform={transform}>
         <Path

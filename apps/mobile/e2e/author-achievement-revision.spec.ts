@@ -7,14 +7,14 @@ import {
   createBuyerFixture,
 } from './support/e2e-fixtures';
 
-test('approved author edits a draft revision without changing the public page until approve', async ({
+test('approved author can add and delete achievements without a dummy save', async ({
   browser,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const { buyer } = await createBuyerFixture();
   const { admin } = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
-  const slug = `revision-${Date.now()}`;
+  const slug = `achieve-${Date.now()}`;
 
   try {
     await page.goto('/profile');
@@ -22,7 +22,7 @@ test('approved author edits a draft revision without changing the public page un
     await page.getByRole('button', { name: 'Добавить фото' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
     await expect(page.getByRole('button', { name: 'Изменить фото' })).toBeVisible();
-    await page.getByLabel('Имя или название').fill('Опубликованное имя');
+    await page.getByLabel('Имя или название').fill('Автор достижений');
     await page.getByLabel('URL-slug').fill(slug);
     await page.getByLabel('Дисциплина').fill('Керамика');
     await page.getByLabel('Страна').fill('BY');
@@ -30,7 +30,7 @@ test('approved author edits a draft revision without changing the public page un
     await page.getByLabel('Публичная ссылка').fill(`https://example.com/${slug}`);
     await page.getByLabel('Короткое описание').fill('Первая биография.');
     await expect(page.getByLabel('Имя или название')).toHaveValue(
-      'Опубликованное имя',
+      'Автор достижений',
     );
     await page.getByRole('button', { name: 'Продолжить' }).click();
     await page
@@ -58,30 +58,40 @@ test('approved author edits a draft revision without changing the public page un
       ).ok(),
     ).toBeTruthy();
 
-    await page.goto(`/authors/${slug}`);
-    await expect(page.getByText('Опубликованное имя')).toBeVisible();
-
     await page.goto('/profile');
-    await page.getByLabel('Имя или название').fill('Черновик имени');
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
-    await expect(page.getByLabel('Имя или название')).toHaveValue(
-      'Черновик имени',
-    );
+    await expect(page.getByText('Выставки и достижения')).toBeVisible();
+    const achievementField = page.getByLabel('Описание достижения');
+    await achievementField.scrollIntoViewIfNeeded();
+    await achievementField.fill('Первая выставка');
+    await page.getByRole('button', { name: 'Сохранить достижение' }).click();
+    await expect(page.getByText('Первая выставка')).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
     ).toBeVisible();
+    await achievementField.fill('Вторая выставка');
+    await page.getByRole('button', { name: 'Сохранить достижение' }).click();
+    await expect(page.getByText('Вторая выставка')).toBeVisible();
+    await page.getByRole('button', { name: 'Удалить' }).first().click();
+    await expect(page.getByText('Первая выставка')).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
+    ).toBeVisible();
+
+    const guest = await browser.newPage();
+    await guest.setViewportSize({ width: 390, height: 844 });
+    await guest.goto(`/authors/${slug}`);
+    await guest.getByRole('tab', { name: 'Об авторе' }).click();
+    await expect(guest.getByText('Автор достижений')).toBeVisible();
+    await expect(guest.getByText('Первая выставка')).toHaveCount(0);
+    await expect(guest.getByText('Вторая выставка')).toHaveCount(0);
+    await guest.close();
+
     await page
       .getByRole('button', { name: 'Отправить на проверку', exact: true })
       .click();
     await expect(
       page.getByText('Заявка на проверке', { exact: false }),
     ).toBeVisible();
-
-    const guest = await browser.newPage();
-    await guest.goto(`/authors/${slug}`);
-    await expect(guest.getByText('Опубликованное имя')).toBeVisible();
-    await expect(guest.getByText('Черновик имени')).toHaveCount(0);
-    await guest.close();
 
     expect(
       (
@@ -94,7 +104,9 @@ test('approved author edits a draft revision without changing the public page un
     await adminContext.close();
 
     await page.goto(`/authors/${slug}`);
-    await expect(page.getByText('Черновик имени')).toBeVisible();
+    await page.getByRole('tab', { name: 'Об авторе' }).click();
+    await expect(page.getByText('Вторая выставка')).toBeVisible();
+    await expect(page.getByText('Первая выставка')).toHaveCount(0);
   } finally {
     await context.close();
   }

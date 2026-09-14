@@ -1,5 +1,33 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Mobile-web correction
+
+- `Implemented` (mobile web only): public AppShell shows a compact
+  `accessibilityRole="alert"` with «Не удалось проверить сессию» and
+  «Повторить проверку сессии». Home catalog stays available when only `/api/auth/me`
+  fails. The Home API retry stays labelled «Повторить». Protected `/profile`
+  keeps PageState «Не удалось проверить доступ» without a second session banner.
+  Coverage: `figma-error-state.spec.ts`.
+- `Implemented` (mobile web only): approved-author add/delete of achievements
+  uses the PR A `ensureEditableEditingRevision` fork, invalidates both
+  `['seller', 'application']` and `['seller', 'profile']` so «Отправить на проверку»
+  appears without a dummy profile save, and e2e covers
+  APPROVED → add/delete → public unchanged → submit → approve → public updated.
+  Coverage: `author-achievement-revision.spec.ts`.
+- `Implemented`: maintained Playwright `test:e2e` runs Chromium and WebKit.
+  `test:e2e:stabilization` stays the 38 visual Chromium+WebKit suite.
+- `Implemented` (compile-only, no UI redesign): mobile typecheck accepts RN-web
+  `visibility` on `ViewStyle` used by `CreatorHero` compact fades. Runtime markup
+  is unchanged. `FigmaImagePlaceholder` no longer forwards `accessible={true}` to
+  the DOM, which React 19 rejected and which blocked profile photo file pickers.
+- `Partial`: first-application optional achievements remain the founder decision
+  in [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+- `Unchanged`: 232×64 dock, Home/Works/Authors/Search/ShareSheet/cards/frost
+  and `CreatorHeader.web` except the listed AppShell/achievement/e2e files.
+  Fixed 390 mobile-web column stays expected. Commerce archive `19eb40e` is not
+  modified.
+- `Not claimed`: Founder Accepted, launch-ready, desktop/tablet/native.
+
 ## 2026-09-14 — Portfolio foundation correction
 
 - `Implemented`: `ensureEditableEditingRevision` is the single seller editing-revision
@@ -81,8 +109,9 @@
   `test:e2e` is the maintained Playwright gate and
   `test:e2e:stabilization` is the 38 visual Chromium+WebKit suite;
   `media-resilience.spec.ts` is restored without the obsolete header/login
-  assertion. Auth session error + retry stay on `ProtectedRoute` (alert +
-  «Повторить»); AppShell does not add a second public-home retry. Coverage:
+  assertion. Protected `/profile` keeps PageState «Не удалось проверить доступ»
+  + «Повторить». Public Home session alert/retry is the later mobile-web
+  correction, not this preservation commit. Coverage:
   `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
   `floating-dock.spec.ts`, `author-application-publication.spec.ts`,
   `author-revision-flow.spec.ts`, `media-resilience.spec.ts`,

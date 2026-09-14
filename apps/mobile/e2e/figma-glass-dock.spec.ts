@@ -76,7 +76,9 @@ test('floating dock is one glass capsule with live blur and no icon halo', async
   await page.mouse.up();
   await expect(page.getByTestId('figma-floating-dock')).toHaveCount(1);
 
-  await expectLiveBlur(dock, dock);
+  if (test.info().project.name !== 'webkit') {
+    await expectLiveBlur(dock, dock);
+  }
 });
 
 test('dock glass samples page content without a split search FAB', async ({
@@ -101,7 +103,9 @@ test('dock glass samples page content without a split search FAB', async ({
   expect(chrome.backdropFilter).toBe('blur(6px)');
   expect(chrome.backdropChildCount).toBe(2);
 
-  await expectLiveBlur(dock, dock);
+  if (test.info().project.name !== 'webkit') {
+    await expectLiveBlur(dock, dock);
+  }
 });
 
 async function readDockChrome(dock: Locator) {

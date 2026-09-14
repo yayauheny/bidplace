@@ -15,12 +15,14 @@ async function fillProductStepOne(page: Page, title: string) {
 }
 
 async function createDraftThroughStepOne(page: Page) {
+  const save = page.getByRole('button', { name: 'Сохранить и продолжить' });
+  await expect(save).toBeEnabled();
   const createResponsePromise = page.waitForResponse(
     (response) =>
       response.url().endsWith('/api/products') &&
       response.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Сохранить и продолжить' }).click();
+  await save.click();
   const createResponse = await createResponsePromise;
   expect(createResponse.ok()).toBeTruthy();
   const { product } = await createResponse.json();

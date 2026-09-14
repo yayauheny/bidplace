@@ -43,13 +43,16 @@ export function AuthorApplicationAchievements({
       setImageBlob(null);
       setImageLabel(null);
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
     },
   });
 
   const deleteAchievement = useMutation({
     mutationFn: (id: string) => api.portfolio.deleteAuthorAchievement(id),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    },
   });
 
   const chooseImage = async () => {

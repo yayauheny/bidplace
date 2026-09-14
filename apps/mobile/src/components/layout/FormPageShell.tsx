@@ -17,7 +17,11 @@ export function FormPageShell({
   hideDock?: boolean;
 }) {
   return (
-    <AppShell hideDock={hideDock} bottomAction={bottomAction}>
+    <AppShell
+      hideDock={hideDock}
+      bottomAction={bottomAction}
+      showSessionAlert={false}
+    >
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
