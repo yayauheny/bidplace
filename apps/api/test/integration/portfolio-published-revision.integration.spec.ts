@@ -209,4 +209,140 @@ describe('portfolio published revision HTTP transport', () => {
       ((await response.json()) as { author: { slug: string } }).author.slug,
     ).toBe(author.slug);
   });
+
+  it('rejects unsupported achievement images and hides unpublished bytes from guests', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const stranger = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(
+      owner,
+      fixture.sellers.changes.email,
+      fixture.sellers.changes.password,
+    );
+    await login(
+      stranger,
+      fixture.sellers.otherApproved.email,
+      fixture.sellers.otherApproved.password,
+    );
+
+    const gif = new FormData();
+    gif.set('body', 'Show');
+    gif.append(
+      'image',
+      new Blob(
+        [
+          Buffer.from(
+            'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
+          ),
+        ],
+        { type: 'image/gif' },
+      ),
+      'animation.gif',
+    );
+    expect((await owner.post('/author/application/achievements', gif)).status).toBe(
+      400,
+    );
+
+    const uploaded = await owner.post(
+      '/author/application/achievements',
+      (() => {
+        const form = new FormData();
+        form.set('body', 'Show');
+        form.append(
+          'image',
+          new Blob([permissionImage], { type: 'image/png' }),
+          'show.png',
+        );
+        return form;
+      })(),
+    );
+    expect(uploaded.status).toBe(201);
+    const uploadedId = (
+      (await uploaded.json()) as { achievement: { id: string } }
+    ).achievement.id;
+    const ownerImage = await owner.get(
+      `/author-achievements/${uploadedId}/image`,
+    );
+    expect(ownerImage.status).toBe(200);
+    expect(ownerImage.headers.get('content-type')).toMatch(/image\/png/);
+    expect(Buffer.from(await ownerImage.arrayBuffer()).subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect(
+      (await guest.get(`/author-achievements/${uploadedId}/image`)).status,
+    ).toBe(404);
+    expect(
+      (await stranger.get(`/author-achievements/${uploadedId}/image`)).status,
+    ).toBe(404);
+
+    const created = await owner.post('/author/application/achievements', (() => {
+      const form = new FormData();
+      form.set('body', 'Show text only');
+      return form;
+    })());
+    expect(created.status).toBe(201);
+    const achievementId = (
+      (await created.json()) as { achievement: { id: string } }
+    ).achievement.id;
+
+    expect((await guest.get(`/author-achievements/${achievementId}/image`)).status).toBe(
+      404,
+    );
+    expect(
+      (await stranger.delete(`/author/application/achievements/${achievementId}`))
+        .status,
+    ).toBe(404);
+  });
+
+  it('keeps the public profile photo on the published object after a pending owner edit', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const author = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true, editingRevisionId: true },
+    });
+    await prisma.sellerProfileRevision.update({
+      where: { id: author.editingRevisionId! },
+      data: {
+        profilePhotoMimeType: 'image/png',
+        profilePhotoByteLength: permissionImage.byteLength,
+        profilePhotoChecksum: '0'.repeat(64),
+        profilePhotoObjectKey: `seller-photo:${fixture.sellers.approved.profileId}`,
+        profilePhotoData: permissionImage,
+      },
+    });
+    await login(
+      owner,
+      fixture.sellers.approved.email,
+      fixture.sellers.approved.password,
+    );
+
+    const nextPhoto = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const photoForm = new FormData();
+    photoForm.set('fullName', 'Pending photo author');
+    photoForm.append(
+      'profilePhoto',
+      new Blob([nextPhoto], { type: 'image/png' }),
+      'next.png',
+    );
+    expect((await owner.patch('/seller/profile', photoForm)).status).toBe(200);
+
+    const publicPhoto = await guest.get(`/sellers/${author.slug}/photo`);
+    expect(publicPhoto.status).toBe(200);
+    expect(Buffer.from(await publicPhoto.arrayBuffer())).toEqual(permissionImage);
+
+    const ownerPhoto = await owner.get('/author/application/photo');
+    expect(ownerPhoto.status).toBe(200);
+    const ownerPhotoBytes = Buffer.from(await ownerPhoto.arrayBuffer());
+    expect(ownerPhoto.headers.get('content-type')).toMatch(/image\/png/);
+    expect(ownerPhotoBytes.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+    expect(ownerPhotoBytes).not.toEqual(permissionImage);
+  });
 });

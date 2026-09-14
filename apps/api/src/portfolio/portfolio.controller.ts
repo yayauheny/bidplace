@@ -1,12 +1,19 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
   Query,
+  Res,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { Buffer } from 'node:buffer';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   portfolioAuthorsQuerySchema,
   portfolioAchievementWriteRequestSchema,
@@ -14,7 +21,19 @@ import {
 } from '@bidplace/contracts';
 
 import { parseBody } from '../core/validation';
-import { BearerAuthGuard, CurrentUser } from '../auth';
+import {
+  BearerAuthGuard,
+  CurrentUser,
+  OptionalBearerAuthGuard,
+} from '../auth';
+import { RateLimit, RateLimitGuard } from '../core/rate-limit';
+import {
+  acceptSupportedUploadMimeType,
+  getImageCacheControl,
+  productImageUploadLimits,
+  type RawImageUpload,
+  validateProductImageUploads,
+} from '../images/image-policy';
 import { PortfolioService } from './portfolio.service';
 
 @Controller()
@@ -70,13 +89,94 @@ export class PortfolioController {
     return this.portfolio.submitApplication(auth.sub);
   }
 
-  @Post('author/application/achievements')
+  @Get('author/application/photo')
   @UseGuards(BearerAuthGuard)
-  addAchievement(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
+  async getApplicationPhoto(
+    @CurrentUser() auth: { sub: string },
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const photo = await this.portfolio.getApplicationPhoto(auth.sub);
+    response.setHeader(
+      'Cache-Control',
+      getImageCacheControl({ isPublic: false, kind: 'seller-photo' }),
+    );
+    response.type(photo.mimeType);
+    response.send(Buffer.from(photo.data));
+  }
+
+  @Post('author/application/achievements')
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:achievement-upload',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
+  @UseInterceptors(
+    FilesInterceptor('image', 1, {
+      limits: { fileSize: productImageUploadLimits.maxFileBytes, files: 1 },
+      fileFilter: (_request, file, done) =>
+        acceptSupportedUploadMimeType(file.mimetype, done),
+    }),
+  )
+  async addAchievement(
+    @CurrentUser() auth: { sub: string },
+    @Body() body: unknown,
+    @UploadedFiles() files: RawImageUpload[] = [],
+  ) {
+    if (files.length > 1) {
+      throw new BadRequestException('Only one achievement image is allowed');
+    }
     return this.portfolio.addAchievement(
       auth.sub,
       parseBody(portfolioAchievementWriteRequestSchema, body),
+      files.length ? (await validateProductImageUploads(files))[0] : undefined,
     );
+  }
+
+  @Delete('author/application/achievements/:id')
+  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'images:achievement-delete',
+    limit: 10,
+    windowMs: 60_000,
+    scope: 'user',
+  })
+  deleteAchievement(
+    @CurrentUser() auth: { sub: string },
+    @Param('id') id: string,
+  ) {
+    return this.portfolio.deleteAchievement(auth.sub, id);
+  }
+
+  @Get('author-achievements/:id/image')
+  @UseGuards(OptionalBearerAuthGuard)
+  async getAchievementImage(
+    @Param('id') id: string,
+    @CurrentUser() auth: { sub: string; role: string } | undefined,
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const image = await this.portfolio.getAchievementImage(
+      id,
+      auth?.sub,
+      auth?.role,
+    );
+    response.setHeader(
+      'Cache-Control',
+      getImageCacheControl({ isPublic: image.isPublic, kind: 'seller-photo' }),
+    );
+    response.type(image.mimeType);
+    response.send(Buffer.from(image.data));
   }
 
   @Get('author/cabinet/works')

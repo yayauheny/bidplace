@@ -8,6 +8,24 @@ import { slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
 
+export const portfolioAchievementImageSchema = z
+  .object({
+    url: z.string().regex(/^\/api\/author-achievements\/[0-9a-f-]+\/image$/),
+    mimeType: publicText,
+    byteLength: z.number().int().positive(),
+    checksum: z.string().length(64),
+  })
+  .strict();
+
+export const portfolioAchievementSchema = z
+  .object({
+    id: uuidSchema,
+    occurredAt: z.string().datetime().nullable(),
+    body: publicText,
+    image: portfolioAchievementImageSchema.nullable(),
+  })
+  .strict();
+
 export const portfolioWorkSchema = z
   .object({
     id: uuidSchema,
@@ -42,15 +60,7 @@ export const portfolioAuthorSchema = z
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
     shortDescription: publicText,
-    achievements: z.array(
-      z
-        .object({
-          id: uuidSchema,
-          occurredAt: z.string().datetime().nullable(),
-          body: publicText,
-        })
-        .strict(),
-    ),
+    achievements: z.array(portfolioAchievementSchema),
     sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
   })
   .strict();
@@ -199,13 +209,13 @@ export const portfolioAchievementWriteRequestSchema = z
 
 export const portfolioAchievementResponseSchema = z
   .object({
-    achievement: z
-      .object({
-        id: uuidSchema,
-        occurredAt: z.string().datetime().nullable(),
-        body: publicText,
-      })
-      .strict(),
+    achievement: portfolioAchievementSchema,
+  })
+  .strict();
+
+export const portfolioOkResponseSchema = z
+  .object({
+    ok: z.literal(true),
   })
   .strict();
 
@@ -219,4 +229,7 @@ export type PortfolioAuthorsQuery = z.output<
 >;
 export type PortfolioDiscoveryFacetsResponse = z.output<
   typeof portfolioDiscoveryFacetsResponseSchema
+>;
+export type PortfolioWorkDetailResponse = z.infer<
+  typeof portfolioWorkDetailResponseSchema
 >;

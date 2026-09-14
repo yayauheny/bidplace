@@ -57,6 +57,7 @@ describe('SellersService', () => {
         id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
         occurredAt: null,
         body: 'First exhibition',
+        image: null,
       },
     });
 
@@ -99,6 +100,7 @@ describe('SellersService', () => {
           discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
+          city: 'Minsk',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Description',
           handoffContactType: 'TELEGRAM',
@@ -140,6 +142,30 @@ describe('SellersService', () => {
           order.push('object-key');
           return createdProfile;
         }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...createdProfile,
+          city: 'Minsk',
+          practice: null,
+          telegramUrl: null,
+          instagramUrl: null,
+          websiteUrl: null,
+          editingRevision: {
+            id: 'c0d82a10-3170-49eb-904f-a8bc87d311a5',
+            version: 1,
+            status: 'PENDING_REVIEW',
+            slug: 'seller-slug',
+            discipline: 'Керамика',
+            fullName: 'Seller',
+            country: 'BY',
+            city: 'Minsk',
+            practice: null,
+            socialLink: 'https://example.com/seller',
+            telegramUrl: null,
+            instagramUrl: null,
+            websiteUrl: null,
+            shortDescription: 'Description',
+          },
+        }),
       },
       sellerProfileRevision: {
         create: vi.fn().mockResolvedValue({ id: 'revision-id' }),
@@ -171,6 +197,7 @@ describe('SellersService', () => {
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
+        city: 'Minsk',
         socialLink: 'https://example.com/seller',
         shortDescription: 'Description',
         handoffContactType: 'TELEGRAM',
@@ -246,6 +273,7 @@ describe('SellersService', () => {
           discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
+          city: 'Minsk',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Description',
           handoffContactType: 'TELEGRAM',
@@ -302,6 +330,10 @@ describe('SellersService', () => {
       instagramUrl: null,
       websiteUrl: null,
       shortDescription: 'Description',
+      profilePhotoMimeType: 'image/jpeg',
+      profilePhotoByteLength: 8,
+      profilePhotoChecksum: 'b'.repeat(64),
+      profilePhotoObjectKey: 'seller-photo:seller-profile-id',
       achievements: [
         {
           position: 0,
@@ -378,6 +410,8 @@ describe('SellersService', () => {
 
     expect(tx.sellerProfileRevision.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
+        profilePhotoObjectKey: 'seller-photo:seller-profile-id',
+        profilePhotoMimeType: 'image/jpeg',
         achievements: {
           create: [
             expect.objectContaining({
@@ -511,6 +545,7 @@ describe('SellersService', () => {
           discipline: 'Керамика',
           fullName: 'Seller',
           country: 'BY',
+          city: 'Minsk',
           socialLink: 'https://example.com/seller',
           shortDescription: 'Short',
         }),
@@ -672,5 +707,35 @@ describe('SellersService', () => {
     );
     expect(prisma.auditEvent.update).not.toHaveBeenCalled();
     expect(prisma.auditEvent.delete).not.toHaveBeenCalled();
+  });
+
+  it('hides unpublished achievement images from strangers', async () => {
+    const prisma = {
+      sellerProfileRevisionAchievement: {
+        findUnique: vi.fn().mockResolvedValue({
+          mimeType: 'image/png',
+          objectKey: 'seller-achievement:achievement-id',
+          revisionId: 'draft-revision-id',
+          revision: {
+            sellerProfile: {
+              userId: 'owner-id',
+              status: 'APPROVED',
+              publishedRevisionId: 'published-revision-id',
+            },
+          },
+        }),
+      },
+    };
+    const get = vi.fn();
+    const service = new SellersService(
+      prisma as never,
+      {} as never,
+      { ...imageStore, get } as never,
+    );
+
+    await expect(
+      service.getAchievementImage('achievement-id', 'stranger-id'),
+    ).rejects.toThrow('Achievement image not found');
+    expect(get).not.toHaveBeenCalled();
   });
 });

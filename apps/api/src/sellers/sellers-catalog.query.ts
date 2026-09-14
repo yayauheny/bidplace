@@ -2,7 +2,6 @@ import type { PortfolioAuthorsQuery } from '@bidplace/contracts';
 import { Prisma } from '@bidplace/database';
 
 import { escapeLikePattern } from '../products/products-catalog.query';
-import { portfolioProductContentSql } from '../products/public-visibility';
 
 export type PublicAuthorPageRow = { id: string; total: number | bigint };
 export type PublicAuthorFacetRow = {
@@ -16,7 +15,7 @@ export function publicAuthorOrderBy(
   if (sort === 'name') {
     return 'filtered."full_name" ASC, filtered."id" ASC';
   }
-  return 'filtered."latest_product_at" DESC NULLS LAST, filtered."id" ASC';
+  return 'filtered."created_at" DESC, filtered."id" ASC';
 }
 
 export function publicAuthorCte(
@@ -53,16 +52,7 @@ export function publicAuthorCte(
       author."full_name",
       author."city",
       author."discipline",
-      (
-        SELECT p."created_at"
-        FROM "products" p
-        INNER JOIN "seller_profiles" sp ON sp."id" = p."seller_profile_id"
-        WHERE p."seller_profile_id" = author."id"
-          AND p."status" = 'APPROVED'
-          AND ${portfolioProductContentSql}
-        ORDER BY p."created_at" DESC, p."id" ASC
-        LIMIT 1
-      ) AS "latest_product_at"
+      author."created_at"
     FROM "seller_profiles" author
     WHERE ${Prisma.join(filters, ' AND ')}
   )`;

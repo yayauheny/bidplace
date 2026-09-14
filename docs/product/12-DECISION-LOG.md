@@ -1802,4 +1802,3 @@ accepted card avoids resolving an incomplete visual contract by invention.
 
 The domain gains structured multi-material data, or an approved Figma/card
 contract defines which brief facts must be visible.
-

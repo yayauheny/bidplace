@@ -92,12 +92,25 @@ export class AdminModerationService {
           editingRevision.status,
           revisionStatus,
         );
-        if (input.status === 'APPROVED') {
-          this.assertSellerApprovalRequirements({
-            ...editingRevision,
-            profilePhotoData: sellerProfile.profilePhotoData,
-          });
-        }
+        const approvedPhoto =
+          input.status === 'APPROVED'
+            ? this.requiredApprovedSellerPhoto({
+                ...editingRevision,
+                profilePhotoMimeType:
+                  editingRevision.profilePhotoMimeType ??
+                  sellerProfile.profilePhotoMimeType,
+                profilePhotoByteLength:
+                  editingRevision.profilePhotoByteLength ??
+                  sellerProfile.profilePhotoByteLength,
+                profilePhotoChecksum:
+                  editingRevision.profilePhotoChecksum ??
+                  sellerProfile.profilePhotoChecksum,
+                profilePhotoObjectKey:
+                  editingRevision.profilePhotoObjectKey ??
+                  sellerProfile.profilePhotoObjectKey,
+                profilePhotoData: sellerProfile.profilePhotoData,
+              })
+            : null;
 
         await tx.sellerProfileRevision.update({
           where: { id: editingRevision.id },
@@ -110,6 +123,7 @@ export class AdminModerationService {
                 where: { id: sellerProfileId },
                 data: {
                   ...this.publishedSellerProfileData(editingRevision),
+                  ...approvedPhoto,
                   status:
                     sellerProfile.status === 'PENDING_REVIEW'
                       ? 'APPROVED'
@@ -380,20 +394,32 @@ export class AdminModerationService {
     };
   }
 
-  private assertSellerApprovalRequirements(sellerProfile: {
+  private requiredApprovedSellerPhoto(sellerProfile: {
     fullName: string | null;
     city: string | null;
-    socialLink: string | null;
     shortDescription: string | null;
-    profilePhotoData: Uint8Array | null;
+    profilePhotoMimeType?: string | null;
+    profilePhotoByteLength?: number | null;
+    profilePhotoChecksum?: string | null;
+    profilePhotoObjectKey?: string | null;
+    profilePhotoData?: Uint8Array | null;
   }) {
+    const profilePhotoMimeType = sellerProfile.profilePhotoMimeType ?? null;
+    const profilePhotoByteLength = sellerProfile.profilePhotoByteLength ?? null;
+    const profilePhotoChecksum = sellerProfile.profilePhotoChecksum ?? null;
+    const profilePhotoObjectKey = sellerProfile.profilePhotoObjectKey ?? null;
+    const hasRevisionPhoto = Boolean(
+      profilePhotoMimeType &&
+        profilePhotoByteLength &&
+        profilePhotoChecksum &&
+        profilePhotoObjectKey,
+    );
+    const hasLegacyPhoto = Boolean(sellerProfile.profilePhotoData?.byteLength);
     if (
       !sellerProfile.fullName ||
       !sellerProfile.city ||
-      !sellerProfile.socialLink ||
       !sellerProfile.shortDescription ||
-      !sellerProfile.profilePhotoData ||
-      sellerProfile.profilePhotoData.byteLength < 1
+      (!hasRevisionPhoto && !hasLegacyPhoto)
     ) {
       this.logger.warn(
         'Blocked seller approval because required fields are missing',
@@ -402,6 +428,35 @@ export class AdminModerationService {
         'Seller profile does not meet approval requirements',
       );
     }
+
+    if (
+      profilePhotoMimeType &&
+      profilePhotoByteLength &&
+      profilePhotoChecksum &&
+      profilePhotoObjectKey
+    ) {
+      return {
+        profilePhotoMimeType,
+        profilePhotoByteLength,
+        profilePhotoChecksum,
+        profilePhotoObjectKey,
+      };
+    }
+
+    return {};
+  }
+
+  private assertSellerApprovalRequirements(sellerProfile: {
+    fullName: string | null;
+    city: string | null;
+    shortDescription: string | null;
+    profilePhotoData: Uint8Array | null;
+    profilePhotoMimeType?: string | null;
+    profilePhotoByteLength?: number | null;
+    profilePhotoChecksum?: string | null;
+    profilePhotoObjectKey?: string | null;
+  }) {
+    this.requiredApprovedSellerPhoto(sellerProfile);
   }
 
   private assertProductApprovalRequirements(product: {

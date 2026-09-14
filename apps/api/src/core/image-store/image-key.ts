@@ -2,9 +2,18 @@ export const imageKey = {
   productImage: (id: string) => `product-image:${id}`,
   creationStep: (id: string) => `creation-step:${id}`,
   sellerPhoto: (sellerProfileId: string) => `seller-photo:${sellerProfileId}`,
+  sellerProfileRevision: (revisionId: string) =>
+    `seller-profile-revision:${revisionId}`,
+  sellerAchievement: (achievementId: string) =>
+    `seller-achievement:${achievementId}`,
 } as const;
 
-export type ImageKeyKind = 'product-image' | 'creation-step' | 'seller-photo';
+export type ImageKeyKind =
+  | 'product-image'
+  | 'creation-step'
+  | 'seller-photo'
+  | 'seller-profile-revision'
+  | 'seller-achievement';
 
 export type ParsedImageKey = {
   kind: ImageKeyKind;
@@ -24,7 +33,9 @@ export function parseImageKey(key: string): ParsedImageKey {
     !id ||
     (kind !== 'product-image' &&
       kind !== 'creation-step' &&
-      kind !== 'seller-photo')
+      kind !== 'seller-photo' &&
+      kind !== 'seller-profile-revision' &&
+      kind !== 'seller-achievement')
   ) {
     throw new Error(`Invalid image key: ${key}`);
   }

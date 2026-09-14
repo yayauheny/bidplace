@@ -1,5 +1,37 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Portfolio foundation preservation
+
+- `Implemented`: author create requires non-blank `city`; `socialLink` is nullable
+  when Telegram/Instagram/website is sent and is never coerced to `''`. Owner
+  `GET /api/seller/profile` and `/api/author/application` return `editingRevision`
+  and overlay draft public fields; the published author page stays on the approved
+  revision until admin approve. Coverage: `packages/contracts/test/contracts.test.ts`,
+  `seller-profile.mapper.spec.ts`, `author-application-contract.integration.spec.ts`.
+- `Implemented`: profile-photo editing revision plus optional achievement image
+  upload/delete/read. Public achievement bytes come only from the published
+  revision; owner/admin can read draft; stranger/anonymous draft reads 404.
+  MIME/size/count, rate limits and private/public Cache-Control follow the
+  existing image policy. `ImageStore` keys `seller-profile-revision` and
+  `seller-achievement` keep the seller-photo fallback. Coverage:
+  `postgres-image-store.spec.ts`, `sellers.service.spec.ts`,
+  `portfolio-published-revision.integration.spec.ts`.
+- `Implemented`: `PortfolioWorkDetailResponse` is exported from `@bidplace/contracts`.
+- `Implemented`: `GET /api/authors?sort=added` orders by author `created_at` with
+  `id` tie-break; `sort=name` stays name/`id`. Coverage:
+  `sellers-catalog.query.spec.ts`, `portfolio-filters.integration.spec.ts`.
+- `Implemented`: `POST /products/:id/hide` fails closed when a `SCHEDULED` or
+  `LIVE` Listing exists (no Product/Listing/audit write). ENDED/no-listing hide
+  still works. Concurrent hide writes one ARCHIVED audit. Coverage:
+  `products.service.spec.ts`, `author-hide-listing.integration.spec.ts`.
+- `Unchanged`: Nest Listings/Bids/Orders, Prisma commerce tables,
+  `COMMERCE_ENABLED`, recovery APIs and archive lineage stay on this branch.
+- `Partial`: the pre-Figma seller application form now collects required `city`
+  and optional `practice` and sends them on create/update. Figma application
+  revision UI, public catalog e2e, and approved-author submit remain Phase 2.
+- `Not claimed`: Founder Accepted, launch-ready, mobile-web Figma UI, or commerce
+  removal.
+
 ## 2026-09-14 — Portfolio foundation staged beside commerce runtime
 
 - `Implemented`: portfolio backend foundation on the existing commerce runtime.

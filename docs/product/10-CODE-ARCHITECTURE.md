@@ -18,7 +18,10 @@
   author application projections. Public Work/Author catalog reads use the published
   `ProductRevision` projection (`listPortfolio` / `getPortfolio`), not Listing
   membership. `GET /api/portfolio/home` returns a server-owned curator selection
-  (`CuratorSelection` slot `home`) or `null`. Portfolio DTOs never expose commerce
+  (`CuratorSelection` slot `home`) or `null`. Owner application reads overlay draft
+  public fields from `editingRevision` and expose `editingRevision` on the seller
+  response; the published author projection stays on the approved revision until
+  admin approve. Portfolio DTOs never expose commerce
   fields. Listing, Bid, Order, Discovery, Activity and Socket.IO commerce modules
   remain in the default API boot graph until a later removal PR.
 - `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
@@ -49,7 +52,7 @@
 ```text
 SellerProfile
   ├─ SellerProfileRevision[]
-  │    └─ SellerProfileRevisionAchievement[] (text/date; revision scoped)
+  │    └─ SellerProfileRevisionAchievement[] (text/date + optional image; revision scoped)
   └─ Product
        ├─ ProductRevision[]
        │    └─ ProductRevisionImage[]
@@ -66,23 +69,29 @@ SellerProfile
 ## Confirmed current MVP implementation boundary
 
 - `APPROVED` SellerProfile is the seller capability; `assertApprovedSeller` is the shared write gate for Product, Listing, image and seller writes, while `AdminModerationService` records append-only audit events for moderation transitions;
-- SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName` plus a public profile photo on seller application, reopens edits only when moderation returns `CHANGES_REQUESTED` for public and handoff corrections, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks;
+- SellerProfile stores public profile data separately from buyer identity. The current implementation keeps the handoff contact private, persists public `discipline` separately from the coarse seller type, requires `fullName`, a non-blank `city` and a public profile photo on seller application, accepts `socialLink` as null when Telegram/Instagram/website is used, reopens public-field edits for `CHANGES_REQUESTED` and `REJECTED` plus approved-author editing revisions, and snapshots the handoff data into Orders; public seller/catalog views reuse shared visibility predicates and narrow seller selects instead of duplicating checks. `GET /api/authors?sort=added` orders by `seller_profiles.created_at`, not latest work;
 - `Product` is the current persistence name for a Work. `ProductRevision` holds
   mutable public Work content and immutable revision-image membership; a Work points
   to its editing and published revisions. A published Work copies its published
   revision when the author starts a new edit. The prior revision and Product public
   projection remain visible until admin approval atomically promotes the next
   revision. Rejections and requested changes apply to the editing revision only;
-  hiding/unhiding applies to the approved Work. Work writes lock the Product row
+  hiding/unhiding applies to the approved Work. Hide fails closed when a
+  `SCHEDULED` or `LIVE` Listing exists and does not write Product, Listing or
+  audit. Work writes lock the Product row
   (`SELECT … FOR UPDATE`) and re-check ownership and seller capability inside a
   Read Committed transaction;
 - `SellerProfileRevision` gives approved authors an editing-revision pointer and a
   published-revision pointer. Public portfolio author data is read from the approved
   profile projection; author submission locks edits and admin moderation only promotes
   the approved revision. `SellerProfileRevisionAchievement` belongs to that revision,
-  so pending achievements cannot leak into the public author page. A new profile
-  revision copies the prior published achievement records (including media metadata),
-  and the append operation locks the revision row before calculating position;
+  so pending achievements cannot leak into the public author page. Public
+  achievement image GET is allowed only from the published revision; owner and
+  admin can read draft bytes; anonymous/stranger draft reads return 404. A new
+  profile revision copies the prior published achievement records (including media
+  metadata), and the append operation locks the revision row before calculating
+  position. `ImageStore` keys include `seller-profile-revision` and
+  `seller-achievement` with the existing seller-photo canonical fallback;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not

@@ -73,6 +73,7 @@ function createWritePrisma(options: {
       findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue(options.responseProduct ?? options.product),
+      update: vi.fn().mockResolvedValue(options.responseProduct ?? options.product),
       updateMany: vi.fn().mockResolvedValue({
         count: options.updateManyCount ?? 1,
       }),
@@ -641,5 +642,49 @@ describe('ProductsService', () => {
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
     expect(pageQueryText).toContain('p."uniqueness"');
+  });
+
+  it('refuses hide when a scheduled or live listing exists', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: {
+        ...ownerProduct('APPROVED', [{ id: 'listing-id' }]),
+        publishedRevisionId: 'published-revision-id',
+      },
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await expect(service.hide('owner-id', product.id)).rejects.toThrow(
+      'Work cannot be hidden while a scheduled or live listing exists',
+    );
+    expect(tx.product.update).not.toHaveBeenCalled();
+    expect(tx.auditEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('allows hide when no scheduled or live listing is locked', async () => {
+    const { prisma, tx } = createWritePrisma({
+      product: {
+        ...ownerProduct('APPROVED'),
+        publishedRevisionId: 'published-revision-id',
+      },
+      responseProduct: {
+        ...approvedProduct,
+        status: 'ARCHIVED',
+        publicId: 'publicId001',
+        sellerProfileId: product.sellerProfileId,
+        publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+        editingRevisionId: 'revision-id',
+        publishedRevisionId: 'published-revision-id',
+      },
+    });
+    const service = new ProductsService(prisma as never, {} as never);
+
+    await expect(service.hide('owner-id', product.id)).resolves.toMatchObject({
+      product: { status: 'ARCHIVED' },
+    });
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { id: product.id },
+      data: { status: 'ARCHIVED' },
+    });
+    expect(tx.auditEvent.create).toHaveBeenCalled();
   });
 });

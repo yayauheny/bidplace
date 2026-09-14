@@ -19,7 +19,15 @@ export const publicSellerProfileSelect = {
     select: {
       achievements: {
         orderBy: [{ occurredAt: 'desc' }, { position: 'asc' }],
-        select: { id: true, occurredAt: true, body: true },
+        select: {
+          id: true,
+          occurredAt: true,
+          body: true,
+          mimeType: true,
+          byteLength: true,
+          checksum: true,
+          objectKey: true,
+        },
       },
     },
   },
@@ -52,8 +60,34 @@ export const sellerProfileResponseSelect = {
   updatedAt: true,
 } satisfies Prisma.SellerProfileSelect;
 
+export const sellerProfileOwnerSelect = {
+  ...sellerProfileResponseSelect,
+  editingRevision: {
+    select: {
+      id: true,
+      version: true,
+      status: true,
+      slug: true,
+      discipline: true,
+      fullName: true,
+      country: true,
+      city: true,
+      practice: true,
+      socialLink: true,
+      telegramUrl: true,
+      instagramUrl: true,
+      websiteUrl: true,
+      shortDescription: true,
+    },
+  },
+} satisfies Prisma.SellerProfileSelect;
+
 export type SellerProfileResponseRecord = Prisma.SellerProfileGetPayload<{
   select: typeof sellerProfileResponseSelect;
+}>;
+
+export type SellerProfileOwnerRecord = Prisma.SellerProfileGetPayload<{
+  select: typeof sellerProfileOwnerSelect;
 }>;
 
 export const sellerProfileAuthSelect = {
@@ -74,6 +108,7 @@ export const sellerProfilePhotoSelect = {
   slug: true,
   userId: true,
   status: true,
+  profilePhotoObjectKey: true,
 } satisfies Prisma.SellerProfileSelect;
 
 export type SellerProfilePhotoRecord = Prisma.SellerProfileGetPayload<{
@@ -97,9 +132,9 @@ export function toPublicSellerProfile(
     fullName: sellerProfile.fullName,
     profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
     country: sellerProfile.country,
-    city: sellerProfile.city ?? null,
+    city: sellerProfile.city?.trim() || null,
     practice: sellerProfile.practice ?? null,
-    socialLink: sellerProfile.socialLink ?? '',
+    socialLink: sellerProfile.socialLink ?? null,
     telegramUrl: sellerProfile.telegramUrl ?? null,
     instagramUrl: sellerProfile.instagramUrl ?? null,
     websiteUrl: sellerProfile.websiteUrl ?? null,
@@ -109,42 +144,86 @@ export function toPublicSellerProfile(
         id: achievement.id,
         occurredAt: achievement.occurredAt?.toISOString() ?? null,
         body: achievement.body,
+        image:
+          achievement.mimeType &&
+          achievement.byteLength &&
+          achievement.checksum &&
+          achievement.objectKey
+            ? {
+                url: `/api/author-achievements/${achievement.id}/image`,
+                mimeType: achievement.mimeType,
+                byteLength: achievement.byteLength,
+                checksum: achievement.checksum,
+              }
+            : null,
       })) ?? [],
   };
 }
 
 export function toSellerProfileResponse(
-  sellerProfile: SellerProfileResponseRecord,
+  sellerProfile: SellerProfileResponseRecord & {
+    editingRevision?: SellerProfileOwnerRecord['editingRevision'] | null;
+  },
 ) {
   const {
     profilePhotoMimeType: _profilePhotoMimeType,
     profilePhotoByteLength: _profilePhotoByteLength,
     profilePhotoChecksum: _profilePhotoChecksum,
     profilePhotoData: _profilePhotoData,
+    editingRevision,
     ...sellerProfileResponse
   } = sellerProfile as SellerProfileResponseRecord & {
     profilePhotoMimeType?: string | null;
     profilePhotoByteLength?: number | null;
     profilePhotoChecksum?: string | null;
     profilePhotoData?: Uint8Array | null;
+    editingRevision?: SellerProfileOwnerRecord['editingRevision'] | null;
   };
   void _profilePhotoMimeType;
   void _profilePhotoByteLength;
   void _profilePhotoChecksum;
   void _profilePhotoData;
 
+  const publicFields = editingRevision
+    ? {
+        slug: editingRevision.slug,
+        discipline: editingRevision.discipline,
+        fullName: editingRevision.fullName,
+        country: editingRevision.country,
+        city: editingRevision.city,
+        practice: editingRevision.practice,
+        socialLink: editingRevision.socialLink ?? null,
+        telegramUrl: editingRevision.telegramUrl,
+        instagramUrl: editingRevision.instagramUrl,
+        websiteUrl: editingRevision.websiteUrl,
+        shortDescription: editingRevision.shortDescription,
+      }
+    : {};
+
   return sellerProfileResponseSchema.parse({
     sellerProfile: {
       ...sellerProfileResponse,
-      city: sellerProfileResponse.city ?? null,
-      practice: sellerProfileResponse.practice ?? null,
-      socialLink: sellerProfileResponse.socialLink ?? '',
-      telegramUrl: sellerProfileResponse.telegramUrl ?? null,
-      instagramUrl: sellerProfileResponse.instagramUrl ?? null,
-      websiteUrl: sellerProfileResponse.websiteUrl ?? null,
+      ...publicFields,
+      city:
+        (publicFields.city ?? sellerProfileResponse.city)?.trim() || null,
+      practice: (publicFields.practice ?? sellerProfileResponse.practice) ?? null,
+      telegramUrl:
+        (publicFields.telegramUrl ?? sellerProfileResponse.telegramUrl) ?? null,
+      instagramUrl:
+        (publicFields.instagramUrl ?? sellerProfileResponse.instagramUrl) ??
+        null,
+      websiteUrl:
+        (publicFields.websiteUrl ?? sellerProfileResponse.websiteUrl) ?? null,
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),
     },
+    editingRevision: editingRevision
+      ? {
+          id: editingRevision.id,
+          version: editingRevision.version,
+          status: editingRevision.status,
+        }
+      : null,
   });
 }

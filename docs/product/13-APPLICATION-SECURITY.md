@@ -34,6 +34,7 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Ban/unban with reason; ban increments `sessionVersion` | Implemented | `admin-user.service.ts`, `admin-user-emergency.integration.spec.ts` |
 | Revoke all sessions (`sessionVersion++`) | Implemented | same |
 | Emergency cancel listing `SCHEDULED\|LIVE → CANCELLED` | Implemented | `admin-listing-emergency.service.ts` |
+| Author hide vs live listing | Implemented | `POST /products/:id/hide` returns 409 when a `SCHEDULED` or `LIVE` Listing exists; Product, Listing and audit are unchanged. No automatic listing cancel. Coverage: `products.service.spec.ts`, `author-hide-listing.integration.spec.ts` |
 | Needs-order queue + manual Order create | Implemented | admin recovery routes + mobile Recovery tab |
 | Read-only leftover commerce inventory | Implemented | `scripts/ops/commerce-inventory.mjs`; refuses `--apply`; no secret URLs in report |
 | **Cannot ban/revoke self or other admins** | Implemented | `assertIncidentTargetAllowed` in `admin-user.service.ts` |
@@ -62,11 +63,12 @@ investigations. Those stay in [`09-TRUST-AND-AUCTION-INTEGRITY.md`](09-TRUST-AND
 | Byte/file caps | Implemented | Existing `productImageUploadLimits` unchanged |
 | Decode outside TX | Implemented | Normalize outside the persist TX; short locked TX for status/listing/capacity check + insert |
 | Sequential bounded normalize | Implemented | Metadata gate (`animated: true` for detection) → `rotate().toFormat(jpeg\|png)` with `limitInputPixels`; normalize uses `animated: false` |
-| Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs |
+| Upload rate limit | Implemented | `@RateLimit` 10/min per user on product + creation-step upload POSTs and author achievement upload/delete |
+| Achievement / revision photo visibility | Implemented | Public achievement GET only from the published revision; owner/admin can read draft; anonymous/stranger draft reads 404. Owner application photo is private `no-store`. |
 | Canonical storage | Partial | S3-compatible `ImageStore` is required in production; live object-store drill remains pending |
 
-Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`.  
-Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`.
+Primary code: `apps/api/src/images/image-policy.ts`, `images.service.ts`, `images.controller.ts`, `portfolio.controller.ts`, `sellers.service.ts`.
+Tests: `image-policy.spec.ts`, `image-upload-safety.integration.spec.ts`, `seller-permissions.integration.spec.ts`, `portfolio-published-revision.integration.spec.ts`.
 
 **Pros:** cheap failures for non-owners; bounded decode; no animated surface in MVP catalog.  
 **Cons:** no object storage, CDN, thumbnails, or versioned mutable URLs yet; JPEG re-encode for jpeg/webp input.  

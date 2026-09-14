@@ -25,6 +25,8 @@ export type ProfileFields = {
   fullName: string;
   discipline: string;
   country: string;
+  city: string;
+  practice: string;
   socialLink: string;
   telegramUrl: string;
   instagramUrl: string;
@@ -138,12 +140,27 @@ export function SellerProfileFormSteps({
             required
           />
           <TextField
+            label="Город"
+            value={fields.city}
+            onChangeText={(value) => update('city', value)}
+            placeholder="Минск"
+            editable={editable}
+            required
+          />
+          <TextField
             label="Дисциплина"
             value={fields.discipline}
             onChangeText={(value) => update('discipline', value)}
             placeholder="Керамика, живопись, текстиль"
             editable={editable}
             required
+          />
+          <TextField
+            label="Практика"
+            value={fields.practice}
+            onChangeText={(value) => update('practice', value)}
+            placeholder="Авторская керамика"
+            editable={editable}
           />
           <TextField
             label="Публичная ссылка"
@@ -317,6 +334,7 @@ export function SellerProfileVerificationSection({
       <AppText role="bodySmall" tone="secondary">
         {fields.discipline || 'Дисциплина не заполнена'} ·{' '}
         {fields.country || 'Страна не заполнена'}
+        {fields.city.trim() ? ` · ${fields.city.trim()}` : ''}
       </AppText>
     </FormSection>
   );

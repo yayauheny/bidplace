@@ -39,6 +39,8 @@ const emptyFields: ProfileFields = {
   fullName: '',
   discipline: '',
   country: 'BY',
+  city: '',
+  practice: '',
   socialLink: '',
   telegramUrl: '',
   instagramUrl: '',
@@ -95,7 +97,9 @@ export function SellerProfileScreen() {
       fullName: profile.fullName,
       discipline: profile.discipline,
       country: profile.country,
-      socialLink: profile.socialLink,
+      city: profile.city ?? '',
+      practice: profile.practice ?? '',
+      socialLink: profile.socialLink ?? '',
       telegramUrl: profile.telegramUrl ?? '',
       instagramUrl: profile.instagramUrl ?? '',
       websiteUrl: profile.websiteUrl ?? '',
@@ -116,11 +120,9 @@ export function SellerProfileScreen() {
         fullName: fields.fullName,
         discipline: fields.discipline,
         country: fields.country,
-        socialLink:
-          fields.socialLink.trim() ||
-          fields.websiteUrl.trim() ||
-          fields.telegramUrl.trim() ||
-          fields.instagramUrl.trim(),
+        city: fields.city.trim(),
+        practice: fields.practice.trim() || null,
+        socialLink: fields.socialLink.trim() || null,
         telegramUrl: fields.telegramUrl.trim() || null,
         instagramUrl: fields.instagramUrl.trim() || null,
         websiteUrl: fields.websiteUrl.trim() || null,
@@ -227,6 +229,7 @@ export function SellerProfileScreen() {
     fields.slug.trim() &&
     fields.discipline.trim() &&
     fields.country.trim() &&
+    fields.city.trim() &&
     fields.shortDescription.trim() &&
     photoBlob &&
     !fieldErrors.socialLink,

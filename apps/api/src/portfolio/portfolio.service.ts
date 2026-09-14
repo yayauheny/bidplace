@@ -190,10 +190,7 @@ export class PortfolioService {
   }
 
   async getApplication(userId: string) {
-    const [response, editingRevision] = await Promise.all([
-      this.sellers.getMine(userId),
-      this.sellers.getEditingRevision(userId),
-    ]);
+    const response = await this.sellers.getMine(userId);
     const profile = response.sellerProfile;
     return portfolioAuthorApplicationResponseSchema.parse({
       application: {
@@ -206,7 +203,7 @@ export class PortfolioService {
         shortDescription: profile.shortDescription,
         status: profile.status,
       },
-      editingRevision,
+      editingRevision: response.editingRevision,
     });
   }
 
@@ -215,8 +212,24 @@ export class PortfolioService {
     return this.getApplication(userId);
   }
 
-  addAchievement(userId: string, input: PortfolioAchievementWriteRequest) {
-    return this.sellers.addAchievement(userId, input);
+  addAchievement(
+    userId: string,
+    input: PortfolioAchievementWriteRequest,
+    image?: Parameters<SellersService['addAchievement']>[2],
+  ) {
+    return this.sellers.addAchievement(userId, input, image);
+  }
+
+  deleteAchievement(userId: string, achievementId: string) {
+    return this.sellers.deleteAchievement(userId, achievementId);
+  }
+
+  getApplicationPhoto(userId: string) {
+    return this.sellers.getEditingPhoto(userId);
+  }
+
+  getAchievementImage(id: string, userId?: string, role?: string) {
+    return this.sellers.getAchievementImage(id, userId, role);
   }
 
   async listCabinetWorks(userId: string) {
@@ -311,6 +324,12 @@ function toPortfolioAuthor(profile: {
         id: string;
         occurredAt: string | null;
         body: string;
+        image?: {
+          url: string;
+          mimeType: string;
+          byteLength: number;
+          checksum: string;
+        } | null;
       }>
     | undefined;
 }) {

@@ -488,6 +488,11 @@ export class ProductsService {
       if (product.publishedRevisionId == null) {
         throw new ConflictException('Product has no published revision');
       }
+      if (nextStatus === 'ARCHIVED' && product.listings.length > 0) {
+        throw new ConflictException(
+          'Work cannot be hidden while a scheduled or live listing exists',
+        );
+      }
 
       await tx.product.update({
         where: { id },

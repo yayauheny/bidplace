@@ -1,6 +1,7 @@
 export { imageKey, parseImageKey } from './image-key';
 export {
   ImageStore,
+  RevisionMediaStorageError,
   emptyImageBytes,
   type ImageObject,
   type ImageStoreClient,

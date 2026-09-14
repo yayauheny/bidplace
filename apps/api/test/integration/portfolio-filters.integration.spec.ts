@@ -390,4 +390,63 @@ describe('portfolio catalog SQL filters and pagination', () => {
       second.authors[0]?.author.slug,
     );
   });
+
+  it('orders authors by profile created_at for sort=added, not latest work', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const older = await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.approved.profileId },
+      data: {
+        fullName: 'Older Added',
+        city: 'Minsk',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      select: { slug: true },
+    });
+    const newer = await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.otherApproved.profileId },
+      data: {
+        fullName: 'Newer Added',
+        city: 'Minsk',
+        createdAt: new Date('2026-08-01T00:00:00.000Z'),
+      },
+      select: { slug: true },
+    });
+    await publishWork({
+      sellerProfileId: fixture.sellers.approved.profileId,
+      categoryId: fixture.categoryId,
+      publicId: 'sortOld001',
+      title: 'Recent work on older author',
+      materials: 'шамот',
+      publishedAt: new Date('2026-09-10T00:00:00.000Z'),
+    });
+    await publishWork({
+      sellerProfileId: fixture.sellers.otherApproved.profileId,
+      categoryId: fixture.categoryId,
+      publicId: 'sortNew001',
+      title: 'Older work on newer author',
+      materials: 'дерево',
+      publishedAt: new Date('2026-02-01T00:00:00.000Z'),
+    });
+
+    const added = await guest.get('/authors?sort=added');
+    expect(added.status).toBe(200);
+    const addedBody = (await added.json()) as {
+      authors: Array<{ author: { slug: string } }>;
+    };
+    expect(addedBody.authors.map((item) => item.author.slug)).toEqual([
+      newer.slug,
+      older.slug,
+    ]);
+
+    const byName = await guest.get('/authors?sort=name');
+    expect(byName.status).toBe(200);
+    const nameBody = (await byName.json()) as {
+      authors: Array<{ author: { fullName: string } }>;
+    };
+    expect(nameBody.authors.map((item) => item.author.fullName)).toEqual([
+      'Newer Added',
+      'Older Added',
+    ]);
+  });
 });
