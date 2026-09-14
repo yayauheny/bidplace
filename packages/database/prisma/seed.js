@@ -29,16 +29,49 @@ const productImageFixturesDirectory = join(
   'product-images',
 );
 
+// Public strings below are production-quality demo copy. Invented Figma gaps
+// stay in these comments only — never in user-facing biography/story/technique.
 const VEX_SHORT_DESCRIPTION =
   'Ищу логику в абсурде.\nСтираю грань между реальностью и сном';
 const VEX_BIOGRAPHY =
-  'Илья Васильев — белорусский художник, чьи работы исследуют тонкие грани между реальностью и воображением. Он родился и вырос в Минске, где начал свой творческий путь. Получив академическое образование, он продолжил развивать свой уникальный стиль, сочетающий классические традиции и современное видение.';
+  'Илья Васильев — художник из Минска. В своих работах он исследует границу между знакомыми образами и ощущением сна, соединяя реалистичные детали с неожиданными формами и пространствами.';
 const VEX_PRACTICE =
-  'Моя практика основана на глубоком интересе к текстуре, цвету и свету. Я работаю исключительно маслом, создавая многослойные композиции, которые приглашают зрителя к размышлению и эмоциональному отклику. Каждая работа — это исследование границ восприятия и приглашение увидеть мир иначе.';
-const VEX_ACHIEVEMENT_BODY =
-  'Картина "Алиса в Зазеркалье" — современное произведение, представленное на выставке Кунибала Ректора, посвящённой футуристическим темам и времени.';
+  'Работа начинается с наблюдения и небольших эскизов. Илья собирает визуальные фрагменты, экспериментирует с цветом и светом, а затем постепенно соединяет их в цельную композицию. Его интересует момент, когда привычный образ начинает восприниматься иначе.';
+const PIXELP_SHORT_DESCRIPTION =
+  'Соединяю классические мотивы с современным цветом.';
+const PIXELP_BIOGRAPHY =
+  'Павел работает с живописью и цифровыми образами, исследуя, как классическая визуальная культура меняется в современном контексте. Его работы строятся на сочетании узнаваемых мотивов, насыщенного цвета и сюрреалистичных деталей.';
+const PIXELP_PRACTICE =
+  'В основе работ — коллажный подход: Павел собирает референсы, делает серию эскизов и постепенно переносит композицию на большой формат. Особое внимание он уделяет цвету, фактуре поверхности и взаимодействию объектов внутри пространства.';
 const OPENING_CURATOR_NOTE =
   'Тот случай, когда безупречная техника встречается с сильной идеей. Переосмысляет эстетику прошлого, создавая миры, где стирается грань реальности. Наша главная визуальная находка этой недели.';
+const DALI_STORY = `Работа построена вокруг образа, который одновременно кажется знакомым и невозможным. Плавные органические формы появляются на фоне почти классического пейзажа и постепенно превращают его в пространство сна.
+
+В процессе автор несколько раз менял композицию, добиваясь ощущения движения и глубины. Контраст холодных форм и насыщенного жёлтого света стал центральным элементом финальной версии.`;
+const MEMORY_STORY = `Серия началась с небольших пластических этюдов человеческого лица. Автор постепенно упрощал форму, оставляя только фрагменты, которые сильнее всего связаны с ощущением памяти и узнавания.
+
+Финальная работа соединяет несколько лиц в единую форму: одни черты проявляются сразу, другие становятся заметны только при изменении угла зрения.`;
+const COLOR_STORY = `Основой работы стала серия экспериментов с цветом. Автор собирал сочетания оттенков, наблюдая, как небольшое изменение насыщенности полностью меняет восприятие композиции.
+
+Финальная версия сохраняет часть этих тестов и превращает технический процесс настройки цвета в самостоятельный визуальный образ.`;
+const GRAPHIC_STORY = `Работа появилась из серии быстрых набросков. Автор сохранял случайные линии и несовершенства, постепенно объединяя их в более сложную композицию.
+
+В финале первоначальный рисунок остался заметен под новыми слоями и стал частью фактуры изображения.`;
+const ALICE_STORY = `Композиция собрана как оптический взгляд сквозь стекло: привычный свет распадается на кольца цвета и собирается снова уже в другом порядке.
+
+Автор несколько раз менял угол пересечения плоскостей, пока пространство не начало читаться одновременно как объект и как отражение.`;
+const BETWEEN_STORY = `Фигуры держат общую плоскость цвета и почти не показывают лиц. Жест руки становится главным событием кадра: касание, защита и поддержка происходят в одном движении.
+
+Работа собиралась из нескольких цветовых эскизов. Финальная версия оставляет только те сочетания, которые держат напряжение без лишних деталей.`;
+const RAINBOW_STORY = `Серия масок началась с повторяющегося профиля. Автор смещал цвет от лица к лицу, пока ритм не собрался в одну горизонталь.
+
+В финале одинаковые черты читаются по-разному из-за сдвигов красного, голубого и жёлтого. Повтор становится способом увидеть, как меняется узнавание.`;
+const BLOSSOM_STORY = `Ваза собрана из трёх объёмов, в каждом из которых спрятано лицо. Трещины глазури остаются видимыми: это не дефект, а след обжига и часть поверхности.
+
+Автор искал баланс между предметом и скульптурой, пока сосуд не начал читаться как несколько фигур, сложенных в один объект.`;
+const SAPPHIRE_STORY = `Камень написан как источник света, а не как ювелирный объект. Автор собирал жёлтые плоскости до тех пор, пока объём не начал светиться изнутри.
+
+Финальная композиция держит камень в центре и оставляет вокруг него только те цветовые поля, которые усиливают этот внутренний свет.`;
 
 function requiredEnvironment(name) {
   const value = process.env[name];
@@ -88,9 +121,15 @@ async function createProductWithCover({
   city,
   publishedAt,
   imageFileName,
+  detailFileName,
   status = 'APPROVED',
 }) {
-  const image = readSeedProductImage(imageFileName);
+  const covers = [
+    { position: 0, ...readSeedProductImage(imageFileName) },
+    ...(detailFileName
+      ? [{ position: 1, ...readSeedProductImage(detailFileName) }]
+      : []),
+  ];
 
   const product = await prisma.product.create({
     data: {
@@ -108,12 +147,7 @@ async function createProductWithCover({
       publishedAt,
       status,
       images: {
-        create: [
-          {
-            position: 0,
-            ...image,
-          },
-        ],
+        create: covers,
       },
     },
   });
@@ -328,7 +362,7 @@ async function main() {
     }),
   ]);
 
-  const pendingPhoto = readSeedSellerProfileImage('pixelp-placeholder.png');
+  const pendingPhoto = readSeedSellerProfileImage('pending-seller.png');
   const pendingSellerProfile = await prisma.sellerProfile.create({
     data: {
       userId: pendingSeller.id,
@@ -373,10 +407,10 @@ async function main() {
     discipline: 'Живопись',
     city: 'Гродно',
     practice:
-      'Пишу цвет и свет плотными слоями. Demo copy: Figma catalog chips were reused junk, so this practice is invented.',
-    biography: null,
-    shortDescription:
-      'Собираю цвет в плотные плоскости. Demo copy: not in Figma About.',
+      'Процесс строится вокруг серии цветовых проб и эскизов. Анастасия постепенно уточняет композицию, оставляя пространство для случайных сочетаний оттенков и фактур.',
+    biography:
+      'Анастасия исследует цвет, материал и оптические эффекты. В её работах строгая композиция соединяется с яркими визуальными акцентами и ощущением движения.',
+    shortDescription: 'Собираю цвет в плотные светящиеся плоскости.',
     photoFileName: 'quantumparadox.png',
     createdAt: new Date('2026-09-03T12:00:00.000Z'),
     handle: '@quantumparadox',
@@ -386,13 +420,13 @@ async function main() {
     passwordHash: adminPasswordHash,
     slug: 'havoc',
     fullName: 'Константин Константинович',
-    discipline: 'Предметный дизайн',
+    discipline: 'Цифровая графика',
     city: 'Брест',
     practice:
-      'Проверяю цвет и калибровку на предметных съёмках. Demo copy: not in Figma About.',
-    biography: null,
-    shortDescription:
-      'Сверяю цвет до последней плоскости. Demo copy: not in Figma About.',
+      'Он начинает с цифровых экспериментов, искажений и цветовых тестов, после чего отбирает наиболее выразительные фрагменты и собирает из них финальную композицию.',
+    biography:
+      'Константин работает с цифровой графикой и смешанными медиа. Его интересуют визуальный шум, ошибки изображения и эстетика технологических процессов.',
+    shortDescription: 'Собираю изображение из сбоев цвета и света.',
     photoFileName: 'havoc.png',
     createdAt: new Date('2026-09-02T12:00:00.000Z'),
     handle: '@havoc',
@@ -402,13 +436,13 @@ async function main() {
     passwordHash: adminPasswordHash,
     slug: 'bala_klava',
     fullName: 'Клавдия Агаповна',
-    discipline: 'Живопись',
+    discipline: 'Скульптура',
     city: 'Витебск',
     practice:
-      'Пишу серии и предметные натюрморты. Demo copy: not in Figma About.',
-    biography: null,
-    shortDescription:
-      'Держу серию в одном жесте. Demo copy: not in Figma About.',
+      'Работы развиваются от небольших пластических набросков к полноразмерным объектам. В процессе Клавдия экспериментирует с формой, поверхностью и светом, сохраняя следы ручной работы как часть произведения.',
+    biography:
+      'Клавдия работает на границе скульптуры и визуального искусства. Её интересуют память, телесность и то, как знакомые человеческие формы меняются под воздействием времени и восприятия.',
+    shortDescription: 'Собираю форму из памяти и касания.',
     photoFileName: 'bala_klava.png',
     createdAt: new Date('2026-09-01T12:00:00.000Z'),
     handle: '@bala_klava',
@@ -418,119 +452,187 @@ async function main() {
     passwordHash: adminPasswordHash,
     slug: 'pixelp',
     fullName: 'Павел Пиксель',
-    discipline: 'Коллекционер',
+    discipline: 'Художник',
     city: 'Минск',
-    practice:
-      'Собираю изображение так, чтобы оно зазвучало. Demo copy: pixelp is not in the Figma authors catalog.',
-    biography: null,
-    shortDescription:
-      'Собираю изображение так, чтобы оно зазвучало. Demo copy: invented display name and bio; not in Figma authors catalog.',
-    photoFileName: 'pixelp-placeholder.png',
+    practice: PIXELP_PRACTICE,
+    biography: PIXELP_BIOGRAPHY,
+    shortDescription: PIXELP_SHORT_DESCRIPTION,
+    photoFileName: 'pixelp.png',
     createdAt: new Date('2026-08-01T12:00:00.000Z'),
     handle: '@pixelp',
   });
 
-  const achievementDate = new Date('2026-04-01T00:00:00.000Z');
   await publishSellerProfile(vex.profile, {
     achievements: [
-      { occurredAt: achievementDate, body: VEX_ACHIEVEMENT_BODY },
-      { occurredAt: achievementDate, body: VEX_ACHIEVEMENT_BODY },
+      {
+        occurredAt: new Date('2026-04-01T00:00:00.000Z'),
+        body: '«Алиса в Зазеркалье»\nРабота представлена на групповой выставке, посвящённой современным интерпретациям сюрреализма и теме изменённого восприятия пространства.',
+      },
+      {
+        occurredAt: new Date('2025-09-01T00:00:00.000Z'),
+        body: '«Между сном и формой»\nПерсональная серия работ была показана в Минске. В экспозицию вошли живописные и графические произведения последних двух лет.',
+      },
     ],
   });
   await Promise.all([
     publishSellerProfile(quantumparadox.profile),
     publishSellerProfile(havoc.profile),
     publishSellerProfile(balaKlava.profile),
-    publishSellerProfile(pixelp.profile),
+    publishSellerProfile(pixelp.profile, {
+      achievements: [
+        {
+          occurredAt: new Date('2025-11-01T00:00:00.000Z'),
+          body: '«После классики»\nГрупповая выставка в Минске, где Павел показал живопись, собранную вокруг узнаваемых мотивов и современного цвета.',
+        },
+      ],
+    }),
   ]);
 
+  const unique = 'Единственный экземпляр';
   const dali = await createProductWithCover({
     publicId: 'daliEstate1',
     sellerProfileId: pixelp.profile.id,
     categoryId: category.id,
     title: 'Salvador Dalí Estate & Fundació Gala Сальвадор Дали',
-    story:
-      'Открытие недели: работа из каталога Figma. Demo copy: technique/story are not labeled on the Figma card.',
-    technique: 'Масло, смешанная техника. Demo copy.',
-    materials: 'Холст, масло. Demo copy.',
-    dimensions: 'Не указаны в Figma. Demo copy.',
+    story: DALI_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '80 × 100 см',
     year: 2024,
-    uniqueness: 'Единственный экземпляр. Demo copy.',
+    uniqueness: unique,
     city: 'Минск',
     publishedAt: new Date('2026-08-20T12:00:00.000Z'),
     imageFileName: 'dali-estate.png',
+    detailFileName: 'dali-estate-detail.png',
   });
   await createProductWithCover({
     publicId: 'caricature1',
     sellerProfileId: balaKlava.profile.id,
     categoryId: category.id,
     title: 'Картина по фото в стиле шарж',
-    story: 'Портрет по фото в шарже. Demo copy: not on the Figma card.',
-    technique: 'Графика. Demo copy.',
-    materials: 'Бумага, пигмент. Demo copy.',
+    story: GRAPHIC_STORY,
+    technique: 'Графика',
+    materials: 'Бумага, пигмент',
+    dimensions: '40 × 50 см',
+    year: 2025,
+    uniqueness: unique,
     city: 'Витебск',
     publishedAt: new Date('2026-09-10T12:00:00.000Z'),
     imageFileName: 'caricature.png',
+    detailFileName: 'caricature-detail.png',
   });
   await createProductWithCover({
     publicId: 'yellowSapph',
     sellerProfileId: quantumparadox.profile.id,
     categoryId: category.id,
     title: 'Желтый сапфир',
-    story: 'Цвет собран в одну плоскость. Demo copy: not on the Figma card.',
-    technique: 'Живопись. Demo copy.',
-    materials: 'Холст, масло. Demo copy.',
+    story: SAPPHIRE_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '70 × 90 см',
+    year: 2025,
+    uniqueness: unique,
     city: 'Гродно',
     publishedAt: new Date('2026-09-09T12:00:00.000Z'),
     imageFileName: 'yellow-sapphire.png',
+    detailFileName: 'yellow-sapphire-detail.png',
   });
   await createProductWithCover({
     publicId: 'colorCalib1',
     sellerProfileId: havoc.profile.id,
     categoryId: category.id,
     title: 'Color calibration',
-    story: 'Калибровка цвета на предметной съёмке. Demo copy.',
-    technique: 'Предметная съёмка. Demo copy.',
-    materials: 'Печать. Demo copy.',
+    story: COLOR_STORY,
+    technique: 'Цифровая графика',
+    materials: 'Пигментная печать',
+    dimensions: '50 × 50 см',
+    year: 2025,
+    uniqueness: unique,
     city: 'Брест',
     publishedAt: new Date('2026-09-08T12:00:00.000Z'),
     imageFileName: 'color-calibration.png',
+    detailFileName: 'color-calibration-detail.png',
   });
   await createProductWithCover({
     publicId: 'rainbowMask',
     sellerProfileId: balaKlava.profile.id,
     categoryId: category.id,
     title: 'Радуга (Mask Series 1997 no.8)',
-    story: 'Серия масок. Demo copy: Home «Новые работы» title from Figma.',
-    technique: 'Живопись. Demo copy.',
-    materials: 'Холст, масло. Demo copy.',
+    story: RAINBOW_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, масло',
+    dimensions: '90 × 120 см',
+    year: 2024,
+    uniqueness: unique,
     city: 'Витебск',
     publishedAt: new Date('2026-09-13T12:00:00.000Z'),
     imageFileName: 'rainbow-mask.png',
+    detailFileName: 'rainbow-mask-detail.png',
   });
   await createProductWithCover({
     publicId: 'blossomVase',
     sellerProfileId: balaKlava.profile.id,
     categoryId: category.id,
     title: 'Ваза "Блоссом"',
-    story: 'Предметная ваза. Demo copy: Home «Новые работы» title from Figma.',
-    technique: 'Предмет. Demo copy.',
-    materials: 'Керамика. Demo copy.',
+    story: BLOSSOM_STORY,
+    technique: 'Скульптура',
+    materials: 'Керамика',
+    dimensions: '28 × 18 см',
+    year: 2025,
+    uniqueness: unique,
     city: 'Витебск',
     publishedAt: new Date('2026-09-12T12:00:00.000Z'),
     imageFileName: 'blossom-vase.png',
+    detailFileName: 'blossom-vase-detail.png',
   });
   await createProductWithCover({
     publicId: 'memoryWork1',
     sellerProfileId: balaKlava.profile.id,
     categoryId: category.id,
     title: 'Память',
-    story: 'Фигура в интерьере. Demo copy: Home «Новые работы» title from Figma.',
-    technique: 'Живопись. Demo copy.',
-    materials: 'Холст, масло. Demo copy.',
+    story: MEMORY_STORY,
+    technique: 'Скульптура',
+    materials: 'Смешанная техника',
+    dimensions: '42 × 36 × 28 см',
+    year: 2025,
+    uniqueness: unique,
     city: 'Витебск',
     publishedAt: new Date('2026-09-11T12:00:00.000Z'),
     imageFileName: 'memory.png',
+    detailFileName: 'memory-detail.png',
+  });
+  // Demo ownership: Figma does not assign these works to vex. Used so the
+  // curator profile is a complete public author, without moving Dali off pixelp.
+  await createProductWithCover({
+    publicId: 'aliceGlass1',
+    sellerProfileId: vex.profile.id,
+    categoryId: category.id,
+    title: 'Алиса в Зазеркалье',
+    story: ALICE_STORY,
+    technique: 'Смешанная техника',
+    materials: 'Стекло, пигмент',
+    dimensions: '90 × 120 см',
+    year: 2026,
+    uniqueness: unique,
+    city: 'Минск',
+    publishedAt: new Date('2026-08-18T12:00:00.000Z'),
+    imageFileName: 'alice-glass.png',
+    detailFileName: 'alice-glass-detail.png',
+  });
+  await createProductWithCover({
+    publicId: 'sleepForm01',
+    sellerProfileId: vex.profile.id,
+    categoryId: category.id,
+    title: 'Между сном и формой',
+    story: BETWEEN_STORY,
+    technique: 'Живопись',
+    materials: 'Холст, акрил',
+    dimensions: '100 × 100 см',
+    year: 2025,
+    uniqueness: unique,
+    city: 'Минск',
+    publishedAt: new Date('2026-08-16T12:00:00.000Z'),
+    imageFileName: 'between-form.png',
   });
 
   await createProductWithCover({
@@ -538,8 +640,9 @@ async function main() {
     sellerProfileId: pendingSellerProfile.id,
     categoryId: category.id,
     title: 'Этюд «Тихий свет»',
-    story: 'Предмет ожидает проверки перед публикацией.',
-    technique: 'Ручная роспись',
+    story: 'Натюрморт с утренним светом на столе у окна.',
+    technique: 'Живопись',
+    materials: 'Холст, масло',
     city: 'Минск',
     publishedAt: null,
     imageFileName: 'pending-placeholder.png',
@@ -558,7 +661,7 @@ async function main() {
   });
 
   console.log(
-    'Seeded Figma local demo: admin, buyer login, pending-seller, catalog authors vex/quantumparadox/havoc/bala_klava, pixelp as Dali owner, seven public works, no listings/bids/orders, Opening curator=vex work=daliEstate1.',
+    'Seeded Figma local demo: Opening curator=vex work=daliEstate1 owner=pixelp; vex has aliceGlass1 and sleepForm01; no listings/bids/orders.',
   );
 }
 

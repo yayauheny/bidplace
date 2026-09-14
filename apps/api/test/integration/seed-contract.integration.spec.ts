@@ -67,7 +67,14 @@ describe('demo seed executable contract', () => {
       }),
       prisma.sellerProfile.findUnique({
         where: { slug: 'pixelp' },
-        select: { id: true, fullName: true, createdAt: true },
+        select: {
+          id: true,
+          fullName: true,
+          createdAt: true,
+          discipline: true,
+          biography: true,
+          profilePhotoByteLength: true,
+        },
       }),
       prisma.sellerProfile.findMany({
         where: {
@@ -81,6 +88,9 @@ describe('demo seed executable contract', () => {
         select: {
           publicId: true,
           status: true,
+          story: true,
+          technique: true,
+          materials: true,
           sellerProfile: { select: { slug: true } },
         },
       }),
@@ -105,10 +115,56 @@ describe('demo seed executable contract', () => {
     expect(orders).toBe(0);
     expect(vex?.fullName).toBe('Илья Васильев');
     expect(vex?.shortDescription).toContain('Ищу логику в абсурде');
-    expect(vex?.biography).toContain('белорусский художник');
-    expect(vex?.products).toHaveLength(0);
+    expect(vex?.biography).toContain('художник из Минска');
+    expect(vex?.products).toHaveLength(2);
     expect(vex?.publishedRevision?.achievements).toHaveLength(2);
+    expect(
+      new Set(
+        vex?.publishedRevision?.achievements.map((item) => item.body) ?? [],
+      ).size,
+    ).toBe(2);
     expect(pixelp?.fullName).toBe('Павел Пиксель');
+    expect(pixelp?.discipline).toBe('Художник');
+    expect(pixelp?.biography).toContain('живописью и цифровыми образами');
+    expect(pixelp?.profilePhotoByteLength ?? 0).toBeGreaterThan(10_000);
+    const publicCopyMarker =
+      /Demo copy|invented|not in Figma|placeholder|test fixture|\bseed\b|\bmock\b/i;
+    expect(dali?.story).not.toMatch(publicCopyMarker);
+    for (const row of await prisma.product.findMany({
+      select: {
+        title: true,
+        story: true,
+        technique: true,
+        materials: true,
+        uniqueness: true,
+      },
+    })) {
+      expect(
+        `${row.title}\n${row.story}\n${row.technique}\n${row.materials}\n${row.uniqueness ?? ''}`,
+      ).not.toMatch(publicCopyMarker);
+    }
+    for (const row of await prisma.sellerProfile.findMany({
+      where: { status: 'APPROVED' },
+      select: {
+        fullName: true,
+        biography: true,
+        shortDescription: true,
+        practice: true,
+        discipline: true,
+        publishedRevision: {
+          select: { achievements: { select: { body: true } } },
+        },
+      },
+    })) {
+      const achievements = (row.publishedRevision?.achievements ?? [])
+        .map((item) => item.body)
+        .join('\n');
+      expect(
+        `${row.fullName}\n${row.biography ?? ''}\n${row.shortDescription ?? ''}\n${row.practice ?? ''}\n${row.discipline ?? ''}\n${achievements}`,
+      ).not.toMatch(publicCopyMarker);
+    }
+    expect(dali?.technique).toBe('Живопись');
+    expect(dali?.materials).toBe('Холст, масло');
     expect(catalogAuthors.map((author) => author.slug)).toEqual([
       'vex',
       'quantumparadox',
@@ -120,6 +176,12 @@ describe('demo seed executable contract', () => {
     );
     expect(dali?.sellerProfile.slug).toBe('pixelp');
     expect(dali?.status).toBe('APPROVED');
+    expect(
+      await prisma.product.findUnique({
+        where: { publicId: 'aliceGlass1' },
+        select: { sellerProfile: { select: { slug: true } } },
+      }),
+    ).toMatchObject({ sellerProfile: { slug: 'vex' } });
     expect(curator?.product.publicId).toBe('daliEstate1');
     expect(curator?.curator.slug).toBe('vex');
     expect(curator?.note).toContain('безупречная техника');

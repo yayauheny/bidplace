@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-15
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1862,13 +1862,44 @@ Revises: `DEC-090` (Playwright-only `@vex` / Anna seed). Does not reopen
 - Public slugs may include underscore (`bala_klava`) to match Figma handles.
 - `SellerProfile.biography` is additive and distinct from Opening
   `shortDescription`. Author About prefers `biography` when present.
-- Do not invent a vex-owned Product from achievement copy. Missing Figma
-  rasters are recorded as gaps, not Unsplash/random substitutes.
+- Do not invent a vex-owned Product from achievement copy unless a later
+  decision (`DEC-092`) assigns a demo work for catalog completeness. Missing
+  Figma rasters are not replaced with Unsplash.
 
 ### Revisit when
 
 Figma confirms a vex-owned work, an isolated `pixelp` portrait exists, or the
 unreleased `curator_selections` table is applied in production.
+
+## DEC-092 — Demo data is invented in seed, production-quality in the UI
+
+Date: 2026-09-15
+Status: Confirmed
+Source: explicit founder instruction to revise local demo data quality on
+`feature/portfolio-mvp-release`
+Revises: `DEC-091` (empty vex Works / labeled demo stubs / pixelp 1×1 gap).
+Does not reopen Opening ownership (`vex` curator, Dali / `pixelp`) or
+`DEC-087` commerce/baseline migrations.
+
+### Decision
+
+- Demo data may be invented. It must look like production content in the UI.
+- Seed comments, fixture README and status docs may record Figma gaps.
+- User-facing fields must not contain `Demo copy`, `invented`, `placeholder`,
+  `not in Figma`, `test fixture`, `seed` or `mock`.
+- Allowed to invent: display names, biographies, practice, descriptions,
+  technique, story, exhibition text, and demo work ownership that does not
+  conflict with a confirmed Figma relation (Dali stays on `pixelp`).
+- `@vex` is a complete public author and may have demo works. Achievement
+  titles are not automatically Products; assigning a Figma fill to vex for
+  demo completeness is allowed when labeled in seed comments.
+- Public Work `История` stays RFC plain-text paragraphs. Extra `ProductImage`
+  rows are gallery photos, not a process-builder content model.
+
+### Revisit when
+
+Figma confirms an isolated `pixelp` portrait or a vex-owned work card, or the
+process photo/text story builder leaves the post-MVP backlog.
 
 ## DEC-088 — MVP dock is one four-item glass capsule
 

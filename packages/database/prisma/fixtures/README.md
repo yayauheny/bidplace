@@ -2,7 +2,7 @@
 
 These images are committed local inputs for the explicitly guarded development/test seed. They are not production content and the application never requests Figma or CDN URLs at runtime.
 
-Source: Figma file `uMo04w9bgrchWXXDgO4W62`. Files are **raw image fills**, not composed overlay cards.
+Source: Figma file `uMo04w9bgrchWXXDgO4W62`, plus one demo studio portrait for `pixelp`. Files are **raw image fills** or same-work detail crops, not composed overlay cards. User-facing copy is production-quality even when invented; invented/Figma-gap notes live only in this file and seed comments (`DEC-092`).
 
 ## Seller portraits
 
@@ -10,7 +10,8 @@ Source: Figma file `uMo04w9bgrchWXXDgO4W62`. Files are **raw image fills**, not 
 - `seller-profile/quantumparadox.png` — authors catalog fill, Анастасия Винова.
 - `seller-profile/havoc.png` — authors catalog fill, Константин Константинович.
 - `seller-profile/bala_klava.png` — authors catalog fill, Клавдия Агаповна.
-- `seller-profile/pixelp-placeholder.png` — **gap**. Figma has no isolated `pixelp` portrait. The Dali work-card chip is a circular crop of the painting, not a person photo. Technical 1×1 PNG so `SellerProfile` can persist required photo bytes. Do not replace with Unsplash or another author’s face.
+- `seller-profile/pixelp.png` — demo studio portrait for Павел Пиксель. Figma has no isolated unused male portrait (catalog four would collide). Not Unsplash and not another catalog author’s face.
+- `seller-profile/pending-seller.png` — technical 1×1 for unpublished `pending-seller`. Not a public catalog avatar.
 
 ## Work covers
 
@@ -21,6 +22,10 @@ Source: Figma file `uMo04w9bgrchWXXDgO4W62`. Files are **raw image fills**, not 
 - `product-images/rainbow-mask.png` — Home «Новые работы»: «Радуга (Mask Series 1997 no.8)» (`bala_klava`).
 - `product-images/blossom-vase.png` — Home «Новые работы»: «Ваза "Блоссом"» (`bala_klava`).
 - `product-images/memory.png` — Home «Новые работы»: «Память» (`bala_klava`).
-- `product-images/pending-placeholder.png` — technical 1×1 for the unpublished `pending-seller` moderation product. Not a public catalog asset.
+- `product-images/alice-glass.png` — vex «Алиса в Зазеркалье». Figma search-grid fill; demo ownership on vex, not a confirmed Figma work card.
+- `product-images/between-form.png` — vex «Между сном и формой». Figma search-grid fill; demo ownership on vex.
+- `product-images/pending-placeholder.png` — technical 1×1 for the unpublished pending product. Not a public catalog asset.
 
-Large Figma rasters were resized to a max long side of 1400px (portraits 800px) without upscaling smaller sources. No Unsplash fallbacks.
+Same-work `*-detail.png` crops are gallery extras from the matching cover, not another work’s photo.
+
+Large Figma rasters were resized to a max long side of 1400px (portraits 800px) without upscaling smaller sources.

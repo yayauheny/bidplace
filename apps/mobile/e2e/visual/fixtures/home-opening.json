@@ -48,14 +48,14 @@
         "fullName": "Павел Пиксель",
         "country": "Беларусь",
         "city": "Минск",
-        "discipline": "Коллекционер",
+        "discipline": "Художник",
         "practice": null,
         "biography": null,
         "profilePhotoUrl": "/api/sellers/pixelp/photo",
         "telegramUrl": null,
         "instagramUrl": null,
         "websiteUrl": null,
-        "shortDescription": "Собираю изображение так, чтобы оно зазвучало. Demo copy: invented display name and bio; not in Figma authors catalog.",
+        "shortDescription": "Соединяю классические мотивы с современным цветом.",
         "achievements": [],
         "sharePath": "/authors/pixelp"
       }

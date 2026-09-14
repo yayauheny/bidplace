@@ -1,5 +1,24 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Production-quality local demo copy
+
+- `Implemented`: local seed copy is production-quality. User-facing biography,
+  practice, story, technique, materials and achievements no longer contain
+  `Demo copy`, `invented`, `not in Figma` or other internal notes (`DEC-092`).
+  Opening remains curator=`vex`, work=`daliEstate1`, owner=`pixelp`.
+- `Implemented`: `@vex` has two published works (`aliceGlass1` «Алиса в
+  Зазеркалье», `sleepForm01` «Между сном и формой») on unused Figma fills.
+  Ownership is demo and recorded in seed comments; Dali stays on `pixelp`.
+- `Implemented`: `@pixelp` is `Художник`, Минск, with a real-looking studio
+  portrait, biography/practice, and Dali in Works. Gallery extras are same-work
+  3:4 detail crops, not another work’s photo.
+- `Partial`: public Work `История` remains RFC plain-text paragraphs. Interleaved
+  process photos inside the tab would need the post-MVP process builder
+  (`05-MVP-RFC` §15). Extra gallery images cover the “not only a text wall”
+  need without a new content model.
+- Coverage: `packages/database/prisma/seed.js`,
+  `seed-contract.integration.spec.ts`.
+
 ## 2026-09-14 — Figma-aligned local demo seed
 
 - `Implemented`: `CuratorSelection.curatorSellerProfileId` FK → `SellerProfile`
@@ -20,15 +39,13 @@
   `caricature1`, `yellowSapph`, `colorCalib1`, `rainbowMask`, `blossomVase`,
   `memoryWork1`. No Listing/Bid/Order rows. Opening curator=`vex`,
   work=`daliEstate1` / `pixelp`, Figma `note`. `seller@bidplace.test` is vex.
-  Vex has no Product. Published `SellerProfileRevision` + two April 2026
-  achievements for vex. Coverage: `seed-contract.integration.spec.ts`,
+  Vex product rows and public copy quality are updated in the 2026-09-15
+  demo-copy entry. Coverage: `seed-contract.integration.spec.ts`,
   `packages/database/prisma/seed.js`.
 - `Implemented` (mobile web binding): `home-opening.tsx` left column / profile
   button → `selection.curator`; `WorkCoverCard` → `selection.work.author.slug`.
-- `Partial` / gaps: no isolated `pixelp` portrait (technical 1×1 placeholder);
-  cities/disciplines/bios for non-vex authors are labeled demo copy; vex Works
-  tab is empty by Figma (achievement text is not a Product). Playwright visual
-  golden remains a later typography pass; mock fixture is not seed identity.
+- `Partial` / gaps: Playwright visual golden remains a later typography pass.
+  Public History does not interleave process photos (RFC plain text).
 - `Unchanged`: `05-MVP-RFC.md` Opening as author or work; canonical Pen;
   commerce Prisma leftovers. `DEC-091` revises `DEC-090` seed-identity clause.
 

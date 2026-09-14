@@ -1,8 +1,15 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-15
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-15 — Production-quality demo catalog copy
+
+- `Implemented` (data only): public profiles and works use production-quality
+  copy; Opening curator/work/owner binding is unchanged. Typography, Home
+  scroller and pixel Opening stay out of this slice.
+- `Unchanged`: canonical Pen, quiet pill tokens, first-fold golden.
 
 ## 2026-09-14 — Figma local seed identity for Opening
 

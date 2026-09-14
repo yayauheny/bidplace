@@ -11,6 +11,8 @@ const seededWorks = [
   'rainbowMask',
   'blossomVase',
   'memoryWork1',
+  'aliceGlass1',
+  'sleepForm01',
 ] as const;
 
 test('demo seed exposes public portfolio authors, works and media', async ({

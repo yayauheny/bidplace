@@ -41,6 +41,8 @@ const seededDemoProductIds = [
   'rainbowMask',
   'blossomVase',
   'memoryWork1',
+  'aliceGlass1',
+  'sleepForm01',
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {

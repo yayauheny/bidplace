@@ -1,6 +1,6 @@
 # bidplace — реестр дизайн-ресурсов
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-15
 
 Статус: **Canonical source, runtime mapping и локальные demo fixtures verified**
 
@@ -60,14 +60,14 @@ asset или изображения без подтверждённых прав
 | Favicon web | `apps/mobile/assets/branding/bidplace-favicon-light.png` и `.svg` | `apps/mobile/app.json`, web favicon |
 | Mark/adaptive icon | `apps/mobile/assets/branding/bidplace-mark-light.png` и `.svg`; производные `apps/mobile/assets/android-icon-*.png` | App icon, Android adaptive/monochrome icon |
 | Expo splash/icon derivatives | `apps/mobile/assets/icon.png`, `splash-icon.png`, `brand-mark.png` | Expo app configuration; не использовать как desktop wordmark |
-| Product demo media | `packages/database/prisma/fixtures/product-images/dali-estate.png`, `caricature.png`, `yellow-sapphire.png`, `color-calibration.png`, `rainbow-mask.png`, `blossom-vase.png`, `memory.png` | Только local/test seed; Figma raw fills. Unpublished pending product uses `pending-placeholder.png` (technical 1×1, not catalog) |
-| Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/vex.png`, `quantumparadox.png`, `havoc.png`, `bala_klava.png` | Только local/test seed; Figma raw fills. `pixelp-placeholder.png` is a documented gap (no isolated Figma portrait) |
+| Product demo media | `packages/database/prisma/fixtures/product-images/dali-estate.png`, `caricature.png`, `yellow-sapphire.png`, `color-calibration.png`, `rainbow-mask.png`, `blossom-vase.png`, `memory.png`, `alice-glass.png`, `between-form.png` plus matching `*-detail.png` crops | Только local/test seed. Catalog covers are Figma raw fills. Vex `alice-glass` / `between-form` are unused Figma fills with demo ownership. Unpublished pending product uses `pending-placeholder.png` (technical 1×1, not catalog) |
+| Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/vex.png`, `quantumparadox.png`, `havoc.png`, `bala_klava.png`, `pixelp.png` | Только local/test seed. Catalog four + vex are Figma fills. `pixelp.png` is a demo studio portrait because Figma has no isolated unused male portrait. `pending-seller.png` is a technical 1×1 for unpublished moderation. |
 | E2E Home Opening visual | golden `e2e/visual/references/home-opening-figma-390.png`; mock `e2e/visual/fixtures/home-opening.json` | Playwright mock of production Home. Rasters reuse Prisma fixtures (`vex.png`, `dali-estate.png`). Fixture JSON is not the identity of `@vex`; seed is. |
 | E2E-only profile fixture | `apps/mobile/e2e/fixtures/profile-photo.png` | Тест upload flow; не production content |
 
-Local seed uses Figma raw fills listed above. There are no Unsplash catalog
-fallbacks. `pixelp` has no isolated Figma portrait (gap). Vex has no seeded
-Product.
+Local seed uses Figma raw fills listed above plus demo studio portrait for
+`pixelp` and two unused Figma fills as vex works. There are no Unsplash catalog
+fallbacks. User-facing copy is production-quality (`DEC-092`).
 
 ### 3.2. Точные Pen image refs
 

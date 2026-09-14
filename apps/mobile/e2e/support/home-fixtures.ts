@@ -62,8 +62,8 @@ export function homeWorkItem(overrides?: {
     homeAuthor({
       id: '10000000-0000-4000-8000-000000000032',
       slug: homeWorkAuthorSlug,
-      fullName: 'pixelp',
-      shortDescription: 'Собери изображение так, чтобы оно зазвучало.',
+      fullName: 'Павел Пиксель',
+      shortDescription: 'Соединяю классические мотивы с современным цветом.',
     });
   return {
     work: {
