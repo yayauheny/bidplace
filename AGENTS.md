@@ -26,6 +26,7 @@ Apply these rules to every task in this repository.
 
 Use the most specific skill for the task:
 
+- `agent` for worker/supervisor delegation, Worker handoffs, and review loops until the task is complete.
 - `review` for diffs, pull requests, and review-only requests.
 - `security` for auth, permissions, payments, purchases, bids, balances, webhooks, files, external APIs, admin actions, or sensitive data.
 - `ui` for React, React Native, and Expo UI work.
