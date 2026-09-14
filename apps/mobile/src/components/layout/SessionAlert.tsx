@@ -3,6 +3,7 @@ export type SessionAlertProps = {
   onRetry: () => void;
 };
 
-export function SessionAlert(_props: SessionAlertProps) {
+export function SessionAlert(props: SessionAlertProps) {
+  void props;
   return null;
 }

@@ -3,7 +3,8 @@ import type { ViewStyle } from 'react-native';
 export type WebVisibility = 'visible' | 'hidden';
 
 export function webVisibilityStyle(
-  _visibility: WebVisibility,
+  visibility: WebVisibility,
 ): ViewStyle | undefined {
+  void visibility;
   return undefined;
 }
