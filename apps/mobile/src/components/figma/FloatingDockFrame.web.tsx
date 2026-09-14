@@ -46,7 +46,7 @@ export function FloatingDockFrame({
       <FigmaGlassSurface
         preset="navigation"
         testID="figma-floating-dock"
-        accessibilityRole="tablist"
+        accessibilityRole="navigation"
         accessibilityLabel="Основная навигация"
         contentClassName="figma-dock-items"
       >

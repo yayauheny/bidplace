@@ -204,6 +204,7 @@ export class PortfolioService {
         status: profile.status,
       },
       editingRevision: response.editingRevision,
+      achievements: await this.sellers.listEditingAchievements(userId),
     });
   }
 

@@ -36,6 +36,25 @@ export function figmaDockSurfaceSize(
   };
 }
 
+export function dockItemAccessibility(
+  id: FigmaDockItemId,
+  selected: boolean,
+): {
+  role: 'link' | 'button';
+  accessibilityState: { selected?: boolean };
+  ariaCurrent?: 'page';
+} {
+  if (id === 'plus') {
+    return { role: 'button', accessibilityState: {} };
+  }
+
+  return {
+    role: 'link',
+    accessibilityState: { selected },
+    ariaCurrent: selected ? 'page' : undefined,
+  };
+}
+
 export function isFigmaDockItemSelected(
   id: FigmaDockItemId,
   pathname: string,

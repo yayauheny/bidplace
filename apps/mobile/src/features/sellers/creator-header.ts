@@ -1,4 +1,4 @@
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import type { FigmaTab } from '../../components/figma/figma-tabs';
 export type CreatorHeaderProps = {
   profile: PortfolioWorkDetailResponse['author'];

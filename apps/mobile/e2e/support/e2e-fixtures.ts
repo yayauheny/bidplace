@@ -323,6 +323,7 @@ export async function createSellerFixture(
       sellerType: 'creator',
       fullName: `E2E Seller ${suffix}`,
       country: 'BY',
+      city: 'Minsk',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: photo.byteLength,
       profilePhotoChecksum: '0'.repeat(64),

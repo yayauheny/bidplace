@@ -73,7 +73,7 @@ export function DestructiveButton({
         alignSelf: alignSelf ?? (resolvedWidth === 'full' ? 'stretch' : 'flex-start'),
       }}
     >
-      <FigmaButton {...props} variant="solid" width={resolvedWidth} />
+      <FigmaButton {...props} variant="danger" width={resolvedWidth} />
     </View>
   );
 }

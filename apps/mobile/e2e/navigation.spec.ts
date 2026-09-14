@@ -41,8 +41,8 @@ test('guest dock search, home, profile and plus stay inside the capsule', async 
   await dock.getByLabel('Поиск').click();
   await expect(page).toHaveURL(/\/search\/?$/);
   await expect(dock.getByLabel('Поиск')).toHaveAttribute(
-    'aria-selected',
-    'true',
+    'aria-current',
+    'page',
   );
 
   await dock.getByLabel('Главная').click();

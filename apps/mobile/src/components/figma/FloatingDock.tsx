@@ -13,6 +13,7 @@ import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
 import { FloatingDockFrame } from './FloatingDockFrame';
 import {
+  dockItemAccessibility,
   figmaDockItems,
   isFigmaDockItemSelected,
   type FigmaDockItem,
@@ -104,13 +105,16 @@ function DockItem({
   href?: Href;
   onPress?: () => void;
 }) {
+  const itemAccessibility = dockItemAccessibility(item.id, selected);
   const content = (
     <MotionPressable
-      accessibilityRole="tab"
+      accessibilityRole={itemAccessibility.role}
       accessibilityLabel={item.label}
-      accessibilityState={{ selected }}
+      accessibilityState={itemAccessibility.accessibilityState}
       {...(Platform.OS === 'web'
-        ? { 'aria-selected': selected ? true : undefined }
+        ? {
+            'aria-current': itemAccessibility.ariaCurrent,
+          }
         : {})}
       onPress={onPress}
       preset="dock"

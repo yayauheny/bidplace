@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { CreatorSocialLink } from './CreatorSocialLink';

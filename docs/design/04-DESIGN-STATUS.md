@@ -4,6 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-14 — Mobile-web preservation (mobile web only)
+
+- `Implemented`: city + revision application, achievement images in About,
+  AdminRecoveryPanel while commerce runtime is loaded, shared `danger`
+  button, dock `navigation` / links / `aria-current`, restored
+  `media-resilience` in the maintained gate. Auth session error stays on
+  `ProtectedRoute`. Dock remains 232×64.
+- `Verified` (this branch, this run): maintained `test:e2e` Chromium `41/41`;
+  `test:e2e:stabilization` Chromium+WebKit `38/38`. Not founder Accepted or
+  launch-ready. Absence of desktop/native is not a remaining defect.
+- `Unchanged`: author header motion, Home `curatorSelection`, ShareSheet,
+  Works/Authors/Search URL state, cover frost, FigmaTabs typography.
+
 ## 2026-09-14 — Mobile-web 390 Figma cutover
 
 - `Implemented` (mobile-web 390 only): Figma tokens and shared primitives,
@@ -13,9 +26,9 @@
   `/authors` aliases, S4 auth composition, S7 filter masters, URL-owned Works /
   Authors / Search with server facets and pagination, and web tab
   label/count typography.
-- `Verified` (this branch): mobile typecheck, lint, unit `60` files / `235`
-  tests, Playwright stabilization Chromium+WebKit `38/38`, leftover Chromium
-  `test:e2e:all` `36/36`. This gate does not accept native or 1024/1440.
+- `Verified` (this branch): not re-used as current evidence. `test:e2e` is the
+  maintained mobile-web Playwright gate; `test:e2e:stabilization` is the 38
+  visual Chromium+WebKit suite. This gate does not accept native or 1024/1440.
 - `Partial`: Figma registration-complete frame has no runtime state because
   login redirects immediately. Author About is not URL-owned. RFC §6 brief
   facts stay unresolved; cards remain title + `@author`.

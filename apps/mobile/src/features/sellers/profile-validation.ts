@@ -13,7 +13,7 @@ type PublicLinkField =
   | 'websiteUrl';
 
 export type ProfileFieldErrors = Partial<
-  Record<PublicLinkField | 'handoffContactValue', string>
+  Record<PublicLinkField | 'handoffContactValue' | 'city', string>
 >;
 
 export function getPublicLinkError(value: string): string | undefined {
@@ -46,6 +46,7 @@ export function getHandoffContactError(
 }
 
 export function getProfileFieldErrors(fields: {
+  city: string;
   socialLink: string;
   telegramUrl: string;
   instagramUrl: string;
@@ -54,6 +55,9 @@ export function getProfileFieldErrors(fields: {
   handoffContactValue: string;
 }): ProfileFieldErrors {
   const errors: ProfileFieldErrors = {};
+  if (!fields.city.trim()) {
+    errors.city = 'Укажите город';
+  }
   const publicFields: PublicLinkField[] = [
     'socialLink',
     'telegramUrl',

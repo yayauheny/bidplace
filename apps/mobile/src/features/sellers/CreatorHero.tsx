@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Platform, View } from 'react-native';
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { AuthorAtmosphere } from '../../components/figma/AuthorAtmosphere';

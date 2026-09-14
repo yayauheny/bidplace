@@ -146,6 +146,7 @@ export function SellerProfileFormSteps({
             placeholder="Минск"
             editable={editable}
             required
+            error={fieldErrors.city}
           />
           <TextField
             label="Дисциплина"

@@ -197,6 +197,7 @@ export const portfolioAuthorApplicationResponseSchema = z
       })
       .strict()
       .nullable(),
+    achievements: z.array(portfolioAchievementSchema),
   })
   .strict();
 

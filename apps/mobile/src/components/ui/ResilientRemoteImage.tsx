@@ -186,7 +186,12 @@ export function ResilientRemoteImage({
   }
 
   return (
-    <View style={[style, { overflow: 'hidden' }]}>
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={accessibilityLabel}
+      style={[style, { overflow: 'hidden' }]}
+    >
       <Image
         key={sourceUri}
         source={{ uri: sourceUri }}
@@ -194,8 +199,7 @@ export function ResilientRemoteImage({
         contentPosition={contentPosition}
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${visibleRecovery.requestVersion}`}
-        accessibilityLabel={accessibilityLabel}
-        accessible={Boolean(accessibilityLabel)}
+        accessible={false}
         blurRadius={blurRadius}
         onLoad={handleLoad}
         onError={handleError}

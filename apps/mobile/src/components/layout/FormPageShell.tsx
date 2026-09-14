@@ -7,14 +7,17 @@ import { AppShell } from './AppShell';
 
 export function FormPageShell({
   children,
+  bottomAction,
+  maxWidth,
   hideDock = false,
 }: {
   children: ReactNode;
+  bottomAction?: ReactNode;
   maxWidth?: number;
   hideDock?: boolean;
 }) {
   return (
-    <AppShell hideDock={hideDock}>
+    <AppShell hideDock={hideDock} bottomAction={bottomAction}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
@@ -27,7 +30,14 @@ export function FormPageShell({
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ width: '100%', gap: designTokens.space.sectionGap }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth,
+            alignSelf: maxWidth ? 'center' : undefined,
+            gap: designTokens.space.sectionGap,
+          }}
+        >
           {children}
         </View>
       </ScrollView>

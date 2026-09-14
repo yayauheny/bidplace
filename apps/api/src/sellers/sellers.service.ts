@@ -57,6 +57,7 @@ import {
   publicSellerProfileSelect,
   sellerProfilePhotoSelect,
   sellerProfileOwnerSelect,
+  toPortfolioAchievement,
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
@@ -233,6 +234,37 @@ export class SellersService {
     }
 
     return toSellerProfileResponse(sellerProfile);
+  }
+
+  async listEditingAchievements(userId: string) {
+    const sellerProfile = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: {
+        editingRevision: {
+          select: {
+            achievements: {
+              orderBy: { position: 'asc' },
+              select: {
+                id: true,
+                occurredAt: true,
+                body: true,
+                mimeType: true,
+                byteLength: true,
+                checksum: true,
+                objectKey: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!sellerProfile) {
+      throw new NotFoundException('Seller profile not found');
+    }
+    return (
+      sellerProfile.editingRevision?.achievements.map(toPortfolioAchievement) ??
+      []
+    );
   }
 
   async getEditingRevision(userId: string) {

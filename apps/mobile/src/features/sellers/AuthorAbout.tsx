@@ -1,9 +1,10 @@
 import { ScrollView, View } from 'react-native';
 
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText } from '../../components/ui';
+import { AppText, ResilientRemoteImage } from '../../components/ui';
+import { getApiAssetUrl } from '../../lib/environment';
 import { formatAchievementDate } from './achievement-date';
 
 export function AuthorAbout({
@@ -66,23 +67,40 @@ export function AuthorAbout({
                   </View>
                 ) : null}
                 <View style={{ gap: designTokens.space.x3 }}>
-                  <View
-                    style={{
-                      width: '100%',
-                      minHeight: (designTokens.size.achievementWidth * 4) / 3,
-                      padding: designTokens.space.x3,
-                      borderRadius: designTokens.radius.achievement,
-                      backgroundColor: designTokens.color.surfaceMuted,
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <AppText
-                      role="achievementStatement"
-                      style={{ textAlign: 'center' }}
+                  {item.image ? (
+                    <ResilientRemoteImage
+                      uri={getApiAssetUrl(item.image.url)}
+                      component="AuthorAchievement"
+                      accessibilityLabel="Фото выставки или достижения автора"
+                      fallbackLabel="Фотография недоступна"
+                      style={{
+                        width: '100%',
+                        aspectRatio: 3 / 4,
+                        borderRadius: designTokens.radius.achievement,
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: '100%',
+                        minHeight: (designTokens.size.achievementWidth * 4) / 3,
+                        padding: designTokens.space.x3,
+                        borderRadius: designTokens.radius.achievement,
+                        backgroundColor: designTokens.color.surfaceMuted,
+                        justifyContent: 'center',
+                      }}
                     >
-                      {item.body}
-                    </AppText>
-                  </View>
+                      <AppText
+                        role="achievementStatement"
+                        style={{ textAlign: 'center' }}
+                      >
+                        {item.body}
+                      </AppText>
+                    </View>
+                  )}
+                  {item.image ? (
+                    <AppText role="bodySmall">{item.body}</AppText>
+                  ) : null}
                 </View>
               </View>
             ))}

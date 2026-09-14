@@ -26,9 +26,9 @@
   `products.service.spec.ts`, `author-hide-listing.integration.spec.ts`.
 - `Unchanged`: Nest Listings/Bids/Orders, Prisma commerce tables,
   `COMMERCE_ENABLED`, recovery APIs and archive lineage stay on this branch.
-- `Partial`: the pre-Figma seller application form now collects required `city`
-  and optional `practice` and sends them on create/update. Figma application
-  revision UI, public catalog e2e, and approved-author submit remain Phase 2.
+- `Partial`: the seller application form collects required `city` and optional
+  `practice`. Public catalog e2e and approved-author revision coverage live on
+  `fix/mobile-web-preservation`.
 - `Not claimed`: Founder Accepted, launch-ready, or commerce removal.
 
 ## 2026-09-14 — Mobile-web Figma staged on portfolio foundation
@@ -39,14 +39,35 @@
   Dock is the `DEC-088` 232×64 four-item capsule. Auction/listing/order/activity
   screens and `socket.io-client` are removed from mobile runtime. Public cards
   stay title + `@author`. Home opening reads server `curatorSelection`.
-  Coverage: mobile unit `60` files / `235` tests; Playwright stabilization
-  Chromium+WebKit `38/38` (`figma-stabilization`, `home-figma`,
-  `discovery-launch`, `author-header-motion`, `product-layout`, `auth-layout`,
-  `figma-cover-frost`); leftover Chromium `test:e2e:all` `36/36` including the
-  unchanged PR A create-work and application wizards. Expo web export has no
-  `socket.io-client`. This is not founder Accepted or launch-ready.
-- `Partial`: native iOS/Android visual parity, 1024/1440, RFC §10 create-work
-  rewrite and launch-ready are not in this branch.
+  Expo web export has no `socket.io-client`. This is not founder Accepted or
+  launch-ready.
+- `Partial`: native iOS/Android, RFC §10 create-work rewrite and launch-ready
+  are out of scope for mobile web only.
+
+## 2026-09-14 — Mobile-web preservation on corrected PR A
+
+- `Implemented` (mobile web only): author application requires `city`; approved
+  authors edit via revision + «Отправить на проверку»; optional achievement
+  images render in Author About and can be uploaded/deleted by the owner;
+  AdminRecoveryPanel + «Восстановление» stay while commerce runtime is loaded;
+  `DestructiveButton` uses shared `danger`; `sort=added` and hide-vs-live
+  listing stay from [PR A preservation](#2026-09-14--portfolio-foundation-preservation);
+  dock is `navigation` with links/`aria-current` and a create button;
+  `PortfolioWorkDetailResponse` is imported from `@bidplace/contracts`;
+  `test:e2e` is the maintained Playwright gate and
+  `test:e2e:stabilization` is the 38 visual Chromium+WebKit suite;
+  `media-resilience.spec.ts` is restored without the obsolete header/login
+  assertion. Auth session error + retry stay on `ProtectedRoute` (alert +
+  «Повторить»); AppShell does not add a second public-home retry. Coverage:
+  `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
+  `floating-dock.spec.ts`, `author-application-publication.spec.ts`,
+  `author-revision-flow.spec.ts`, `media-resilience.spec.ts`,
+  `figma-error-state.spec.ts`.
+- `Unchanged`: 232×64 dock, author header motion, Home `curatorSelection`,
+  ShareSheet, Works/Authors/Search URL state, cover frost, FigmaTabs
+  typography. Commerce archive `19eb40e` is not modified.
+- `Not claimed`: Founder Accepted, launch-ready, native, or 1024/1440
+  compositions. Absence of desktop/native is not a remaining defect.
 - `Unchanged`: Nest commerce modules, Listing/Bid/Order contracts, Prisma
   commerce tables and `COMMERCE_ENABLED` remain from PR A until PR C.
 - `Confirmed`: `DEC-088` is recorded here; `DEC-085`/`086`/`087`/`089` stay

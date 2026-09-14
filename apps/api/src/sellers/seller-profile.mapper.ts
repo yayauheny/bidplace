@@ -119,6 +119,34 @@ export function sellerProfilePhotoUrl(slug: string): string {
   return `/api/sellers/${slug}/photo`;
 }
 
+export function toPortfolioAchievement(achievement: {
+  id: string;
+  occurredAt: Date | null;
+  body: string;
+  mimeType: string | null;
+  byteLength: number | null;
+  checksum: string | null;
+  objectKey: string | null;
+}) {
+  return {
+    id: achievement.id,
+    occurredAt: achievement.occurredAt?.toISOString() ?? null,
+    body: achievement.body,
+    image:
+      achievement.mimeType &&
+      achievement.byteLength &&
+      achievement.checksum &&
+      achievement.objectKey
+        ? {
+            url: `/api/author-achievements/${achievement.id}/image`,
+            mimeType: achievement.mimeType,
+            byteLength: achievement.byteLength,
+            checksum: achievement.checksum,
+          }
+        : null,
+  };
+}
+
 export function toPublicSellerProfile(
   sellerProfile: Omit<PublicSellerProfileRecord, 'publishedRevision'> & {
     publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
@@ -140,23 +168,8 @@ export function toPublicSellerProfile(
     websiteUrl: sellerProfile.websiteUrl ?? null,
     shortDescription: sellerProfile.shortDescription,
     achievements:
-      sellerProfile.publishedRevision?.achievements.map((achievement) => ({
-        id: achievement.id,
-        occurredAt: achievement.occurredAt?.toISOString() ?? null,
-        body: achievement.body,
-        image:
-          achievement.mimeType &&
-          achievement.byteLength &&
-          achievement.checksum &&
-          achievement.objectKey
-            ? {
-                url: `/api/author-achievements/${achievement.id}/image`,
-                mimeType: achievement.mimeType,
-                byteLength: achievement.byteLength,
-                checksum: achievement.checksum,
-              }
-            : null,
-      })) ?? [],
+      sellerProfile.publishedRevision?.achievements.map(toPortfolioAchievement) ??
+      [],
   };
 }
 

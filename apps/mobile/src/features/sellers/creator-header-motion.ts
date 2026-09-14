@@ -1,4 +1,4 @@
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 
 export const CREATOR_COMPACT_SOCIAL_LIMIT = 2;
 export const CREATOR_SCROLL_TEST_ID = 'creator-scroll';

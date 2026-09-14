@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 
 import { toProductScreenModel } from './portfolio-work-adapter';
 

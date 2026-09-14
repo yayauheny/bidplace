@@ -5,6 +5,7 @@ export const figmaButtonVariants = [
   'outline',
   'ghost',
   'muted',
+  'danger',
 ] as const;
 
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
@@ -37,8 +38,10 @@ export function figmaButtonStyle(
     backgroundColor:
       variant === 'outline'
         ? 'transparent'
-        : disabled && variant === 'solid'
-          ? figmaTokens.color.solidDisabled
+        : disabled && (variant === 'solid' || variant === 'danger')
+          ? variant === 'danger'
+            ? figmaTokens.color.danger
+            : figmaTokens.color.solidDisabled
           : fill,
     opacity: disabled ? 0.5 : 1,
     boxShadow: showRing
@@ -57,6 +60,9 @@ export function figmaButtonSurfaceFill(
   if (interaction === 'disabled' && variant === 'solid') {
     return figmaTokens.color.solidDisabled;
   }
+  if (interaction === 'disabled' && variant === 'danger') {
+    return figmaTokens.color.danger;
+  }
   return buttonFill(variant, active);
 }
 
@@ -65,13 +71,17 @@ export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
 }
 
 export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
-  return variant === 'solid' ? figmaTokens.color.white : figmaTokens.color.ink;
+  return variant === 'solid' || variant === 'danger'
+    ? figmaTokens.color.white
+    : figmaTokens.color.ink;
 }
 
 function buttonFill(variant: FigmaButtonVariant, active: boolean) {
   switch (variant) {
     case 'solid':
       return active ? figmaTokens.color.solidHover : figmaTokens.color.solid;
+    case 'danger':
+      return active ? figmaTokens.color.dangerHover : figmaTokens.color.danger;
     case 'outline':
     case 'ghost':
       return active ? figmaTokens.color.ghostHover : figmaTokens.color.canvas;
@@ -86,6 +96,8 @@ function buttonBorder(variant: FigmaButtonVariant) {
   switch (variant) {
     case 'solid':
       return figmaTokens.color.ink;
+    case 'danger':
+      return figmaTokens.color.dangerHover;
     case 'outline':
       return 'transparent';
     case 'ghost':

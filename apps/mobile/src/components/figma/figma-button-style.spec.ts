@@ -56,4 +56,26 @@ describe('Figma button styles', () => {
     expect(figmaButtonStyle('solid', 'disabled').opacity).toBe(0.5);
     expect(figmaButtonStyle('muted', 'disabled').opacity).toBe(0.5);
   });
+
+  it('keeps danger visually distinct from the primary solid pill', () => {
+    expect(figmaButtonStyle('danger', 'idle')).toMatchObject({
+      backgroundColor: figmaTokens.color.danger,
+      borderColor: figmaTokens.color.dangerHover,
+    });
+    expect(figmaButtonStyle('danger', 'hover').backgroundColor).toBe(
+      figmaTokens.color.dangerHover,
+    );
+    expect(figmaButtonStyle('danger', 'pressed')).toMatchObject({
+      backgroundColor: figmaTokens.color.dangerHover,
+      boxShadow: `0px 0px 0px 2px ${figmaTokens.color.pressRing}`,
+    });
+    expect(figmaButtonStyle('danger', 'disabled')).toMatchObject({
+      backgroundColor: figmaTokens.color.danger,
+      opacity: 0.5,
+    });
+    expect(figmaButtonLabelColor('danger')).toBe(figmaTokens.color.white);
+    expect(figmaButtonStyle('danger', 'idle').backgroundColor).not.toBe(
+      figmaButtonStyle('solid', 'idle').backgroundColor,
+    );
+  });
 });

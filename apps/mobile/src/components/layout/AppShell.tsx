@@ -11,11 +11,11 @@ import { FloatingDock } from '../figma/FloatingDock';
 
 export function AppShell({
   children,
+  bottomAction,
   hideDock = false,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
-  ambientVariant?: string;
   hideDock?: boolean;
 }) {
   const dockBlurTarget = useRef<View | null>(null);
@@ -43,6 +43,18 @@ export function AppShell({
           }}
         >
           {children}
+          {bottomAction ? (
+            <View
+              style={{
+                paddingHorizontal: designTokens.space.pageGutter,
+                paddingBottom: hideDock
+                  ? designTokens.space.x4
+                  : designTokens.size.dockReserve,
+              }}
+            >
+              {bottomAction}
+            </View>
+          ) : null}
         </BlurTargetView>
         {!hideDock && isFocused ? (
           <FloatingDock blurTarget={dockBlurTarget} />

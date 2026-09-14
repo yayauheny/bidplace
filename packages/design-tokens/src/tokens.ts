@@ -33,6 +33,7 @@ export const designTokens = {
     success: '#039600',
     warning: '#A66B12',
     danger: '#FF0000',
+    dangerHover: '#C40000',
     error: '#FF0000',
     focus: '#004DFF',
     overlay: 'rgba(41, 41, 41, 0.70)',

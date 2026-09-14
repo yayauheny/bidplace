@@ -34,10 +34,12 @@ export function FigmaGlassSurface({
   contentStyle?: StyleProp<ViewStyle>;
   contentClassName?: string;
   testID?: string;
-  accessibilityRole?: AccessibilityRole;
+  accessibilityRole?: AccessibilityRole | 'navigation';
   accessibilityLabel?: string;
 }) {
   const spec = figmaGlassSurfaceSpec(preset);
+  const nativeRole =
+    accessibilityRole === 'navigation' ? undefined : accessibilityRole;
 
   return (
     <LinearGradient
@@ -74,7 +76,7 @@ export function FigmaGlassSurface({
         />
       </BlurView>
       <View
-        accessibilityRole={accessibilityRole}
+        accessibilityRole={nativeRole}
         accessibilityLabel={accessibilityLabel}
         style={contentStyle}
       >

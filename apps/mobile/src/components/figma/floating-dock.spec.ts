@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
+  dockItemAccessibility,
   figmaDeferredDockItemIds,
   figmaDockItemIds,
   figmaDockItems,
@@ -42,5 +43,21 @@ describe('Figma floating dock', () => {
     expect(isFigmaDockItemSelected('search', '/search')).toBe(true);
     expect(isFigmaDockItemSelected('profile', '/login')).toBe(true);
     expect(isFigmaDockItemSelected('plus', '/')).toBe(false);
+  });
+
+  it('keeps route items as links and create as a button', () => {
+    expect(dockItemAccessibility('home', true)).toEqual({
+      role: 'link',
+      accessibilityState: { selected: true },
+      ariaCurrent: 'page',
+    });
+    expect(dockItemAccessibility('search', false)).toEqual({
+      role: 'link',
+      accessibilityState: { selected: false },
+    });
+    expect(dockItemAccessibility('plus', false)).toEqual({
+      role: 'button',
+      accessibilityState: {},
+    });
   });
 });

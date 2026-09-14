@@ -1,4 +1,4 @@
-import type { PortfolioWorkDetailResponse } from '../../lib/portfolio-types';
+import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 
 export function toProductScreenModel(detail: PortfolioWorkDetailResponse): {
   product: {

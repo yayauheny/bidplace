@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getHandoffContactError,
+  getProfileFieldErrors,
   getPublicLinkError,
 } from './profile-validation';
 
@@ -42,5 +43,21 @@ describe('seller profile field validation', () => {
     ],
   ] as const)('validates %s handoff values: %s', (type, value, expected) => {
     expect(getHandoffContactError(type, value)).toBe(expected);
+  });
+
+  it('requires a non-blank city', () => {
+    const valid = {
+      city: 'Минск',
+      socialLink: '',
+      telegramUrl: '',
+      instagramUrl: '',
+      websiteUrl: '',
+      handoffContactType: 'TELEGRAM' as const,
+      handoffContactValue: '',
+    };
+    expect(getProfileFieldErrors(valid).city).toBeUndefined();
+    expect(getProfileFieldErrors({ ...valid, city: '   ' }).city).toBe(
+      'Укажите город',
+    );
   });
 });

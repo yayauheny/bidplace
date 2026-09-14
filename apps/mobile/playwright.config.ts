@@ -1,8 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
-// Leftover specs after auction and superseded Pen/header deletion.
-// This is not a native or desktop acceptance gate. The official
-// mobile-web 390 gate is playwright.stabilization.config.ts.
+// Maintained mobile-web release gate. Visual 390 Chromium+WebKit coverage
+// is `test:e2e:stabilization`. Auction/Pen specs were deleted with commerce
+// chrome and must not be reintroduced without an explicit ignore reason.
 
 const apiPort = process.env.E2E_API_PORT ?? '3001';
 const webPort = process.env.E2E_WEB_PORT ?? '8081';

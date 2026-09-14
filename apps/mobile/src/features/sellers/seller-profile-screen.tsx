@@ -26,6 +26,11 @@ import {
   getHandoffContactError,
   getProfileFieldErrors,
 } from './profile-validation';
+import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
+import {
+  canSubmitSellerProfileRevision,
+  isSellerProfileFormEditable,
+} from './seller-profile-editable';
 import {
   SellerProfileCreationStepSelector,
   SellerProfileFormSteps,
@@ -79,8 +84,19 @@ export function SellerProfileScreen() {
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [profileStep, setProfileStep] = useState(1);
   const profile = query.data?.sellerProfile;
-  const editable = !profile || profile.status === 'CHANGES_REQUESTED';
+  const editingRevision = query.data?.editingRevision;
+  const editable = isSellerProfileFormEditable(profile, editingRevision);
+  const canSubmitRevision = canSubmitSellerProfileRevision(
+    profile,
+    editingRevision,
+  );
   const isProfileCreation = !profile;
+  const applicationPhoto = useQuery({
+    queryKey: ['seller', 'application-photo', profile?.id],
+    queryFn: () => api.portfolio.getAuthorApplicationPhoto(),
+    enabled: Boolean(profile) && !photoBlob,
+    retry: false,
+  });
 
   useEffect(() => {
     if (!profile) {
@@ -112,6 +128,24 @@ export function SellerProfileScreen() {
     setPhotoBlob(null);
   }, [profile]);
 
+  useEffect(() => {
+    if (photoBlob || !applicationPhoto.data) return;
+    let cancelled = false;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (cancelled || typeof reader.result !== 'string') return;
+      setPhotoUri(reader.result);
+      setPhotoFailed(false);
+    };
+    reader.onerror = () => {
+      if (!cancelled) setPhotoFailed(true);
+    };
+    reader.readAsDataURL(applicationPhoto.data);
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationPhoto.data, photoBlob]);
+
   const mutation = useMutation({
     mutationFn: () => {
       const payload = {
@@ -131,6 +165,10 @@ export function SellerProfileScreen() {
       if (profile) {
         if (!editable) {
           throw new Error('Seller profile is not editable');
+        }
+
+        if (profile.status === 'APPROVED') {
+          return api.sellers.updateProfile(payload, photoBlob ?? undefined);
         }
 
         return api.sellers.updateProfile(
@@ -159,8 +197,24 @@ export function SellerProfileScreen() {
         photoBlob,
       );
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['seller', 'application-photo'],
+      });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+    },
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: () => api.portfolio.submitAuthorApplication(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['seller', 'application-photo'],
+      });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+    },
   });
 
   const choosePhoto = async () => {
@@ -362,9 +416,13 @@ export function SellerProfileScreen() {
           fields={fields}
         />
 
+        {profile ? <AuthorApplicationAchievements editable={editable} /> : null}
+
         {!editable ? (
           <AppText role="bodySmall" tone="secondary">
-            Профиль можно редактировать только после статуса «Нужны правки».
+            {editingRevision?.status === 'PENDING_REVIEW'
+              ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.'
+              : 'Сейчас профиль нельзя редактировать.'}
           </AppText>
         ) : null}
 
@@ -394,6 +452,16 @@ export function SellerProfileScreen() {
           width="block"
         />
 
+        {canSubmitRevision ? (
+          <PrimaryButton
+            loading={submitMutation.isPending}
+            disabled={submitMutation.isPending || mutation.isPending}
+            onPress={() => submitMutation.mutate()}
+            label="Отправить на проверку"
+            width="block"
+          />
+        ) : null}
+
         {profile?.status === 'APPROVED' ? (
           <Link href="/products/new" asChild>
             <PrimaryButton
@@ -407,6 +475,11 @@ export function SellerProfileScreen() {
         {mutation.isError ? (
           <AppText role="bodySmall" tone="danger">
             Не удалось сохранить профиль
+          </AppText>
+        ) : null}
+        {submitMutation.isError ? (
+          <AppText role="bodySmall" tone="danger">
+            Не удалось отправить заявку на проверку
           </AppText>
         ) : null}
       </View>

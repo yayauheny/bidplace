@@ -22,6 +22,7 @@ test('creator profile creation stages public identity, links and private handoff
     await page.getByLabel('URL-slug').fill(slug);
     await page.getByLabel('Дисциплина').fill('Керамика');
     await page.getByLabel('Страна').fill('BY');
+    await page.getByLabel('Город').fill('Минск');
     await page
       .getByLabel('Публичная ссылка')
       .fill(`https://example.com/${slug}`);

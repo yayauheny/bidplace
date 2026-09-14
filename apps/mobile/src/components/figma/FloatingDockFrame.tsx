@@ -30,7 +30,6 @@ export function FloatingDockFrame({
         preset="navigation"
         blurTarget={blurTarget}
         testID="figma-floating-dock"
-        accessibilityRole="tablist"
         accessibilityLabel="Основная навигация"
         contentStyle={{
           flexDirection: 'row',
