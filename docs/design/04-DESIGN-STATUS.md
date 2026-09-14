@@ -6,9 +6,11 @@
 
 ## 2026-09-14 — Mobile-web correction
 
-- `Implemented` (mobile web only): public session retry is an in-flow
-  `role="alert"` in AppShell, not a fullscreen overlay. Compact author-header
-  `visibility` stays CSS layout-preserving on web via a platform helper.
+- `Implemented` (mobile web only): public session retry is an in-flow Yoga
+  `View` with `accessibilityRole="alert"` in AppShell, not a fullscreen overlay
+  and not a raw HTML sibling that Home scroll can intercept. Compact
+  author-header `visibility` stays CSS layout-preserving on web via a platform
+  helper.
 - `Unchanged`: 232×64 dock, Home, discovery/search/filters, ShareSheet,
   cards/frost, CreatorHeader.web motion. OverlayHost, dialogs and image pickers
   were not rewritten for the session banner.
