@@ -114,18 +114,20 @@ export function OverlayPortal({
   })();
 
   return createPortal(
-    <View
-      nativeID={testId}
+    <div
+      id={testId}
+      data-testid={testId}
       style={{
         position: 'fixed',
-        ...style,
+        left: style.left,
+        top: style.top,
         width: placement === 'right-start' ? undefined : width,
         zIndex: designTokens.layer.popover,
         pointerEvents: 'auto',
       }}
     >
       {children}
-    </View>,
+    </div>,
     target,
   );
 }

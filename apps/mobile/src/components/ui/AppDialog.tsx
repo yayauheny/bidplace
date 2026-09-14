@@ -7,6 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
+import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
 
 type AppDialogProps = {
@@ -95,18 +96,15 @@ export function AppDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay
-          closeOnPress
+        <AppDialogOverlay
           style={{
-            position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
             backgroundColor: presentation === 'sheet' ? designTokens.color.modalDimmer : designTokens.color.overlay,
             zIndex: designTokens.layer.modal,
           }}
         />
-        <View
+        <AppDialogFrame
           style={{
-            position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
             alignItems: presentation === 'sheet' ? 'stretch' : 'center',
             ...(presentation === 'sheet' ? {
@@ -232,7 +230,7 @@ export function AppDialog({
               <View style={{ gap: designTokens.space.x3 }}>{children}</View>
             </ScrollView>
           </Dialog.Content>
-        </View>
+        </AppDialogFrame>
       </Dialog.Portal>
     </Dialog.Root>
   );

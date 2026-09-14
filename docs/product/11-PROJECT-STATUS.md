@@ -1,5 +1,29 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Portfolio foundation correction
+
+- `Implemented`: `ensureEditableEditingRevision` is the single seller editing-revision
+  use case. `update`, `addAchievement` and `deleteAchievement` lock the
+  `seller_profiles` row, then the editing revision row, inside a Read Committed
+  transaction. An approved author whose editing pointer still equals the published
+  revision can add or delete an achievement without a dummy profile save: the
+  operation copies the published revision (photo metadata + achievements, including
+  `objectKey`/`data`) into a new `DRAFT`, leaves the published page unchanged, and
+  applies the write only to that draft. Delete of a published achievement id is
+  remapped to the copied draft row. `PENDING_REVIEW` stays locked (409). Coverage:
+  `ensure-editable-seller-profile-revision.spec.ts`, `sellers.service.spec.ts`,
+  `author-achievement-revision.integration.spec.ts`.
+- `Partial`: the first author application still creates a `PENDING_REVIEW` revision
+  immediately, so optional achievements cannot be added before the first moderation.
+  Design `02-USER-FLOWS-AND-SCREENS.md` §8 allows a fourth visual step and a saved
+  incomplete draft; that workflow is not implemented here. Exact founder decision:
+  [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
+- `Implemented` (compile-only, no UI redesign): mobile typecheck accepts the
+  `global.css` side-effect import and web overlay positioning via a CSS `div` /
+  platform dialog layer instead of `ViewStyle['position'] = 'fixed'`.
+- `Not claimed`: Founder Accepted, launch-ready, first-application achievement
+  step, desktop/tablet/native, or commerce removal.
+
 ## 2026-09-14 — Portfolio foundation preservation
 
 - `Implemented`: author create requires non-blank `city`; `socialLink` is nullable

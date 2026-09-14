@@ -61,8 +61,10 @@ import {
   toPublicSellerProfile,
   toSellerProfileResponse,
 } from './seller-profile.mapper';
-import { lockSellerProfileRevisionRowForUpdate } from './seller-profile-revision-lock';
-import { canAuthorEditSellerProfileRevision } from './seller-profile-revision-state';
+import {
+  ensureEditableEditingRevision,
+  resolveEditingAchievementId,
+} from './ensure-editable-seller-profile-revision';
 
 export function countPublicSellerStatuses(
   products: Array<{ listings: Array<{ status: string }> }>,
@@ -419,74 +421,7 @@ export class SellersService {
       const sellerProfile = await runReadCommittedTransaction(
         this.prisma,
         async (tx) => {
-          const profile = await tx.sellerProfile.findUnique({
-            where: { id: current.id },
-            include: {
-              editingRevision: true,
-              publishedRevision: {
-                include: {
-                  achievements: { orderBy: { position: 'asc' } },
-                },
-              },
-            },
-          });
-          if (!profile?.publishedRevision) {
-            throw new ConflictException(
-              'Published profile revision is missing',
-            );
-          }
-          let revisionId = profile.editingRevisionId;
-          if (revisionId === profile.publishedRevisionId) {
-            const published = profile.publishedRevision;
-            const editing = await tx.sellerProfileRevision.create({
-              data: {
-                sellerProfileId: profile.id,
-                version: published.version + 1,
-                status: 'DRAFT',
-                slug: published.slug,
-                discipline: published.discipline,
-                fullName: published.fullName,
-                country: published.country,
-                city: published.city,
-                practice: published.practice,
-                socialLink: published.socialLink,
-                telegramUrl: published.telegramUrl,
-                instagramUrl: published.instagramUrl,
-                websiteUrl: published.websiteUrl,
-                shortDescription: published.shortDescription,
-                profilePhotoMimeType: published.profilePhotoMimeType,
-                profilePhotoByteLength: published.profilePhotoByteLength,
-                profilePhotoChecksum: published.profilePhotoChecksum,
-                profilePhotoObjectKey: published.profilePhotoObjectKey,
-                achievements: {
-                  create: published.achievements.map((achievement) => ({
-                    position: achievement.position,
-                    occurredAt: achievement.occurredAt,
-                    body: achievement.body,
-                    mimeType: achievement.mimeType,
-                    byteLength: achievement.byteLength,
-                    checksum: achievement.checksum,
-                    objectKey: achievement.objectKey,
-                  })),
-                },
-              },
-            });
-            revisionId = editing.id;
-            await tx.sellerProfile.update({
-              where: { id: profile.id },
-              data: { editingRevisionId: revisionId },
-            });
-          }
-          if (!revisionId) {
-            throw new ConflictException('Profile editing revision is missing');
-          }
-          const editing = await tx.sellerProfileRevision.findUniqueOrThrow({
-            where: { id: revisionId },
-            select: { status: true },
-          });
-          if (!canAuthorEditSellerProfileRevision(editing.status)) {
-            throw new ConflictException('Seller profile revision is locked');
-          }
+          const editing = await ensureEditableEditingRevision(tx, userId);
           const profilePhotoData = profilePhoto
             ? {
                 profilePhotoMimeType: profilePhoto.mimeType,
@@ -494,12 +429,13 @@ export class SellersService {
                 profilePhotoChecksum: createHash('sha256')
                   .update(profilePhoto.buffer)
                   .digest('hex'),
-                profilePhotoObjectKey:
-                  imageKey.sellerProfileRevision(revisionId),
+                profilePhotoObjectKey: imageKey.sellerProfileRevision(
+                  editing.revisionId,
+                ),
               }
             : {};
           await tx.sellerProfileRevision.update({
-            where: { id: revisionId },
+            where: { id: editing.revisionId },
             data: {
               ...publicProfileRevisionData(input),
               ...profilePhotoData,
@@ -508,13 +444,13 @@ export class SellersService {
           if (profilePhoto) {
             await putStoredImage(
               this.imageStore,
-              imageKey.sellerProfileRevision(revisionId),
+              imageKey.sellerProfileRevision(editing.revisionId),
               { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
               tx,
             );
           }
           return tx.sellerProfile.findUniqueOrThrow({
-            where: { id: profile.id },
+            where: { id: editing.profileId },
             select: sellerProfileOwnerSelect,
           });
         },
@@ -646,14 +582,13 @@ export class SellersService {
     image?: ValidatedImageUpload,
   ) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const revision = await this.editableRevision(tx, userId);
-      await lockSellerProfileRevisionRowForUpdate(tx, revision.id);
+      const editing = await ensureEditableEditingRevision(tx, userId);
       const position = await tx.sellerProfileRevisionAchievement.count({
-        where: { revisionId: revision.id },
+        where: { revisionId: editing.revisionId },
       });
       const achievement = await tx.sellerProfileRevisionAchievement.create({
         data: {
-          revisionId: revision.id,
+          revisionId: editing.revisionId,
           position,
           occurredAt: input.occurredAt ? new Date(input.occurredAt) : null,
           body: input.body,
@@ -701,36 +636,23 @@ export class SellersService {
     const objectKeyToDelete = await runReadCommittedTransaction(
       this.prisma,
       async (tx) => {
-        const profile = await tx.sellerProfile.findUnique({
-          where: { userId },
-          include: { editingRevision: true },
-        });
-        if (!profile?.editingRevision) {
-          throw new NotFoundException('Achievement not found');
-        }
-        if (profile.status === 'SUSPENDED') {
-          throw new ForbiddenException('Seller profile is suspended');
-        }
-        await lockSellerProfileRevisionRowForUpdate(
+        const editing = await ensureEditableEditingRevision(tx, userId);
+        const targetAchievementId = await resolveEditingAchievementId(
           tx,
-          profile.editingRevision.id,
+          editing,
+          achievementId,
         );
         const achievement = await tx.sellerProfileRevisionAchievement.findFirst(
           {
             where: {
-              id: achievementId,
-              revisionId: profile.editingRevision.id,
+              id: targetAchievementId,
+              revisionId: editing.revisionId,
             },
             select: { id: true, objectKey: true },
           },
         );
         if (!achievement) {
           throw new NotFoundException('Achievement not found');
-        }
-        if (
-          !canAuthorEditSellerProfileRevision(profile.editingRevision.status)
-        ) {
-          throw new ConflictException('Seller profile revision is locked');
         }
         await tx.sellerProfileRevisionAchievement.delete({
           where: { id: achievement.id },
@@ -746,7 +668,7 @@ export class SellersService {
           }
         }
         const remaining = await tx.sellerProfileRevisionAchievement.findMany({
-          where: { revisionId: profile.editingRevision.id },
+          where: { revisionId: editing.revisionId },
           select: { id: true },
           orderBy: { position: 'asc' },
         });
@@ -849,23 +771,6 @@ export class SellersService {
       throw new NotFoundException('Achievement image not found');
     }
     return { mimeType: stored.mimeType, data: stored.bytes, isPublic };
-  }
-
-  private async editableRevision(
-    tx: Parameters<Parameters<typeof runReadCommittedTransaction>[1]>[0],
-    userId: string,
-  ) {
-    const profile = await tx.sellerProfile.findUnique({
-      where: { userId },
-      include: { editingRevision: true },
-    });
-    if (!profile?.editingRevision) {
-      throw new NotFoundException('Seller profile revision not found');
-    }
-    if (!canAuthorEditSellerProfileRevision(profile.editingRevision.status)) {
-      throw new ConflictException('Seller profile revision is locked');
-    }
-    return profile.editingRevision;
   }
 
   async listProducts(userId: string) {

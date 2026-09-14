@@ -87,11 +87,16 @@ SellerProfile
   the approved revision. `SellerProfileRevisionAchievement` belongs to that revision,
   so pending achievements cannot leak into the public author page. Public
   achievement image GET is allowed only from the published revision; owner and
-  admin can read draft bytes; anonymous/stranger draft reads return 404. A new
-  profile revision copies the prior published achievement records (including media
-  metadata), and the append operation locks the revision row before calculating
-  position. `ImageStore` keys include `seller-profile-revision` and
-  `seller-achievement` with the existing seller-photo canonical fallback;
+  admin can read draft bytes; anonymous/stranger draft reads return 404. Profile
+  field updates, achievement append and achievement delete share one
+  `ensureEditableEditingRevision` use case: it locks `seller_profiles` then the
+  editing revision (`SELECT … FOR UPDATE`), forks a `DRAFT` from the published
+  revision when those pointers still coincide, copies published achievements
+  including media metadata/`data`, and remaps a published achievement id to the
+  copied draft row so the first add/delete does not require a dummy save.
+  `PENDING_REVIEW` remains locked. `ImageStore` keys include
+  `seller-profile-revision` and `seller-achievement` with the existing seller-photo
+  canonical fallback;
 - one own Product image is the MVP technical minimum. Maximum file count and
   aggregate bytes are enforced for the whole Product inside a Read Committed
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
