@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Home «Новые работы» is a horizontal catalog
+
+- `Implemented`: Home «Новые работы» is a flow section after Opening:
+  `sectionTitle` + hug quiet «Смотреть все» (`/works`) and a horizontal
+  `WorkCoverCard` scroller from `Home.newWorks` (`listWorks` newest, limit 6).
+  No price/timer/sale chrome. Coverage: `home-new-works.tsx`, `home-screen.tsx`,
+  `home-figma.spec.ts` card metrics 264×352.
+- `Implemented` (demo seed): `aliceGlass1` `publishedAt` is 2026-09-14 so the
+  newest-six query includes a `@vex`-owned work without moving Dali off
+  `pixelp`. Coverage: `seed.js`, `seed-contract.integration.spec.ts`.
+- `Unchanged`: Opening composition, authors section, `/works` grid,
+  `05-MVP-RFC.md`, canonical Pen.
+
 ## 2026-09-15 — Phone gallery arrows, achievement photos, History media
 
 - `Implemented`: `WorkGallery` still owns prev/next controls, but they render

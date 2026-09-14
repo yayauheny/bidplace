@@ -662,7 +662,7 @@ async function main() {
     year: 2026,
     uniqueness: unique,
     city: 'Минск',
-    publishedAt: new Date('2026-08-18T12:00:00.000Z'),
+    publishedAt: new Date('2026-09-14T12:00:00.000Z'),
     imageFileName: 'alice-glass.png',
     detailFileName: 'alice-glass-detail.png',
   });
@@ -709,7 +709,7 @@ async function main() {
   });
 
   console.log(
-    'Seeded Figma local demo: Opening curator=vex work=daliEstate1 owner=pixelp; vex has aliceGlass1 and sleepForm01; no listings/bids/orders.',
+    'Seeded Figma local demo: Opening curator=vex work=daliEstate1 owner=pixelp; vex aliceGlass1 is newest so Home.newWorks includes a vex-owned work; no listings/bids/orders.',
   );
 }
 

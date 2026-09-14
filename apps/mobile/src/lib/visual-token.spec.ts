@@ -93,6 +93,7 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.space.quietButtonY).toBe(8);
     expect(designTokens.radius.chip).toBe(28);
     expect(designTokens.size.openingAvatar).toBe(54);
+    expect(designTokens.space.homeSectionStack).toBe(67);
     expect(designTokens.layout.openingAuthorWidth).toBe(280);
     expect(designTokens.layout.phoneFoldHeight).toBe(860);
     expect(designTokens.typography.authorRowHandle).toMatchObject({

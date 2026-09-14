@@ -12,8 +12,8 @@ import {
   PageState,
   PrimaryButton,
 } from '../../components/ui';
-import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
+import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
 
@@ -50,7 +50,7 @@ export function HomeScreen() {
         >
           <BrandLogo profile />
         </View>
-        <View style={{ gap: designTokens.space.x10, minWidth: 0 }}>
+        <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
           {loading ? <PageState title="Загружаем bidplace…" loading /> : null}
           {failed ? (
             <PageState
@@ -64,24 +64,7 @@ export function HomeScreen() {
             <HomeOpening selection={plan.opening} />
           ) : null}
           {!loading && !failed && plan.showWorks ? (
-            <View
-              nativeID="home-new-works"
-              style={{ gap: designTokens.space.sectionGap }}
-            >
-              <AppText
-                role="sectionTitle"
-                accessibilityRole="header"
-                style={{ textAlign: 'center' }}
-              >
-                Новые работы
-              </AppText>
-              <WorkCoverCardGrid items={plan.works} />
-              <PrimaryButton
-                label="Смотреть все"
-                width="full"
-                onPress={() => router.push('/works')}
-              />
-            </View>
+            <HomeNewWorks works={plan.works} />
           ) : null}
           {!loading && !failed && plan.showAuthors ? (
             <View

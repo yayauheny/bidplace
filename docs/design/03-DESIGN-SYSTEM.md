@@ -308,6 +308,14 @@ muted caption line with renderer tail truncation; the author row hugs
 Do not reuse `authorHandle`, `authorName`, `body`/`bodySmall`, `cardTitle`,
 `muted`, or global `outline` for these roles.
 
+Home «Новые работы» reuses Figma Active-auctions Frame `439:4478` as layout
+only: `sectionTitle` + hug `FigmaButton` `quiet`+`compact` «Смотреть все»,
+then a horizontal `WorkCoverCard` scroller (`264×352`, gutter/gap 12).
+Cards stay title + `@author` frost — no price, timer, or «В продаже».
+Inter-section stack after Opening is `space.homeSectionStack` 67 (Opening
+`439:4406` bottom 533 → section top 600). Do not implement the later
+stacked/rotated Figma «Новые работы» prototype.
+
 ## 7. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens

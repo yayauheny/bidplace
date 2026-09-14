@@ -45,8 +45,8 @@ test('selected opening, null opening, and catalog empty states', async ({
   expect(selectedMetrics.openingHeading?.x ?? 99).toBeLessThan(24);
   expect(selectedMetrics.openingWork?.width).toBeCloseTo(264, 1);
   expect(selectedMetrics.openingWork?.height).toBeCloseTo(352, 1);
-  expect(selectedMetrics.newWorksCard?.width).toBeCloseTo(366, 1);
-  expect(selectedMetrics.newWorksCard?.height).toBeCloseTo(488, 1);
+  expect(selectedMetrics.newWorksCard?.width).toBeCloseTo(264, 1);
+  expect(selectedMetrics.newWorksCard?.height).toBeCloseTo(352, 1);
   expect(selectedMetrics.shell?.width).toBeCloseTo(390, 1);
   await writeFile(
     resolve(artifactDir, 'measurements.json'),

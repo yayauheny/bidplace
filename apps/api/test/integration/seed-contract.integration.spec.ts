@@ -260,6 +260,19 @@ describe('demo seed executable contract', () => {
         select: { sellerProfile: { select: { slug: true } } },
       }),
     ).toMatchObject({ sellerProfile: { slug: 'vex' } });
+    const newestHomeWorks = await prisma.product.findMany({
+      where: { publishedAt: { not: null }, status: 'APPROVED' },
+      orderBy: { publishedAt: 'desc' },
+      take: 6,
+      select: {
+        publicId: true,
+        sellerProfile: { select: { slug: true } },
+      },
+    });
+    expect(newestHomeWorks.map((work) => work.publicId)).toContain('aliceGlass1');
+    expect(newestHomeWorks.some((work) => work.sellerProfile.slug === 'vex')).toBe(
+      true,
+    );
     expect(curator?.product.publicId).toBe('daliEstate1');
     expect(curator?.curator.slug).toBe('vex');
     expect(curator?.note).toContain('безупречная техника');

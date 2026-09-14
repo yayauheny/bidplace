@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home «Новые работы» horizontal catalog
+
+- `Implemented` (mobile web): Home «Новые работы» uses the Active-auctions
+  `439:4478` header + horizontal scroller, not the previous vertical
+  full-width grid. `FigmaButton` `quiet`+`compact` «Смотреть все» → `/works`.
+  Cards are existing `WorkCoverCard` (title + `@author`); no auction chrome.
+  Stack gap after Opening is `homeSectionStack` 67.
+- `Unchanged`: Opening, authors section, stacked Figma «Новые работы»
+  prototype, canonical Pen, new visual goldens.
+
 ## 2026-09-15 — Opening bio is a one-line muted caption
 
 - `Implemented` (mobile web): Opening `@vex` bio (`439:4415`) is one visual

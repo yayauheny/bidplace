@@ -63,7 +63,9 @@ and «Смотреть профиль» bind `selection.curator`. Work card `@au
 `selection.work.author`. Optional `note` is editorial copy on the selection
 (`DEC-090`); empty/null hides «Выбор куратора» and the paragraph, not the
 curator row, profile button, or work card. Work cards показывают название и
-`@author`. После работ — `Новые авторы` или короткий переход в `/authors`.
+`@author`. «Новые работы» — header + hug quiet «Смотреть все» (`/works`) and
+a horizontal `WorkCoverCard` scroller from `home.newWorks`. После работ —
+`Новые авторы` или короткий переход в `/authors`.
 
 ## 5. Works and Authors discovery
 
