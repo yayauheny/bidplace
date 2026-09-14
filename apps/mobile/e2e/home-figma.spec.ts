@@ -69,10 +69,10 @@ test('selected opening, null opening, and catalog empty states', async ({
   await page.getByRole('link', { name: /Сальвадор Дали/ }).click();
   await expect(page).toHaveURL(`/product/${homeSelectedPublicId}`);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Смотреть все', exact: true }).click();
+  await page.locator('#home-new-works').getByRole('button', { name: 'Смотреть все' }).click();
   await expect(page).toHaveURL(/\/works/);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Смотреть всех' }).click();
+  await page.locator('#home-new-authors').getByRole('button', { name: 'Смотреть все' }).click();
   await expect(page).toHaveURL(/\/authors/);
 
   home.body = homePayload({ curatorSelection: null });
@@ -216,7 +216,7 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
     document.body.style.zoom = '2';
   });
   await expect(page.getByText('Открытие недели', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Смотреть всех' }).scrollIntoViewIfNeeded();
+  await page.locator('#home-new-authors').getByRole('button', { name: 'Смотреть все' }).scrollIntoViewIfNeeded();
   await expectNoHorizontalOverflow(page);
   await screenshotHomeFull(
     page,
@@ -374,7 +374,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function assertDockDoesNotCoverContent(page: Page) {
-  const last = page.getByRole('button', { name: 'Смотреть всех' });
+  const last = page.locator('#home-new-authors').getByRole('button', { name: 'Смотреть все' });
   await last.scrollIntoViewIfNeeded();
   const lastBox = await last.boundingBox();
   const dock = page.getByTestId('figma-floating-dock');

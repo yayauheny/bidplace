@@ -65,7 +65,8 @@ and «Смотреть профиль» bind `selection.curator`. Work card `@au
 curator row, profile button, or work card. Work cards показывают название и
 `@author`. «Новые работы» — header + hug quiet «Смотреть все» (`/works`) and
 a horizontal `WorkCoverCard` scroller from `home.newWorks`. После работ —
-`Новые авторы` или короткий переход в `/authors`.
+`Новые авторы` is Frame 47 geometry with `AuthorCoverCard` photos from
+`home.newAuthors` and «Смотреть все» → `/authors`.
 
 ## 5. Works and Authors discovery
 

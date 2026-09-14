@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home «Новые авторы» Frame 47 fan
+
+- `Implemented` (mobile web): Home authors uses stacked-works Frame `436:1320`
+  geometry with `AuthorCoverCard` photos from `Home.newAuthors`. Title
+  «Новые авторы». CTA «Смотреть все» → `/authors`. 3/2/1/0 card counts.
+  No work price/timer/status. Wrapper does not clip; page stays 390.
+- `Unchanged`: Opening, New works horizontal scroller, `/authors` grid,
+  canonical Pen, new visual goldens.
+
 ## 2026-09-15 — Home «Новые работы» horizontal catalog
 
 - `Implemented` (mobile web): Home «Новые работы» uses the Active-auctions

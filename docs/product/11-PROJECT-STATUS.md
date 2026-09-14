@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Home «Новые авторы» uses Frame 47 geometry
+
+- `Implemented`: Home «Новые авторы» is a 366 fan from Figma Frame 47
+  (`436:1320`) filled with real `Home.newAuthors` `AuthorCoverCard` photos
+  (`profilePhotoUrl`). CTA «Смотреть все» → `/authors`. Coverage:
+  `home-new-authors.tsx`, `home-author-fan.ts`, `home-author-fan.spec.ts`,
+  `home-figma.spec.ts`.
+- `Unchanged`: Opening, New works scroller, `/authors` `CreatorCardGrid`,
+  `05-MVP-RFC.md`, canonical Pen.
+
 ## 2026-09-15 — Home «Новые работы» is a horizontal catalog
 
 - `Implemented`: Home «Новые работы» is a flow section after Opening:

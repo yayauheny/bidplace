@@ -6,13 +6,9 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
-import {
-  AppText,
-  CreatorCardGrid,
-  PageState,
-  PrimaryButton,
-} from '../../components/ui';
+import { PageState, PrimaryButton } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
+import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
 import { homeSectionPlan } from './home-sections';
@@ -27,9 +23,6 @@ export function HomeScreen() {
   const loading = home.isLoading;
   const failed = home.isError;
   const plan = homeSectionPlan(home.data);
-  const sellerItems = plan.authors.map((author) => ({
-    sellerProfile: author,
-  }));
 
   return (
     <AppShell>
@@ -67,24 +60,7 @@ export function HomeScreen() {
             <HomeNewWorks works={plan.works} />
           ) : null}
           {!loading && !failed && plan.showAuthors ? (
-            <View
-              nativeID="home-new-authors"
-              style={{ gap: designTokens.space.sectionGap }}
-            >
-              <AppText
-                role="sectionTitle"
-                accessibilityRole="header"
-                style={{ textAlign: 'center' }}
-              >
-                Новые авторы
-              </AppText>
-              <CreatorCardGrid items={sellerItems} />
-              <PrimaryButton
-                label="Смотреть всех"
-                width="full"
-                onPress={() => router.push('/authors')}
-              />
-            </View>
+            <HomeNewAuthors authors={plan.authors} />
           ) : null}
           {!loading && !failed && plan.showAuthorsLink ? (
             <PrimaryButton

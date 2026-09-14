@@ -314,7 +314,13 @@ then a horizontal `WorkCoverCard` scroller (`264×352`, gutter/gap 12).
 Cards stay title + `@author` frost — no price, timer, or «В продаже».
 Inter-section stack after Opening is `space.homeSectionStack` 67 (Opening
 `439:4406` bottom 533 → section top 600). Do not implement the later
-stacked/rotated Figma «Новые работы» prototype.
+stacked/rotated Figma «Новые работы» prototype as New works.
+
+Home «Новые авторы» reuses Frame 47 `436:1320` as geometry only: centered
+`sectionTitle`, rear 308×410 at ±1° / 0.5 opacity, front 322×430, full
+`PrimaryButton` «Смотреть все». Cards are `AuthorCoverCard` sized to those
+boxes (`size` prop). No work price/timer/status. The 366 wrapper does not
+clip (`clipsContent: false`); page width stays 390.
 
 ## 7. Old system boundary
 

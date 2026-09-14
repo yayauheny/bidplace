@@ -4,10 +4,22 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 export const coverArtworkScale = 1.05;
 
-export function coverCardFrameStyle(kind: 'work' | 'author'): ViewStyle {
+export type CoverCardFrameSize = {
+  width: number;
+  height: number;
+};
+
+export function coverCardFrameStyle(
+  kind: 'work' | 'author',
+  size?: CoverCardFrameSize,
+): ViewStyle {
   return {
-    width: '100%',
-    aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+    width: size?.width ?? '100%',
+    ...(size
+      ? { height: size.height }
+      : {
+          aspectRatio: figmaTokens.size.coverWidth / figmaTokens.size.coverHeight,
+        }),
     overflow: 'hidden',
     borderRadius:
       kind === 'author'

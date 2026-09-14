@@ -16,6 +16,7 @@ import {
   coverChipRowStyle,
   coverFrostZoneStyle,
   coverOverlayPadStyle,
+  type CoverCardFrameSize,
 } from './cover-card-style';
 import {
   authorCoverAccessibilityLabel,
@@ -28,7 +29,8 @@ export function AuthorCoverCard({
   slug,
   tags,
   imageUrl,
-}: AuthorCoverInput & { imageUrl: string }) {
+  size,
+}: AuthorCoverInput & { imageUrl: string; size?: CoverCardFrameSize }) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
   const reducedMotion = useReducedMotion();
 
@@ -39,7 +41,7 @@ export function AuthorCoverCard({
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
         style={{
-          ...coverCardFrameStyle('author'),
+          ...coverCardFrameStyle('author', size),
           justifyContent: 'space-between',
         }}
       >
