@@ -13,7 +13,8 @@
   author application projections. Public Work/Author catalog reads use the published
   `ProductRevision` projection (`listPortfolio` / `getPortfolio`), not Listing
   membership. `GET /api/portfolio/home` returns a server-owned curator selection
-  (`CuratorSelection` slot `home`) or `null`. Owner application reads overlay draft
+  (`CuratorSelection` slot `home`) or `null`, including optional editorial `note`.
+  Owner application reads overlay draft
   public fields from `editingRevision` and expose `editingRevision` on the seller
   response; the published author projection stays on the approved revision until
   admin approve. Portfolio DTOs never expose commerce
@@ -40,7 +41,7 @@
 - `apps/api/src/products/products.mapper.ts` and `apps/api/src/products/products-catalog.query.ts` own the canonical public catalog selection and CTE/order SQL; `products.service.ts` keeps only use-cases and orchestration.
 - `packages/contracts` owns runtime HTTP and event shapes; `packages/api-client` validates responses with those schemas.
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
-- `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed still creates auction fixtures and one home `CuratorSelection` on a published public Work. `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
+- `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed still creates auction fixtures and one home `CuratorSelection` on a published public Work with `note` null. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `DEC-090`) is the only in-place migration edit; after first production apply, further columns are additive. This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 
 ## Persistence model
@@ -53,7 +54,7 @@ SellerProfile
        ├─ ProductRevision[]
        │    └─ ProductRevisionImage[]
        ├─ ProductImage[] (legacy metadata)
-       ├─ CuratorSelection? (home editorial pointer)
+       ├─ CuratorSelection? (home editorial pointer + optional note)
        └─ Listing[]
             ├─ AuctionRules
             ├─ Bid[]

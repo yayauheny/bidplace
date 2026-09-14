@@ -83,6 +83,60 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.typography.nav.fontFamily).toBe('Inter_500Medium');
   });
 
+  it('keeps Home opening roles from first-fold nodes 439:4414–4420', () => {
+    expect(designTokens.color.textSubtle).toBe('#6F6F6F');
+    expect(designTokens.color.quietFill).toBe('#EFEFEF');
+    expect(designTokens.color.quietBorderStart).toBe('#FFFFFF');
+    expect(designTokens.color.quietBorderEnd).toBe('#999999');
+    expect(designTokens.opacity.quietBorder).toBe(0.16);
+    expect(designTokens.space.quietButtonX).toBe(14);
+    expect(designTokens.space.quietButtonY).toBe(8);
+    expect(designTokens.radius.chip).toBe(28);
+    expect(designTokens.size.openingAvatar).toBe(54);
+    expect(designTokens.size.openingAuthorRow).toBe(68);
+    expect(designTokens.layout.openingAuthorWidth).toBe(280);
+    expect(designTokens.layout.phoneFoldHeight).toBe(860);
+    expect(designTokens.typography.authorRowHandle).toMatchObject({
+      fontFamily: 'Inter_500Medium',
+      fontSize: 22,
+      lineHeight: 25,
+      letterSpacing: -0.22,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '500',
+    });
+    expect(designTokens.typography.authorRowBio).toMatchObject({
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 17,
+      fontWeight: '400',
+    });
+    expect(designTokens.typography.editorialTitle).toMatchObject({
+      fontFamily: 'Inter_500Medium',
+      fontSize: 20,
+      lineHeight: 24,
+      letterSpacing: -0.4,
+      letterSpacingEm: '-0.02em',
+      fontWeight: '500',
+    });
+    expect(designTokens.typography.editorial).toMatchObject({
+      fontFamily: 'Inter_400Regular',
+      fontSize: 16,
+      lineHeight: 22,
+      letterSpacing: -0.16,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '400',
+    });
+    expect(designTokens.typography.buttonCompact).toMatchObject({
+      fontFamily: 'Inter_500Medium',
+      fontSize: 13,
+      lineHeight: 18,
+      letterSpacing: -0.13,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '500',
+    });
+    expect(designTokens.size.buttonCompact).toBe(40);
+  });
+
   it('keeps author tab tracking and count from Figma 621:19524 / 621:19525', () => {
     expect(designTokens.typography.profileTab).toMatchObject({
       fontFamily: 'Inter_500Medium',

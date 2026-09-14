@@ -287,6 +287,21 @@ origin. The native branch is a stub.
 Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
 Apply/Reset. They are not `role="menu"`.
 
+Home Opening (`439:4404`, 390×860) uses exact first-fold roles. Bio and
+curator heading use the Figma TEXT box heights as line-height because the
+live inspect composition is 14/17 and 20/24.
+
+| Role | Node | Token |
+| --- | --- | --- |
+| Handle `@slug` | `439:4414` | `typography.authorRowHandle` 22/25/500/−1%, `color.ink` |
+| Bio | `439:4415` | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F` |
+| «Выбор куратора» | `439:4417` | `typography.editorialTitle` 20/24/500/−2%, `color.ink` |
+| Curator note | `439:4418` | `typography.editorial` 16/22/400/−1%, `color.textSubdued` |
+| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `quiet`+`compact`: hug, pad 8/14, `radius.chip` 28, `quietFill` `#EFEFEF`, stroke `#FFFFFF`→`#999999` @ 0.16, label `typography.buttonCompact` 13/18/500 |
+
+Do not reuse `authorHandle`, `authorName`, `body`/`bodySmall`, `cardTitle`,
+`muted`, or global `outline` for these roles.
+
 ## 7. Old system boundary
 
 `docs/modern-ui` and its design language are retired. Runtime public screens

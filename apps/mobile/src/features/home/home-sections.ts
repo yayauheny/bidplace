@@ -13,6 +13,10 @@ export type HomeWorkItem = {
   };
 };
 
+export type HomeCuratorSelection = HomeWorkItem & {
+  note: string | null;
+};
+
 export type HomeAuthor = {
   slug: string;
   fullName: string;
@@ -21,13 +25,13 @@ export type HomeAuthor = {
 };
 
 export type HomePayload = {
-  curatorSelection: HomeWorkItem | null;
+  curatorSelection: HomeCuratorSelection | null;
   newWorks: HomeWorkItem[];
   newAuthors: HomeAuthor[];
 };
 
 export type HomeSectionPlan = {
-  opening: HomeWorkItem | null;
+  opening: HomeCuratorSelection | null;
   works: HomeWorkItem[];
   authors: HomeAuthor[];
   showWorks: boolean;
@@ -37,8 +41,8 @@ export type HomeSectionPlan = {
 };
 
 export function visibleCuratorSelection(
-  selection: HomeWorkItem | null | undefined,
-): HomeWorkItem | null {
+  selection: HomeCuratorSelection | null | undefined,
+): HomeCuratorSelection | null {
   if (!selection?.work.publicId || !selection.author.slug) {
     return null;
   }

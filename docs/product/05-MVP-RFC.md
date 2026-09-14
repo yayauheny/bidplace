@@ -92,7 +92,9 @@ Work. Cart, likes и notification bell отсутствуют. Плавающа�
 3. `Новые авторы` либо короткий переход в каталог авторов.
 
 Нет `Активных торгов`, цен, таймеров и commerce status. Нельзя публиковать фиктивный
-editorial choice или тестовые карточки как реальные.
+editorial choice или тестовые карточки как реальные. Optional curator `note` on the
+home selection is editorial copy; missing/empty note hides «Выбор куратора» and the
+paragraph (`DEC-090`).
 
 ## 6. Каталоги и поиск
 

@@ -83,36 +83,70 @@ describe('admin curator selection HTTP', () => {
     });
 
     expect(
-      (await stranger.put('/admin/curator-selection', { publicId: approved.publicId }))
+      (await stranger.put('/admin/curator-selection', {
+        publicId: approved.publicId,
+        note: null,
+      }))
         .status,
     ).toBe(403);
     expect(
-      (await guest.put('/admin/curator-selection', { publicId: approved.publicId }))
+      (await guest.put('/admin/curator-selection', {
+        publicId: approved.publicId,
+        note: null,
+      }))
         .status,
     ).toBe(401);
     expect(
       (
         await adminClient.put('/admin/curator-selection', {
-          publicId: draft.publicId,
+          publicId: approved.publicId,
         })
       ).status,
-    ).toBe(409);
+    ).toBe(400);
 
     const selected = await adminClient.put('/admin/curator-selection', {
       publicId: approved.publicId,
+      note: null,
     });
     expect(selected.status).toBe(200);
     expect(await selected.json()).toMatchObject({
       publicId: approved.publicId,
       productId: approved.id,
+      note: null,
     });
 
     const visibleHome = await guest.get('/portfolio/home');
     expect(visibleHome.status).toBe(200);
     expect(
-      ((await visibleHome.json()) as { curatorSelection: { work: { publicId: string } } })
-        .curatorSelection.work.publicId,
-    ).toBe(approved.publicId);
+      ((await visibleHome.json()) as {
+        curatorSelection: { work: { publicId: string }; note: string | null };
+      }).curatorSelection,
+    ).toMatchObject({
+      work: { publicId: approved.publicId },
+      note: null,
+    });
+
+    const withNote = await adminClient.put('/admin/curator-selection', {
+      publicId: approved.publicId,
+      note: 'Главная визуальная находка этой недели.',
+    });
+    expect(withNote.status).toBe(200);
+    expect(await withNote.json()).toMatchObject({
+      note: 'Главная визуальная находка этой недели.',
+    });
+    expect(
+      ((await (await guest.get('/portfolio/home')).json()) as {
+        curatorSelection: { note: string | null };
+      }).curatorSelection.note,
+    ).toBe('Главная визуальная находка этой недели.');
+    expect(
+      (
+        await adminClient.put('/admin/curator-selection', {
+          publicId: draft.publicId,
+          note: null,
+        })
+      ).status,
+    ).toBe(409);
 
     expect((await owner.post(`/products/${approved.id}/hide`)).status).toBe(201);
     const hiddenHome = await guest.get('/portfolio/home');

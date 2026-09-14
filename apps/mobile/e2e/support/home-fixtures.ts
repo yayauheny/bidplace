@@ -75,8 +75,22 @@ export function homeWorkItem(overrides?: {
   };
 }
 
+export function homeCuratorSelection(overrides?: {
+  publicId?: string;
+  title?: string;
+  imageId?: string;
+  author?: ReturnType<typeof homeAuthor>;
+  note?: string | null;
+}) {
+  const { note, ...workOverrides } = overrides ?? {};
+  return {
+    ...homeWorkItem(workOverrides),
+    note: note === undefined ? null : note,
+  };
+}
+
 export function homePayload(overrides?: {
-  curatorSelection?: ReturnType<typeof homeWorkItem> | null;
+  curatorSelection?: ReturnType<typeof homeCuratorSelection> | null;
   newWorks?: Array<ReturnType<typeof homeWorkItem>>;
   newAuthors?: Array<ReturnType<typeof homeAuthor>>;
 }) {
@@ -84,7 +98,7 @@ export function homePayload(overrides?: {
     curatorSelection:
       overrides && 'curatorSelection' in overrides
         ? overrides.curatorSelection
-        : homeWorkItem(),
+        : homeCuratorSelection(),
     newWorks: overrides?.newWorks ?? [
       homeWorkItem({
         publicId: 'newestWork1',

@@ -112,14 +112,14 @@ export function createAdminClient(context: RequestContext) {
         },
       );
     },
-    setCuratorSelection(publicId: string) {
+    setCuratorSelection(publicId: string, note: string | null) {
       return requestJson(
         context,
         '/api/admin/curator-selection',
         adminCuratorSelectionResponseSchema,
         {
           method: 'PUT',
-          body: adminCuratorSelectionRequestSchema.parse({ publicId }),
+          body: adminCuratorSelectionRequestSchema.parse({ publicId, note }),
         },
       );
     },

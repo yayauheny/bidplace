@@ -533,6 +533,7 @@ model CuratorSelection {
   id               String   @id @default(uuid()) @db.Uuid
   slot             String   @unique @db.VarChar(32)
   productId        String   @unique @map("product_id") @db.Uuid
+  note             String?  @db.Text
   selectedAt       DateTime @map("selected_at")
   selectedByUserId String?  @map("selected_by_user_id") @db.Uuid
   product          Product  @relation(fields: [productId], references: [id], onDelete: Restrict)

@@ -4,6 +4,7 @@ import {
   homeSectionPlan,
   visibleCuratorSelection,
   type HomeAuthor,
+  type HomeCuratorSelection,
   type HomeWorkItem,
 } from './home-sections';
 
@@ -27,6 +28,17 @@ function workItem(
   };
 }
 
+function selection(
+  publicId: string,
+  slug: string,
+  note: string | null = null,
+): HomeCuratorSelection {
+  return {
+    ...workItem(publicId, slug),
+    note,
+  };
+}
+
 function author(slug: string): HomeAuthor {
   return {
     slug,
@@ -38,20 +50,28 @@ function author(slug: string): HomeAuthor {
 
 describe('visibleCuratorSelection', () => {
   it('returns the server-owned work and does not invent a pick', () => {
-    const selected = workItem('seedWork001', 'anna-morozova', 'Портрет');
+    const selected = selection('seedWork001', 'anna-morozova', null);
 
     expect(visibleCuratorSelection(selected)).toEqual(selected);
+  });
+
+  it('keeps a curator note on the selection pointer', () => {
+    const selected = selection(
+      'seedWork001',
+      'anna-morozova',
+      'Главная визуальная находка этой недели.',
+    );
+
+    expect(visibleCuratorSelection(selected)?.note).toBe(
+      'Главная визуальная находка этой недели.',
+    );
   });
 
   it('omits null, undefined, and incomplete pointers', () => {
     expect(visibleCuratorSelection(null)).toBeNull();
     expect(visibleCuratorSelection(undefined)).toBeNull();
-    expect(
-      visibleCuratorSelection(
-        workItem('', 'anna-morozova'),
-      ),
-    ).toBeNull();
-    expect(visibleCuratorSelection(workItem('seedWork001', ''))).toBeNull();
+    expect(visibleCuratorSelection(selection('', 'anna-morozova'))).toBeNull();
+    expect(visibleCuratorSelection(selection('seedWork001', ''))).toBeNull();
   });
 });
 
@@ -72,7 +92,7 @@ describe('homeSectionPlan', () => {
   });
 
   it('keeps opening when lists are empty and does not invent catalog cards', () => {
-    const selected = workItem('seedWork001', 'anna-morozova');
+    const selected = selection('seedWork001', 'anna-morozova');
     const plan = homeSectionPlan({
       curatorSelection: selected,
       newWorks: [],

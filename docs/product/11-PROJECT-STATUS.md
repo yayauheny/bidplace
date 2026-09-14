@@ -1,5 +1,57 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Home Opening curator note and Figma visual fixture
+
+- `Implemented`: `CuratorSelection.note` (`TEXT NULL`) on the unreleased
+  `curator_selections` CREATE TABLE (Prisma +
+  `20260909120000_portfolio_media_socials_curator`, not a new migration).
+  `GET /api/portfolio/home` `curatorSelection` includes `note`; catalog work
+  items do not. Admin `PUT /api/admin/curator-selection` body is
+  `{ publicId, note }` with `note` required on write (`string | null`).
+  Local seed still points at `seedLive002` / Anna and leaves `note` null.
+  Coverage:
+  `packages/contracts/test/contracts.test.ts`,
+  `portfolio.service.spec.ts` (null, trimmed note, blank → null),
+  `curator-selection.integration.spec.ts`,
+  `seed-contract.integration.spec.ts`.
+- `Implemented` (mobile web): Home Opening uses Figma first-fold roles
+  (`authorRowHandle`, `authorRowBio`/`subtle`, `editorialTitle`, `editorial`,
+  quiet compact `FigmaButton`). Empty/null `note` hides «Выбор куратора» and
+  the paragraph. Work overlay and «Активные торги» stay out of this slice.
+  Coverage: `home-sections.spec.ts`, `figma-button-style.spec.ts`,
+  `visual-token.spec.ts`, `app-text-role-style.spec.ts`, `home-figma.spec.ts`.
+- `Implemented` (e2e-only): Playwright mocks production `HomeScreen` with
+  `e2e/visual` `@vex` fixtures and compares the clipped `#home-opening-author`
+  column to the 390×860 first-fold golden. Isolated
+  `playwright.stabilization.config.ts` Chromium+WebKit passed
+  (`e2e/visual/home-opening-figma.spec.ts`). Actuals go to gitignored
+  `apps/mobile/test-results/`. `@vex` is not in Prisma seed. Live visual
+  matching of Opening uses the same `e2e/visual` fixture against production
+  `HomeScreen`; seed stays Anna. Cover raster is the Figma card fill at 3:4,
+  not the clipped first-fold `renderBounds` PNG.
+- `Unchanged`: `WorkCoverCard` frost/price/timer, admin note editor, global
+  `outline`, canonical Pen. `DEC-090` recorded.
+
+## 2026-09-14 — Share sheet docks to the bottom on mobile web
+
+- `Implemented` (mobile web): `AppDialog` `presentation="sheet"` now sets an
+  explicit column flex on the portal host so `justifyContent: 'flex-end'`
+  docks ShareSheet to the bottom. The web host had been `display:flex`
+  without an axis, so CSS `row` stretched the sheet to the top. Native
+  `AppDialogFrame` gets the same column style. Centered
+  `presentation="dialog"` is unchanged. No API, auth, token, ShareSheet
+  contract, or FilterSheet rewrite. Evidence:
+  `app-dialog-host-style.ts`, `app-dialog-host-style.spec.ts`,
+  `app-dialog-layer.web.tsx`, `AppDialog.tsx`.
+- `Verified` at 390 on the live release stand: computed
+  `flex-direction: column` and `justify-content: flex-end` on
+  `#app-dialog-host`, and `#app-dialog-content` bottom equals the 844px
+  viewport. Playwright in `figma-stabilization.spec.ts` now asserts the
+  same geometry; the isolated e2e webServer was not rerun here because
+  `prepare.mjs` wants a disposable `bidplace_e2e` `migrate reset`.
+- Mobile vitest 251/251; `tsc --noEmit` passed. Canonical Pen was not
+  touched.
+
 ## 2026-09-14 — PR C: commerce application runtime removed
 
 - `Implemented`: Nest Listings, Bids, Orders, Lifecycle, Realtime, Activity,

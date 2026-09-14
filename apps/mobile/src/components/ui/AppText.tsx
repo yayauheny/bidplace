@@ -1,7 +1,9 @@
 import type { PropsWithChildren } from 'react';
-import { Text, type TextProps } from 'react-native';
+import { Platform, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { designTokens, type TextRole } from '@bidplace/design-tokens';
+
+import { appTextRoleStyle } from './app-text-role-style';
 
 type AppTextProps = PropsWithChildren<Omit<TextProps, 'role'>> & {
   role?: TextRole;
@@ -9,6 +11,7 @@ type AppTextProps = PropsWithChildren<Omit<TextProps, 'role'>> & {
     | 'default'
     | 'secondary'
     | 'subdued'
+    | 'subtle'
     | 'muted'
     | 'accent'
     | 'danger'
@@ -19,6 +22,7 @@ const toneColors = {
   default: designTokens.color.ink,
   secondary: designTokens.color.textSecondary,
   subdued: designTokens.color.textSubdued,
+  subtle: designTokens.color.textSubtle,
   muted: designTokens.color.textMuted,
   accent: designTokens.color.ink,
   danger: designTokens.color.danger,
@@ -35,10 +39,12 @@ export function AppText({
     <Text
       {...props}
       style={[
-        designTokens.typography[role],
+        appTextRoleStyle(role, Platform.OS) as TextStyle,
         { color: toneColors[tone] },
         style,
       ]}
     />
   );
 }
+
+export { appTextRoleStyle } from './app-text-role-style';

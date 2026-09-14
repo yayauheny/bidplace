@@ -6,10 +6,10 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   homeArtworkSvg,
   homeAuthor,
+  homeCuratorSelection,
   homePayload,
   homePortraitSvg,
   homeSelectedPublicId,
-  homeWorkItem,
 } from './support/home-fixtures';
 import { e2eEvidenceDir } from './support/evidence-dir';
 
@@ -91,7 +91,7 @@ test('selected opening, null opening, and catalog empty states', async ({
   );
 
   home.body = homePayload({
-    curatorSelection: homeWorkItem(),
+    curatorSelection: homeCuratorSelection(),
     newWorks: [],
   });
   await page.goto('/');
@@ -120,6 +120,24 @@ test('selected opening, null opening, and catalog empty states', async ({
     resolve(artifactDir, 'home-authors-empty-390.png'),
     { minHeight: 800 },
   );
+});
+
+test('renders curator heading only when the selection has a note', async ({
+  page,
+}) => {
+  const home = await installHomeMock(page);
+  home.body = homePayload({
+    curatorSelection: homeCuratorSelection({
+      note: 'Главная визуальная находка этой недели.',
+    }),
+  });
+  await page.goto('/');
+  await expect(page.getByText('Открытие недели', { exact: true })).toBeVisible();
+  await expect(page.getByText('Выбор куратора')).toHaveCount(1);
+  await expect(
+    page.getByText('Главная визуальная находка этой недели.'),
+  ).toBeVisible();
+  await expect(page.getByText('Активные торги')).toHaveCount(0);
 });
 
 test('loading, error retry, broken media, long copy, zoom and motion', async ({
@@ -166,7 +184,7 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
 
   home.breakSelectedWork = false;
   home.body = homePayload({
-    curatorSelection: homeWorkItem({
+    curatorSelection: homeCuratorSelection({
       title:
         'Очень длинное название выбранной работы для проверки переноса и обрезки',
       author: homeAuthor({

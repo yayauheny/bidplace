@@ -1803,6 +1803,42 @@ accepted card avoids resolving an incomplete visual contract by invention.
 The domain gains structured multi-material data, or an approved Figma/card
 contract defines which brief facts must be visible.
 
+## DEC-090 — Home Opening curator note is an optional selection field
+
+Date: 2026-09-14
+Status: Confirmed
+Source: explicit founder acceptance of an in-place unreleased-table amendment
+plus Figma first-fold `439:4404` (390×860) as the Opening visual fixture
+Revises: `DEC-086` (editorial copy on the selection) and the additive-migration
+clause in `10-CODE-ARCHITECTURE.md` only for this unreleased
+`curator_selections` table. Does not reopen `DEC-087` commerce/baseline
+migrations.
+
+### Decision
+
+- Editorial copy for Home «Открытие недели» belongs on `CuratorSelection.note`,
+  not on `author.shortDescription` or `work.story`. The heading «Выбор куратора»
+  is UI chrome.
+- `note` is optional (`TEXT NULL`). Empty/null hides the heading and paragraph
+  and keeps the author row, profile button, and work card. Section visibility
+  still follows `DEC-086`.
+- Pre-production schema amendment of
+  `20260909120000_portfolio_media_socials_curator/migration.sql` is allowed for
+  this unreleased table. After the first production apply, further columns are
+  additive. This does not authorize editing commerce or baseline migrations.
+- Visual identity is not seed data. Figma `@vex` rasters and essay copy stay in
+  Playwright `e2e/visual` fixtures. Local Prisma seed keeps `seedLive002` / Anna
+  with `note = null`.
+- Do not change global `outline`. Do not reuse a typography or fill role because
+  it is close. The quiet profile pill hugs contents (padding 8/14, radius 28,
+  `#EFEFEF` fill, 16% white→`#999999` stroke).
+
+### Revisit when
+
+The table has been applied in production, an admin editor for `note` is in
+scope, or live Figma inspect copy `uMo04w9bgrchWXXDgO4W62` disagrees with the
+versioned first-fold snapshot.
+
 ## DEC-088 — MVP dock is one four-item glass capsule
 
 Date: 2026-09-11

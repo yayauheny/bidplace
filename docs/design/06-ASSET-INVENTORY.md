@@ -1,6 +1,6 @@
 # bidplace — реестр дизайн-ресурсов
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-14
 
 Статус: **Canonical source, runtime mapping и локальные demo fixtures verified**
 
@@ -63,6 +63,7 @@ asset или изображения без подтверждённых прав
 | Product demo media | `packages/database/prisma/fixtures/product-images/ceramic-brush-holder.png`, `handmade-mug.png`, `handmade-vase.png`, `painted-planter.png` | Только local/test seed; после seed хранится в ProductImage и отдается API |
 | Seller profile demo media | `packages/database/prisma/fixtures/seller-profile/anna-morozova.png`, `irina-levchenko.png`, `lena-kravets.png`, `mark-volkov.png`, `nikita-orlov.png`, `olga-vlasova.png`, `pavel-sokolov.png`, `svetlana-gromova.png` | Только local/test seed; после seed хранится в SellerProfile и отдается API |
 | E2E-only profile fixture | `apps/mobile/e2e/fixtures/profile-photo.png` | Тест upload flow; не production content |
+| E2E-only Home Opening visual | `apps/mobile/e2e/visual/assets/vex-avatar.png`, `vex-work-cover.png`; golden `e2e/visual/references/home-opening-figma-390.png` | Playwright mock of production Home. Avatar is the first-fold handoff raster. Cover is the Figma `439:4422` image fill at card 3:4 (`528×704`), not the clipped 86px first-fold `renderBounds` export. Not in Prisma seed or the production bundle |
 
 В seed сейчас используются четыре исходных product PNG для восьми карточек:
 `painted-planter.png`, `ceramic-brush-holder.png`, `handmade-mug.png` и

@@ -122,7 +122,7 @@ export class PortfolioService {
       this.listAuthors({ page: 1, limit: 6, sort: 'added' }),
       this.prisma.curatorSelection.findUnique({
         where: { slot: HOME_CURATOR_SLOT },
-        select: { productId: true },
+        select: { productId: true, note: true },
       }),
     ]);
     let curatorSelection = null;
@@ -133,9 +133,12 @@ export class PortfolioService {
       });
       if (product) {
         try {
-          curatorSelection = toPortfolioWorkItem(
-            await this.products.getPortfolio(product.publicId),
-          );
+          curatorSelection = {
+            ...toPortfolioWorkItem(
+              await this.products.getPortfolio(product.publicId),
+            ),
+            note: selection.note?.trim() ? selection.note.trim() : null,
+          };
         } catch (error) {
           if (!(error instanceof NotFoundException)) {
             throw error;
@@ -150,7 +153,11 @@ export class PortfolioService {
     });
   }
 
-  async setCuratorSelection(publicId: string, actorUserId: string) {
+  async setCuratorSelection(
+    publicId: string,
+    note: string | null,
+    actorUserId: string,
+  ) {
     let item;
     try {
       item = await this.products.getPortfolio(publicId);
@@ -166,11 +173,13 @@ export class PortfolioService {
       create: {
         slot: HOME_CURATOR_SLOT,
         productId: item.product.id,
+        note,
         selectedAt,
         selectedByUserId: actorUserId,
       },
       update: {
         productId: item.product.id,
+        note,
         selectedAt,
         selectedByUserId: actorUserId,
       },
@@ -179,6 +188,7 @@ export class PortfolioService {
       publicId: item.product.publicId,
       productId: item.product.id,
       selectedAt: selectedAt.toISOString(),
+      note,
     };
   }
 

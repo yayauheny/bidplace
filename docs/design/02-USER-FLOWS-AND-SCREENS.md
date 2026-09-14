@@ -58,8 +58,11 @@ FAB are not production items. Public share aliases `/works/:id` and
 ## 4. Home
 
 `Открытие недели` рендерится только из `home.curatorSelection` (`DEC-086`).
-Если selection `null` или недоступна, секция отсутствует. Work cards показывают
-название и `@author`. После работ — `Новые авторы` или короткий переход в `/authors`.
+Если selection `null` или недоступна, секция отсутствует. Optional `note` is
+editorial copy on the selection (`DEC-090`); empty/null hides «Выбор куратора»
+and the paragraph, not the author row, profile button, or work card. Work cards
+показывают название и `@author`. После работ — `Новые авторы` или короткий
+переход в `/authors`.
 
 ## 5. Works and Authors discovery
 

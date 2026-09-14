@@ -50,7 +50,7 @@ export function HomeScreen() {
         >
           <BrandLogo profile />
         </View>
-        <View style={{ gap: designTokens.space.x10 }}>
+        <View style={{ gap: designTokens.space.x10, minWidth: 0 }}>
           {loading ? <PageState title="Загружаем bidplace…" loading /> : null}
           {failed ? (
             <PageState

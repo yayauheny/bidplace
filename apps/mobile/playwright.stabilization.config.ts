@@ -13,6 +13,7 @@ export default defineConfig({
   testMatch: [
     'figma-stabilization.spec.ts',
     'home-figma.spec.ts',
+    'visual/home-opening-figma.spec.ts',
     'discovery-launch.spec.ts',
     'author-header-motion.spec.ts',
     'product-layout.spec.ts',

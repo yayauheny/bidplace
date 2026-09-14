@@ -54,6 +54,10 @@ export const designTokens = {
     ghostHover: '#F7F7F7',
     mutedFill: '#F3F3F3',
     mutedHover: '#E8E8E8',
+    quietFill: '#EFEFEF',
+    quietBorderStart: '#FFFFFF',
+    quietBorderEnd: '#999999',
+    textSubtle: '#6F6F6F',
     fieldHoverFill: '#FCFCFC',
     pressRing: 'rgba(0, 235, 151, 0.25)',
     saleLive: '#E9401A',
@@ -83,6 +87,11 @@ export const designTokens = {
     choiceChipY: 8,
     buttonX: 16,
     buttonY: 8,
+    quietButtonX: 14,
+    quietButtonY: 8,
+    quietButtonGap: 6,
+    authorRowGap: 2,
+    editorialGap: 4,
     fieldX: 12,
     fieldY: 13,
     fieldGap: 4,
@@ -158,6 +167,8 @@ export const designTokens = {
     button: 44,
     buttonLarge: 56,
     buttonCompact: 40,
+    openingAvatar: 54,
+    openingAuthorRow: 68,
     choiceChip: 38,
     buttonIconFrame: 26,
     iconButton: 36,
@@ -336,6 +347,49 @@ export const designTokens = {
       letterSpacing: -0.18,
       fontWeight: '600' as const,
     },
+    // Home opening handle `439:4414`: Inter Medium 22/25, tracking -1%.
+    authorRowHandle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 22,
+      lineHeight: 25,
+      letterSpacing: -0.22,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '500' as const,
+    },
+    // Home opening bio `439:4415`: Inter Regular 14 / box 17, `#6F6F6F`.
+    authorRowBio: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 17,
+      fontWeight: '400' as const,
+    },
+    // Home curator heading `439:4417`: Inter Medium 20 / box 24, tracking -2%.
+    editorialTitle: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 20,
+      lineHeight: 24,
+      letterSpacing: -0.4,
+      letterSpacingEm: '-0.02em',
+      fontWeight: '500' as const,
+    },
+    // Home curator note `439:4418`: Inter Regular 16/22, tracking -1%.
+    editorial: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 16,
+      lineHeight: 22,
+      letterSpacing: -0.16,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '400' as const,
+    },
+    // Home profile pill label `439:4420`: Inter Medium 13/18, tracking -1%.
+    buttonCompact: {
+      fontFamily: 'Inter_500Medium',
+      fontSize: 13,
+      lineHeight: 18,
+      letterSpacing: -0.13,
+      letterSpacingEm: '-0.01em',
+      fontWeight: '500' as const,
+    },
     workTitle: {
       fontFamily: 'Inter_600SemiBold',
       fontSize: 20,
@@ -459,6 +513,8 @@ export const designTokens = {
     mobileMenuWidth: 320,
     dialogMaxWidth: 366,
     phoneWidth: 390,
+    openingAuthorWidth: 280,
+    phoneFoldHeight: 860,
   },
   breakpoint: {
     mobileHeader: 99999,
@@ -494,6 +550,7 @@ export const designTokens = {
   opacity: {
     disabled: 0.5,
     atmosphere: 0.5,
+    quietBorder: 0.16,
   },
   stroke: {
     icon: 1.13,
@@ -506,3 +563,12 @@ export const figmaTokens = designTokens;
 
 export type TextRole = keyof typeof designTokens.typography;
 export type FigmaTokens = typeof designTokens;
+
+type TypographyRole = (typeof designTokens.typography)[TextRole];
+
+export function typographyLetterSpacingEm(role: TextRole) {
+  const spec = designTokens.typography[role] as TypographyRole & {
+    letterSpacingEm?: string;
+  };
+  return spec.letterSpacingEm;
+}

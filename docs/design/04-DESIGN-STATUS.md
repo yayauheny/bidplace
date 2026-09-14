@@ -4,6 +4,39 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-14 — Home Opening curator note and quiet pill
+
+- `Implemented` (mobile web): Opening left column follows first-fold
+  `439:4404` (390×860): handle `439:4414`, bio `439:4415`, «Выбор куратора»
+  `439:4417` + note `439:4418` when `note` is present, quiet hug pill
+  `439:4419`/`439:4420`. New tokens: `textSubtle`, `quietFill`,
+  `quietBorderStart`/`End`, `authorRowHandle`, `authorRowBio`,
+  `editorialTitle`, `editorial`, `typography.buttonCompact`. `FigmaButton`
+  variant `quiet` size `compact` hugs padding 8/14; not 149×34; not `muted`
+  or global `outline`.
+- `Verified`: first-fold Opening is matched in the live HomeScreen at 390×860
+  with the `@vex` network fixture. Horizontal Opening row is constrained to the
+  phone column so `AppShell` centering cannot shift the left column off-canvas.
+  Opening work photo uses the unclipped 3:4 Figma fill (`264×352` / `528×704`),
+  so `WorkCoverCard` `cover` fills the rounded card instead of zooming the
+  clipped 86px first-fold strip. Work overlay copy and «Активные торги» stay
+  out of this slice.
+- `Unchanged`: WorkCoverCard overlay, dock, discovery. Canonical Pen file
+  was not touched.
+
+## 2026-09-14 — Share sheet host is an explicit column flex
+
+- `Implemented` (mobile web): `AppDialog` sheet presentation sets
+  `flexDirection: 'column'` and the web portal host defaults to the same
+  axis, so `flex-end` is vertical. Matches Figma `597:19045` bottom-sheet
+  chrome (20px top radii). Dialog presentation stays centered.
+- `Verified` at 390: `#app-dialog-host` computed `flex-direction: column`,
+  `#app-dialog-content` bottom at the viewport edge. Evidence:
+  `app-dialog-host-style.ts`, `app-dialog-layer.web.tsx`, `AppDialog.tsx`,
+  `figma-stabilization.spec.ts`.
+- `Unchanged`: dock, Home, discovery, author header motion. Canonical Pen
+  file was not touched.
+
 ## 2026-09-14 — PR C admin chrome after commerce runtime removal
 
 - `Implemented`: admin moderation tabs are authors / works / users.

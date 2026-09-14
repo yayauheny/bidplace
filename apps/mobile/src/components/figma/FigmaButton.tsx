@@ -1,17 +1,22 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
+import { AppText } from '../ui/AppText';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
 import { type FigmaIconName } from './figma-icon-names';
 import {
+  figmaButtonGradientColors,
+  figmaButtonGradientOpacity,
   figmaButtonLabelColor,
+  figmaButtonRadius,
   figmaButtonStyle,
   figmaButtonSurfaceFill,
   figmaButtonUsesGradientBorder,
   type FigmaButtonInteraction,
+  type FigmaButtonSize,
   type FigmaButtonVariant,
 } from './figma-button-style';
 
@@ -36,10 +41,12 @@ export function FigmaButton({
   iconPosition?: 'left' | 'right';
   accessibilityHint?: string;
   width?: 'content' | 'full';
-  size?: 'regular' | 'large';
+  size?: FigmaButtonSize;
 }) {
   const inactive = disabled || loading;
   const textColor = figmaButtonLabelColor(variant);
+  const radius = figmaButtonRadius(size);
+  const compact = size === 'compact';
 
   return (
     <MotionPressable
@@ -50,6 +57,16 @@ export function FigmaButton({
       disabled={inactive}
       onPress={onPress}
       preset="primaryAction"
+      hitSlop={
+        compact
+          ? {
+              top: figmaTokens.space.quietButtonY,
+              bottom: figmaTokens.space.quietButtonY,
+              left: figmaTokens.space.quietButtonX,
+              right: figmaTokens.space.quietButtonX,
+            }
+          : undefined
+      }
       style={({ hovered, pressed }) => [
         {
           position: 'relative',
@@ -76,16 +93,23 @@ export function FigmaButton({
               <>
                 <LinearGradient
                   pointerEvents="none"
-                  colors={[figmaTokens.color.ink, '#585858']}
+                  colors={[...figmaButtonGradientColors(variant)]}
                   start={{ x: 0.5, y: 0 }}
                   end={{ x: 0.5, y: 1 }}
-                  style={styles.gradientBorder}
+                  style={[
+                    styles.gradientBorder,
+                    {
+                      borderRadius: radius,
+                      opacity: figmaButtonGradientOpacity(variant),
+                    },
+                  ]}
                 />
                 <View
                   pointerEvents="none"
                   style={[
                     styles.gradientSurface,
                     {
+                      borderRadius: radius,
                       backgroundColor: figmaButtonSurfaceFill(
                         variant,
                         interaction,
@@ -100,16 +124,21 @@ export function FigmaButton({
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: icon ? 2 : 0,
+                gap: icon
+                  ? compact
+                    ? figmaTokens.space.quietButtonGap
+                    : figmaTokens.space.x2
+                  : 0,
                 opacity: loading ? 0 : 1,
               }}
             >
               {iconPosition === 'left' ? iconElement : null}
-              <Text
-                style={[{ color: textColor }, figmaTokens.typography.button]}
+              <AppText
+                role={compact ? 'buttonCompact' : 'button'}
+                style={{ color: textColor }}
               >
                 {label}
-              </Text>
+              </AppText>
               {iconPosition === 'right' ? iconElement : null}
             </View>
             {loading ? (

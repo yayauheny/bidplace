@@ -12,6 +12,7 @@ CREATE TABLE "curator_selections" (
   "id" UUID NOT NULL,
   "slot" VARCHAR(32) NOT NULL,
   "product_id" UUID NOT NULL,
+  "note" TEXT,
   "selected_at" TIMESTAMP(3) NOT NULL,
   "selected_by_user_id" UUID,
   CONSTRAINT "curator_selections_pkey" PRIMARY KEY ("id")

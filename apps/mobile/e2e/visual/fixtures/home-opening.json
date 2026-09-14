@@ -1,0 +1,49 @@
+{
+  "curatorSelection": {
+    "work": {
+      "id": "20000000-0000-4000-8000-000000000040",
+      "publicId": "daliEstate1",
+      "title": "Salvador Dalí Estate & Fundació Gala Сальвадор Дали",
+      "story": null,
+      "categoryId": "20000000-0000-4000-8000-000000000042",
+      "technique": null,
+      "materials": null,
+      "dimensions": null,
+      "year": 2024,
+      "uniqueness": null,
+      "images": [
+        {
+          "id": "20000000-0000-4000-8000-000000000041",
+          "position": 0,
+          "url": "/api/images/20000000-0000-4000-8000-000000000041",
+          "mimeType": "image/png",
+          "byteLength": 656587,
+          "checksum": "1b5295db40adca9d29c772b8a04f752cdf6aa76387b5673fd9638d0699fa1198",
+          "width": 528,
+          "height": 704
+        }
+      ],
+      "publishedAt": "2026-09-01T00:00:00.000Z",
+      "sharePath": "/works/daliEstate1"
+    },
+    "author": {
+      "id": "20000000-0000-4000-8000-000000000043",
+      "slug": "vex",
+      "fullName": "vex",
+      "country": "Беларусь",
+      "city": "Минск",
+      "discipline": "Живопись",
+      "practice": null,
+      "profilePhotoUrl": "/api/sellers/vex/photo",
+      "telegramUrl": null,
+      "instagramUrl": null,
+      "websiteUrl": null,
+      "shortDescription": "Ищу логику в абсурде.\nСтираю грань между реальностью и сном",
+      "achievements": [],
+      "sharePath": "/authors/vex"
+    },
+    "note": "Тот случай, когда безупречная техника встречается с сильной идеей. Переосмысляет эстетику прошлого, создавая миры, где стирается грань реальности. Наша главная визуальная находка этой недели."
+  },
+  "newWorks": [],
+  "newAuthors": []
+}

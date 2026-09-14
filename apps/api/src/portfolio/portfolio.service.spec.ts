@@ -244,6 +244,7 @@ describe('PortfolioService', () => {
       curatorSelection: {
         findUnique: vi.fn().mockResolvedValue({
           productId: item.product.id,
+          note: null,
         }),
       },
       product: {
@@ -260,6 +261,7 @@ describe('PortfolioService', () => {
       expect.objectContaining({
         curatorSelection: expect.objectContaining({
           work: expect.objectContaining({ publicId: 'portfolio01' }),
+          note: null,
         }),
       }),
     );
@@ -274,6 +276,105 @@ describe('PortfolioService', () => {
     );
     await expect(hidden.home()).resolves.toEqual(
       expect.objectContaining({ curatorSelection: null }),
+    );
+  });
+
+  it('returns the curator note and treats blank notes as null', async () => {
+    const item = {
+      product: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        publicId: 'portfolio01',
+        title: 'Work',
+        story: null,
+        categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        uniqueness: null,
+        images: [
+          {
+            id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            position: 0,
+            url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            mimeType: 'image/jpeg',
+            byteLength: 1,
+            checksum: 'a'.repeat(64),
+            width: 1,
+            height: 1,
+          },
+        ],
+        publishedAt: '2026-09-08T00:00:00.000Z',
+      },
+      sellerProfile: {
+        id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        slug: 'author',
+        fullName: 'Author',
+        country: 'Belarus',
+        city: 'Minsk',
+        discipline: 'Painting',
+        practice: null,
+        profilePhotoUrl: '/api/sellers/author/photo',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Bio',
+        achievements: [],
+      },
+    };
+    const products = {
+      listPortfolio: vi.fn().mockResolvedValue({
+        items: [item],
+        pagination: { page: 1, limit: 6, total: 1 },
+      }),
+      getPortfolio: vi.fn().mockResolvedValue(item),
+    };
+    const sellers = {
+      listPortfolioAuthors: vi.fn().mockResolvedValue({
+        sellers: [],
+        pagination: { page: 1, limit: 6, total: 0 },
+      }),
+    };
+    const prisma = {
+      curatorSelection: {
+        findUnique: vi.fn().mockResolvedValue({
+          productId: item.product.id,
+          note: '  Главная визуальная находка этой недели.  ',
+        }),
+      },
+      product: {
+        findUnique: vi.fn().mockResolvedValue({ publicId: 'portfolio01' }),
+      },
+    };
+
+    await expect(
+      new PortfolioService(
+        products as never,
+        sellers as never,
+        prisma as never,
+      ).home(),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        curatorSelection: expect.objectContaining({
+          note: 'Главная визуальная находка этой недели.',
+        }),
+      }),
+    );
+
+    prisma.curatorSelection.findUnique.mockResolvedValue({
+      productId: item.product.id,
+      note: '   ',
+    });
+    await expect(
+      new PortfolioService(
+        products as never,
+        sellers as never,
+        prisma as never,
+      ).home(),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        curatorSelection: expect.objectContaining({ note: null }),
+      }),
     );
   });
 

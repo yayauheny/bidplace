@@ -271,9 +271,11 @@ export class AdminController {
     @CurrentUser() auth: { sub: string },
     @Body() body: unknown,
   ) {
+    const parsed = parseBody(adminCuratorSelectionRequestSchema, body);
     return adminCuratorSelectionResponseSchema.parse(
       await this.portfolio.setCuratorSelection(
-        parseBody(adminCuratorSelectionRequestSchema, body).publicId,
+        parsed.publicId,
+        parsed.note,
         auth.sub,
       ),
     );

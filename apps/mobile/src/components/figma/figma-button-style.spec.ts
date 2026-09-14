@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import {
+  figmaButtonGradientColors,
+  figmaButtonGradientOpacity,
   figmaButtonLabelColor,
+  figmaButtonLabelTypography,
   figmaButtonSurfaceFill,
   figmaButtonStyle,
   figmaButtonUsesGradientBorder,
@@ -55,6 +58,38 @@ describe('Figma button styles', () => {
   it('dims disabled variants instead of inventing a second control size', () => {
     expect(figmaButtonStyle('solid', 'disabled').opacity).toBe(0.5);
     expect(figmaButtonStyle('muted', 'disabled').opacity).toBe(0.5);
+  });
+
+  it('hugs the quiet compact pill from padding and type, not 149×34', () => {
+    const compact = figmaButtonStyle('quiet', 'idle', 'compact');
+    expect(compact).toMatchObject({
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      borderWidth: 0,
+      borderRadius: figmaTokens.radius.chip,
+      paddingHorizontal: figmaTokens.space.quietButtonX,
+      paddingVertical: figmaTokens.space.quietButtonY,
+    });
+    expect(compact).not.toHaveProperty('minHeight');
+    expect(compact).not.toHaveProperty('width');
+    expect(compact).not.toHaveProperty('height');
+    expect(figmaButtonUsesGradientBorder('quiet')).toBe(true);
+    expect(figmaButtonGradientColors('quiet')).toEqual([
+      figmaTokens.color.quietBorderStart,
+      figmaTokens.color.quietBorderEnd,
+    ]);
+    expect(figmaButtonGradientOpacity('quiet')).toBe(
+      figmaTokens.opacity.quietBorder,
+    );
+    expect(figmaButtonSurfaceFill('quiet', 'idle')).toBe(
+      figmaTokens.color.quietFill,
+    );
+    expect(figmaButtonLabelColor('quiet')).toBe(figmaTokens.color.ink);
+    expect(figmaButtonLabelTypography('compact')).toMatchObject({
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '500',
+    });
   });
 
   it('keeps danger visually distinct from the primary solid pill', () => {

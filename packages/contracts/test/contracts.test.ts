@@ -10,8 +10,11 @@ import {
   publicProductSchema,
   portfolioWorksQuerySchema,
   portfolioWorkDetailResponseSchema,
+  portfolioHomeResponseSchema,
+  portfolioWorkListItemSchema,
   portfolioAuthorApplicationResponseSchema,
   portfolioDiscoveryFacetsResponseSchema,
+  adminCuratorSelectionRequestSchema,
   sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
@@ -101,6 +104,91 @@ describe('shared contracts', () => {
     expect(
       portfolioWorksQuerySchema.safeParse({ sort: 'priceAsc' }).success,
     ).toBe(false);
+  });
+
+  it('keeps curator note on the home selection, not catalog work items', () => {
+    const work = {
+      id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      publicId: 'portfolio01',
+      title: 'Work',
+      story: null,
+      categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      technique: null,
+      materials: null,
+      dimensions: null,
+      year: null,
+      uniqueness: null,
+      images: [
+        {
+          id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          position: 0,
+          url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          mimeType: 'image/jpeg',
+          byteLength: 1,
+          checksum: 'a'.repeat(64),
+          width: 1,
+          height: 1,
+        },
+      ],
+      publishedAt: '2026-09-08T00:00:00.000Z',
+      sharePath: '/works/portfolio01',
+    };
+    const author = {
+      id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      slug: 'author',
+      fullName: 'Author',
+      country: 'Belarus',
+      city: 'Minsk',
+      discipline: 'Painting',
+      practice: null,
+      profilePhotoUrl: '/api/sellers/author/photo',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      shortDescription: 'Bio',
+      achievements: [],
+      sharePath: '/authors/author',
+    };
+
+    expect(
+      portfolioWorkListItemSchema.safeParse({ work, author, note: 'x' }).success,
+    ).toBe(false);
+    expect(
+      portfolioHomeResponseSchema.safeParse({
+        curatorSelection: { work, author },
+        newWorks: [],
+        newAuthors: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      portfolioHomeResponseSchema.parse({
+        curatorSelection: { work, author, note: null },
+        newWorks: [],
+        newAuthors: [],
+      }).curatorSelection?.note,
+    ).toBeNull();
+    expect(
+      portfolioHomeResponseSchema.parse({
+        curatorSelection: {
+          work,
+          author,
+          note: ' Главная визуальная находка этой недели. ',
+        },
+        newWorks: [],
+        newAuthors: [],
+      }).curatorSelection?.note,
+    ).toBe('Главная визуальная находка этой недели.');
+    expect(
+      adminCuratorSelectionRequestSchema.safeParse({
+        publicId: 'portfolio01',
+      }).success,
+    ).toBe(false);
+    expect(
+      adminCuratorSelectionRequestSchema.parse({
+        publicId: 'portfolio01',
+        note: null,
+      }),
+    ).toEqual({ publicId: 'portfolio01', note: null });
   });
 
   it('keeps author application projections free of private handoff data', () => {

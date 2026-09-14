@@ -144,9 +144,15 @@ export const portfolioAuthorDetailResponseSchema = z
   })
   .strict();
 
+export const portfolioHomeCuratorSelectionSchema = portfolioWorkListItemSchema
+  .extend({
+    note: publicText.max(2_000).nullable(),
+  })
+  .strict();
+
 export const portfolioHomeResponseSchema = z
   .object({
-    curatorSelection: portfolioWorkListItemSchema.nullable(),
+    curatorSelection: portfolioHomeCuratorSelectionSchema.nullable(),
     newWorks: z.array(portfolioWorkListItemSchema),
     newAuthors: z.array(portfolioAuthorSchema),
   })

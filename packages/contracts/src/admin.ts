@@ -109,6 +109,7 @@ export const adminOkResponseSchema = z.object({ ok: z.literal(true) }).strict();
 export const adminCuratorSelectionRequestSchema = z
   .object({
     publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    note: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strict();
 
@@ -117,6 +118,7 @@ export const adminCuratorSelectionResponseSchema = z
     publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
     productId: uuidSchema,
     selectedAt: isoDateTimeSchema,
+    note: z.string().trim().min(1).max(2_000).nullable(),
   })
   .strict();
 

@@ -3,18 +3,22 @@ import { figmaTokens } from '@bidplace/design-tokens';
 export const figmaButtonVariants = [
   'solid',
   'outline',
+  'quiet',
   'ghost',
   'muted',
   'danger',
 ] as const;
 
+export const figmaButtonSizes = ['regular', 'large', 'compact'] as const;
+
 export type FigmaButtonVariant = (typeof figmaButtonVariants)[number];
+export type FigmaButtonSize = (typeof figmaButtonSizes)[number];
 export type FigmaButtonInteraction = 'idle' | 'hover' | 'pressed' | 'disabled';
 
 export function figmaButtonStyle(
   variant: FigmaButtonVariant,
   interaction: FigmaButtonInteraction,
-  size: 'regular' | 'large' = 'regular',
+  size: FigmaButtonSize = 'regular',
 ) {
   const disabled = interaction === 'disabled';
   const hovered = interaction === 'hover';
@@ -23,20 +27,29 @@ export function figmaButtonStyle(
   const showRing = pressed;
   const insetPressedSurface =
     pressed && (variant === 'ghost' || variant === 'muted');
+  const compact = size === 'compact';
 
   return {
-    minHeight:
-      (size === 'large'
-        ? figmaTokens.size.buttonLarge
-        : figmaTokens.size.button) - (insetPressedSurface ? 2 : 0),
+    ...(compact
+      ? {}
+      : {
+          minHeight:
+            (size === 'large'
+              ? figmaTokens.size.buttonLarge
+              : figmaTokens.size.button) - (insetPressedSurface ? 2 : 0),
+        }),
     margin: insetPressedSurface ? 1 : 0,
-    paddingHorizontal: figmaTokens.space.buttonX,
-    paddingVertical: figmaTokens.space.buttonY,
-    borderRadius: figmaTokens.radius.button,
-    borderWidth: insetPressedSurface ? 0 : 1,
+    paddingHorizontal: compact
+      ? figmaTokens.space.quietButtonX
+      : figmaTokens.space.buttonX,
+    paddingVertical: compact
+      ? figmaTokens.space.quietButtonY
+      : figmaTokens.space.buttonY,
+    borderRadius: figmaButtonRadius(size),
+    borderWidth: compact || insetPressedSurface ? 0 : 1,
     borderColor: buttonBorder(variant),
     backgroundColor:
-      variant === 'outline'
+      variant === 'outline' || variant === 'quiet'
         ? 'transparent'
         : disabled && (variant === 'solid' || variant === 'danger')
           ? variant === 'danger'
@@ -50,6 +63,12 @@ export function figmaButtonStyle(
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   };
+}
+
+export function figmaButtonRadius(size: FigmaButtonSize) {
+  return size === 'compact'
+    ? figmaTokens.radius.chip
+    : figmaTokens.radius.button;
 }
 
 export function figmaButtonSurfaceFill(
@@ -67,13 +86,33 @@ export function figmaButtonSurfaceFill(
 }
 
 export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
-  return variant === 'outline';
+  return variant === 'outline' || variant === 'quiet';
+}
+
+export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
+  if (variant === 'quiet') {
+    return [
+      figmaTokens.color.quietBorderStart,
+      figmaTokens.color.quietBorderEnd,
+    ] as const;
+  }
+  return [figmaTokens.color.ink, '#585858'] as const;
+}
+
+export function figmaButtonGradientOpacity(variant: FigmaButtonVariant) {
+  return variant === 'quiet' ? figmaTokens.opacity.quietBorder : 1;
 }
 
 export function figmaButtonLabelColor(variant: FigmaButtonVariant) {
   return variant === 'solid' || variant === 'danger'
     ? figmaTokens.color.white
     : figmaTokens.color.ink;
+}
+
+export function figmaButtonLabelTypography(size: FigmaButtonSize) {
+  return size === 'compact'
+    ? figmaTokens.typography.buttonCompact
+    : figmaTokens.typography.button;
 }
 
 function buttonFill(variant: FigmaButtonVariant, active: boolean) {
@@ -85,6 +124,8 @@ function buttonFill(variant: FigmaButtonVariant, active: boolean) {
     case 'outline':
     case 'ghost':
       return active ? figmaTokens.color.ghostHover : figmaTokens.color.canvas;
+    case 'quiet':
+      return figmaTokens.color.quietFill;
     case 'muted':
       return active
         ? figmaTokens.color.mutedHover
@@ -99,6 +140,7 @@ function buttonBorder(variant: FigmaButtonVariant) {
     case 'danger':
       return figmaTokens.color.dangerHover;
     case 'outline':
+    case 'quiet':
       return 'transparent';
     case 'ghost':
     case 'muted':
