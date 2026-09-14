@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Safe Figma comparison fixture
+
+- `Implemented`: Vex-only comparison fixture with `current_database()` plus
+  local/test env guards. `syncFigmaComparisonFixture()` cannot skip the CLI
+  guard. Targets `bidplace`, `bidplace_e2e`, `postgres`, `auction` and other
+  production-like names are refused before the first write. Two applies on a
+  disposable integration schema are idempotent and keep source PNG checksums.
+  No `deleteMany`, no `pnpm db:seed`, no shared `bidplace` writes, and no
+  non-parity Anna assets. Coverage:
+  `figma-comparison-fixture.integration.spec.ts`.
+- `Not claimed`: visual parity, Founder Accepted, or launch-ready.
+
 ## 2026-09-14 — Portfolio foundation preservation
 
 - `Implemented`: author create requires non-blank `city`; `socialLink` is nullable
