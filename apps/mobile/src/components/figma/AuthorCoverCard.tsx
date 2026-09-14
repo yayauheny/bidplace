@@ -30,9 +30,18 @@ export function AuthorCoverCard({
   tags,
   imageUrl,
   size,
-}: AuthorCoverInput & { imageUrl: string; size?: CoverCardFrameSize }) {
+  frameRadius,
+  interaction = 'default',
+}: AuthorCoverInput & {
+  imageUrl: string;
+  size?: CoverCardFrameSize;
+  frameRadius?: number;
+  interaction?: 'default' | 'static';
+}) {
   const content = getAuthorCoverContent({ fullName, slug, tags });
   const reducedMotion = useReducedMotion();
+  const emphasizeArtwork =
+    interaction !== 'static' && !reducedMotion;
 
   return (
     <Link href={`/seller/${slug}`} asChild>
@@ -41,7 +50,7 @@ export function AuthorCoverCard({
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
         style={{
-          ...coverCardFrameStyle('author', size),
+          ...coverCardFrameStyle('author', size, frameRadius),
           justifyContent: 'space-between',
         }}
       >
@@ -49,7 +58,8 @@ export function AuthorCoverCard({
           <>
             <View
               style={coverArtworkFrameStyle(
-                !reducedMotion && (hovered || focused),
+                emphasizeArtwork && (hovered || focused),
+                frameRadius,
               )}
             >
               <ResilientRemoteImage

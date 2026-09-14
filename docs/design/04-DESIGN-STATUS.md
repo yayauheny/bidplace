@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home authors fan silhouette and hover
+
+- `Implemented` (mobile web): Frame 47 fan cards use radius 24 on every
+  visual layer. Front shadow sits on a 322×430 / 24px shell with
+  `overflow: visible`. Fan `AuthorCoverCard` is `interaction="static"` so
+  hover does not scale or square the artwork layer. Coverage:
+  `home-new-authors.tsx`, `cover-card-style.ts`, `AuthorCoverCard.tsx`.
+- `Unchanged`: Frame 47 positions, `Home.newAuthors` photos, Opening, New
+  works, `/authors` radius 28, canonical Pen.
+
 ## 2026-09-15 — Home «Новые авторы» Frame 47 fan
 
 - `Implemented` (mobile web): Home authors uses stacked-works Frame `436:1320`

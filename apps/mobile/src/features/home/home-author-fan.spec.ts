@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { homeAuthorFanSlots } from './home-author-fan';
+import { homeAuthorFanLayout, homeAuthorFanSlots } from './home-author-fan';
 import { type HomeAuthor } from './home-sections';
 
 function author(slug: string, photo = `/api/sellers/${slug}/photo`): HomeAuthor {
@@ -12,6 +12,10 @@ function author(slug: string, photo = `/api/sellers/${slug}/photo`): HomeAuthor 
 }
 
 describe('homeAuthorFanSlots', () => {
+  it('locks Frame 47 card radius at 24', () => {
+    expect(homeAuthorFanLayout.cardRadius).toBe(24);
+  });
+
   it('hides when no author has a photo', () => {
     expect(homeAuthorFanSlots([author('vex', '')])).toEqual([]);
   });

@@ -12,6 +12,7 @@ export type CoverCardFrameSize = {
 export function coverCardFrameStyle(
   kind: 'work' | 'author',
   size?: CoverCardFrameSize,
+  frameRadius?: number,
 ): ViewStyle {
   return {
     width: size?.width ?? '100%',
@@ -22,14 +23,18 @@ export function coverCardFrameStyle(
         }),
     overflow: 'hidden',
     borderRadius:
-      kind === 'author'
+      frameRadius ??
+      (kind === 'author'
         ? figmaTokens.radius.authorCover
-        : figmaTokens.radius.cover,
+        : figmaTokens.radius.cover),
     backgroundColor: figmaTokens.color.mutedFill,
   };
 }
 
-export function coverArtworkFrameStyle(emphasized: boolean): ViewStyle {
+export function coverArtworkFrameStyle(
+  emphasized: boolean,
+  frameRadius?: number,
+): ViewStyle {
   const webTransition =
     Platform.OS === 'web'
       ? ({
@@ -45,6 +50,9 @@ export function coverArtworkFrameStyle(emphasized: boolean): ViewStyle {
     right: 0,
     bottom: 0,
     left: 0,
+    ...(frameRadius != null
+      ? { borderRadius: frameRadius, overflow: 'hidden' as const }
+      : null),
     transform: [{ scale: emphasized ? coverArtworkScale : 1 }],
     ...webTransition,
   };

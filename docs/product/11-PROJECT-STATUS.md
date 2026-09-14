@@ -1,5 +1,14 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Home authors fan uses Frame 47 radius and shadow shell
+
+- `Implemented`: Home fan `AuthorCoverCard` keeps catalog radius 28 unless
+  `frameRadius` is passed. Fan cards use 24, a rounded front shadow shell,
+  and `interaction="static"` so hover does not change geometry. Coverage:
+  `cover-card-style.ts`, `AuthorCoverCard.tsx`, `home-new-authors.tsx`,
+  `cover-card-style.spec.ts`.
+- `Unchanged`: Opening, New works, `/authors` grid, photo mapping.
+
 ## 2026-09-15 — Home «Новые авторы» uses Frame 47 geometry
 
 - `Implemented`: Home «Новые авторы» is a 366 fan from Figma Frame 47

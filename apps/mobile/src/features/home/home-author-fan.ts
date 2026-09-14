@@ -9,6 +9,7 @@ export const homeAuthorFanLayout = {
   rearLeft: { x: 2.45, y: 22.72, rotate: '1deg' },
   frontPos: { x: 22, y: 0 },
   rearOpacity: 0.5,
+  cardRadius: 24,
   frontShadow: '0px 6px 20px rgba(58, 58, 58, 0.4)',
 } as const;
 

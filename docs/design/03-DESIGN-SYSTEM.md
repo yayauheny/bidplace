@@ -319,8 +319,12 @@ stacked/rotated Figma «Новые работы» prototype as New works.
 Home «Новые авторы» reuses Frame 47 `436:1320` as geometry only: centered
 `sectionTitle`, rear 308×410 at ±1° / 0.5 opacity, front 322×430, full
 `PrimaryButton` «Смотреть все». Cards are `AuthorCoverCard` sized to those
-boxes (`size` prop). No work price/timer/status. The 366 wrapper does not
-clip (`clipsContent: false`); page width stays 390.
+boxes (`size` + `frameRadius` 24 + `interaction="static"`). Stack is
+position/rotation wrapper → rounded shadow shell (`overflow: visible`) →
+clipped card. Front shadow is `0 6px 20px rgba(58,58,58,0.4)` on the 24px
+shell, not the anonymous wrapper. Catalog `/authors` radius stays 28. No
+work price/timer/status. The 366 wrapper does not clip (`clipsContent: false`);
+page width stays 390.
 
 ## 7. Old system boundary
 

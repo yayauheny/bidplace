@@ -18,14 +18,13 @@ function authorTags(author: HomeAuthor) {
     : [];
 }
 
-function fanSlotStyle(slot: HomeAuthorFanSlot) {
+function fanPositionStyle(slot: HomeAuthorFanSlot) {
   if (slot === 'front') {
     return {
       position: 'absolute' as const,
       left: homeAuthorFanLayout.frontPos.x,
       top: homeAuthorFanLayout.frontPos.y,
       zIndex: 2,
-      boxShadow: homeAuthorFanLayout.frontShadow,
     };
   }
   const place =
@@ -39,6 +38,20 @@ function fanSlotStyle(slot: HomeAuthorFanSlot) {
     zIndex: 1,
     opacity: homeAuthorFanLayout.rearOpacity,
     transform: [{ rotate: place.rotate }],
+  };
+}
+
+function fanShadowShellStyle(slot: HomeAuthorFanSlot) {
+  const size =
+    slot === 'front' ? homeAuthorFanLayout.front : homeAuthorFanLayout.rear;
+  return {
+    width: size.width,
+    height: size.height,
+    borderRadius: homeAuthorFanLayout.cardRadius,
+    overflow: 'visible' as const,
+    ...(slot === 'front'
+      ? { boxShadow: homeAuthorFanLayout.frontShadow }
+      : null),
   };
 }
 
@@ -75,14 +88,18 @@ export function HomeNewAuthors({ authors }: { authors: HomeAuthor[] }) {
               ? homeAuthorFanLayout.front
               : homeAuthorFanLayout.rear;
           return (
-            <View key={item.author.slug} style={fanSlotStyle(item.slot)}>
-              <AuthorCoverCard
-                fullName={item.author.fullName}
-                slug={item.author.slug}
-                tags={authorTags(item.author)}
-                imageUrl={item.author.profilePhotoUrl}
-                size={size}
-              />
+            <View key={item.author.slug} style={fanPositionStyle(item.slot)}>
+              <View style={fanShadowShellStyle(item.slot)}>
+                <AuthorCoverCard
+                  fullName={item.author.fullName}
+                  slug={item.author.slug}
+                  tags={authorTags(item.author)}
+                  imageUrl={item.author.profilePhotoUrl}
+                  size={size}
+                  frameRadius={homeAuthorFanLayout.cardRadius}
+                  interaction="static"
+                />
+              </View>
             </View>
           );
         })}
