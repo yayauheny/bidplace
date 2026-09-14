@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View, type TextStyle } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -7,6 +7,16 @@ import { FigmaButton, WorkCoverCard } from '../../components/figma';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { type HomeCuratorSelection } from './home-sections';
+
+// RN web maps numberOfLines={1} to nowrap, which glues a seeded newline into
+// one run. Line-clamp keeps the first logical line and lets the renderer ellipsize.
+const openingBioWebClamp = {
+  display: '-webkit-box',
+  overflow: 'hidden',
+  WebkitBoxOrient: 'vertical',
+  WebkitLineClamp: 1,
+  whiteSpace: 'pre-line',
+} as unknown as TextStyle;
 
 export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) {
   const router = useRouter();
@@ -85,7 +95,13 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                   @{selection.curator.slug}
                 </AppText>
                 {selection.curator.shortDescription ? (
-                  <AppText role="authorRowBio" tone="subtle">
+                  <AppText
+                    role="authorRowBio"
+                    tone="subtle"
+                    numberOfLines={Platform.OS === 'web' ? undefined : 1}
+                    ellipsizeMode="tail"
+                    style={Platform.OS === 'web' ? openingBioWebClamp : undefined}
+                  >
                     {selection.curator.shortDescription}
                   </AppText>
                 ) : null}

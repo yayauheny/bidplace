@@ -4,14 +4,26 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Opening bio is a one-line muted caption
+
+- `Implemented` (mobile web): Opening `@vex` bio (`439:4415`) is one visual
+  line. Seeded `shortDescription` is unchanged. Native uses `numberOfLines={1}`
+  / `ellipsizeMode="tail"`. Web uses line-clamp + `pre-line` because RN web
+  `numberOfLines={1}` is nowrap and would glue the second phrase into the
+  caption. Type stays `authorRowBio` 14/17/400 `#6F6F6F`.
+- `Verified` live at 390×860 against first-fold visual `439:4404` / `439:4415`.
+- Corrects the previous “unclamped Opening bio” note below.
+- `Unchanged`: Opening title, handle, curator note, quiet pill, avatar/work,
+  seed/ownership, canonical Pen, visual goldens.
+
 ## 2026-09-15 — Home Opening type polish vs `439:4404`
 
 - `Implemented` (mobile web): Opening first-fold type at 390×860 matches
   Inspect for title, `@vex`, curator heading, note, and quiet pill. Inter
-  400/500/600 faces are loaded; `font-synthesis: none`. Bio is unclamped
-  seeded copy (`authorRowBio` 14/17/400, no tracking); the author row hugs
-  auto-layout `439:4411` instead of a 68px lock. Shared `sectionTitle` is
-  unchanged (Opening title matches other Home headings).
+  400/500/600 faces are loaded; `font-synthesis: none`. Shared `sectionTitle`
+  is unchanged (Opening title matches other Home headings). Author row hugs
+  auto-layout `439:4411` instead of a 68px lock.
+- Bio line behavior: superseded by the one-line caption note above.
 - `Verified` live at 390×860 against `uMo04w9bgrchWXXDgO4W62` / `439:4404`.
 - `Unchanged`: Active auctions / New works, work-card overlay, seed/ownership,
   canonical Pen, new visual goldens.
