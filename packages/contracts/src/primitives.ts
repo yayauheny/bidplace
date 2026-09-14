@@ -12,7 +12,7 @@ export const slugSchema = z
   .string()
   .trim()
   .min(1)
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+  .regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/);
 export const currencyCodeSchema = z
   .string()
   .trim()

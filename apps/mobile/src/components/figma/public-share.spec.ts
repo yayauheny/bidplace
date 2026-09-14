@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { publicShareTarget } from './public-share';
 
 describe('public share target', () => {
-  it.each(['/authors/anna-morozova', '/works/seedOlga001'])('keeps %s on the current origin with a PNG filename', (path) => {
+  it.each(['/authors/vex', '/authors/bala_klava', '/works/daliEstate1'])('keeps %s on the current origin with a PNG filename', (path) => {
     expect(publicShareTarget(path, 'https://bidplace.test')).toEqual({
       url: `https://bidplace.test${path}`,
       filename: `bidplace-${path.split('/').at(-1)}.png`,

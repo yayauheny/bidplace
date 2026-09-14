@@ -34,10 +34,13 @@ export type AuctionFixture = {
 };
 
 const seededDemoProductIds = [
-  'seedSched01',
-  'seedLive002',
-  'seedEnded03',
-  'seedVase004',
+  'daliEstate1',
+  'caricature1',
+  'yellowSapph',
+  'colorCalib1',
+  'rainbowMask',
+  'blossomVase',
+  'memoryWork1',
 ] as const;
 
 export async function prioritizeSeededDemoProducts(): Promise<void> {

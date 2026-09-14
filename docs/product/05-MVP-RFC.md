@@ -94,7 +94,7 @@ Work. Cart, likes и notification bell отсутствуют. Плавающа�
 Нет `Активных торгов`, цен, таймеров и commerce status. Нельзя публиковать фиктивный
 editorial choice или тестовые карточки как реальные. Optional curator `note` on the
 home selection is editorial copy; missing/empty note hides «Выбор куратора» and the
-paragraph (`DEC-090`).
+paragraph (`DEC-090`). Curator and work owner may differ (`DEC-091`).
 
 ## 6. Каталоги и поиск
 

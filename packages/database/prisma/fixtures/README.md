@@ -1,23 +1,26 @@
 # Local demo fixture assets
 
-These images are committed local inputs for the explicitly guarded development/test seed. They are not production content and the application never requests the source URLs at runtime.
+These images are committed local inputs for the explicitly guarded development/test seed. They are not production content and the application never requests Figma or CDN URLs at runtime.
 
-Profile photos were downloaded from Unsplash and converted to PNG on 2026-08-11:
+Source: Figma file `uMo04w9bgrchWXXDgO4W62`. Files are **raw image fills**, not composed overlay cards.
 
-- `seller-profile/irina-levchenko.png` — https://images.unsplash.com/photo-1524504388940-b1c1722653e1
-- `seller-profile/pavel-sokolov.png` — https://images.unsplash.com/photo-1500648767791-00dcc994a43e
-- `seller-profile/olga-vlasova.png` — https://images.unsplash.com/photo-1534528741775-53994a69daeb
-- `seller-profile/mark-volkov.png` — https://images.unsplash.com/photo-1506794778202-cad84cf45f1d
-- `seller-profile/lena-kravets.png` — https://images.unsplash.com/photo-1544005313-94ddf0286df2
-- `seller-profile/nikita-orlov.png` — https://images.unsplash.com/photo-1519085360753-af0119f7cbe7
-- `seller-profile/svetlana-gromova.png` — https://images.unsplash.com/photo-1551836022-d5d88e9218df
+## Seller portraits
 
-The fourth public catalog image is a ceramic vase downloaded from Unsplash and converted to PNG:
+- `seller-profile/vex.png` — Opening portrait fill (`439:4412`), Илья Васильев.
+- `seller-profile/quantumparadox.png` — authors catalog fill, Анастасия Винова.
+- `seller-profile/havoc.png` — authors catalog fill, Константин Константинович.
+- `seller-profile/bala_klava.png` — authors catalog fill, Клавдия Агаповна.
+- `seller-profile/pixelp-placeholder.png` — **gap**. Figma has no isolated `pixelp` portrait. The Dali work-card chip is a circular crop of the painting, not a person photo. Technical 1×1 PNG so `SellerProfile` can persist required photo bytes. Do not replace with Unsplash or another author’s face.
 
-- `product-images/handmade-vase.png` — https://images.unsplash.com/photo-1666445759502-85124c28524e
-- `product-images/ceramic-bowl.png` — https://unsplash.com/photos/white-ceramic-bowl-xERRpHYVKjg
-- `product-images/studio-lamp.png` — https://images.unsplash.com/photo-1657906707347-bd8270e87ead
-- `product-images/textile-composition.png` — https://images.unsplash.com/photo-1718049942873-58bd663206dc
-- `product-images/linocut-print.png` — https://images.unsplash.com/photo-1436918898788-ebce04d38e46
+## Work covers
 
-The source images are used under the Unsplash License for local design/test fixtures. Existing `anna-morozova.png` and the original product fixtures remain unchanged. The additional product images are mapped one-to-one to the four extra seeded listings so the discovery grid does not repeat its first-row artwork.
+- `product-images/dali-estate.png` — Opening / catalog Dali cover (`pixelp`).
+- `product-images/caricature.png` — «Картина по фото в стиле шарж» (`bala_klava`).
+- `product-images/yellow-sapphire.png` — «Желтый сапфир» (`quantumparadox`).
+- `product-images/color-calibration.png` — «Color calibration» (`havoc`).
+- `product-images/rainbow-mask.png` — Home «Новые работы»: «Радуга (Mask Series 1997 no.8)» (`bala_klava`).
+- `product-images/blossom-vase.png` — Home «Новые работы»: «Ваза "Блоссом"» (`bala_klava`).
+- `product-images/memory.png` — Home «Новые работы»: «Память» (`bala_klava`).
+- `product-images/pending-placeholder.png` — technical 1×1 for the unpublished `pending-seller` moderation product. Not a public catalog asset.
+
+Large Figma rasters were resized to a max long side of 1400px (portraits 800px) without upscaling smaller sources. No Unsplash fallbacks.

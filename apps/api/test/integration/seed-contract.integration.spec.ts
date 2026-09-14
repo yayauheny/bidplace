@@ -38,52 +38,101 @@ beforeAll(async () => {
 afterAll(async () => context?.cleanup());
 
 describe('demo seed executable contract', () => {
-  it('creates internally consistent local/test bid and Order fixtures', async () => {
+  it('creates the Figma local catalog without commerce fixtures', async () => {
     runSeed({ nodeEnv: 'test', appEnv: 'local' });
 
-    const [live, ended, endedBids, orders, buyer] = await Promise.all([
-      prisma.listing.findFirst({
-        where: { status: 'LIVE' },
-        include: { bids: true },
-      }),
-      prisma.listing.findFirst({
-        where: { status: 'ENDED', product: { publicId: 'seedEnded03' } },
-        include: { bids: true },
-      }),
-      prisma.bid.findMany({
-        where: {
-          listing: {
-            status: 'ENDED',
-            product: { publicId: 'seedEnded03' },
+    const [
+      listings,
+      bids,
+      orders,
+      vex,
+      pixelp,
+      catalogAuthors,
+      dali,
+      curator,
+      publishedRevisions,
+      pending,
+    ] = await Promise.all([
+      prisma.listing.count(),
+      prisma.bid.count(),
+      prisma.order.count(),
+      prisma.sellerProfile.findUnique({
+        where: { slug: 'vex' },
+        include: {
+          publishedRevision: {
+            include: { achievements: { orderBy: { position: 'asc' } } },
           },
+          products: { select: { id: true } },
         },
-        include: { bidderUser: true },
       }),
-      prisma.order.findMany({
-        include: { sourceBid: true, buyer: true },
+      prisma.sellerProfile.findUnique({
+        where: { slug: 'pixelp' },
+        select: { id: true, fullName: true, createdAt: true },
       }),
-      prisma.user.findUnique({
-        where: { email: 'buyer@bidplace.test' },
+      prisma.sellerProfile.findMany({
+        where: {
+          slug: { in: ['vex', 'quantumparadox', 'havoc', 'bala_klava'] },
+        },
+        select: { slug: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.product.findUnique({
+        where: { publicId: 'daliEstate1' },
+        select: {
+          publicId: true,
+          status: true,
+          sellerProfile: { select: { slug: true } },
+        },
+      }),
+      prisma.curatorSelection.findUnique({
+        where: { slot: 'home' },
+        include: {
+          product: { select: { publicId: true, status: true } },
+          curator: { select: { slug: true } },
+        },
+      }),
+      prisma.sellerProfileRevision.count({
+        where: { status: 'APPROVED' },
+      }),
+      prisma.sellerProfile.findUnique({
+        where: { slug: 'pending-seller' },
+        select: { status: true, city: true },
       }),
     ]);
 
-    expect(await prisma.bid.count()).toBe(2);
-    expect(live?.currentPrice.toNumber()).toBe(75);
-    expect(live?.bidCount).toBe(1);
-    expect(ended?.currentPrice.toNumber()).toBe(120);
-    expect(ended?.bidCount).toBe(1);
-    expect(endedBids).toHaveLength(1);
-    expect(endedBids[0]?.bidderUserId).toBe(buyer?.id);
-    expect(orders).toHaveLength(1);
-    expect(orders[0]?.buyerId).toBe(buyer?.id);
-    expect(orders[0]?.sourceBidId).toBe(endedBids[0]?.id);
-    expect(orders[0]?.finalAmount.toNumber()).toBe(120);
-    const curator = await prisma.curatorSelection.findUnique({
-      where: { slot: 'home' },
-      include: { product: { select: { publicId: true, status: true } } },
-    });
-    expect(curator?.product.publicId).toBe('seedLive002');
+    expect(listings).toBe(0);
+    expect(bids).toBe(0);
+    expect(orders).toBe(0);
+    expect(vex?.fullName).toBe('Илья Васильев');
+    expect(vex?.shortDescription).toContain('Ищу логику в абсурде');
+    expect(vex?.biography).toContain('белорусский художник');
+    expect(vex?.products).toHaveLength(0);
+    expect(vex?.publishedRevision?.achievements).toHaveLength(2);
+    expect(pixelp?.fullName).toBe('Павел Пиксель');
+    expect(catalogAuthors.map((author) => author.slug)).toEqual([
+      'vex',
+      'quantumparadox',
+      'havoc',
+      'bala_klava',
+    ]);
+    expect(pixelp?.createdAt.getTime()).toBeLessThan(
+      catalogAuthors.at(-1)?.createdAt.getTime() ?? 0,
+    );
+    expect(dali?.sellerProfile.slug).toBe('pixelp');
+    expect(dali?.status).toBe('APPROVED');
+    expect(curator?.product.publicId).toBe('daliEstate1');
+    expect(curator?.curator.slug).toBe('vex');
+    expect(curator?.note).toContain('безупречная техника');
     expect(curator?.product.status).toBe('APPROVED');
+    expect(publishedRevisions).toBeGreaterThan(0);
+    expect(pending?.status).toBe('PENDING_REVIEW');
+    expect(pending?.city).toBeNull();
+    expect(
+      await prisma.user.findUnique({
+        where: { email: 'buyer@bidplace.test' },
+        select: { id: true },
+      }),
+    ).not.toBeNull();
     expect(await prisma.productRevision.count()).toBeGreaterThan(0);
   });
 
@@ -102,15 +151,15 @@ describe('demo seed executable contract', () => {
 
   it('keeps the seeded database unchanged after production-like denial', async () => {
     const before = {
-      bids: await prisma.bid.count(),
-      orders: await prisma.order.count(),
+      products: await prisma.product.count(),
+      authors: await prisma.sellerProfile.count(),
     };
 
     expect(() =>
       runSeed({ nodeEnv: 'production', appEnv: 'production' }),
     ).toThrow();
 
-    expect(await prisma.bid.count()).toBe(before.bids);
-    expect(await prisma.order.count()).toBe(before.orders);
+    expect(await prisma.product.count()).toBe(before.products);
+    expect(await prisma.sellerProfile.count()).toBe(before.authors);
   });
 });

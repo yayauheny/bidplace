@@ -53,6 +53,7 @@ export const portfolioAuthorSchema = z
     city: publicText,
     discipline: publicText,
     practice: z.string().trim().min(1).nullable(),
+    biography: z.string().trim().min(1).nullable(),
     profilePhotoUrl: z
       .string()
       .regex(/^\/api\/sellers\/[A-Za-z0-9_-]+\/photo$/),
@@ -61,7 +62,7 @@ export const portfolioAuthorSchema = z
     websiteUrl: z.string().url().nullable(),
     shortDescription: publicText,
     achievements: z.array(portfolioAchievementSchema),
-    sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:[-_][a-z0-9]+)*$/),
   })
   .strict();
 
@@ -144,8 +145,16 @@ export const portfolioAuthorDetailResponseSchema = z
   })
   .strict();
 
-export const portfolioHomeCuratorSelectionSchema = portfolioWorkListItemSchema
+export const portfolioHomeWorkSchema = portfolioWorkSchema
   .extend({
+    author: portfolioAuthorSchema,
+  })
+  .strict();
+
+export const portfolioHomeCuratorSelectionSchema = z
+  .object({
+    curator: portfolioAuthorSchema,
+    work: portfolioHomeWorkSchema,
     note: publicText.max(2_000).nullable(),
   })
   .strict();

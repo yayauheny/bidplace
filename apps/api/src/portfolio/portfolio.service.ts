@@ -122,23 +122,38 @@ export class PortfolioService {
       this.listAuthors({ page: 1, limit: 6, sort: 'added' }),
       this.prisma.curatorSelection.findUnique({
         where: { slot: HOME_CURATOR_SLOT },
-        select: { productId: true, note: true },
+        select: {
+          productId: true,
+          note: true,
+          curator: { select: { slug: true } },
+        },
       }),
     ]);
     let curatorSelection = null;
-    if (selection) {
+    if (selection?.curator.slug) {
       const product = await this.prisma.product.findUnique({
         where: { id: selection.productId },
         select: { publicId: true },
       });
       if (product) {
         try {
-          curatorSelection = {
-            ...toPortfolioWorkItem(
-              await this.products.getPortfolio(product.publicId),
-            ),
-            note: selection.note?.trim() ? selection.note.trim() : null,
-          };
+          const [item, curator] = await Promise.all([
+            this.products.getPortfolio(product.publicId),
+            this.sellers.getApprovedPublicAuthor(selection.curator.slug, {
+              requireCity: true,
+            }),
+          ]);
+          if (curator) {
+            const mapped = toPortfolioWorkItem(item);
+            curatorSelection = {
+              curator: toPortfolioAuthor(curator.sellerProfile),
+              work: {
+                ...mapped.work,
+                author: mapped.author,
+              },
+              note: selection.note?.trim() ? selection.note.trim() : null,
+            };
+          }
         } catch (error) {
           if (!(error instanceof NotFoundException)) {
             throw error;
@@ -155,6 +170,7 @@ export class PortfolioService {
 
   async setCuratorSelection(
     publicId: string,
+    curatorSlug: string,
     note: string | null,
     actorUserId: string,
   ) {
@@ -167,18 +183,26 @@ export class PortfolioService {
       }
       throw error;
     }
+    const curator = await this.sellers.getApprovedPublicAuthor(curatorSlug, {
+      requireCity: true,
+    });
+    if (!curator) {
+      throw new ConflictException('Curator is not publicly visible');
+    }
     const selectedAt = new Date();
     await this.prisma.curatorSelection.upsert({
       where: { slot: HOME_CURATOR_SLOT },
       create: {
         slot: HOME_CURATOR_SLOT,
         productId: item.product.id,
+        curatorSellerProfileId: curator.sellerProfile.id,
         note,
         selectedAt,
         selectedByUserId: actorUserId,
       },
       update: {
         productId: item.product.id,
+        curatorSellerProfileId: curator.sellerProfile.id,
         note,
         selectedAt,
         selectedByUserId: actorUserId,
@@ -187,6 +211,7 @@ export class PortfolioService {
     return {
       publicId: item.product.publicId,
       productId: item.product.id,
+      curatorSlug: curator.sellerProfile.slug,
       selectedAt: selectedAt.toISOString(),
       note,
     };
@@ -325,6 +350,7 @@ function toPortfolioAuthor(profile: {
   city: string | null;
   discipline: string;
   practice: string | null;
+  biography?: string | null;
   profilePhotoUrl: string;
   telegramUrl: string | null;
   instagramUrl: string | null;
@@ -352,6 +378,7 @@ function toPortfolioAuthor(profile: {
     city: profile.city ?? '',
     discipline: profile.discipline,
     practice: profile.practice,
+    biography: profile.biography ?? null,
     profilePhotoUrl: profile.profilePhotoUrl,
     telegramUrl: profile.telegramUrl,
     instagramUrl: profile.instagramUrl,

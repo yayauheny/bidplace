@@ -1826,9 +1826,9 @@ migrations.
   `20260909120000_portfolio_media_socials_curator/migration.sql` is allowed for
   this unreleased table. After the first production apply, further columns are
   additive. This does not authorize editing commerce or baseline migrations.
-- Visual identity is not seed data. Figma `@vex` rasters and essay copy stay in
-  Playwright `e2e/visual` fixtures. Local Prisma seed keeps `seedLive002` / Anna
-  with `note = null`.
+- Visual identity for Opening typography remains a later pass. The seed-identity
+  clause that kept `@vex` in Playwright only and Anna in Prisma is superseded
+  by `DEC-091`.
 - Do not change global `outline`. Do not reuse a typography or fill role because
   it is close. The quiet profile pill hugs contents (padding 8/14, radius 28,
   `#EFEFEF` fill, 16% white→`#999999` stroke).
@@ -1838,6 +1838,37 @@ migrations.
 The table has been applied in production, an admin editor for `note` is in
 scope, or live Figma inspect copy `uMo04w9bgrchWXXDgO4W62` disagrees with the
 versioned first-fold snapshot.
+
+## DEC-091 — Figma Opening identity is local seed; curator is not the work owner
+
+Date: 2026-09-14
+Status: Confirmed
+Source: explicit founder instruction to implement the Figma-aligned local demo
+seed on `feature/portfolio-mvp-release`
+Revises: `DEC-090` (Playwright-only `@vex` / Anna seed). Does not reopen
+`DEC-087` commerce/baseline migrations or typography/layout of Opening.
+
+### Decision
+
+- Ordinary local `db:seed` is the Figma Home catalog, not Anna/Unsplash and not
+  a Playwright-only fixture. `@vex` is a seeded public author. Opening selected
+  work is Dali (`daliEstate1`), owned by `pixelp`. Curator is `vex`.
+- `CuratorSelection.curatorSellerProfileId` is required and points at an
+  approved public `SellerProfile`. `selectedByUserId` remains the admin actor.
+  Pre-production amendment of the unreleased `curator_selections` CREATE is
+  allowed for this FK (`DEC-090` table-amendment clause).
+- Home DTO is `{ curator, work: { ...work, author }, note }`. `work.author` is
+  the Product owner. Do not expose a sibling `author` on the selection.
+- Public slugs may include underscore (`bala_klava`) to match Figma handles.
+- `SellerProfile.biography` is additive and distinct from Opening
+  `shortDescription`. Author About prefers `biography` when present.
+- Do not invent a vex-owned Product from achievement copy. Missing Figma
+  rasters are recorded as gaps, not Unsplash/random substitutes.
+
+### Revisit when
+
+Figma confirms a vex-owned work, an isolated `pixelp` portrait exists, or the
+unreleased `curator_selections` table is applied in production.
 
 ## DEC-088 — MVP dock is one four-item glass capsule
 

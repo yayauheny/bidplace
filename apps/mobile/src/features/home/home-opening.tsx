@@ -61,10 +61,10 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
               }}
             >
               <ResilientRemoteImage
-                uri={getApiAssetUrl(selection.author.profilePhotoUrl)}
+                uri={getApiAssetUrl(selection.curator.profilePhotoUrl)}
                 component="AuthorPhoto"
-                accessibilityLabel={`Фото автора ${selection.author.fullName}`}
-                fallbackLabel={`Фото автора недоступно: ${selection.author.fullName}`}
+                accessibilityLabel={`Фото автора ${selection.curator.fullName}`}
+                fallbackLabel={`Фото автора недоступно: ${selection.curator.fullName}`}
                 style={{
                   width: designTokens.size.openingAvatar,
                   height: designTokens.size.openingAvatar,
@@ -82,11 +82,11 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                 }}
               >
                 <AppText role="authorRowHandle" numberOfLines={1}>
-                  @{selection.author.slug}
+                  @{selection.curator.slug}
                 </AppText>
-                {selection.author.shortDescription ? (
+                {selection.curator.shortDescription ? (
                   <AppText role="authorRowBio" tone="subtle" numberOfLines={1}>
-                    {selection.author.shortDescription}
+                    {selection.curator.shortDescription}
                   </AppText>
                 ) : null}
               </View>
@@ -112,7 +112,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
               label="Смотреть профиль"
               variant="quiet"
               size="compact"
-              onPress={() => router.push(`/seller/${selection.author.slug}`)}
+              onPress={() => router.push(`/seller/${selection.curator.slug}`)}
             />
           </View>
           <View
@@ -127,7 +127,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
               imageUrl={image?.url ?? ''}
               imageLabel={selection.work.title}
               title={selection.work.title}
-              authorSlug={selection.author.slug}
+              authorSlug={selection.work.author.slug}
             />
           </View>
         </ScrollView>

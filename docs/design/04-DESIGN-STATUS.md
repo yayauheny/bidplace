@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-14 — Figma local seed identity for Opening
+
+- `Implemented` (data binding only): Opening left column and profile button use
+  `selection.curator`; work-card chip uses `selection.work.author`. Local seed
+  is the Figma catalog (`vex` curator, Dali work owned by `pixelp`). Typography,
+  spacing, WorkCoverCard overlay and pixel-tolerance stay out of this slice.
+- `Unchanged`: canonical Pen, quiet pill tokens, first-fold golden
+  `e2e/visual/references/home-opening-figma-390.png`.
+
 ## 2026-09-14 — Home Opening curator note and quiet pill
 
 - `Implemented` (mobile web): Opening left column follows first-fold

@@ -8,8 +8,14 @@ import { designTokens } from '@bidplace/design-tokens';
 
 const visualDir = resolve(process.cwd(), 'e2e/visual');
 const fixturePath = resolve(visualDir, 'fixtures/home-opening.json');
-const avatarPath = resolve(visualDir, 'assets/vex-avatar.png');
-const coverPath = resolve(visualDir, 'assets/vex-work-cover.png');
+const avatarPath = resolve(
+  process.cwd(),
+  '../../packages/database/prisma/fixtures/seller-profile/vex.png',
+);
+const coverPath = resolve(
+  process.cwd(),
+  '../../packages/database/prisma/fixtures/product-images/dali-estate.png',
+);
 const goldenPath = resolve(
   visualDir,
   'references/home-opening-figma-390.png',

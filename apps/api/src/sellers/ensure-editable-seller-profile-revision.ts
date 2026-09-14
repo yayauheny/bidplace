@@ -73,6 +73,7 @@ export async function ensureEditableEditingRevision(
       country: published.country,
       city: published.city,
       practice: published.practice,
+      biography: published.biography,
       socialLink: published.socialLink,
       telegramUrl: published.telegramUrl,
       instagramUrl: published.instagramUrl,

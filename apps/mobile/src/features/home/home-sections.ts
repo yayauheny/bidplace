@@ -3,6 +3,9 @@ export type HomeWorkItem = {
     publicId: string;
     title: string;
     images: Array<{ url: string }>;
+    author?: {
+      slug: string;
+    };
   };
   author: {
     slug: string;
@@ -13,7 +16,18 @@ export type HomeWorkItem = {
   };
 };
 
-export type HomeCuratorSelection = HomeWorkItem & {
+export type HomeCuratorSelection = {
+  curator: {
+    slug: string;
+    fullName: string;
+    shortDescription: string;
+    profilePhotoUrl: string;
+  };
+  work: HomeWorkItem['work'] & {
+    author: {
+      slug: string;
+    };
+  };
   note: string | null;
 };
 
@@ -43,7 +57,7 @@ export type HomeSectionPlan = {
 export function visibleCuratorSelection(
   selection: HomeCuratorSelection | null | undefined,
 ): HomeCuratorSelection | null {
-  if (!selection?.work.publicId || !selection.author.slug) {
+  if (!selection?.work?.publicId || !selection.curator?.slug) {
     return null;
   }
 

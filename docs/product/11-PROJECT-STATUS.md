@@ -1,5 +1,37 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Figma-aligned local demo seed
+
+- `Implemented`: `CuratorSelection.curatorSellerProfileId` FK → `SellerProfile`
+  on the unreleased `curator_selections` CREATE
+  (`20260909120000_portfolio_media_socials_curator`). Admin PUT is
+  `{ publicId, curatorSlug, note }`. Home DTO is
+  `{ curator, work: { ...work, author }, note }` with no sibling `author`.
+  Coverage: `portfolio.service.spec.ts`, `curator-selection.integration.spec.ts`,
+  `packages/contracts/test/contracts.test.ts`.
+- `Implemented`: additive `SellerProfile.biography` /
+  `SellerProfileRevision.biography` (`20260914200000_add_seller_biography`).
+  Public author DTO includes `biography`. Author About uses `biography` when
+  present, else `shortDescription`. Opening keeps `shortDescription`.
+- `Implemented`: local/test seed is the Figma Home catalog, not Anna/Unsplash.
+  Public authors: `vex`, `quantumparadox`, `havoc`, `bala_klava` first in
+  `Home.newAuthors` (`createdAt` DESC); `pixelp` is a public profile and Dali
+  owner but older so not in the leading cards. Works: `daliEstate1`,
+  `caricature1`, `yellowSapph`, `colorCalib1`, `rainbowMask`, `blossomVase`,
+  `memoryWork1`. No Listing/Bid/Order rows. Opening curator=`vex`,
+  work=`daliEstate1` / `pixelp`, Figma `note`. `seller@bidplace.test` is vex.
+  Vex has no Product. Published `SellerProfileRevision` + two April 2026
+  achievements for vex. Coverage: `seed-contract.integration.spec.ts`,
+  `packages/database/prisma/seed.js`.
+- `Implemented` (mobile web binding): `home-opening.tsx` left column / profile
+  button → `selection.curator`; `WorkCoverCard` → `selection.work.author.slug`.
+- `Partial` / gaps: no isolated `pixelp` portrait (technical 1×1 placeholder);
+  cities/disciplines/bios for non-vex authors are labeled demo copy; vex Works
+  tab is empty by Figma (achievement text is not a Product). Playwright visual
+  golden remains a later typography pass; mock fixture is not seed identity.
+- `Unchanged`: `05-MVP-RFC.md` Opening as author or work; canonical Pen;
+  commerce Prisma leftovers. `DEC-091` revises `DEC-090` seed-identity clause.
+
 ## 2026-09-14 — Home Opening curator note and Figma visual fixture
 
 - `Implemented`: `CuratorSelection.note` (`TEXT NULL`) on the unreleased
@@ -8,7 +40,8 @@
   `GET /api/portfolio/home` `curatorSelection` includes `note`; catalog work
   items do not. Admin `PUT /api/admin/curator-selection` body is
   `{ publicId, note }` with `note` required on write (`string | null`).
-  Local seed still points at `seedLive002` / Anna and leaves `note` null.
+  Seed identity in this checkpoint (Anna / `seedLive002`, `note` null) is
+  superseded by the Figma-aligned local demo seed and `DEC-091`.
   Coverage:
   `packages/contracts/test/contracts.test.ts`,
   `portfolio.service.spec.ts` (null, trimmed note, blank → null),
@@ -25,10 +58,9 @@
   column to the 390×860 first-fold golden. Isolated
   `playwright.stabilization.config.ts` Chromium+WebKit passed
   (`e2e/visual/home-opening-figma.spec.ts`). Actuals go to gitignored
-  `apps/mobile/test-results/`. `@vex` is not in Prisma seed. Live visual
-  matching of Opening uses the same `e2e/visual` fixture against production
-  `HomeScreen`; seed stays Anna. Cover raster is the Figma card fill at 3:4,
-  not the clipped first-fold `renderBounds` PNG.
+  `apps/mobile/test-results/`. Cover raster is the Figma card fill at 3:4,
+  not the clipped first-fold `renderBounds` PNG. Playwright-only `@vex` /
+  Anna seed identity is superseded by `DEC-091`.
 - `Unchanged`: `WorkCoverCard` frost/price/timer, admin note editor, global
   `outline`, canonical Pen. `DEC-090` recorded.
 

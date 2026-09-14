@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PortfolioService } from './portfolio.service';
@@ -103,6 +103,7 @@ describe('PortfolioService', () => {
               city: 'Minsk',
               discipline: 'Painting',
               practice: null,
+              biography: null,
               profilePhotoUrl: '/api/sellers/author/photo',
               telegramUrl: null,
               instagramUrl: null,
@@ -143,6 +144,7 @@ describe('PortfolioService', () => {
           city: 'Minsk',
           discipline: 'Painting',
           practice: null,
+          biography: null,
           profilePhotoUrl: '/api/sellers/author/photo',
           telegramUrl: null,
           instagramUrl: null,
@@ -219,6 +221,7 @@ describe('PortfolioService', () => {
         city: 'Minsk',
         discipline: 'Painting',
         practice: null,
+        biography: null,
         profilePhotoUrl: '/api/sellers/author/photo',
         telegramUrl: null,
         instagramUrl: null,
@@ -239,12 +242,21 @@ describe('PortfolioService', () => {
         sellers: [],
         pagination: { page: 1, limit: 6, total: 0 },
       }),
+      getApprovedPublicAuthor: vi.fn().mockResolvedValue({
+        sellerProfile: {
+          ...item.sellerProfile,
+          id: '7c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          slug: 'vex',
+          profilePhotoUrl: '/api/sellers/vex/photo',
+        },
+      }),
     };
     const prisma = {
       curatorSelection: {
         findUnique: vi.fn().mockResolvedValue({
           productId: item.product.id,
           note: null,
+          curator: { slug: 'vex' },
         }),
       },
       product: {
@@ -260,7 +272,11 @@ describe('PortfolioService', () => {
     await expect(visible.home()).resolves.toEqual(
       expect.objectContaining({
         curatorSelection: expect.objectContaining({
-          work: expect.objectContaining({ publicId: 'portfolio01' }),
+          curator: expect.objectContaining({ slug: 'vex' }),
+          work: expect.objectContaining({
+            publicId: 'portfolio01',
+            author: expect.objectContaining({ slug: 'author' }),
+          }),
           note: null,
         }),
       }),
@@ -314,6 +330,7 @@ describe('PortfolioService', () => {
         city: 'Minsk',
         discipline: 'Painting',
         practice: null,
+        biography: null,
         profilePhotoUrl: '/api/sellers/author/photo',
         telegramUrl: null,
         instagramUrl: null,
@@ -334,12 +351,21 @@ describe('PortfolioService', () => {
         sellers: [],
         pagination: { page: 1, limit: 6, total: 0 },
       }),
+      getApprovedPublicAuthor: vi.fn().mockResolvedValue({
+        sellerProfile: {
+          ...item.sellerProfile,
+          id: '7c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          slug: 'vex',
+          profilePhotoUrl: '/api/sellers/vex/photo',
+        },
+      }),
     };
     const prisma = {
       curatorSelection: {
         findUnique: vi.fn().mockResolvedValue({
           productId: item.product.id,
           note: '  Главная визуальная находка этой недели.  ',
+          curator: { slug: 'vex' },
         }),
       },
       product: {
@@ -364,6 +390,7 @@ describe('PortfolioService', () => {
     prisma.curatorSelection.findUnique.mockResolvedValue({
       productId: item.product.id,
       note: '   ',
+      curator: { slug: 'vex' },
     });
     await expect(
       new PortfolioService(
@@ -376,6 +403,179 @@ describe('PortfolioService', () => {
         curatorSelection: expect.objectContaining({ note: null }),
       }),
     );
+  });
+
+  it('hides Opening when the curator profile is not publicly visible', async () => {
+    const item = {
+      product: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        publicId: 'portfolio01',
+        title: 'Work',
+        story: null,
+        categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        uniqueness: null,
+        images: [
+          {
+            id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            position: 0,
+            url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            mimeType: 'image/jpeg',
+            byteLength: 1,
+            checksum: 'a'.repeat(64),
+            width: 1,
+            height: 1,
+          },
+        ],
+        publishedAt: '2026-09-08T00:00:00.000Z',
+      },
+      sellerProfile: {
+        id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        slug: 'author',
+        fullName: 'Author',
+        country: 'Belarus',
+        city: 'Minsk',
+        discipline: 'Painting',
+        practice: null,
+        biography: null,
+        profilePhotoUrl: '/api/sellers/author/photo',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Bio',
+        achievements: [],
+      },
+    };
+    const products = {
+      listPortfolio: vi.fn().mockResolvedValue({
+        items: [item],
+        pagination: { page: 1, limit: 6, total: 1 },
+      }),
+      getPortfolio: vi.fn().mockResolvedValue(item),
+    };
+    const sellers = {
+      listPortfolioAuthors: vi.fn().mockResolvedValue({
+        sellers: [],
+        pagination: { page: 1, limit: 6, total: 0 },
+      }),
+      getApprovedPublicAuthor: vi.fn().mockResolvedValue(null),
+    };
+
+    await expect(
+      new PortfolioService(
+        products as never,
+        sellers as never,
+        {
+          curatorSelection: {
+            findUnique: vi.fn().mockResolvedValue({
+              productId: item.product.id,
+              note: 'note',
+              curator: { slug: 'vex' },
+            }),
+          },
+          product: {
+            findUnique: vi.fn().mockResolvedValue({ publicId: 'portfolio01' }),
+          },
+        } as never,
+      ).home(),
+    ).resolves.toEqual(expect.objectContaining({ curatorSelection: null }));
+  });
+
+  it('stores a public curator independently of the work owner', async () => {
+    const item = {
+      product: {
+        id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        publicId: 'daliEstate1',
+        title: 'Work',
+        story: null,
+        categoryId: '3c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        uniqueness: null,
+        images: [
+          {
+            id: '4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            position: 0,
+            url: '/api/images/4c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            mimeType: 'image/jpeg',
+            byteLength: 1,
+            checksum: 'a'.repeat(64),
+            width: 1,
+            height: 1,
+          },
+        ],
+        publishedAt: '2026-09-08T00:00:00.000Z',
+      },
+      sellerProfile: {
+        id: '5c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+        slug: 'pixelp',
+        fullName: 'Owner',
+        country: 'Belarus',
+        city: 'Minsk',
+        discipline: 'Painting',
+        practice: null,
+        biography: null,
+        profilePhotoUrl: '/api/sellers/pixelp/photo',
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        shortDescription: 'Bio',
+        achievements: [],
+      },
+    };
+    const products = {
+      getPortfolio: vi.fn().mockResolvedValue(item),
+    };
+    const sellers = {
+      getApprovedPublicAuthor: vi.fn().mockResolvedValue({
+        sellerProfile: {
+          id: '8c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          slug: 'vex',
+        },
+      }),
+    };
+    const prisma = {
+      curatorSelection: {
+        upsert: vi.fn().mockResolvedValue({}),
+      },
+    };
+    const service = new PortfolioService(
+      products as never,
+      sellers as never,
+      prisma as never,
+    );
+
+    await expect(
+      service.setCuratorSelection('daliEstate1', 'vex', null, 'admin-id'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        publicId: 'daliEstate1',
+        curatorSlug: 'vex',
+        note: null,
+      }),
+    );
+    expect(sellers.getApprovedPublicAuthor).toHaveBeenCalledWith('vex', {
+      requireCity: true,
+    });
+    expect(prisma.curatorSelection.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          productId: item.product.id,
+          curatorSellerProfileId: '8c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          selectedByUserId: 'admin-id',
+        }),
+      }),
+    );
+
+    sellers.getApprovedPublicAuthor.mockResolvedValue(null);
+    await expect(
+      service.setCuratorSelection('daliEstate1', 'hidden', null, 'admin-id'),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('omits the current work from related works', async () => {
@@ -413,6 +613,7 @@ describe('PortfolioService', () => {
         city: 'Minsk',
         discipline: 'Painting',
         practice: null,
+        biography: null,
         profilePhotoUrl: '/api/sellers/author/photo',
         telegramUrl: null,
         instagramUrl: null,

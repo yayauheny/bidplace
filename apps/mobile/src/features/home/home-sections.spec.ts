@@ -30,11 +30,22 @@ function workItem(
 
 function selection(
   publicId: string,
-  slug: string,
+  curatorSlug: string,
+  workAuthorSlug = curatorSlug,
   note: string | null = null,
 ): HomeCuratorSelection {
+  const item = workItem(publicId, workAuthorSlug);
   return {
-    ...workItem(publicId, slug),
+    curator: {
+      slug: curatorSlug,
+      fullName: 'Куратор',
+      shortDescription: 'Практика автора',
+      profilePhotoUrl: `/api/sellers/${curatorSlug}/photo`,
+    },
+    work: {
+      ...item.work,
+      author: { slug: workAuthorSlug },
+    },
     note,
   };
 }
@@ -50,15 +61,16 @@ function author(slug: string): HomeAuthor {
 
 describe('visibleCuratorSelection', () => {
   it('returns the server-owned work and does not invent a pick', () => {
-    const selected = selection('seedWork001', 'anna-morozova', null);
+    const selected = selection('daliEstate1', 'vex', 'pixelp', null);
 
     expect(visibleCuratorSelection(selected)).toEqual(selected);
   });
 
   it('keeps a curator note on the selection pointer', () => {
     const selected = selection(
-      'seedWork001',
-      'anna-morozova',
+      'daliEstate1',
+      'vex',
+      'pixelp',
       'Главная визуальная находка этой недели.',
     );
 
@@ -70,14 +82,20 @@ describe('visibleCuratorSelection', () => {
   it('omits null, undefined, and incomplete pointers', () => {
     expect(visibleCuratorSelection(null)).toBeNull();
     expect(visibleCuratorSelection(undefined)).toBeNull();
-    expect(visibleCuratorSelection(selection('', 'anna-morozova'))).toBeNull();
-    expect(visibleCuratorSelection(selection('seedWork001', ''))).toBeNull();
+    expect(visibleCuratorSelection(selection('', 'vex'))).toBeNull();
+    expect(visibleCuratorSelection(selection('daliEstate1', ''))).toBeNull();
+    expect(
+      visibleCuratorSelection({
+        work: { publicId: 'daliEstate1' },
+        note: null,
+      } as never),
+    ).toBeNull();
   });
 });
 
 describe('homeSectionPlan', () => {
   it('does not fall back to newest work when selection is null', () => {
-    const newest = workItem('newestWork01', 'mark-volkov');
+    const newest = workItem('newestWork01', 'havoc');
     const plan = homeSectionPlan({
       curatorSelection: null,
       newWorks: [newest],
@@ -92,7 +110,7 @@ describe('homeSectionPlan', () => {
   });
 
   it('keeps opening when lists are empty and does not invent catalog cards', () => {
-    const selected = selection('seedWork001', 'anna-morozova');
+    const selected = selection('daliEstate1', 'vex', 'pixelp');
     const plan = homeSectionPlan({
       curatorSelection: selected,
       newWorks: [],
@@ -110,7 +128,7 @@ describe('homeSectionPlan', () => {
     const plan = homeSectionPlan({
       curatorSelection: null,
       newWorks: [],
-      newAuthors: [author('anna-morozova')],
+      newAuthors: [author('vex')],
     });
 
     expect(plan.opening).toBeNull();

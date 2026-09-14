@@ -27,6 +27,7 @@ describe('AdminModerationService', () => {
       country: 'BY',
       city: 'Minsk',
       practice: null,
+      biography: null,
       socialLink: 'https://example.com',
       telegramUrl: null,
       instagramUrl: null,

@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 test('cold-start guest author profile renders its photo', async ({ page }) => {
-  await page.goto('/authors/anna-morozova');
+  await page.goto('/seller/vex');
 
   const photo = page
     .getByTestId('creator-avatar')
-    .getByLabel('Фото автора Анна Морозова');
+    .getByLabel('Фото автора Илья Васильев');
   await expect(photo).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(() =>
@@ -33,7 +33,7 @@ test('guest author photo logs a failed request and keeps a safe fallback', async
     }
   });
 
-  await page.route('**/api/sellers/anna-morozova/photo*', async (route) => {
+  await page.route('**/api/sellers/vex/photo*', async (route) => {
     attempts += 1;
     if (attempts <= 16) {
       await route.abort('failed');
@@ -43,10 +43,10 @@ test('guest author photo logs a failed request and keeps a safe fallback', async
     await route.continue();
   });
   await page.clock.install();
-  await page.goto('/authors/anna-morozova');
+  await page.goto('/seller/vex');
 
   await expect(
-    page.getByLabel('Фото автора недоступно: Анна Морозова').first(),
+    page.getByLabel('Фото автора недоступно: Илья Васильев').first(),
   ).toBeVisible();
 
   await expect.poll(() => attempts).toBeGreaterThan(0);

@@ -81,10 +81,25 @@ describe('admin curator selection HTTP', () => {
       where: { id: fixture.approvedDraftProductId },
       select: { publicId: true },
     });
+    const [ownerProfile, curatorProfile, pendingProfile] = await Promise.all([
+      prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.approved.profileId },
+        select: { slug: true },
+      }),
+      prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.otherApproved.profileId },
+        select: { slug: true },
+      }),
+      prisma.sellerProfile.findUniqueOrThrow({
+        where: { id: fixture.sellers.pending.profileId },
+        select: { slug: true },
+      }),
+    ]);
 
     expect(
       (await stranger.put('/admin/curator-selection', {
         publicId: approved.publicId,
+        curatorSlug: curatorProfile.slug,
         note: null,
       }))
         .status,
@@ -92,6 +107,7 @@ describe('admin curator selection HTTP', () => {
     expect(
       (await guest.put('/admin/curator-selection', {
         publicId: approved.publicId,
+        curatorSlug: curatorProfile.slug,
         note: null,
       }))
         .status,
@@ -106,12 +122,14 @@ describe('admin curator selection HTTP', () => {
 
     const selected = await adminClient.put('/admin/curator-selection', {
       publicId: approved.publicId,
+      curatorSlug: curatorProfile.slug,
       note: null,
     });
     expect(selected.status).toBe(200);
     expect(await selected.json()).toMatchObject({
       publicId: approved.publicId,
       productId: approved.id,
+      curatorSlug: curatorProfile.slug,
       note: null,
     });
 
@@ -119,20 +137,31 @@ describe('admin curator selection HTTP', () => {
     expect(visibleHome.status).toBe(200);
     expect(
       ((await visibleHome.json()) as {
-        curatorSelection: { work: { publicId: string }; note: string | null };
+        curatorSelection: {
+          curator: { slug: string };
+          work: { publicId: string; author: { slug: string } };
+          note: string | null;
+        };
       }).curatorSelection,
     ).toMatchObject({
-      work: { publicId: approved.publicId },
+      curator: { slug: curatorProfile.slug },
+      work: {
+        publicId: approved.publicId,
+        author: { slug: ownerProfile.slug },
+      },
       note: null,
     });
+    expect(curatorProfile.slug).not.toBe(ownerProfile.slug);
 
     const withNote = await adminClient.put('/admin/curator-selection', {
       publicId: approved.publicId,
+      curatorSlug: curatorProfile.slug,
       note: 'Главная визуальная находка этой недели.',
     });
     expect(withNote.status).toBe(200);
     expect(await withNote.json()).toMatchObject({
       note: 'Главная визуальная находка этой недели.',
+      curatorSlug: curatorProfile.slug,
     });
     expect(
       ((await (await guest.get('/portfolio/home')).json()) as {
@@ -143,6 +172,16 @@ describe('admin curator selection HTTP', () => {
       (
         await adminClient.put('/admin/curator-selection', {
           publicId: draft.publicId,
+          curatorSlug: curatorProfile.slug,
+          note: null,
+        })
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await adminClient.put('/admin/curator-selection', {
+          publicId: approved.publicId,
+          curatorSlug: pendingProfile.slug,
           note: null,
         })
       ).status,

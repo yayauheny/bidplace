@@ -75,7 +75,7 @@ describe('resolvePublicWorkPageState', () => {
         isLoading: false,
         isError: false,
         error: null,
-        data: { work: { publicId: 'seedAnna001' } },
+        data: { work: { publicId: 'daliEstate1' } },
       }),
     ).toBe('ready');
   });

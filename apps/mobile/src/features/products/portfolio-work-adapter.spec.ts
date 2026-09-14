@@ -38,6 +38,7 @@ const author = {
   city: 'Minsk',
   discipline: 'Painting',
   practice: null,
+  biography: null,
   profilePhotoUrl: '/api/sellers/author/photo',
   telegramUrl: null,
   instagramUrl: null,

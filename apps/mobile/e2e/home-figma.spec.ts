@@ -29,7 +29,7 @@ test('selected opening, null opening, and catalog empty states', async ({
   home.body = homePayload();
   await page.goto('/');
   await expect(page.getByText('Открытие недели', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Портрет сестры/ })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /Сальвадор Дали/ })).toHaveAttribute(
     'href',
     `/product/${homeSelectedPublicId}`,
   );
@@ -64,9 +64,9 @@ test('selected opening, null opening, and catalog empty states', async ({
   await assertDockDoesNotCoverContent(page);
 
   await page.getByRole('button', { name: 'Смотреть профиль' }).click();
-  await expect(page).toHaveURL(/\/seller\/anna-morozova/);
+  await expect(page).toHaveURL(/\/seller\/vex/);
   await page.goto('/');
-  await page.getByRole('link', { name: /Портрет сестры/ }).click();
+  await page.getByRole('link', { name: /Сальвадор Дали/ }).click();
   await expect(page).toHaveURL(`/product/${homeSelectedPublicId}`);
   await page.goto('/');
   await page.getByRole('button', { name: 'Смотреть все', exact: true }).click();
@@ -79,7 +79,7 @@ test('selected opening, null opening, and catalog empty states', async ({
   await page.goto('/');
   await expect(page.getByText('Открытие недели', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Новые работы', { exact: true })).toBeVisible();
-  await expect(page.getByText('Портрет сестры')).toHaveCount(0);
+  await expect(page.getByText('Сальвадор Дали')).toHaveCount(0);
   await screenshotHomeFold(
     page,
     resolve(artifactDir, 'home-null-390-first-fold.png'),
@@ -174,7 +174,7 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
   home.body = homePayload();
   await page.goto('/');
   await expect(
-    page.getByRole('img', { name: 'Изображение недоступно: Портрет сестры' }),
+    page.getByRole('img', { name: 'Изображение недоступно: Salvador Dalí Estate & Fundació Gala Сальвадор Дали' }),
   ).toBeVisible({ timeout: 15_000 });
   await screenshotHomeFull(
     page,
@@ -187,8 +187,8 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
     curatorSelection: homeCuratorSelection({
       title:
         'Очень длинное название выбранной работы для проверки переноса и обрезки',
-      author: homeAuthor({
-        slug: 'anna-morozova-with-an-unusually-long-public-handle',
+      curator: homeAuthor({
+        slug: 'vex-with-an-unusually-long-public-handle',
         shortDescription:
           'Длинное описание практики, которое не должно выталкивать карточку.',
       }),
@@ -197,7 +197,7 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
   await page.goto('/');
   await expect(page.getByText(/Очень длинное название/)).toBeVisible();
   await expect(page.locator('#home-opening-author')).toContainText(
-    '@anna-morozova-with-an-unusually-long-public-handle',
+    '@vex-with-an-unusually-long-public-handle',
   );
   await expectNoHorizontalOverflow(page);
   await screenshotHomeFull(
@@ -258,7 +258,7 @@ test('keyboard and centered phone column at 390, 1024 and 1440', async ({
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('link', { name: /Портрет сестры/ }).focus();
+  await page.getByRole('link', { name: /Сальвадор Дали/ }).focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(`/product/${homeSelectedPublicId}`);
 });

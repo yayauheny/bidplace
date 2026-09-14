@@ -18,6 +18,7 @@ import {
   sellerProductDetailResponseSchema,
   sellerProfileCreateRequestSchema,
   sellerProfileUpdateRequestSchema,
+  slugSchema,
 } from '../src';
 
 describe('shared contracts', () => {
@@ -145,24 +146,33 @@ describe('shared contracts', () => {
       telegramUrl: null,
       instagramUrl: null,
       websiteUrl: null,
+      biography: null,
       shortDescription: 'Bio',
       achievements: [],
       sharePath: '/authors/author',
     };
+    const curator = {
+      ...author,
+      id: '6c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      slug: 'vex',
+      sharePath: '/authors/vex',
+      profilePhotoUrl: '/api/sellers/vex/photo',
+    };
+    const openingWork = { ...work, author };
 
     expect(
       portfolioWorkListItemSchema.safeParse({ work, author, note: 'x' }).success,
     ).toBe(false);
     expect(
       portfolioHomeResponseSchema.safeParse({
-        curatorSelection: { work, author },
+        curatorSelection: { work, author, note: null },
         newWorks: [],
         newAuthors: [],
       }).success,
     ).toBe(false);
     expect(
       portfolioHomeResponseSchema.parse({
-        curatorSelection: { work, author, note: null },
+        curatorSelection: { curator, work: openingWork, note: null },
         newWorks: [],
         newAuthors: [],
       }).curatorSelection?.note,
@@ -170,25 +180,37 @@ describe('shared contracts', () => {
     expect(
       portfolioHomeResponseSchema.parse({
         curatorSelection: {
-          work,
-          author,
+          curator,
+          work: openingWork,
           note: ' Главная визуальная находка этой недели. ',
         },
         newWorks: [],
         newAuthors: [],
-      }).curatorSelection?.note,
-    ).toBe('Главная визуальная находка этой недели.');
+      }).curatorSelection,
+    ).toMatchObject({
+      curator: { slug: 'vex' },
+      work: { author: { slug: 'author' } },
+      note: 'Главная визуальная находка этой недели.',
+    });
     expect(
       adminCuratorSelectionRequestSchema.safeParse({
         publicId: 'portfolio01',
+        note: null,
       }).success,
     ).toBe(false);
     expect(
       adminCuratorSelectionRequestSchema.parse({
         publicId: 'portfolio01',
+        curatorSlug: 'bala_klava',
         note: null,
       }),
-    ).toEqual({ publicId: 'portfolio01', note: null });
+    ).toEqual({
+      publicId: 'portfolio01',
+      curatorSlug: 'bala_klava',
+      note: null,
+    });
+    expect(slugSchema.safeParse('bala_klava').success).toBe(true);
+    expect(slugSchema.safeParse('bala__klava').success).toBe(false);
   });
 
   it('keeps author application projections free of private handoff data', () => {

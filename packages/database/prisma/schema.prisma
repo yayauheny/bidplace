@@ -116,6 +116,7 @@ model SellerProfile {
   country             String              @db.VarChar(80)
   city                String?             @db.VarChar(160)
   practice            String?             @db.Text
+  biography           String?             @db.Text
   profilePhotoMimeType String              @map("profile_photo_mime_type") @db.VarChar(100)
   profilePhotoByteLength Int              @map("profile_photo_byte_length")
   profilePhotoChecksum String              @map("profile_photo_checksum") @db.Char(64)
@@ -136,6 +137,7 @@ model SellerProfile {
   updatedAt           DateTime            @updatedAt @map("updated_at")
   user                User                @relation(fields: [userId], references: [id], onDelete: Restrict)
   products            Product[]
+  curatorSelections   CuratorSelection[]  @relation("CuratorSelectionCurator")
   revisions           SellerProfileRevision[] @relation("SellerProfileRevisions")
   editingRevision     SellerProfileRevision? @relation("SellerProfileEditingRevision", fields: [editingRevisionId], references: [id], onDelete: Restrict)
   publishedRevision   SellerProfileRevision? @relation("SellerProfilePublishedRevision", fields: [publishedRevisionId], references: [id], onDelete: Restrict)
@@ -154,6 +156,7 @@ model SellerProfileRevision {
   country         String              @db.VarChar(80)
   city            String?             @db.VarChar(160)
   practice        String?             @db.Text
+  biography       String?             @db.Text
   socialLink      String?             @map("social_link") @db.VarChar(255)
   telegramUrl     String?             @map("telegram_url") @db.VarChar(255)
   instagramUrl    String?             @map("instagram_url") @db.VarChar(255)
@@ -530,14 +533,17 @@ model AcquisitionAttribution {
 }
 
 model CuratorSelection {
-  id               String   @id @default(uuid()) @db.Uuid
-  slot             String   @unique @db.VarChar(32)
-  productId        String   @unique @map("product_id") @db.Uuid
-  note             String?  @db.Text
-  selectedAt       DateTime @map("selected_at")
-  selectedByUserId String?  @map("selected_by_user_id") @db.Uuid
-  product          Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  selectedBy       User?    @relation("CuratorSelectionActor", fields: [selectedByUserId], references: [id], onDelete: SetNull)
+  id                     String        @id @default(uuid()) @db.Uuid
+  slot                   String        @unique @db.VarChar(32)
+  productId              String        @unique @map("product_id") @db.Uuid
+  curatorSellerProfileId String        @map("curator_seller_profile_id") @db.Uuid
+  note                   String?       @db.Text
+  selectedAt             DateTime      @map("selected_at")
+  selectedByUserId       String?       @map("selected_by_user_id") @db.Uuid
+  product                Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  curator                SellerProfile @relation("CuratorSelectionCurator", fields: [curatorSellerProfileId], references: [id], onDelete: Restrict)
+  selectedBy             User?         @relation("CuratorSelectionActor", fields: [selectedByUserId], references: [id], onDelete: SetNull)
 
+  @@index([curatorSellerProfileId])
   @@map("curator_selections")
 }

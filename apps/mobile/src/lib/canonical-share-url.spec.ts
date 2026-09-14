@@ -13,9 +13,9 @@ describe('canonicalShareUrl', () => {
 
   it('uses the native URL factory when no origin is available', () => {
     expect(
-      canonicalShareUrl('/authors/anna-morozova', undefined, (path) =>
+      canonicalShareUrl('/authors/vex', undefined, (path) =>
         `bidplace:/${path}`,
       ),
-    ).toBe('bidplace://authors/anna-morozova');
+    ).toBe('bidplace://authors/vex');
   });
 });

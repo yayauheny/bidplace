@@ -14,7 +14,10 @@ export function AuthorAbout({
 }) {
   return (
     <View style={{ gap: designTokens.space.authorAboutGap }}>
-      <AboutSection title="Биография" body={author.shortDescription} />
+      <AboutSection
+        title="Биография"
+        body={author.biography ?? author.shortDescription}
+      />
       {author.practice ? (
         <AboutSection title="Практика и подход" body={author.practice} />
       ) : null}

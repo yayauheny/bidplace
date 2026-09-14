@@ -373,6 +373,7 @@ export class AdminModerationService {
     country: string;
     city: string | null;
     practice: string | null;
+    biography: string | null;
     socialLink: string | null;
     telegramUrl: string | null;
     instagramUrl: string | null;
@@ -386,6 +387,7 @@ export class AdminModerationService {
       country: revision.country,
       city: revision.city,
       practice: revision.practice,
+      biography: revision.biography,
       socialLink: revision.socialLink,
       telegramUrl: revision.telegramUrl,
       instagramUrl: revision.instagramUrl,

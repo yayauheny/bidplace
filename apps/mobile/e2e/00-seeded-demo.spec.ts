@@ -4,10 +4,13 @@ import { e2eApiBaseURL } from './support/e2e-env';
 
 const apiBaseURL = e2eApiBaseURL;
 const seededWorks = [
-  'seedSched01',
-  'seedLive002',
-  'seedEnded03',
-  'seedVase004',
+  'daliEstate1',
+  'caricature1',
+  'yellowSapph',
+  'colorCalib1',
+  'rainbowMask',
+  'blossomVase',
+  'memoryWork1',
 ] as const;
 
 test('demo seed exposes public portfolio authors, works and media', async ({
@@ -26,16 +29,16 @@ test('demo seed exposes public portfolio authors, works and media', async ({
   expect(authorsPayload.authors.length).toBeGreaterThan(0);
   expect(
     authorsPayload.authors.some(
-      (item) => item.author.slug === 'anna-morozova',
+      (item) => item.author.slug === 'vex',
     ),
   ).toBe(true);
 
-  const anna = authorsPayload.authors.find(
-    (item) => item.author.slug === 'anna-morozova',
+  const vex = authorsPayload.authors.find(
+    (item) => item.author.slug === 'vex',
   );
-  expect(anna).toBeTruthy();
+  expect(vex).toBeTruthy();
   const authorPhotoResponse = await request.get(
-    new URL(anna!.author.profilePhotoUrl, apiBaseURL).toString(),
+    new URL(vex!.author.profilePhotoUrl, apiBaseURL).toString(),
   );
   expect(authorPhotoResponse.status()).toBe(200);
   expect(authorPhotoResponse.headers()['content-type']).toMatch(/^image\//);
@@ -73,7 +76,7 @@ test('demo seed exposes public portfolio authors, works and media', async ({
   await expect(page.getByRole('tab', { name: /Торги/ })).toHaveCount(0);
   await expect(page.getByRole('tab', { name: /Детали/ })).toBeVisible();
 
-  await page.goto('/seller/anna-morozova');
+  await page.goto('/seller/vex');
   await expect(page.getByRole('tab', { name: /Работы/ })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Об авторе/ })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Идут торги/ })).toHaveCount(0);

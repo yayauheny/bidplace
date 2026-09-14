@@ -15,6 +15,7 @@ function publishedRevision() {
     country: 'BY',
     city: 'Minsk',
     practice: null,
+    biography: null,
     socialLink: 'https://example.com/seller',
     telegramUrl: null,
     instagramUrl: null,

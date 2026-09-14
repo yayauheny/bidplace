@@ -110,6 +110,7 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
     ...(input.country !== undefined ? { country: input.country } : {}),
     ...(input.city !== undefined ? { city: input.city } : {}),
     ...(input.practice !== undefined ? { practice: input.practice } : {}),
+    ...(input.biography !== undefined ? { biography: input.biography } : {}),
     ...(input.socialLink !== undefined ? { socialLink: input.socialLink } : {}),
     ...(input.telegramUrl !== undefined
       ? { telegramUrl: input.telegramUrl }
@@ -217,6 +218,7 @@ export class SellersService {
             country: input.country,
             city: input.city,
             practice: input.practice ?? null,
+            biography: input.biography ?? null,
             socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
@@ -259,6 +261,7 @@ export class SellersService {
             country: input.country,
             city: input.city,
             practice: input.practice ?? null,
+            biography: input.biography ?? null,
             socialLink: input.socialLink ?? null,
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,

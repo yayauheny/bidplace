@@ -1,5 +1,22 @@
 {
   "curatorSelection": {
+    "curator": {
+      "id": "20000000-0000-4000-8000-000000000043",
+      "slug": "vex",
+      "fullName": "Илья Васильев",
+      "country": "Беларусь",
+      "city": "Минск",
+      "discipline": "Художник",
+      "practice": null,
+      "biography": null,
+      "profilePhotoUrl": "/api/sellers/vex/photo",
+      "telegramUrl": null,
+      "instagramUrl": null,
+      "websiteUrl": null,
+      "shortDescription": "Ищу логику в абсурде.\nСтираю грань между реальностью и сном",
+      "achievements": [],
+      "sharePath": "/authors/vex"
+    },
     "work": {
       "id": "20000000-0000-4000-8000-000000000040",
       "publicId": "daliEstate1",
@@ -17,30 +34,31 @@
           "position": 0,
           "url": "/api/images/20000000-0000-4000-8000-000000000041",
           "mimeType": "image/png",
-          "byteLength": 656587,
-          "checksum": "1b5295db40adca9d29c772b8a04f752cdf6aa76387b5673fd9638d0699fa1198",
-          "width": 528,
-          "height": 704
+          "byteLength": 1,
+          "checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "width": 1050,
+          "height": 1400
         }
       ],
       "publishedAt": "2026-09-01T00:00:00.000Z",
-      "sharePath": "/works/daliEstate1"
-    },
-    "author": {
-      "id": "20000000-0000-4000-8000-000000000043",
-      "slug": "vex",
-      "fullName": "vex",
-      "country": "Беларусь",
-      "city": "Минск",
-      "discipline": "Живопись",
-      "practice": null,
-      "profilePhotoUrl": "/api/sellers/vex/photo",
-      "telegramUrl": null,
-      "instagramUrl": null,
-      "websiteUrl": null,
-      "shortDescription": "Ищу логику в абсурде.\nСтираю грань между реальностью и сном",
-      "achievements": [],
-      "sharePath": "/authors/vex"
+      "sharePath": "/works/daliEstate1",
+      "author": {
+        "id": "20000000-0000-4000-8000-000000000044",
+        "slug": "pixelp",
+        "fullName": "Павел Пиксель",
+        "country": "Беларусь",
+        "city": "Минск",
+        "discipline": "Коллекционер",
+        "practice": null,
+        "biography": null,
+        "profilePhotoUrl": "/api/sellers/pixelp/photo",
+        "telegramUrl": null,
+        "instagramUrl": null,
+        "websiteUrl": null,
+        "shortDescription": "Собираю изображение так, чтобы оно зазвучало. Demo copy: invented display name and bio; not in Figma authors catalog.",
+        "achievements": [],
+        "sharePath": "/authors/pixelp"
+      }
     },
     "note": "Тот случай, когда безупречная техника встречается с сильной идеей. Переосмысляет эстетику прошлого, создавая миры, где стирается грань реальности. Наша главная визуальная находка этой недели."
   },

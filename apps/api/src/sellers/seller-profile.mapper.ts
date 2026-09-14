@@ -10,6 +10,7 @@ export const publicSellerProfileSelect = {
   country: true,
   city: true,
   practice: true,
+  biography: true,
   socialLink: true,
   telegramUrl: true,
   instagramUrl: true,
@@ -47,6 +48,7 @@ export const sellerProfileResponseSelect = {
   country: true,
   city: true,
   practice: true,
+  biography: true,
   socialLink: true,
   telegramUrl: true,
   instagramUrl: true,
@@ -73,6 +75,7 @@ export const sellerProfileOwnerSelect = {
       country: true,
       city: true,
       practice: true,
+      biography: true,
       socialLink: true,
       telegramUrl: true,
       instagramUrl: true,
@@ -162,6 +165,7 @@ export function toPublicSellerProfile(
     country: sellerProfile.country,
     city: sellerProfile.city?.trim() || null,
     practice: sellerProfile.practice ?? null,
+    biography: sellerProfile.biography ?? null,
     socialLink: sellerProfile.socialLink ?? null,
     telegramUrl: sellerProfile.telegramUrl ?? null,
     instagramUrl: sellerProfile.instagramUrl ?? null,
@@ -205,6 +209,7 @@ export function toSellerProfileResponse(
         country: editingRevision.country,
         city: editingRevision.city,
         practice: editingRevision.practice,
+        biography: editingRevision.biography,
         socialLink: editingRevision.socialLink ?? null,
         telegramUrl: editingRevision.telegramUrl,
         instagramUrl: editingRevision.instagramUrl,
@@ -220,6 +225,8 @@ export function toSellerProfileResponse(
       city:
         (publicFields.city ?? sellerProfileResponse.city)?.trim() || null,
       practice: (publicFields.practice ?? sellerProfileResponse.practice) ?? null,
+      biography:
+        (publicFields.biography ?? sellerProfileResponse.biography) ?? null,
       telegramUrl:
         (publicFields.telegramUrl ?? sellerProfileResponse.telegramUrl) ?? null,
       instagramUrl:

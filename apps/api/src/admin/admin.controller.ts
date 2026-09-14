@@ -275,6 +275,7 @@ export class AdminController {
     return adminCuratorSelectionResponseSchema.parse(
       await this.portfolio.setCuratorSelection(
         parsed.publicId,
+        parsed.curatorSlug,
         parsed.note,
         auth.sub,
       ),
