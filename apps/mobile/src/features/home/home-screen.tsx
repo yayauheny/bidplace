@@ -1,84 +1,56 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'expo-router';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  AuctionCardGrid,
   CreatorCardGrid,
-  MotionPressable,
   PageState,
+  PrimaryButton,
 } from '../../components/ui';
+import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useApiClient } from '../../providers/api-provider';
-import { getCatalogColumnCount } from '../products/catalog-layout';
-
-function SectionLink({ href, label }: { href: '/works' | '/authors'; label: string }) {
-  return (
-    <Link href={href} asChild>
-      <MotionPressable
-        accessibilityRole="link"
-        accessibilityLabel={label}
-        preset="button"
-        style={{
-          minHeight: designTokens.size.touch,
-          justifyContent: 'center',
-          paddingHorizontal: designTokens.space.x2,
-        }}
-      >
-        <AppText role="label">{label} →</AppText>
-      </MotionPressable>
-    </Link>
-  );
-}
+import { HomeOpening } from './home-opening';
+import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen() {
   const api = useApiClient();
-  const { width } = useWindowDimensions();
+  const router = useRouter();
   const home = useQuery({
-    queryKey: ['discovery-home'],
-    queryFn: () => api.discovery.home(),
+    queryKey: ['portfolio-home'],
+    queryFn: () => api.portfolio.home(),
   });
   const loading = home.isLoading;
   const failed = home.isError;
-  const productItems = home.data?.topAuctions ?? [];
-  const newWorkItems = home.data?.newWorks ?? [];
-  const sellerItems = home.data?.creators ?? [];
-  const columns = getCatalogColumnCount(width);
+  const plan = homeSectionPlan(home.data);
+  const sellerItems = plan.authors.map((author) => ({
+    sellerProfile: author,
+  }));
 
   return (
     <AppShell>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: designTokens.space.x20 }}
+        testID="home-scroll"
+        contentContainerStyle={{
+          paddingHorizontal: designTokens.space.pageGutter,
+          paddingTop: designTokens.space.logoTop,
+          paddingBottom: designTokens.size.dockReserve,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View
           style={{
-            width: '100%',
-            maxWidth: designTokens.layout.contentMaxWidth,
-            alignSelf: 'center',
-            gap: designTokens.space.x16,
-            paddingHorizontal:
-              width >= designTokens.breakpoint.desktopShell
-                ? designTokens.layout.desktopGutter
-                : designTokens.layout.mobileGutter,
-            paddingTop:
-              width >= designTokens.breakpoint.compactHeader
-                ? designTokens.space.x20
-                : designTokens.space.x12,
+            alignItems: 'center',
+            marginBottom: designTokens.space.logoGap,
           }}
         >
-          <AppText
-            role={
-              width >= designTokens.breakpoint.compactHeader
-                ? 'display'
-                : 'screenTitle'
-            }
-          >
-            Работы в bidplace
-          </AppText>
+          <BrandLogo profile />
+        </View>
+        <View style={{ gap: designTokens.space.x10 }}>
           {loading ? <PageState title="Загружаем bidplace…" loading /> : null}
           {failed ? (
             <PageState
@@ -88,65 +60,73 @@ export function HomeScreen() {
               }}
             />
           ) : null}
-          {!loading && !failed && productItems.length > 0 ? (
-            <View style={{ gap: designTokens.space.x6 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x4,
-                }}
+          {!loading && !failed && plan.opening ? (
+            <HomeOpening selection={plan.opening} />
+          ) : null}
+          {!loading && !failed && plan.showWorks ? (
+            <View
+              nativeID="home-new-works"
+              style={{ gap: designTokens.space.sectionGap }}
+            >
+              <AppText
+                role="sectionTitle"
+                accessibilityRole="header"
+                style={{ textAlign: 'center' }}
               >
-                <AppText role="sectionTitle">Работы</AppText>
-                <SectionLink href="/works" label="Смотреть все работы" />
-              </View>
-              <AuctionCardGrid
-                items={productItems}
-                columns={Math.min(columns, 3) as 1 | 2 | 3}
+                Новые работы
+              </AppText>
+              <WorkCoverCardGrid items={plan.works} />
+              <PrimaryButton
+                label="Смотреть все"
+                width="full"
+                onPress={() => router.push('/works')}
               />
             </View>
           ) : null}
-          {!loading && !failed && newWorkItems.length > 0 ? (
-            <View style={{ gap: designTokens.space.x6 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x4,
-                }}
+          {!loading && !failed && plan.showAuthors ? (
+            <View
+              nativeID="home-new-authors"
+              style={{ gap: designTokens.space.sectionGap }}
+            >
+              <AppText
+                role="sectionTitle"
+                accessibilityRole="header"
+                style={{ textAlign: 'center' }}
               >
-                <AppText role="sectionTitle">Новые работы</AppText>
-                <SectionLink href="/works" label="Смотреть все работы" />
-              </View>
-              <AuctionCardGrid
-                items={newWorkItems}
-                columns={Math.min(columns, 3) as 1 | 2 | 3}
+                Новые авторы
+              </AppText>
+              <CreatorCardGrid items={sellerItems} />
+              <PrimaryButton
+                label="Смотреть всех"
+                width="full"
+                onPress={() => router.push('/authors')}
               />
             </View>
           ) : null}
-          {!loading && !failed && sellerItems.length > 0 ? (
-            <View style={{ gap: designTokens.space.x6 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x4,
-                }}
-              >
-                <AppText role="sectionTitle">Авторы</AppText>
-                <SectionLink href="/authors" label="Смотреть всех авторов" />
-              </View>
-              <CreatorCardGrid items={sellerItems} columns={columns} />
-            </View>
-          ) : null}
-          {!loading && !failed && productItems.length === 0 && sellerItems.length === 0 ? (
-            <PageState
-              title="Пока здесь тихо"
-              message="Новые работы и авторы появятся после публикации."
+          {!loading && !failed && plan.showAuthorsLink ? (
+            <PrimaryButton
+              label="Все авторы"
+              width="full"
+              onPress={() => router.push('/authors')}
             />
+          ) : null}
+          {!loading && !failed && plan.showEmpty ? (
+            <View style={{ gap: designTokens.space.sectionGap }}>
+              <PageState
+                title="Пока здесь тихо"
+                message="Новые работы и авторы появятся после публикации."
+              />
+              <PrimaryButton
+                label="Все работы"
+                width="full"
+                onPress={() => router.push('/works')}
+              />
+              <PrimaryButton
+                label="Все авторы"
+                width="full"
+                onPress={() => router.push('/authors')}
+              />
+            </View>
           ) : null}
         </View>
       </ScrollView>

@@ -1,8 +1,31 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-08
+Последнее обновление: 2026-09-14
 
-Общий статус: **Pen v2 public discovery implementation is Partial; automated checks and runtime matrices pass, while matched Pen overlay and founder/device acceptance remain pending**
+Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-14 — Mobile-web 390 Figma cutover
+
+- `Implemented` (mobile-web 390 only): Figma tokens and shared primitives,
+  `AppShell`, `DEC-088` 232×64 four-item glass dock, deletion of auction /
+  listing / order / activity chrome, cover cards with web frost, public Author /
+  Work / Home, web compact author header motion, ShareSheet plus `/works` and
+  `/authors` aliases, S4 auth composition, S7 filter masters, URL-owned Works /
+  Authors / Search with server facets and pagination, and web tab
+  label/count typography.
+- `Verified` (this branch): mobile typecheck, lint, unit `60` files / `235`
+  tests, Playwright stabilization Chromium+WebKit `38/38`, leftover Chromium
+  `test:e2e:all` `36/36`. This gate does not accept native or 1024/1440.
+- `Partial`: Figma registration-complete frame has no runtime state because
+  login redirects immediately. Author About is not URL-owned. RFC §6 brief
+  facts stay unresolved; cards remain title + `@author`.
+- `Needs verification` / out of scope: native frost, native compact header,
+  native ShareSheet QR, 1024/1440 compositions, RFC §10 create-work, author
+  application visual rewrite, and founder Accepted / launch-ready.
+- Create-work, author application and admin screens stay on the PR A
+  implementations except compile/navigation chrome required by the new shell.
+- `.pen`, Figma handoff rasters and QA binaries are not part of this runtime
+  branch.
 
 ## 2026-09-08 — Portfolio-first Figma scope
 

@@ -1,7 +1,7 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-08
-Статус: Confirmed product/UI scope; implementation pending
+Последнее обновление: 2026-09-14
+Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
 ## 1. Источник и граница
@@ -11,10 +11,9 @@ portfolio-first UI. Его запрещено редактировать, пер
 пересохранять в code-задачах. Screenshots являются review evidence, но точные tokens,
 assets и measurements берутся только из versioned inspect/handoff.
 
-Текущий production остаётся Pen-based до формального cutover. Защищённый `.pen` не
-редактируется и не удаляется. Во время реализации новый product contract определяет
-поведение и данные, Figma — визуальную композицию, а Pen — только historical runtime
-reference.
+Текущий production visual source на mobile-web 390 — Figma (`DEC-085`). Защищённый
+`.pen` не редактируется и не удаляется. Product owner documents и server
+contracts по-прежнему определяют routes, data, permissions и auction behavior.
 
 ## 2. Основной flow
 
@@ -41,21 +40,26 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Экран | First MVP | Убирается/откладывается |
 |---|---|---|
 | Global navigation | Home, Search, Add, Profile | Cart, likes, notification bell |
-| Home | Открытие недели, новые работы, новые авторы | Активные торги, цены, timers, sale badges |
+| Home | Открытие недели (optional server selection), новые работы, авторы | Активные торги, цены, timers |
 | Works | Search, category/material filters, newest/oldest sort, pagination | Auction/announcement/archive tabs, price/status filters |
 | Authors | Search, tag/city filters, name/date sort | Rating, followers, sales and verified authenticity claims |
 | Creator | Header, chips, socials, share/QR, `Работы`, `Об авторе`, achievements | Public `Архив`, cart, like, bell, private states |
-| Work | Gallery, title, author, chips, optional story, details, related works | Price, timer, archive badge, bid CTA/history, payment/delivery |
+| Work | Gallery, title, author, chips, optional story, details, related works, payment/delivery stub | Price, timer, archive badge, bid CTA/history |
 | Auth | Email/password, verify email, forgot/reset | Telegram/Google OAuth, passwordless code, buyer-only promotion |
 | Author application | Photo, name, slug, location, about, tags, optional socials/achievements | Sale language, buyer handoff contact |
 | Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
+Phone chrome is one 232×64 four-item glass dock: Home, Search, Add, Profile
+(`DEC-088`). Search lives inside the capsule. Cart and the unused split-search
+FAB are not production items. Public share aliases `/works/:id` and
+`/authors/:slug` resolve to the existing Work and Creator routes.
+
 ## 4. Home
 
-`Открытие недели` показывается только при реальном ручном выборе. Если selection нет,
-секция исчезает без placeholder. Work cards показывают название, автора и portfolio
-facts. `Новые работы` не дублируется на одной странице.
+`Открытие недели` рендерится только из `home.curatorSelection` (`DEC-086`).
+Если selection `null` или недоступна, секция отсутствует. Work cards показывают
+название и `@author`. После работ — `Новые авторы` или короткий переход в `/authors`.
 
 ## 5. Works and Authors discovery
 
@@ -65,6 +69,12 @@ appearance; пока переход по тегу не включён, они с
 
 Кнопка результата использует `работ`, не `лотов`. Unsupported placeholder filters не
 рендерятся. Popularity/price/availability sorting отсутствует.
+
+На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
+после `Применить`; sheet хранит локальный draft до Apply/Reset. `/search?q=`
+показывает независимые loading/result/empty/error/retry/pagination состояния
+работ и авторов. Figma live-search overlay остаётся вне scope. Work `?tab=`
+is URL-owned; Author About is local state and is not a `?tab=` contract.
 
 ## 6. Creator profile
 
@@ -88,9 +98,10 @@ Portfolio variant сохраняет визуальную галерею и ин
 - `История` только если заполнен plain text;
 - `Детали` всегда.
 
-`Оплата и доставка` и `Ставки` отсутствуют. `Другие работы автора` содержит только
-Work cards; ссылка имени уже ведёт в Creator profile. Claims об authenticity/provenance
-маркируются как информация автора, если platform не проводила экспертизу.
+`Оплата и доставка` показывается как v1 stub без цены и CTA ставки. `Ставки`
+отсутствуют. `Другие работы автора` содержит только Work cards; ссылка имени уже
+ведёт в Creator profile. Claims об authenticity/provenance маркируются как
+информация автора, если platform не проводила экспертизу.
 
 ## 8. Author application
 

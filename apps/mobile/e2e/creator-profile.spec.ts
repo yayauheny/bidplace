@@ -81,19 +81,17 @@ test('public creator profile shows only public data and remains responsive', asy
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/seller/${fixture.sellerProfile.slug}`);
 
-  await expect(page.getByTestId('ambient-image-background')).toBeVisible();
+  await expect(page.getByTestId('author-header')).toBeVisible();
   await expect(
     page.getByText(fixture.sellerProfile.fullName, { exact: true }).first(),
   ).toBeVisible();
   await expect(
-    page.getByTestId('app-shell-content').getByText('Работы', { exact: true }),
+    page.getByRole('tab', { name: /Работы/ }).first(),
   ).toBeVisible();
   await expect(page.getByText(fixture.product.title)).toBeVisible();
   await expect(page.getByLabel('Сайт автора')).toHaveCount(0);
   await expect(
-    page.getByRole('button', {
-      name: `Скопировать ссылку на профиль ${fixture.sellerProfile.fullName}`,
-    }),
+    page.getByRole('button', { name: 'Поделиться профилем' }),
   ).toBeVisible();
 
   await expect(page.locator('body')).not.toContainText(

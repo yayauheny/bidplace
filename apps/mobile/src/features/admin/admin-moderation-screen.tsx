@@ -30,7 +30,6 @@ import {
   sellerTypeLabels,
 } from '../../lib/presentation';
 import { ModerationCard } from './ModerationCard';
-import { AdminRecoveryPanel } from './AdminRecoveryPanel';
 import { AdminUsersPanel } from './AdminUsersPanel';
 
 type AdminSellersData = Awaited<
@@ -49,7 +48,7 @@ type Confirmation =
   | { kind: 'order-cancel' }
   | { kind: 'order-replace'; bidId: string };
 type ProductModerationAction = 'APPROVED' | 'CHANGES_REQUESTED';
-type ModerationTab = 'authors' | 'works' | 'orders' | 'users' | 'recovery';
+type ModerationTab = 'authors' | 'works' | 'orders' | 'users';
 type ModerationFilter =
   | 'ALL'
   | 'PENDING_REVIEW'
@@ -314,13 +313,6 @@ export function AdminModerationScreen() {
             label="Пользователи"
             onPress={() => {
               setModerationTab('users');
-              setModerationSearch('');
-            }}
-          />
-          <SecondaryButton
-            label="Восстановление"
-            onPress={() => {
-              setModerationTab('recovery');
               setModerationSearch('');
             }}
           />
@@ -677,7 +669,6 @@ export function AdminModerationScreen() {
         </FormSection>
       ) : null}
       {moderationTab === 'users' ? <AdminUsersPanel /> : null}
-      {moderationTab === 'recovery' ? <AdminRecoveryPanel /> : null}
       {confirmation ? (
         <AppDialog
           open

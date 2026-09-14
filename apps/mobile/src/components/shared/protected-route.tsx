@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, SecondaryButton } from '../ui';
+import { AppText, PageState } from '../ui';
 import { useAuth } from '../../providers/auth-provider';
 
 type ProtectedRouteProps = {
@@ -38,21 +38,16 @@ export function ProtectedRoute({
   if (auth.status === 'error') {
     return (
       <View
-        accessibilityRole="alert"
         style={{
           flex: 1,
-          alignItems: 'center',
           justifyContent: 'center',
-          gap: designTokens.space.x3,
           backgroundColor: designTokens.color.canvas,
         }}
       >
-        <AppText role="bodySmall" tone="danger">
-          {auth.sessionError}
-        </AppText>
-        <SecondaryButton
-          label="Повторить"
-          onPress={() => void auth.refreshSession()}
+        <PageState
+          title="Не удалось проверить доступ"
+          message={auth.sessionError ?? undefined}
+          retry={() => void auth.refreshSession()}
         />
       </View>
     );

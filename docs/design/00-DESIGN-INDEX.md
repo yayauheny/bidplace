@@ -1,16 +1,16 @@
 # bidplace — индекс дизайн-документации
 
-Последнее обновление: 2026-09-08
+Последнее обновление: 2026-09-14
 
 Статус: **Confirmed documentation baseline**
 
 ## Назначение
 
 Этот раздел — единая документационная точка входа для UI bidplace. First MVP
-переведён на portfolio-first product contract. Новый Figma-файл
-`NM63j9lwRMqpo2HvAiYNll` является read-only target следующей реализации; текущий
-Pen-based production и защищённый `.pen` сохраняются как historical runtime baseline
-до формального cutover.
+переведён на portfolio-first product contract. Production visual source for
+mobile-web 390 is the read-only Figma inspect copy (`DEC-085`). The protected
+`.pen` file stays historical and is not the runtime visual source. Native iOS
+and Android and 1024/1440 compositions are outside the current UI claim.
 
 Старая Modern UI design system удалена. Её документы, внешние референсы и
 cutover-план больше не являются источниками решений. Текущий production UI —
@@ -24,7 +24,8 @@ cutover-план больше не являются источниками ре�
    server contracts.
 2. Для portfolio-first target — read-only Figma `NM63j9lwRMqpo2HvAiYNll` после
    versioned inspect/token/asset handoff.
-3. Для текущего historical runtime — защищённый `../../design/pen/bidplace-web-v2.pen`.
+3. Для historical visual anatomy — защищённый `../../design/pen/bidplace-web-v2.pen`.
+   Mobile-web 390 runtime follows Figma (`DEC-085`), not Pen.
 4. Этот design-модуль — screen/behavior/state mapping.
 5. Production-код — фактическое исходное состояние, а не новый visual target.
 

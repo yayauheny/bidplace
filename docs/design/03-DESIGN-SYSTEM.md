@@ -1,8 +1,8 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-08-12
+Последнее обновление: 2026-09-14
 
-Статус: **Measured baseline; motion and responsive verification remain**
+Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
 ## 1. Архитектура источников
 
@@ -254,9 +254,43 @@ derived before coding each component and recorded in handoff:
 Breakpoints follow composition pressure, not device names. A component is not
 complete if it matches only the 1440 frame.
 
+## 6.1. Figma portfolio primitives — mobile-web 390
+
+Read-only source: Figma inspect copy `uMo04w9bgrchWXXDgO4W62` (`DEC-085`).
+Values live in the only `designTokens` export (`figmaTokens` alias).
+
+`AppShell` is a centered 390 column plus `FloatingDock`. Wide windows keep the
+same column. 1024/1440 compositions are out of this wave.
+
+`FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
+Профиль. Search is an item inside that capsule. The 64×64 search FAB and the
+288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the
+dock to `document.body` and uses CSS `backdrop-filter`. Native `expo-blur`
+files ship for Metro and are not part of the web claim.
+
+Cover cards keep title + `@author` and web frost only. Public grids call
+`WorkCoverCard` / `AuthorCoverCard` directly. There is no `AuctionCard`
+runtime wrapper.
+
+Web author tabs use Inter Medium 16/19 −0.32 for the label and Inter Regular
+12/14 −0.24 for an absolutely positioned count (`typography.profileTab` /
+`typography.profileTabCount`). Native `FigmaTabs` inline label+count is a
+Metro pair, not the web typography claim.
+
+On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter
+faces are not faux-bolded.
+
+Shared `ShareSheet` renders a copy action and a downloadable PNG QR for
+validated public `/works/:id` and `/authors/:slug` paths on the current
+origin. The native branch is a stub.
+
+Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
+Apply/Reset. They are not `role="menu"`.
+
 ## 7. Old system boundary
 
-`docs/modern-ui` and its design language are retired. Runtime components живут
-в `apps/mobile/src/components/ui`; параллельного legacy component/token layer
-нет. `components/ui` реализует текущую систему, но не заменяет Pen и design docs
-как визуальный source of truth.
+`docs/modern-ui` and its design language are retired. Runtime public screens
+use `apps/mobile/src/components/figma` and wrappers in `components/ui`. There
+is no nested Figma token object. Figma is the production visual source for
+mobile-web 390 (`DEC-085`); the protected `.pen` file is historical and unused
+at runtime.

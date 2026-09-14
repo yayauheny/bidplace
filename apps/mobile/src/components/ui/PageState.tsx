@@ -27,6 +27,7 @@ export function PageState({
           alignItems: 'center',
           justifyContent: 'center',
           paddingVertical: designTokens.space.x8,
+          paddingHorizontal: designTokens.space.pageGutter,
         }}
       >
         <AppText
@@ -42,15 +43,20 @@ export function PageState({
 
   return (
     <View
+      accessibilityRole={mode === 'error' ? 'alert' : undefined}
+      accessibilityLiveRegion={mode === 'error' ? 'polite' : 'none'}
       style={{
         minHeight: 220,
         alignItems: 'center',
         justifyContent: 'center',
         gap: designTokens.space.x3,
         paddingVertical: designTokens.space.x8,
+        paddingHorizontal: designTokens.space.pageGutter,
       }}
     >
-      <AppText role="sectionTitle">{title}</AppText>
+      <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
+        {title}
+      </AppText>
       {message || mode === 'error' ? (
         <AppText role="bodySmall" tone="secondary" style={{ textAlign: 'center' }}>
           {message ?? 'Проверьте соединение и повторите попытку.'}

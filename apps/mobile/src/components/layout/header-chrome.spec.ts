@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  canShowDesktopCreateListing,
+  canShowDesktopCreateWork,
   getHeaderSearchPlaceholder,
   getMobileCreateHref,
   getDiscoveryLabel,
@@ -20,7 +20,7 @@ describe('header-chrome', () => {
 
   it('computes discovery label', () => {
     expect(getDiscoveryLabel('/authors')).toBe('Авторы');
-    expect(getDiscoveryLabel('/works')).toBe('Аукционы');
+    expect(getDiscoveryLabel('/works')).toBe('Работы');
   });
 
   it('computes search placeholder for header chrome', () => {
@@ -35,16 +35,16 @@ describe('header-chrome', () => {
 
   it('controls desktop create button visibility', () => {
     expect(
-      canShowDesktopCreateListing({ isAdmin: true, sellerStatus: 'APPROVED' }),
+      canShowDesktopCreateWork({ isAdmin: true, sellerStatus: 'APPROVED' }),
     ).toBe(false);
     expect(
-      canShowDesktopCreateListing({
+      canShowDesktopCreateWork({
         isAdmin: false,
         sellerStatus: 'APPROVED',
       }),
     ).toBe(true);
     expect(
-      canShowDesktopCreateListing({
+      canShowDesktopCreateWork({
         isAdmin: false,
         sellerStatus: 'PENDING_REVIEW' as SellerStatus,
       }),

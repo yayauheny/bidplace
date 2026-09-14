@@ -29,8 +29,28 @@
 - `Partial`: the pre-Figma seller application form now collects required `city`
   and optional `practice` and sends them on create/update. Figma application
   revision UI, public catalog e2e, and approved-author submit remain Phase 2.
-- `Not claimed`: Founder Accepted, launch-ready, mobile-web Figma UI, or commerce
-  removal.
+- `Not claimed`: Founder Accepted, launch-ready, or commerce removal.
+
+## 2026-09-14 — Mobile-web Figma staged on portfolio foundation
+
+- `Implemented` (mobile-web 390 only): `apps/mobile` and `packages/design-tokens`
+  now render the Figma public surfaces on top of PR A portfolio APIs
+  (`api.portfolio.home|listWorks|getWork|listAuthors|getAuthor|facets`).
+  Dock is the `DEC-088` 232×64 four-item capsule. Auction/listing/order/activity
+  screens and `socket.io-client` are removed from mobile runtime. Public cards
+  stay title + `@author`. Home opening reads server `curatorSelection`.
+  Coverage: mobile unit `60` files / `235` tests; Playwright stabilization
+  Chromium+WebKit `38/38` (`figma-stabilization`, `home-figma`,
+  `discovery-launch`, `author-header-motion`, `product-layout`, `auth-layout`,
+  `figma-cover-frost`); leftover Chromium `test:e2e:all` `36/36` including the
+  unchanged PR A create-work and application wizards. Expo web export has no
+  `socket.io-client`. This is not founder Accepted or launch-ready.
+- `Partial`: native iOS/Android visual parity, 1024/1440, RFC §10 create-work
+  rewrite and launch-ready are not in this branch.
+- `Unchanged`: Nest commerce modules, Listing/Bid/Order contracts, Prisma
+  commerce tables and `COMMERCE_ENABLED` remain from PR A until PR C.
+- `Confirmed`: `DEC-088` is recorded here; `DEC-085`/`086`/`087`/`089` stay
+  owned by PR A and are not duplicated.
 
 ## 2026-09-14 — Portfolio foundation staged beside commerce runtime
 

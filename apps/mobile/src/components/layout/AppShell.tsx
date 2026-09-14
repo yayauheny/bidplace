@@ -1,91 +1,52 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
+import { useIsFocused } from 'expo-router';
+import { BlurTargetView } from 'expo-blur';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppHeader } from './AppHeader';
 import { OverlayHost } from './OverlayHost';
-import {
-  AmbientImageBackground,
-  AppText,
-  SecondaryButton,
-  type AmbientBackgroundVariant,
-} from '../ui';
-import { useAuth } from '../../providers/auth-provider';
+import { FloatingDock } from '../figma/FloatingDock';
 
 export function AppShell({
   children,
-  bottomAction,
-  ambientVariant,
+  hideDock = false,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
-  ambientVariant?: AmbientBackgroundVariant;
+  ambientVariant?: string;
+  hideDock?: boolean;
 }) {
-  const hasAmbient = ambientVariant !== undefined;
-  const auth = useAuth();
+  const dockBlurTarget = useRef<View | null>(null);
+  const isFocused = useIsFocused();
 
   return (
     <OverlayHost>
       <SafeAreaView
         style={{
           flex: 1,
-          position: 'relative',
-          backgroundColor: hasAmbient
-            ? designTokens.color.surfaceWarm
-            : designTokens.color.canvas,
+          backgroundColor: designTokens.color.canvas,
+          alignItems: 'center',
+          overflow: 'visible',
         }}
       >
-        {ambientVariant ? (
-          <AmbientImageBackground variant={ambientVariant} />
-        ) : null}
-        <View
+        <BlurTargetView
+          ref={dockBlurTarget}
+          testID="app-shell-content"
           style={{
             flex: 1,
-            minHeight: 0,
-            position: 'relative',
+            width: '100%',
+            maxWidth: designTokens.layout.phoneWidth,
+            minWidth: 0,
+            overflow: 'visible',
           }}
         >
-          <AppHeader ambient={hasAmbient} />
-          {auth.status === 'error' ? (
-            <View
-              accessibilityRole="alert"
-              style={{
-                minHeight: designTokens.size.touch,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-                gap: designTokens.space.x3,
-                paddingHorizontal: designTokens.layout.mobileGutter,
-                paddingVertical: designTokens.space.x2,
-                backgroundColor: designTokens.color.surface,
-                borderBottomWidth: 1,
-                borderBottomColor: designTokens.color.border,
-              }}
-            >
-              <AppText role="bodySmall" tone="danger">
-                {auth.sessionError}
-              </AppText>
-              <SecondaryButton
-                label="Повторить"
-                onPress={() => void auth.refreshSession()}
-              />
-            </View>
-          ) : null}
-          <View
-            testID="app-shell-content"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              backgroundColor: 'transparent',
-            }}
-          >
-            {children}
-            {bottomAction}
-          </View>
-        </View>
+          {children}
+        </BlurTargetView>
+        {!hideDock && isFocused ? (
+          <FloatingDock blurTarget={dockBlurTarget} />
+        ) : null}
       </SafeAreaView>
     </OverlayHost>
   );

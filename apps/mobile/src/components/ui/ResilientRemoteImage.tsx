@@ -1,5 +1,12 @@
 import { Image, type ImageProps } from 'expo-image';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type ImageStyle,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { designTokens } from '@bidplace/design-tokens';
@@ -20,12 +27,16 @@ import {
 } from './media-recovery';
 
 export type ResilientRemoteImageComponent =
-  | 'AuctionCard'
   | 'CreatorCard'
   | 'CreationStep'
   | 'ProductGallery'
   | 'ProductAuthor'
-  | 'AuthorPhoto';
+  | 'AuthorPhoto'
+  | 'AuthorAchievement'
+  | 'WorkCoverCard'
+  | 'AuthorCoverCard'
+  | 'AuthorIdentity'
+  | 'AuthorAtmosphere';
 
 type ResilientRemoteImageProps = {
   uri: string;
@@ -34,8 +45,10 @@ type ResilientRemoteImageProps = {
   fallbackLabel: string;
   style: StyleProp<ViewStyle>;
   contentFit?: ImageProps['contentFit'];
+  contentPosition?: ImageProps['contentPosition'];
   transition?: ImageProps['transition'];
   recyclingKey?: string;
+  blurRadius?: number;
 };
 
 export function ResilientRemoteImage({
@@ -45,8 +58,10 @@ export function ResilientRemoteImage({
   fallbackLabel,
   style,
   contentFit = 'cover',
+  contentPosition,
   transition,
   recyclingKey,
+  blurRadius,
 }: ResilientRemoteImageProps) {
   const recovery = useMediaRecovery(uri);
   const currentUriRef = useRef(uri);
@@ -163,11 +178,7 @@ export function ResilientRemoteImage({
         />
         {visibleRecovery.exhausted ? (
           <View style={{ position: 'absolute', bottom: designTokens.space.x2 }}>
-            <SecondaryButton
-              compact
-              label="Повторить"
-              onPress={handleManualRetry}
-            />
+            <SecondaryButton label="Повторить" onPress={handleManualRetry} />
           </View>
         ) : null}
       </View>
@@ -180,12 +191,20 @@ export function ResilientRemoteImage({
         key={sourceUri}
         source={{ uri: sourceUri }}
         contentFit={contentFit}
+        contentPosition={contentPosition}
         transition={transition}
         recyclingKey={`${recyclingKey ?? uri}-${visibleRecovery.requestVersion}`}
         accessibilityLabel={accessibilityLabel}
+        accessible={Boolean(accessibilityLabel)}
+        blurRadius={blurRadius}
         onLoad={handleLoad}
         onError={handleError}
-        style={StyleSheet.absoluteFill}
+        style={[
+          StyleSheet.absoluteFill,
+          Platform.OS === 'web' && blurRadius
+            ? ({ filter: `blur(${blurRadius}px)` } as ImageStyle)
+            : null,
+        ]}
       />
     </View>
   );

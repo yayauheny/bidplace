@@ -9,7 +9,7 @@ describe('ambient background presets', () => {
   it('keeps the product atmosphere neutral and fades into the warm surface', () => {
     expect(productAmbientLayers.cool).toHaveLength(3);
     expect(productAmbientLayers.warm).toHaveLength(3);
-    expect(productAmbientLayers.veil.at(-1)).toBe('#FBFBF8');
+    expect(productAmbientLayers.veil.at(-1)).toBe('#FFFFFF');
   });
 
   it('keeps the creator atmosphere independent from profile imagery', () => {

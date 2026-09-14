@@ -11,6 +11,7 @@ import { MotionPressable } from './MotionPressable';
 
 type AppDialogProps = {
   open: boolean;
+  presentation?: 'dialog' | 'sheet';
   title: string;
   description?: string;
   onClose: () => void;
@@ -19,6 +20,7 @@ type AppDialogProps = {
 
 export function AppDialog({
   open,
+  presentation = 'dialog',
   title,
   description,
   onClose,
@@ -98,7 +100,7 @@ export function AppDialog({
           style={{
             position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
-            backgroundColor: designTokens.color.overlay,
+            backgroundColor: presentation === 'sheet' ? designTokens.color.modalDimmer : designTokens.color.overlay,
             zIndex: designTokens.layer.modal,
           }}
         />
@@ -106,9 +108,13 @@ export function AppDialog({
           style={{
             position: Platform.OS === 'web' ? 'fixed' : 'absolute',
             inset: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: viewportGutter,
+            alignItems: presentation === 'sheet' ? 'stretch' : 'center',
+            ...(presentation === 'sheet' ? {
+              left: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
+              right: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
+            } : {}),
+            justifyContent: presentation === 'sheet' ? 'flex-end' : 'center',
+            paddingHorizontal: presentation === 'sheet' ? 0 : viewportGutter,
             zIndex: designTokens.layer.modal,
             pointerEvents: 'box-none',
           }}
@@ -130,14 +136,28 @@ export function AppDialog({
             nativeID="app-dialog-content"
             style={{
               width: '100%',
-              maxWidth: designTokens.layout.dialogMaxWidth,
+              maxWidth:
+                presentation === 'sheet'
+                  ? designTokens.layout.phoneWidth
+                  : designTokens.layout.dialogMaxWidth,
               maxHeight: Math.max(height - viewportGutter * 2, 0),
               zIndex: designTokens.layer.modal,
               borderWidth: 1,
               borderColor: 'rgba(20, 20, 20, 0.08)',
-              borderRadius: designTokens.radius.dialog,
+              borderRadius:
+                presentation === 'sheet'
+                  ? designTokens.radius.shareSheet
+                  : designTokens.radius.dialog,
+              ...(presentation === 'sheet'
+                ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
+                : {}),
               backgroundColor: designTokens.color.dialogSurface,
-              padding: width >= 600 ? designTokens.space.x8 : designTokens.space.x5,
+              padding:
+                presentation === 'sheet'
+                  ? designTokens.space.pageGutter
+                  : width >= 600
+                    ? designTokens.space.x8
+                    : designTokens.space.x5,
               ...designTokens.elevation.floating,
             }}
           >
@@ -161,9 +181,13 @@ export function AppDialog({
               >
                 <Dialog.Title asChild>
                   <AppText
-                    role="sectionTitle"
+                    role={
+                      presentation === 'sheet'
+                        ? 'profileHeading'
+                        : 'sectionTitle'
+                    }
                     style={
-                      width >= 600
+                      presentation === 'dialog' && width >= 600
                         ? {
                             fontSize: 38,
                             lineHeight: 40,

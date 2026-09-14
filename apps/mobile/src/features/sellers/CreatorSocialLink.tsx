@@ -1,19 +1,23 @@
 import { Link, type Href } from 'expo-router';
 
-import { designTokens } from '@bidplace/design-tokens';
+import { figmaTokens } from '@bidplace/design-tokens';
 
-import { AppIcon, MotionPressable } from '../../components/ui';
+import { FigmaIcon } from '../../components/figma/FigmaIcon';
+import { figmaGlassCircleStyle } from '../../components/figma/figma-glass-circle';
+import { MotionPressable } from '../../components/ui';
 
 export type CreatorSocialLinkProps = {
   href: string;
   icon: 'send' | 'instagram' | 'globe';
   label: string;
+  grouped?: boolean;
 };
 
 export function CreatorSocialLink({
   href,
   icon,
   label,
+  grouped = false,
 }: CreatorSocialLinkProps) {
   return (
     <Link href={href as Href} target="_blank" asChild>
@@ -21,23 +25,31 @@ export function CreatorSocialLink({
         accessibilityRole="link"
         accessibilityLabel={label}
         preset="icon"
-        style={{
-          width: 28,
-          height: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: designTokens.color.border,
-          borderRadius: 14,
-        }}
+        style={
+          grouped
+            ? {
+                width: figmaTokens.size.control,
+                height: figmaTokens.size.control,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: figmaTokens.radius.pill,
+              }
+            : figmaGlassCircleStyle()
+        }
       >
-        <AppIcon
-          name={icon}
-          size={20}
-          color={designTokens.color.textSecondary}
+        <FigmaIcon
+          name={
+            icon === 'send'
+              ? 'telegram'
+              : icon === 'globe'
+                ? 'internet'
+                : 'instagram'
+          }
+          size={
+            grouped ? figmaTokens.size.socialGroupIcon : figmaTokens.size.icon
+          }
         />
       </MotionPressable>
     </Link>
   );
 }
-
