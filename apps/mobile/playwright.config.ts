@@ -18,8 +18,8 @@ export default defineConfig({
   timeout: 60_000,
   workers: 1,
   projects: [
-    { name: 'chromium', use: { browserName: 'chromium' }, retries: 1 },
-    { name: 'webkit', use: { browserName: 'webkit' }, retries: 1 },
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
   ],
   use: {
     baseURL: webBaseURL,
