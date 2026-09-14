@@ -34,6 +34,7 @@ export function AuthorAbout({
             {author.achievements.map((item) => (
               <View
                 key={item.id}
+                testID="author-achievement-card"
                 style={{
                   width: designTokens.size.achievementWidth,
                   gap: designTokens.space.x3,

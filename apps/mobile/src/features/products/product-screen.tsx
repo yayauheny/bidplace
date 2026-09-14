@@ -5,7 +5,13 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
-import { AppText, MotionPressable, PageState } from '../../components/ui';
+import {
+  AppText,
+  MotionPressable,
+  PageState,
+  ResilientRemoteImage,
+  productMediaStyle,
+} from '../../components/ui';
 import { WorkGallery } from '../../components/figma/WorkGallery';
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { WorkFactsList } from '../../components/figma/WorkFactsList';
@@ -16,12 +22,18 @@ import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
 import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { ShareSheet } from '../../components/figma/ShareSheet';
+import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 import { useApiClient } from '../../providers/api-provider';
 import { PAYMENT_DELIVERY_STUB } from './payment-delivery-stub';
 import { resolvePublicWorkPageState } from './public-work-page-state';
-import { resolveWorkTab, workFacts, workTabs } from './work-content';
+import {
+  resolveWorkTab,
+  workFacts,
+  workHistoryBlocks,
+  workTabs,
+} from './work-content';
 
 export { PAYMENT_DELIVERY_STUB };
 
@@ -187,7 +199,32 @@ export function ProductScreen({ publicId }: { publicId: string }) {
               style={{ paddingBottom: designTokens.space.sectionGap }}
             >
               {tab === 'story' ? (
-                <AppText role="bodySmall">{work.story}</AppText>
+                <View
+                  testID="work-history"
+                  style={{ gap: designTokens.space.x5 }}
+                >
+                  {workHistoryBlocks(work.story, work.images).map(
+                    (block, index) =>
+                      block.type === 'text' ? (
+                        <AppText key={`text-${index}`} role="bodySmall">
+                          {block.text}
+                        </AppText>
+                      ) : (
+                        <View
+                          key={block.image.id}
+                          testID="work-history-image"
+                        >
+                          <ResilientRemoteImage
+                            uri={getApiAssetUrl(block.image.url)}
+                            component="ProductGallery"
+                            accessibilityLabel={`${work.title}, фото из истории`}
+                            fallbackLabel="Изображение недоступно"
+                            style={productMediaStyle()}
+                          />
+                        </View>
+                      ),
+                  )}
+                </View>
               ) : tab === 'delivery' ? (
                 <AppText role="bodySmall">{PAYMENT_DELIVERY_STUB}</AppText>
               ) : (

@@ -6,6 +6,7 @@ import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIconButton } from './FigmaIconButton';
+import { workGalleryShowsArrows } from './work-gallery-arrows';
 
 type GalleryImage = { id: string; url: string };
 export function WorkGallery({
@@ -33,8 +34,10 @@ export function WorkGallery({
     setActive(page);
     scroll.current?.scrollTo({ x: width * page, animated: !reduced });
   };
+  const showArrows = images.length > 1 && workGalleryShowsArrows(width);
   return (
     <View
+      testID="work-gallery"
       onLayout={(event) => {
         const next = event.nativeEvent.layout.width;
         setWidth(next);
@@ -89,8 +92,9 @@ export function WorkGallery({
             {action}
           </View>
         ) : null}
-        {images.length > 1 ? (
+        {showArrows ? (
           <View
+            testID="work-gallery-arrows"
             style={{
               position: 'absolute',
               bottom: designTokens.space.x3,

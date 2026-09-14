@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import type { PrismaClient } from '@bidplace/database';
@@ -13,6 +15,16 @@ let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 const repositoryRoot = resolve(__dirname, '../../../..');
 const seedPath = resolve(repositoryRoot, 'packages/database/prisma/seed.js');
+const fixtureRoot = resolve(
+  repositoryRoot,
+  'packages/database/prisma/fixtures',
+);
+
+function fixtureChecksum(relativePath: string): string {
+  return createHash('sha256')
+    .update(readFileSync(resolve(fixtureRoot, relativePath)))
+    .digest('hex');
+}
 
 function runSeed(options: { nodeEnv: string; appEnv: string }): void {
   execFileSync(process.execPath, [seedPath], {
@@ -74,6 +86,9 @@ describe('demo seed executable contract', () => {
           discipline: true,
           biography: true,
           profilePhotoByteLength: true,
+          publishedRevision: {
+            include: { achievements: { orderBy: { position: 'asc' } } },
+          },
         },
       }),
       prisma.sellerProfile.findMany({
@@ -92,6 +107,10 @@ describe('demo seed executable contract', () => {
           technique: true,
           materials: true,
           sellerProfile: { select: { slug: true } },
+          images: {
+            orderBy: { position: 'asc' },
+            select: { position: true, checksum: true },
+          },
         },
       }),
       prisma.curatorSelection.findUnique({
@@ -118,6 +137,27 @@ describe('demo seed executable contract', () => {
     expect(vex?.biography).toContain('художник из Минска');
     expect(vex?.products).toHaveLength(2);
     expect(vex?.publishedRevision?.achievements).toHaveLength(2);
+    const vexAchievementChecksums =
+      vex?.publishedRevision?.achievements.map((item) => item.checksum) ?? [];
+    expect(vexAchievementChecksums).toEqual([
+      fixtureChecksum('product-images/alice-glass-detail.png'),
+      fixtureChecksum('product-images/between-form-detail.png'),
+    ]);
+    expect(
+      vex?.publishedRevision?.achievements.every(
+        (item) =>
+          item.objectKey === `seller-achievement:${item.id}` &&
+          item.mimeType === 'image/png' &&
+          (item.byteLength ?? 0) > 10_000,
+      ),
+    ).toBe(true);
+    expect(vexAchievementChecksums).not.toContain(
+      fixtureChecksum('product-images/alice-glass.png'),
+    );
+    expect(vexAchievementChecksums).not.toContain(
+      fixtureChecksum('product-images/between-form.png'),
+    );
+    expect(new Set(vexAchievementChecksums).size).toBe(2);
     expect(
       new Set(
         vex?.publishedRevision?.achievements.map((item) => item.body) ?? [],
@@ -127,6 +167,24 @@ describe('demo seed executable contract', () => {
     expect(pixelp?.discipline).toBe('Художник');
     expect(pixelp?.biography).toContain('живописью и цифровыми образами');
     expect(pixelp?.profilePhotoByteLength ?? 0).toBeGreaterThan(10_000);
+    expect(pixelp?.publishedRevision?.achievements).toHaveLength(1);
+    expect(pixelp?.publishedRevision?.achievements[0]).toMatchObject({
+      checksum: fixtureChecksum(
+        'seller-achievements/pixelp-after-classics.png',
+      ),
+      mimeType: 'image/png',
+    });
+    expect(
+      pixelp?.publishedRevision?.achievements[0]?.objectKey,
+    ).toBe(
+      `seller-achievement:${pixelp?.publishedRevision?.achievements[0]?.id}`,
+    );
+    expect(pixelp?.publishedRevision?.achievements[0]?.checksum).not.toBe(
+      fixtureChecksum('product-images/dali-estate.png'),
+    );
+    expect(pixelp?.publishedRevision?.achievements[0]?.checksum).not.toBe(
+      vexAchievementChecksums[0],
+    );
     const publicCopyMarker =
       /Demo copy|invented|not in Figma|placeholder|test fixture|\bseed\b|\bmock\b/i;
     expect(dali?.story).not.toMatch(publicCopyMarker);
@@ -176,6 +234,26 @@ describe('demo seed executable contract', () => {
     );
     expect(dali?.sellerProfile.slug).toBe('pixelp');
     expect(dali?.status).toBe('APPROVED');
+    expect(dali?.images.map((image) => image.checksum)).toEqual([
+      fixtureChecksum('product-images/dali-estate.png'),
+      fixtureChecksum('product-images/dali-estate-detail.png'),
+    ]);
+    expect(
+      await prisma.product.findUnique({
+        where: { publicId: 'sleepForm01' },
+        select: {
+          images: {
+            orderBy: { position: 'asc' },
+            select: { checksum: true },
+          },
+        },
+      }),
+    ).toMatchObject({
+      images: [
+        { checksum: fixtureChecksum('product-images/between-form.png') },
+        { checksum: fixtureChecksum('product-images/between-form-detail.png') },
+      ],
+    });
     expect(
       await prisma.product.findUnique({
         where: { publicId: 'aliceGlass1' },

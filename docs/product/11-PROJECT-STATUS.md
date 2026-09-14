@@ -1,5 +1,28 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Phone gallery arrows, achievement photos, History media
+
+- `Implemented`: `WorkGallery` still owns prev/next controls, but they render
+  only when gallery layout width is greater than `layout.phoneWidth` (390).
+  Phone-width Dali keeps swipe paging, dots and share; arrows are absent.
+  Coverage: `work-gallery-arrows.ts`, `work-gallery-arrows.spec.ts`.
+- `Implemented`: public Work `История` still authors as one plain-text `story`.
+  The tab now interleaves non-cover published `ProductImage` rows between
+  paragraphs (`workHistoryBlocks`). Not a process-builder CMS
+  (`ProductCreationStep` stays owner-only / post-MVP, `05-MVP-RFC` §15).
+  Dali History uses existing `dali-estate-detail.png`. Coverage:
+  `work-content.ts`, `work-content.spec.ts`, `product-screen.tsx`.
+- `Implemented`: vex and pixelp achievement cards use existing
+  `SellerProfileRevisionAchievement` image fields (`objectKey` + bytes).
+  Photos are distinct same-event Figma fills / same-work detail crops, not
+  product covers and not one shared raster. Coverage: `seed.js`,
+  `seed-contract.integration.spec.ts`.
+- `Partial`: Figma has no isolated exhibition-install photographs. Vex cards
+  use Alice / Between **detail** crops; pixelp uses History Spectre fill
+  `437:3989`, not Opening Dali cover. A second Dali History photo is absent.
+- Unchanged: Opening curator=`vex`, work=`daliEstate1`, owner=`pixelp`;
+  production-quality copy (`DEC-092`); no new visual regression tests.
+
 ## 2026-09-15 — Production-quality local demo copy
 
 - `Implemented`: local seed copy is production-quality. User-facing biography,
@@ -12,10 +35,9 @@
 - `Implemented`: `@pixelp` is `Художник`, Минск, with a real-looking studio
   portrait, biography/practice, and Dali in Works. Gallery extras are same-work
   3:4 detail crops, not another work’s photo.
-- `Partial`: public Work `История` remains RFC plain-text paragraphs. Interleaved
-  process photos inside the tab would need the post-MVP process builder
-  (`05-MVP-RFC` §15). Extra gallery images cover the “not only a text wall”
-  need without a new content model.
+- `Partial`: public Work `История` is still one authored plain-text field.
+  The public tab may now interleave same-work gallery extras between
+  paragraphs (`DEC-093`); that is rendering, not the post-MVP process builder.
 - Coverage: `packages/database/prisma/seed.js`,
   `seed-contract.integration.spec.ts`.
 
@@ -45,7 +67,7 @@
 - `Implemented` (mobile web binding): `home-opening.tsx` left column / profile
   button → `selection.curator`; `WorkCoverCard` → `selection.work.author.slug`.
 - `Partial` / gaps: Playwright visual golden remains a later typography pass.
-  Public History does not interleave process photos (RFC plain text).
+  Isolated exhibition-install photos are still missing in Figma.
 - `Unchanged`: `05-MVP-RFC.md` Opening as author or work; canonical Pen;
   commerce Prisma leftovers. `DEC-091` revises `DEC-090` seed-identity clause.
 

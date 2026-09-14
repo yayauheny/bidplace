@@ -1901,6 +1901,39 @@ Does not reopen Opening ownership (`vex` curator, Dali / `pixelp`) or
 Figma confirms an isolated `pixelp` portrait or a vex-owned work card, or the
 process photo/text story builder leaves the post-MVP backlog.
 
+## DEC-093 — Phone gallery hides arrows; History and achievements reuse media
+
+Date: 2026-09-15
+Status: Confirmed
+Source: explicit founder instruction on `feature/portfolio-mvp-release`
+Revises: `DEC-092` History-rendering clause only. Does not reopen Opening
+ownership, demo-copy quality, or the post-MVP process builder (`05-MVP-RFC` §15).
+Does not rewrite `05-MVP-RFC.md`.
+
+### Decision
+
+- Phone-width Work gallery keeps prev/next in `WorkGallery` but does not
+  render them when layout width ≤ `layout.phoneWidth`. Swipe/drag paging,
+  pagination dots and share stay. Wider galleries may show arrows.
+- Authoring of Work `История` remains one plain-text `story` field. Public
+  rendering may interleave published non-cover `ProductImage` rows between
+  story paragraphs. This is not `ProductCreationStep` and not a CMS.
+- Achievement cards use existing `SellerProfileRevisionAchievement` image
+  fields. Figma has no isolated exhibition-install photographs; seed may
+  attach a same-event Figma fill or same-work **detail** crop, never the
+  product cover and never one raster reused across authors.
+
+### Why
+
+Phone UI was duplicating swipe with overlay arrows. About cards were
+text-only grey blocks while Figma shows date → photo → description.
+History was a text wall despite existing gallery extras.
+
+### Revisit when
+
+Figma supplies isolated exhibition-install photos, a second same-work Dali
+History fill, or the process-builder leaves the post-MVP backlog.
+
 ## DEC-088 — MVP dock is one four-item glass capsule
 
 Date: 2026-09-11

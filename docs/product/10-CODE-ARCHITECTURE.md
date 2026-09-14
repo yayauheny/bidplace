@@ -104,6 +104,9 @@ SellerProfile
   transaction that locks the Product row, including repeated/concurrent uploads. Condition is not
   mandatory for creator-made Product; the current optional field is preserved
   until a future item-class decision requires migration;
+- public Work `История` authors as one `story` text field. The public tab
+  interleaves published non-cover `ProductImage` rows between paragraphs.
+  `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
 - buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance. OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin

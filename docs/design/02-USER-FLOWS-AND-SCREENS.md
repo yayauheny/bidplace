@@ -99,7 +99,8 @@ is URL-owned; Author About is local state and is not a `?tab=` contract.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 
-- `История` только если заполнен plain text;
+- `История` только если заполнен plain text; public rendering may interleave
+  same-work gallery extras between paragraphs (`DEC-093`);
 - `Детали` всегда.
 
 `Оплата и доставка` показывается как v1 stub без цены и CTA ставки. `Ставки`

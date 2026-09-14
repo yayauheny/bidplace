@@ -4,6 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Phone gallery arrows, achievement photos, History media
+
+- `Implemented` (mobile web): Work gallery prev/next stay in `WorkGallery`
+  but are hidden at phone width (390). Swipe, dots and share remain.
+- `Implemented`: Author About achievement cards render date → image →
+  description when seed supplies image bytes. Grey text-only fallback remains
+  for authors without photos.
+- `Implemented`: Work `История` renders story paragraphs interleaved with
+  non-cover gallery images. Not a process-builder UI.
+- `Verified` at 390 on the live stand after reseed (this slice).
+- `Unchanged`: Opening typography, Home pixel pass, Active auctions / New
+  works, canonical Pen, new visual goldens.
+
 ## 2026-09-15 — Production-quality demo catalog copy
 
 - `Implemented` (data only): public profiles and works use production-quality

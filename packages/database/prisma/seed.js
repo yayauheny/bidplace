@@ -96,6 +96,17 @@ function readSeedProductImage(fileName) {
   };
 }
 
+function readSeedFixtureImage(relativePath) {
+  const data = readFileSync(join(__dirname, 'fixtures', relativePath));
+
+  return {
+    byteLength: data.byteLength,
+    checksum: createHash('sha256').update(data).digest('hex'),
+    data,
+    mimeType: 'image/png',
+  };
+}
+
 function readSeedSellerProfileImage(fileName) {
   const data = readFileSync(join(sellerProfileFixturesDirectory, fileName));
 
@@ -223,15 +234,42 @@ async function publishSellerProfile(profile, { achievements = [] } = {}) {
       achievements:
         achievements.length > 0
           ? {
-              create: achievements.map((achievement, position) => ({
-                position,
-                occurredAt: achievement.occurredAt,
-                body: achievement.body,
-              })),
+              create: achievements.map((achievement, position) => {
+                const image = achievement.imageRelativePath
+                  ? readSeedFixtureImage(achievement.imageRelativePath)
+                  : null;
+                return {
+                  position,
+                  occurredAt: achievement.occurredAt,
+                  body: achievement.body,
+                  ...(image
+                    ? {
+                        mimeType: image.mimeType,
+                        byteLength: image.byteLength,
+                        checksum: image.checksum,
+                        data: image.data,
+                      }
+                    : {}),
+                };
+              }),
             }
           : undefined,
     },
   });
+
+  const imagedAchievements =
+    await prisma.sellerProfileRevisionAchievement.findMany({
+      where: { revisionId: revision.id, data: { not: null } },
+      select: { id: true },
+    });
+  await Promise.all(
+    imagedAchievements.map((achievement) =>
+      prisma.sellerProfileRevisionAchievement.update({
+        where: { id: achievement.id },
+        data: { objectKey: `seller-achievement:${achievement.id}` },
+      }),
+    ),
+  );
 
   await prisma.sellerProfile.update({
     where: { id: profile.id },
@@ -467,10 +505,16 @@ async function main() {
       {
         occurredAt: new Date('2026-04-01T00:00:00.000Z'),
         body: '«Алиса в Зазеркалье»\nРабота представлена на групповой выставке, посвящённой современным интерпретациям сюрреализма и теме изменённого восприятия пространства.',
+        // Same-work detail crop of unused Figma search-grid fill, not the cover.
+        // Figma has no isolated exhibition-install photograph for this event.
+        imageRelativePath: 'product-images/alice-glass-detail.png',
       },
       {
         occurredAt: new Date('2025-09-01T00:00:00.000Z'),
         body: '«Между сном и формой»\nПерсональная серия работ была показана в Минске. В экспозицию вошли живописные и графические произведения последних двух лет.',
+        // Same-work 3:4 crop of the Figma search-grid fill, not the cover.
+        // No separate exhibition photograph exists in the Figma file.
+        imageRelativePath: 'product-images/between-form-detail.png',
       },
     ],
   });
@@ -483,6 +527,9 @@ async function main() {
         {
           occurredAt: new Date('2025-11-01T00:00:00.000Z'),
           body: '«После классики»\nГрупповая выставка в Минске, где Павел показал живопись, собранную вокруг узнаваемых мотивов и современного цвета.',
+          // Figma History raw fill 437:3989 (Spectre / crutches Dali), not
+          // Opening cover dali-estate.png. Thematically “after classics”.
+          imageRelativePath: 'seller-achievements/pixelp-after-classics.png',
         },
       ],
     }),
@@ -633,6 +680,7 @@ async function main() {
     city: 'Минск',
     publishedAt: new Date('2026-08-16T12:00:00.000Z'),
     imageFileName: 'between-form.png',
+    detailFileName: 'between-form-detail.png',
   });
 
   await createProductWithCover({
