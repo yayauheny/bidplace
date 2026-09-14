@@ -38,25 +38,34 @@ export function AuthorApplicationAchievements({
         { body: body.trim() },
         imageBlob ?? undefined,
       ),
-    onSuccess: () => {
+    onSuccess: async () => {
       setBody('');
       setImageBlob(null);
       setImageLabel(null);
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['seller', 'application'] }),
+        queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
+      ]);
     },
   });
 
   const deleteAchievement = useMutation({
     mutationFn: (id: string) => api.portfolio.deleteAuthorAchievement(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['seller', 'application'] }),
+        queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
+      ]);
     },
   });
 
+  const achievementsBusy =
+    addAchievement.isPending ||
+    deleteAchievement.isPending ||
+    application.isFetching;
+
   const chooseImage = async () => {
-    if (!editable) return;
+    if (!editable || achievementsBusy) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: false,
@@ -112,11 +121,15 @@ export function AuthorApplicationAchievements({
             <SecondaryButton
               label="Удалить"
               width="block"
+              disabled={achievementsBusy}
               loading={
                 deleteAchievement.isPending &&
                 deleteAchievement.variables === item.id
               }
-              onPress={() => deleteAchievement.mutate(item.id)}
+              onPress={() => {
+                if (achievementsBusy) return;
+                deleteAchievement.mutate(item.id);
+              }}
             />
           ) : null}
         </View>
@@ -131,14 +144,19 @@ export function AuthorApplicationAchievements({
             multiline
           />
           <SecondaryButton
-            label={imageLabel ? `Фото: ${imageLabel}` : 'Добавить фото (необязательно)'}
+            label={
+              imageLabel
+                ? `Фото: ${imageLabel}`
+                : 'Добавить фото (необязательно)'
+            }
             width="block"
+            disabled={achievementsBusy}
             onPress={() => void chooseImage()}
           />
           <SecondaryButton
             label="Сохранить достижение"
             width="block"
-            disabled={!body.trim() || addAchievement.isPending}
+            disabled={!body.trim() || achievementsBusy}
             loading={addAchievement.isPending}
             onPress={() => addAchievement.mutate()}
           />

@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { OverlayHost } from './OverlayHost';
+import { SessionAlert } from './SessionAlert';
 import { FloatingDock } from '../figma/FloatingDock';
-import { AppText, SecondaryButton } from '../ui';
 import { useAuth } from '../../providers/auth-provider';
 
 export function AppShell({
@@ -48,32 +48,10 @@ export function AppShell({
             overflow: 'visible',
           }}
         >
-          {sessionAlertVisible ? (
-            <View
-              accessibilityRole="alert"
-              style={{
-                minHeight: designTokens.size.touch,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-                gap: designTokens.space.x3,
-                paddingHorizontal: designTokens.space.pageGutter,
-                paddingVertical: designTokens.space.x2,
-                backgroundColor: designTokens.color.surface,
-                borderBottomWidth: 1,
-                borderBottomColor: designTokens.color.border,
-              }}
-            >
-              <AppText role="bodySmall" tone="danger">
-                Не удалось проверить сессию
-              </AppText>
-              <SecondaryButton
-                label="Повторить проверку сессии"
-                onPress={() => void auth.refreshSession()}
-              />
-            </View>
-          ) : null}
+          <SessionAlert
+            visible={sessionAlertVisible}
+            onRetry={() => void auth.refreshSession()}
+          />
           {children}
           {bottomAction ? (
             <View

@@ -2,24 +2,26 @@
 
 ## 2026-09-14 — Mobile-web correction
 
-- `Implemented` (mobile web only): public AppShell shows a compact
-  `accessibilityRole="alert"` with «Не удалось проверить сессию» and
-  «Повторить проверку сессии». Home catalog stays available when only `/api/auth/me`
-  fails. The Home API retry stays labelled «Повторить». Protected `/profile`
-  keeps PageState «Не удалось проверить доступ» without a second session banner.
-  Coverage: `figma-error-state.spec.ts`.
-- `Implemented` (mobile web only): approved-author add/delete of achievements
-  uses the PR A `ensureEditableEditingRevision` fork, invalidates both
-  `['seller', 'application']` and `['seller', 'profile']` so «Отправить на проверку»
-  appears without a dummy profile save, and e2e covers
-  APPROVED → add/delete → public unchanged → submit → approve → public updated.
+- `Implemented` (mobile web only): public AppShell shows an in-flow
+  `SessionAlert.web.tsx` with `role="alert"`, «Не удалось проверить сессию» and
+  «Повторить проверку сессии». Native SessionAlert is null. Home catalog stays
+  available when only `/api/auth/me` fails. The Home API retry stays labelled
+  «Повторить». Protected `/profile` keeps PageState «Не удалось проверить доступ»
+  without a second session banner. Coverage: `figma-error-state.spec.ts`.
+- `Implemented` (mobile web only): approved-author first mutation DELETE of a
+  published achievement id forks a DRAFT via PR A exact id map, then POST adds
+  to that draft. Public stays unchanged until submit → approve. Add/delete await
+  query invalidation and disable further writes until refetch.
   Coverage: `author-achievement-revision.spec.ts`.
 - `Implemented`: maintained Playwright `test:e2e` runs Chromium and WebKit.
   `test:e2e:stabilization` stays the 38 visual Chromium+WebKit suite.
-- `Implemented` (compile-only, no UI redesign): mobile typecheck accepts RN-web
-  `visibility` on `ViewStyle` used by `CreatorHero` compact fades. Runtime markup
-  is unchanged. `FigmaImagePlaceholder` no longer forwards `accessible={true}` to
-  the DOM, which React 19 rejected and which blocked profile photo file pickers.
+- `Implemented` (compile-only, mobile web): CreatorHero compact fades pass CSS
+  `visibility` through a web-only helper. React Native `ViewStyle` is not
+  globally augmented. `SessionAlert.web.tsx` renders an in-flow `role="alert"`
+  with «Повторить проверку сессии»; native SessionAlert is null.
+- `Implemented` (mobile web only): achievement add/delete await application and
+  profile query invalidation and disable further add/delete until refetch, so a
+  stale published id cannot be sent after a prior mutation.
 - `Partial`: first-application optional achievements remain the founder decision
   in [`14-OPEN-MVP-DECISIONS.md`](14-OPEN-MVP-DECISIONS.md).
 - `Unchanged`: 232×64 dock, Home/Works/Authors/Search/ShareSheet/cards/frost
@@ -112,12 +114,12 @@
   `test:e2e:stabilization` is the 38 visual Chromium+WebKit suite;
   `media-resilience.spec.ts` is restored without the obsolete header/login
   assertion. Protected `/profile` keeps PageState «Не удалось проверить доступ»
-  + «Повторить». Public Home session alert/retry is the later mobile-web
-  correction, not this preservation commit. Coverage:
-  `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
-  `floating-dock.spec.ts`, `author-application-publication.spec.ts`,
-  `author-revision-flow.spec.ts`, `media-resilience.spec.ts`,
-  `figma-error-state.spec.ts`.
+  - «Повторить». Public Home session alert/retry is the later mobile-web
+    correction, not this preservation commit. Coverage:
+    `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
+    `floating-dock.spec.ts`, `author-application-publication.spec.ts`,
+    `author-revision-flow.spec.ts`, `media-resilience.spec.ts`,
+    `figma-error-state.spec.ts`.
 - `Unchanged`: 232×64 dock, author header motion, Home `curatorSelection`,
   ShareSheet, Works/Authors/Search URL state, cover frost, FigmaTabs
   typography. Commerce archive `19eb40e` is not modified.

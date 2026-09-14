@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-14 — Mobile-web correction
+
+- `Implemented` (mobile web only): public session retry is an in-flow
+  `role="alert"` in AppShell, not a fullscreen overlay. Compact author-header
+  `visibility` stays CSS layout-preserving on web via a platform helper.
+- `Unchanged`: 232×64 dock, Home, discovery/search/filters, ShareSheet,
+  cards/frost, CreatorHeader.web motion. OverlayHost, dialogs and image pickers
+  were not rewritten for the session banner.
+- `Not claimed`: Founder Accepted, launch-ready, desktop/tablet/native UI.
+
 ## 2026-09-14 — Mobile-web preservation (mobile web only)
 
 - `Implemented`: city + revision application, achievement images in About,
@@ -221,7 +231,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   The review intentionally omits private transfer fields; exact Pen comparison
   and device/accessibility acceptance remain pending.
 - `Partial`: canonical Pen now includes design-only board `JOjIY` (`FINAL —
-  Creator Profile Creation Flow`) with 20 desktop, 9 mobile and 3 tablet states,
+Creator Profile Creation Flow`) with 20 desktop, 9 mobile and 3 tablet states,
   canonical Creator Profile previews, slug and avatar interaction matrices,
   public/private transfer separation and moderation outcomes. Persistent wizard
   previews no longer embed CreatorCard. At ≤767px one reusable compact
@@ -241,12 +251,12 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
   to their own modal/board coordinate systems.
 - `Verified`: all 16 Product Creation and 19 two-column Creator Profile Creation
   desktop states now share centered `WorkspaceLayout` geometry (`1088 = 600 +
-  48 + 440`, x=176, top=56). Forms, review, loading, errors, success and
+48 + 440`, x=176, top=56). Forms, review, loading, errors, success and
   moderation outcomes keep identical column positions. Three tablet states use
   the centered `928 = 500 + 32 + 396` workspace; nine mobile states remain
   single-column with the approved compact header and collapsible preview.
 - `Partial`: canonical Pen now includes design-only board `NRlEW` (`FINAL —
-  Admin Moderation Workspace`) with exactly two moderation domains: Authors and
+Admin Moderation Workspace`) with exactly two moderation domains: Authors and
   Works. It contains 23 required desktop, 14 mobile and 4 tablet states, wide
   queue rows without inline decisions, canonical public previews, separated
   private transfer data, centered `800 + 40 + 360` review workspaces, decision
@@ -258,30 +268,30 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 
 ## Screen matrix
 
-| Target           | Pen      | Visual spec       | Data/route                            | Code        | Acceptance             |
-| ---------------- | -------- | ----------------- | ------------------------------------- | ----------- | ---------------------- |
-| Global Header    | `L9UV9` + `h757v` | measured desktop/tablet and mobile masters | role logic, mobile states and overlays exist | partial | pending visual QA/device QA |
-| Home             | `BJd1P`  | exported/readable | `/api/discovery/home`                 | partial     | pending responsive QA  |
-| Browse Works     | `H5vf2`  | exported/readable | server query + controls               | partial     | pending responsive QA  |
-| Browse Authors   | `N4ebBk` | exported/readable | approved author list API + discipline | partial     | pending visual QA      |
-| Product About    | `L7ytbv` | exported/readable | compatible contract                   | implemented | verified               |
-| Product Creation | `cK8kD`  | exported/readable | existing fields only                  | implemented | verified               |
-| Product Bids     | `XIzHe`  | exported/readable | compatible core fields                | implemented | verified               |
-| Creator Profile  | `MqUMz`  | exported/readable | current public links                  | partial     | pending visual/data QA |
-| Profile Creation | `JOjIY`  | responsive staged flow | public identity/links + private handoff | partial | pending visual/device QA |
-| Admin Moderation | `NRlEW`  | responsive queue/review states | Authors/Works admin contracts | partial | pending visual/device QA |
+| Target           | Pen               | Visual spec                                | Data/route                                   | Code        | Acceptance                  |
+| ---------------- | ----------------- | ------------------------------------------ | -------------------------------------------- | ----------- | --------------------------- |
+| Global Header    | `L9UV9` + `h757v` | measured desktop/tablet and mobile masters | role logic, mobile states and overlays exist | partial     | pending visual QA/device QA |
+| Home             | `BJd1P`           | exported/readable                          | `/api/discovery/home`                        | partial     | pending responsive QA       |
+| Browse Works     | `H5vf2`           | exported/readable                          | server query + controls                      | partial     | pending responsive QA       |
+| Browse Authors   | `N4ebBk`          | exported/readable                          | approved author list API + discipline        | partial     | pending visual QA           |
+| Product About    | `L7ytbv`          | exported/readable                          | compatible contract                          | implemented | verified                    |
+| Product Creation | `cK8kD`           | exported/readable                          | existing fields only                         | implemented | verified                    |
+| Product Bids     | `XIzHe`           | exported/readable                          | compatible core fields                       | implemented | verified                    |
+| Creator Profile  | `MqUMz`           | exported/readable                          | current public links                         | partial     | pending visual/data QA      |
+| Profile Creation | `JOjIY`           | responsive staged flow                     | public identity/links + private handoff      | partial     | pending visual/device QA    |
+| Admin Moderation | `NRlEW`           | responsive queue/review states             | Authors/Works admin contracts                | partial     | pending visual/device QA    |
 
 ## Shared component matrix
 
-| Component     | Pen      | Runtime status                                                                  |
-| ------------- | -------- | ------------------------------------------------------------------------------- |
-| GlobalHeader  | `L9UV9`  | implemented horizontal responsive header                                        |
-| AuctionCard   | `k5vYGf` | implemented shared card with media hover and responsive grid                    |
-| CreatorCard   | `SrXPq`  | reusable production component uses public discipline; visual acceptance remains |
-| AuctionPlayer | `X6Ksg`  | implemented controlled transaction component                                    |
-| FilterMenu    | shared discovery controls | implemented shared sort/facet control in `components/layout` |
-| ProductTabs   | `Jh9jr`  | implemented keyboard tabs with deep-link/back history                           |
-| AmbientImageBackground | shared atmosphere | one shell-level image-derived background for Product and Creator; runtime verified |
+| Component              | Pen                       | Runtime status                                                                     |
+| ---------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
+| GlobalHeader           | `L9UV9`                   | implemented horizontal responsive header                                           |
+| AuctionCard            | `k5vYGf`                  | implemented shared card with media hover and responsive grid                       |
+| CreatorCard            | `SrXPq`                   | reusable production component uses public discipline; visual acceptance remains    |
+| AuctionPlayer          | `X6Ksg`                   | implemented controlled transaction component                                       |
+| FilterMenu             | shared discovery controls | implemented shared sort/facet control in `components/layout`                       |
+| ProductTabs            | `Jh9jr`                   | implemented keyboard tabs with deep-link/back history                              |
+| AmbientImageBackground | shared atmosphere         | one shell-level image-derived background for Product and Creator; runtime verified |
 
 ## Legacy production state
 

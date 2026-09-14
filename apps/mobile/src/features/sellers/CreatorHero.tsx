@@ -8,6 +8,7 @@ import { FigmaChip } from '../../components/figma/FigmaChip';
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { getApiAssetUrl } from '../../lib/environment';
 import { CreatorSocialActions } from './CreatorSocialActions';
+import { webVisibilityStyle } from './web-visibility-style';
 export type CreatorHeroProps = {
   profile: PortfolioWorkDetailResponse['author'];
   actions: ReactNode;
@@ -56,7 +57,7 @@ export function CreatorHero({
           aria-hidden={compact}
           testID="creator-fade-logo"
           style={{
-            visibility: compact ? 'hidden' : 'visible',
+            ...webVisibilityStyle(compact ? 'hidden' : 'visible'),
             marginBottom:
               designTokens.space.logoGap - designTokens.space.authorSectionGap,
           }}
@@ -125,7 +126,7 @@ export function CreatorHero({
               aria-hidden={compact}
               testID="creator-fade-meta"
               style={{
-                visibility: compact ? 'hidden' : 'visible',
+                ...webVisibilityStyle(compact ? 'hidden' : 'visible'),
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: designTokens.space.x2,
@@ -155,7 +156,7 @@ export function CreatorHero({
             aria-hidden={compact}
             testID="creator-fade-tags"
             style={{
-              visibility: compact ? 'hidden' : 'visible',
+              ...webVisibilityStyle(compact ? 'hidden' : 'visible'),
               flexDirection: 'row',
               flexWrap: 'wrap',
               justifyContent: 'center',
