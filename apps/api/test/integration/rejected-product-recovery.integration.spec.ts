@@ -223,16 +223,15 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
     expect(await prisma.product.count()).toBe(productCountBefore);
     expect(await prisma.listing.count()).toBe(listingCountBefore);
 
-    const startsAt = new Date(Date.now() + 3_600_000);
     expect(
       (
         await clients.approved.post(`/products/${rejected.id}/listings`, {
-          startsAt: startsAt.toISOString(),
-          endsAt: new Date(startsAt.getTime() + 3_600_000).toISOString(),
+          startsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          endsAt: new Date(Date.now() + 7_200_000).toISOString(),
           startPrice: 10,
         })
       ).status,
-    ).toBe(409);
+    ).toBe(404);
 
     const submitResponse = await clients.approved.post(
       `/products/${rejected.id}/submit`,

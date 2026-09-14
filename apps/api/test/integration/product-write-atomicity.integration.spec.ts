@@ -7,7 +7,6 @@ import { PostgresImageStore } from '../../src/core/image-store';
 import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { ImagesService } from '../../src/images/images.service';
-import { ListingsService } from '../../src/listings/listings.service';
 import { ProductsService } from '../../src/products/products.service';
 import {
   createIntegrationDatabaseContext,
@@ -189,7 +188,6 @@ function createServices() {
   return {
     products: new ProductsService(prisma as never, new PublicIdService()),
     images: new ImagesService(prisma as never, imageStore),
-    listings: new ListingsService(prisma as never),
     admin: new AdminModerationService(prisma as never),
   };
 }
@@ -553,107 +551,5 @@ describe('Product write atomicity against PostgreSQL', () => {
     expect(remaining.some((row) => row.id === product.images[0]!.id)).toBe(
       true,
     );
-  });
-
-  it('keeps ListingsService schedule from winning after the Product leaves APPROVED under the row lock', async () => {
-    const { owner, product } = await createSubmitReadyProduct('APPROVED');
-    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
-    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const listing = await prisma.listing.create({
-      data: {
-        productId: product.id,
-        startsAt,
-        originalEndsAt: endsAt,
-        endsAt,
-        currentPrice: new Prisma.Decimal(10),
-        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
-      },
-    });
-    const { listings } = createServices();
-    const { release, finished } = await holdProductAndMutate(
-      product.id,
-      async (tx) => {
-        await tx.product.update({
-          where: { id: product.id },
-          data: { status: 'CHANGES_REQUESTED' },
-        });
-      },
-    );
-
-    const schedulePromise = listings.transition(
-      owner.id,
-      listing.id,
-      'SCHEDULE',
-    );
-    await waitThenRelease(release);
-
-    await expect(schedulePromise).rejects.toThrow('Product must be approved');
-    await finished;
-
-    expect(
-      (
-        await prisma.listing.findUniqueOrThrow({
-          where: { id: listing.id },
-          select: { status: true },
-        })
-      ).status,
-    ).toBe('DRAFT');
-  });
-
-  it('serializes listing schedule against admin changes-requested on the Product row', async () => {
-    const { owner, product } = await createSubmitReadyProduct();
-    await prisma.product.update({
-      where: { id: product.id },
-      data: { status: 'APPROVED' },
-    });
-    const admin = await prisma.user.create({
-      data: {
-        email: `admin.${randomUUID().replace(/-/g, '').slice(0, 8)}@write-race.test`,
-        passwordHash: 'test',
-        displayName: 'Admin',
-        role: 'admin',
-      },
-    });
-    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
-    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const listing = await prisma.listing.create({
-      data: {
-        productId: product.id,
-        startsAt,
-        originalEndsAt: endsAt,
-        endsAt,
-        currentPrice: new Prisma.Decimal(10),
-        auctionRules: { create: { startPrice: new Prisma.Decimal(10) } },
-      },
-    });
-    const { listings, admin: adminModeration } = createServices();
-
-    const results = await Promise.allSettled([
-      listings.transition(owner.id, listing.id, 'SCHEDULE'),
-      adminModeration.updateProductStatus(admin.id, product.id, {
-        status: 'CHANGES_REQUESTED',
-        reason: 'Need edits',
-      }),
-    ]);
-
-    const persisted = await prisma.product.findUniqueOrThrow({
-      where: { id: product.id },
-      select: {
-        status: true,
-        listings: { select: { id: true, status: true } },
-      },
-    });
-    const scheduled = persisted.listings.filter(
-      (row) => row.status === 'SCHEDULED' || row.status === 'LIVE',
-    );
-
-    if (persisted.status === 'APPROVED') {
-      expect(results[0]?.status).toBe('fulfilled');
-      expect(scheduled).toHaveLength(1);
-    } else {
-      expect(persisted.status).toBe('CHANGES_REQUESTED');
-      expect(scheduled).toHaveLength(0);
-      expect(results[0]?.status).toBe('rejected');
-    }
   });
 });

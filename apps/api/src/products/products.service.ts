@@ -1,11 +1,8 @@
 import {
   creationStoryResponseSchema,
   type CreationStoryWriteRequest,
-  publicProductDetailResponseSchema,
-  productListResponseSchema,
   type PortfolioWorksQuery,
   type ProductStatus,
-  type PublicDiscoveryQuery,
   type ProductWriteRequest,
   type SellerStatus,
 } from '@bidplace/contracts';
@@ -21,10 +18,7 @@ import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
   portfolioCatalogProductSelect,
-  productImageMetadataSelect,
   productSelect,
-  publicCatalogProductSelect,
-  toContractProduct,
   toCreationStepContract,
   toImageContracts,
   toProductResponse,
@@ -34,8 +28,6 @@ import {
 import {
   portfolioCatalogCte,
   portfolioCatalogOrderBy,
-  publicCatalogCte,
-  publicCatalogOrderBy,
   type PublicCatalogPageRow,
   type PublicWorkFacetRow,
 } from './products-catalog.query';
@@ -48,14 +40,10 @@ import {
 } from './product-write-guard';
 import {
   portfolioDirectProductWhere,
-  publicDirectProductWhere,
 } from './public-visibility';
 import { assertProductRevisionTransition } from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
-import {
-  publicSellerProfileSelect,
-  toPublicSellerProfile,
-} from '../sellers/seller-profile.mapper';
+import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
 
 @Injectable()
 export class ProductsService {
@@ -637,173 +625,6 @@ export class ProductsService {
     });
   }
 
-  async getPublic(publicId: string) {
-    const product = await this.prisma.product.findFirst({
-      where: {
-        publicId,
-        ...publicDirectProductWhere,
-      },
-      include: {
-        sellerProfile: {
-          select: publicSellerProfileSelect,
-        },
-        images: {
-          orderBy: { position: 'asc' },
-          select: productImageMetadataSelect,
-        },
-        creationSteps: {
-          orderBy: { position: 'asc' },
-          select: {
-            id: true,
-            position: true,
-            title: true,
-            body: true,
-            mimeType: true,
-            byteLength: true,
-            checksum: true,
-            width: true,
-            height: true,
-          },
-        },
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    const projection = this.toPublicProduct(product);
-    return publicProductDetailResponseSchema.parse({
-      ...projection,
-      creationIntro: product.creationIntro ?? null,
-      creationSteps: product.creationSteps.map((step) => ({
-        id: step.id,
-        position: step.position,
-        title: step.title,
-        body: step.body,
-        image:
-          step.mimeType && step.byteLength && step.checksum
-            ? {
-                url: `/api/creation-steps/${step.id}/image`,
-                mimeType: step.mimeType,
-                byteLength: step.byteLength,
-                checksum: step.checksum,
-                width: step.width,
-                height: step.height,
-              }
-            : null,
-      })),
-      minimumNextBid: null,
-    });
-  }
-
-  async listPublic(query: PublicDiscoveryQuery) {
-    const cte = publicCatalogCte(query);
-    const pageRows = await this.prisma.$queryRaw<PublicCatalogPageRow[]>(
-      Prisma.sql`${cte}
-        SELECT "id", COUNT(*) OVER()::int AS "total"
-        FROM filtered p
-        ORDER BY ${Prisma.raw(publicCatalogOrderBy(query.sort))}
-        LIMIT ${query.limit}
-        OFFSET ${(query.page - 1) * query.limit}`,
-    );
-
-    const total = pageRows.length
-      ? Number(pageRows[0]!.total)
-      : Number(
-          (
-            await this.prisma.$queryRaw<Array<{ total: number | bigint }>>(
-              Prisma.sql`${cte}
-                SELECT COUNT(*)::int AS "total"
-                FROM filtered`,
-            )
-          )[0]?.total ?? 0,
-        );
-
-    if (!pageRows.length) {
-      return productListResponseSchema.parse({
-        products: [],
-        pagination: { page: query.page, limit: query.limit, total },
-        facets: await this.discoveryFacets(query),
-      });
-    }
-
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: pageRows.map((row) => row.id) } },
-      select: publicCatalogProductSelect,
-    });
-    const productsById = new Map(
-      products.map((product) => [product.id, product]),
-    );
-    const pagedProducts = pageRows
-      .map((row) => productsById.get(row.id))
-      .filter(
-        (product): product is (typeof products)[number] =>
-          product !== undefined,
-      );
-
-    return productListResponseSchema.parse({
-      products: pagedProducts.map((product) => this.toPublicProduct(product)),
-      pagination: { page: query.page, limit: query.limit, total },
-      facets: await this.discoveryFacets(query),
-    });
-  }
-
-  private async discoveryFacets(query: PublicDiscoveryQuery) {
-    const facetQuery = { ...query, status: undefined };
-    const cte = publicCatalogCte(facetQuery);
-    const [categoryRows, authorRows, materialRows, uniquenessRows] =
-      await Promise.all([
-        this.prisma.$queryRaw<
-          Array<{ id: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT c."id", c."name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "categories" c ON c."id" = f."category_id"
-          GROUP BY c."id", c."name"
-          ORDER BY c."name" ASC`,
-        ),
-        this.prisma.$queryRaw<
-          Array<{ slug: string; name: string; count: number | bigint }>
-        >(
-          Prisma.sql`${cte}
-          SELECT sp."slug", sp."full_name" AS "name", COUNT(*)::int AS "count"
-          FROM filtered f
-          INNER JOIN "seller_profiles" sp ON sp."id" = f."seller_profile_id"
-          GROUP BY sp."slug", sp."full_name"
-          ORDER BY sp."full_name" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ materials: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."materials"
-          FROM filtered f
-          WHERE f."materials" IS NOT NULL
-          ORDER BY f."materials" ASC`,
-        ),
-        this.prisma.$queryRaw<Array<{ uniqueness: string }>>(
-          Prisma.sql`${cte}
-          SELECT DISTINCT f."uniqueness"
-          FROM filtered f
-          WHERE f."uniqueness" IS NOT NULL
-          ORDER BY f."uniqueness" ASC`,
-        ),
-      ]);
-    return {
-      statusCounts: { SCHEDULED: 0, LIVE: 0, ENDED: 0 },
-      categories: categoryRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      authors: authorRows.map((row) => ({
-        ...row,
-        count: Number(row.count),
-      })),
-      materials: materialRows.map((row) => row.materials),
-      uniquenesses: uniquenessRows.map((row) => row.uniqueness),
-    };
-  }
-
   async getPortfolio(publicId: string) {
     const product = await this.prisma.product.findFirst({
       where: {
@@ -930,70 +751,6 @@ export class ProductsService {
         publishedAt: product.publishedAt.toISOString(),
       },
       sellerProfile: toPublicSellerProfile(product.sellerProfile),
-    };
-  }
-
-  toPublicProduct(
-    product: Awaited<ReturnType<PrismaService['product']['findFirst']>> &
-      object,
-  ) {
-    const record = product as typeof product & {
-      sellerProfile: {
-        id: string;
-        slug: string;
-        sellerType: 'creator' | 'influencer';
-        discipline: string;
-        fullName: string;
-        country: string;
-        city: string | null;
-        practice: string | null;
-        socialLink: string | null;
-        telegramUrl: string | null;
-        instagramUrl: string | null;
-        websiteUrl: string | null;
-        shortDescription: string;
-      };
-      images: Array<{
-        id: string;
-        position: number;
-        mimeType: string;
-        byteLength: number;
-        checksum: string;
-        width: number | null;
-        height: number | null;
-      }>;
-    };
-    const publicProduct = toContractProduct({
-      id: record.id,
-      publicId: record.publicId,
-      sellerProfileId: record.sellerProfileId,
-      categoryId: record.categoryId,
-      title: record.title,
-      story: record.story,
-      technique: record.technique,
-      materials: record.materials,
-      dimensions: record.dimensions,
-      weight: record.weight,
-      year: record.year,
-      condition: record.condition,
-      uniqueness: record.uniqueness,
-      provenance: record.provenance,
-      city: record.city,
-      packaging: record.packaging,
-      deliveryInfo: record.deliveryInfo,
-      publishedAt: record.publishedAt,
-      status: record.status,
-      editingRevisionId: record.editingRevisionId,
-      publishedRevisionId: record.publishedRevisionId,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      images: record.images,
-    });
-
-    return {
-      product: publicProduct,
-      sellerProfile: toPublicSellerProfile(record.sellerProfile),
-      listing: null,
     };
   }
 }

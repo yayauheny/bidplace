@@ -1,17 +1,7 @@
 import { z } from 'zod';
 
-import { paginationMetaSchema, paginationQuerySchema } from './pagination';
-import { publicProductListItemSchema } from './public-product';
+import { paginationMetaSchema } from './pagination';
 import { publicSellerProfileSchema } from './seller-profile';
-
-const publicSellerWorkStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'ENDED']);
-const publicSellerWorkSortSchema = z.enum([
-  'activity',
-  'newest',
-  'oldest',
-  'priceAsc',
-  'priceDesc',
-]);
 
 export const publicSellerListItemSchema = z
   .object({
@@ -27,33 +17,4 @@ export const publicSellerListResponseSchema = z
   })
   .strict();
 
-export const publicSellerDetailResponseSchema = z
-  .object({
-    sellerProfile: publicSellerProfileSchema,
-    products: z.array(publicProductListItemSchema),
-    statusCounts: z
-      .object({
-        SCHEDULED: z.number().int().nonnegative(),
-        LIVE: z.number().int().nonnegative(),
-        ENDED: z.number().int().nonnegative(),
-      })
-      .strict(),
-    pagination: paginationMetaSchema,
-  })
-  .strict();
-
-export const publicSellerWorksQuerySchema = paginationQuerySchema
-  .extend({
-    status: publicSellerWorkStatusSchema.optional(),
-    sort: publicSellerWorkSortSchema.default('activity'),
-  })
-  .strict();
-
-export type PublicSellerDetailResponse = z.infer<
-  typeof publicSellerDetailResponseSchema
->;
-
 export type PublicSellerListItem = z.infer<typeof publicSellerListItemSchema>;
-export type PublicSellerWorksQuery = z.infer<
-  typeof publicSellerWorksQuerySchema
->;

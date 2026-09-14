@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { categorySchema } from './category';
-import { listingSchema } from './listing';
 import { creationStepSchema, productSchema } from './product';
 
 export const categoryListResponseSchema = z
@@ -25,19 +24,10 @@ export const sellerProductDetailResponseSchema = z
   })
   .strict();
 
-export const sellerListingListResponseSchema = z
-  .object({
-    listings: z.array(listingSchema),
-  })
-  .strict();
-
 export type CategoryListResponse = z.infer<typeof categoryListResponseSchema>;
 export type SellerProductListResponse = z.infer<
   typeof sellerProductListResponseSchema
 >;
 export type SellerProductDetailResponse = z.infer<
   typeof sellerProductDetailResponseSchema
->;
-export type SellerListingListResponse = z.infer<
-  typeof sellerListingListResponseSchema
 >;

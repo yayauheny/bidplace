@@ -5,15 +5,10 @@
 
 ## Applications and shared boundaries
 
-- `apps/api` is the authoritative NestJS HTTP, scheduler and Socket.IO process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions.
-- First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating Bid/Order business facts. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`.
+- `apps/api` is the authoritative NestJS HTTP process. Controllers parse shared Zod contracts; services own business rules and Prisma transactions. Listing, Bid, Order, Discovery, Activity, lifecycle and Socket.IO application modules are not on the default boot graph.
+- First-party product analytics ingest lives in `apps/api/src/analytics` (`POST /api/analytics/events`) and persists `AnalyticsEvent` / `AcquisitionAttribution` without duplicating leftover Bid/Order tables. Admin aggregates are served by `GET /api/admin/analytics/overview` and rendered in Expo admin `/(admin)/analytics`. The overview covers users, authors, published works, acquisition and stuck moderation. Auction/bid/order marketplace metrics are not part of the active overview.
 - HTTP requests receive `X-Request-Id` (incoming or generated) for correlation in logs and error responses.
 - `apps/api/src/sellers` owns the authenticated seller detail boundary `GET /api/seller/products/:id`; it verifies product ownership before returning the shared detail contract, including persisted creation-story steps, process-photo metadata and the latest non-null product moderation reason. `apps/mobile/src/features/sellers/ProductDraftScreen` hydrates from this owner detail before initializing the editable wizard, including `REJECTED` recovery on the same Product.
-- `apps/api/src/core/commerce` owns the fail-closed commerce capability. Its typed
-  `COMMERCE_ENABLED` configuration defaults to `false`; commerce HTTP controllers,
-  commerce admin actions, lifecycle and Socket.IO consume the same boundary.
-  `apps/api/src/discovery` delegates to Product/Seller services and portfolio
-  discovery no longer requires a `Listing` to make an approved Work public.
 - `apps/api/src/portfolio` owns strict portfolio-only Home, Work, Author, facets and
   author application projections. Public Work/Author catalog reads use the published
   `ProductRevision` projection (`listPortfolio` / `getPortfolio`), not Listing
@@ -22,13 +17,15 @@
   public fields from `editingRevision` and expose `editingRevision` on the seller
   response; the published author projection stays on the approved revision until
   admin approve. Portfolio DTOs never expose commerce
-  fields. Listing, Bid, Order, Discovery, Activity and Socket.IO commerce modules
-  remain in the default API boot graph until a later removal PR.
-- `apps/mobile` is an Expo Router client. React Query holds server state; Socket.IO only signals a refetch of the canonical HTTP snapshot.
+  fields. Commerce application runtime is archived at
+  `feature/commerce-runtime-archive` (`19eb40e`); Prisma Listing/Bid/Order tables
+  remain as leftover safety data.
+- `apps/mobile` is an Expo Router client. React Query holds server state. There is
+  no Socket.IO client in the mobile runtime.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/
-  Creator grids reuse `AuctionCardGrid` rather than duplicating card anatomy.
+  Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
   metadata, ownership, checksum and deterministic object key; S3-compatible storage
@@ -45,7 +42,6 @@
 - `packages/contracts/src/seller-profile.ts` owns the reusable public-link and handoff-contact validation shapes consumed by both seller write contracts and the profile editor; client-side field feedback does not replace server validation. Public `socialLink`, `telegramUrl`, `instagramUrl` and `websiteUrl` use shared `httpsUrlSchema` and accept only `https:` URLs. Telegram/Instagram `@handle` forms stay on the separate handoff schemas.
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Bid/Order demo fixtures may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed still creates auction fixtures and one home `CuratorSelection` on a published public Work. `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
-- Realtime Socket.IO configuration is assembled once from validated bootstrap env and then injected through a custom adapter; gateway classes only define event handlers and state, not transport policy.
 
 ## Persistence model
 
@@ -105,50 +101,34 @@ SellerProfile
   mandatory for creator-made Product; the current optional field is preserved
   until a future item-class decision requires migration;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text before the first Bid; `auth.service.ts` stores the acceptance, `bid-eligibility.ts` requires both `emailVerifiedAt` and the current rules version; OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance. OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
+- leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
+  seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
+  Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,
+  no Socket.IO, no ScheduleModule lifecycle, and no `COMMERCE_ENABLED` gate.
+  Ops leftover inventory is `scripts/ops/commerce-inventory.mjs`. The removed
+  application code stays on `feature/commerce-runtime-archive` @ `19eb40e`.
 - password recovery lives in `apps/api/src/password-reset/`: forgot is neutral and never enumerates accounts; per-IP forgot limits run before user lookup and per-email limits after an active user is found; resend cooldown applies only to unused tokens; reset consumes a hashed single-use token, invalidates sibling tokens, updates `passwordHash` and increments `sessionVersion` atomically; `MailTransport` sends reset links; `core/email/smtp-transport.ts` builds Nodemailer options with single-address recipient guard; production requires `PASSWORD_RESET_URL_BASE` for reset links and local dev may fall back to `resolveCorsOrigin()`;
-- active Order handoff snapshots `sellerHandoffType`, `sellerHandoffValue`, `buyerEmailAtClose` and `handoffInitiator` at close. New Orders also freeze `snapshotTitle`, `snapshotCurrency` and `snapshotProductPublicId` from the Listing/Product inside the create transaction (`createWinnerOrder` and replacement). `listingId` and `finalAmount` are the Listing identity and price snapshot. `contactDueAt` is computed at create time by the shared 48-hour policy in `orders/order-contact-deadline.ts` for lifecycle close, admin recovery and replacement. Projections prefer frozen deal fields and fall back to live Product/Listing only for historical rows. Buyer, seller and admin receive role-scoped projections, seller actions and admin cancellation/replacement enforce actor role at the service boundary, terminal handoff transitions are not repeatable, and admin cancellation/replacement preserves the original record with append-only audit;
-- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts` and `admin-listing-emergency.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, session revoke, and emergency `SCHEDULED|LIVE → CANCELLED` without bid edits; `AuditTargetType.USER` records user incidents; mobile admin exposes Users and Recovery tabs wired to needs-order API;
-- Order audience is resolved from the Order relation itself: admin sees the full admin projection, the seller sees the seller projection when `order.sellerId === userId`, and the buyer sees the buyer projection when `order.buyerId === userId`. Cancelled Orders stay hidden from buyer and seller projections when historical contacts must remain private. `GET /api/orders` is the seller inbox: session `sellerId` only, `CANCELLED` excluded, page/limit bounded to 100, seller projection, frozen snapshot fields. Inbox and `GET /api/orders/:publicId` hydrate Order snapshot scalars plus `listing.currency` and `product.title`/`publicId`; they do not select `SellerProfile.profilePhotoData`. Bid placement, public Product GET, listing owner reads, winner-order create, admin replacement/recovery and product moderation load `SellerProfile` through `sellerProfileAuthSelect` / `sellerProfileHandoffSelect` (no `profilePhotoData`). Public Product images reuse `productImageMetadataSelect` and do not hydrate `ProductImage.data`. HTTP byte responses stay in the image-store photo/image GET paths. Admin seller approval still reads `profilePhotoData` to check `byteLength`.
-- Public Socket.IO is anonymous but fenced: handshake origins are allow-listed
-  from `CORS_ORIGIN`, public transports do not send credentials, joins reuse the
-  approved Product/SellerProfile Listing predicate, are rate-limited per IP,
-  public rooms are capped per socket, and socket-local room tracking is cleared
-  on disconnect.
-- Public discovery is split by contract: Product catalog queries use a
-  PostgreSQL canonical-listing CTE for server-side filters, status-aware sort,
-  total count and page selection before narrow Prisma hydration; Seller
-  directory queries expose only `q`, pagination and `activity`/`name` sort.
+- admin emergency controls live in `apps/api/src/admin/admin-user.service.ts`: exact email user lookup, reasoned ban/unban with `sessionVersion++` on ban, and session revoke. Listing emergency cancel, needs-order recovery and order replacement HTTP are not on the active boot graph.
 - Production SMTP transport must either use implicit TLS or STARTTLS with `requireTLS: true`. `SMTP_AUTH_MODE` explicitly selects `none` or `login`; login requires both `SMTP_USERNAME` and `SMTP_PASSWORD`, while none omits Nodemailer auth. Empty local relay credentials normalize to absent values and production configuration still fails closed for invalid partial auth.
 - automatic winner replacement and AI-assisted evidence assessment are outside MVP and have no approved future workflow.
 
 ## Integrity and privacy
 
-- Buyer Activity (`GET /api/me/activity`) is a server-owned exhaustive projection of the latest Bid per Listing plus that buyer's Order. `CONTACTED` and `HANDOFF_FAILED` are first-class activity statuses. Cancelled Orders omit `orderPublicId` so the client cannot open a buyer-forbidden Order; the public Product link remains.
-- Bid placement is server-time, serializable, idempotent by
-  `(bidderUserId, idempotencyKey)`, self-bid protected, email/rules verified and
-  compare-and-update guarded; admin accounts are explicitly denied by the Bids
-  service and have no buyer Activity projection. Public aliases hash
-  `(listingId, bidderUserId)`, remaining stable within one Listing without
-  correlating the user across Listings. Optimistic CAS conflicts retry up to
-  three times with full re-validation before returning `LISTING_CHANGED`.
 - HTTP errors use one response shape `{ status, code, message, details? }` from
   `ApiExceptionFilter`. Category codes (`bad_request`, `conflict`, …) remain the
-  default for plain Nest exceptions; bidding emits stable business codes such as
-  `BID_TOO_LOW` via `AppException`. Clients branch on `code`, not `message`.
+  default for plain Nest exceptions. Leftover listing/bid business codes remain in
+  the shared error enum. Clients branch on `code`, not `message`.
   Unexpected errors become `internal_error` without leaking internals.
-- The 60-second inclusive soft-close window, 60-second extension and 600-second cap live in `core/auction`; the resulting `endsAt` is committed with the Bid.
-- Scheduler activation/close is idempotent and closes from database state, choosing the winner by amount, timestamp and ID. Expired LIVE Listings always become `ENDED` in a committed transaction before winner Order creation; Order creation is a separate best-effort transaction (shared `createWinnerOrder` helper) and must not roll back the close. `SCHEDULED` Listings whose `endsAt` has passed become `CANCELLED` with append-only audit (`actorUserId` null, reason `EXPIRED_SCHEDULED_WINDOW`) and `listing.updated`; no Order and no silent +24h (`DEC-073`). Each 30s tick (`waitForCompletion: true`) loads at most `LIFECYCLE_TICK_BATCH_SIZE` (50) listings per activate/cancel/close `findMany`, with stable `orderBy` (`startsAt`/`id` for activate, `endsAt`/`id` for cancel and close); remainder waits for the next tick. Cron activate/cancel/close failures are isolated per Listing. Schedule/activation require seller handoff contact. Admin recovery for `ENDED` + Bids + no Order is list + idempotent create-order only (same Bid ranking as close); no new Listing statuses, queues, or outbox.
-- Public Product, Listing, Bid history, ProductImage and Socket.IO access share
+- Public Work/Author catalog, ProductImage and seller-photo access share
   approved Product/SellerProfile gates and contain no buyer contacts or seller
-  internal identifiers. Order projections stay role-scoped: buyer sees the
-  seller snapshot only when the handoff initiator is `BUYER_CONTACTS_SELLER`,
-  seller sees the buyer email snapshot, and admin sees the allowed full record.
-- Buyer-facing Order privacy mode can hide seller contacts entirely when the seller chooses `SELLER_CONTACTS_BUYER`; the buyer projection returns `null` contact fields in that mode.
+  internal identifiers. There is no public Listing, Bid history or Socket.IO
+  join path on the active API.
 - Product image reorder uses a two-phase temporary offset inside a transaction
   so the unique `(productId, position)` constraint never collides during swaps;
-  count/byte capacity is checked transactionally before insert. Listing `SCHEDULE`
-  locks the same Product row before `DRAFT → SCHEDULED`, which is the owner edit lock.
+  count/byte capacity is checked transactionally before insert. Owner Work writes
+  and hide still lock the Product row and fail closed when a leftover
+  `SCHEDULED`/`LIVE` Listing exists.
 - Product image uploads enforce **authz-before-decode**: owner + editable Product +
   `assertApprovedSeller` run before Sharp. GIF and animated WebP/PNG are rejected;
   static JPEG/PNG/WebP only, with max edge 4096px and 16_777_216 pixel budget,
@@ -164,7 +144,7 @@ SellerProfile
 
 ## Runtime topology and extension boundary
 
-The API currently assumes a single scheduler and Socket.IO instance. The pilot deployment must enforce one API replica via Docker Compose (`docker compose --profile app`). Before multi-instance deployment, lifecycle work needs a distributed lock or external queue and realtime needs an adapter. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them.
+The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
 

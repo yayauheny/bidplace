@@ -1,23 +1,16 @@
 import { z } from 'zod';
 
-import { bidSchema } from './bid';
 import { userRoleSchema, userStatusSchema } from './enums';
 import {
-  orderCancellationReasonSchema,
   productStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import {
-  isoDateTimeSchema,
-  moneyAmountSchema,
-  uuidSchema,
-} from './primitives';
+import { isoDateTimeSchema, uuidSchema } from './primitives';
 import {
   sellerProfileResponseSchema,
   sellerProfileSchema,
 } from './seller-profile';
 import { creationStepSchema, productSchema } from './product';
-import { adminOrderResponseSchema } from './order';
 
 const sellerModerationStatusSchema = sellerStatusSchema.extract([
   'APPROVED',
@@ -71,40 +64,6 @@ export const adminProductStatusUpdateRequestSchema = z
     }
   });
 
-export const adminOrderCancellationRequestSchema = z
-  .object({ reason: orderCancellationReasonSchema })
-  .strict();
-
-export const adminOrderReplacementRequestSchema = z
-  .object({ bidId: uuidSchema })
-  .strict();
-
-export const adminRankedBidsResponseSchema = z
-  .object({ bids: z.array(bidSchema) })
-  .strict();
-
-export const adminListingNeedsOrderItemSchema = z
-  .object({
-    listingId: uuidSchema,
-    productId: uuidSchema,
-    productPublicId: z.string().min(1),
-    productTitle: z.string().nullable(),
-    sellerProfileId: uuidSchema,
-    sellerSlug: z.string().min(1),
-    bidCount: z.number().int().positive(),
-    currentPrice: moneyAmountSchema,
-    endsAt: isoDateTimeSchema,
-    closedAt: isoDateTimeSchema.nullable(),
-    handoffReady: z.boolean(),
-  })
-  .strict();
-
-export const adminListingsNeedingOrderResponseSchema = z
-  .object({ listings: z.array(adminListingNeedsOrderItemSchema) })
-  .strict();
-
-export const adminCreateListingOrderResponseSchema = adminOrderResponseSchema;
-
 export const adminUsersLookupQuerySchema = z
   .object({
     email: z.string().email().transform((value) => value.trim().toLowerCase()),
@@ -144,12 +103,6 @@ export const adminUserRevokeSessionsRequestSchema = z
   .strict();
 
 export const adminUserStatusResponseSchema = adminUserSchema;
-
-export const adminEmergencyCancelRequestSchema = z
-  .object({
-    reason: z.string().trim().min(1),
-  })
-  .strict();
 
 export const adminOkResponseSchema = z.object({ ok: z.literal(true) }).strict();
 
@@ -202,21 +155,6 @@ export type AdminSellerStatusUpdateRequest = z.infer<
 export type AdminProductStatusUpdateRequest = z.infer<
   typeof adminProductStatusUpdateRequestSchema
 >;
-export type AdminOrderCancellationRequest = z.infer<
-  typeof adminOrderCancellationRequestSchema
->;
-export type AdminOrderReplacementRequest = z.infer<
-  typeof adminOrderReplacementRequestSchema
->;
-export type AdminListingNeedsOrderItem = z.infer<
-  typeof adminListingNeedsOrderItemSchema
->;
-export type AdminListingsNeedingOrderResponse = z.infer<
-  typeof adminListingsNeedingOrderResponseSchema
->;
-export type AdminCreateListingOrderResponse = z.infer<
-  typeof adminCreateListingOrderResponseSchema
->;
 export type AdminUsersLookupQuery = z.infer<typeof adminUsersLookupQuerySchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminUsersLookupResponse = z.infer<
@@ -227,7 +165,4 @@ export type AdminUserStatusUpdateRequest = z.infer<
 >;
 export type AdminUserRevokeSessionsRequest = z.infer<
   typeof adminUserRevokeSessionsRequestSchema
->;
-export type AdminEmergencyCancelRequest = z.infer<
-  typeof adminEmergencyCancelRequestSchema
 >;

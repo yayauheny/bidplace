@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { countPublicSellerStatuses, SellersService } from './sellers.service';
+import { SellersService } from './sellers.service';
 import { publicSellerProfileSelect } from './seller-profile.mapper';
 
 const imageStore = {
@@ -10,17 +10,6 @@ const imageStore = {
 };
 
 describe('SellersService', () => {
-  it('counts one public listing state per visible creator work', () => {
-    expect(
-      countPublicSellerStatuses([
-        { listings: [{ status: 'LIVE' }] },
-        { listings: [{ status: 'SCHEDULED' }] },
-        { listings: [{ status: 'ENDED' }] },
-        { listings: [] },
-      ]),
-    ).toEqual({ SCHEDULED: 1, LIVE: 1, ENDED: 1 });
-  });
-
   it('adds an achievement after locking the editable profile revision', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
@@ -54,7 +43,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -96,7 +84,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -194,7 +181,6 @@ describe('SellersService', () => {
     });
     const service = new SellersService(
       prisma as never,
-      {} as never,
       { ...imageStore, put } as never,
     );
 
@@ -269,7 +255,6 @@ describe('SellersService', () => {
     const put = vi.fn().mockRejectedValue(new Error('store down'));
     const service = new SellersService(
       prisma as never,
-      {} as never,
       { ...imageStore, put } as never,
     );
 
@@ -312,7 +297,6 @@ describe('SellersService', () => {
       };
       const service = new SellersService(
         prisma as never,
-        {} as never,
         imageStore as never,
       );
 
@@ -417,7 +401,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -472,7 +455,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -529,7 +511,6 @@ describe('SellersService', () => {
     const put = vi.fn().mockResolvedValue(undefined);
     const service = new SellersService(
       prisma as never,
-      {} as never,
       { ...imageStore, put } as never,
     );
 
@@ -552,7 +533,7 @@ describe('SellersService', () => {
     );
   });
 
-  it('uses a narrow seller select for public SellerProfile pages', async () => {
+  it('uses a narrow seller select for public author pages', async () => {
     const prisma = {
       sellerProfile: {
         findFirst: vi.fn().mockResolvedValue({
@@ -563,31 +544,26 @@ describe('SellersService', () => {
           fullName: 'Seller',
           country: 'BY',
           city: 'Minsk',
+          practice: null,
           socialLink: 'https://example.com/seller',
+          telegramUrl: null,
+          instagramUrl: null,
+          websiteUrl: null,
           shortDescription: 'Short',
+          publishedRevision: { achievements: [] },
         }),
       },
-      $queryRaw: vi.fn().mockResolvedValue([]),
-      product: { findMany: vi.fn() },
     };
-    const service = new SellersService(
-      prisma as never,
-      {
-        toPublicProduct: vi.fn(),
-      } as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
-    const result = await service.getPublic('seller-slug');
+    const result = await service.getApprovedPublicAuthor('seller-slug');
 
-    expect(result.statusCounts).toEqual({ SCHEDULED: 0, LIVE: 0, ENDED: 0 });
-
+    expect(result?.sellerProfile.slug).toBe('seller-slug');
     expect(prisma.sellerProfile.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         select: publicSellerProfileSelect,
       }),
     );
-    expect(prisma.$queryRaw).toHaveBeenCalledTimes(3);
   });
 
   it('hydrates the owner product detail with persisted creation history', async () => {
@@ -636,7 +612,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -709,7 +684,6 @@ describe('SellersService', () => {
     };
     const service = new SellersService(
       prisma as never,
-      {} as never,
       imageStore as never,
     );
 
@@ -746,7 +720,6 @@ describe('SellersService', () => {
     const get = vi.fn();
     const service = new SellersService(
       prisma as never,
-      {} as never,
       { ...imageStore, get } as never,
     );
 

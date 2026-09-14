@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-14 — PR C admin chrome after commerce runtime removal
+
+- `Implemented`: admin moderation tabs are authors / works / users.
+  `AdminRecoveryPanel` and the Recovery tab are gone. Admin analytics is
+  users/authors/works/acquisition/stuck moderation; marketplace bid/order
+  widgets are gone. Not a Pen public surface.
+- `Unchanged`: public 390 Figma Home/Works/Authors/Search/ShareSheet/dock.
+  Canonical Pen file was not touched.
+
 ## 2026-09-14 — Mobile-web correction
 
 - `Implemented` (mobile web only): public session retry is an in-flow Yoga

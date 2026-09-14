@@ -1,17 +1,10 @@
 import {
   adminAnalyticsOverviewSchema,
   adminAnalyticsQuerySchema,
-  adminCreateListingOrderResponseSchema,
   adminCuratorSelectionRequestSchema,
   adminCuratorSelectionResponseSchema,
-  adminEmergencyCancelRequestSchema,
-  adminListingsNeedingOrderResponseSchema,
   adminOkResponseSchema,
-  adminOrderCancellationRequestSchema,
-  adminOrderResponseSchema,
-  adminOrderReplacementRequestSchema,
   adminProductStatusUpdateRequestSchema,
-  adminRankedBidsResponseSchema,
   adminSellerStatusResponseSchema,
   adminSellerProfilesResponseSchema,
   adminProductsResponseSchema,
@@ -23,9 +16,6 @@ import {
   adminUsersLookupResponseSchema,
   productResponseSchema,
   type AdminAnalyticsQuery,
-  type AdminEmergencyCancelRequest,
-  type AdminOrderCancellationRequest,
-  type AdminOrderReplacementRequest,
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
   type AdminUserRevokeSessionsRequest,
@@ -90,20 +80,6 @@ export function createAdminClient(context: RequestContext) {
         },
       );
     },
-    listRankedBids(listingId: string) {
-      return requestJson(
-        context,
-        `/api/admin/listings/${listingId}/bids`,
-        adminRankedBidsResponseSchema,
-      );
-    },
-    listListingsNeedingOrder() {
-      return requestJson(
-        context,
-        '/api/admin/listings/needs-order',
-        adminListingsNeedingOrderResponseSchema,
-      );
-    },
     lookupUsers(query: AdminUsersLookupQuery) {
       const parsed = adminUsersLookupQuerySchema.parse(query);
 
@@ -153,50 +129,6 @@ export function createAdminClient(context: RequestContext) {
         '/api/admin/curator-selection',
         adminOkResponseSchema,
         { method: 'DELETE' },
-      );
-    },
-    emergencyCancelListing(
-      listingId: string,
-      input: AdminEmergencyCancelRequest,
-    ) {
-      return requestJson(
-        context,
-        `/api/admin/listings/${listingId}/emergency-cancel`,
-        adminOkResponseSchema,
-        {
-          method: 'POST',
-          body: adminEmergencyCancelRequestSchema.parse(input),
-        },
-      );
-    },
-    createOrderForEndedListing(listingId: string) {
-      return requestJson(
-        context,
-        `/api/admin/listings/${listingId}/create-order`,
-        adminCreateListingOrderResponseSchema,
-        { method: 'POST' },
-      );
-    },
-    cancelOrder(publicId: string, input: AdminOrderCancellationRequest) {
-      return requestJson(
-        context,
-        `/api/admin/orders/${publicId}/cancel`,
-        adminOrderResponseSchema,
-        {
-          method: 'POST',
-          body: adminOrderCancellationRequestSchema.parse(input),
-        },
-      );
-    },
-    replaceOrder(publicId: string, input: AdminOrderReplacementRequest) {
-      return requestJson(
-        context,
-        `/api/admin/orders/${publicId}/replacement`,
-        adminOrderResponseSchema,
-        {
-          method: 'POST',
-          body: adminOrderReplacementRequestSchema.parse(input),
-        },
       );
     },
   };

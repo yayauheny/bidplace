@@ -67,25 +67,6 @@ function eachUtcDate(from: Date, to: Date): string[] {
   return dates;
 }
 
-function median(values: number[]): number | null {
-  if (values.length === 0) {
-    return null;
-  }
-
-  const sorted = [...values].sort((left, right) => left - right);
-  const mid = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1]! + sorted[mid]!) / 2;
-  }
-
-  return sorted[mid]!;
-}
-
-function moneyString(value: { toFixed(digits: number): string }): string {
-  return value.toFixed(2);
-}
-
 function rate(numerator: number, denominator: number): number | null {
   if (denominator === 0) {
     return null;
@@ -111,37 +92,21 @@ export class AdminAnalyticsService {
       newUsers,
       activeUsers,
       creators,
-      liveAuctions,
-      bids,
-      endedAuctions,
-      successfulAuctions,
+      publishedWorks,
       attributions,
       listingViewed,
-      bidCtaClicked,
-      bidRejectedEvents,
       sellerProfilesCreated,
       productsCreated,
       productsApproved,
-      auctionsStarted,
-      endedInPeriod,
-      uniqueBidders,
-      activeSellerRows,
-      firstBidListings,
       recentUsers,
       recentCreators,
-      recentListings,
-      recentBids,
-      recentEnded,
-      recentOrders,
-      staleLiveListings,
+      recentWorks,
       stuckProducts,
       stuckSellers,
       growthUsers,
       growthViews,
       growthSellers,
-      growthListings,
-      growthBids,
-      growthOrders,
+      growthWorks,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: periodFilter } }),
@@ -154,12 +119,12 @@ export class AdminAnalyticsService {
         select: { userId: true },
       }),
       this.prisma.sellerProfile.count(),
-      this.prisma.listing.count({ where: { status: 'LIVE' } }),
-      this.prisma.bid.count({ where: { createdAt: periodFilter } }),
-      this.prisma.listing.count({
-        where: { status: 'ENDED', closedAt: periodFilter },
+      this.prisma.product.count({
+        where: {
+          status: 'APPROVED',
+          publishedRevisionId: { not: null },
+        },
       }),
-      this.prisma.order.count({ where: { createdAt: periodFilter } }),
       this.prisma.acquisitionAttribution.findMany({
         where: { capturedAt: periodFilter },
         select: {
@@ -171,12 +136,6 @@ export class AdminAnalyticsService {
       this.prisma.analyticsEvent.count({
         where: { eventName: 'listing_viewed', createdAt: periodFilter },
       }),
-      this.prisma.analyticsEvent.count({
-        where: { eventName: 'bid_cta_clicked', createdAt: periodFilter },
-      }),
-      this.prisma.analyticsEvent.count({
-        where: { eventName: 'bid_rejected', createdAt: periodFilter },
-      }),
       this.prisma.sellerProfile.count({
         where: { createdAt: periodFilter },
       }),
@@ -186,53 +145,6 @@ export class AdminAnalyticsService {
           targetType: 'PRODUCT',
           newStatus: 'APPROVED',
           createdAt: periodFilter,
-        },
-      }),
-      this.prisma.listing.count({
-        where: {
-          startsAt: periodFilter,
-          status: { not: 'DRAFT' },
-        },
-      }),
-      this.prisma.listing.findMany({
-        where: { status: 'ENDED', closedAt: periodFilter },
-        select: { bidCount: true },
-      }),
-      this.prisma.bid.findMany({
-        where: { createdAt: periodFilter },
-        distinct: ['bidderUserId'],
-        select: { bidderUserId: true },
-      }),
-      this.prisma.listing.findMany({
-        where: {
-          OR: [
-            {
-              status: { in: ['LIVE', 'ENDED', 'CANCELLED'] },
-              startsAt: periodFilter,
-            },
-            { bids: { some: { createdAt: periodFilter } } },
-          ],
-        },
-        select: {
-          product: { select: { sellerProfileId: true } },
-        },
-      }),
-      this.prisma.listing.findMany({
-        where: {
-          status: { in: ['LIVE', 'ENDED'] },
-          bidCount: { gt: 0 },
-          OR: [
-            { startsAt: periodFilter },
-            { bids: { some: { createdAt: periodFilter } } },
-          ],
-        },
-        select: {
-          startsAt: true,
-          bids: {
-            orderBy: { createdAt: 'asc' },
-            take: 1,
-            select: { createdAt: true },
-          },
         },
       }),
       this.prisma.user.findMany({
@@ -251,49 +163,16 @@ export class AdminAnalyticsService {
           createdAt: true,
         },
       }),
-      this.prisma.listing.findMany({
-        orderBy: { createdAt: 'desc' },
+      this.prisma.product.findMany({
+        where: { publishedAt: { not: null } },
+        orderBy: { publishedAt: 'desc' },
         take: 8,
         select: {
           id: true,
-          status: true,
-          createdAt: true,
-          product: { select: { publicId: true, title: true } },
-        },
-      }),
-      this.prisma.bid.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 8,
-        select: {
-          id: true,
-          listingId: true,
-          amount: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.listing.findMany({
-        where: { status: 'ENDED' },
-        orderBy: { closedAt: 'desc' },
-        take: 8,
-        select: {
-          id: true,
-          bidCount: true,
-          closedAt: true,
-          product: { select: { publicId: true, title: true } },
-        },
-      }),
-      this.prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 8,
-        select: {
           publicId: true,
-          status: true,
-          finalAmount: true,
-          createdAt: true,
+          title: true,
+          publishedAt: true,
         },
-      }),
-      this.prisma.listing.count({
-        where: { status: 'LIVE', endsAt: { lt: now } },
       }),
       this.prisma.product.count({
         where: {
@@ -319,46 +198,11 @@ export class AdminAnalyticsService {
         where: { createdAt: periodFilter },
         select: { createdAt: true },
       }),
-      this.prisma.listing.findMany({
-        where: { createdAt: periodFilter },
-        select: { createdAt: true },
-      }),
-      this.prisma.bid.findMany({
-        where: { createdAt: periodFilter },
-        select: { createdAt: true },
-      }),
-      this.prisma.order.findMany({
-        where: { createdAt: periodFilter },
-        select: { createdAt: true },
+      this.prisma.product.findMany({
+        where: { publishedAt: periodFilter },
+        select: { publishedAt: true },
       }),
     ]);
-
-    const auctionsWithBids = endedInPeriod.filter(
-      (listing) => listing.bidCount > 0,
-    ).length;
-    const auctionsWithZeroBids = endedInPeriod.length - auctionsWithBids;
-    const totalEndedBids = endedInPeriod.reduce(
-      (sum, listing) => sum + listing.bidCount,
-      0,
-    );
-    const uniqueActiveSellers = new Set(
-      activeSellerRows.map((row) => row.product.sellerProfileId),
-    ).size;
-    const medianSecondsToFirstBid = median(
-      firstBidListings
-        .map((listing) => {
-          const firstBid = listing.bids[0];
-          if (!firstBid) {
-            return null;
-          }
-
-          return Math.max(
-            0,
-            (firstBid.createdAt.getTime() - listing.startsAt.getTime()) / 1000,
-          );
-        })
-        .filter((value): value is number => value !== null),
-    );
 
     const acquisitionBySource = new Map<
       string,
@@ -390,10 +234,7 @@ export class AdminAnalyticsService {
         signups: counts.signups,
       }))
       .sort((left, right) => right.visitors - left.visitors);
-    const totalVisitors = bySource.reduce(
-      (sum, row) => sum + row.visitors,
-      0,
-    );
+    const totalVisitors = bySource.reduce((sum, row) => sum + row.visitors, 0);
     const totalSignups = bySource.reduce((sum, row) => sum + row.signups, 0);
 
     const growthDates = eachUtcDate(from, to);
@@ -405,25 +246,22 @@ export class AdminAnalyticsService {
           newUsers: 0,
           listingViews: 0,
           newSellers: 0,
-          newListings: 0,
-          bids: 0,
-          orders: 0,
+          newWorks: 0,
         },
       ]),
     );
 
     const bump = (
-      rows: Array<{ createdAt: Date }>,
-      key:
-        | 'newUsers'
-        | 'listingViews'
-        | 'newSellers'
-        | 'newListings'
-        | 'bids'
-        | 'orders',
+      rows: Array<{ createdAt?: Date; publishedAt?: Date | null }>,
+      key: 'newUsers' | 'listingViews' | 'newSellers' | 'newWorks',
+      field: 'createdAt' | 'publishedAt' = 'createdAt',
     ) => {
       for (const row of rows) {
-        const bucket = growthMap.get(utcDateKey(row.createdAt));
+        const value = row[field];
+        if (!value) {
+          continue;
+        }
+        const bucket = growthMap.get(utcDateKey(value));
         if (bucket) {
           bucket[key] += 1;
         }
@@ -433,9 +271,7 @@ export class AdminAnalyticsService {
     bump(growthUsers, 'newUsers');
     bump(growthViews, 'listingViews');
     bump(growthSellers, 'newSellers');
-    bump(growthListings, 'newListings');
-    bump(growthBids, 'bids');
-    bump(growthOrders, 'orders');
+    bump(growthWorks, 'newWorks', 'publishedAt');
 
     const overview: AdminAnalyticsOverview = {
       period: query.period,
@@ -443,11 +279,7 @@ export class AdminAnalyticsService {
       to: to.toISOString(),
       overview: {
         users: metric(users, 'Total User count all time', 'postgresql'),
-        newUsers: metric(
-          newUsers,
-          'Users created in period',
-          'postgresql',
-        ),
+        newUsers: metric(newUsers, 'Users created in period', 'postgresql'),
         activeUsers: metric(
           activeUsers.length,
           'Distinct User.id that emitted product analytics events in period',
@@ -458,20 +290,9 @@ export class AdminAnalyticsService {
           'Total SellerProfile count all time',
           'postgresql',
         ),
-        liveAuctions: metric(
-          liveAuctions,
-          'Listings with status LIVE now',
-          'postgresql',
-        ),
-        bids: metric(bids, 'Bid count in period', 'postgresql'),
-        endedAuctions: metric(
-          endedAuctions,
-          'Listings ENDED with closedAt in period',
-          'postgresql',
-        ),
-        successfulAuctions: metric(
-          successfulAuctions,
-          'Orders created in period (successful auction close with winner)',
+        publishedWorks: metric(
+          publishedWorks,
+          'Approved Products with a published revision',
           'postgresql',
         ),
       },
@@ -479,22 +300,11 @@ export class AdminAnalyticsService {
         bySource,
         visitorToSignupRate: rate(totalSignups, totalVisitors),
       },
-      buyerFunnel: {
+      audience: {
         listingViewed: metric(
           listingViewed,
           'listing_viewed analytics events in period',
           'analytics',
-        ),
-        bidCtaClicked: metric(
-          bidCtaClicked,
-          'bid_cta_clicked analytics events in period',
-          'analytics',
-        ),
-        bidAccepted: metric(bids, 'Bid count in period', 'postgresql'),
-        winners: metric(
-          successfulAuctions,
-          'Order count in period',
-          'postgresql',
         ),
       },
       sellerFunnel: {
@@ -518,65 +328,6 @@ export class AdminAnalyticsService {
           'AuditEvent PRODUCT newStatus APPROVED in period',
           'postgresql',
         ),
-        auctionsStarted: metric(
-          auctionsStarted,
-          'Listings with startsAt in period and status != DRAFT',
-          'postgresql',
-        ),
-        auctionsWithBids: metric(
-          auctionsWithBids,
-          'Ended listings in period with bidCount > 0',
-          'postgresql',
-        ),
-        auctionsSold: metric(
-          successfulAuctions,
-          'Orders created in period',
-          'postgresql',
-        ),
-      },
-      marketplace: {
-        liveAuctions: metric(
-          liveAuctions,
-          'Listings with status LIVE now',
-          'postgresql',
-        ),
-        auctionsStarted: metric(
-          auctionsStarted,
-          'Listings with startsAt in period and status != DRAFT',
-          'postgresql',
-        ),
-        auctionsEnded: metric(
-          endedAuctions,
-          'Listings ENDED with closedAt in period',
-          'postgresql',
-        ),
-        auctionsWithZeroBids: metric(
-          auctionsWithZeroBids,
-          'Ended listings in period with zero bids',
-          'postgresql',
-        ),
-        auctionsWithBids: metric(
-          auctionsWithBids,
-          'Ended listings in period with bids',
-          'postgresql',
-        ),
-        averageBidsPerEndedAuction:
-          endedInPeriod.length === 0
-            ? null
-            : totalEndedBids / endedInPeriod.length,
-        uniqueBidders: metric(
-          uniqueBidders.length,
-          'Distinct bidderUserId on bids in period',
-          'postgresql',
-        ),
-        uniqueActiveSellers: metric(
-          uniqueActiveSellers,
-          'Distinct seller profiles with listings that received bids or went live in period',
-          'postgresql',
-        ),
-        medianSecondsToFirstBid,
-        auctionsReceivingBidRate: rate(auctionsWithBids, endedInPeriod.length),
-        auctionsSoldRate: rate(successfulAuctions, endedInPeriod.length),
       },
       growth: growthDates.map((date) => growthMap.get(date)!),
       recent: {
@@ -592,38 +343,16 @@ export class AdminAnalyticsService {
           status: creator.status,
           createdAt: creator.createdAt.toISOString(),
         })),
-        listings: recentListings.map((listing) => ({
-          id: listing.id,
-          productPublicId: listing.product.publicId,
-          productTitle: listing.product.title,
-          status: listing.status,
-          createdAt: listing.createdAt.toISOString(),
-        })),
-        bids: recentBids.map((bid) => ({
-          id: bid.id,
-          listingId: bid.listingId,
-          amount: moneyString(bid.amount),
-          createdAt: bid.createdAt.toISOString(),
-        })),
-        endedAuctions: recentEnded.map((listing) => ({
-          id: listing.id,
-          productPublicId: listing.product.publicId,
-          productTitle: listing.product.title,
-          bidCount: listing.bidCount,
-          closedAt: listing.closedAt?.toISOString() ?? null,
-        })),
-        orders: recentOrders.map((order) => ({
-          publicId: order.publicId,
-          status: order.status,
-          finalAmount: moneyString(order.finalAmount),
-          createdAt: order.createdAt.toISOString(),
+        works: recentWorks.map((work) => ({
+          id: work.id,
+          publicId: work.publicId,
+          title: work.title,
+          publishedAt: work.publishedAt?.toISOString() ?? null,
         })),
       },
       attention: {
-        staleLiveListings,
         stuckProducts,
         stuckSellers,
-        bidRejectedEvents,
       },
     };
 
@@ -632,7 +361,6 @@ export class AdminAnalyticsService {
         query.drilldown,
         from,
         to,
-        now,
         stuckBefore,
       );
     }
@@ -644,35 +372,11 @@ export class AdminAnalyticsService {
     drilldown: NonNullable<AdminAnalyticsQuery['drilldown']>,
     from: Date,
     to: Date,
-    now: Date,
     stuckBefore: Date,
   ): Promise<NonNullable<AdminAnalyticsOverview['drilldown']>> {
     const periodFilter = { gte: from, lte: to };
 
     switch (drilldown) {
-      case 'auctions_without_bids': {
-        const rows = await this.prisma.listing.findMany({
-          where: {
-            status: 'ENDED',
-            closedAt: periodFilter,
-            bidCount: 0,
-          },
-          orderBy: { closedAt: 'desc' },
-          take: 50,
-          select: {
-            id: true,
-            closedAt: true,
-            product: { select: { publicId: true, title: true } },
-          },
-        });
-
-        return rows.map((row) => ({
-          id: row.id,
-          label: row.product.title ?? row.product.publicId,
-          meta: row.closedAt?.toISOString(),
-          href: `/products/${row.product.publicId}`,
-        }));
-      }
       case 'new_users': {
         const rows = await this.prisma.user.findMany({
           where: { createdAt: periodFilter },
@@ -704,74 +408,28 @@ export class AdminAnalyticsService {
           id: row.id,
           label: row.fullName,
           meta: row.createdAt.toISOString(),
-          href: `/sellers/${row.slug}`,
+          href: `/authors/${row.slug}`,
         }));
       }
-      case 'recent_bids': {
-        const rows = await this.prisma.bid.findMany({
-          where: { createdAt: periodFilter },
-          orderBy: { createdAt: 'desc' },
+      case 'recent_works': {
+        const rows = await this.prisma.product.findMany({
+          where: { publishedAt: periodFilter },
+          orderBy: { publishedAt: 'desc' },
           take: 50,
           select: {
             id: true,
-            amount: true,
-            createdAt: true,
-            listingId: true,
+            publicId: true,
+            title: true,
+            publishedAt: true,
           },
         });
 
         return rows.map((row) => ({
           id: row.id,
-          label: moneyString(row.amount),
-          meta: row.createdAt.toISOString(),
-          href: `/admin/listings/${row.listingId}/bids`,
+          label: row.title ?? row.publicId,
+          meta: row.publishedAt?.toISOString(),
+          href: `/works/${row.publicId}`,
         }));
-      }
-      case 'recent_orders': {
-        const rows = await this.prisma.order.findMany({
-          where: { createdAt: periodFilter },
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-          select: {
-            publicId: true,
-            finalAmount: true,
-            createdAt: true,
-            status: true,
-          },
-        });
-
-        return rows.map((row) => ({
-          id: row.publicId,
-          label: `${row.publicId} · ${moneyString(row.finalAmount)}`,
-          meta: `${row.status} · ${row.createdAt.toISOString()}`,
-        }));
-      }
-      case 'bid_rejected': {
-        const rows = await this.prisma.analyticsEvent.findMany({
-          where: { eventName: 'bid_rejected', createdAt: periodFilter },
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-          select: { id: true, properties: true, createdAt: true },
-        });
-
-        return rows.map((row) => {
-          const properties =
-            row.properties &&
-            typeof row.properties === 'object' &&
-            !Array.isArray(row.properties)
-              ? (row.properties as Record<string, unknown>)
-              : {};
-          const errorCode =
-            typeof properties.errorCode === 'string'
-              ? properties.errorCode
-              : 'bid_rejected';
-
-          return {
-            id: row.id,
-            label: errorCode,
-            meta: row.createdAt.toISOString(),
-          };
-        });
       }
       case 'stuck_products': {
         const rows = await this.prisma.product.findMany({
@@ -816,26 +474,7 @@ export class AdminAnalyticsService {
           id: row.id,
           label: row.fullName,
           meta: row.updatedAt.toISOString(),
-          href: `/sellers/${row.slug}`,
-        }));
-      }
-      case 'stale_live_listings': {
-        const rows = await this.prisma.listing.findMany({
-          where: { status: 'LIVE', endsAt: { lt: now } },
-          orderBy: { endsAt: 'asc' },
-          take: 50,
-          select: {
-            id: true,
-            endsAt: true,
-            product: { select: { publicId: true, title: true } },
-          },
-        });
-
-        return rows.map((row) => ({
-          id: row.id,
-          label: row.product.title ?? row.product.publicId,
-          meta: row.endsAt.toISOString(),
-          href: `/products/${row.product.publicId}`,
+          href: `/authors/${row.slug}`,
         }));
       }
     }

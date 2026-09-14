@@ -1,4 +1,0 @@
-import { z } from 'zod'; import { bidSchema } from './bid'; import { listingStatusSchema } from './enums'; import { isoDateTimeSchema, moneyAmountSchema, uuidSchema } from './primitives';
-export const realtimeEventNameSchema = z.enum(['listing.updated', 'bid.placed', 'listing.ended']);
-const listingUpdate = z.object({ listingId: uuidSchema, currentPrice: moneyAmountSchema, bidCount: z.number().int().nonnegative(), status: listingStatusSchema, endsAt: isoDateTimeSchema }).strict();
-export const realtimeEventPayloadSchema = z.discriminatedUnion('event', [z.object({ event: z.literal('listing.updated'), payload: listingUpdate }).strict(), z.object({ event: z.literal('bid.placed'), payload: z.object({ ...listingUpdate.shape, bid: bidSchema }).strict() }).strict(), z.object({ event: z.literal('listing.ended'), payload: listingUpdate }).strict()]);

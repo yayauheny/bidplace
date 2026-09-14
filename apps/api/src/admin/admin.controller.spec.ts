@@ -12,10 +12,11 @@ describe('AdminController Product approval', () => {
     };
     const controller = new AdminController(
       prisma as never,
-      {} as never,
       moderation as never,
       {} as never,
-      { now: () => new Date() },
+      {} as never,
+      {} as never,
+      { now: () => new Date() } as never,
     );
 
     await expect(controller.updateProduct({ sub: 'admin-id' }, 'product-id', { status: 'APPROVED' }))

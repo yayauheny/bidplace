@@ -1,2 +1,0 @@
-import { Module } from '@nestjs/common'; import { CommerceCapabilityModule } from '../core/commerce'; import { DatabaseModule } from '../core/database'; import { ClockModule } from '../core/time'; import { RealtimeModule } from '../realtime/realtime.module'; import { ListingLifecycleService } from './listing-lifecycle.service';
-@Module({ imports: [CommerceCapabilityModule, DatabaseModule, ClockModule, RealtimeModule], providers: [ListingLifecycleService], exports: [ListingLifecycleService] }) export class LifecycleModule {}

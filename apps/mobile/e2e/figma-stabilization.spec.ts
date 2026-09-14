@@ -3,11 +3,11 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
+import { e2eApiBaseURL } from './support/e2e-env';
 import { e2eEvidenceDir } from './support/evidence-dir';
 
 const artifactDir = resolve(e2eEvidenceDir, 'stabilization');
-const apiPort = process.env.E2E_API_PORT ?? '3003';
-const apiBaseURL = `http://localhost:${apiPort}`;
+const apiBaseURL = e2eApiBaseURL;
 
 test.beforeEach(async ({ page }, info) => {
   await mkdir(artifactDir, { recursive: true });

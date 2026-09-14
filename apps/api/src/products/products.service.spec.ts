@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { publicDiscoveryQuerySchema } from '@bidplace/contracts';
+import { portfolioWorksQuerySchema } from '@bidplace/contracts';
 
 import { ProductsService } from './products.service';
 import {
   publicCatalogProductWhere,
   publicProductContentWhere,
-  selectPublicListing,
 } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import { productImageMetadataSelect } from './products.mapper';
@@ -134,21 +133,6 @@ describe('ProductsService', () => {
     expect(publicProductContentWhere).toHaveProperty('publishedRevisionId', {
       not: null,
     });
-  });
-
-  it('selects a live listing over an older ended listing', () => {
-    const ended = {
-      id: 'ended',
-      status: 'ENDED' as const,
-      createdAt: new Date('2026-07-01'),
-    };
-    const live = {
-      id: 'live',
-      status: 'LIVE' as const,
-      createdAt: new Date('2026-07-02'),
-    };
-
-    expect(selectPublicListing([ended, live])?.id).toBe('live');
   });
 
   it('retries a Product public ID collision without exposing the database error', async () => {
@@ -493,38 +477,51 @@ describe('ProductsService', () => {
     );
   });
 
-  it('uses a narrow seller select for public Product queries', async () => {
+  it('uses a narrow seller select for public portfolio queries', async () => {
     const publicProduct = {
       ...approvedProduct,
       status: 'APPROVED' as const,
-      publishedAt: null,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      sellerProfile: {
+        id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+        slug: 'seller-slug',
+        sellerType: 'creator',
+        discipline: 'Керамика',
+        fullName: 'Seller',
+        country: 'BY',
+        city: 'Минск',
+        socialLink: 'https://example.com/seller',
+        shortDescription: 'Short',
+      },
+      publishedRevision: {
+        title: approvedProduct.title,
+        story: approvedProduct.story,
+        categoryId: approvedProduct.categoryId,
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        uniqueness: approvedProduct.uniqueness,
+        images: [
+          {
+            position: 0,
+            image: approvedProduct.images[0],
+          },
+        ],
+      },
     };
     const prisma = {
       product: {
-        findFirst: vi.fn().mockResolvedValue({
-          ...publicProduct,
-          sellerProfile: {
-            id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
-            slug: 'seller-slug',
-            sellerType: 'creator',
-            discipline: 'Керамика',
-            fullName: 'Seller',
-            country: 'BY',
-            socialLink: 'https://example.com/seller',
-            shortDescription: 'Short',
-          },
-          creationSteps: [],
-          listings: [],
-        }),
+        findFirst: vi.fn().mockResolvedValue(publicProduct),
       },
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.getPublic('public-id');
+    await service.getPortfolio('public-id');
 
     expect(prisma.product.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: expect.objectContaining({
+        select: expect.objectContaining({
           sellerProfile: {
             select: publicSellerProfileSelect,
           },
@@ -550,25 +547,26 @@ describe('ProductsService', () => {
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
+        city: 'Минск',
         socialLink: 'https://example.com/seller',
         shortDescription: 'Short',
       },
-      listings: [
-        {
-          id: 'c0d82a10-3170-49eb-904f-a8bc87d311a7',
-          productId: product.id,
-          status: 'LIVE' as const,
-          startsAt: new Date('2026-07-19T00:00:00.000Z'),
-          originalEndsAt: new Date('2026-07-20T00:00:00.000Z'),
-          endsAt: new Date('2026-07-20T00:00:00.000Z'),
-          currentPrice: { toNumber: () => 10 },
-          bidCount: 1,
-          closedAt: null,
-          createdAt: new Date('2026-07-19T00:00:00.000Z'),
-          updatedAt: new Date('2026-07-19T00:00:00.000Z'),
-          auctionRules: { startPrice: { toNumber: () => 5 } },
-        },
-      ],
+      publishedRevision: {
+        title: approvedProduct.title,
+        story: approvedProduct.story,
+        categoryId: approvedProduct.categoryId,
+        technique: null,
+        materials: null,
+        dimensions: null,
+        year: null,
+        uniqueness: approvedProduct.uniqueness,
+        images: [
+          {
+            position: 0,
+            image: approvedProduct.images[0],
+          },
+        ],
+      },
     };
     const prisma = {
       $queryRaw: vi
@@ -585,8 +583,8 @@ describe('ProductsService', () => {
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({ limit: 1, sort: 'endingSoon' }),
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ limit: 1, sort: 'newest' }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
@@ -594,8 +592,7 @@ describe('ProductsService', () => {
     expect(pageQueryText).toContain('LIMIT');
     expect(pageQueryText).not.toContain('status_rank');
     expect(pageQueryText).not.toContain('"listings"');
-    expect(pageQueryText).toContain('NULLIF(BTRIM(p."title"), \'\')');
-    expect(pageQueryText).toContain('FROM "product_images"');
+    expect(pageQueryText).toContain('p."published_revision_id" IS NOT NULL');
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: [product.id] } },
@@ -615,8 +612,8 @@ describe('ProductsService', () => {
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({ sort: 'newest' }),
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ sort: 'newest' }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
@@ -624,24 +621,24 @@ describe('ProductsService', () => {
     expect(prisma.product.findMany).not.toHaveBeenCalled();
   });
 
-  it('applies confirmed author and uniqueness discovery filters in SQL', async () => {
+  it('applies confirmed author and materials discovery filters in SQL', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([]),
       product: { findMany: vi.fn() },
     };
     const service = new ProductsService(prisma as never, {} as never);
 
-    await service.listPublic(
-      publicDiscoveryQuerySchema.parse({
+    await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({
         author: 'marina-k',
-        uniqueness: 'One',
+        materials: 'Clay',
       }),
     );
 
     const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: unknown };
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
-    expect(pageQueryText).toContain('p."uniqueness"');
+    expect(pageQueryText).toContain('published."materials"');
   });
 
   it('refuses hide when a scheduled or live listing exists', async () => {

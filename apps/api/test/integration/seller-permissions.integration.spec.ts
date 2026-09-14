@@ -191,15 +191,9 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
     }
   });
 
-  it('protects Product submit, Listing create/change and image mutations through the same HTTP boundary', async () => {
+  it('protects Product submit and image mutations through the same HTTP boundary', async () => {
     const fixture = await createPermissionFixture(prisma);
     const clients = await createClients(fixture);
-    const startsAt = new Date(Date.now() + 3_600_000);
-    const listingInput = {
-      startsAt: startsAt.toISOString(),
-      endsAt: new Date(startsAt.getTime() + 3_600_000).toISOString(),
-      startPrice: 10,
-    };
 
     for (const client of [clients.guest, clients.buyer]) {
       const before = await permissionState(prisma);
@@ -225,84 +219,6 @@ describe('seller permission boundaries over HTTP and PostgreSQL', () => {
         before,
         await client.post(`/products/${productId}/submit`, undefined),
         403,
-      );
-    }
-
-    for (const [client, productId] of [
-      [clients.guest, fixture.approvedProductId],
-      [clients.buyer, fixture.approvedProductId],
-      [clients.pending, fixture.sellers.pending.productId],
-      [clients.changes, fixture.sellers.changes.productId],
-      [clients.suspended, fixture.sellers.suspended.productId],
-      [clients.otherApproved, fixture.approvedProductId],
-    ] as const) {
-      const before = await permissionState(prisma);
-      const response = await client.post(
-        `/products/${productId}/listings`,
-        listingInput,
-      );
-      await expectUnchanged(
-        before,
-        response,
-        client === clients.guest ? 401 : 403,
-      );
-    }
-
-    const createListingResponse = await clients.approved.post(
-      `/products/${fixture.approvedProductId}/listings`,
-      listingInput,
-    );
-    expect(createListingResponse.status).toBe(201);
-    const createdListing = (await createListingResponse.json()) as {
-      listing: { id: string };
-    };
-    expect(
-      (
-        await clients.approved.patch(`/listings/${createdListing.listing.id}`, {
-          action: 'SCHEDULE',
-        })
-      ).status,
-    ).toBe(200);
-
-    const crossOwnerListingBefore = await permissionState(prisma);
-    await expectUnchanged(
-      crossOwnerListingBefore,
-      await clients.otherApproved.patch(
-        `/listings/${fixture.approvedListingId}`,
-        {
-          action: 'CANCEL',
-        },
-      ),
-      403,
-    );
-
-    for (const [client, listingId] of [
-      [clients.pending, fixture.sellers.pending.listingId],
-      [clients.changes, fixture.sellers.changes.listingId],
-      [clients.suspended, fixture.sellers.suspended.listingId],
-    ] as const) {
-      const before = await permissionState(prisma);
-      await expectUnchanged(
-        before,
-        await client.patch(`/listings/${listingId}`, {
-          action: 'CANCEL',
-        }),
-        403,
-      );
-    }
-
-    for (const [client, expectedStatus] of [
-      [clients.guest, 401],
-      [clients.buyer, 403],
-      [clients.otherApproved, 403],
-    ] as const) {
-      const before = await permissionState(prisma);
-      await expectUnchanged(
-        before,
-        await client.patch(`/listings/${fixture.approvedListingId}`, {
-          action: 'CANCEL',
-        }),
-        expectedStatus,
       );
     }
 

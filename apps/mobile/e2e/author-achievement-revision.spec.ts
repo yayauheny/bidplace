@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { e2eApiBaseURL } from './support/e2e-env';
+import { fillControl } from './support/fill-control';
 import {
   createAdminModerationFixture,
   createBuyerFixture,
@@ -24,29 +25,38 @@ test('approved author can delete a published achievement then add a draft', asyn
     await expect(
       page.getByRole('button', { name: 'Изменить фото' }),
     ).toBeVisible();
-    await page.getByLabel('Имя или название').fill('Автор достижений');
-    await page.getByLabel('URL-slug').fill(slug);
-    await page.getByLabel('Дисциплина').fill('Керамика');
-    await page.getByLabel('Страна').fill('BY');
-    await page.getByLabel('Город').fill('Минск');
-    await page
-      .getByLabel('Публичная ссылка')
-      .fill(`https://example.com/${slug}`);
-    await page.getByLabel('Короткое описание').fill('Первая биография.');
-    await expect(page.getByLabel('Имя или название')).toHaveValue(
-      'Автор достижений',
+    await fillControl(page.getByLabel('Имя или название'), 'Автор достижений');
+    await fillControl(page.getByLabel('URL-slug'), slug);
+    await fillControl(page.getByLabel('Дисциплина'), 'Керамика');
+    await fillControl(page.getByLabel('Страна'), 'BY');
+    await fillControl(page.getByLabel('Город'), 'Минск');
+    await fillControl(
+      page.getByLabel('Публичная ссылка'),
+      `https://example.com/${slug}`,
+    );
+    await fillControl(
+      page.getByLabel('Короткое описание'),
+      'Первая биография.',
     );
     await page.getByRole('button', { name: 'Продолжить' }).click();
-    await page
-      .getByLabel('Telegram')
-      .fill(`https://t.me/${slug.replaceAll('-', '_')}`);
-    await page.getByLabel('Instagram').fill(`https://instagram.com/${slug}`);
-    await page.getByLabel('Сайт').fill(`https://example.com/${slug}`);
-    await page
-      .getByLabel('Основная публичная ссылка')
-      .fill(`https://example.com/${slug}`);
+    await fillControl(
+      page.getByLabel('Telegram'),
+      `https://t.me/${slug.replaceAll('-', '_')}`,
+    );
+    await fillControl(
+      page.getByLabel('Instagram'),
+      `https://instagram.com/${slug}`,
+    );
+    await fillControl(page.getByLabel('Сайт'), `https://example.com/${slug}`);
+    await fillControl(
+      page.getByLabel('Основная публичная ссылка'),
+      `https://example.com/${slug}`,
+    );
     await page.getByRole('button', { name: 'Продолжить' }).click();
-    await page.getByLabel('Контакт для передачи').fill('@handoff_creator');
+    await fillControl(
+      page.getByLabel('Контакт для передачи'),
+      '@handoff_creator',
+    );
     await page.getByRole('button', { name: 'Создать профиль' }).click();
     await expect(page.getByText('На модерации')).toBeVisible();
 
@@ -68,7 +78,7 @@ test('approved author can delete a published achievement then add a draft', asyn
     await expect(page.getByText('Выставки и достижения')).toBeVisible();
     const achievementField = page.getByLabel('Описание достижения');
     await achievementField.scrollIntoViewIfNeeded();
-    await achievementField.fill('Первая выставка');
+    await fillControl(achievementField, 'Первая выставка');
     await page.getByRole('button', { name: 'Сохранить достижение' }).click();
     await expect(page.getByText('Первая выставка')).toBeVisible();
     await expect(
@@ -105,7 +115,7 @@ test('approved author can delete a published achievement then add a draft', asyn
     await expect(guest.getByText('Первая выставка')).toBeVisible();
     await expect(guest.getByText('Вторая выставка')).toHaveCount(0);
 
-    await achievementField.fill('Вторая выставка');
+    await fillControl(achievementField, 'Вторая выставка');
     await page.getByRole('button', { name: 'Сохранить достижение' }).click();
     await expect(page.getByText('Вторая выставка')).toBeVisible();
     await guest.reload();

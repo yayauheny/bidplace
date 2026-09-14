@@ -1,5 +1,54 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — PR C: commerce application runtime removed
+
+- `Implemented`: Nest Listings, Bids, Orders, Lifecycle, Realtime, Activity,
+  Discovery, `core/commerce` and `core/auction` are off the default API boot
+  graph. `AppModule` has no `ScheduleModule`. `bootstrap.ts` has no Socket.IO
+  adapter. `COMMERCE_ENABLED` is gone from server env. API package no longer
+  depends on `@nestjs/platform-socket.io`, `@nestjs/schedule`,
+  `@nestjs/websockets` or `socket.io`.
+- `Implemented`: public `GET /api/products` and `GET /api/sellers` catalog
+  routes are gone. Public catalog is portfolio-only:
+  `GET /api/works`, `GET /api/authors`, `GET /api/portfolio/*`.
+  Owner Product create/update/hide/unhide and seller profile HTTP remain.
+  Hide still fails closed on leftover `SCHEDULED`/`LIVE` Listing rows.
+  Admin listing/order/recovery HTTP is gone. Admin moderation keeps
+  `hasBlockingListing`. Admin analytics overview no longer queries
+  Listing/Bid/Order marketplace metrics.
+- `Implemented`: Listing/Bid/Order/Discovery/Activity/event contracts and
+  api-client surfaces without HTTP are removed. Shared leftover enums
+  (`LISTING_STATUSES`, `ORDER_STATUSES`) and listing/bid error codes remain.
+  Ingest event names `listing_viewed` / `bid_cta_clicked` / `bid_rejected`
+  stay as leftover analytics taxonomy.
+- `Implemented`: mobile admin no longer has Orders or Recovery tabs.
+  `AdminRecoveryPanel` is gone. Admin analytics UI matches the portfolio
+  overview contract.
+- `Unchanged`: Prisma Listing/Bid/Order models, applied migrations and seed
+  auction fixtures. `scripts/ops/commerce-inventory.mjs` and
+  `test:ops-inventory` remain. Archive
+  `feature/commerce-runtime-archive` @ `19eb40e` is not modified.
+- `Partial` vs `05-MVP-RFC.md`: the RFC still describes `DEC-084` fail-closed
+  commerce runtime. `DEC-087` is the accepted physical-removal direction for
+  application code. This branch does not rewrite the RFC.
+- `Not claimed`: Founder Accepted, launch-ready, Prisma leftover deletion,
+  seed rewrite, or cloud deploy.
+- Coverage: contracts `packages/contracts/test/contracts.test.ts`; API unit
+  `admin-analytics.service.spec.ts`, `products.service.spec.ts`,
+  `sellers.service.spec.ts`; HTTP/integration leftovers
+  `portfolio-route-surface.integration.spec.ts`,
+  `media-transport.integration.spec.ts`,
+  `rejected-product-recovery.integration.spec.ts`,
+  `seller-permissions.integration.spec.ts`,
+  `author-hide-listing.integration.spec.ts`,
+  `commerce-inventory.integration.spec.ts`,
+  `seed-contract.integration.spec.ts`.
+- `Verified` (this branch, this run): `pnpm verify` — typecheck 7/7, lint 2/2,
+  API unit 272/272, contracts 23/23, ops inventory 11/11, PostgreSQL
+  integration 62/62, build 7/7. Mobile unit 248/248. Maintained Playwright
+  Chromium+WebKit `retries=0`: 86/86. Expo web export wrote `apps/mobile/dist`.
+  `git diff --check` clean. `artifacts/cleanup/` stays untracked.
+
 ## 2026-09-14 — Mobile-web correction
 
 - `Implemented` (mobile web only): public AppShell shows an in-flow Yoga

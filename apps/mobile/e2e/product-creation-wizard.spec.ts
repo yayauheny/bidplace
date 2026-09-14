@@ -2,16 +2,29 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { createSellerFixture } from './support/e2e-fixtures';
 import { authenticatedPage } from './support/auth-session';
+import { fillControl } from './support/fill-control';
 import { productWizardStepOneIncompleteMessage } from '../src/features/sellers/product-draft-wizard';
 
 async function fillProductStepOne(page: Page, title: string) {
   await page.getByRole('button', { name: 'E2E art' }).click();
-  await page.getByLabel('Название').fill(title);
-  await page.getByLabel('История предмета').fill('Wizard regression draft.');
-  await page.getByLabel('Уникальность или тираж').fill('One');
-  await page.getByLabel('Происхождение').fill('E2E fixture');
-  await page.getByLabel('Город').fill('Minsk');
-  await page.getByLabel('Передача или доставка').fill('Pickup');
+  await fillControl(page.getByRole('textbox', { name: /Название/ }), title);
+  await fillControl(
+    page.getByRole('textbox', { name: /История предмета/ }),
+    'Wizard regression draft.',
+  );
+  await fillControl(
+    page.getByRole('textbox', { name: /Уникальность или тираж/ }),
+    'One',
+  );
+  await fillControl(
+    page.getByRole('textbox', { name: /Происхождение/ }),
+    'E2E fixture',
+  );
+  await fillControl(page.getByRole('textbox', { name: /Город/ }), 'Minsk');
+  await fillControl(
+    page.getByRole('textbox', { name: /Передача или доставка/ }),
+    'Pickup',
+  );
 }
 
 async function createDraftThroughStepOne(page: Page) {

@@ -1,20 +1,16 @@
 import { type ZodType } from 'zod';
 
 import { createAdminClient } from './admin';
-import { createActivityClient } from './activity';
 import { createAnalyticsClient } from './analytics';
 import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
-import { createDiscoveryClient } from './discovery';
 export {
   ApiClientError,
   getApiErrorCode,
   getBidTooLowMinimum,
   type ApiClientErrorKind,
 } from './errors';
-import { createListingsClient } from './listings';
 import { createImagesClient } from './images';
-import { createOrdersClient } from './orders';
 import { createProductsClient } from './products';
 import { createPortfolioClient } from './portfolio';
 import {
@@ -40,17 +36,13 @@ export function createApiClient(options: ApiClientOptions) {
       return requestJson(context, path, schema, requestOptions);
     },
     auth: createAuthClient(context),
-    activity: createActivityClient(context),
     analytics: createAnalyticsClient(context),
-    listings: createListingsClient(context),
     images: createImagesClient(context),
     products: createProductsClient(context),
     portfolio: createPortfolioClient(context),
-    orders: createOrdersClient(context),
     sellers: createSellersClient(context),
     admin: createAdminClient(context),
     categories: createCategoriesClient(context),
-    discovery: createDiscoveryClient(context),
   };
 }
 
