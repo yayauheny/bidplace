@@ -123,38 +123,6 @@ describe('author achievement editing revision HTTP contract', () => {
     expect(publishedBefore.map((item) => item.body)).toEqual(['Original show']);
     const publishedId = publishedBefore[0]!.id;
 
-    const added = await owner.post(
-      '/author/application/achievements',
-      achievementForm('Added show', true),
-    );
-    expect(added.status).toBe(201);
-    const addedId = (
-      (await added.json()) as { achievement: { id: string } }
-    ).achievement.id;
-    expect(addedId).not.toBe(publishedId);
-    expect(
-      (await publicAchievements(guest, author.slug)).map((item) => item.body),
-    ).toEqual(['Original show']);
-    expect((await guest.get(`/author-achievements/${addedId}/image`)).status).toBe(
-      404,
-    );
-    expect((await owner.get(`/author-achievements/${addedId}/image`)).status).toBe(
-      200,
-    );
-
-    const profileAfterAdd = await prisma.sellerProfile.findUniqueOrThrow({
-      where: { id: fixture.sellers.approved.profileId },
-      select: {
-        publishedRevisionId: true,
-        editingRevisionId: true,
-        editingRevision: { select: { status: true } },
-      },
-    });
-    expect(profileAfterAdd.editingRevisionId).not.toBe(
-      profileAfterAdd.publishedRevisionId,
-    );
-    expect(profileAfterAdd.editingRevision?.status).toBe('DRAFT');
-
     const deleted = await owner.delete(
       `/author/application/achievements/${publishedId}`,
     );
@@ -168,6 +136,41 @@ describe('author achievement editing revision HTTP contract', () => {
         select: { body: true },
       }),
     ).toEqual({ body: 'Original show' });
+
+    const profileAfterDelete = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: {
+        publishedRevisionId: true,
+        editingRevisionId: true,
+        editingRevision: { select: { status: true } },
+      },
+    });
+    expect(profileAfterDelete.editingRevisionId).not.toBe(
+      profileAfterDelete.publishedRevisionId,
+    );
+    expect(profileAfterDelete.editingRevision?.status).toBe('DRAFT');
+    expect(
+      (await owner.delete(`/author/application/achievements/${publishedId}`))
+        .status,
+    ).toBe(404);
+
+    const added = await owner.post(
+      '/author/application/achievements',
+      achievementForm('Added show', true),
+    );
+    expect(added.status).toBe(201);
+    const addedId = ((await added.json()) as { achievement: { id: string } })
+      .achievement.id;
+    expect(addedId).not.toBe(publishedId);
+    expect(
+      (await publicAchievements(guest, author.slug)).map((item) => item.body),
+    ).toEqual(['Original show']);
+    expect(
+      (await guest.get(`/author-achievements/${addedId}/image`)).status,
+    ).toBe(404);
+    expect(
+      (await owner.get(`/author-achievements/${addedId}/image`)).status,
+    ).toBe(200);
 
     expect((await owner.post('/author/application/submit')).status).toBe(201);
     expect(
@@ -185,9 +188,9 @@ describe('author achievement editing revision HTTP contract', () => {
     const publishedAfter = await publicAchievements(guest, author.slug);
     expect(publishedAfter.map((item) => item.body)).toEqual(['Added show']);
     expect(publishedAfter[0]!.id).toBe(addedId);
-    expect((await guest.get(`/author-achievements/${addedId}/image`)).status).toBe(
-      200,
-    );
+    expect(
+      (await guest.get(`/author-achievements/${addedId}/image`)).status,
+    ).toBe(200);
   });
 
   it('rejects achievement writes while a revision is pending review', async () => {
@@ -219,7 +222,9 @@ describe('author achievement editing revision HTTP contract', () => {
     });
     const pendingAchievement =
       await prisma.sellerProfileRevisionAchievement.findFirstOrThrow({
-        where: { revision: { sellerProfileId: fixture.sellers.pending.profileId } },
+        where: {
+          revision: { sellerProfileId: fixture.sellers.pending.profileId },
+        },
         select: { id: true },
       });
     expect(

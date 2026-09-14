@@ -91,10 +91,12 @@ SellerProfile
   field updates, achievement append and achievement delete share one
   `ensureEditableEditingRevision` use case: it locks `seller_profiles` then the
   editing revision (`SELECT … FOR UPDATE`), forks a `DRAFT` from the published
-  revision when those pointers still coincide, copies published achievements
-  including media metadata/`data`, and remaps a published achievement id to the
-  copied draft row so the first add/delete does not require a dummy save.
-  `PENDING_REVIEW` remains locked. `ImageStore` keys include
+  revision when those pointers still coincide, and copies published achievements
+  including media metadata/`data` one row at a time so the fork map is the
+  created draft id for that published id. The first add/delete does not require
+  a dummy save. After that fork, later deletes accept only the fork map or an
+  id that already belongs to the editing revision; content/position matching is
+  not used. `PENDING_REVIEW` remains locked. `ImageStore` keys include
   `seller-profile-revision` and `seller-achievement` with the existing seller-photo
   canonical fallback;
 - one own Product image is the MVP technical minimum. Maximum file count and
