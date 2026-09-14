@@ -33,3 +33,7 @@ Portfolio projections сохранить. Неизвестные external consum
 ### Результат
 
 Закрытые IDs, evidence, changed files/commit, команды и результаты, обновлённая документация, риски/решения и статус. Не выполнять соседние пакеты автоматически.
+
+## Дополнение после новых аудитов
+
+Обновлённые границы: frontend/header/tokens/fonts и VAL unused schema cleanup переданы 24. Этот пакет оставляет backend local wrappers/DI/selects. parseBody/parseQuery унификацию согласовать с 14/24, не делать дважды.

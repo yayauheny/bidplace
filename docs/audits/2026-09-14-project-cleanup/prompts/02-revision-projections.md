@@ -33,3 +33,7 @@ Owner/admin/cabinet contracts/mappers, admin lists, mobile moderation/cabinet/ed
 ### Результат
 
 Закрытые IDs, evidence, changed files/commit, команды и результаты, обновлённая документация, риски/решения и статус. Не выполнять соседние пакеты автоматически.
+
+## Дополнение после новых аудитов
+
+Дополнение новых источников: M-LOGIC-12 Reject+reason принадлежит этому пакету (не pagination 09). Покрой author reason и сохранение старой публикации после reject editing revision. CROSS:B3 start-edit и сам кабинет принадлежат 17; здесь только DTO/очередь. Не объявляй весь кабинет готовым по контрактным тестам.

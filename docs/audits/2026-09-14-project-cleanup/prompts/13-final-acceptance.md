@@ -33,3 +33,7 @@ Evidence reconciliation, readiness/gaps, owner status/architecture, release chec
 ### Результат
 
 Закрытые IDs, evidence, changed files/commit, команды и результаты, обновлённая документация, риски/решения и статус. Не выполнять соседние пакеты автоматически.
+
+## Дополнение после новых аудитов
+
+Расширение: итоговый gate теперь после выбранных 01–25, не только первых 13. CROSS:T7 и DS-14 относятся к документальной сверке (visual prerequisite — 22). Verdict NO-GO в source03 — датированная оценка аудитора, не новый независимо проверенный вердикт этого planning pack. Проверяй final author loop и legal/ops/storage gates; визуальный UX-аудит ещё ожидается.

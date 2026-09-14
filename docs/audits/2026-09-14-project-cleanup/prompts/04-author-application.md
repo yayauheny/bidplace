@@ -33,3 +33,7 @@ Application schemas/services, auth gate, audit, onboarding client/UI, tests; sch
 ### Результат
 
 Закрытые IDs, evidence, changed files/commit, команды и результаты, обновлённая документация, риски/решения и статус. Не выполнять соседние пакеты автоматически.
+
+## Дополнение после новых аудитов
+
+Дополнение: M-LOGIC-05 и CROSS:G1/G2/B4 входят сюда. Добавь рабочий verify-email UI с request/resend/cooldown/expired/invalid code и продолжением onboarding; обязательный HTTP+DB OTP test не должен заранее выставлять verifiedAt в fixture. URL step и persisted draft отдельно; dirty input/photo не стирать при refetch. Сначала 14 для wire/errors и 16 для session recovery; визуальные изменения только после 22.
