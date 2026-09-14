@@ -57,7 +57,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                height: designTokens.size.openingAuthorRow,
+                alignSelf: 'stretch',
               }}
             >
               <ResilientRemoteImage
@@ -85,7 +85,7 @@ export function HomeOpening({ selection }: { selection: HomeCuratorSelection }) 
                   @{selection.curator.slug}
                 </AppText>
                 {selection.curator.shortDescription ? (
-                  <AppText role="authorRowBio" tone="subtle" numberOfLines={1}>
+                  <AppText role="authorRowBio" tone="subtle">
                     {selection.curator.shortDescription}
                   </AppText>
                 ) : null}

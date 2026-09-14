@@ -289,10 +289,14 @@ Apply/Reset. They are not `role="menu"`.
 
 Home Opening (`439:4404`, 390×860) uses exact first-fold roles. Bio and
 curator heading use the Figma TEXT box heights as line-height because the
-live inspect composition is 14/17 and 20/24.
+live inspect composition is 14/17 and 20/24. The title uses shared
+`sectionTitle` (same 24/29/600/−0.72 as other Home headings). Tracking is
+kept only where Inspect sets it. Bio is unclamped seeded `shortDescription`
+(no tracking); the author row hugs `439:4411` instead of a 68px lock.
 
 | Role | Node | Token |
 | --- | --- | --- |
+| «Открытие недели» | `439:4408` | `typography.sectionTitle` 24/29/600/−0.72, `color.ink` |
 | Handle `@slug` | `439:4414` | `typography.authorRowHandle` 22/25/500/−1%, `color.ink` |
 | Bio | `439:4415` | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F` |
 | «Выбор куратора» | `439:4417` | `typography.editorialTitle` 20/24/500/−2%, `color.ink` |

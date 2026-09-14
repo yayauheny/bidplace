@@ -4,6 +4,18 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home Opening type polish vs `439:4404`
+
+- `Implemented` (mobile web): Opening first-fold type at 390×860 matches
+  Inspect for title, `@vex`, curator heading, note, and quiet pill. Inter
+  400/500/600 faces are loaded; `font-synthesis: none`. Bio is unclamped
+  seeded copy (`authorRowBio` 14/17/400, no tracking); the author row hugs
+  auto-layout `439:4411` instead of a 68px lock. Shared `sectionTitle` is
+  unchanged (Opening title matches other Home headings).
+- `Verified` live at 390×860 against `uMo04w9bgrchWXXDgO4W62` / `439:4404`.
+- `Unchanged`: Active auctions / New works, work-card overlay, seed/ownership,
+  canonical Pen, new visual goldens.
+
 ## 2026-09-15 — Phone gallery arrows, achievement photos, History media
 
 - `Implemented` (mobile web): Work gallery prev/next stay in `WorkGallery`
