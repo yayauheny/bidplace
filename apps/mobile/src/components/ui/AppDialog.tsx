@@ -5,6 +5,7 @@ import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { appDialogHostStyle } from './app-dialog-host-style';
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
 import { MotionPressable } from './MotionPressable';
@@ -105,19 +106,11 @@ export function AppDialog({
           }}
         />
         <View
-          style={{
-            position: Platform.OS === 'web' ? 'fixed' : 'absolute',
-            inset: 0,
-            alignItems: presentation === 'sheet' ? 'stretch' : 'center',
-            ...(presentation === 'sheet' ? {
-              left: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
-              right: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
-            } : {}),
-            justifyContent: presentation === 'sheet' ? 'flex-end' : 'center',
-            paddingHorizontal: presentation === 'sheet' ? 0 : viewportGutter,
-            zIndex: designTokens.layer.modal,
-            pointerEvents: 'box-none',
-          }}
+          style={appDialogHostStyle({
+            presentation,
+            width,
+            viewportGutter,
+          })}
         >
           <Dialog.Content
             asChild

@@ -40,6 +40,8 @@ uses the Hugeicons Instagram glyph through `FigmaIcon`, not a camera symbol.
 
 `AppDialog` supports a bottom sheet presentation, capped at the 390px phone
 width, with 20px top corners and the existing focus/dismissal behavior.
+The portal host is an explicit column flex so `flex-end` docks the sheet to the
+bottom on RN Web, not the CSS row default.
 The modal token is 50, above the web dock layer 40. `ShareSheet` uses a 164px
 QR preview based on Figma `597:19045`; `share-04` is in the Figma icon registry.
 

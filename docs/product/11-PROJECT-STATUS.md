@@ -1,5 +1,19 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Share sheet docks to the bottom again
+
+- `Needs verification` (mobile web): `AppDialog` `presentation="sheet"` now
+  sets an explicit column flex on the portal host so `justifyContent:
+  'flex-end'` can dock ShareSheet to the bottom. The host had been a classless
+  `display:flex` div without the RN column default, so CSS `row` stretched
+  the sheet to the top. The unit spec only checks the JS style object;
+  runtime DOM (`flex-direction: column` on the portal host and the bottom
+  coordinate of `#app-dialog-content` at 390) is still unchecked. Centered
+  `presentation="dialog"` is unchanged. No API, auth, token, ShareSheet, or
+  FilterSheet contract changed. Evidence:
+  `app-dialog-host-style.ts`, `app-dialog-host-style.spec.ts`,
+  `AppDialog.tsx`.
+
 ## 2026-09-13 — Mobile-web discovery launch gate
 
 - `Implemented` at 390: `/works` has URL-owned query/category/material,

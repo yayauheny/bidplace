@@ -1,5 +1,16 @@
 # bidplace — статус дизайна и UI-реализации
 
+## 2026-09-14 — Share sheet host is an explicit column flex
+
+- `Needs verification` (mobile web): `AppDialog` sheet presentation sets
+  `flexDirection: 'column'` so `flex-end` is vertical, matching Figma
+  `597:19045` and the S1 bottom-sheet chrome (20px top radii). The helper
+  spec covers the JS style object only; computed host CSS and
+  `#app-dialog-content` geometry at 390 still need a browser check.
+  Dialog presentation stays centered. Evidence:
+  `app-dialog-host-style.ts`, `app-dialog-host-style.spec.ts`,
+  `AppDialog.tsx`.
+
 ## 2026-09-13 — Discovery catalogs and Search at 390
 
 - `Implemented`: accepted S7 filter/sort masters are wired into Works and
