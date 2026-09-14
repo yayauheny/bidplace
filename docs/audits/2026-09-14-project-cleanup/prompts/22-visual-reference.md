@@ -33,3 +33,7 @@ Design/agent documentation consistency, конкретная карта referenc
 ### Результат
 
 IDs, reproduction/fix evidence, diff/commit, commands/results, documentation, оставшиеся риски и решения. Соседние пакеты автоматически не запускать.
+
+## Дополнение visual UX audit
+
+UX-11 дублирует curator decision: API pointer и разрешение показать секцию не доказывают обязательность её реализации в принятом Home. RFC brief facts / DEC-089 остаются decision gap, не автоматическое добавление. Не добавлять 404 CTA по вкусу. Source07 сам признаёт, что новые Figma measurements в этом отрезке не делались.

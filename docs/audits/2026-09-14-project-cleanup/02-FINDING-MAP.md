@@ -128,10 +128,40 @@ VAL:D13 не DATA:D13; номера совпадают только внутри
 - CROSS chain6 говорит «401 clears session», M-LOGIC-03 — отсутствует global mutation recovery: 16 проверяет конкретные request paths, ни один отчёт не выбирается молча.
 - CROSS:B3 запрещённый client start-edit дополняет DATA/LOGIC DTO проблему, но это отдельный 17; pending gate 01 остаётся строгим.
 - VAL:H1–H5 — 14 воспроизведение HTTP limits/client parse/nested fieldErrors/slug; H4 analytics max — low impact inventory, не blocker без доказательства. VAL:H6 уточнён VAL:D13 → 20.
-- M:H1/H2 — 04/15 dirty-refetch/double-submit tests; M:H3→16; M:H4→19; M:H5 native/deferred achievements не blocker; M:H6 retry:1 оставить без нового evidence; M:H7 shared pending UX в будущий visual audit.
+- M:H1/H2 — 04/15 dirty-refetch/double-submit tests; M:H3→16; M:H4→19; M:H5 native/deferred achievements не blocker; M:H6 retry:1 оставить без нового evidence; M:H7 shared pending UX не проверен в полученном visual audit (admin не открыт), проверить в owner/admin acceptance.
 - CROSS orphan/media cache/stale cookie→07/25; seed coupling→19; чужие itest schemas не чистить. G7 archive rulesets — external evidence, не локально подтверждённый факт.
 - DS pressRing/close glyph/nativewind/ring applicability требуют runtime/reference proof в 23/24. Нет live Figma compare и owner/admin screenshots в source06; не заявлять pixel parity по этому аудиту.
 - Packaging HEAD vs dirty не новая причина удалить API/schema; 15 проверяет уже сделанную независимую работу. Не присваивать чужой diff.
 - «Открытие недели», About URL и brief facts — противоречия/решения, не автоматически bugs. 22/18/13.
 
 Все новые строки Imported / Needs revalidation, Not started. Условный приоритет источника не независимое подтверждение severity.
+
+## Последний источник: визуальный UX
+
+UX-* — [дословный визуальный UX-аудит](sources/07-visual-ux.md), HEAD 70c5fd5. Оценки приоритета/доказанности принадлежат источнику; статусы Imported / Needs revalidation, Not started.
+
+| ID | Пакет / ownership |
+|---|---|
+| UX-01 | 20, neutral copy отдельно от legal external gate |
+| UX-02 | 26 |
+| UX-03 | 28, reproduction/design boundary |
+| UX-04 | 27 |
+| UX-05 | 26 |
+| UX-06 | 27, wire fieldErrors остаётся 14 |
+| UX-07 | 27, chrome остаётся 23 |
+| UX-08 | 23, visual box vs actual hit target |
+| UX-09 | 23, дубль DS-08 |
+| UX-10 | 28, CSS zoom ≠ browser zoom |
+| UX-11 | 22/12 decision; 13 final reconciliation |
+
+### Ограничения и несогласие источников
+
+- DS считает Share chrome неверным, UX описывает его как цельный. UX не завершил copy/download и не провёл новый pixel compare; DS также не измерил live Figma. Решение 23 основано на actual reference и поведении, не голосовании отчётов.
+- UX dock finding показывает геометрию одного viewport. Не превращать предложенные 12px и один ряд chips в новый дизайн-контракт; 28 воспроизводит доступность текста и фиксирует необходимую design развилку.
+- UX отсутствие headings/association/name перепроверяется в реальном RN-web DOM. Typography role ≠ heading level; одинаковый size не определяет семантику.
+- Видимый в snapshot фон не доказывает отсутствие focus isolation, а отсутствие движения Tab в automation не доказывает исправность trap. 27 проверяет оба направления и cleanup.
+- Реальный hit target может отличаться от visual 42px. Foundation/reference конфликт решает 22, соответствующую реализацию — 23.
+- CSS zoom ограничен как evidence. Screen-reader, reduced motion, owner/admin/wizard/onboarding, sort sheet и compact header этим UX источником не проверены. Их проверки остаются в соответствующих implementation/acceptance пакетах.
+- CORS localhost/127.0.0.1 описан как проблема audit environment, не новый UI finding.
+- Screenshot basenames в тексте не являются локальными вложениями этого planning pack; перед повторным использованием evidence проверить наличие/происхождение.
+- Сохранить approved title+author card, capsule, 3:4 gallery, commerce-free UI, honest stub/404 и спокойное оформление. Новые декоративные эффекты не требуются.

@@ -28,7 +28,7 @@ Evidence reconciliation, readiness/gaps, owner status/architecture, release chec
 
 ### Не входит / условия остановки
 
-Новые bugs не исправлять без отдельного scope. Дизайн и безопасность целиком пока не проверены.
+Новые bugs не исправлять без отдельного scope. Наличие всех аудитов не подтверждает полную проверку дизайна и безопасности.
 
 ### Результат
 
@@ -36,4 +36,8 @@ Evidence reconciliation, readiness/gaps, owner status/architecture, release chec
 
 ## Дополнение после новых аудитов
 
-Расширение: итоговый gate теперь после выбранных 01–25, не только первых 13. CROSS:T7 и DS-14 относятся к документальной сверке (visual prerequisite — 22). Verdict NO-GO в source03 — датированная оценка аудитора, не новый независимо проверенный вердикт этого planning pack. Проверяй final author loop и legal/ops/storage gates; визуальный UX-аудит ещё ожидается.
+Расширение: итоговый gate теперь после выбранных 01–25, не только первых 13. CROSS:T7 и DS-14 относятся к документальной сверке (visual prerequisite — 22). Verdict NO-GO в source03 — датированная оценка аудитора, не новый независимо проверенный вердикт этого planning pack. Проверяй final author loop и legal/ops/storage gates; на момент первой редакции visual UX-аудит ещё ожидался; теперь получен (см. дополнение ниже).
+
+## Дополнение visual UX audit
+
+Финальное поступление: получены все 7 аудитов. Последняя область — 07-visual-ux; теперь selected scope 01–28. Сбор всех отчётов завершён, но исходные findings и runtime checks не перепроверены этим planning task. Final acceptance включает 26–28 и непроверенные авторами owner/admin/states. Отчёт об исполнении не может ссылаться на старое ожидание visual audit как на актуальный blocker.

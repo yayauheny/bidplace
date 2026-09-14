@@ -33,3 +33,7 @@ Fixture swatches не pixel proof. Отсутствие close glyph в README н
 ### Результат
 
 IDs, reproduction/fix evidence, diff/commit, commands/results, documentation, оставшиеся риски и решения. Соседние пакеты автоматически не запускать.
+
+## Дополнение visual UX audit
+
+UX-09 = DS-08, одно исправление ссылки forgot, но аудиторы предложили разные typography sizes/roles: выбрать по действующему reference, не автоматически 16px или caption. UX-08: 42px измерен как visual box, отдельно проверь реальный hit area и актуальность foundation 44px после 22. Можно сохранить visual pill и расширить hit target, если это поддержано стеком и не перекрывает соседние controls. Не объявлять 42px нарушением WCAG без нужного критерия. UX-06/07 DOM association/isolation теперь owner 27; overlay chrome здесь, a11y реализовать последовательно с 27.

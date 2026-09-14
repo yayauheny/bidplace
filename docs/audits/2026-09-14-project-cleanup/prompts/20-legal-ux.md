@@ -33,3 +33,7 @@ Approved legal controls имеют реальное server evidence где тр�
 ### Результат
 
 IDs, reproduction/fix evidence, diff/commit, commands/results, documentation, оставшиеся риски и решения. Соседние пакеты автоматически не запускать.
+
+## Дополнение visual UX audit
+
+UX-01 уточняет CROSS:B5: убрать неподтверждённый claim также из заголовка /authors, не только /search. Используй существующий portfolio-copy owner. RFC-safe исправление уже определённого запрета не ждёт юриста или разрешения игнорировать Figma literal; legal implementation остаётся отдельным gated шагом. Проверить оба экрана и portfolio-copy tests.

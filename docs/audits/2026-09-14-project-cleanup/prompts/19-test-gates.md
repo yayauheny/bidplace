@@ -33,3 +33,7 @@ T6 ban→404 зависит от 12, не кодировать неподтве�
 ### Результат
 
 IDs, reproduction/fix evidence, diff/commit, commands/results, documentation, оставшиеся риски и решения. Соседние пакеты автоматически не запускать.
+
+## Дополнение visual UX audit
+
+Дополнение UX: узкий browser gate 26–28 включает Enter, independent empty/error states, headings, error associations, modal name/focus и dock/zoom с документированным методом. Не считать старый screenshot basename доступным artifact, если файл не найден. Owner/admin/onboarding были не открыты UX-аудитором: эти сценарии всё равно требуют самостоятельной приёмки.
