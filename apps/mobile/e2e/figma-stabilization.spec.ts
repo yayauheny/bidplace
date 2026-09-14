@@ -139,6 +139,25 @@ test('Work page and ShareSheet focus, Escape, and download', async ({
   await share.click();
   const dialog = page.getByRole('dialog', { name: 'Поделиться' });
   await expect(dialog).toBeVisible();
+  const dock = await page.evaluate(() => {
+    const host = document.getElementById('app-dialog-host');
+    const content = document.getElementById('app-dialog-content');
+    if (!host || !content) {
+      return null;
+    }
+    const hostStyle = getComputedStyle(host);
+    const box = content.getBoundingClientRect();
+    return {
+      flexDirection: hostStyle.flexDirection,
+      justifyContent: hostStyle.justifyContent,
+      contentBottom: box.bottom,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(dock).not.toBeNull();
+  expect(dock?.flexDirection).toBe('column');
+  expect(dock?.justifyContent).toBe('flex-end');
+  expect(dock!.contentBottom).toBeGreaterThan(dock!.viewportHeight - 8);
   await expect
     .poll(() =>
       page.evaluate(() => {

@@ -2,6 +2,8 @@ import type { CSSProperties, ReactNode } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import * as Dialog from '@rn-primitives/dialog';
 
+import { appDialogHostFlexDirection } from './app-dialog-host-style';
+
 function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
   const flat = StyleSheet.flatten(style) ?? {};
   const {
@@ -9,6 +11,7 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
     pointerEvents: _pointerEvents,
     alignItems,
     justifyContent,
+    flexDirection,
     ...rest
   } = flat as ViewStyle & {
     paddingHorizontal?: number;
@@ -29,6 +32,7 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
   if (justifyContent) {
     css.justifyContent = justifyContent;
   }
+  css.flexDirection = appDialogHostFlexDirection(flexDirection);
   return css;
 }
 
@@ -52,9 +56,10 @@ export function AppDialogFrame({
 }) {
   const css = toFixedCss(style);
   css.display = 'flex';
+  css.flexDirection = appDialogHostFlexDirection(css.flexDirection);
   css.pointerEvents = 'none';
   return (
-    <div style={css}>
+    <div id="app-dialog-host" style={css}>
       <div style={{ pointerEvents: 'auto', width: '100%' }}>{children}</div>
     </div>
   );

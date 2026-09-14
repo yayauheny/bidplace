@@ -15,5 +15,9 @@ export function AppDialogFrame({
   style: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
-  return <View style={[{ position: 'absolute' }, style]}>{children}</View>;
+  return (
+    <View nativeID="app-dialog-host" style={[{ position: 'absolute' }, style]}>
+      {children}
+    </View>
+  );
 }

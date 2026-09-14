@@ -7,6 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
+import { appDialogHostStyle } from './app-dialog-host-style';
 import { AppDialogFrame, AppDialogOverlay } from './app-dialog-layer';
 import { MotionPressable } from './MotionPressable';
 
@@ -104,18 +105,11 @@ export function AppDialog({
           }}
         />
         <AppDialogFrame
-          style={{
-            inset: 0,
-            alignItems: presentation === 'sheet' ? 'stretch' : 'center',
-            ...(presentation === 'sheet' ? {
-              left: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
-              right: Math.max((width - designTokens.layout.phoneWidth) / 2, 0),
-            } : {}),
-            justifyContent: presentation === 'sheet' ? 'flex-end' : 'center',
-            paddingHorizontal: presentation === 'sheet' ? 0 : viewportGutter,
-            zIndex: designTokens.layer.modal,
-            pointerEvents: 'box-none',
-          }}
+          style={appDialogHostStyle({
+            presentation,
+            width,
+            viewportGutter,
+          })}
         >
           <Dialog.Content
             asChild

@@ -33,7 +33,6 @@ export function AppShell({
         style={{
           flex: 1,
           backgroundColor: designTokens.color.canvas,
-          alignItems: 'center',
           overflow: 'visible',
         }}
       >
@@ -45,6 +44,7 @@ export function AppShell({
             width: '100%',
             maxWidth: designTokens.layout.phoneWidth,
             minWidth: 0,
+            alignSelf: 'center',
             overflow: 'visible',
           }}
         >
