@@ -208,9 +208,15 @@ test.describe('product creation wizard navigation', () => {
       await expect(page.getByText('Проверка перед модерацией')).toBeVisible();
       await page.goto(`/products/${product.id}?flow=creation&step=4`);
       await expect(page).toHaveURL(/flow=creation&step=4$/);
+      await expect(
+        page.getByText('Проверка перед модерацией'),
+      ).toBeVisible();
 
       await page.reload();
       await expect(page).toHaveURL(/flow=creation&step=4$/);
+      await expect(
+        page.getByText('Проверка перед модерацией'),
+      ).toBeVisible();
       await expect(
         page.getByRole('button', { name: '1. О работе' }),
       ).toBeEnabled();
