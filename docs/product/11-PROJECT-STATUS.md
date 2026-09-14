@@ -9,8 +9,10 @@
   revision can add or delete an achievement without a dummy profile save: the
   operation copies the published revision (photo metadata + achievements, including
   `objectKey`/`data`) into a new `DRAFT`, leaves the published page unchanged, and
-  applies the write only to that draft. Delete of a published achievement id is
-  remapped to the copied draft row. `PENDING_REVIEW` stays locked (409). Coverage:
+  applies the write only to that draft. Delete of a published achievement id
+  during that same fork uses the exact created draft id. A later delete does
+  not guess a draft copy from body, date, object key or position.
+  `PENDING_REVIEW` stays locked (409). Coverage:
   `ensure-editable-seller-profile-revision.spec.ts`, `sellers.service.spec.ts`,
   `author-achievement-revision.integration.spec.ts`.
 - `Partial`: the first author application still creates a `PENDING_REVIEW` revision

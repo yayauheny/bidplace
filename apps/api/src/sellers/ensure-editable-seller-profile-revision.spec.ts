@@ -59,7 +59,8 @@ describe('ensureEditableEditingRevision', () => {
         create: vi.fn(),
       },
       sellerProfileRevisionAchievement: {
-        findMany: vi.fn(),
+        create: vi.fn(),
+        findFirst: vi.fn(),
       },
     };
 
@@ -71,11 +72,12 @@ describe('ensureEditableEditingRevision', () => {
       achievementIdByPublishedId: new Map(),
     });
     expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
+    expect(tx.sellerProfileRevisionAchievement.create).not.toHaveBeenCalled();
     expect(tx.sellerProfile.update).not.toHaveBeenCalled();
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
   });
 
-  it('forks an approved published revision into a draft and maps achievement ids', async () => {
+  it('forks an approved published revision and maps each created draft achievement id', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
       sellerProfile: {
@@ -93,9 +95,7 @@ describe('ensureEditableEditingRevision', () => {
         create: vi.fn().mockResolvedValue({ id: 'draft-revision-id' }),
       },
       sellerProfileRevisionAchievement: {
-        findMany: vi.fn().mockResolvedValue([
-          { id: 'draft-achievement-id', position: 0 },
-        ]),
+        create: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
       },
     };
 
@@ -113,16 +113,18 @@ describe('ensureEditableEditingRevision', () => {
         sellerProfileId: 'seller-profile-id',
         status: 'DRAFT',
         profilePhotoObjectKey: 'seller-photo:seller-profile-id',
-        achievements: {
-          create: [
-            expect.objectContaining({
-              position: 0,
-              body: 'First exhibition',
-              objectKey: 'achievement:one',
-              data: Buffer.from('png'),
-            }),
-          ],
-        },
+      }),
+    });
+    expect(
+      tx.sellerProfileRevision.create.mock.calls[0]?.[0]?.data?.achievements,
+    ).toBeUndefined();
+    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        revisionId: 'draft-revision-id',
+        position: 0,
+        body: 'First exhibition',
+        objectKey: 'achievement:one',
+        data: Buffer.from('png'),
       }),
     });
     expect(tx.sellerProfile.update).toHaveBeenCalledWith({
@@ -140,7 +142,10 @@ describe('ensureEditableEditingRevision', () => {
           status: 'PENDING_REVIEW',
           editingRevisionId: 'pending-revision-id',
           publishedRevisionId: null,
-          editingRevision: { id: 'pending-revision-id', status: 'PENDING_REVIEW' },
+          editingRevision: {
+            id: 'pending-revision-id',
+            status: 'PENDING_REVIEW',
+          },
           publishedRevision: null,
         }),
         update: vi.fn(),
@@ -180,26 +185,63 @@ describe('ensureEditableEditingRevision', () => {
     expect(tx.sellerProfileRevision.create).not.toHaveBeenCalled();
   });
 
-  it('resolves a published achievement id onto the copied draft row after a prior fork', async () => {
+  it('resolves a published achievement id only from the fork map', async () => {
     const tx = {
-      sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue({
-          publishedRevisionId: 'published-revision-id',
-        }),
-      },
       sellerProfileRevisionAchievement: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({
-            position: 0,
-            body: 'First exhibition',
-            occurredAt: new Date('2025-01-02T00:00:00.000Z'),
-            objectKey: 'achievement:one',
-          }),
-        findMany: vi.fn().mockResolvedValue([
-          { id: 'draft-achievement-id', position: 0 },
-        ]),
+        findFirst: vi.fn(),
+      },
+    };
+
+    await expect(
+      resolveEditingAchievementId(
+        tx as never,
+        {
+          profileId: 'seller-profile-id',
+          revisionId: 'draft-revision-id',
+          achievementIdByPublishedId: new Map([
+            ['published-achievement-id', 'draft-achievement-id'],
+          ]),
+        },
+        'published-achievement-id',
+      ),
+    ).resolves.toBe('draft-achievement-id');
+    expect(
+      tx.sellerProfileRevisionAchievement.findFirst,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('accepts an achievement id that already belongs to the editing revision', async () => {
+    const tx = {
+      sellerProfileRevisionAchievement: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
+      },
+    };
+
+    await expect(
+      resolveEditingAchievementId(
+        tx as never,
+        {
+          profileId: 'seller-profile-id',
+          revisionId: 'draft-revision-id',
+          achievementIdByPublishedId: new Map(),
+        },
+        'draft-achievement-id',
+      ),
+    ).resolves.toBe('draft-achievement-id');
+    expect(tx.sellerProfileRevisionAchievement.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'draft-achievement-id',
+        revisionId: 'draft-revision-id',
+      },
+      select: { id: true },
+    });
+  });
+
+  it('does not guess a draft copy from published achievement content', async () => {
+    const tx = {
+      sellerProfileRevisionAchievement: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn(),
       },
     };
 
@@ -213,6 +255,7 @@ describe('ensureEditableEditingRevision', () => {
         },
         'published-achievement-id',
       ),
-    ).resolves.toBe('draft-achievement-id');
+    ).rejects.toThrow('Achievement not found');
+    expect(tx.sellerProfileRevisionAchievement.findMany).not.toHaveBeenCalled();
   });
 });

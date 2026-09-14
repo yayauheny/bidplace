@@ -82,18 +82,6 @@ export async function ensureEditableEditingRevision(
       profilePhotoByteLength: published.profilePhotoByteLength,
       profilePhotoChecksum: published.profilePhotoChecksum,
       profilePhotoObjectKey: published.profilePhotoObjectKey,
-      achievements: {
-        create: published.achievements.map((achievement) => ({
-          position: achievement.position,
-          occurredAt: achievement.occurredAt,
-          body: achievement.body,
-          mimeType: achievement.mimeType,
-          byteLength: achievement.byteLength,
-          checksum: achievement.checksum,
-          objectKey: achievement.objectKey,
-          data: achievement.data,
-        })),
-      },
     },
   });
   await tx.sellerProfile.update({
@@ -102,17 +90,22 @@ export async function ensureEditableEditingRevision(
   });
   await lockSellerProfileRevisionRowForUpdate(tx, draft.id);
 
-  const copies = await tx.sellerProfileRevisionAchievement.findMany({
-    where: { revisionId: draft.id },
-    select: { id: true, position: true },
-    orderBy: { position: 'asc' },
-  });
   const achievementIdByPublishedId = new Map<string, string>();
   for (const source of published.achievements) {
-    const copy = copies.find((item) => item.position === source.position);
-    if (copy) {
-      achievementIdByPublishedId.set(source.id, copy.id);
-    }
+    const copy = await tx.sellerProfileRevisionAchievement.create({
+      data: {
+        revisionId: draft.id,
+        position: source.position,
+        occurredAt: source.occurredAt,
+        body: source.body,
+        mimeType: source.mimeType,
+        byteLength: source.byteLength,
+        checksum: source.checksum,
+        objectKey: source.objectKey,
+        data: source.data,
+      },
+    });
+    achievementIdByPublishedId.set(source.id, copy.id);
   }
 
   return {
@@ -140,48 +133,5 @@ export async function resolveEditingAchievementId(
     return onEditing.id;
   }
 
-  const profile = await tx.sellerProfile.findUnique({
-    where: { id: editing.profileId },
-    select: { publishedRevisionId: true },
-  });
-  if (
-    !profile?.publishedRevisionId ||
-    profile.publishedRevisionId === editing.revisionId
-  ) {
-    return achievementId;
-  }
-
-  const published = await tx.sellerProfileRevisionAchievement.findFirst({
-    where: {
-      id: achievementId,
-      revisionId: profile.publishedRevisionId,
-    },
-    select: {
-      position: true,
-      body: true,
-      occurredAt: true,
-      objectKey: true,
-    },
-  });
-  if (!published) {
-    return achievementId;
-  }
-
-  const copies = await tx.sellerProfileRevisionAchievement.findMany({
-    where: {
-      revisionId: editing.revisionId,
-      body: published.body,
-      occurredAt: published.occurredAt,
-      objectKey: published.objectKey,
-    },
-    select: { id: true, position: true },
-    orderBy: { position: 'asc' },
-  });
-  if (copies.length === 1) {
-    return copies[0]!.id;
-  }
-  return (
-    copies.find((item) => item.position === published.position)?.id ??
-    achievementId
-  );
+  throw new NotFoundException('Achievement not found');
 }

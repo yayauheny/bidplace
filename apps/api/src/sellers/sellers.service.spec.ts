@@ -345,6 +345,7 @@ describe('SellersService', () => {
       profilePhotoObjectKey: 'seller-photo:seller-profile-id',
       achievements: [
         {
+          id: 'published-achievement-id',
           position: 0,
           occurredAt: new Date('2025-01-02T00:00:00.000Z'),
           body: 'First exhibition',
@@ -397,6 +398,7 @@ describe('SellersService', () => {
         update: vi.fn(),
       },
       sellerProfileRevisionAchievement: {
+        create: vi.fn().mockResolvedValue({ id: 'draft-achievement-id' }),
         findMany: vi.fn().mockResolvedValue([]),
       },
     };
@@ -425,15 +427,17 @@ describe('SellersService', () => {
       data: expect.objectContaining({
         profilePhotoObjectKey: 'seller-photo:seller-profile-id',
         profilePhotoMimeType: 'image/jpeg',
-        achievements: {
-          create: [
-            expect.objectContaining({
-              position: 0,
-              body: 'First exhibition',
-              objectKey: 'achievement:one',
-            }),
-          ],
-        },
+      }),
+    });
+    expect(
+      tx.sellerProfileRevision.create.mock.calls[0]?.[0]?.data?.achievements,
+    ).toBeUndefined();
+    expect(tx.sellerProfileRevisionAchievement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        revisionId: 'editing-revision-id',
+        position: 0,
+        body: 'First exhibition',
+        objectKey: 'achievement:one',
       }),
     });
   });
