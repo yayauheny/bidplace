@@ -10,10 +10,12 @@ function mainError(error) {
   process.exit(1);
 }
 
-let databaseName;
+let target;
 try {
-  databaseName = assertFigmaComparisonTarget(process.env.DATABASE_URL);
-  console.log(`Target disposable database: ${databaseName}`);
+  target = assertFigmaComparisonTarget(process.env.DATABASE_URL);
+  console.log(
+    `Target allowlisted database: ${target.databaseName} schema ${target.schemaName}`,
+  );
   if (printTargetOnly) {
     process.exit(0);
   }
@@ -24,7 +26,7 @@ try {
 const { PrismaClient } = require('../dist');
 const prisma = new PrismaClient();
 
-syncFigmaComparisonFixture(prisma)
+syncFigmaComparisonFixture(prisma, process.env, process.env.DATABASE_URL)
   .then((summary) => {
     console.log(
       `Synced Figma comparison author ${summary.slug} works ${summary.publicIds.join(', ')} curatorSelection ${summary.curatorSelectionPublicId}`,

@@ -11,21 +11,21 @@ import {
 } from './http-test-app';
 
 const requireFromHere = createRequire(__filename);
-const {
-  assertFigmaComparisonTarget,
-  MANIFEST,
-  verifyFigmaComparisonRecords,
-} = requireFromHere(
-  '../../../../packages/database/prisma/figma-comparison-fixture.js',
-) as {
-  assertFigmaComparisonTarget: (databaseUrl: string) => string;
-  MANIFEST: {
-    author: { profilePhoto: { checksum: string } };
-    curatorSelectionPublicId: string;
-    works: Array<{ publicId: string; checksum: string }>;
+const { assertFigmaComparisonTarget, MANIFEST, verifyFigmaComparisonRecords } =
+  requireFromHere(
+    '../../../../packages/database/prisma/figma-comparison-fixture.js',
+  ) as {
+    assertFigmaComparisonTarget: (databaseUrl: string) => {
+      databaseName: string;
+      schemaName: string;
+    };
+    MANIFEST: {
+      author: { profilePhoto: { checksum: string } };
+      curatorSelectionPublicId: string;
+      works: Array<{ publicId: string; checksum: string }>;
+    };
+    verifyFigmaComparisonRecords: (prisma: PrismaClient) => Promise<unknown>;
   };
-  verifyFigmaComparisonRecords: (prisma: PrismaClient) => Promise<unknown>;
-};
 
 const applyUrl = process.env.FIGMA_COMPARISON_DATABASE_URL;
 
@@ -36,7 +36,7 @@ describe.skipIf(!applyUrl)('applied Figma comparison preview database', () => {
   let databaseName: string;
 
   beforeAll(async () => {
-    databaseName = assertFigmaComparisonTarget(applyUrl);
+    databaseName = assertFigmaComparisonTarget(applyUrl).databaseName;
     prisma = new PrismaClient({
       datasources: { db: { url: applyUrl } },
     });

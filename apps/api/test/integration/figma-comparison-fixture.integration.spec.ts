@@ -17,40 +17,52 @@ import {
 } from './test-database';
 
 const requireFromHere = createRequire(__filename);
-const {
-  FIGMA_COMPARISON_SLUG,
-  MANIFEST,
-  syncFigmaComparisonFixture,
-} = requireFromHere(
-  '../../../../packages/database/prisma/figma-comparison-fixture.js',
-) as {
-  FIGMA_COMPARISON_SLUG: string;
-  MANIFEST: {
-    author: {
-      fullName: string;
-      city: string;
-      country: string;
-      discipline: string;
-      shortDescription: string;
-      practice: string;
-      profilePhoto: { checksum: string };
+const { FIGMA_COMPARISON_SLUG, MANIFEST, syncFigmaComparisonFixture } =
+  requireFromHere(
+    '../../../../packages/database/prisma/figma-comparison-fixture.js',
+  ) as {
+    FIGMA_COMPARISON_SLUG: string;
+    MANIFEST: {
+      author: {
+        fullName: string;
+        city: string;
+        country: string;
+        discipline: string;
+        shortDescription: string;
+        practice: string;
+        profilePhoto: { checksum: string; fileName: string };
+      };
+      curatorSelectionPublicId: string;
+      works: Array<{ publicId: string; title: string; checksum: string }>;
+      achievements: Array<{ body: string; checksum?: string }>;
     };
-    curatorSelectionPublicId: string;
-    works: Array<{ publicId: string; title: string; checksum: string }>;
-    achievements: Array<{ body: string; checksum?: string }>;
+    syncFigmaComparisonFixture: (
+      prisma:
+        | PrismaClient
+        | { $queryRaw: (...args: unknown[]) => Promise<unknown> },
+      env?: NodeJS.ProcessEnv,
+      databaseUrl?: string,
+    ) => Promise<{
+      profilePhotoChecksum: string;
+      works: Array<{ publicId: string; checksum: string }>;
+      achievementChecksums: string[];
+      curatorSelectionPublicId: string;
+    }>;
   };
-  syncFigmaComparisonFixture: (
-    prisma:
-      | PrismaClient
-      | { $queryRaw: (...args: unknown[]) => Promise<unknown> },
-    env?: NodeJS.ProcessEnv,
-  ) => Promise<{
-    profilePhotoChecksum: string;
-    works: Array<{ publicId: string; checksum: string }>;
-    achievementChecksums: string[];
-    curatorSelectionPublicId: string;
-  }>;
-};
+const { assertConnectedFigmaComparisonTarget, assertFigmaComparisonTarget } =
+  requireFromHere(
+    '../../../../packages/database/prisma/figma-comparison-target.js',
+  ) as {
+    assertConnectedFigmaComparisonTarget: (
+      prisma: { $queryRaw: (...args: unknown[]) => Promise<unknown> },
+      env?: NodeJS.ProcessEnv,
+      databaseUrl?: string,
+    ) => Promise<{ databaseName: string; schemaName: string }>;
+    assertFigmaComparisonTarget: (
+      databaseUrl: string,
+      env?: NodeJS.ProcessEnv,
+    ) => { databaseName: string; schemaName: string };
+  };
 
 const localFixtureEnv = {
   NODE_ENV: 'test',
@@ -68,13 +80,35 @@ const SENTINEL_SLUG = 'sentinel-author';
 let context: IntegrationDatabaseContext;
 let prisma: PrismaClient;
 
-function runSyncCli(env: NodeJS.ProcessEnv): string {
-  return execFileSync(process.execPath, [syncPath], {
+function runSyncCli(env: NodeJS.ProcessEnv, args: string[] = []): string {
+  return execFileSync(process.execPath, [syncPath, ...args], {
     cwd: resolve(repositoryRoot, 'packages/database'),
     env,
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
+}
+
+function refuseTarget(databaseName: string, schemaName = 'public'): string {
+  return `Refusing Figma comparison fixture for database "${databaseName}" schema "${schemaName}"`;
+}
+
+function localCliEnv(databaseUrl: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    NODE_ENV: 'test',
+    APP_ENV: 'local',
+    ALLOW_FIGMA_COMPARISON_FIXTURE: 'true',
+    DATABASE_URL: databaseUrl,
+  };
+}
+
+function mockConnected(databaseName: string, schemaName: string) {
+  return {
+    $queryRaw: async () => [
+      { database_name: databaseName, schema_name: schemaName },
+    ],
+  };
 }
 
 function assertPublicPayload(payload: unknown): void {
@@ -101,32 +135,62 @@ beforeAll(async () => {
 afterAll(async () => context?.cleanup());
 
 describe('figma comparison fixture executable guards', () => {
-  it('refuses the shared bidplace database before any write', () => {
-    expect(() =>
-      runSyncCli({
-        ...process.env,
-        NODE_ENV: 'test',
-        APP_ENV: 'local',
-        ALLOW_FIGMA_COMPARISON_FIXTURE: 'true',
-        DATABASE_URL: 'postgresql://auction:auction@127.0.0.1:5432/bidplace',
-      }),
-    ).toThrow(
-      'Refusing Figma comparison fixture for non-disposable database "bidplace"',
+  it.each([
+    ['bidplace', 'postgresql://auction:auction@127.0.0.1:5432/bidplace'],
+    [
+      'bidplace_e2e',
+      'postgresql://auction:auction@127.0.0.1:5432/bidplace_e2e',
+    ],
+    ['postgres', 'postgresql://auction:auction@127.0.0.1:5432/postgres'],
+    [
+      'foo_test_prod',
+      'postgresql://auction:auction@127.0.0.1:5432/foo_test_prod',
+    ],
+    [
+      'production_preview',
+      'postgresql://auction:auction@127.0.0.1:5432/production_preview',
+    ],
+    [
+      'stage_integration',
+      'postgresql://auction:auction@127.0.0.1:5432/stage_integration',
+    ],
+  ])('refuses %s before any write', (_name, databaseUrl) => {
+    expect(() => runSyncCli(localCliEnv(databaseUrl))).toThrow(
+      refuseTarget(_name),
     );
   });
 
-  it('refuses bidplace_e2e before any write', () => {
+  it('refuses bidplace_integration unless the URL schema is itest_*', () => {
     expect(() =>
-      runSyncCli({
-        ...process.env,
-        NODE_ENV: 'test',
-        APP_ENV: 'local',
-        ALLOW_FIGMA_COMPARISON_FIXTURE: 'true',
-        DATABASE_URL:
-          'postgresql://auction:auction@127.0.0.1:5432/bidplace_e2e',
-      }),
-    ).toThrow(
-      'Refusing Figma comparison fixture for non-disposable database "bidplace_e2e"',
+      runSyncCli(
+        localCliEnv(
+          'postgresql://auction:auction@127.0.0.1:5432/bidplace_integration',
+        ),
+        ['--print-target-only'],
+      ),
+    ).toThrow(refuseTarget('bidplace_integration', 'public'));
+  });
+
+  it('accepts allowlisted URL targets without connecting', () => {
+    expect(
+      runSyncCli(
+        localCliEnv(
+          'postgresql://auction:auction@127.0.0.1:5432/bidplace_figma_comparison',
+        ),
+        ['--print-target-only'],
+      ),
+    ).toContain(
+      'Target allowlisted database: bidplace_figma_comparison schema public',
+    );
+    expect(
+      runSyncCli(
+        localCliEnv(
+          'postgresql://auction:auction@127.0.0.1:5432/bidplace_integration?schema=itest_abc123',
+        ),
+        ['--print-target-only'],
+      ),
+    ).toContain(
+      'Target allowlisted database: bidplace_integration schema itest_abc123',
     );
   });
 
@@ -146,6 +210,31 @@ describe('figma comparison fixture executable guards', () => {
 });
 
 describe('figma comparison fixture programmatic guards', () => {
+  it.each([
+    ['bidplace', 'postgresql://auction:auction@127.0.0.1:5432/bidplace'],
+    [
+      'bidplace_e2e',
+      'postgresql://auction:auction@127.0.0.1:5432/bidplace_e2e',
+    ],
+    ['postgres', 'postgresql://auction:auction@127.0.0.1:5432/postgres'],
+    [
+      'foo_test_prod',
+      'postgresql://auction:auction@127.0.0.1:5432/foo_test_prod',
+    ],
+    [
+      'production_preview',
+      'postgresql://auction:auction@127.0.0.1:5432/production_preview',
+    ],
+    [
+      'stage_integration',
+      'postgresql://auction:auction@127.0.0.1:5432/stage_integration',
+    ],
+  ])('refuses URL %s before connecting', (_name, databaseUrl) => {
+    expect(() =>
+      assertFigmaComparisonTarget(databaseUrl, { ...localFixtureEnv }),
+    ).toThrow(refuseTarget(_name));
+  });
+
   it('refuses production-like profiles before any write', async () => {
     await expect(
       syncFigmaComparisonFixture(prisma, {
@@ -158,26 +247,83 @@ describe('figma comparison fixture programmatic guards', () => {
     );
   });
 
-  it('refuses the shared bidplace database from the connected session', async () => {
+  it.each([
+    ['bidplace', 'public'],
+    ['bidplace_e2e', 'public'],
+    ['postgres', 'public'],
+    ['foo_test_prod', 'public'],
+    ['production_preview', 'public'],
+    ['stage_integration', 'public'],
+    ['bidplace_integration', 'public'],
+    ['bidplace_figma_comparison', 'itest_abc123'],
+  ])(
+    'refuses connected %s schema %s before asset reads',
+    async (databaseName, schemaName) => {
+      await expect(
+        syncFigmaComparisonFixture(mockConnected(databaseName, schemaName), {
+          ...localFixtureEnv,
+        }),
+      ).rejects.toThrow(refuseTarget(databaseName, schemaName));
+    },
+  );
+
+  it('refuses a URL that does not match the connected database', async () => {
     await expect(
-      syncFigmaComparisonFixture(
-        { $queryRaw: async () => [{ name: 'bidplace' }] },
+      assertConnectedFigmaComparisonTarget(
+        mockConnected('bidplace_integration', 'itest_abc123'),
         { ...localFixtureEnv },
+        'postgresql://auction:auction@127.0.0.1:5432/bidplace_figma_comparison?schema=public',
       ),
     ).rejects.toThrow(
-      'Refusing Figma comparison fixture for non-disposable database "bidplace"',
+      'Refusing Figma comparison fixture because DATABASE_URL targets "bidplace_figma_comparison" schema "public" but the connected session is "bidplace_integration" schema "itest_abc123"',
     );
   });
 
-  it('refuses bidplace_e2e from the connected session', async () => {
+  it('refuses a URL that does not match the connected schema', async () => {
     await expect(
-      syncFigmaComparisonFixture(
-        { $queryRaw: async () => [{ name: 'bidplace_e2e' }] },
+      assertConnectedFigmaComparisonTarget(
+        mockConnected('bidplace_integration', 'itest_abc123'),
         { ...localFixtureEnv },
+        'postgresql://auction:auction@127.0.0.1:5432/bidplace_integration?schema=itest_other',
       ),
     ).rejects.toThrow(
-      'Refusing Figma comparison fixture for non-disposable database "bidplace_e2e"',
+      'Refusing Figma comparison fixture because DATABASE_URL targets "bidplace_integration" schema "itest_other" but the connected session is "bidplace_integration" schema "itest_abc123"',
     );
+  });
+
+  it('refuses when the live session does not match an allowlisted URL', async () => {
+    await expect(
+      syncFigmaComparisonFixture(
+        prisma,
+        { ...localFixtureEnv },
+        'postgresql://auction:auction@127.0.0.1:5432/bidplace_figma_comparison?schema=public',
+      ),
+    ).rejects.toThrow(
+      /DATABASE_URL targets "bidplace_figma_comparison" schema "public" but the connected session is "bidplace_integration" schema "itest_/,
+    );
+  });
+
+  it('refuses when the live schema does not match the URL schema', async () => {
+    const url = new URL(context.databaseUrl);
+    url.searchParams.set('schema', 'itest_other');
+    await expect(
+      syncFigmaComparisonFixture(
+        prisma,
+        { ...localFixtureEnv },
+        url.toString(),
+      ),
+    ).rejects.toThrow(
+      `DATABASE_URL targets "bidplace_integration" schema "itest_other" but the connected session is "bidplace_integration" schema "${context.schemaName}"`,
+    );
+  });
+
+  it('accepts the connected integration schema without a URL', async () => {
+    await expect(
+      assertConnectedFigmaComparisonTarget(prisma, { ...localFixtureEnv }),
+    ).resolves.toEqual({
+      databaseName: 'bidplace_integration',
+      schemaName: context.schemaName,
+    });
   });
 });
 
@@ -229,7 +375,10 @@ describe('figma comparison fixture sync and public HTTP', () => {
       ...localFixtureEnv,
     });
 
-    http = await createHttpTestApp(context.databaseUrl, 'http://localhost:8081');
+    http = await createHttpTestApp(
+      context.databaseUrl,
+      'http://localhost:8081',
+    );
     guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
   });
 
@@ -262,12 +411,14 @@ describe('figma comparison fixture sync and public HTTP', () => {
 
     expect(
       await prisma.product.count({
-        where: { publicId: { in: MANIFEST.works.map((work) => work.publicId) } },
+        where: {
+          publicId: { in: MANIFEST.works.map((work) => work.publicId) },
+        },
       }),
     ).toBe(4);
-    expect(await prisma.sellerProfile.count({ where: { slug: 'anna-morozova' } })).toBe(
-      0,
-    );
+    expect(
+      await prisma.sellerProfile.count({ where: { slug: 'anna-morozova' } }),
+    ).toBe(0);
   });
 
   it('returns public comparison data, curator selection, checksums and no private fields', async () => {
@@ -348,9 +499,9 @@ describe('figma comparison fixture sync and public HTTP', () => {
       expect(work.author.slug).toBe('vex');
       expect(work.work.title).toBe(expected.title);
       expect(work.work.images[0]?.checksum).toBe(expected.checksum);
-      expect(
-        work.relatedWorks.map((item) => item.work.publicId),
-      ).not.toContain(expected.publicId);
+      expect(work.relatedWorks.map((item) => item.work.publicId)).not.toContain(
+        expected.publicId,
+      );
       assertPublicPayload(work);
 
       const imageResponse = await guest.get(

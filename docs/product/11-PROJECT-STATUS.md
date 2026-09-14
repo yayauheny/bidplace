@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-14 — Figma comparison fixture correction
+
+- `Implemented`: Figma comparison sync uses a strict allowlist, not a substring
+  regex. Allowed targets are `bidplace_figma_comparison` + schema `public`, and
+  `bidplace_integration` + schema `itest_*` for API integration tests.
+  `current_database()` and `current_schema()` are checked before PNG asset reads
+  and before writes. PNG reads are a private step of that same `sync` call after
+  the guard returns; there is no module-level unlock or public asset loader.
+  A supplied URL must match the connected session. Names
+  `foo_test_prod`, `production_preview`, `stage_integration`, `bidplace_e2e`,
+  `bidplace`, and `postgres` are refused. Coverage:
+  `figma-comparison-fixture.integration.spec.ts`.
+- `Not claimed`: visual parity, Founder Accepted, launch-ready, or writes to
+  shared `bidplace`.
+
 ## 2026-09-14 — Mobile-web correction
 
 - `Implemented` (mobile web only): public AppShell shows a compact
@@ -30,13 +45,12 @@
 
 ## 2026-09-14 — Safe Figma comparison fixture
 
-- `Implemented`: Vex-only comparison fixture with `current_database()` plus
-  local/test env guards. `syncFigmaComparisonFixture()` cannot skip the CLI
-  guard. Targets `bidplace`, `bidplace_e2e`, `postgres`, `auction` and other
-  production-like names are refused before the first write. Two applies on a
-  disposable integration schema are idempotent and keep source PNG checksums.
-  No `deleteMany`, no `pnpm db:seed`, no shared `bidplace` writes, and no
-  non-parity Anna assets. Coverage:
+- `Implemented`: Vex-only comparison fixture with connected-database guards.
+  Later tightened by [Figma comparison fixture correction](#2026-09-14--figma-comparison-fixture-correction)
+  to an exact database/schema allowlist. `syncFigmaComparisonFixture()` cannot
+  skip the CLI guard. Two applies on a disposable integration schema are
+  idempotent and keep source PNG checksums. No `deleteMany`, no `pnpm db:seed`,
+  no shared `bidplace` writes, and no non-parity Anna assets. Coverage:
   `figma-comparison-fixture.integration.spec.ts`.
 - `Not claimed`: visual parity, Founder Accepted, or launch-ready.
 
@@ -122,7 +136,7 @@
   `test:e2e:stabilization` is the 38 visual Chromium+WebKit suite;
   `media-resilience.spec.ts` is restored without the obsolete header/login
   assertion. Protected `/profile` keeps PageState «Не удалось проверить доступ»
-  + «Повторить». Public Home session alert/retry is the later mobile-web
+  and «Повторить». Public Home session alert/retry is the later mobile-web
   correction, not this preservation commit. Coverage:
   `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
   `floating-dock.spec.ts`, `author-application-publication.spec.ts`,

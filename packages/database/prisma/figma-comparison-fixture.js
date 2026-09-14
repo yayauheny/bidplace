@@ -52,7 +52,7 @@ const PUBLISHED_AT = new Date('2026-04-13T12:00:00.000Z');
 const REVIEWED_AT = new Date('2026-04-02T00:00:00.000Z');
 const SUBMITTED_AT = new Date('2026-04-01T00:00:00.000Z');
 
-function loadPngAsset(relativePath, expected) {
+function readPngAsset(relativePath, expected) {
   const data = readFileSync(join(FIXTURE_DIRECTORY, relativePath));
   const checksum = createHash('sha256').update(data).digest('hex');
   if (expected.checksum && checksum !== expected.checksum) {
@@ -189,7 +189,7 @@ async function ensureCategory(prisma) {
   return AUTHOR_IDS.category;
 }
 
-function achievementCreates(revisionId) {
+function achievementCreates(revisionId, readAsset) {
   return MANIFEST.achievements.map((item, index) => {
     const id = ACHIEVEMENT_IDS[index] ?? randomUUID();
     if (!item.fileName) {
@@ -202,7 +202,7 @@ function achievementCreates(revisionId) {
       };
     }
 
-    const image = loadPngAsset(item.fileName, item);
+    const image = readAsset(item.fileName, item);
     return {
       id,
       revisionId,
@@ -218,7 +218,7 @@ function achievementCreates(revisionId) {
   });
 }
 
-async function ensureAuthor(prisma, userId, photo) {
+async function ensureAuthor(prisma, userId, photo, readAsset) {
   const bySlug = await prisma.sellerProfile.findUnique({
     where: { slug: FIGMA_COMPARISON_SLUG },
   });
@@ -296,7 +296,7 @@ async function ensureAuthor(prisma, userId, photo) {
     });
   }
 
-  for (const achievement of achievementCreates(revisionId)) {
+  for (const achievement of achievementCreates(revisionId, readAsset)) {
     const { id, ...fields } = achievement;
     await prisma.sellerProfileRevisionAchievement.upsert({
       where: { id },
@@ -316,9 +316,15 @@ async function ensureAuthor(prisma, userId, photo) {
   return profile.id;
 }
 
-async function ensureWork(prisma, sellerProfileId, categoryId, work) {
+async function ensureWork(
+  prisma,
+  sellerProfileId,
+  categoryId,
+  work,
+  readAsset,
+) {
   const ids = WORK_IDS[work.publicId];
-  const image = loadPngAsset(work.fileName, work);
+  const image = readAsset(work.fileName, work);
   const fields = workPublicFields(work, categoryId);
   const existing = await prisma.product.findUnique({
     where: { publicId: work.publicId },
@@ -494,19 +500,30 @@ async function ensureWork(prisma, sellerProfileId, categoryId, work) {
   return product.id;
 }
 
-async function syncFigmaComparisonFixture(prisma, env = process.env) {
-  await assertConnectedFigmaComparisonTarget(prisma, env);
-  const photo = loadPngAsset(
+async function syncFigmaComparisonFixture(
+  prisma,
+  env = process.env,
+  databaseUrl,
+) {
+  await assertConnectedFigmaComparisonTarget(prisma, env, databaseUrl);
+  const photo = readPngAsset(
     MANIFEST.author.profilePhoto.fileName,
     MANIFEST.author.profilePhoto,
   );
   const userId = await ensureUser(prisma);
   const categoryId = await ensureCategory(prisma);
-  const sellerProfileId = await ensureAuthor(prisma, userId, photo);
+  const sellerProfileId = await ensureAuthor(
+    prisma,
+    userId,
+    photo,
+    readPngAsset,
+  );
 
   const workIds = [];
   for (const work of MANIFEST.works) {
-    workIds.push(await ensureWork(prisma, sellerProfileId, categoryId, work));
+    workIds.push(
+      await ensureWork(prisma, sellerProfileId, categoryId, work, readPngAsset),
+    );
   }
 
   const featured = await prisma.product.findUniqueOrThrow({
@@ -537,7 +554,9 @@ async function verifyFigmaComparisonRecords(prisma) {
     include: {
       publishedRevision: { include: { achievements: true } },
       products: {
-        where: { publicId: { in: MANIFEST.works.map((work) => work.publicId) } },
+        where: {
+          publicId: { in: MANIFEST.works.map((work) => work.publicId) },
+        },
         include: {
           publishedRevision: true,
           images: { orderBy: { position: 'asc' } },
@@ -620,7 +639,6 @@ module.exports = {
   MANIFEST,
   assertConnectedFigmaComparisonTarget,
   assertFigmaComparisonTarget,
-  loadPngAsset,
   syncFigmaComparisonFixture,
   verifyFigmaComparisonRecords,
 };
