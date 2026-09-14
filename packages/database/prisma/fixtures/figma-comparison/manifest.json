@@ -1,0 +1,113 @@
+{
+  "purpose": "Local/test-only Figma comparison inputs. Not a visual-parity claim.",
+  "handoff": "design/figma-handoff/portfolio-phone-v1",
+  "nodes": {
+    "creatorFullWorks": "621:19820",
+    "creatorAbout": "621:19475",
+    "creatorCompact": "526:14482",
+    "creatorVisitorWorks": "526:13351",
+    "achievements": "742:20510",
+    "homeDefault": "436:1137",
+    "homeFirstFold": "439:4404"
+  },
+  "author": {
+    "email": "vex@bidplace.test",
+    "slug": "vex",
+    "handle": "@vex",
+    "fullName": "Илья Васильев",
+    "city": "Минск",
+    "country": "BY",
+    "discipline": "Художник, Картины, Масло",
+    "shortDescription": "Илья Васильев — белорусский художник, чьи работы исследуют тонкие грани между реальностью и воображением. Он родился и вырос в Минске, где начал свой творческий путь. Получив академическое образование, он продолжил развивать свой уникальный стиль, сочетающий классические традиции и современное видение.",
+    "practice": "Моя практика основана на глубоком интересе к текстуре, цвету и свету. Я работаю исключительно маслом, используя сложную многослойную технику, чтобы создавать атмосферные, почти осязаемые образы. В своих картинах я стремлюсь передать не только видимое, но и эмоциональное состояние, скрытое за повседневностью.",
+    "openingQuote": "“Ищу логику в абсурде.\nСтираю грань между реальностью и сном”",
+    "openingQuoteNote": "Present on compact/home opening nodes. No public API field exists; Home currently shows shortDescription. Kept here as handoff copy only.",
+    "profilePhoto": {
+      "fileName": "profile/ilya-vasiliev.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/screens/creator/creator__about__390x1609__node-621-19475/assets/002-621_19481.png",
+      "nodeId": "621:19481",
+      "checksum": "85c040c62d5ddfea4f3be8392ee2e8ef86f3357e9433204f524e9b0898c11c7d",
+      "byteLength": 66005,
+      "width": 417,
+      "height": 417
+    }
+  },
+  "category": {
+    "slug": "figma-vex-paintings",
+    "name": "Картины"
+  },
+  "curatorSelectionPublicId": "figVexWk001",
+  "works": [
+    {
+      "publicId": "figVexWk001",
+      "title": "Salvador Dalí Estate & Fundació Gala Сальвадор Дали",
+      "fileName": "works/salvador-dali-estate.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/screens/creator/creator__works__390x2703__node-621-19820/assets/003-621_19881.png",
+      "nodeId": "621:19881",
+      "checksum": "0ba6bbaa311cd086d2ec75a19f7be705fd43507b8474a0b5994a8e85846c1f18",
+      "byteLength": 4820919,
+      "width": 1464,
+      "height": 1952
+    },
+    {
+      "publicId": "figVexWk002",
+      "title": "Картина по фото в стиле шарж",
+      "fileName": "works/photo-caricature.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/screens/creator/creator__works__390x2703__node-621-19820/assets/004-621_19902.png",
+      "nodeId": "621:19902",
+      "checksum": "980b48b32535a13b9121a815b58b58f2e303526192087e604def6fe113e64514",
+      "byteLength": 779965,
+      "width": 718,
+      "height": 957
+    },
+    {
+      "publicId": "figVexWk003",
+      "title": "Желтый сапфир",
+      "fileName": "works/yellow-sapphire.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/screens/creator/creator__works__390x2703__node-621-19820/assets/005-621_19916.png",
+      "nodeId": "621:19916",
+      "checksum": "b5ff04a95f91e5f23eca997b2aaa74f8701e6e1df5ab5d130a0d99528c12a197",
+      "byteLength": 5726577,
+      "width": 1464,
+      "height": 1952
+    },
+    {
+      "publicId": "figVexWk004",
+      "title": "Color calibration",
+      "fileName": "works/color-calibration.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/screens/creator/creator__works__390x2703__node-621-19820/assets/006-621_19930.png",
+      "nodeId": "621:19930",
+      "checksum": "fab18a3154f3a77f8392b07fc998b715f46be7ae842107290fb11dbb525200af",
+      "byteLength": 2954307,
+      "width": 1464,
+      "height": 1952
+    }
+  ],
+  "achievements": [
+    {
+      "position": 0,
+      "occurredAt": "2026-04-01T00:00:00.000Z",
+      "body": "Картина \"Алиса в Зазеркалье\" — современное произведение, представленное на выставке Кунибала Ректора, посвящённой футуристическим темам и времени.",
+      "fileName": "achievements/alice-exhibition-a.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/components/achievements-timeline__1471x641__node-742-20510/assets/001-742_20503.png",
+      "nodeId": "742:20503",
+      "checksum": "98e5c00b44d3134ef5b7d36fb21f3c57fabf997a8ccf6953cde3a8dcb3220f18",
+      "byteLength": 403706
+    },
+    {
+      "position": 1,
+      "occurredAt": "2026-04-01T00:00:00.000Z",
+      "body": "Картина \"Алиса в Зазеркалье\" — современное произведение, представленное на выставке Кунибала Ректора, посвящённой футуристическим темам и времени.",
+      "fileName": "achievements/alice-exhibition-b.png",
+      "source": "design/figma-handoff/portfolio-phone-v1/components/achievements-timeline__1471x641__node-742-20510/assets/002-742_20508.png",
+      "nodeId": "742:20508",
+      "checksum": "ce54723bb119d9e80c8d339be0f045c760112e8924f78394ed017f58175f47f3",
+      "byteLength": 136835
+    },
+    {
+      "position": 2,
+      "occurredAt": "2016-01-01T00:00:00.000Z",
+      "body": "Закончил ВУЗ технико-прикладнических наук"
+    }
+  ]
+}
