@@ -162,6 +162,23 @@ After changing UI:
 - Static Pen frames do not exhaust interaction behavior. Implement hover, focus, open/close, blur, artwork atmosphere, sticky transitions and reduced-motion exactly from `docs/design/03-DESIGN-SYSTEM.md`; never add route-local animation guesses or edit Pen to show them.
 - Verify visual parity at 1440, 1024, and 390 px with matched screenshots, plus required content, role, state, keyboard, zoom, and reduced-motion coverage.
 
+### Figma UI Implementation
+
+When implementing a Figma design, do not locally "tune" a screen with one-off inline values just to match a specific screenshot.
+
+If the difference belongs to a repeatable visual pattern — typography, button size/variant, colors, radius, spacing token, chip, input, card, and similar — first check the existing design system. If no matching option exists, add the correct semantic token, variant, or component API and use it.
+
+Local values are allowed only for genuinely unique geometry of a specific component when it is not a repeatable pattern.
+
+Priority:
+
+1. Exact Figma match.
+2. Reuse the existing design system.
+3. Extend the design system with a new semantic variant or token.
+4. Only then a local style, if the value is unique to that layout.
+
+Do not replace an exact Figma style with the nearest similar existing variant when they are visually different.
+
 ### Task Completion
 
 Before the final response:
