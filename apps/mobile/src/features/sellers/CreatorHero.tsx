@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
@@ -47,9 +47,6 @@ export function CreatorHero({
       <View
         style={{
           alignItems: 'center',
-          alignSelf: 'center',
-          width: '100%',
-          maxWidth: designTokens.layout.phoneWidth,
           gap: designTokens.space.authorSectionGap,
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.logoTop,
@@ -98,32 +95,11 @@ export function CreatorHero({
           >
             <View
               testID="creator-handle"
-              style={{ alignSelf: 'stretch', position: 'relative' }}
+              style={{ alignSelf: 'center', maxWidth: '100%', minWidth: 0 }}
             >
-              <View
-                testID="creator-handle-expanded"
-                aria-hidden={compact}
-                style={{ alignSelf: 'stretch' }}
-              >
-                <AppText
-                  role="profileHandle"
-                  numberOfLines={1}
-                  style={{ textAlign: 'center', flexShrink: 1 }}
-                >
-                  @{profile.slug}
-                </AppText>
-              </View>
-              {Platform.OS === 'web' ? (
-                <View
-                  testID="creator-handle-compact"
-                  aria-hidden={!compact}
-                  style={{ position: 'absolute', left: 0, top: 0 }}
-                >
-                  <AppText role="profileHandleCompact" numberOfLines={1}>
-                    @{profile.slug}
-                  </AppText>
-                </View>
-              ) : null}
+              <AppText role="profileHandle" numberOfLines={1}>
+                @{profile.slug}
+              </AppText>
             </View>
             <View
               aria-hidden={compact}

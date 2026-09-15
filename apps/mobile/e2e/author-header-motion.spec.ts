@@ -117,8 +117,13 @@ async function creatorMetrics(page: Page) {
     const header = document.querySelector('[data-testid="creator-sticky-header"]');
     const labeled = document.querySelector('[data-testid="creator-scroll"]');
     const avatar = document.querySelector('[data-testid="creator-avatar"]');
-    const handle = document.querySelector('[data-testid="creator-handle-compact"]');
-    const expanded = document.querySelector('[data-testid="creator-handle-expanded"]');
+    const handle = document.querySelector('[data-testid="creator-handle"]');
+    const compactHandle = document.querySelector(
+      '[data-testid="creator-handle-compact"]',
+    );
+    const expandedHandle = document.querySelector(
+      '[data-testid="creator-handle-expanded"]',
+    );
     const actions = document.querySelector('[data-testid="creator-actions"]');
     const tabs = document.querySelector('[role="tablist"]');
     const overflow = [
@@ -128,6 +133,13 @@ async function creatorMetrics(page: Page) {
     const socials = document.querySelectorAll(
       '[data-testid^="creator-social-"]:not([data-testid="creator-social-overflow"])',
     );
+    const authorHeader = document.querySelector('[data-testid="author-header"]');
+    const headerHandleTexts = authorHeader
+      ? [...authorHeader.querySelectorAll('*')].filter((node) => {
+          const text = node.textContent?.trim() ?? '';
+          return node.childElementCount === 0 && text.startsWith('@');
+        })
+      : [];
     const boxes = [avatar, handle, actions, tabs]
       .filter((node): node is Element => Boolean(node))
       .map((node) => node.getBoundingClientRect());
@@ -151,25 +163,23 @@ async function creatorMetrics(page: Page) {
       scrollTop: port instanceof HTMLElement ? port.scrollTop : 0,
       avatar: avatar?.getBoundingClientRect().toJSON(),
       handle: handle?.getBoundingClientRect().toJSON(),
-      expanded: expanded?.getBoundingClientRect().toJSON(),
+      handleCount: headerHandleTexts.length,
+      compactHandleCount: compactHandle ? 1 : 0,
+      expandedHandleCount: expandedHandle ? 1 : 0,
       actions: actions?.getBoundingClientRect().toJSON(),
       tabs: tabs?.getBoundingClientRect().toJSON(),
       handleFont: (() => {
         if (!handle) {
           return null;
         }
-        const style =
-          [...handle.querySelectorAll('*'), handle]
-            .map((node) => getComputedStyle(node))
-            .find(
-              (item) =>
-                item.fontSize === '16px' || /Inter_500/.test(item.fontFamily),
-            ) ?? getComputedStyle(handle);
+        const style = getComputedStyle(handle);
+        const transform = style.transform;
         return {
           fontFamily: style.fontFamily,
           fontSize: style.fontSize,
           fontWeight: style.fontWeight,
           letterSpacing: style.letterSpacing,
+          transform,
         };
       })(),
       overflowCount: overflow.length,
@@ -230,6 +240,10 @@ test.describe('author header motion', () => {
     const beforeDelay = await creatorMetrics(page);
     expect(beforeDelay.progress).toBe(0);
     expect(beforeDelay.overflow).toBe(false);
+    expect(beforeDelay.handleCount).toBe(1);
+    expect(beforeDelay.compactHandleCount).toBe(0);
+    expect(beforeDelay.handle?.x).toBeGreaterThan(40);
+    expect(beforeDelay.handle?.height).toBeCloseTo(29, 1);
 
     await page.evaluate(() => {
       const labeled = document.querySelector('[data-testid="creator-scroll"]');
@@ -262,6 +276,9 @@ test.describe('author header motion', () => {
       measurements[String(Math.round(percent * 100))] = metrics;
       expect(metrics.overflow).toBe(false);
       expect(metrics.shareCount).toBe(1);
+      expect(metrics.handleCount).toBe(1);
+      expect(metrics.compactHandleCount).toBe(0);
+      expect(metrics.expandedHandleCount).toBe(0);
       await page.screenshot({
         path: resolve(motionDir, `${prefix}-${Math.round(percent * 100)}.png`),
       });
@@ -304,17 +321,19 @@ test.describe('author header motion', () => {
     expect(frames[4]).toBeCloseTo(1, 2);
 
     const compact = await creatorMetrics(page);
+    expect(compact.handleCount).toBe(1);
+    expect(compact.compactHandleCount).toBe(0);
+    expect(compact.expandedHandleCount).toBe(0);
     expect(compact.avatar?.width).toBeCloseTo(48, 1);
     expect(compact.avatar?.x).toBeCloseTo(20, 1);
     expect(compact.avatar?.y).toBeCloseTo(44, 2);
     expect(compact.tabs?.y).toBeCloseTo(186, 2);
-    const compactSize = Number.parseFloat(compact.handleFont?.fontSize ?? '');
-    if (Number.isFinite(compactSize) && compactSize > 0) {
-      expect(compactSize).toBeCloseTo(16, 0);
-      expect(compact.handleFont?.fontWeight).not.toBe('600');
-      expect(compact.handleFont?.fontFamily ?? '').not.toMatch(/Inter_600/);
-    }
-    expect(compact.handle?.height).toBeCloseTo(19, 1);
+    expect(compact.handle?.x).toBeCloseTo(76, 1);
+    expect(compact.handle?.y).toBeCloseTo(58.5, 1);
+    expect(compact.handle?.height).toBeCloseTo(19, 0);
+    expect(compact.handleFont?.fontWeight).toBe('500');
+    expect(compact.handleFont?.fontFamily ?? '').toMatch(/Inter_500/);
+    expect(compact.handleFont?.fontFamily ?? '').not.toMatch(/Inter_600/);
     expect(compact.overflowHidden).toBe(1);
     expect(compact.overlap).toBe(false);
     expect(compact.handle!.right).toBeLessThanOrEqual(compact.actions!.left + 1);
@@ -328,6 +347,10 @@ test.describe('author header motion', () => {
     await scrollCreator(page, 0);
     const reversed = await creatorMetrics(page);
     expect(reversed.progress).toBeCloseTo(0, 2);
+    expect(reversed.handleCount).toBe(1);
+    expect(reversed.compactHandleCount).toBe(0);
+    expect(reversed.handle?.x).toBeCloseTo(beforeDelay.handle?.x ?? 0, 1);
+    expect(reversed.handle?.y).toBeCloseTo(beforeDelay.handle?.y ?? 0, 1);
     expect(reversed.overflowHidden).toBe(0);
     await expect(page.getByLabel('Сайт автора')).toBeVisible();
   });
@@ -348,7 +371,10 @@ test.describe('author header motion', () => {
       expect(metrics.shareCount).toBe(1);
       expect(metrics.overflow).toBe(false);
       expect(metrics.overlap).toBe(false);
-      expect(metrics.handle!.width).toBeGreaterThan(90);
+      expect(metrics.handleCount).toBe(1);
+      expect(metrics.compactHandleCount).toBe(0);
+      expect(metrics.handle!.x).toBeCloseTo(76, 1);
+      expect(metrics.handle!.right).toBeLessThanOrEqual(metrics.actions!.left + 1);
       widths.push(metrics.handle!.width);
       if (socials === 0) {
         await expect(page.getByTestId('author-social-group')).toHaveCount(0);
@@ -358,7 +384,6 @@ test.describe('author header motion', () => {
       }
     }
     expect(Math.abs(widths[1]! - widths[2]!)).toBeLessThan(8);
-    expect(widths[0]!).toBeGreaterThan(widths[1]!);
   });
 
   test('opens from /authors and snaps under reduced motion', async ({ page }) => {
@@ -376,9 +401,44 @@ test.describe('author header motion', () => {
     await scrollCreator(page, offset);
     const end = await creatorMetrics(page);
     expect(end.progress).toBe(1);
+    expect(end.handleCount).toBe(1);
+    expect(end.compactHandleCount).toBe(0);
+    expect(end.handle?.x).toBeCloseTo(76, 1);
+    expect(end.handle?.y).toBeCloseTo(58.5, 1);
     expect(end.avatar?.width).toBeCloseTo(48, 1);
     expect(end.tabs?.y).toBeCloseTo(186, 2);
     await scrollCreator(page, 0);
-    expect((await creatorMetrics(page)).progress).toBe(0);
+    const start = await creatorMetrics(page);
+    expect(start.progress).toBe(0);
+    expect(start.handleCount).toBe(1);
+    expect(start.handle?.x).toBeGreaterThan(40);
+  });
+
+  test('keeps one handle for a long slug and truncates before actions', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 860 });
+    await mockAuthor(
+      page,
+      'verylonghandlethatshouldtruncateinthecompactrow',
+      3,
+      3,
+    );
+    await page.goto(
+      '/seller/verylonghandlethatshouldtruncateinthecompactrow',
+    );
+    await waitForHeader(page);
+    const start = await creatorMetrics(page);
+    expect(start.handleCount).toBe(1);
+    expect(start.compactHandleCount).toBe(0);
+    expect(start.handle?.x).toBeGreaterThanOrEqual(12);
+    const offset = await offsetOf(page);
+    await scrollCreator(page, offset);
+    const end = await creatorMetrics(page);
+    expect(end.handleCount).toBe(1);
+    expect(end.handle?.x).toBeCloseTo(76, 1);
+    expect(end.handle?.y).toBeCloseTo(58.5, 1);
+    expect(end.handle!.right).toBeLessThanOrEqual(end.actions!.left + 1);
+    expect(end.overlap).toBe(false);
   });
 });

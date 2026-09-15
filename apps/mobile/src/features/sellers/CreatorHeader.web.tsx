@@ -6,6 +6,7 @@ import { CreatorHero } from './CreatorHero';
 import { AuthorShare } from './AuthorShare';
 import type { CreatorHeaderProps } from './creator-header';
 import {
+  creatorHandleLayout,
   findScrollBoundary,
   measureCompactActionsWidth,
   progressBucket,
@@ -19,7 +20,7 @@ const motionCss = `
   --creator-progress: 0;
 }
 .creator-header [data-testid="creator-avatar"],
-.creator-header [data-testid="creator-handle-compact"],
+.creator-header [data-testid="creator-handle"],
 .creator-header [data-testid="creator-actions"],
 .creator-header [data-testid="author-atmosphere"] {
   transform-origin: top left;
@@ -32,22 +33,40 @@ const motionCss = `
     )
     scale(calc(1 + (var(--avatar-scale, 1) - 1) * var(--creator-progress)));
 }
-.creator-header [data-testid="creator-handle-compact"] {
-  transform: translate(
-    calc(var(--handle-tx, 0px) * var(--creator-progress)),
-    calc(var(--handle-ty, 0px) * var(--creator-progress))
+.creator-header [data-testid="creator-handle"] {
+  align-self: flex-start !important;
+  width: fit-content !important;
+  margin-left: var(--handle-ml, 0px);
+  white-space: nowrap;
+  max-width: calc(
+    var(--handle-expanded-width, 100%) -
+      var(--handle-clip, 0px) * var(--creator-progress)
   );
-  max-width: var(--handle-limit);
-  opacity: var(--creator-progress);
+  overflow: hidden;
+  transform: translate(
+      calc(var(--handle-tx, 0px) * var(--creator-progress)),
+      calc(var(--handle-ty, 0px) * var(--creator-progress))
+    )
+    scale(
+      calc(1 + (var(--handle-scale, 1) - 1) * var(--creator-progress))
+    );
+  font-family: Inter_600SemiBold, Inter, sans-serif;
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: calc(600 - 100 * var(--creator-progress));
 }
-.creator-header [data-testid="creator-handle-compact"] > * {
+.creator-header [data-testid="creator-handle"] > * {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: inherit !important;
 }
-.creator-header [data-testid="creator-handle-expanded"] {
-  opacity: calc(1 - var(--creator-progress));
+.creator-header[data-progress="1"] [data-testid="creator-handle"] {
+  font-family: Inter_500Medium, Inter, sans-serif;
 }
 .creator-header [data-testid="creator-actions"] {
   transform: translate(
@@ -66,10 +85,6 @@ const motionCss = `
 .creator-header:not([data-progress="0"]) [data-testid="creator-social-overflow"] {
   pointer-events: none;
 }
-.creator-header[data-progress="0"] [data-testid="creator-handle-compact"] {
-  visibility: hidden;
-}
-.creator-header[data-progress="1"] [data-testid="creator-handle-expanded"],
 .creator-header[data-progress="1"] [data-testid^="creator-fade-"] {
   visibility: hidden;
 }
@@ -147,7 +162,7 @@ export function CreatorHeader({
         '[data-testid="creator-avatar"]',
       );
       const handle = root.querySelector<HTMLElement>(
-        '[data-testid="creator-handle-compact"]',
+        '[data-testid="creator-handle"]',
       );
       const actions = root.querySelector<HTMLElement>(
         '[data-testid="creator-actions"]',
@@ -156,25 +171,43 @@ export function CreatorHeader({
         return;
       }
       const a = box(avatar, root);
-      const h = box(handle, root);
       const compactActionsWidth = measureCompactActionsWidth(actions);
       const x = designTokens.space.x5;
       const top = shift + designTokens.space.creatorCompactTop;
       const avatarSize = designTokens.size.creatorCompactAvatar;
       const handleX = x + avatarSize + designTokens.space.x2;
       const actionsX = root.offsetWidth - x - compactActionsWidth;
+      const parent = handle.parentElement;
+      const parentBox = parent ? box(parent, root) : { x: 0, width: 0 };
+      const parentWidth = parent?.clientWidth ?? handle.offsetWidth;
+      const motion = creatorHandleLayout({
+        parentX: parentBox.x,
+        parentWidth,
+        intrinsicWidth: Math.max(handle.scrollWidth, handle.offsetWidth),
+        intrinsicY: box(handle, root).y,
+        compactLeft: handleX,
+        compactTop: top,
+        compactAvatarSize: avatarSize,
+        compactHeight: designTokens.typography.profileHandleCompact.lineHeight,
+        compactMaxWidth: Math.max(
+          0,
+          actionsX - designTokens.space.x3 - handleX,
+        ),
+        expandedFontSize: designTokens.typography.profileHandle.fontSize,
+        compactFontSize: designTokens.typography.profileHandleCompact.fontSize,
+      });
       shell.style.setProperty('--avatar-tx', `${x - a.x}px`);
       shell.style.setProperty('--avatar-ty', `${top - a.y}px`);
       shell.style.setProperty('--avatar-scale', String(avatarSize / a.width));
-      shell.style.setProperty('--handle-tx', `${handleX - h.x}px`);
+      shell.style.setProperty('--handle-tx', `${motion.tx}px`);
+      shell.style.setProperty('--handle-ty', `${motion.ty}px`);
+      shell.style.setProperty('--handle-scale', String(motion.scale));
+      shell.style.setProperty('--handle-ml', `${motion.marginLeft}px`);
       shell.style.setProperty(
-        '--handle-ty',
-        `${top + (avatarSize - h.height) / 2 - h.y}px`,
+        '--handle-expanded-width',
+        `${motion.width}px`,
       );
-      shell.style.setProperty(
-        '--handle-limit',
-        `${Math.max(0, actionsX - designTokens.space.x3 - handleX)}px`,
-      );
+      shell.style.setProperty('--handle-clip', `${motion.clipLayout}px`);
       shell.style.setProperty('--actions-tx', `${actionsX - box(actions, root).x}px`);
       shell.style.setProperty('--actions-ty', `${top - box(actions, root).y}px`);
       shell.style.setProperty(

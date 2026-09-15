@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CREATOR_COMPACT_SOCIAL_LIMIT,
   compactSocialCount,
+  creatorHandleLayout,
   listPublicSocialLinks,
   progressBucket,
   progressFromScroll,
@@ -65,5 +66,45 @@ describe('creator header motion helpers', () => {
     expect(progressBucket(0)).toBe('0');
     expect(progressBucket(0.5)).toBe('mid');
     expect(progressBucket(1)).toBe('1');
+  });
+
+  it('moves the hug glyph box from the expanded center to the compact slot', () => {
+    const vex = creatorHandleLayout({
+      parentX: 12,
+      parentWidth: 366,
+      intrinsicWidth: 63,
+      intrinsicY: 250,
+      compactLeft: 76,
+      compactTop: 44,
+      compactAvatarSize: 48,
+      compactHeight: 19,
+      compactMaxWidth: 150,
+      expandedFontSize: 24,
+      compactFontSize: 16,
+    });
+    expect(vex.x).toBeCloseTo(163.5, 5);
+    expect(vex.marginLeft).toBeCloseTo(151.5, 5);
+    expect(vex.tx).toBeCloseTo(76 - 163.5, 5);
+    expect(vex.scale).toBeCloseTo(16 / 24, 5);
+    expect(vex.ty).toBeCloseTo(58.5 - 250, 5);
+    expect(vex.clipLayout).toBe(0);
+
+    const long = creatorHandleLayout({
+      parentX: 12,
+      parentWidth: 366,
+      intrinsicWidth: 366,
+      intrinsicY: 250,
+      compactLeft: 76,
+      compactTop: 44,
+      compactAvatarSize: 48,
+      compactHeight: 19,
+      compactMaxWidth: 150,
+      expandedFontSize: 24,
+      compactFontSize: 16,
+    });
+    expect(long.x).toBe(12);
+    expect(long.marginLeft).toBe(0);
+    expect(long.tx).toBe(64);
+    expect(long.clipLayout).toBeGreaterThan(100);
   });
 });

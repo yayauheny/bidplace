@@ -108,6 +108,45 @@ export function readCurrentScrollTop(boundary: HTMLElement) {
   return boundary.scrollTop;
 }
 
+export type CreatorHandleLayoutInput = {
+  parentX: number;
+  parentWidth: number;
+  intrinsicWidth: number;
+  intrinsicY: number;
+  compactLeft: number;
+  compactTop: number;
+  compactAvatarSize: number;
+  compactHeight: number;
+  compactMaxWidth: number;
+  expandedFontSize: number;
+  compactFontSize: number;
+};
+
+export function creatorHandleLayout(input: CreatorHandleLayoutInput) {
+  const width = Math.min(
+    Math.max(0, input.intrinsicWidth),
+    Math.max(0, input.parentWidth),
+  );
+  const marginLeft = Math.max(0, (input.parentWidth - width) / 2);
+  const x = input.parentX + marginLeft;
+  const scale =
+    input.expandedFontSize > 0
+      ? input.compactFontSize / input.expandedFontSize
+      : 1;
+  const compactY =
+    input.compactTop + (input.compactAvatarSize - input.compactHeight) / 2;
+  const compactLayoutWidth = scale > 0 ? input.compactMaxWidth / scale : 0;
+  return {
+    marginLeft,
+    x,
+    width,
+    scale,
+    tx: input.compactLeft - x,
+    ty: compactY - input.intrinsicY,
+    clipLayout: Math.max(0, width - compactLayoutWidth),
+  };
+}
+
 export function measureCompactActionsWidth(actions: HTMLElement) {
   const extras = [
     ...actions.querySelectorAll(
