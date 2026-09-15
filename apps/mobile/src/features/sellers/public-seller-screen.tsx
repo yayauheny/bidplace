@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View, type ViewStyle } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
@@ -19,6 +19,7 @@ import { AuthorAbout } from './AuthorAbout';
 import { CreatorHeader } from './CreatorHeader';
 
 import { type AuthorPublicTab } from './author-public-tabs';
+import { authorPageWebBleed } from './author-page-bleed-style';
 
 export function PublicSellerScreen({
   slug,
@@ -98,7 +99,14 @@ export function PublicSellerScreen({
 
   return (
     <AppShell>
-      <View style={{ flex: 1, position: 'relative', overflow: 'visible' }}>
+      <View
+        style={[
+          { flex: 1, position: 'relative', overflow: 'visible' },
+          Platform.OS === 'web'
+            ? (authorPageWebBleed as unknown as ViewStyle)
+            : null,
+        ]}
+      >
         <ScrollView
           testID="creator-scroll"
           contentContainerStyle={{
@@ -133,6 +141,9 @@ export function PublicSellerScreen({
             role="tabpanel"
             aria-labelledby={`${panelId}-${tab}`}
             style={{
+              width: '100%',
+              maxWidth: designTokens.layout.phoneWidth,
+              alignSelf: 'center',
               backgroundColor: designTokens.color.canvas,
               paddingHorizontal: designTokens.space.pageGutter,
               paddingTop:

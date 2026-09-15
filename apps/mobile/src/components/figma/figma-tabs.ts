@@ -1,3 +1,5 @@
+import { figmaTokens } from '@bidplace/design-tokens';
+
 export type FigmaTab = { value: string; label: string; count?: number };
 export type FigmaTabsProps = {
   tabs: readonly FigmaTab[];
@@ -7,3 +9,7 @@ export type FigmaTabsProps = {
   panelId: string;
   align?: 'start' | 'center';
 };
+
+export function figmaTabLabelColor(selected: boolean) {
+  return selected ? figmaTokens.color.ink : figmaTokens.color.tabInactive;
+}

@@ -1,5 +1,5 @@
 import { designTokens } from '@bidplace/design-tokens';
-import type { FigmaTabsProps } from './figma-tabs';
+import { figmaTabLabelColor, type FigmaTabsProps } from './figma-tabs';
 
 export function FigmaTabs({
   tabs,
@@ -52,10 +52,7 @@ export function FigmaTabs({
             ...designTokens.typography.profileTab,
             lineHeight: `${designTokens.typography.profileTab.lineHeight}px`,
             letterSpacing: `${designTokens.typography.profileTab.letterSpacing}px`,
-            color:
-              value === tab.value
-                ? designTokens.color.ink
-                : designTokens.color.textSecondary,
+            color: figmaTabLabelColor(value === tab.value),
             padding:
               tab.count !== undefined
                 ? `0 ${designTokens.space.x5}px ${designTokens.space.x1}px 0`

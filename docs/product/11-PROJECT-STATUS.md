@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Author page About closer to Figma `621:19475`
+
+- `Implemented`: Public Creator About atmosphere, tabs, chips, city line,
+  and achievement rail/dates follow `621:19475` + Frame 219 `742:20510`.
+  Web author page uses a `100vw` breakout so the 485 atmosphere covers
+  viewports wider than the 390 column. Coverage: `public-seller-screen.tsx`,
+  `CreatorHero.tsx`, `AuthorAtmosphere.tsx`, `AuthorAbout.tsx`,
+  `FigmaTabs.web.tsx`, `FigmaChip.web.tsx`, `author-achievement-rail.ts`.
+- `Unchanged`: Home, dock, Works tab, public Archive remains hidden.
+
 ## 2026-09-15 — Shared light quiet button is flat `#EFEFEF`
 
 - `Implemented`: `FigmaButton` `quiet` uses `quietFill` `#EFEFEF` as the

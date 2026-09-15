@@ -4,6 +4,21 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Author page About tab closer to `621:19475`
+
+- `Implemented` (mobile web): Creator About follows `621:19475` /
+  Frame 219 `742:20510`. On web the author page breaks out of the 390
+  `AppShell` column (`100vw`) so atmosphere `621:19476` reaches the
+  viewport edges; identity and About/Works content stay max 390.
+  Inactive tabs use `#565656`; profile chips keep glass fill with an
+  outside `#DEDEDE`→`#F3F3F3` stroke and pad 6/16; location is city-only;
+  achievement dates are `MM.YYYY` 17/24/500 over Frame 221’s 14px ring
+  + 2px `#565656` rail. Headings stay 17/600 `#2A2A2A` (not `#565656`).
+  Coverage: `public-seller-screen.tsx`, `CreatorHero.tsx`,
+  `AuthorAtmosphere.tsx`, `AuthorAbout.tsx`, `FigmaTabs.web.tsx`,
+  `FigmaChip.web.tsx`.
+- `Unchanged`: Home, dock, Works tab grid, public `Архив` stays hidden.
+
 ## 2026-09-15 — Shared light quiet button is flat `#EFEFEF`
 
 - `Implemented` (mobile web): `FigmaButton` `quiet` paints flat

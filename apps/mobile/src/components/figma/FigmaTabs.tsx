@@ -33,7 +33,10 @@ export function FigmaTabs({
               value === tab.value ? designTokens.color.ink : 'transparent',
           }}
         >
-          <AppText role="profileTab">
+          <AppText
+            role="profileTab"
+            tone={value === tab.value ? 'default' : 'subdued'}
+          >
             {tab.label}
             {tab.count !== undefined ? ` ${tab.count}` : ''}
           </AppText>

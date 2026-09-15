@@ -5,7 +5,8 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
-import { formatAchievementDate } from './achievement-date';
+import { formatAuthorAchievementLabel } from './achievement-date';
+import { authorAchievementRailSpec } from './author-achievement-rail';
 
 export function AuthorAbout({
   author,
@@ -32,85 +33,112 @@ export function AuthorAbout({
             contentContainerStyle={{ gap: designTokens.space.x4 }}
           >
             {author.achievements.map((item) => (
-              <View
-                key={item.id}
-                testID="author-achievement-card"
-                style={{
-                  width: designTokens.size.achievementWidth,
-                  gap: designTokens.space.x3,
-                }}
-              >
-                {item.occurredAt ? (
-                  <View style={{ gap: designTokens.space.x1 }}>
-                    <View
-                      aria-hidden
-                      style={{ flexDirection: 'row', alignItems: 'center' }}
-                    >
-                      <View
-                        style={{
-                          width: 14,
-                          height: 14,
-                          borderRadius: 7,
-                          borderWidth: 2,
-                          borderColor: '#565656',
-                          backgroundColor: designTokens.color.surface,
-                        }}
-                      />
-                      <View
-                        style={{
-                          flex: 1,
-                          height: 2,
-                          borderRadius: 6,
-                          backgroundColor: '#565656',
-                        }}
-                      />
-                    </View>
-                    <AppText role="achievementDate">
-                      {formatAchievementDate(item.occurredAt)}
-                    </AppText>
-                  </View>
-                ) : null}
-                <View style={{ gap: designTokens.space.x3 }}>
-                  {item.image ? (
-                    <ResilientRemoteImage
-                      uri={getApiAssetUrl(item.image.url)}
-                      component="AuthorAchievement"
-                      accessibilityLabel="Фото выставки или достижения автора"
-                      fallbackLabel="Фотография недоступна"
-                      style={{
-                        width: '100%',
-                        aspectRatio: 3 / 4,
-                        borderRadius: designTokens.radius.achievement,
-                      }}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: '100%',
-                        minHeight: (designTokens.size.achievementWidth * 4) / 3,
-                        padding: designTokens.space.x3,
-                        borderRadius: designTokens.radius.achievement,
-                        backgroundColor: designTokens.color.surfaceMuted,
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <AppText
-                        role="achievementStatement"
-                        style={{ textAlign: 'center' }}
-                      >
-                        {item.body}
-                      </AppText>
-                    </View>
-                  )}
-                  {item.image ? (
-                    <AppText role="bodySmall">{item.body}</AppText>
-                  ) : null}
-                </View>
-              </View>
+              <AchievementCard key={item.id} item={item} />
             ))}
           </ScrollView>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+function AchievementCard({
+  item,
+}: {
+  item: PortfolioWorkDetailResponse['author']['achievements'][number];
+}) {
+  const rail = authorAchievementRailSpec();
+
+  return (
+    <View
+      testID="author-achievement-card"
+      style={{
+        width: designTokens.size.achievementWidth,
+        gap: designTokens.space.x3,
+      }}
+    >
+      {item.occurredAt ? (
+        <View style={{ gap: designTokens.space.x1 }}>
+          <AppText role="achievementDate" style={{ textAlign: 'center' }}>
+            {formatAuthorAchievementLabel(item.occurredAt)}
+          </AppText>
+          <View
+            aria-hidden
+            testID="author-achievement-rail"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              height: rail.row,
+            }}
+          >
+            <View
+              style={{
+                width: rail.marker,
+                height: rail.marker,
+                padding: rail.markerPad,
+                borderRadius: rail.markerRadius,
+                backgroundColor: rail.markerFill,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <View
+                style={{
+                  width: rail.markerHole,
+                  height: rail.markerHole,
+                  borderRadius: rail.markerRadius,
+                  backgroundColor: rail.markerHoleFill,
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flex: 1,
+                height: rail.lineHeight,
+                borderRadius: rail.lineRadius,
+                backgroundColor: rail.lineColor,
+              }}
+            />
+          </View>
+        </View>
+      ) : null}
+      <View style={{ gap: designTokens.space.x3 }}>
+        {item.image ? (
+          <ResilientRemoteImage
+            uri={getApiAssetUrl(item.image.url)}
+            component="AuthorAchievement"
+            accessibilityLabel="Фото выставки или достижения автора"
+            fallbackLabel="Фотография недоступна"
+            style={{
+              width: '100%',
+              aspectRatio: rail.imageAspect,
+              borderRadius: rail.imageRadius,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: '100%',
+              minHeight:
+                (designTokens.size.achievementWidth * 4) / 3,
+              padding: designTokens.space.x3,
+              borderRadius: rail.imageRadius,
+              backgroundColor: designTokens.color.surfaceMuted,
+              justifyContent: 'center',
+            }}
+          >
+            <AppText
+              role="achievementStatement"
+              style={{ textAlign: 'center' }}
+            >
+              {item.body}
+            </AppText>
+          </View>
+        )}
+        {item.image ? (
+          <AppText role="bodySmall">{item.body}</AppText>
+        ) : null}
+      </View>
     </View>
   );
 }

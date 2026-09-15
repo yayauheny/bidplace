@@ -36,7 +36,7 @@ export function CreatorHero({
     <View
       testID="author-header"
       style={{
-        overflow: 'hidden',
+        overflow: 'visible',
         paddingBottom: designTokens.space.authorHeaderBottom,
       }}
     >
@@ -47,6 +47,9 @@ export function CreatorHero({
       <View
         style={{
           alignItems: 'center',
+          alignSelf: 'center',
+          width: '100%',
+          maxWidth: designTokens.layout.phoneWidth,
           gap: designTokens.space.authorSectionGap,
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.logoTop,
@@ -146,7 +149,7 @@ export function CreatorHero({
                 }}
               />
               <AppText role="profileMetadata">
-                {[profile.city, country].filter(Boolean).join(', ')}
+                {profile.city || country}
               </AppText>
             </View>
           </View>

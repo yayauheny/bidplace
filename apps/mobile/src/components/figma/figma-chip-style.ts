@@ -10,7 +10,23 @@ export const figmaChipGradientStroke = {
 } as const;
 
 export function figmaChipUsesGradientStroke(tone: FigmaChipTone) {
-  return tone === 'onDark' || tone === 'tinted';
+  return tone === 'onDark' || tone === 'tinted' || tone === 'onGlass';
+}
+
+export function figmaChipGradientPlacement(tone: FigmaChipTone) {
+  if (tone === 'onGlass') return 'outside' as const;
+  if (figmaChipUsesGradientStroke(tone)) return 'inset' as const;
+  return 'none' as const;
+}
+
+export function figmaChipGradientColors(tone: FigmaChipTone) {
+  if (tone === 'onGlass') {
+    return {
+      start: figmaTokens.color.glassBorder,
+      end: figmaTokens.color.glassBorderEnd,
+    } as const;
+  }
+  return figmaChipGradientStroke;
 }
 
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {

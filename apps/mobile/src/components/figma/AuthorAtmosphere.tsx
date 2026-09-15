@@ -27,8 +27,8 @@ export function AuthorAtmosphere({
         { pointerEvents: 'none' },
         Platform.OS === 'web' &&
           ({
-            maskImage: `linear-gradient(to bottom, black calc(100% - ${spec.blur * 2}px), transparent 100%)`,
-            WebkitMaskImage: `linear-gradient(to bottom, black calc(100% - ${spec.blur * 2}px), transparent 100%)`,
+            maskImage: `linear-gradient(to bottom, black calc(100% - ${spec.maskFade}px), transparent 100%)`,
+            WebkitMaskImage: `linear-gradient(to bottom, black calc(100% - ${spec.maskFade}px), transparent 100%)`,
           } as ViewStyle),
       ]}
     >
@@ -37,24 +37,26 @@ export function AuthorAtmosphere({
         aria-hidden
         accessible={false}
         importantForAccessibility="no-hide-descendants"
-        style={{
-          position: 'absolute',
-          pointerEvents: 'none',
-          top: compact
-            ? designTokens.space.creatorCompactAtmosphereTop
-            : spec.top,
-          left: spec.left,
-          width: spec.width,
-          height: spec.height,
-          opacity: spec.opacity,
-          overflow: 'visible',
-          zIndex: 0,
-          ...webFilterBlur(spec.blur),
-        }}
+        style={
+          {
+            position: 'absolute',
+            pointerEvents: 'none',
+            top: compact
+              ? designTokens.space.creatorCompactAtmosphereTop
+              : spec.top,
+            left: Platform.OS === 'web' ? spec.webLeft : spec.left,
+            width: Platform.OS === 'web' ? spec.webWidth : spec.width,
+            height: spec.height,
+            opacity: spec.opacity,
+            overflow: 'visible',
+            zIndex: 0,
+            ...webFilterBlur(spec.blur),
+          } as ViewStyle
+        }
       >
         <View
           style={{
-            width: spec.width,
+            width: '100%',
             height: spec.height,
             borderBottomLeftRadius: spec.bottomRadius,
             borderBottomRightRadius: spec.bottomRadius,
@@ -68,7 +70,7 @@ export function AuthorAtmosphere({
             fallbackLabel={`Фон автора ${fullName}`}
             blurRadius={Platform.OS === 'web' ? undefined : spec.blur}
             contentFit="cover"
-            style={{ width: spec.width, height: spec.height }}
+            style={{ width: '100%', height: spec.height }}
           />
           <View
             style={[

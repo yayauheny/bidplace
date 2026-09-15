@@ -119,7 +119,7 @@ export const designTokens = {
     authorHeaderBottom: 40,
     authorAboutGap: 26,
     authorChipX: 16,
-    authorChipY: 5,
+    authorChipY: 6,
     authorChipGap: 10,
     workChipX: 12,
     workChipY: 5,
@@ -468,9 +468,12 @@ export const designTokens = {
       fontWeight: '500' as const,
     },
     achievementDate: {
+      // About card date `621:19580`: Inter Medium 17/24, tracking -3%.
       fontFamily: 'Inter_500Medium',
-      fontSize: 18,
+      fontSize: 17,
       lineHeight: 24,
+      letterSpacing: -0.51,
+      letterSpacingEm: '-0.03em',
       fontWeight: '500' as const,
     },
     identityHandle: {

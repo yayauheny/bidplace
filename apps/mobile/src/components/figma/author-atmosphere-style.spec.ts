@@ -11,9 +11,12 @@ describe('Author atmosphere', () => {
       left: -47,
       top: -36,
       opacity: 0.5,
-      blur: 40,
+      blur: 80,
+      maskFade: 80,
       bottomRadius: 200,
       wash: 'rgba(255, 255, 255, 0.40)',
+      webLeft: 'calc(50% - max(485px, 100vw) / 2)',
+      webWidth: 'max(485px, 100vw)',
     });
   });
 });

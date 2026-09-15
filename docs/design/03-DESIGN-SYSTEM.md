@@ -274,8 +274,20 @@ runtime wrapper.
 
 Web author tabs use Inter Medium 16/19 −0.32 for the label and Inter Regular
 12/14 −0.24 for an absolutely positioned count (`typography.profileTab` /
-`typography.profileTabCount`). Native `FigmaTabs` inline label+count is a
-Metro pair, not the web typography claim.
+`typography.profileTabCount`). Inactive label is `tabInactive` `#565656`
+(`621:19524`); active is `ink` `#2A2A2A` (`621:19532`). Native `FigmaTabs`
+inline label+count is a Metro pair, not the web typography claim.
+
+Public Creator About (`621:19475`) keeps section titles `profileHeading`
+17/21/600/−2% `#2A2A2A` (`621:19536` / `621:19539` / `621:19577`). Body is
+`bodySmall` 14/20/400/−1% `#2A2A2A`. Atmosphere `621:19476` is a 485 layer
+blur 80, white veil 0.4, opacity 0.5, bottom radius 200; on web it stays
+centered and can paint past the 390 column so the wash reaches the viewport
+edges. Profile chips `621:19490` are glass `#FFFFFF` @ 0.8 with a 1px
+**outside** `#DEDEDE`→`#F3F3F3` stroke, pad 6/16, Inter 16/23/500. Location
+line is city only (`621:19487`). Achievement rail uses Frame 219 marker `744:20554` (14px `#565656`
+circle, 3px pad, 10px white hole, radius 21) plus 2px `#565656` line
+`744:20556`. Dates are `MM.YYYY` from `621:19580` (Inter 17/24/500/−3%).
 
 On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter
 faces are not faux-bolded.

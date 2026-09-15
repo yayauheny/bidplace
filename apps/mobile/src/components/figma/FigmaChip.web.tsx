@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react';
 
 import {
-  figmaChipGradientStroke,
+  figmaChipGradientColors,
+  figmaChipGradientPlacement,
   figmaChipSizeStyle,
   figmaChipStyle,
   figmaChipTextColor,
@@ -26,6 +27,8 @@ export function FigmaChip({
   size?: FigmaChipSize;
 }) {
   const usesGradientStroke = figmaChipUsesGradientStroke(tone);
+  const gradientPlacement = figmaChipGradientPlacement(tone);
+  const gradientColors = figmaChipGradientColors(tone);
   const baseStyle = figmaChipStyle(tone);
   const sizeStyle = figmaChipSizeStyle(size);
   const paddingHorizontal =
@@ -43,11 +46,13 @@ export function FigmaChip({
       style={{
         borderRadius: baseStyle.borderRadius,
         backgroundColor: baseStyle.backgroundColor,
-        borderWidth: baseStyle.borderWidth,
+        borderWidth:
+          gradientPlacement === 'outside' ? 0 : baseStyle.borderWidth,
         borderStyle: 'solid',
         borderColor: usesGradientStroke
           ? 'transparent'
           : baseStyle.borderColor,
+        overflow: 'visible',
         alignItems: baseStyle.alignItems,
         justifyContent: baseStyle.justifyContent,
         paddingLeft: paddingHorizontal,
@@ -64,7 +69,11 @@ export function FigmaChip({
       {usesGradientStroke ? (
         <div
           aria-hidden="true"
-          style={gradientStrokeStyle}
+          style={
+            gradientPlacement === 'outside'
+              ? outsideGradientStrokeStyle(gradientColors)
+              : insetGradientStrokeStyle(gradientColors)
+          }
         />
       ) : null}
       <span
@@ -89,17 +98,39 @@ export function FigmaChip({
   );
 }
 
-const gradientStrokeStyle: MaskedStrokeStyle = {
-  position: 'absolute',
-  inset: 0,
-  padding: 1,
-  borderRadius: 'inherit',
-  pointerEvents: 'none',
-  boxSizing: 'border-box',
-  backgroundImage: `linear-gradient(180deg, ${figmaChipGradientStroke.start}, ${figmaChipGradientStroke.end})`,
-  WebkitMask:
-    'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-  WebkitMaskComposite: 'xor',
-  mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-  maskComposite: 'exclude',
-};
+function insetGradientStrokeStyle(colors: {
+  start: string;
+  end: string;
+}): MaskedStrokeStyle {
+  return {
+    position: 'absolute',
+    inset: 0,
+    padding: 1,
+    borderRadius: 'inherit',
+    pointerEvents: 'none',
+    boxSizing: 'border-box',
+    backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
+    WebkitMask:
+      'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+    WebkitMaskComposite: 'xor',
+    mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+    maskComposite: 'exclude',
+  };
+}
+
+function outsideGradientStrokeStyle(colors: {
+  start: string;
+  end: string;
+}): CSSProperties {
+  return {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    bottom: -1,
+    left: -1,
+    borderRadius: 29,
+    pointerEvents: 'none',
+    zIndex: -1,
+    backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
+  };
+}
