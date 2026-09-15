@@ -63,13 +63,14 @@ describe('Figma button styles', () => {
   it('hugs the quiet compact pill from padding and type, not 149×34', () => {
     const compact = figmaButtonStyle('quiet', 'idle', 'compact');
     expect(compact).toMatchObject({
-      backgroundColor: 'transparent',
+      backgroundColor: figmaTokens.color.quietFill,
       borderColor: 'transparent',
       borderWidth: 0,
       borderRadius: figmaTokens.radius.chip,
       paddingHorizontal: figmaTokens.space.quietButtonX,
       paddingVertical: figmaTokens.space.quietButtonY,
     });
+    expect(compact.backgroundColor).toBe('#EFEFEF');
     expect(compact).not.toHaveProperty('minHeight');
     expect(compact).not.toHaveProperty('width');
     expect(compact).not.toHaveProperty('height');
@@ -80,6 +81,9 @@ describe('Figma button styles', () => {
     ]);
     expect(figmaButtonGradientOpacity('quiet')).toBe(
       figmaTokens.opacity.quietBorder,
+    );
+    expect(figmaButtonStyle('quiet', 'hover', 'compact').backgroundColor).toBe(
+      figmaTokens.color.quietFill,
     );
     expect(figmaButtonSurfaceFill('quiet', 'idle')).toBe(
       figmaTokens.color.quietFill,

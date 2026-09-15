@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Shared light quiet button is flat `#EFEFEF`
+
+- `Implemented` (mobile web): `FigmaButton` `quiet` paints flat
+  `quietFill` `#EFEFEF` on the control. The `#FFFFFF`→`#999999` @ 0.16
+  gradient stays the stroke layer only (`439:4419` / `436:1152`). Opening
+  «Смотреть профиль» and New works «Смотреть все» share this variant.
+- `Unchanged`: padding 8/14, radius 28, compact type 13/18/500/−1%,
+  Home layout, authors dark `PrimaryButton`, card gradients.
+
 ## 2026-09-15 — Home authors fan uses Frame 47 rotation signs
 
 - `Implemented` (mobile web): rear-right `+1deg`, rear-left `-1deg`, origin

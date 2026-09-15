@@ -1,5 +1,15 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Shared light quiet button is flat `#EFEFEF`
+
+- `Implemented`: `FigmaButton` `quiet` uses `quietFill` `#EFEFEF` as the
+  control background. Gradient `#FFFFFF`→`#999999` @ 0.16 remains the
+  stroke only. Coverage: `figma-button-style.ts`,
+  `figma-button-style.spec.ts`. Opening and New works keep the same
+  `quiet`+`compact` variant.
+- `Unchanged`: Home layout, Opening/New works/Authors fan composition,
+  authors dark CTA, card frost/gradients.
+
 ## 2026-09-15 — Home authors fan uses Frame 47 rotation signs
 
 - `Implemented`: Rear-right rotates `+1deg`, rear-left `-1deg`, origin

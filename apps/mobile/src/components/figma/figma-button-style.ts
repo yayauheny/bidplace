@@ -49,7 +49,7 @@ export function figmaButtonStyle(
     borderWidth: compact || insetPressedSurface ? 0 : 1,
     borderColor: buttonBorder(variant),
     backgroundColor:
-      variant === 'outline' || variant === 'quiet'
+      variant === 'outline'
         ? 'transparent'
         : disabled && (variant === 'solid' || variant === 'danger')
           ? variant === 'danger'

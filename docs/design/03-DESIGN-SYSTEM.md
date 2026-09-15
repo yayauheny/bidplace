@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-15
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
@@ -303,7 +303,7 @@ muted caption line with renderer tail truncation; the author row hugs
 | Bio | `439:4415` | `typography.authorRowBio` 14/17/400, `color.textSubtle` `#6F6F6F` |
 | «Выбор куратора» | `439:4417` | `typography.editorialTitle` 20/24/500/−2%, `color.ink` |
 | Curator note | `439:4418` | `typography.editorial` 16/22/400/−1%, `color.textSubdued` |
-| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `quiet`+`compact`: hug, pad 8/14, `radius.chip` 28, `quietFill` `#EFEFEF`, stroke `#FFFFFF`→`#999999` @ 0.16, label `typography.buttonCompact` 13/18/500 |
+| Profile pill | `439:4419`/`439:4420` | `FigmaButton` `quiet`+`compact`: hug, pad 8/14, `radius.chip` 28, flat control fill `quietFill` `#EFEFEF` (not a gradient), stroke `#FFFFFF`→`#999999` @ 0.16, label `typography.buttonCompact` 13/18/500 |
 
 Do not reuse `authorHandle`, `authorName`, `body`/`bodySmall`, `cardTitle`,
 `muted`, or global `outline` for these roles.
