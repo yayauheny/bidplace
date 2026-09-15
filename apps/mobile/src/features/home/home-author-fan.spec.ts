@@ -12,8 +12,23 @@ function author(slug: string, photo = `/api/sellers/${slug}/photo`): HomeAuthor 
 }
 
 describe('homeAuthorFanSlots', () => {
-  it('locks Frame 47 card radius at 24', () => {
+  it('locks Frame 47 card radius, shadow, and top-left rotation origin', () => {
     expect(homeAuthorFanLayout.cardRadius).toBe(24);
+    expect(homeAuthorFanLayout.frontShadow).toBe(
+      '0 6px 20px rgba(58, 58, 58, 0.40)',
+    );
+    expect(homeAuthorFanLayout.rearTransformOrigin).toBe('0px 0px');
+    expect(homeAuthorFanLayout.frontPos).toEqual({ x: 22, y: 0 });
+    expect(homeAuthorFanLayout.rearLeft).toEqual({
+      x: 2.45,
+      y: 22.72,
+      rotate: '1deg',
+    });
+    expect(homeAuthorFanLayout.rearRight).toEqual({
+      x: 55.6,
+      y: 17.34,
+      rotate: '-1deg',
+    });
   });
 
   it('hides when no author has a photo', () => {

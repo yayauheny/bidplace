@@ -4,6 +4,14 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home authors fan uses Figma top-left rotation
+
+- `Implemented` (mobile web): Frame 47 rear cards rotate around `0px 0px`
+  so the 2.45 / 55.6 x values keep ~20px left/right peeks. Front shadow
+  stays `0 6px 20px rgba(58,58,58,0.40)` on the 24px shell. CoverFrost
+  already darkens toward the bottom; CTA stays `#292929`.
+- `Unchanged`: locked x/y/size, photos, Opening, New works, `/authors`.
+
 ## 2026-09-15 — Home authors fan silhouette and hover
 
 - `Implemented` (mobile web): Frame 47 fan cards use radius 24 on every

@@ -8,9 +8,12 @@ export const homeAuthorFanLayout = {
   rearRight: { x: 55.6, y: 17.34, rotate: '-1deg' },
   rearLeft: { x: 2.45, y: 22.72, rotate: '1deg' },
   frontPos: { x: 22, y: 0 },
+  // Frame 47 HTML rotates rear cards around the top-left of the 308×410 box.
+  // RN/web defaults to center (154×205), which pulls the visible peeks inward.
+  rearTransformOrigin: '0px 0px',
   rearOpacity: 0.5,
   cardRadius: 24,
-  frontShadow: '0px 6px 20px rgba(58, 58, 58, 0.4)',
+  frontShadow: '0 6px 20px rgba(58, 58, 58, 0.40)',
 } as const;
 
 export type HomeAuthorFanSlot = 'front' | 'rearLeft' | 'rearRight';

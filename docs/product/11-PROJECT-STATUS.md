@@ -1,5 +1,14 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Home authors fan rotates from Frame 47 top-left
+
+- `Implemented`: Rear fan cards use `transform-origin: 0px 0px` so Frame 47
+  x/y stay as measured (`2.45` / `55.6` / `22` / `17.34` / `22.72`). Front
+  shadow remains `0 6px 20px rgba(58, 58, 58, 0.40)` on the rounded shell.
+  Coverage: `home-author-fan.ts`, `home-new-authors.tsx`,
+  `home-author-fan.spec.ts`.
+- `Unchanged`: photos, Opening, New works, `/authors`, CTA fill, CoverFrost.
+
 ## 2026-09-15 — Home authors fan uses Frame 47 radius and shadow shell
 
 - `Implemented`: Home fan `AuthorCoverCard` keeps catalog radius 28 unless

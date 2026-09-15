@@ -38,6 +38,7 @@ function fanPositionStyle(slot: HomeAuthorFanSlot) {
     zIndex: 1,
     opacity: homeAuthorFanLayout.rearOpacity,
     transform: [{ rotate: place.rotate }],
+    transformOrigin: homeAuthorFanLayout.rearTransformOrigin,
   };
 }
 
