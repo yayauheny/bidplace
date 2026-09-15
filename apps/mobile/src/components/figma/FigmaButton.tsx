@@ -10,11 +10,13 @@ import { type FigmaIconName } from './figma-icon-names';
 import {
   figmaButtonGradientColors,
   figmaButtonGradientOpacity,
+  figmaButtonGradientPlacement,
   figmaButtonLabelColor,
   figmaButtonRadius,
   figmaButtonStyle,
   figmaButtonSurfaceFill,
   figmaButtonUsesGradientBorder,
+  figmaButtonUsesOutsidePaintWrapper,
   type FigmaButtonInteraction,
   type FigmaButtonSize,
   type FigmaButtonVariant,
@@ -47,8 +49,10 @@ export function FigmaButton({
   const textColor = figmaButtonLabelColor(variant);
   const radius = figmaButtonRadius(size);
   const compact = size === 'compact';
+  const gradientPlacement = figmaButtonGradientPlacement(variant);
+  const alignSelf = width === 'full' ? 'stretch' : 'flex-start';
 
-  return (
+  const button = (
     <MotionPressable
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -70,7 +74,7 @@ export function FigmaButton({
       style={({ hovered, pressed }) => [
         {
           position: 'relative',
-          alignSelf: width === 'full' ? 'stretch' : 'flex-start',
+          alignSelf,
         },
         figmaButtonStyle(
           variant,
@@ -89,7 +93,8 @@ export function FigmaButton({
 
         return (
           <>
-            {figmaButtonUsesGradientBorder(variant) ? (
+            {figmaButtonUsesGradientBorder(variant) &&
+            gradientPlacement === 'inset' ? (
               <>
                 <LinearGradient
                   pointerEvents="none"
@@ -153,6 +158,29 @@ export function FigmaButton({
       }}
     </MotionPressable>
   );
+
+  if (!figmaButtonUsesOutsidePaintWrapper(variant)) {
+    return button;
+  }
+
+  return (
+    <View style={[styles.outsideWrapper, { alignSelf }]}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={[...figmaButtonGradientColors(variant)]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[
+          styles.outsideStroke,
+          {
+            borderRadius: radius + 1,
+            opacity: figmaButtonGradientOpacity(variant),
+          },
+        ]}
+      />
+      {button}
+    </View>
+  );
 }
 
 function resolveInteraction({
@@ -171,6 +199,16 @@ function resolveInteraction({
 }
 
 const styles = StyleSheet.create({
+  outsideWrapper: {
+    position: 'relative',
+  },
+  outsideStroke: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    bottom: -1,
+    left: -1,
+  },
   gradientBorder: {
     position: 'absolute',
     top: 0,

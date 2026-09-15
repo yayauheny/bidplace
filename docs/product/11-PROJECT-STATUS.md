@@ -3,10 +3,10 @@
 ## 2026-09-15 — Shared light quiet button is flat `#EFEFEF`
 
 - `Implemented`: `FigmaButton` `quiet` uses `quietFill` `#EFEFEF` as the
-  control background. Gradient `#FFFFFF`→`#999999` @ 0.16 remains the
-  stroke only. Coverage: `figma-button-style.ts`,
-  `figma-button-style.spec.ts`. Opening and New works keep the same
-  `quiet`+`compact` variant.
+  control background. Gradient `#FFFFFF`→`#999999` @ 0.16 is a 1px
+  outside stroke behind the fill (`439:4419` `renderBounds` −1), not an
+  inset overlay. Coverage: `FigmaButton.tsx`, `figma-button-style.ts`,
+  `figma-button-style.spec.ts`. Opening and New works keep `quiet`+`compact`.
 - `Unchanged`: Home layout, Opening/New works/Authors fan composition,
   authors dark CTA, card frost/gradients.
 

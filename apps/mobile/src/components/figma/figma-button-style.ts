@@ -89,6 +89,18 @@ export function figmaButtonUsesGradientBorder(variant: FigmaButtonVariant) {
   return variant === 'outline' || variant === 'quiet';
 }
 
+export function figmaButtonGradientPlacement(variant: FigmaButtonVariant) {
+  if (variant === 'quiet') return 'outside' as const;
+  if (variant === 'outline') return 'inset' as const;
+  return 'none' as const;
+}
+
+export function figmaButtonUsesOutsidePaintWrapper(
+  variant: FigmaButtonVariant,
+) {
+  return figmaButtonGradientPlacement(variant) === 'outside';
+}
+
 export function figmaButtonGradientColors(variant: FigmaButtonVariant) {
   if (variant === 'quiet') {
     return [

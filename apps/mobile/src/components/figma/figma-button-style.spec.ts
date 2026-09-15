@@ -5,6 +5,8 @@ import { figmaTokens } from '@bidplace/design-tokens';
 import {
   figmaButtonGradientColors,
   figmaButtonGradientOpacity,
+  figmaButtonGradientPlacement,
+  figmaButtonUsesOutsidePaintWrapper,
   figmaButtonLabelColor,
   figmaButtonLabelTypography,
   figmaButtonSurfaceFill,
@@ -75,6 +77,14 @@ describe('Figma button styles', () => {
     expect(compact).not.toHaveProperty('width');
     expect(compact).not.toHaveProperty('height');
     expect(figmaButtonUsesGradientBorder('quiet')).toBe(true);
+    expect(figmaButtonGradientPlacement('quiet')).toBe('outside');
+    expect(figmaButtonGradientPlacement('outline')).toBe('inset');
+    expect(figmaButtonUsesOutsidePaintWrapper('quiet')).toBe(true);
+    expect(figmaButtonUsesOutsidePaintWrapper('outline')).toBe(false);
+    for (const variant of ['solid', 'ghost', 'muted', 'danger'] as const) {
+      expect(figmaButtonGradientPlacement(variant)).toBe('none');
+      expect(figmaButtonUsesOutsidePaintWrapper(variant)).toBe(false);
+    }
     expect(figmaButtonGradientColors('quiet')).toEqual([
       figmaTokens.color.quietBorderStart,
       figmaTokens.color.quietBorderEnd,

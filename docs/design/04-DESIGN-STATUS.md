@@ -8,8 +8,9 @@
 
 - `Implemented` (mobile web): `FigmaButton` `quiet` paints flat
   `quietFill` `#EFEFEF` on the control. The `#FFFFFF`→`#999999` @ 0.16
-  gradient stays the stroke layer only (`439:4419` / `436:1152`). Opening
-  «Смотреть профиль» and New works «Смотреть все» share this variant.
+  gradient is a 1px **outside** stroke behind the fill (`439:4419`
+  `renderBounds` −1), not a full-size overlay / inset second pill.
+  Opening «Смотреть профиль» and New works «Смотреть все» share this.
 - `Unchanged`: padding 8/14, radius 28, compact type 13/18/500/−1%,
   Home layout, authors dark `PrimaryButton`, card gradients.
 
