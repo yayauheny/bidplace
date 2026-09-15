@@ -4,6 +4,12 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-15 — Home authors fan uses Frame 47 rotation signs
+
+- `Implemented` (mobile web): rear-right `+1deg`, rear-left `-1deg`, origin
+  `0 0`. Locked x/y unchanged. Coverage: `home-author-fan.ts`.
+- `Unchanged`: photos, Opening, New works, `/authors`, CTA.
+
 ## 2026-09-15 — Home authors fan uses Figma top-left rotation
 
 - `Implemented` (mobile web): Frame 47 rear cards rotate around `0px 0px`

@@ -22,12 +22,12 @@ describe('homeAuthorFanSlots', () => {
     expect(homeAuthorFanLayout.rearLeft).toEqual({
       x: 2.45,
       y: 22.72,
-      rotate: '1deg',
+      rotate: '-1deg',
     });
     expect(homeAuthorFanLayout.rearRight).toEqual({
       x: 55.6,
       y: 17.34,
-      rotate: '-1deg',
+      rotate: '1deg',
     });
   });
 

@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-15 — Home authors fan uses Frame 47 rotation signs
+
+- `Implemented`: Rear-right rotates `+1deg`, rear-left `-1deg`, origin
+  `0px 0px`. x/y stay Frame 47. Coverage: `home-author-fan.ts`,
+  `home-author-fan.spec.ts`.
+- `Unchanged`: photos, Opening, New works, `/authors`.
+
 ## 2026-09-15 — Home authors fan rotates from Frame 47 top-left
 
 - `Implemented`: Rear fan cards use `transform-origin: 0px 0px` so Frame 47

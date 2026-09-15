@@ -5,8 +5,8 @@ export const homeAuthorFanLayout = {
   fanHeight: 430,
   rear: { width: 308, height: 410 },
   front: { width: 322, height: 430 },
-  rearRight: { x: 55.6, y: 17.34, rotate: '-1deg' },
-  rearLeft: { x: 2.45, y: 22.72, rotate: '1deg' },
+  rearRight: { x: 55.6, y: 17.34, rotate: '1deg' },
+  rearLeft: { x: 2.45, y: 22.72, rotate: '-1deg' },
   frontPos: { x: 22, y: 0 },
   // Frame 47 HTML rotates rear cards around the top-left of the 308×410 box.
   // RN/web defaults to center (154×205), which pulls the visible peeks inward.

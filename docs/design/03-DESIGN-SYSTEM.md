@@ -317,8 +317,8 @@ Inter-section stack after Opening is `space.homeSectionStack` 67 (Opening
 stacked/rotated Figma «Новые работы» prototype as New works.
 
 Home «Новые авторы» reuses Frame 47 `436:1320` as geometry only: centered
-`sectionTitle`, rear 308×410 at ±1° / 0.5 opacity around `transform-origin:
-0 0` (Figma top-left, not the RN center default), front 322×430, full
+`sectionTitle`, rear 308×410 at left −1° / right +1° / 0.5 opacity around
+`transform-origin: 0 0` (Figma top-left), front 322×430, full
 `PrimaryButton` «Смотреть все». Cards are `AuthorCoverCard` sized to those
 boxes (`size` + `frameRadius` 24 + `interaction="static"`). Stack is
 position/rotation wrapper → rounded shadow shell (`overflow: visible`) →
