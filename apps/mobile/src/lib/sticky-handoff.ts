@@ -1,7 +1,6 @@
 import { designTokens } from '@bidplace/design-tokens';
 
 export const STICKY_HANDOFF_HYSTERESIS = 20;
-export const WEB_COMPACT_STACK = designTokens.stickyDock.actionHeight;
 
 export type StickyHeaderState = 'expanded' | 'compact';
 

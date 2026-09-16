@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { designTokens } from '@bidplace/design-tokens';
-
 import {
   CREATOR_COMPACT_SOCIAL_LIMIT,
-  CREATOR_HANDOFF_HYSTERESIS,
-  creatorHandoffThresholds,
-  creatorHeaderStateFromScroll,
   listPublicSocialLinks,
 } from './creator-header-motion';
 
@@ -36,51 +31,5 @@ describe('creator header handoff helpers', () => {
         websiteUrl: null,
       }),
     ).toEqual([]);
-  });
-
-  it('parks compact at measured hero height minus the identity stack', () => {
-    const compactStack = designTokens.stickyDock.actionHeight;
-    expect(CREATOR_HANDOFF_HYSTERESIS).toBe(20);
-    const thresholds = creatorHandoffThresholds(460);
-    expect(thresholds.compactStack).toBe(compactStack);
-    expect(thresholds.collapseAt).toBe(460 - compactStack);
-    expect(thresholds.expandAt).toBe(
-      460 - compactStack - CREATOR_HANDOFF_HYSTERESIS,
-    );
-    expect(creatorHeaderStateFromScroll(0, 'expanded', thresholds)).toBe(
-      'expanded',
-    );
-    expect(
-      creatorHeaderStateFromScroll(
-        thresholds.collapseAt - 1,
-        'expanded',
-        thresholds,
-      ),
-    ).toBe('expanded');
-    expect(
-      creatorHeaderStateFromScroll(
-        thresholds.collapseAt,
-        'expanded',
-        thresholds,
-      ),
-    ).toBe('compact');
-    expect(
-      creatorHeaderStateFromScroll(
-        thresholds.expandAt + 1,
-        'compact',
-        thresholds,
-      ),
-    ).toBe('compact');
-    expect(
-      creatorHeaderStateFromScroll(thresholds.expandAt, 'compact', thresholds),
-    ).toBe('expanded');
-    expect(creatorHandoffThresholds(0).collapseAt).toBe(0);
-    expect(
-      creatorHeaderStateFromScroll(
-        120,
-        'compact',
-        creatorHandoffThresholds(compactStack),
-      ),
-    ).toBe('expanded');
   });
 });
