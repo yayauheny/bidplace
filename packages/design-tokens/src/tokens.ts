@@ -112,7 +112,7 @@ export const designTokens = {
     atmosphereOffset: 36,
     logoTop: 54,
     // Figma `526:14521` Frame 76 y (iPhone status inset). Web compact parks
-    // identity at `space.x3` via `CREATOR_WEB_COMPACT_STACK`, not this value.
+    // identity at `stickyDock.controlTop` (`space.x3`), not this value.
     creatorCompactTop: 44,
     creatorCompactAtmosphereTop: -340,
     logoGap: 34,
@@ -188,7 +188,8 @@ export const designTokens = {
     identityAvatar: 84,
     authorAtmosphere: 485,
     // Figma compact tabs origin `526:14484` y=186. Web compact chrome uses
-    // `CREATOR_WEB_COMPACT_STACK` (12+48+20), not this value.
+    // `stickyDock.actionHeight` (`space.x3` + `size.header` + `space.x5`),
+    // not this value.
     creatorCompactHeader: 186,
     creatorCompactAvatar: 48,
     social: 38,
@@ -566,6 +567,18 @@ export const designTokens = {
     icon: 1.13,
     iconHeavy: 1.25,
     dockIcon: 1.5,
+  },
+  // Shared Creator/Work top chrome. Distinct from `size.dock*` bottom nav.
+  // controlTop = space.x3, controlSize = size.header, controlInset = space.x5.
+  // actionHeight = controlTop + controlSize + space.x5.
+  // tabsHeight = profileTab.lineHeight + space.x1 + 2px underline + 1px divider.
+  stickyDock: {
+    controlTop: 12,
+    controlSize: 48,
+    controlInset: 20,
+    actionHeight: 80,
+    tabsHeight: 26,
+    fullHeight: 106,
   },
 } as const;
 

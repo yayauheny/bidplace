@@ -5,7 +5,6 @@ import { designTokens } from '@bidplace/design-tokens';
 import {
   CREATOR_COMPACT_SOCIAL_LIMIT,
   CREATOR_HANDOFF_HYSTERESIS,
-  CREATOR_WEB_COMPACT_STACK,
   creatorHandoffThresholds,
   creatorHeaderStateFromScroll,
   listPublicSocialLinks,
@@ -40,34 +39,48 @@ describe('creator header handoff helpers', () => {
   });
 
   it('parks compact at measured hero height minus the identity stack', () => {
+    const compactStack = designTokens.stickyDock.actionHeight;
     expect(CREATOR_HANDOFF_HYSTERESIS).toBe(20);
-    expect(CREATOR_WEB_COMPACT_STACK).toBe(
-      designTokens.space.x3 +
-        designTokens.size.creatorCompactAvatar +
-        designTokens.space.x5,
-    );
     const thresholds = creatorHandoffThresholds(460);
-    expect(thresholds.compactStack).toBe(80);
-    expect(thresholds.collapseAt).toBe(380);
-    expect(thresholds.expandAt).toBe(360);
+    expect(thresholds.compactStack).toBe(compactStack);
+    expect(thresholds.collapseAt).toBe(460 - compactStack);
+    expect(thresholds.expandAt).toBe(
+      460 - compactStack - CREATOR_HANDOFF_HYSTERESIS,
+    );
     expect(creatorHeaderStateFromScroll(0, 'expanded', thresholds)).toBe(
       'expanded',
     );
     expect(
-      creatorHeaderStateFromScroll(379, 'expanded', thresholds),
+      creatorHeaderStateFromScroll(
+        thresholds.collapseAt - 1,
+        'expanded',
+        thresholds,
+      ),
     ).toBe('expanded');
     expect(
-      creatorHeaderStateFromScroll(380, 'expanded', thresholds),
+      creatorHeaderStateFromScroll(
+        thresholds.collapseAt,
+        'expanded',
+        thresholds,
+      ),
     ).toBe('compact');
     expect(
-      creatorHeaderStateFromScroll(361, 'compact', thresholds),
+      creatorHeaderStateFromScroll(
+        thresholds.expandAt + 1,
+        'compact',
+        thresholds,
+      ),
     ).toBe('compact');
     expect(
-      creatorHeaderStateFromScroll(360, 'compact', thresholds),
+      creatorHeaderStateFromScroll(thresholds.expandAt, 'compact', thresholds),
     ).toBe('expanded');
     expect(creatorHandoffThresholds(0).collapseAt).toBe(0);
     expect(
-      creatorHeaderStateFromScroll(120, 'compact', creatorHandoffThresholds(80)),
+      creatorHeaderStateFromScroll(
+        120,
+        'compact',
+        creatorHandoffThresholds(compactStack),
+      ),
     ).toBe('expanded');
   });
 });

@@ -1,16 +1,13 @@
 import { designTokens } from '@bidplace/design-tokens';
 
 export const STICKY_HANDOFF_HYSTERESIS = 20;
-export const WEB_COMPACT_STACK =
-  designTokens.space.x3 +
-  designTokens.size.header +
-  designTokens.space.x5;
+export const WEB_COMPACT_STACK = designTokens.stickyDock.actionHeight;
 
 export type StickyHeaderState = 'expanded' | 'compact';
 
 export function stickyHandoffThresholds(
   heroHeight: number,
-  compactStack = WEB_COMPACT_STACK,
+  compactStack = designTokens.stickyDock.actionHeight,
 ) {
   const collapseAt = Math.max(0, heroHeight - compactStack);
   return {
@@ -18,10 +15,6 @@ export function stickyHandoffThresholds(
     expandAt: Math.max(0, collapseAt - STICKY_HANDOFF_HYSTERESIS),
     compactStack,
   };
-}
-
-export function workHandoffThresholds(heroHeight: number) {
-  return stickyHandoffThresholds(heroHeight, 0);
 }
 
 export function stickyHeaderStateFromScroll(

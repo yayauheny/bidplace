@@ -1,22 +1,12 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { designTokens } from '@bidplace/design-tokens';
 import { WorkGallery } from '../../components/figma/WorkGallery';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
-import { controlLayoutTransition } from '../../lib/layout-transition';
-import {
-  findScrollBoundary,
-  readCurrentScrollTop,
-  scrollTopFromEvent,
-  stickyHeaderStateFromScroll,
-  workHandoffThresholds,
-} from '../../lib/sticky-handoff';
-import {
-  WorkBackControl,
-  WorkCompactNav,
-  WorkShareControl,
-} from './WorkActions';
+import { StickyDockActionRow } from '../../components/figma/StickyDockActionRow';
+import { StickyDockSurface } from '../../components/figma/StickyDockSurface';
+import { stickyDockTabsStyle } from '../../components/figma/sticky-dock-action-row';
+import { WorkBackControl, WorkShareControl } from './WorkActions';
 import { WORK_SCROLL_TEST_ID, type WorkHeaderProps } from './work-header';
 import { WorkIdentity } from './WorkIdentity';
 
@@ -32,144 +22,149 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  children,
 }: WorkHeaderProps) {
-  const header = useRef<HTMLDivElement>(null);
-  const hero = useRef<HTMLDivElement>(null);
-  const compactRef = useRef(false);
-  const heroHeightRef = useRef(0);
-  const [heroHeight, setHeroHeight] = useState(0);
-  const [compact, setCompact] = useState(false);
-  const offset = Math.max(0, heroHeight);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [dockSurfaceActive, setDockSurfaceActive] = useState(false);
 
   useLayoutEffect(() => {
-    const shell = header.current;
-    const root = hero.current;
-    if (!shell || !root) {
+    const marker = sentinel.current;
+    if (!marker) {
       return;
     }
-
-    const measure = () => {
-      const next = root.offsetHeight;
-      heroHeightRef.current = next;
-      setHeroHeight((prev) => (prev === next ? prev : next));
-    };
-
-    const applyScroll = (scrollTop: number) => {
-      const { collapseAt, expandAt } = workHandoffThresholds(
-        heroHeightRef.current || root.offsetHeight,
-      );
-      const next = stickyHeaderStateFromScroll(
-        scrollTop,
-        compactRef.current ? 'compact' : 'expanded',
-        { collapseAt, expandAt },
-      );
-      const isCompact = next === 'compact';
-      if (isCompact === compactRef.current) {
-        return;
-      }
-      compactRef.current = isCompact;
-      setCompact(isCompact);
-    };
-
-    measure();
-    const boundary = findScrollBoundary(shell, WORK_SCROLL_TEST_ID);
-    if (boundary) {
-      boundary.style.overflowAnchor = 'none';
-      const port = [
-        boundary,
-        ...boundary.querySelectorAll<HTMLElement>('*'),
-      ].find((node) => node.scrollHeight > node.clientHeight + 1);
-      if (port) {
-        port.style.overflowAnchor = 'none';
-      }
-      applyScroll(readCurrentScrollTop(boundary));
+    const root = marker.closest(`[data-testid="${WORK_SCROLL_TEST_ID}"]`);
+    if (!(root instanceof HTMLElement)) {
+      return;
     }
-
-    const resize = new ResizeObserver(() => {
-      measure();
-      if (boundary) {
-        applyScroll(readCurrentScrollTop(boundary));
-      }
-    });
-    resize.observe(root);
-    if (boundary) {
-      resize.observe(boundary);
-    }
-
-    if (!boundary) {
-      return () => {
-        resize.disconnect();
-      };
-    }
-
-    const onScroll = (event: Event) => {
-      applyScroll(scrollTopFromEvent(event, boundary));
-    };
-    boundary.addEventListener('scroll', onScroll, {
-      capture: true,
-      passive: true,
-    });
-    return () => {
-      resize.disconnect();
-      boundary.removeEventListener('scroll', onScroll, { capture: true });
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        if (!entry) {
+          return;
+        }
+        const next = !entry.isIntersecting;
+        setDockSurfaceActive((prev) => (prev === next ? prev : next));
+      },
+      {
+        root,
+        rootMargin: `-${designTokens.stickyDock.actionHeight}px 0px 0px 0px`,
+        threshold: 0,
+      },
+    );
+    observer.observe(marker);
+    return () => observer.disconnect();
   }, [title]);
 
   return (
     <div
-      ref={header}
       data-testid="work-sticky-header"
-      data-state={compact ? 'compact' : 'expanded'}
-      style={
-        {
-          position: 'sticky',
-          top: -offset,
-          zIndex: 2,
-          background: designTokens.color.canvas,
-          overflowAnchor: 'none',
-        } as CSSProperties
-      }
+      data-state={dockSurfaceActive ? 'docked' : 'overlay'}
     >
-      <div ref={hero} data-testid="work-hero" style={{ position: 'relative' }}>
-        <WorkGallery
-          images={images}
-          label={title}
-          leadingAction={
-            compact ? undefined : <WorkBackControl onPress={onBack} />
-          }
-          action={compact ? undefined : <WorkShareControl onPress={onShare} />}
-        />
-        <View
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        <div style={{ gridRow: 1, gridColumn: 1, minWidth: 0, zIndex: 0 }}>
+          <WorkGallery images={images} label={title} />
+        </div>
+        <div style={{ gridRow: 2, gridColumn: 1, minWidth: 0, zIndex: 0 }}>
+          <View
+            style={{
+              paddingTop: designTokens.space.sectionGap,
+              paddingBottom: designTokens.space.x10,
+              paddingHorizontal: designTokens.space.pageGutter,
+            }}
+          >
+            <WorkIdentity
+              title={title}
+              authorName={authorName}
+              authorHref={authorHref}
+              chips={chips}
+            />
+          </View>
+        </div>
+        <div
+          ref={sentinel}
+          data-testid="work-dock-sentinel"
           style={{
-            paddingHorizontal: designTokens.space.pageGutter,
+            gridRow: 3,
+            gridColumn: 1,
+            // 1px IO target, zero flow height, 2px above tabs so the
+            // actionHeight inset clears when tabs dock.
+            height: 1,
+            marginBottom: -1,
+            position: 'relative',
+            top: -2,
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          data-testid="work-sticky-tabs"
+          style={
+            {
+              gridRow: 4,
+              gridColumn: 1,
+              minWidth: 0,
+              ...stickyDockTabsStyle(),
+            } as CSSProperties
+          }
+        >
+          <FigmaTabs
+            tabs={tabs}
+            value={tab}
+            onChange={onTabChange}
+            label="Информация о работе"
+            panelId={panelId}
+            contentInset={designTokens.space.pageGutter}
+          />
+        </div>
+        <div
+          style={{
+            gridRow: 5,
+            gridColumn: 1,
+            minWidth: 0,
             paddingTop: designTokens.space.sectionGap,
-            paddingBottom: designTokens.space.x10,
+            zIndex: 0,
           }}
         >
-          <WorkIdentity
-            title={title}
-            authorName={authorName}
-            authorHref={authorHref}
-            chips={chips}
-          />
-        </View>
+          {children}
+        </div>
+        <div
+          data-testid="sticky-dock-surface-host"
+          style={{
+            gridRow: '1 / -1',
+            gridColumn: 1,
+            position: 'sticky',
+            top: 0,
+            alignSelf: 'start',
+            height: designTokens.stickyDock.fullHeight,
+            zIndex: designTokens.layer.chrome - 1,
+            pointerEvents: 'none',
+          }}
+        >
+          <StickyDockSurface active={dockSurfaceActive} />
+        </div>
+        <div
+          style={{
+            gridRow: '1 / -1',
+            gridColumn: 1,
+            position: 'sticky',
+            top: 0,
+            alignSelf: 'start',
+            zIndex: designTokens.layer.chrome,
+            pointerEvents: 'none',
+          }}
+        >
+          <StickyDockActionRow testID="work-sticky-actions">
+            <WorkBackControl onPress={onBack} />
+            <WorkShareControl onPress={onShare} />
+          </StickyDockActionRow>
+        </div>
       </div>
-      {compact ? (
-        <WorkCompactNav onBack={onBack} onShare={onShare} />
-      ) : null}
-      <Animated.View
-        testID="work-sticky-tabs"
-        layout={controlLayoutTransition}
-      >
-        <FigmaTabs
-          tabs={tabs}
-          value={tab}
-          onChange={onTabChange}
-          label="Информация о работе"
-          panelId={panelId}
-          contentInset={designTokens.space.pageGutter}
-        />
-      </Animated.View>
     </div>
   );
 }

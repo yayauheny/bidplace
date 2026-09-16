@@ -157,6 +157,33 @@ describe('Figma semantic token contract', () => {
     });
   });
 
+  it('keeps one sticky-dock contract derived from existing tokens', () => {
+    expect(designTokens.stickyDock.controlTop).toBe(designTokens.space.x3);
+    expect(designTokens.stickyDock.controlSize).toBe(designTokens.size.header);
+    expect(designTokens.stickyDock.controlSize).toBe(
+      designTokens.size.creatorCompactAvatar,
+    );
+    expect(designTokens.stickyDock.controlInset).toBe(designTokens.space.x5);
+    expect(designTokens.stickyDock.actionHeight).toBe(
+      designTokens.stickyDock.controlTop +
+        designTokens.stickyDock.controlSize +
+        designTokens.space.x5,
+    );
+    expect(designTokens.stickyDock.tabsHeight).toBe(
+      designTokens.typography.profileTab.lineHeight +
+        designTokens.space.x1 +
+        2 +
+        1,
+    );
+    expect(designTokens.stickyDock.fullHeight).toBe(
+      designTokens.stickyDock.actionHeight +
+        designTokens.stickyDock.tabsHeight,
+    );
+    expect(designTokens.stickyDock.controlInset).not.toBe(
+      designTokens.space.pageGutter,
+    );
+  });
+
   it('uses the measured media interaction timing', () => {
     expect(designTokens.motion.media).toBe(300);
     expect(designTokens.motion.easing).toBe('cubic-bezier(0, 0, 0.2, 1)');

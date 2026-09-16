@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Href } from 'expo-router';
 
 import type { FigmaTab } from '../../components/figma/figma-tabs';
@@ -18,4 +19,5 @@ export type WorkHeaderProps = {
   panelId: string;
   onBack: () => void;
   onShare: () => void;
+  children?: ReactNode;
 };

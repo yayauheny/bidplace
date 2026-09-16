@@ -1,7 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const PUBLIC_ID = 'daliEstate1';
-const WEB_COMPACT_STACK = 12 + 48 + 20;
+const ACTION_HEIGHT = 80;
+const CONTROL_TOP = 12;
+const CONTROL_SIZE = 48;
+const CONTROL_INSET = 20;
+const TABS_HEIGHT = 26;
 const IMAGE_A = '30000000-0000-4000-8000-0000000000a1';
 const IMAGE_B = '30000000-0000-4000-8000-0000000000a2';
 const checksum = 'a'.repeat(64);
@@ -127,6 +131,23 @@ async function workMetrics(page: Page) {
       shareCount: count('work-share'),
       compactNavCount: count('work-compact-nav'),
       galleryChromeCount: count('work-gallery-chrome'),
+      surfaceCount: count('sticky-dock-surface'),
+      surfaceActive:
+        document
+          .querySelector('[data-testid="sticky-dock-surface"]')
+          ?.getAttribute('data-active') === 'true',
+      persistentBack: count('work-back') &&
+        document.querySelector('[data-testid="work-back"]')?.getAttribute(
+          'data-persistent',
+        ) === 'work-back'
+        ? 1
+        : 0,
+      persistentShare:
+        document.querySelector('[data-testid="work-share"]')?.getAttribute(
+          'data-persistent',
+        ) === 'work-share'
+          ? 1
+          : 0,
       back: box('work-back'),
       share: box('work-share'),
       gallery: gallery?.getBoundingClientRect().toJSON(),
@@ -151,10 +172,17 @@ async function waitForHeader(page: Page) {
   await expect(page.getByTestId('work-share')).toBeVisible();
 }
 
-async function waitForState(page: Page, state: 'expanded' | 'compact') {
-  await expect
-    .poll(async () => (await workMetrics(page)).state, { timeout: 4000 })
-    .toBe(state);
+async function stampActions(page: Page) {
+  await page.evaluate(() => {
+    const back = document.querySelector('[data-testid="work-back"]');
+    const share = document.querySelector('[data-testid="work-share"]');
+    if (back instanceof HTMLElement) {
+      back.dataset.persistent = 'work-back';
+    }
+    if (share instanceof HTMLElement) {
+      share.dataset.persistent = 'work-share';
+    }
+  });
 }
 
 async function scrollWork(page: Page, top: number) {
@@ -170,20 +198,6 @@ async function scrollWork(page: Page, top: number) {
     port.scrollTop = nextTop;
     port.dispatchEvent(new Event('scroll', { bubbles: false }));
   }, top);
-}
-
-async function measureHandoff(page: Page) {
-  return page.evaluate(() => {
-    const hero = document.querySelector('[data-testid="work-hero"]');
-    if (!(hero instanceof HTMLElement)) {
-      throw new Error('missing work-hero');
-    }
-    const heroHeight = hero.offsetHeight;
-    return {
-      heroHeight,
-      handoffOffset: heroHeight,
-    };
-  });
 }
 
 async function addWorkSpacer(page: Page) {
@@ -202,6 +216,26 @@ async function addWorkSpacer(page: Page) {
 function expectOneActions(metrics: Awaited<ReturnType<typeof workMetrics>>) {
   expect(metrics.backCount).toBe(1);
   expect(metrics.shareCount).toBe(1);
+  expect(metrics.compactNavCount).toBe(0);
+  expect(metrics.galleryChromeCount).toBe(0);
+  expect(metrics.surfaceCount).toBe(1);
+}
+
+function expectPinnedControls(
+  metrics: Awaited<ReturnType<typeof workMetrics>>,
+  viewportWidth: number,
+) {
+  expect(metrics.back?.width).toBeCloseTo(CONTROL_SIZE, 0);
+  expect(metrics.back?.height).toBeCloseTo(CONTROL_SIZE, 0);
+  expect(metrics.back?.x).toBeCloseTo(CONTROL_INSET, 0);
+  expect(metrics.back?.y).toBeCloseTo(CONTROL_TOP, 0);
+  expect(metrics.share?.width).toBeCloseTo(CONTROL_SIZE, 0);
+  expect(metrics.share?.height).toBeCloseTo(CONTROL_SIZE, 0);
+  expect(metrics.share?.y).toBeCloseTo(CONTROL_TOP, 0);
+  expect((metrics.share?.x ?? 0) + (metrics.share?.width ?? 0)).toBeCloseTo(
+    viewportWidth - CONTROL_INSET,
+    0,
+  );
 }
 
 async function swipeGallery(page: Page) {
@@ -228,27 +262,20 @@ test.describe('work header motion', () => {
     await page.goto(`/product/${PUBLIC_ID}`);
     await waitForHeader(page);
     const rest = await workMetrics(page);
-    expect(rest.state).toBe('expanded');
+    expect(rest.state).toBe('overlay');
+    expect(rest.surfaceActive).toBe(false);
     expectOneActions(rest);
-    expect(rest.back?.width).toBeCloseTo(48, 0);
-    expect(rest.back?.height).toBeCloseTo(48, 0);
-    expect(rest.back?.x).toBeCloseTo(20, 0);
-    expect(rest.back?.y).toBeCloseTo(12, 0);
-    expect(rest.share?.width).toBeCloseTo(48, 0);
-    expect(rest.share?.height).toBeCloseTo(48, 0);
-    expect((rest.share?.x ?? 0) + (rest.share?.width ?? 0)).toBeCloseTo(370, 0);
-    expect(rest.share?.y).toBeCloseTo(12, 0);
+    expectPinnedControls(rest, 390);
     expect(rest.media?.y).toBeCloseTo(0, 0);
     expect(rest.media?.height).toBeCloseTo(520, 0);
     expect(rest.dots?.y).toBeCloseTo(532, 0);
     expect(rest.dots?.height).toBeCloseTo(6, 0);
     expect(rest.identity?.y).toBeCloseTo((rest.dots?.bottom ?? 0) + 20, 0);
     expect(rest.tabs?.y).toBeCloseTo((rest.identity?.bottom ?? 0) + 40, 0);
+    expect(rest.tabs?.height).toBeCloseTo(TABS_HEIGHT, 0);
     expect(rest.firstTab?.x).toBeCloseTo(12, 0);
     expect(rest.tablist?.x).toBeCloseTo(0, 0);
     expect(rest.tablist?.width).toBeCloseTo(390, 0);
-    expect(rest.compactNavCount).toBe(0);
-    expect(rest.galleryChromeCount).toBe(1);
     expect(rest.overflow).toBe(false);
     await expect(page.getByRole('tab', { name: 'История', exact: true })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Детали', exact: true })).toBeVisible();
@@ -258,102 +285,191 @@ test.describe('work header motion', () => {
     await expect(page.getByRole('tab', { name: /Торги/ })).toHaveCount(0);
   });
 
-  test('parks compact navigation only after metadata has left', async ({
+  test('keeps the same Back and Share pinned while tabs are still travelling', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 860 });
     await mockWork(page);
     await page.goto(`/product/${PUBLIC_ID}`);
     await waitForHeader(page);
+    await stampActions(page);
     await addWorkSpacer(page);
-    const { heroHeight, handoffOffset } = await measureHandoff(page);
-    expect(handoffOffset).toBe(heroHeight);
-    expect(handoffOffset).toBeGreaterThan(100);
-
-    await scrollWork(page, Math.max(0, handoffOffset - 1));
-    const before = await workMetrics(page);
-    expect(before.state).toBe('expanded');
-    expect(before.compactNavCount).toBe(0);
-    expect(before.identity?.bottom ?? 0).toBeLessThanOrEqual(0);
-    expect(before.tabs?.y ?? 99).toBeLessThan(8);
-    expect(before.firstTab?.x).toBeCloseTo(12, 0);
-    expect(before.tablist?.x).toBeCloseTo(0, 0);
+    const rest = await workMetrics(page);
+    const midScroll = Math.min(
+      200,
+      Math.max(40, Math.round((rest.tabs?.y ?? 200) - ACTION_HEIGHT - 80)),
+    );
+    await scrollWork(page, midScroll);
+    const mid = await workMetrics(page);
+    expectOneActions(mid);
+    expect(mid.persistentBack).toBe(1);
+    expect(mid.persistentShare).toBe(1);
+    expectPinnedControls(mid, 390);
+    expect(mid.state).toBe('overlay');
+    expect(mid.surfaceActive).toBe(false);
+    expect(mid.tabs?.y ?? 0).toBeGreaterThan(ACTION_HEIGHT + 8);
+    expect(mid.firstTab?.x).toBeCloseTo(12, 0);
     await expect(page.getByRole('tab', { name: 'История', exact: true })).toBeVisible();
+  });
 
-    await scrollWork(page, handoffOffset);
-    await waitForState(page, 'compact');
-    await expect
-      .poll(async () => Math.round((await workMetrics(page)).scrollTop), {
-        timeout: 1500,
-      })
-      .toBe(handoffOffset);
-    await expect
-      .poll(async () => Math.round((await workMetrics(page)).back?.y ?? -1), {
-        timeout: 1500,
-      })
-      .toBe(12);
+  test('joins tabs under Back and Share without remounting actions', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 860 });
+    await mockWork(page);
+    await page.goto(`/product/${PUBLIC_ID}`);
+    await waitForHeader(page);
+    await stampActions(page);
+    await addWorkSpacer(page);
+    const rest = await workMetrics(page);
+    const dockScroll = Math.ceil((rest.tabs?.y ?? 0) - ACTION_HEIGHT);
+    await scrollWork(page, Math.max(0, dockScroll - 24));
+    const approaching = await workMetrics(page);
+    expectOneActions(approaching);
+    expect(approaching.state).toBe('overlay');
+    expect(approaching.surfaceActive).toBe(false);
+    expect(approaching.tabs?.y ?? 0).toBeGreaterThan(ACTION_HEIGHT);
+    await scrollWork(page, dockScroll);
     await expect
       .poll(async () => Math.round((await workMetrics(page)).tabs?.y ?? -1), {
         timeout: 1500,
       })
-      .toBe(WEB_COMPACT_STACK);
-    const compact = await workMetrics(page);
-    expectOneActions(compact);
-    expect(compact.compactNavCount).toBe(1);
-    expect(compact.galleryChromeCount).toBe(0);
-    expect(compact.identity?.bottom ?? 0).toBeLessThanOrEqual(0);
-    expect(compact.back?.width).toBeCloseTo(48, 0);
-    expect(compact.back?.x).toBeCloseTo(20, 0);
-    expect(compact.share?.y).toBeCloseTo(12, 0);
-    expect((compact.share?.x ?? 0) + (compact.share?.width ?? 0)).toBeCloseTo(
-      370,
-      0,
-    );
-    expect(compact.tabs?.y).toBeCloseTo(WEB_COMPACT_STACK, 0);
-    expect(compact.firstTab?.x).toBeCloseTo(12, 0);
-    expect(compact.tablist?.x).toBeCloseTo(0, 0);
-    expect(compact.tablist?.width).toBeCloseTo(390, 0);
+      .toBe(ACTION_HEIGHT);
+    await expect
+      .poll(async () => (await workMetrics(page)).surfaceActive, {
+        timeout: 1500,
+      })
+      .toBe(true);
+    const docked = await workMetrics(page);
+    expectOneActions(docked);
+    expect(docked.persistentBack).toBe(1);
+    expect(docked.persistentShare).toBe(1);
+    expectPinnedControls(docked, 390);
+    expect(docked.state).toBe('docked');
+    expect(docked.surfaceActive).toBe(true);
+    expect(docked.tabs?.y).toBeCloseTo(ACTION_HEIGHT, 0);
+    expect(docked.tabs?.height).toBeCloseTo(TABS_HEIGHT, 0);
+    expect(docked.firstTab?.x).toBeCloseTo(12, 0);
+    expect(docked.tablist?.x).toBeCloseTo(0, 0);
+    expect(docked.tablist?.width).toBeCloseTo(390, 0);
     await expect(page.getByRole('tab', { name: 'История', exact: true })).toBeVisible();
   });
 
-  test('restores expanded Back and Share on reverse without losing tabs', async ({
+  test('lets tabs leave on reverse while Back and Share stay', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 860 });
     await mockWork(page);
     await page.goto(`/product/${PUBLIC_ID}`);
     await waitForHeader(page);
+    await stampActions(page);
     await addWorkSpacer(page);
-    const { handoffOffset } = await measureHandoff(page);
-    await scrollWork(page, handoffOffset + 30);
-    await waitForState(page, 'compact');
-    const samples: number[] = [];
-    for (let top = handoffOffset; top >= 0; top -= 20) {
-      await scrollWork(page, top);
-      const live = await workMetrics(page);
-      samples.push(live.tabs?.height ?? 0);
-      expect(live.tabs?.height ?? 0).toBeGreaterThan(20);
-    }
+    const rest = await workMetrics(page);
+    const dockScroll = Math.ceil((rest.tabs?.y ?? 0) - ACTION_HEIGHT);
+    await scrollWork(page, dockScroll + 40);
+    await expect
+      .poll(async () => Math.round((await workMetrics(page)).tabs?.y ?? -1), {
+        timeout: 1500,
+      })
+      .toBe(ACTION_HEIGHT);
     await scrollWork(page, 0);
-    await waitForState(page, 'expanded');
     await expect
-      .poll(async () => (await workMetrics(page)).compactNavCount, {
+      .poll(async () => Math.round((await workMetrics(page)).tabs?.y ?? -1), {
         timeout: 1500,
       })
-      .toBe(0);
+      .toBe(Math.round(rest.tabs?.y ?? 0));
     await expect
-      .poll(async () => Math.round((await workMetrics(page)).back?.y ?? -1), {
+      .poll(async () => (await workMetrics(page)).surfaceActive, {
         timeout: 1500,
       })
-      .toBe(12);
+      .toBe(false);
     const expanded = await workMetrics(page);
     expectOneActions(expanded);
-    expect(expanded.compactNavCount).toBe(0);
-    expect(expanded.galleryChromeCount).toBe(1);
-    expect(expanded.back?.x).toBeCloseTo(20, 0);
+    expect(expanded.persistentBack).toBe(1);
+    expect(expanded.persistentShare).toBe(1);
+    expectPinnedControls(expanded, 390);
+    expect(expanded.state).toBe('overlay');
+    expect(expanded.surfaceActive).toBe(false);
+    expect(expanded.media?.y).toBeCloseTo(0, 0);
     expect(expanded.firstTab?.x).toBeCloseTo(12, 0);
-    expect(Math.min(...samples)).toBeGreaterThan(20);
     await expect(page.getByRole('tab', { name: 'Детали', exact: true })).toBeVisible();
+  });
+
+  test('keeps one action pair across fast reverse jumps', async ({ page }) => {
+    await page.setViewportSize({ width: 384, height: 832 });
+    await mockWork(page);
+    await page.goto(`/product/${PUBLIC_ID}`);
+    await waitForHeader(page);
+    await stampActions(page);
+    await addWorkSpacer(page);
+    const rest = await workMetrics(page);
+    const dockScroll = Math.ceil((rest.tabs?.y ?? 0) - ACTION_HEIGHT);
+    await scrollWork(page, dockScroll + 80);
+    const frames = await page.evaluate(async (handoff) => {
+      const labeled = document.querySelector('[data-testid="product-scroll-view"]');
+      if (!(labeled instanceof HTMLElement)) {
+        throw new Error('missing product-scroll-view');
+      }
+      const port =
+        [labeled, ...labeled.querySelectorAll<HTMLElement>('*')].find(
+          (node) => node.scrollHeight > node.clientHeight + 1,
+        ) ?? labeled;
+      const sample = () => ({
+        backCount: document.querySelectorAll('[data-testid="work-back"]').length,
+        shareCount: document.querySelectorAll('[data-testid="work-share"]').length,
+        compactNavCount: document.querySelectorAll(
+          '[data-testid="work-compact-nav"]',
+        ).length,
+        surfaceCount: document.querySelectorAll(
+          '[data-testid="sticky-dock-surface"]',
+        ).length,
+        persistentBack:
+          document.querySelector('[data-testid="work-back"]')?.getAttribute(
+            'data-persistent',
+          ) === 'work-back'
+            ? 1
+            : 0,
+        tabsY: document
+          .querySelector('[data-testid="work-sticky-tabs"]')
+          ?.getBoundingClientRect().y ?? 0,
+        scrollTop: port.scrollTop,
+      });
+      const frames = [sample()];
+      for (const top of [
+        Math.max(0, handoff - 73),
+        Math.max(0, handoff - 227),
+        Math.max(0, handoff - 380),
+      ]) {
+        port.scrollTop = top;
+        port.dispatchEvent(new Event('scroll', { bubbles: false }));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        frames.push(sample());
+      }
+      for (let extra = 0; extra < 6; extra += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        frames.push(sample());
+      }
+      return frames;
+    }, dockScroll);
+    expect(frames.length).toBeGreaterThan(3);
+    for (const frame of frames) {
+      expect(frame.backCount).toBe(1);
+      expect(frame.shareCount).toBe(1);
+      expect(frame.compactNavCount).toBe(0);
+      expect(frame.surfaceCount).toBe(1);
+      expect(frame.persistentBack).toBe(1);
+    }
+    await scrollWork(page, 0);
+    await expect
+      .poll(async () => (await workMetrics(page)).surfaceActive, {
+        timeout: 1500,
+      })
+      .toBe(false);
+    const restAgain = await workMetrics(page);
+    expectOneActions(restAgain);
+    expect(restAgain.state).toBe('overlay');
+    expect(restAgain.surfaceActive).toBe(false);
+    expectPinnedControls(restAgain, 384);
   });
 
   test('keeps gallery swipe after the header mounts', async ({ page }) => {
@@ -380,22 +496,124 @@ test.describe('work header motion', () => {
 
     await page.setViewportSize({ width: 384, height: 860 });
     await addWorkSpacer(page);
-    const { handoffOffset } = await measureHandoff(page);
-    await scrollWork(page, handoffOffset);
-    await waitForState(page, 'compact');
+    const rest = await workMetrics(page);
+    const dockScroll = Math.ceil((rest.tabs?.y ?? 0) - ACTION_HEIGHT);
+    await scrollWork(page, dockScroll);
     await expect
-      .poll(async () => Math.round((await workMetrics(page)).back?.y ?? -1), {
+      .poll(async () => Math.round((await workMetrics(page)).tabs?.y ?? -1), {
         timeout: 1500,
       })
-      .toBe(12);
-    const compact = await workMetrics(page);
-    expectOneActions(compact);
-    expect(compact.back?.x).toBeCloseTo(20, 0);
-    expect((compact.share?.x ?? 0) + (compact.share?.width ?? 0)).toBeCloseTo(
-      364,
-      0,
-    );
-    expect(compact.tabs?.y).toBeCloseTo(WEB_COMPACT_STACK, 0);
-    expect(compact.overflow).toBe(false);
+      .toBe(ACTION_HEIGHT);
+    await expect
+      .poll(async () => (await workMetrics(page)).surfaceActive, {
+        timeout: 1500,
+      })
+      .toBe(true);
+    const docked = await workMetrics(page);
+    expectOneActions(docked);
+    expect(docked.surfaceActive).toBe(true);
+    expectPinnedControls(docked, 384);
+    expect(docked.tabs?.y).toBeCloseTo(ACTION_HEIGHT, 0);
+    expect(docked.overflow).toBe(false);
+  });
+
+  test('deactivates the dock surface on slow reverse', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize({ width: 384, height: 832 });
+    await mockWork(page);
+    await page.goto(`/product/${PUBLIC_ID}`);
+    await waitForHeader(page);
+    await stampActions(page);
+    await addWorkSpacer(page);
+    const rest = await workMetrics(page);
+    expect(rest.state).toBe('overlay');
+    expect(rest.surfaceActive).toBe(false);
+    const result = await page.evaluate(async (actionHeight) => {
+      const header = document.querySelector(
+        '[data-testid="work-sticky-header"]',
+      );
+      const labeled = document.querySelector(
+        '[data-testid="product-scroll-view"]',
+      );
+      const tabs = document.querySelector('[data-testid="work-sticky-tabs"]');
+      const surface = header?.querySelector(
+        '[data-testid="sticky-dock-surface"]',
+      );
+      if (
+        !(header instanceof HTMLElement) ||
+        !(labeled instanceof HTMLElement) ||
+        !(tabs instanceof HTMLElement) ||
+        !(surface instanceof HTMLElement)
+      ) {
+        throw new Error('missing work dock nodes');
+      }
+      const port =
+        [labeled, ...labeled.querySelectorAll<HTMLElement>('*')].find(
+          (node) => node.scrollHeight > node.clientHeight + 1,
+        ) ?? labeled;
+      const frame = () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const sample = () => ({
+        surfaceActive: surface.getAttribute('data-active') === 'true',
+        state: header.getAttribute('data-state'),
+        tabsY: tabs.getBoundingClientRect().y,
+        backCount: document.querySelectorAll('[data-testid="work-back"]').length,
+        shareCount: document.querySelectorAll('[data-testid="work-share"]')
+          .length,
+      });
+      const restTabs = tabs.getBoundingClientRect().y;
+      port.scrollTop = Math.max(0, Math.ceil(restTabs - actionHeight - 32));
+      await frame();
+      let guard = 0;
+      let docked = sample();
+      while (docked.tabsY > actionHeight || !docked.surfaceActive) {
+        port.scrollTop += 2;
+        await frame();
+        docked = sample();
+        if (
+          ++guard > 2000 ||
+          port.scrollTop >= port.scrollHeight - port.clientHeight
+        ) {
+          break;
+        }
+      }
+      let leftDock = false;
+      let stuckAfterLeave = false;
+      while (port.scrollTop > 0) {
+        port.scrollTop = Math.max(0, port.scrollTop - 2);
+        await frame();
+        const current = sample();
+        if (current.tabsY <= actionHeight + 4) {
+          continue;
+        }
+        if (!leftDock) {
+          leftDock = true;
+          await frame();
+          if (sample().surfaceActive) {
+            stuckAfterLeave = true;
+          }
+          continue;
+        }
+        if (current.surfaceActive) {
+          stuckAfterLeave = true;
+        }
+      }
+      await frame();
+      return { docked, leftDock, stuckAfterLeave, rest: sample() };
+    }, ACTION_HEIGHT);
+    expect(result.docked.surfaceActive).toBe(true);
+    expect(result.docked.state).toBe('docked');
+    expect(Math.round(result.docked.tabsY)).toBe(ACTION_HEIGHT);
+    expect(result.leftDock).toBe(true);
+    expect(result.stuckAfterLeave).toBe(false);
+    expect(result.rest.surfaceActive).toBe(false);
+    expect(result.rest.state).toBe('overlay');
+    expect(result.rest.backCount).toBe(1);
+    expect(result.rest.shareCount).toBe(1);
+    const expanded = await workMetrics(page);
+    expectOneActions(expanded);
+    expectPinnedControls(expanded, 384);
+    expect(expanded.persistentBack).toBe(1);
+    expect(expanded.persistentShare).toBe(1);
   });
 });

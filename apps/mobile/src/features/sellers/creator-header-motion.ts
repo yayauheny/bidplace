@@ -1,7 +1,6 @@
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import {
   STICKY_HANDOFF_HYSTERESIS,
-  WEB_COMPACT_STACK,
   findScrollBoundary as findLabeledScrollBoundary,
   stickyHandoffThresholds,
   stickyHeaderStateFromScroll,
@@ -11,7 +10,6 @@ import {
 export const CREATOR_COMPACT_SOCIAL_LIMIT = 2;
 export const CREATOR_SCROLL_TEST_ID = 'creator-scroll';
 export const CREATOR_HANDOFF_HYSTERESIS = STICKY_HANDOFF_HYSTERESIS;
-export const CREATOR_WEB_COMPACT_STACK = WEB_COMPACT_STACK;
 
 export type CreatorHeaderState = StickyHeaderState;
 

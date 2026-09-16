@@ -1,17 +1,26 @@
 # bidplace — текущий статус проекта
 
-## 2026-09-16 — Work compact parks when tabs reach the viewport top
+## 2026-09-17 — StickyDock: shared metrics, persistent Work overlay, Creator park
 
-- `Implemented`: Web Work compact chrome mounts only after identity/chips have
-  left the viewport. Handoff is `scrollTop >= measured heroHeight` (tabs top),
-  reverse at `heroHeight - 20`. Compact Back/Share are a separate 80px row
-  (`WorkCompactNav`); expanded gallery overlay unmounts. Tabs layout to `y≈80`
-  with Reanimated `LinearTransition`. Tab labels keep `space.pageGutter`; the
-  divider stays full-bleed. Coverage: `WorkHeader.web.tsx`, `WorkActions.tsx`,
-  `workHandoffThresholds`, `FigmaTabs` `contentInset`,
-  `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: expanded Work rest geometry, Creator park (`heroHeight - 80`),
-  native Work expanded-only, Work data.
+- `Implemented`: Creator and Work share `stickyDock.*` (`actionHeight` 80,
+  `controlTop` 12, `controlSize` 48, `controlInset` 20, `tabsHeight` 26,
+  `fullHeight` 106). `StickyDockSurface` is presentation-only (canvas,
+  opacity, pointer-events, web opacity fade). Each screen host owns
+  `stickyDock.fullHeight` placement.
+- `Implemented`: Web Work keeps one persistent Back/Share pair in
+  `StickyDockActionRow` (CSS sticky overlay, no remount). Tabs are sticky
+  at `top: stickyDock.actionHeight`. The dock canvas is
+  `surfaceActive = !entry.isIntersecting` with observer root
+  `product-scroll-view`, `rootMargin: -${stickyDock.actionHeight}px 0px 0px 0px`,
+  `threshold: 0`. Coverage: `WorkHeader.web.tsx`, `StickyDockActionRow.tsx`,
+  `StickyDockSurface.web.tsx`, `e2e/work-header-motion.spec.ts`.
+- `Implemented`: Web Creator still parks with measured `heroHeight` and
+  `LinearTransition` on one `CreatorIdentity`. Compact paint order is
+  surface, identity, tabs. Surface activation follows compact.
+  Coverage: `CreatorHeader.web.tsx`, `CreatorIdentity.tsx`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: expanded Work rest (media 520), native headers, Creator
+  hysteresis, Figma compact tokens 186/44.
 
 ## 2026-09-16 — Restore expanded Work vertical composition
 
@@ -19,18 +28,10 @@
   dots and identity, and `space.x10` 40 between chips and tabs. The artwork
   viewport remains 520. Coverage: `WorkHeader.web.tsx`, `WorkHeader.tsx`,
   `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: Creator, Work compact coordinates, gallery crop, Work data.
+- `Unchanged`: Creator, gallery crop, Work data.
 
-## 2026-09-16 — Work sticky handoff uses the same Reanimated park as Creator
+## 2026-09-16 — Creator sticky handoff parks with measured heroHeight
 
-- `Implemented`: Web Work header has two product states, `expanded` and
-  `compact`. Compact starts at the measured park
-  `scrollTop >= heroHeight - 80` and returns at `park - 20`. Sticky
-  positioning is CSS. One `WorkActions` Back/Share pair stays mounted;
-  compact restyles those nodes. Reanimated `LinearTransition` interpolates
-  that layout change. Gallery, identity and tabs are not animated. There is
-  no 558/538 state machine. Coverage: `WorkHeader.web.tsx`,
-  `WorkActions.tsx`, `e2e/work-header-motion.spec.ts`.
 - `Implemented`: Web Creator header has two product states, `expanded` and
   `compact`. Compact starts at the measured park
   `scrollTop >= heroHeight - compactStack` and returns at `park - 20`.
@@ -40,8 +41,8 @@
   sibling of identity and are not animated. Coverage:
   `CreatorHeader.web.tsx`, `CreatorIdentity.tsx`,
   `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
-- `Unchanged`: expanded Creator and Work Figma rest layouts, native
-  headers, Figma compact tokens 186/44.
+- `Unchanged`: expanded Creator Figma rest layout, native headers,
+  Figma compact tokens 186/44.
 
 ## 2026-09-15 — onGlass chips use a 1px outside gradient ring
 

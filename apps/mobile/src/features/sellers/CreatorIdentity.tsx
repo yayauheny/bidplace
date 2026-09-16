@@ -7,7 +7,6 @@ import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
 import { controlLayoutTransition } from '../../lib/layout-transition';
 import { CreatorSocialActions } from './CreatorSocialActions';
-import { CREATOR_WEB_COMPACT_STACK } from './creator-header-motion';
 
 export function CreatorIdentity({
   profile,
@@ -43,12 +42,12 @@ export function CreatorIdentity({
               left: 0,
               right: 0,
               bottom: 0,
-              height: CREATOR_WEB_COMPACT_STACK,
+              height: designTokens.stickyDock.actionHeight,
               flexDirection: 'row',
               alignItems: 'flex-start',
-              paddingTop: designTokens.space.x3,
+              paddingTop: designTokens.stickyDock.controlTop,
               paddingBottom: designTokens.space.x5,
-              paddingHorizontal: designTokens.space.x5,
+              paddingHorizontal: designTokens.stickyDock.controlInset,
               zIndex: 2,
             }
           : {

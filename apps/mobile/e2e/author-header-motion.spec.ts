@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const WEB_COMPACT_STACK = 12 + 48 + 20;
+const ACTION_HEIGHT = 80;
 const WEB_COMPACT_AVATAR_Y = 12;
 const checksum = 'a'.repeat(64);
 const categoryId = '10000000-0000-4000-8000-000000000099';
@@ -119,6 +119,11 @@ async function creatorMetrics(page: Page) {
       avatarCount: count('creator-avatar'),
       handleCount: count('creator-handle'),
       actionsCount: count('creator-actions'),
+      surfaceCount: count('sticky-dock-surface'),
+      surfaceActive:
+        document
+          .querySelector('[data-testid="sticky-dock-surface"]')
+          ?.getAttribute('data-active') === 'true',
       avatar: box('creator-avatar'),
       handle: box('creator-handle'),
       actions: box('creator-actions'),
@@ -127,6 +132,28 @@ async function creatorMetrics(page: Page) {
         document.querySelector('[data-testid="creator-handle"]')?.textContent?.trim() ??
         '',
     };
+  });
+}
+
+async function avatarPaintHit(page: Page) {
+  return page.evaluate(() => {
+    const avatar = document.querySelector('[data-testid="creator-avatar"]');
+    const surface = document.querySelector('[data-testid="sticky-dock-surface"]');
+    if (!(avatar instanceof HTMLElement) || !(surface instanceof HTMLElement)) {
+      return { hit: null as string | null, ids: [] as string[] };
+    }
+    const previous = surface.style.pointerEvents;
+    surface.style.pointerEvents = 'auto';
+    const box = avatar.getBoundingClientRect();
+    const ids = document
+      .elementsFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+      .map((node) => node.getAttribute('data-testid'))
+      .filter((id): id is string => Boolean(id));
+    surface.style.pointerEvents = previous;
+    const hit =
+      ids.find((id) => id === 'creator-avatar' || id === 'sticky-dock-surface') ??
+      null;
+    return { hit, ids };
   });
 }
 
@@ -168,7 +195,7 @@ async function measureHandoff(page: Page) {
       compactStack: stack,
       handoffOffset: Math.max(0, heroHeight - stack),
     };
-  }, WEB_COMPACT_STACK);
+  }, ACTION_HEIGHT);
 }
 
 async function addCreatorSpacer(page: Page) {
@@ -188,6 +215,7 @@ function expectOneIdentity(metrics: Awaited<ReturnType<typeof creatorMetrics>>) 
   expect(metrics.avatarCount).toBe(1);
   expect(metrics.handleCount).toBe(1);
   expect(metrics.actionsCount).toBe(1);
+  expect(metrics.surfaceCount).toBe(1);
 }
 
 test.describe('author header motion', () => {
@@ -198,6 +226,7 @@ test.describe('author header motion', () => {
     await waitForHeader(page);
     const metrics = await creatorMetrics(page);
     expect(metrics.state).toBe('expanded');
+    expect(metrics.surfaceActive).toBe(false);
     expectOneIdentity(metrics);
     expect(metrics.handleText).toBe('@motion-rest');
     expect(metrics.avatar?.width).toBeCloseTo(112, 0);
@@ -229,13 +258,15 @@ test.describe('author header motion', () => {
       })
       .toBe(WEB_COMPACT_AVATAR_Y);
     const compact = await creatorMetrics(page);
+    expect(compact.surfaceActive).toBe(true);
     expectOneIdentity(compact);
     expect(compact.avatar?.width).toBeCloseTo(48, 0);
     expect(compact.avatar?.x).toBeCloseTo(20, 0);
     expect(compact.handle?.x).toBeCloseTo(76, 0);
     expect(compact.actions?.y).toBeCloseTo(WEB_COMPACT_AVATAR_Y, 0);
-    expect(compact.tabs?.y).toBeCloseTo(WEB_COMPACT_STACK, 0);
+    expect(compact.tabs?.y).toBeCloseTo(ACTION_HEIGHT, 0);
     expect(compact.tabs?.height).toBeCloseTo(26, 0);
+    expect((await avatarPaintHit(page)).hit).toBe('creator-avatar');
     await expect(page.getByRole('tab', { name: /^Работы/ })).toBeVisible();
     await expect(page.getByLabel('Поделиться профилем')).toHaveCount(1);
   });
@@ -264,6 +295,7 @@ test.describe('author header motion', () => {
       })
       .toBe(112);
     const expanded = await creatorMetrics(page);
+    expect(expanded.surfaceActive).toBe(false);
     expectOneIdentity(expanded);
     expect(expanded.handleText).toBe('@motion-reverse');
     expect(expanded.avatar?.width).toBeCloseTo(112, 0);

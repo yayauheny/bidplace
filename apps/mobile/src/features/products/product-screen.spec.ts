@@ -38,9 +38,12 @@ describe('Work top chrome', () => {
     expect(productScreen).toContain('navigateWorkPageBack(router)');
     expect(productScreen).toContain('<WorkHeader');
     expect(nativeHeader).toContain('leadingAction=');
-    expect(webHeader).toContain('leadingAction=');
-    expect(webHeader).toContain('WorkCompactNav');
-    expect(webHeader).toContain('contentInset={designTokens.space.pageGutter}');
+    expect(webHeader).not.toContain('leadingAction=');
+    expect(webHeader).toContain('StickyDockActionRow');
+    expect(webHeader).toContain('StickyDockSurface');
+    expect(webHeader).not.toContain('LinearTransition');
+    expect(webActions).not.toContain('entering=');
+    expect(webActions).not.toContain('exiting=');
     expect(nativeHeader).toContain('WorkBackControl');
     expect(nativeHeader).toContain('WorkShareControl');
     expect(webActions).toContain('icon="arrow-left-01"');

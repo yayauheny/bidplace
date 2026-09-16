@@ -113,7 +113,9 @@ stays mounted; avatar, handle and actions keep the same nodes. Compact only
 changes their layout. Reanimated `LinearTransition` (`200ms`,
 `cubic-bezier(0.2, 0, 0, 1)`, `ReduceMotion.System`) interpolates those
 nodes. Tabs sit below identity at `y≈80` and are not part of that
-animation. Page scroll is not
+animation. Compact canvas is a presentational `StickyDockSurface` filling a
+host owned by the Creator header (`stickyDock.fullHeight`), painted behind
+identity and tabs. Page scroll is not
 snapped. Web compact chrome (~106px with tabs) is an intentional deviation
 from Figma iPhone `y=44` / tabs `y=186`. Canonical tokens
 `creatorCompactTop` 44 and `creatorCompactHeader` 186 stay Figma source.
@@ -128,15 +130,13 @@ outside `#DEDEDE`→`#F3F3F3` ring, with Work pad 6/12 and 14/500 `#565656`.
 Expanded 390 composition is gallery media 520, dots after `space.x3`, identity
 after `sectionGap` 20, tabs after `space.x10` 40.
 
-Web 390 Work sticky header parks when the Work tabs reach the viewport top:
-`scrollTop >= measured heroHeight`, reverse at `heroHeight - 20`. Hero is
-gallery, dots, title, author and chips — not the compact chrome. Before that
-park, identity and chips scroll away naturally and compact Back/Share are not
-mounted. At the park, identity is already above the viewport; a separate 80px
-compact row (`space.x3` + `size.header` + `space.x5`) mounts and tabs layout
-to `y≈80`. Expanded gallery Back/Share overlay unmounts. Tab labels keep
-`space.pageGutter` inset; the tab divider stays full-bleed. There is no
-compact thumbnail and no Figma scrolled Work frame. Page scroll is not
+Web 390 Work sticky chrome shares Creator compact `stickyDock` geometry
+(action zone 80, controls 12/48/20, tabs 26) without sharing Creator park
+physics. Back/Share overlay the gallery at rest and remain the same nodes
+while scrolling (CSS sticky). The full-width canvas dock appears only when
+tabs stick at `y≈80` under Back/Share. Identity and chips scroll away. Tab
+labels keep `space.pageGutter` inset; the tab divider stays full-bleed. There
+is no compact thumbnail and no Figma scrolled Work frame. Page scroll is not
 snapped. Scroll-to-top when changing Work tabs is a follow-up. Native Work
 stays expanded-only.
 

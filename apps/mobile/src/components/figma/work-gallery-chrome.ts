@@ -8,10 +8,10 @@ import { designTokens } from '@bidplace/design-tokens';
 export function workGalleryChromeStyle() {
   return {
     position: 'absolute' as const,
-    top: designTokens.space.x3,
-    left: designTokens.space.x5,
-    right: designTokens.space.x5,
-    height: designTokens.size.header,
+    top: designTokens.stickyDock.controlTop,
+    left: designTokens.stickyDock.controlInset,
+    right: designTokens.stickyDock.controlInset,
+    height: designTokens.stickyDock.controlSize,
     flexDirection: 'row' as const,
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,

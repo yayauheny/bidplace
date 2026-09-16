@@ -12,10 +12,10 @@ describe('Work gallery chrome', () => {
   it('places Frame 76 12px from the web hero top, not under a status bar', () => {
     expect(workGalleryChromeStyle()).toMatchObject({
       position: 'absolute',
-      top: designTokens.space.x3,
-      left: designTokens.space.x5,
-      right: designTokens.space.x5,
-      height: designTokens.size.header,
+      top: designTokens.stickyDock.controlTop,
+      left: designTokens.stickyDock.controlInset,
+      right: designTokens.stickyDock.controlInset,
+      height: designTokens.stickyDock.controlSize,
       flexDirection: 'row',
       justifyContent: 'space-between',
     });

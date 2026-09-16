@@ -1,17 +1,23 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
+import { StickyDockSurface } from '../../components/figma/StickyDockSurface';
 import { CreatorHero } from './CreatorHero';
 import { AuthorShare } from './AuthorShare';
 import type { CreatorHeaderProps } from './creator-header';
 import {
-  CREATOR_WEB_COMPACT_STACK,
   creatorHandoffThresholds,
   creatorHeaderStateFromScroll,
   findScrollBoundary,
   readCurrentScrollTop,
   scrollTopFromEvent,
 } from './creator-header-motion';
+
+const creatorDockLayer = {
+  surface: 0,
+  content: 1,
+  tabs: 2,
+} as const;
 
 export function CreatorHeader({
   profile,
@@ -26,7 +32,10 @@ export function CreatorHeader({
   const heroHeightRef = useRef(0);
   const [heroHeight, setHeroHeight] = useState(0);
   const [compact, setCompact] = useState(false);
-  const offset = Math.max(0, heroHeight - CREATOR_WEB_COMPACT_STACK);
+  const offset = Math.max(
+    0,
+    heroHeight - designTokens.stickyDock.actionHeight,
+  );
 
   useLayoutEffect(() => {
     const shell = header.current;
@@ -112,9 +121,24 @@ export function CreatorHeader({
       }
     >
       <div
+        data-testid="sticky-dock-surface-host"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: designTokens.stickyDock.fullHeight,
+          pointerEvents: 'none',
+          zIndex: creatorDockLayer.surface,
+        }}
+      >
+        <StickyDockSurface active={compact} />
+      </div>
+      <div
         ref={hero}
         style={{
           position: 'relative',
+          zIndex: creatorDockLayer.content,
           height: compact && heroHeight ? heroHeight : undefined,
         }}
       >
@@ -124,14 +148,16 @@ export function CreatorHeader({
           actions={<AuthorShare sharePath={profile.sharePath} />}
         />
       </div>
-      <FigmaTabs
-        tabs={tabs}
-        value={tab}
-        onChange={onTabChange}
-        label="Профиль автора"
-        panelId={panelId}
-        align="center"
-      />
+      <div style={{ position: 'relative', zIndex: creatorDockLayer.tabs }}>
+        <FigmaTabs
+          tabs={tabs}
+          value={tab}
+          onChange={onTabChange}
+          label="Профиль автора"
+          panelId={panelId}
+          align="center"
+        />
+      </div>
     </div>
   );
 }

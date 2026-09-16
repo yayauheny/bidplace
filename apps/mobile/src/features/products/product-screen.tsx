@@ -124,7 +124,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           panelId={panelId}
           onBack={() => navigateWorkPageBack(router)}
           onShare={() => setShareOpen(true)}
-        />
+        >
         <View
           style={{
             paddingHorizontal: designTokens.space.pageGutter,
@@ -219,6 +219,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             </View>
           ) : null}
         </View>
+        </WorkHeader>
       </ScrollView>
       <ShareSheet
         open={shareOpen}

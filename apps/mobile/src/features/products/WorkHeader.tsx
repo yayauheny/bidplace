@@ -19,6 +19,7 @@ export function WorkHeader({
   panelId,
   onBack,
   onShare,
+  children,
 }: WorkHeaderProps) {
   return (
     <>
@@ -49,6 +50,7 @@ export function WorkHeader({
           panelId={panelId}
         />
       </View>
+      {children}
     </>
   );
 }
