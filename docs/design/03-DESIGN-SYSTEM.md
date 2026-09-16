@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-09-15
+Последнее обновление: 2026-09-17
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
@@ -346,7 +346,10 @@ faces are not faux-bolded.
 
 Shared `ShareSheet` renders a copy action and a downloadable PNG QR for
 validated public `/works/:id` and `/authors/:slug` paths on the current
-origin. The native branch is a stub.
+origin. Work and Creator open the same `AppDialog` sheet. A sheet enters
+from below, exits downward, and the backdrop fades (`motion.control`,
+`cubic-bezier(0.2, 0, 0, 1)`, reduced motion). Geometry is unchanged. The
+native branch is a stub.
 
 Filter/sort sheets are dialogs with radio/checkbox rows, local draft, and
 Apply/Reset. They are not `role="menu"`.

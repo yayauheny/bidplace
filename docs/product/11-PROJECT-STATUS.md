@@ -1,5 +1,12 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-17 — Share sheet bottom-sheet transition
+
+- `Implemented`: Share sheet now opens and closes with the accepted
+  bottom-sheet transition on Work and Creator. Coverage:
+  `e2e/share-sheet-motion.spec.ts`.
+- `Unchanged`: sheet geometry, QR/copy actions, StickyDock, Creator park.
+
 ## 2026-09-17 — StickyDock: shared metrics, persistent Work overlay, Creator park
 
 - `Implemented`: Creator and Work share `stickyDock.*` (`actionHeight` 80,

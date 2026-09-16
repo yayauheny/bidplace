@@ -2,9 +2,19 @@ import type { ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import * as Dialog from '@rn-primitives/dialog';
 
-export function AppDialogOverlay({ style }: { style: StyleProp<ViewStyle> }) {
+export function AppDialogOverlay({
+  style,
+  forceMount,
+}: {
+  style: StyleProp<ViewStyle>;
+  forceMount?: true;
+}) {
   return (
-    <Dialog.Overlay closeOnPress style={[{ position: 'absolute' }, style]} />
+    <Dialog.Overlay
+      closeOnPress
+      forceMount={forceMount}
+      style={[{ position: 'absolute' }, style]}
+    />
   );
 }
 

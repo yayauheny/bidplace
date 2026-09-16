@@ -2,8 +2,15 @@ import * as Dialog from '@rn-primitives/dialog';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { designTokens } from '@bidplace/design-tokens';
+import {
+  sheetBackdropEnter,
+  sheetBackdropExit,
+  sheetEnter,
+  sheetExit,
+} from '../../lib/layout-transition';
 
 import { AppText } from './AppText';
 import { AppIcon } from './AppIcon';
@@ -89,6 +96,134 @@ export function AppDialog({
     };
   }, [open, restoreFocus]);
 
+  const isSheet = presentation === 'sheet';
+  const overlay = (
+    <AppDialogOverlay
+      forceMount={isSheet ? true : undefined}
+      style={{
+        inset: 0,
+        backgroundColor: isSheet
+          ? designTokens.color.modalDimmer
+          : designTokens.color.overlay,
+        zIndex: designTokens.layer.modal,
+      }}
+    />
+  );
+  const content = (
+    <Dialog.Content
+      asChild
+      forceMount={isSheet ? true : undefined}
+      onOpenAutoFocus={() => {
+        if (Platform.OS !== 'web' || typeof document === 'undefined') {
+          return;
+        }
+        if (document.activeElement instanceof HTMLElement) {
+          returnFocusRef.current = document.activeElement;
+        }
+      }}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        restoreFocus();
+      }}
+      nativeID="app-dialog-content"
+      style={{
+        width: '100%',
+        maxWidth: isSheet
+          ? designTokens.layout.phoneWidth
+          : designTokens.layout.dialogMaxWidth,
+        maxHeight: Math.max(height - viewportGutter * 2, 0),
+        zIndex: designTokens.layer.modal,
+        borderWidth: 1,
+        borderColor: 'rgba(20, 20, 20, 0.08)',
+        borderRadius: isSheet
+          ? designTokens.radius.shareSheet
+          : designTokens.radius.dialog,
+        ...(isSheet
+          ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
+          : {}),
+        backgroundColor: designTokens.color.dialogSurface,
+        padding: isSheet
+          ? designTokens.space.pageGutter
+          : width >= 600
+            ? designTokens.space.x8
+            : designTokens.space.x5,
+        ...designTokens.elevation.floating,
+      }}
+    >
+      <ScrollView
+        accessibilityViewIsModal
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        showsVerticalScrollIndicator
+        contentContainerStyle={{
+          gap: designTokens.space.x4,
+          paddingBottom: designTokens.space.x1,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: designTokens.space.x4,
+          }}
+        >
+          <Dialog.Title asChild>
+            <AppText
+              role={isSheet ? 'profileHeading' : 'sectionTitle'}
+              style={
+                presentation === 'dialog' && width >= 600
+                  ? {
+                      fontSize: 38,
+                      lineHeight: 40,
+                      letterSpacing: -1.1,
+                    }
+                  : undefined
+              }
+            >
+              {title}
+            </AppText>
+          </Dialog.Title>
+          <MotionPressable
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть окно"
+            onPress={onClose}
+            preset="icon"
+            style={{
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: designTokens.radius.pill,
+            }}
+            interactionStyle={({ hovered, pressed }) => ({
+              backgroundColor:
+                hovered || pressed
+                  ? designTokens.color.surfaceStrong
+                  : 'transparent',
+            })}
+          >
+            <AppIcon name="x" size={22} />
+          </MotionPressable>
+        </View>
+        {description ? (
+          <Dialog.Description asChild>
+            <AppText role="bodySmall" tone="secondary">
+              {description}
+            </AppText>
+          </Dialog.Description>
+        ) : null}
+        <View style={{ gap: designTokens.space.x3 }}>{children}</View>
+      </ScrollView>
+    </Dialog.Content>
+  );
+  const frameStyle = appDialogHostStyle({
+    presentation,
+    width,
+    viewportGutter,
+  });
+
   return (
     <Dialog.Root
       open={open}
@@ -96,136 +231,34 @@ export function AppDialog({
         if (!nextOpen) onClose();
       }}
     >
-      <Dialog.Portal>
-        <AppDialogOverlay
-          style={{
-            inset: 0,
-            backgroundColor: presentation === 'sheet' ? designTokens.color.modalDimmer : designTokens.color.overlay,
-            zIndex: designTokens.layer.modal,
-          }}
-        />
-        <AppDialogFrame
-          style={appDialogHostStyle({
-            presentation,
-            width,
-            viewportGutter,
-          })}
-        >
-          <Dialog.Content
-            asChild
-            onOpenAutoFocus={() => {
-              if (Platform.OS !== 'web' || typeof document === 'undefined') {
-                return;
-              }
-              if (document.activeElement instanceof HTMLElement) {
-                returnFocusRef.current = document.activeElement;
-              }
-            }}
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              restoreFocus();
-            }}
-            nativeID="app-dialog-content"
-            style={{
-              width: '100%',
-              maxWidth:
-                presentation === 'sheet'
-                  ? designTokens.layout.phoneWidth
-                  : designTokens.layout.dialogMaxWidth,
-              maxHeight: Math.max(height - viewportGutter * 2, 0),
-              zIndex: designTokens.layer.modal,
-              borderWidth: 1,
-              borderColor: 'rgba(20, 20, 20, 0.08)',
-              borderRadius:
-                presentation === 'sheet'
-                  ? designTokens.radius.shareSheet
-                  : designTokens.radius.dialog,
-              ...(presentation === 'sheet'
-                ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
-                : {}),
-              backgroundColor: designTokens.color.dialogSurface,
-              padding:
-                presentation === 'sheet'
-                  ? designTokens.space.pageGutter
-                  : width >= 600
-                    ? designTokens.space.x8
-                    : designTokens.space.x5,
-              ...designTokens.elevation.floating,
-            }}
-          >
-            <ScrollView
-              accessibilityViewIsModal
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              contentContainerStyle={{
-                gap: designTokens.space.x4,
-                paddingBottom: designTokens.space.x1,
-              }}
+      {isSheet ? (
+        <Dialog.Portal forceMount>
+          {open ? (
+            <Animated.View
+              entering={sheetBackdropEnter}
+              exiting={sheetBackdropExit}
             >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: designTokens.space.x4,
-                }}
+              {overlay}
+            </Animated.View>
+          ) : null}
+          <AppDialogFrame style={frameStyle}>
+            {open ? (
+              <Animated.View
+                entering={sheetEnter}
+                exiting={sheetExit}
+                style={{ width: '100%' }}
               >
-                <Dialog.Title asChild>
-                  <AppText
-                    role={
-                      presentation === 'sheet'
-                        ? 'profileHeading'
-                        : 'sectionTitle'
-                    }
-                    style={
-                      presentation === 'dialog' && width >= 600
-                        ? {
-                            fontSize: 38,
-                            lineHeight: 40,
-                            letterSpacing: -1.1,
-                          }
-                        : undefined
-                    }
-                  >
-                    {title}
-                  </AppText>
-                </Dialog.Title>
-                <MotionPressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Закрыть окно"
-                  onPress={onClose}
-                  preset="icon"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    flexShrink: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: designTokens.radius.pill,
-                  }}
-                  interactionStyle={({ hovered, pressed }) => ({
-                    backgroundColor:
-                      hovered || pressed
-                        ? designTokens.color.surfaceStrong
-                        : 'transparent',
-                  })}
-                >
-                  <AppIcon name="x" size={22} />
-                </MotionPressable>
-              </View>
-              {description ? (
-                <Dialog.Description asChild>
-                  <AppText role="bodySmall" tone="secondary">
-                    {description}
-                  </AppText>
-                </Dialog.Description>
-              ) : null}
-              <View style={{ gap: designTokens.space.x3 }}>{children}</View>
-            </ScrollView>
-          </Dialog.Content>
-        </AppDialogFrame>
-      </Dialog.Portal>
+                {content}
+              </Animated.View>
+            ) : null}
+          </AppDialogFrame>
+        </Dialog.Portal>
+      ) : (
+        <Dialog.Portal>
+          {overlay}
+          <AppDialogFrame style={frameStyle}>{content}</AppDialogFrame>
+        </Dialog.Portal>
+      )}
     </Dialog.Root>
   );
 }

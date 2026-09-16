@@ -4,6 +4,13 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-17 — Share bottom-sheet motion
+
+- `Implemented` (mobile web): Work and Creator Share use the shared bottom
+  sheet; it slides in from below, slides out on X, and the backdrop fades.
+  Coverage: `e2e/share-sheet-motion.spec.ts`.
+- `Unchanged`: sheet chrome, QR, Copy link, centered dialogs, StickyDock.
+
 ## 2026-09-17 — StickyDock: shared metrics, persistent Work overlay, Creator park
 
 - `Implemented` (mobile web): Shared `stickyDock.*` (80 / 12 / 48 / 20 / 26 /

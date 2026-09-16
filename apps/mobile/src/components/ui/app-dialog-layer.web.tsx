@@ -36,11 +36,18 @@ function toFixedCss(style: StyleProp<ViewStyle>): CSSProperties {
   return css;
 }
 
-export function AppDialogOverlay({ style }: { style: StyleProp<ViewStyle> }) {
+export function AppDialogOverlay({
+  style,
+  forceMount,
+}: {
+  style: StyleProp<ViewStyle>;
+  forceMount?: true;
+}) {
   return (
     <div style={toFixedCss(style)}>
       <Dialog.Overlay
         closeOnPress
+        forceMount={forceMount}
         style={{ position: 'absolute', inset: 0 }}
       />
     </div>
