@@ -163,6 +163,51 @@ After changing UI:
 - Static Pen frames do not exhaust interaction behavior. Implement hover, focus, open/close, blur, artwork atmosphere, sticky transitions and reduced-motion exactly from `docs/design/03-DESIGN-SYSTEM.md`; never add route-local animation guesses or edit Pen to show them.
 - Verify visual parity at 1440, 1024, and 390 px with matched screenshots, plus required content, role, state, keyboard, zoom, and reduced-motion coverage.
 
+## Canonical Figma handoff
+
+For all Figma-driven UI work, check this local handoff FIRST:
+
+`/Users/yayauheny/projects/bidplace-home-figma-completion/design/figma-handoff/portfolio-phone-v1`
+
+This is the canonical imported Figma library from commit `d9fb5c2`.
+
+It contains 79 capture packages with:
+
+- `INDEX.md`
+- `catalog.json`
+- `VALIDATION.md`
+- `nodes.json`
+- `reference.png`
+- `assets/`
+
+Source priority:
+
+1. `portfolio-phone-v1` exact node/package
+2. exact node inside a parent capture's `nodes.json`
+3. live Figma Inspect / `get_design_context`
+4. raw Downloads `.figmacapture.zip`
+5. screenshots / current implementation
+
+Do NOT say “local package does not exist” before checking:
+
+- `INDEX.md`
+- `catalog.json`
+- parent screen `nodes.json`
+
+Some important nodes are embedded inside larger screen captures and do not have their own package.
+
+Examples:
+
+- quiet Opening pill `439:4419` lives inside `home__first-fold`
+- Frame 47 `436:1320` lives inside `home__default`
+- dock nodes live inside Home packages
+
+The other worktree is READ-ONLY. Never switch to it, commit there, merge from it, or alter its git state. Read/copy source data into the current task only when needed.
+
+Downloads are import source, not canonical truth. `docs/design-handoff` is prose documentation, not node geometry.
+
+If canonical handoff and live Inspect disagree: report the discrepancy before inventing a third value.
+
 ### Figma UI Implementation
 
 When implementing a Figma design, do not locally "tune" a screen with one-off inline values just to match a specific screenshot.

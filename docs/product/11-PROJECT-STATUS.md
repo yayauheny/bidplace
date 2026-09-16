@@ -1,11 +1,168 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-16 — Creator reverse clip stays viewport-anchored
+
+- `Implemented`: Compact/releasing dock clip follows scroll so the visible
+  window stays at viewport `y=0..106` while the sticky root unsticks.
+  Reverse dest-transform `1 → 0` is unchanged. Coverage:
+  `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: handoff `heroHeight - 80` / `-20`, stack 80, Work 558/538.
+
+## 2026-09-16 — Creator reverse FLIP keeps the dock clip until geometry 0
+
+- `Implemented`: Expand plays dest transforms `1 → 0` under the existing
+  dock clip, then releases clip/chrome on `transform` `transitionend`.
+  Rapid reverse retargets without exposing the hero. Coverage:
+  `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: handoff `heroHeight - 80` / `-20`, stack 80, Work 558/538.
+
+## 2026-09-16 — Creator compact dock clips then plays dest geometry
+
+- `Implemented`: Compact chrome clips the parked 106px slice immediately.
+  `--creator-geometry` then plays dest transforms on the same
+  avatar/handle/actions over 200ms. Tabs do not animate. Reverse is the
+  same geometry backward under clip.
+  Coverage: `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
+  `creator-header-motion.spec.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: measured park handoff, stack 80, Work 558/538.
+
+## 2026-09-16 — Creator dock-enter is a local 150ms settle
+
+- `Superseded`: `--creator-dock-enter` was removed in favor of clipped dest
+  geometry play.
+
+## 2026-09-16 — Creator compact handoff is the measured sticky park
+
+- `Implemented`: Web Creator header collapses at
+  `scrollTop >= measuredHeroHeight - 80` and expands at `<= park - 20`.
+  `--creator-progress` is binary on the state flip; `settled` updates in the
+  same turn. Scroll reads cached hero/handoff refs only. Coverage:
+  `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
+  `creator-header-motion.spec.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: compact stack 80, one-node dock, native header, Work 558/538.
+
+## 2026-09-16 — Work compact row is Back / Share only
+
+- `Implemented`: Compact Work chrome is one Back and one Share; no thumbnail.
+  Header state reads only `product-scroll-view.scrollTop`. Settled compact
+  sets WorkIdentity `inert`. Coverage: `WorkHeader.web.tsx`,
+  `work-header-motion.ts`, `work-header-motion.spec.ts`,
+  `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: 558/538, stack 80, Creator park hysteresis, native header.
+- `Follow-up`: tab scroll-to-top. Short Details / Payment clamp is accepted
+  until that task; no panel `minHeight` filler.
+
+## 2026-09-16 — Work compact header is 2-state 558/538
+
+- `Implemented`: Web Work sticky header collapses at `scrollTop >= 558` and
+  expands at `<= 538`. Landmark is the work title at the top edge. Compact
+  chrome is one Back and one Share. Expanded gallery/title/author/chips are
+  not faded. Park uses measured hero height minus compact stack 80. Coverage:
+  `WorkHeader.web.tsx`, `work-header-motion.ts`, `sticky-header-motion.ts`,
+  `work-header-motion.spec.ts`, `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: native Work header, Creator park hysteresis.
+
+## 2026-09-16 — Creator collapse/expand is 250/230
+
+- `Implemented`: Web Creator header collapses at `scrollTop >= 250` and
+  expands at `<= 230`. Landmark is expanded `@handle` at the top edge after
+  the avatar has left the viewport. Compact chrome ~106px and 200ms easing
+  are unchanged. Coverage: `creator-header-motion.ts`,
+  `creator-header-motion.spec.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: compact geometry, sticky offset, native header.
+
+## 2026-09-15 — Creator expand hysteresis is 180/160
+
+- `Implemented`: Web Creator header expands at `scrollTop <= 160`. Collapse
+  stays `>= 180`. Compact chrome ~106px and 200ms easing are unchanged.
+  Coverage: `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: compact geometry, sticky offset, native header.
+
+## 2026-09-15 — Creator collapse waits until scroll 180
+
+- `Implemented`: Web Creator header collapses at `scrollTop >= 180` and
+  expands at `<= 60`. Compact chrome ~106px and 200ms easing are unchanged.
+  Coverage: `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: compact geometry, sticky offset, native header.
+
+## 2026-09-15 — Creator compact gap 20px and collapse at 120
+
+- `Implemented`: Web compact stack is `space.x3 + 48 + space.x5` (80) plus
+  26px tabs (~106px chrome). Sticky `top: -(heroHeight - 80)`. Hysteresis
+  was 120/60. Duration 200ms and easing are unchanged. Coverage:
+  `creator-header-motion.ts`, `CreatorHeader.web.tsx`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: expanded layout, one-node motion, native header.
+
+## 2026-09-15 — Creator web compact chrome is ~98px
+
+- `Implemented`: Web compact Creator header parks a 72px identity stack
+  (`space.x3` + 48 + `space.x3`) plus 26px tabs (~98px chrome). Sticky
+  `top: -(heroHeight - 72)`. Compact clip waits for settled `data-progress=1`.
+  Figma tokens 186 / 44 remain canonical. Coverage: `CreatorHeader.web.tsx`,
+  `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: expanded layout, hysteresis, native header.
+
+## 2026-09-15 — Creator handle ellipsis is compact-only
+
+- `Implemented`: Expanded Creator handle is hug/`fit-content` inside the hero
+  column. Ellipsis applies only in `data-state="compact"` via
+  `--handle-compact-max`. Coverage: `CreatorHeader.web.tsx`,
+  `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: header 2-state motion, compact geometry, native header.
+
+## 2026-09-15 — Creator header uses a 2-state transition
+
+- `Implemented`: Web Creator sticky header morph is state-driven, not
+  scroll-proportional. `creatorHeaderStateFromScroll` uses 80/40 hysteresis;
+  `--creator-progress` transitions 0↔1 in 200ms
+  `cubic-bezier(0.2, 0, 0, 1)`. Coverage: `CreatorHeader.web.tsx`,
+  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: compact/expanded geometry, native header, Home/Work.
+
+## 2026-09-15 — Creator handle is one transformed node
+
+- `Implemented`: Web Creator header handle is a single `creator-handle` node.
+  Compact `creator-handle-compact` is removed. Progress `p` translates and
+  scales that node from the measured expanded glyph box to compact
+  `76 / 58.5`. Coverage: `CreatorHero.tsx`, `CreatorHeader.web.tsx`,
+  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
+  `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: avatar and actions motion, tabs, atmosphere, native header.
+
+## 2026-09-15 — onGlass chips use a 1px outside gradient ring
+
+- `Implemented`: Web `FigmaChip` `onGlass` paints `#FFFFFF` @ 0.8 with a
+  1px outside `#DEDEDE`→`#F3F3F3` ring (not a filled plate behind the
+  fill). Work chips `745:21232` are pad 6/12; Creator chips `621:19490`
+  stay pad 6/16. Coverage: `FigmaChip.web.tsx`, `figma-chip-style.ts`,
+  `figma-chip-style.spec.ts`.
+- `Unchanged`: Home, quiet buttons, catalog/cover chips, gallery chrome.
+
+## 2026-09-15 — Catalog segment, intro ink, Work back chrome
+
+- `Implemented`: `/works` hides catalog-segment tabs (`874:5421` /
+  `526:13314`). Screen order is title → intro → Filter/Sort → cards.
+  Coverage: `product-list-screen.tsx`, `product-list-catalog.spec.ts`.
+- `Implemented`: `/authors` and `/works` intros stay on approved MVP copy
+  with `bodySmall` default ink `#2A2A2A` 14/20/400/−1%. `textSecondary`
+  `#8A8A8A` is unchanged. Coverage: `public-authors-screen.tsx`,
+  `catalog-intro-style.spec.ts`, `visual-token.spec.ts`.
+- `Implemented`: Work gallery inactive dots are `color.border` `#DEDEDE`.
+  Work hero adds Frame 76 48×48 Back, keeps Share, hides Like, and does
+  not insert a web status-bar gap. Coverage: `WorkGallery.tsx`,
+  `work-gallery-chrome.ts`, `product-screen.tsx`, `work-page-back.ts`,
+  `work-page-back.spec.ts`, `work-gallery-chrome.spec.ts`.
+- `Unchanged`: Home, creator motion/header, dock/glass blur, Work History.
+
 ## 2026-09-15 — Author page About closer to Figma `621:19475`
 
 - `Implemented`: Public Creator About atmosphere, tabs, chips, city line,
   and achievement rail/dates follow `621:19475` + Frame 219 `742:20510`.
-  Web author page uses a `100vw` breakout so the 485 atmosphere covers
-  viewports wider than the 390 column. Coverage: `public-seller-screen.tsx`,
+  Atmosphere stays 485 at x −47 in the 390 column. Coverage:
   `CreatorHero.tsx`, `AuthorAtmosphere.tsx`, `AuthorAbout.tsx`,
   `FigmaTabs.web.tsx`, `FigmaChip.web.tsx`, `author-achievement-rail.ts`.
 - `Unchanged`: Home, dock, Works tab, public Archive remains hidden.

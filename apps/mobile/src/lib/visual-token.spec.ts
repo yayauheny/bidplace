@@ -62,6 +62,9 @@ describe('Figma semantic token contract', () => {
     expect(designTokens.blur.dockNativeIntensity).toBe(30);
     expect(designTokens.blur.dockAndroidReductionFactor).toBe(5);
     expect(designTokens.size.authorAtmosphere).toBe(485);
+    expect(designTokens.size.creatorCompactHeader).toBe(186);
+    expect(designTokens.space.creatorCompactTop).toBe(44);
+    expect(designTokens.size.creatorCompactAvatar).toBe(48);
     expect(designTokens.size.social).toBe(38);
     expect(designTokens.space.atmosphereOffset).toBe(36);
     expect(designTokens.color.glass).toBe('rgba(255, 255, 255, 0.60)');
@@ -157,5 +160,19 @@ describe('Figma semantic token contract', () => {
   it('uses the measured media interaction timing', () => {
     expect(designTokens.motion.media).toBe(300);
     expect(designTokens.motion.easing).toBe('cubic-bezier(0, 0, 0.2, 1)');
+  });
+
+  it('keeps catalog intro metrics on bodySmall ink without changing textSecondary', () => {
+    expect(designTokens.typography.bodySmall).toMatchObject({
+      fontFamily: 'Inter_400Regular',
+      fontSize: 14,
+      lineHeight: 20,
+      letterSpacing: -0.14,
+      fontWeight: '400',
+    });
+    expect(designTokens.color.ink).toBe('#2A2A2A');
+    expect(designTokens.color.textSecondary).toBe('#8A8A8A');
+    expect(designTokens.color.border).toBe('#DEDEDE');
+    expect(designTokens.color.divider).toBe('#E2E2E2');
   });
 });

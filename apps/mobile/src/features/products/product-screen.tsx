@@ -1,26 +1,19 @@
 import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
-  MotionPressable,
   PageState,
   ResilientRemoteImage,
   productMediaStyle,
 } from '../../components/ui';
-import { WorkGallery } from '../../components/figma/WorkGallery';
 import { WorkCoverCard } from '../../components/figma/WorkCoverCard';
 import { WorkFactsList } from '../../components/figma/WorkFactsList';
 import { FigmaButton } from '../../components/figma/FigmaButton';
-import { FigmaTabs } from '../../components/figma/FigmaTabs';
-import { FigmaChip } from '../../components/figma/FigmaChip';
-import { FigmaIcon } from '../../components/figma/FigmaIcon';
-import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
-import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { ShareSheet } from '../../components/figma/ShareSheet';
 import { getApiAssetUrl } from '../../lib/environment';
 import { useTrackWorkView } from '../../lib/analytics/use-track-views';
@@ -34,6 +27,8 @@ import {
   workHistoryBlocks,
   workTabs,
 } from './work-content';
+import { navigateWorkPageBack } from './work-page-back';
+import { WorkHeader } from './WorkHeader';
 
 export { PAYMENT_DELIVERY_STUB };
 
@@ -111,23 +106,24 @@ export function ProductScreen({ publicId }: { publicId: string }) {
           gap: designTokens.space.sectionGap,
         }}
       >
-        <WorkGallery
+        <WorkHeader
           key={publicId}
           images={work.images}
-          label={work.title}
-          action={
-            <FigmaGlassSurface
-              preset="controlGroup"
-              contentStyle={{ padding: designTokens.space.socialGroupY }}
-            >
-              <FigmaIconButton
-                icon="share-04"
-                iconSize={designTokens.size.socialGroupIcon}
-                label="Поделиться работой"
-                onPress={() => setShareOpen(true)}
-              />
-            </FigmaGlassSurface>
+          title={work.title}
+          authorName={author.fullName}
+          authorHref={
+            {
+              pathname: '/seller/[slug]',
+              params: { slug: author.slug },
+            } as Href
           }
+          chips={chips}
+          tabs={workTabs(work.story)}
+          tab={tab}
+          onTabChange={(value) => router.setParams({ tab: value })}
+          panelId={panelId}
+          onBack={() => navigateWorkPageBack(router)}
+          onShare={() => setShareOpen(true)}
         />
         <View
           style={{
@@ -135,69 +131,12 @@ export function ProductScreen({ publicId }: { publicId: string }) {
             gap: designTokens.space.x10,
           }}
         >
-          <View style={{ gap: designTokens.space.x3 }}>
-            <View style={{ gap: designTokens.space.x2 }}>
-              <AppText role="workTitle" accessibilityRole="header">
-                {work.title}
-              </AppText>
-              <Link
-                href={
-                  {
-                    pathname: '/seller/[slug]',
-                    params: { slug: author.slug },
-                  } as Href
-                }
-                asChild
-              >
-                <MotionPressable
-                  accessibilityRole="link"
-                  accessibilityLabel={`Открыть профиль автора ${author.fullName}`}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: designTokens.space.x1,
-                  }}
-                >
-                  <AppText
-                    role="workAuthor"
-                    tone="subdued"
-                    style={{ flexShrink: 1 }}
-                  >
-                    {author.fullName}
-                  </AppText>
-                  <FigmaIcon
-                    name="arrow-right-01"
-                    color={designTokens.color.textSubdued}
-                  />
-                </MotionPressable>
-              </Link>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: designTokens.space.workChipGap,
-              }}
-            >
-              {chips.map((chip) => (
-                <FigmaChip key={chip} label={chip} tone="onGlass" size="work" />
-              ))}
-            </View>
-          </View>
-          <View style={{ gap: designTokens.space.x6 }}>
-            <FigmaTabs
-              tabs={workTabs(work.story)}
-              value={tab}
-              onChange={(value) => router.setParams({ tab: value })}
-              label="Информация о работе"
-              panelId={panelId}
-            />
-            <View
-              nativeID={panelId}
-              role="tabpanel"
-              aria-labelledby={`${panelId}-${tab}`}
-              style={{ paddingBottom: designTokens.space.sectionGap }}
-            >
+          <View
+            nativeID={panelId}
+            role="tabpanel"
+            aria-labelledby={`${panelId}-${tab}`}
+            style={{ paddingBottom: designTokens.space.sectionGap }}
+          >
               {tab === 'story' ? (
                 <View
                   testID="work-history"
@@ -231,7 +170,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
                 <WorkFactsList facts={facts} />
               )}
             </View>
-          </View>
           {related.length > 0 ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
               <AppText

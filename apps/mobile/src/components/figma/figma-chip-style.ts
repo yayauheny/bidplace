@@ -29,6 +29,61 @@ export function figmaChipGradientColors(tone: FigmaChipTone) {
   return figmaChipGradientStroke;
 }
 
+const contentBoxExcludeMask =
+  'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
+
+type GradientRingStyle = {
+  position: 'absolute';
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  padding: number;
+  borderRadius: number;
+  pointerEvents: 'none';
+  boxSizing: 'border-box';
+  backgroundImage: string;
+  WebkitMask: string;
+  WebkitMaskComposite: string;
+  mask: string;
+  maskComposite: string;
+};
+
+// 1px outside ring for translucent `onGlass` fill. A filled behind-plate
+// would show through `rgba(255,255,255,0.80)`.
+export function figmaChipOutsideGradientRingStyle(colors: {
+  start: string;
+  end: string;
+}): GradientRingStyle {
+  return {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    bottom: -1,
+    left: -1,
+    padding: 1,
+    borderRadius: figmaTokens.radius.chip + 1,
+    pointerEvents: 'none',
+    boxSizing: 'border-box',
+    backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
+    WebkitMask: contentBoxExcludeMask,
+    WebkitMaskComposite: 'xor',
+    mask: contentBoxExcludeMask,
+    maskComposite: 'exclude',
+  };
+}
+
+export function figmaChipLayoutHeight(size: FigmaChipSize) {
+  const typography = figmaChipTypography(size);
+  if (size === 'profile') {
+    return figmaTokens.space.authorChipY * 2 + typography.lineHeight;
+  }
+  if (size === 'work') {
+    return figmaTokens.space.workChipY * 2 + typography.lineHeight;
+  }
+  return figmaTokens.space.chipY * 2 + typography.lineHeight;
+}
+
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   if (tone === 'onGlass') {
     return {

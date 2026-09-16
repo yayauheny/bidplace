@@ -1,10 +1,20 @@
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
+import { designTokens } from '@bidplace/design-tokens';
+import {
+  progressForHeaderState as progressForStickyHeaderState,
+  stickyHeaderStateFromScroll,
+} from '../../lib/sticky-header-motion';
 
 export const CREATOR_COMPACT_SOCIAL_LIMIT = 2;
 export const CREATOR_SCROLL_TEST_ID = 'creator-scroll';
 export const CREATOR_SOCIAL_OVERFLOW_TEST_ID = 'creator-social-overflow';
+export const CREATOR_HANDOFF_HYSTERESIS = 20;
+export const CREATOR_GEOMETRY_MS = 200;
+export const CREATOR_GEOMETRY_FALLBACK_MS = CREATOR_GEOMETRY_MS + 40;
+export const CREATOR_WEB_TAB_RAIL = 26;
+export const CREATOR_HEADER_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
 
-export type CreatorProgressBucket = '0' | 'mid' | '1';
+export type CreatorHeaderState = 'expanded' | 'compact';
 
 export type PublicSocialLink = {
   key: 'telegram' | 'instagram' | 'website';
@@ -51,24 +61,56 @@ export function compactSocialCount(total: number) {
   return Math.min(Math.max(0, total), CREATOR_COMPACT_SOCIAL_LIMIT);
 }
 
-export function progressBucket(progress: number): CreatorProgressBucket {
-  if (progress <= 0) {
-    return '0';
-  }
-  if (progress >= 1) {
-    return '1';
-  }
-  return 'mid';
+export function creatorHandoffThresholds(heroHeight: number) {
+  const compactStack = creatorWebCompactStack();
+  const collapseAt = Math.max(0, heroHeight - compactStack);
+  return {
+    collapseAt,
+    expandAt: Math.max(0, collapseAt - CREATOR_HANDOFF_HYSTERESIS),
+    compactStack,
+  };
 }
 
-export function progressFromScroll(
+export function creatorHeaderStateFromScroll(
   scrollTop: number,
-  offset: number,
-  reduced: boolean,
-) {
-  const raw = offset > 0 ? scrollTop / offset : 0;
-  const clamped = Math.min(1, Math.max(0, raw));
-  return reduced ? (clamped >= 1 ? 1 : 0) : clamped;
+  current: CreatorHeaderState,
+  thresholds: { collapseAt: number; expandAt: number },
+): CreatorHeaderState {
+  if (thresholds.collapseAt <= 0) {
+    return 'expanded';
+  }
+  return stickyHeaderStateFromScroll(scrollTop, current, thresholds);
+}
+
+export function progressForHeaderState(state: CreatorHeaderState) {
+  return progressForStickyHeaderState(state);
+}
+
+export function creatorWebCompactStack() {
+  return (
+    designTokens.space.x3 +
+    designTokens.size.creatorCompactAvatar +
+    designTokens.space.x5
+  );
+}
+
+export function creatorWebCompactChrome() {
+  return creatorWebCompactStack() + CREATOR_WEB_TAB_RAIL;
+}
+
+export function creatorIdentityClipInsets(input: {
+  scrollTop: number;
+  handoffOffset: number;
+  heroHeight: number;
+  identityHeight: number;
+}) {
+  const handoffOffset = Math.max(0, input.handoffOffset);
+  const clipTop = Math.min(Math.max(0, input.scrollTop), handoffOffset);
+  const clipBottom = Math.max(
+    0,
+    input.heroHeight - clipTop - input.identityHeight,
+  );
+  return { clipTop, clipBottom };
 }
 
 export function findScrollBoundary(from: Element | null) {
@@ -144,6 +186,7 @@ export function creatorHandleLayout(input: CreatorHandleLayoutInput) {
     tx: input.compactLeft - x,
     ty: compactY - input.intrinsicY,
     clipLayout: Math.max(0, width - compactLayoutWidth),
+    compactLayoutWidth: Math.max(0, compactLayoutWidth),
   };
 }
 

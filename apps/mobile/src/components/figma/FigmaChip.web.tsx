@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import {
   figmaChipGradientColors,
   figmaChipGradientPlacement,
+  figmaChipOutsideGradientRingStyle,
   figmaChipSizeStyle,
   figmaChipStyle,
   figmaChipTextColor,
@@ -71,7 +72,7 @@ export function FigmaChip({
           aria-hidden="true"
           style={
             gradientPlacement === 'outside'
-              ? outsideGradientStrokeStyle(gradientColors)
+              ? figmaChipOutsideGradientRingStyle(gradientColors)
               : insetGradientStrokeStyle(gradientColors)
           }
         />
@@ -115,22 +116,5 @@ function insetGradientStrokeStyle(colors: {
     WebkitMaskComposite: 'xor',
     mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
     maskComposite: 'exclude',
-  };
-}
-
-function outsideGradientStrokeStyle(colors: {
-  start: string;
-  end: string;
-}): CSSProperties {
-  return {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    bottom: -1,
-    left: -1,
-    borderRadius: 29,
-    pointerEvents: 'none',
-    zIndex: -1,
-    backgroundImage: `linear-gradient(180deg, ${colors.start}, ${colors.end})`,
   };
 }

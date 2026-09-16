@@ -5,6 +5,8 @@ import { figmaTokens } from '@bidplace/design-tokens';
 import {
   figmaChipGradientColors,
   figmaChipGradientPlacement,
+  figmaChipLayoutHeight,
+  figmaChipOutsideGradientRingStyle,
   figmaChipSizeStyle,
   figmaChipStyle,
   figmaChipTextColor,
@@ -63,9 +65,12 @@ describe('Figma chip styles', () => {
 
   it('renders work chips with subdued text and work paddings', () => {
     expect(figmaChipSizeStyle('work')).toEqual({
-      paddingHorizontal: figmaTokens.space.workChipX,
-      paddingVertical: figmaTokens.space.workChipY,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
     });
+    expect(figmaTokens.space.workChipX).toBe(12);
+    expect(figmaTokens.space.workChipY).toBe(6);
+    expect(figmaChipLayoutHeight('work')).toBe(29);
     expect(figmaChipTypography('work')).toBe(figmaTokens.typography.workChip);
     expect(figmaChipTextColor('onGlass', 'work')).toBe(
       figmaTokens.color.textSubdued,
@@ -73,5 +78,46 @@ describe('Figma chip styles', () => {
     expect(figmaChipTextColor('onGlass', 'profile')).toBe(
       figmaTokens.color.ink,
     );
+  });
+
+  it('keeps creator profile chip metrics', () => {
+    expect(figmaChipSizeStyle('profile')).toEqual({
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+    });
+    expect(figmaChipLayoutHeight('profile')).toBe(35);
+    expect(figmaChipTypography('profile')).toBe(
+      figmaTokens.typography.profileChip,
+    );
+    expect(figmaChipTypography('profile')).toMatchObject({
+      fontSize: 16,
+      lineHeight: 23,
+      fontWeight: '500',
+    });
+  });
+
+  it('paints onGlass as a 1px outside ring that cannot cover the interior', () => {
+    const style = figmaChipOutsideGradientRingStyle(
+      figmaChipGradientColors('onGlass'),
+    );
+    expect(figmaChipGradientPlacement('onGlass')).toBe('outside');
+    expect(style).toMatchObject({
+      top: -1,
+      right: -1,
+      bottom: -1,
+      left: -1,
+      padding: 1,
+      borderRadius: 29,
+      pointerEvents: 'none',
+      boxSizing: 'border-box',
+      maskComposite: 'exclude',
+      WebkitMaskComposite: 'xor',
+    });
+    expect(style.backgroundImage).toBe(
+      `linear-gradient(180deg, ${figmaTokens.color.glassBorder}, ${figmaTokens.color.glassBorderEnd})`,
+    );
+    expect(style.WebkitMask).toContain('content-box');
+    expect(style.mask).toContain('content-box');
+    expect(style).not.toHaveProperty('zIndex');
   });
 });

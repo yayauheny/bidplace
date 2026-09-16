@@ -7,15 +7,21 @@ import { useReducedMotion } from '../../lib/reduced-motion';
 import { FigmaGlassSurface } from './FigmaGlassSurface';
 import { FigmaIconButton } from './FigmaIconButton';
 import { workGalleryShowsArrows } from './work-gallery-arrows';
+import {
+  workGalleryChromeStyle,
+  workGalleryDotStyle,
+} from './work-gallery-chrome';
 
 type GalleryImage = { id: string; url: string };
 export function WorkGallery({
   images,
   label,
+  leadingAction,
   action,
 }: {
   images: readonly [GalleryImage, ...GalleryImage[]];
   label: string;
+  leadingAction?: ReactNode;
   action?: ReactNode;
 }) {
   const [width, setWidth] = useState<number>(designTokens.layout.phoneWidth);
@@ -81,17 +87,6 @@ export function WorkGallery({
             />
           ))}
         </ScrollView>
-        {action ? (
-          <View
-            style={{
-              position: 'absolute',
-              top: designTokens.space.x3,
-              right: designTokens.space.x5,
-            }}
-          >
-            {action}
-          </View>
-        ) : null}
         {showArrows ? (
           <View
             testID="work-gallery-arrows"
@@ -123,8 +118,15 @@ export function WorkGallery({
           </View>
         ) : null}
       </View>
+      {leadingAction || action ? (
+        <View testID="work-gallery-chrome" style={workGalleryChromeStyle()}>
+          {leadingAction ?? <View />}
+          {action ?? <View />}
+        </View>
+      ) : null}
       {images.length > 1 ? (
         <View
+          testID="work-gallery-dots"
           accessible
           accessibilityLabel={`Фото ${active + 1} из ${images.length}`}
           accessibilityLiveRegion="polite"
@@ -135,18 +137,7 @@ export function WorkGallery({
           }}
         >
           {images.map((image, index) => (
-            <View
-              key={image.id}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor:
-                  index === active
-                    ? designTokens.color.ink
-                    : designTokens.color.divider,
-              }}
-            />
+            <View key={image.id} style={workGalleryDotStyle(index === active)} />
           ))}
         </View>
       ) : null}

@@ -192,6 +192,57 @@ Live Avant Arte verification on 2026-08-10 showed artwork hover
 This becomes the default catalog-card media pattern unless canonical crop QA
 requires an explicitly documented per-component exception.
 
+### Creator identity header (web 390)
+
+Sticky creator header has two states only: `expanded` and `compact`. Scroll
+hysteresis chooses the state from measured hero geometry: `scrollTop >=
+heroHeight - 80` collapses, `scrollTop <= park - 20` expands; between those
+values the current state is kept. Unmeasured height (`park === 0`) stays
+expanded. `--creator-progress` is binary `0 | 1` on the state flip and is not
+CSS-transitioned. Compact immediately paint-clips the parked slice with
+`clip-path: inset(var(--creator-clip-top) 0 var(--creator-clip-bottom) 0)`.
+While compact or releasing, `clipTop = min(scrollTop, handoffOffset)` and
+`clipBottom = max(0, stickyRootHeight - clipTop - compactChromeHeight)` so
+the visible dock stays at viewport `y=0..106` as the sticky root unsticks.
+At or below the park the inset is `handoffOffset / 0`. `--creator-geometry` then
+plays the existing dest transforms on the same avatar / handle / actions
+`0 → 1` over 200ms `cubic-bezier(0.2, 0, 0, 1)` after one animation frame.
+Tabs stay unanimated at `y≈80`. Reverse plays the same dest transforms
+`1 → 0` while that viewport-anchored clip stays on; clip and expanded chrome finalize on
+`transform` `transitionend`. Optional 200ms opacity on `creator-fade-*` / extra socials is
+paint-only and does not gate sticky geometry, overflow clip, handle layout,
+or settlement. Avatar, handle, and the action row are each **one** DOM node
+transformed from the measured expanded box into the compact slot. The handle
+is the expanded glyph box (`621:19483`, Inter 24/600) moving to web compact
+`76 / 26.5` (avatar `20 / 12`, tabs `y=80`). Figma scrolled `526:14524`
+remains `76 / 58.5` under iPhone inset `y=44` / tabs `y=186`; those tokens
+stay canonical. Web compact stack is `space.x3 + creatorCompactAvatar +
+space.x5` (80), plus tabs 26 (~106px chrome). Hero overflow clips with
+settled compact. It is not a second compact `@handle` copy and does not
+cross-fade. Expanded handle uses hug/`fit-content` width, capped only by the
+hero column. Compact handle may ellipsis to the slot before actions. Reduced
+motion keeps the same thresholds and snaps clip, fade, and geometry
+without a white intermediate frame.
+Reverse travel inside the 20px band keeps the same viewport-anchored clip;
+the root may unstick, but the visible dock top stays at 0.
+
+### Work identity header (web 390)
+
+Sticky work header has two states only: `expanded` and `compact`. Scroll
+hysteresis chooses the state (`scrollTop >= 558` collapses, `scrollTop <= 538`
+expands; between 538 and 558 the current state is kept). Collapse waits until
+the work title / identity reaches the top of the viewport. `--work-progress`
+then transitions `0 ↔ 1` over 200ms `cubic-bezier(0.2, 0, 0, 1)`. Gallery,
+title, author and chips are not faded; they leave by scrolling. Compact
+chrome is one Back and one Share; the compact row center stays empty. Nested
+gallery, tabs, and related-work horizontal scroll do not change header state.
+Settled compact hides WorkIdentity from keyboard and SR via `inert`. Web
+compact stack is `space.x3 + size.header + space.x5` (80), plus tabs 26.
+Sticky `top` is `-(measuredHeroHeight - 80)` from RN `onLayout`. Hero overflow
+clips only after compact settles. Reduced motion snaps progress to 0 or 1 with
+the same thresholds. Tab scroll-to-top is a follow-up; short Details / Payment
+content may clamp scroll and expand.
+
 ### Auction/Product card states
 
 - Media viewport uses `overflow: hidden`; outer bounds never change.
@@ -281,13 +332,26 @@ inline label+count is a Metro pair, not the web typography claim.
 Public Creator About (`621:19475`) keeps section titles `profileHeading`
 17/21/600/−2% `#2A2A2A` (`621:19536` / `621:19539` / `621:19577`). Body is
 `bodySmall` 14/20/400/−1% `#2A2A2A`. Atmosphere `621:19476` is a 485 layer
-blur 80, white veil 0.4, opacity 0.5, bottom radius 200; on web it stays
-centered and can paint past the 390 column so the wash reaches the viewport
-edges. Profile chips `621:19490` are glass `#FFFFFF` @ 0.8 with a 1px
-**outside** `#DEDEDE`→`#F3F3F3` stroke, pad 6/16, Inter 16/23/500. Location
-line is city only (`621:19487`). Achievement rail uses Frame 219 marker `744:20554` (14px `#565656`
+blur 80, white veil 0.4, opacity 0.5, bottom radius 200, left −47 inside
+the 390 frame. It is not stretched to `100vw`. Shared `onGlass` chips
+(`FigmaChip` web) paint glass `#FFFFFF` @ 0.8 plus a **1px outside
+gradient ring** `#DEDEDE`→`#F3F3F3` (Figma `White border block`,
+`renderBounds` −1). The gradient is mask-excluded from the interior so it
+cannot tint the translucent fill. Creator profile chips `621:19490` use
+that ring at pad 6/16, Inter 16/23/500 `#2A2A2A`. Work metadata chips
+`745:21232` use the same ring at pad 6/12, Inter 14/17/500 `#565656`.
+Location line is city only (`621:19487`). Achievement rail uses Frame 219 marker `744:20554` (14px `#565656`
 circle, 3px pad, 10px white hole, radius 21) plus 2px `#565656` line
 `744:20556`. Dates are `MM.YYYY` from `621:19580` (Inter 17/24/500/−3%).
+
+Public catalog intros (`526:12957`, `526:13308`) reuse `bodySmall` default ink
+14/20/400/−1% `#2A2A2A`. They do not use `tone="secondary"` /
+`textSecondary` `#8A8A8A`. `/works` does not render catalog-segment tabs
+(`874:5421` / `526:13314`); order matches `/authors`: title → intro →
+Filter/Sort → cards. Work hero chrome (`745:21332`) is a 48×48 glass Back
+plus Share, 12px from the web hero top (Figma y 62 minus the 50px status
+bar). Like stays hidden. Inactive gallery dots (`745:21219`) use
+`color.border` `#DEDEDE`, not `divider` `#E2E2E2`.
 
 On web, `global.css` sets `html { font-synthesis: none }` so expo-font Inter
 faces are not faux-bolded.

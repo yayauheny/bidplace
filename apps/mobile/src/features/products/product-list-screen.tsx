@@ -134,41 +134,15 @@ export function ProductListScreen({
           paddingHorizontal: designTokens.space.pageGutter,
           paddingTop: designTokens.space.x10,
           paddingBottom: designTokens.size.dockReserve,
+          gap: designTokens.space.sectionGap,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            gap: designTokens.space.x2,
-            marginBottom: designTokens.space.x10,
-          }}
-        >
+        <View style={{ gap: designTokens.space.x2 }}>
           <AppText role="screenTitle">{title}</AppText>
-          <AppText role="bodySmall" tone="secondary">
-            {WORKS_CATALOG_INTRO}
-          </AppText>
+          <AppText role="bodySmall">{WORKS_CATALOG_INTRO}</AppText>
         </View>
-        <View
-          style={{
-            marginHorizontal: -designTokens.space.pageGutter,
-            marginBottom: designTokens.space.authorSectionGap,
-            paddingHorizontal: designTokens.space.pageGutter,
-            borderBottomWidth: 1,
-            borderBottomColor: designTokens.color.divider,
-          }}
-        >
-          <View style={{ alignSelf: 'flex-start' }}>
-            <AppText role="profileTab">Все работы</AppText>
-            <View
-              style={{
-                height: 2,
-                backgroundColor: designTokens.color.ink,
-                marginTop: designTokens.space.x1,
-              }}
-            />
-          </View>
-        </View>
-        <View style={{ marginBottom: designTokens.space.x8 }}>
+        <View>
           <FilterSortBar
             filterLabel={activeFilterLabel(state)}
             filterActive={Boolean(state.q || state.category || state.material)}

@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-16
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -77,6 +77,11 @@ appearance; пока переход по тегу не включён, они с
 Кнопка результата использует `работ`, не `лотов`. Unsupported placeholder filters не
 рендерятся. Popularity/price/availability sorting отсутствует.
 
+`/works` and `/authors` share title → intro → Filter/Sort → cards. Catalog-segment
+tabs (`874:5421` / `526:13314`) stay hidden (`HIDE_FOR_FIRST_MVP`). Catalog intro
+copy is the approved MVP strings; the visual role is `bodySmall` default ink
+14/20/400/−1% `#2A2A2A` (`526:12957`, `526:13308`), not `textSecondary`.
+
 На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
 после `Применить`; sheet хранит локальный draft до Apply/Reset. `/search?q=`
 показывает независимые loading/result/empty/error/retry/pagination состояния
@@ -98,7 +103,42 @@ is URL-owned; Author About is local state and is not a `?tab=` contract.
 `Об авторе` поддерживает about, practice и optional achievements timeline. Пустые
 секции скрываются. Bottom navigation учитывает safe area и не закрывает текст/cards.
 
+Web 390 sticky header morphs as two states only: expanded or compact. Compact
+starts at the measured sticky park `scrollTop >= heroHeight - 80`. Returning to
+`scrollTop <= park - 20` finishes expanded; between those values the current
+state is kept. At handoff the parked 106px dock is paint-clipped first; the
+same avatar / handle / actions then travel their dest transforms into
+`20 / 12`, `76 / 26.5`, and actions `y=12`. During compact and reverse the
+clip window stays viewport-anchored (`inset(clipTop 0 clipBottom 0)` from
+current `scrollTop`) so the dock remains `y=0..106` while the sticky root
+unsticks. Crossing `park - 20` plays dest geometry backward under that
+clip; the expanded hero is released only after the reverse transform
+finishes. Tabs stay at `y≈80`. Page scroll
+is not snapped. Web compact chrome
+is an intentional deviation from Figma iPhone `y=44` / tabs `y=186`:
+padding 12, identity 48, gap 20 (`space.x5`), tabs 26 (~106px occupied).
+Canonical tokens `creatorCompactTop` 44 and `creatorCompactHeader` 186 stay
+Figma source.
+
 ## 7. Work
+
+Hero chrome follows Frame 76 (`745:21332`) relative to the web gallery, not the
+Figma iOS status bar: 12px from the hero top, 20px side inset, 48×48 glass Back,
+Like hidden, Share kept. Inactive gallery dots (`745:21219`) are `color.border`
+`#DEDEDE`. Metadata chips (`745:21232`) share Creator `onGlass` fill and a 1px
+outside `#DEDEDE`→`#F3F3F3` ring, with Work pad 6/12 and 14/500 `#565656`.
+
+Web 390 sticky header uses the same 2-state model as Creator, with Work
+geometry. Crossing `scrollTop >= 558` finishes compact; returning to
+`scrollTop <= 538` finishes expanded. Collapse aligns with the work title
+reaching the top of the viewport. Expanded gallery, title, author and chips
+keep scrolling; only Back and Share transition into the compact row. The
+center of that row stays empty. Compact stack is `space.x3 + size.header +
+space.x5` (80), plus tabs 26. Sticky park uses the measured hero height, not a
+hardcoded product or Figma frame. There is no Figma scrolled Work frame;
+compact chrome is a web UX enhancement. Page scroll is not snapped. Tabs stay
+in the sticky shell. Scroll-to-top when changing Work tabs is a follow-up;
+short Details / Payment panels may clamp `scrollTop` and expand the header.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 

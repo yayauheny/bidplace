@@ -120,9 +120,7 @@ export function PublicAuthorsScreen({
           <AppText role="screenTitle">
             Креативные и проверенные авторы на Bidplace
           </AppText>
-          <AppText role="bodySmall" tone="secondary">
-            {AUTHORS_CATALOG_INTRO}
-          </AppText>
+          <AppText role="bodySmall">{AUTHORS_CATALOG_INTRO}</AppText>
         </View>
         <View>
           <FilterSortBar

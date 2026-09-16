@@ -111,6 +111,8 @@ export const designTokens = {
     identityGap: 10,
     atmosphereOffset: 36,
     logoTop: 54,
+    // Figma `526:14521` Frame 76 y (iPhone status inset). Web compact parks
+    // identity at `space.x3` via `creatorWebCompactStack()`, not this value.
     creatorCompactTop: 44,
     creatorCompactAtmosphereTop: -340,
     logoGap: 34,
@@ -122,7 +124,9 @@ export const designTokens = {
     authorChipY: 6,
     authorChipGap: 10,
     workChipX: 12,
-    workChipY: 5,
+    // Figma Work chips `745:21232` pad 6/12. Outside 1px stroke is not
+    // subtracted from padding (`renderBounds` −1).
+    workChipY: 6,
     workChipGap: 6,
     socialGroupX: 8,
     socialGroupY: 6,
@@ -183,6 +187,8 @@ export const designTokens = {
     avatar: 112,
     identityAvatar: 84,
     authorAtmosphere: 485,
+    // Figma compact tabs origin `526:14484` y=186. Web compact chrome uses
+    // `creatorWebCompactStack()` (12+48+20), not this value.
     creatorCompactHeader: 186,
     creatorCompactAvatar: 48,
     social: 38,
