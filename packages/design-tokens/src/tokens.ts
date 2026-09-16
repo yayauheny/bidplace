@@ -112,7 +112,7 @@ export const designTokens = {
     atmosphereOffset: 36,
     logoTop: 54,
     // Figma `526:14521` Frame 76 y (iPhone status inset). Web compact parks
-    // identity at `space.x3` via `creatorWebCompactStack()`, not this value.
+    // identity at `space.x3` via `CREATOR_WEB_COMPACT_STACK`, not this value.
     creatorCompactTop: 44,
     creatorCompactAtmosphereTop: -340,
     logoGap: 34,
@@ -188,7 +188,7 @@ export const designTokens = {
     identityAvatar: 84,
     authorAtmosphere: 485,
     // Figma compact tabs origin `526:14484` y=186. Web compact chrome uses
-    // `creatorWebCompactStack()` (12+48+20), not this value.
+    // `CREATOR_WEB_COMPACT_STACK` (12+48+20), not this value.
     creatorCompactHeader: 186,
     creatorCompactAvatar: 48,
     social: 38,

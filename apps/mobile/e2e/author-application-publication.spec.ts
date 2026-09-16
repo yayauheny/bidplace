@@ -112,7 +112,7 @@ test('city application is approved and appears in the public authors catalog', a
     await page.getByRole('link', { name: /Автор с городом/ }).first().click();
     await expect(page).toHaveURL(new RegExp(`/authors/${slug}|/seller/${slug}`));
     await expect(
-      page.getByTestId('creator-fade-meta').getByText('Автор с городом'),
+      page.getByTestId('creator-meta').getByText('Автор с городом'),
     ).toBeVisible();
   } finally {
     await context.close();

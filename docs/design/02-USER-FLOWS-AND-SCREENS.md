@@ -103,22 +103,20 @@ is URL-owned; Author About is local state and is not a `?tab=` contract.
 `Об авторе` поддерживает about, practice и optional achievements timeline. Пустые
 секции скрываются. Bottom navigation учитывает safe area и не закрывает текст/cards.
 
-Web 390 sticky header morphs as two states only: expanded or compact. Compact
-starts at the measured sticky park `scrollTop >= heroHeight - 80`. Returning to
-`scrollTop <= park - 20` finishes expanded; between those values the current
-state is kept. At handoff the parked 106px dock is paint-clipped first; the
-same avatar / handle / actions then travel their dest transforms into
-`20 / 12`, `76 / 26.5`, and actions `y=12`. During compact and reverse the
-clip window stays viewport-anchored (`inset(clipTop 0 clipBottom 0)` from
-current `scrollTop`) so the dock remains `y=0..106` while the sticky root
-unsticks. Crossing `park - 20` plays dest geometry backward under that
-clip; the expanded hero is released only after the reverse transform
-finishes. Tabs stay at `y≈80`. Page scroll
-is not snapped. Web compact chrome
-is an intentional deviation from Figma iPhone `y=44` / tabs `y=186`:
-padding 12, identity 48, gap 20 (`space.x5`), tabs 26 (~106px occupied).
-Canonical tokens `creatorCompactTop` 44 and `creatorCompactHeader` 186 stay
-Figma source.
+Web 390 Creator sticky header has two product states: expanded and compact.
+Compact starts when scrolling reaches the measured park
+`scrollTop >= heroHeight - compactStack` (`compactStack` is
+`space.x3 + creatorCompactAvatar + space.x5` = 80). Returning to
+`scrollTop <= park - 20` expands again. Between those values the current
+state is kept. CSS `position: sticky` parks the header. One `CreatorIdentity`
+stays mounted; avatar, handle and actions keep the same nodes. Compact only
+changes their layout. Reanimated `LinearTransition` (`200ms`,
+`cubic-bezier(0.2, 0, 0, 1)`, `ReduceMotion.System`) interpolates those
+nodes. Tabs sit below identity at `y≈80` and are not part of that
+animation. Page scroll is not
+snapped. Web compact chrome (~106px with tabs) is an intentional deviation
+from Figma iPhone `y=44` / tabs `y=186`. Canonical tokens
+`creatorCompactTop` 44 and `creatorCompactHeader` 186 stay Figma source.
 
 ## 7. Work
 
@@ -128,17 +126,10 @@ Like hidden, Share kept. Inactive gallery dots (`745:21219`) are `color.border`
 `#DEDEDE`. Metadata chips (`745:21232`) share Creator `onGlass` fill and a 1px
 outside `#DEDEDE`→`#F3F3F3` ring, with Work pad 6/12 and 14/500 `#565656`.
 
-Web 390 sticky header uses the same 2-state model as Creator, with Work
-geometry. Crossing `scrollTop >= 558` finishes compact; returning to
-`scrollTop <= 538` finishes expanded. Collapse aligns with the work title
-reaching the top of the viewport. Expanded gallery, title, author and chips
-keep scrolling; only Back and Share transition into the compact row. The
-center of that row stays empty. Compact stack is `space.x3 + size.header +
-space.x5` (80), plus tabs 26. Sticky park uses the measured hero height, not a
-hardcoded product or Figma frame. There is no Figma scrolled Work frame;
-compact chrome is a web UX enhancement. Page scroll is not snapped. Tabs stay
-in the sticky shell. Scroll-to-top when changing Work tabs is a follow-up;
-short Details / Payment panels may clamp `scrollTop` and expand the header.
+Web Work does not use a compact overlay. Back and Share stay on the gallery and
+scroll away with it. Only the Work tabs are `position: sticky` at the top of
+the viewport. There is no Figma scrolled Work frame. Page scroll is not
+snapped. Scroll-to-top when changing Work tabs is a follow-up.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 

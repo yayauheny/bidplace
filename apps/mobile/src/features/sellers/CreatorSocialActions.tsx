@@ -6,7 +6,6 @@ import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
 import { CreatorSocialLink } from './CreatorSocialLink';
 import {
   CREATOR_COMPACT_SOCIAL_LIMIT,
-  CREATOR_SOCIAL_OVERFLOW_TEST_ID,
   listPublicSocialLinks,
 } from './creator-header-motion';
 
@@ -20,6 +19,10 @@ export function CreatorSocialActions({
   compact?: boolean;
 }) {
   const links = listPublicSocialLinks(profile);
+  const visible = compact
+    ? links.slice(0, CREATOR_COMPACT_SOCIAL_LIMIT)
+    : links;
+
   return (
     <View
       style={{
@@ -27,7 +30,7 @@ export function CreatorSocialActions({
         gap: designTokens.space.socialGroupGap,
       }}
     >
-      {links.length > 0 ? (
+      {visible.length > 0 ? (
         <FigmaGlassSurface
           preset="controlGroup"
           testID="author-social-group"
@@ -41,34 +44,26 @@ export function CreatorSocialActions({
             paddingBottom: designTokens.space.socialGroupY,
           }}
         >
-          {links.map((link, index) => {
-            const overflow = index >= CREATOR_COMPACT_SOCIAL_LIMIT;
-            return (
-              <View
-                key={link.key}
-                testID={
-                  overflow
-                    ? CREATOR_SOCIAL_OVERFLOW_TEST_ID
-                    : `creator-social-${link.key}`
-                }
-                aria-hidden={compact && overflow}
-                style={{
-                  width: designTokens.size.control,
-                  height: designTokens.size.control,
-                }}
-              >
-                <CreatorSocialLink
-                  grouped
-                  href={link.href}
-                  icon={link.icon}
-                  label={link.label}
-                />
-              </View>
-            );
-          })}
+          {visible.map((link) => (
+            <View
+              key={link.key}
+              testID={`creator-social-${link.key}`}
+              style={{
+                width: designTokens.size.control,
+                height: designTokens.size.control,
+              }}
+            >
+              <CreatorSocialLink
+                grouped
+                href={link.href}
+                icon={link.icon}
+                label={link.label}
+              />
+            </View>
+          ))}
         </FigmaGlassSurface>
       ) : null}
-      {actions}
+      <View key="creator-share-action">{actions}</View>
     </View>
   );
 }

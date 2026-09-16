@@ -40,12 +40,5 @@ describe('Work top chrome', () => {
       expect(header).not.toContain('icon="heart"');
     }
     expect(productScreen).not.toContain('icon="heart"');
-    expect(webHeader).not.toContain('onActiveIndexChange');
-    expect(webHeader).not.toContain('work-compact-thumb');
-    expect(webHeader).not.toContain("left: '50%'");
-    expect(webHeader).toContain('data-testid="work-identity-shell"');
-    expect(webHeader).toContain("setAttribute('inert', '')");
-    expect(webHeader).toContain('onLayout=');
-    expect(webHeader).not.toContain('ResizeObserver');
   });
 });

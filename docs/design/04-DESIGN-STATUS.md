@@ -4,152 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
-## 2026-09-16 — Creator reverse clip stays viewport-anchored
+## 2026-09-16 — Creator identity uses Reanimated; Work tabs are sticky
 
-- `Implemented` (mobile web): Compact/releasing clip is
-  `inset(clipTop 0 clipBottom 0)` from current scroll:
-  `clipTop = min(scrollTop, handoffOffset)`,
-  `clipBottom = max(0, stickyRootHeight - clipTop - compactChrome)`.
-  Visible dock stays `y=0..106` while the sticky root unsticks. Reverse
-  FLIP `1 → 0` is unchanged. Coverage: `CreatorHeader.web.tsx`,
+- `Implemented` (mobile web): Creator sticky header is `expanded` / `compact`
+  from the measured park `heroHeight - compactStack` with 20px reverse
+  hysteresis. CSS sticky parks the header. One `CreatorIdentity` stays
+  mounted; compact restyles the same avatar, handle and actions nodes.
+  Reanimated `LinearTransition` interpolates that layout change. Tabs stay a
+  normal sibling. Coverage: `CreatorHeader.web.tsx`, `CreatorIdentity.tsx`,
   `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
-- `Unchanged`: handoff `heroHeight - 80` / `-20`, dest transforms, Work.
-
-## 2026-09-16 — Creator reverse FLIP keeps the dock clip until geometry 0
-
-- `Implemented` (mobile web): Upward expand keeps compact clip/chrome and
-  plays dest transforms `1 → 0` over 200ms. Clip and `settled` expanded
-  wait for `transform` `transitionend` (240ms fallback). Rapid retarget
-  keeps the clip on. Coverage: `CreatorHeader.web.tsx`,
-  `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
-- `Unchanged`: handoff `heroHeight - 80` / `-20`, one-node dock, Work 558/538.
-
-## 2026-09-16 — Creator compact dock clips then plays dest geometry
-
-- `Implemented` (mobile web): At the measured park, compact chrome and
-  `clip-path: inset(handoffOffset)` apply immediately. `--creator-geometry`
-  then plays the existing avatar/handle/actions dest transforms `0 → 1` over
-  200ms. Tabs stay unanimated. `--creator-dock-enter` is removed. Reverse
-  now plays clipped geometry `1 → 0`. Coverage: `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
-  `creator-header-motion.spec.ts`, `e2e/author-header-motion.spec.ts`.
-- `Unchanged`: handoff `heroHeight - 80` / `-20`, one-node dock, Work 558/538.
-
-## 2026-09-16 — Creator dock-enter is a local 150ms settle
-
-- `Superseded`: Compact entrance no longer uses `--creator-dock-enter`.
-  See clipped dest-geometry play above.
-
-## 2026-09-16 — Creator compact handoff is the measured sticky park
-
-- `Implemented` (mobile web): Creator compact starts at
-  `scrollTop >= measuredHeroHeight - 80`. Expand is `<= park - 20`.
-  `--creator-progress` snaps 0/1 with the state flip; settlement is immediate.
-  Fade opacity is paint-only. Coverage: `CreatorHeader.web.tsx`,
-  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
-  `e2e/author-header-motion.spec.ts`.
-- `Unchanged`: compact stack 80, one-node dock, native header, Work 558/538.
-
-## 2026-09-16 — Work compact row is Back / Share only
-
-- `Implemented` (mobile web): Compact Work chrome is one Back and one Share.
-  The center stays empty. Nested horizontal scroll no longer drives header
-  state. Settled compact applies `inert` to WorkIdentity. Coverage:
-  `WorkHeader.web.tsx`, `work-header-motion.ts`, `work-header-motion.spec.ts`,
+- `Implemented` (mobile web): Work Back/Share stay on the gallery and
+  scroll away. Only Work tabs are sticky. Coverage: `WorkHeader.web.tsx`,
   `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: 558/538, compact stack 80, Creator park hysteresis, native header.
-- `Follow-up`: Work tab change should scroll that tab to its own top; short
-  Details / Payment may still clamp `scrollTop` and expand. No panel
-  `minHeight` filler.
-
-## 2026-09-16 — Work compact header is 2-state 558/538
-
-- `Implemented` (mobile web): Work sticky header uses `expanded` / `compact`
-  with hysteresis `>= 558` / `<= 538`. Landmark is the work title reaching
-  the viewport top. Compact chrome is Back and Share (thumbnail removed).
-  Gallery/title/author/chips keep scrolling. Hero height comes from
-  `onLayout`. Stack is `12 + 48 + 20 = 80`. Coverage: `WorkHeader.web.tsx`,
-  `work-header-motion.ts`, `sticky-header-motion.ts`,
-  `work-header-motion.spec.ts`, `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: expanded Work layout, native header, Creator park hysteresis.
-
-## 2026-09-16 — Creator collapse/expand is 250/230
-
-- `Implemented` (mobile web): Collapse threshold is `>= 250`; expand is
-  `<= 230`. Landmark is expanded `@handle` at the top after the avatar has
-  left. Compact chrome ~106px and 200ms easing are unchanged. Coverage:
-  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
-  `author-header-motion.spec.ts`.
-- `Unchanged`: compact geometry, sticky math, duration/easing, native header.
-
-## 2026-09-15 — Creator expand hysteresis is 180/160
-
-- `Implemented` (mobile web): Expand threshold is `<= 160`. Collapse stays
-  `>= 180`. Compact chrome ~106px and 200ms easing are unchanged. Coverage:
-  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
-  `author-header-motion.spec.ts`.
-- `Unchanged`: compact geometry, sticky math, duration/easing, native header.
-
-## 2026-09-15 — Creator collapse waits until scroll 180
-
-- `Implemented` (mobile web): Collapse threshold is `>= 180`; expand stays
-  `<= 60`. Compact chrome ~106px, 200ms easing, and one-node motion are
-  unchanged. Coverage: `creator-header-motion.ts`,
-  `creator-header-motion.spec.ts`, `author-header-motion.spec.ts`.
-- `Unchanged`: compact geometry, sticky math, duration/easing, native header.
-
-## 2026-09-15 — Creator compact gap 20px and collapse at 120
-
-- `Implemented` (mobile web): Compact identity→tabs gap is `space.x5` 20.
-  Stack is `12 + 48 + 20 = 80`, tabs `y=80`, chrome ~106px, sticky
-  `top: -(heroHeight - 80)`. Collapse was `>= 120`, expand `<= 60`. Duration
-  200ms and `cubic-bezier(0.2, 0, 0, 1)` are unchanged. Coverage:
-  `creator-header-motion.ts`, `CreatorHeader.web.tsx`,
-  `creator-header-motion.spec.ts`, `author-header-motion.spec.ts`.
-- `Unchanged`: expanded geometry, one-node motion, Figma 186/44 tokens.
-
-## 2026-09-15 — Creator web compact chrome is ~98px
-
-- `Implemented` (mobile web): Settled compact header uses semantic stack
-  `12 + 48 + 12` plus tabs 26 (~98px). Sticky park stays
-  `top: -(heroHeight - 72)`. Avatar `20/12`, handle `76/26.5`, tabs `y=72`.
-  `overflow: hidden` on the hero only after compact settles. Canonical Figma
-  `creatorCompactHeader` 186 and `creatorCompactTop` 44 are unchanged.
-  Coverage: `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
-  `author-header-motion.spec.ts`.
-- `Unchanged`: expanded hero, 80/40 hysteresis, 200ms easing, native header.
-
-## 2026-09-15 — Creator handle ellipsis is compact-only
-
-- `Implemented` (mobile web): Expanded `@handle` hugs its text. Compact
-  ellipsis uses `--handle-compact-max` (slot between x 76 and actions), not
-  an interpolated hug-width cap. Coverage: `CreatorHeader.web.tsx`,
-  `creator-header-motion.ts`, `author-header-motion.spec.ts`.
-- `Unchanged`: 80/40 hysteresis, 200ms easing, avatar/handle/actions
-  trajectories, one handle node.
-
-## 2026-09-15 — Creator header uses a 2-state transition
-
-- `Implemented` (mobile web): Creator sticky header no longer scrubs morph
-  progress from `scrollTop / offset`. Scroll hysteresis selects `expanded` or
-  `compact` (`>= 80` collapse, `<= 40` expand). CSS transitions
-  `--creator-progress` `0 ↔ 1` over 200ms `cubic-bezier(0.2, 0, 0, 1)`.
-  Reduced motion keeps the thresholds and snaps instantly. One avatar, one
-  handle, one action row; compact endpoints unchanged. Coverage:
-  `CreatorHeader.web.tsx`, `creator-header-motion.ts`,
-  `creator-header-motion.spec.ts`, `author-header-motion.spec.ts`.
-- `Unchanged`: handle/avatar/actions geometry, tabs, atmosphere, About
-  content, native header.
-
-## 2026-09-15 — Creator handle is one transformed node
-
-- `Implemented` (mobile web): Creator `@handle` uses the same motion model as
-  the avatar. One `creator-handle` node interpolates from the measured expanded
-  glyph box (`621:19483`) to compact `76 / 58.5` (`526:14524`). The web-only
-  compact copy is gone. Coverage: `CreatorHero.tsx`, `CreatorHeader.web.tsx`,
-  `creator-header-motion.ts`, `creator-header-motion.spec.ts`,
-  `author-header-motion.spec.ts`.
-- `Unchanged`: avatar/actions transforms, tabs, atmosphere, About content,
-  social controls, native header (still expanded-only).
+- `Unchanged`: expanded Creator Figma layout, native headers, Figma 186/44.
 
 ## 2026-09-15 — onGlass chips paint a 1px outside gradient ring
 
