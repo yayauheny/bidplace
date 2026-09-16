@@ -8,6 +8,7 @@ export function FigmaTabs({
   onChange,
   label,
   align,
+  contentInset = 0,
 }: FigmaTabsProps) {
   return (
     <ScrollView
@@ -18,6 +19,7 @@ export function FigmaTabs({
         gap: designTokens.space.x2,
         flexGrow: 1,
         justifyContent: align === 'center' ? 'center' : 'flex-start',
+        paddingHorizontal: contentInset,
       }}
     >
       {tabs.map((tab) => (

@@ -1,7 +1,36 @@
 # bidplace — текущий статус проекта
 
-## 2026-09-16 — Creator identity uses Reanimated; Work tabs are sticky
+## 2026-09-16 — Work compact parks when tabs reach the viewport top
 
+- `Implemented`: Web Work compact chrome mounts only after identity/chips have
+  left the viewport. Handoff is `scrollTop >= measured heroHeight` (tabs top),
+  reverse at `heroHeight - 20`. Compact Back/Share are a separate 80px row
+  (`WorkCompactNav`); expanded gallery overlay unmounts. Tabs layout to `y≈80`
+  with Reanimated `LinearTransition`. Tab labels keep `space.pageGutter`; the
+  divider stays full-bleed. Coverage: `WorkHeader.web.tsx`, `WorkActions.tsx`,
+  `workHandoffThresholds`, `FigmaTabs` `contentInset`,
+  `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: expanded Work rest geometry, Creator park (`heroHeight - 80`),
+  native Work expanded-only, Work data.
+
+## 2026-09-16 — Restore expanded Work vertical composition
+
+- `Implemented`: Expanded Work rest restored `sectionGap` 20 between gallery
+  dots and identity, and `space.x10` 40 between chips and tabs. The artwork
+  viewport remains 520. Coverage: `WorkHeader.web.tsx`, `WorkHeader.tsx`,
+  `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: Creator, Work compact coordinates, gallery crop, Work data.
+
+## 2026-09-16 — Work sticky handoff uses the same Reanimated park as Creator
+
+- `Implemented`: Web Work header has two product states, `expanded` and
+  `compact`. Compact starts at the measured park
+  `scrollTop >= heroHeight - 80` and returns at `park - 20`. Sticky
+  positioning is CSS. One `WorkActions` Back/Share pair stays mounted;
+  compact restyles those nodes. Reanimated `LinearTransition` interpolates
+  that layout change. Gallery, identity and tabs are not animated. There is
+  no 558/538 state machine. Coverage: `WorkHeader.web.tsx`,
+  `WorkActions.tsx`, `e2e/work-header-motion.spec.ts`.
 - `Implemented`: Web Creator header has two product states, `expanded` and
   `compact`. Compact starts at the measured park
   `scrollTop >= heroHeight - compactStack` and returns at `park - 20`.
@@ -11,12 +40,8 @@
   sibling of identity and are not animated. Coverage:
   `CreatorHeader.web.tsx`, `CreatorIdentity.tsx`,
   `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
-- `Implemented`: Web Work keeps Back/Share on the gallery. Only Work tabs
-  are `position: sticky`. There is no Work compact overlay or 558/538
-  state machine. Coverage: `WorkHeader.web.tsx`,
-  `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: expanded Creator Figma layout, native headers, Figma
-  compact tokens 186/44.
+- `Unchanged`: expanded Creator and Work Figma rest layouts, native
+  headers, Figma compact tokens 186/44.
 
 ## 2026-09-15 — onGlass chips use a 1px outside gradient ring
 

@@ -31,14 +31,22 @@ describe('Work top chrome', () => {
       join(dirname(fileURLToPath(import.meta.url)), 'WorkHeader.web.tsx'),
       'utf8',
     );
+    const webActions = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'WorkActions.tsx'),
+      'utf8',
+    );
     expect(productScreen).toContain('navigateWorkPageBack(router)');
     expect(productScreen).toContain('<WorkHeader');
-    for (const header of [nativeHeader, webHeader]) {
-      expect(header).toContain('leadingAction=');
-      expect(header).toContain('icon="arrow-left-01"');
-      expect(header).toContain('icon="share-04"');
-      expect(header).not.toContain('icon="heart"');
-    }
+    expect(nativeHeader).toContain('leadingAction=');
+    expect(webHeader).toContain('leadingAction=');
+    expect(webHeader).toContain('WorkCompactNav');
+    expect(webHeader).toContain('contentInset={designTokens.space.pageGutter}');
+    expect(nativeHeader).toContain('WorkBackControl');
+    expect(nativeHeader).toContain('WorkShareControl');
+    expect(webActions).toContain('icon="arrow-left-01"');
+    expect(webActions).toContain('icon="share-04"');
+    expect(webActions).not.toContain('icon="heart"');
+    expect(nativeHeader).not.toContain('icon="heart"');
     expect(productScreen).not.toContain('icon="heart"');
   });
 });

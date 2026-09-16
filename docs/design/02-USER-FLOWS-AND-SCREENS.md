@@ -106,7 +106,7 @@ is URL-owned; Author About is local state and is not a `?tab=` contract.
 Web 390 Creator sticky header has two product states: expanded and compact.
 Compact starts when scrolling reaches the measured park
 `scrollTop >= heroHeight - compactStack` (`compactStack` is
-`space.x3 + creatorCompactAvatar + space.x5` = 80). Returning to
+`space.x3 + size.header + space.x5` = 80). Returning to
 `scrollTop <= park - 20` expands again. Between those values the current
 state is kept. CSS `position: sticky` parks the header. One `CreatorIdentity`
 stays mounted; avatar, handle and actions keep the same nodes. Compact only
@@ -125,11 +125,20 @@ Figma iOS status bar: 12px from the hero top, 20px side inset, 48×48 glass Back
 Like hidden, Share kept. Inactive gallery dots (`745:21219`) are `color.border`
 `#DEDEDE`. Metadata chips (`745:21232`) share Creator `onGlass` fill and a 1px
 outside `#DEDEDE`→`#F3F3F3` ring, with Work pad 6/12 and 14/500 `#565656`.
+Expanded 390 composition is gallery media 520, dots after `space.x3`, identity
+after `sectionGap` 20, tabs after `space.x10` 40.
 
-Web Work does not use a compact overlay. Back and Share stay on the gallery and
-scroll away with it. Only the Work tabs are `position: sticky` at the top of
-the viewport. There is no Figma scrolled Work frame. Page scroll is not
-snapped. Scroll-to-top when changing Work tabs is a follow-up.
+Web 390 Work sticky header parks when the Work tabs reach the viewport top:
+`scrollTop >= measured heroHeight`, reverse at `heroHeight - 20`. Hero is
+gallery, dots, title, author and chips — not the compact chrome. Before that
+park, identity and chips scroll away naturally and compact Back/Share are not
+mounted. At the park, identity is already above the viewport; a separate 80px
+compact row (`space.x3` + `size.header` + `space.x5`) mounts and tabs layout
+to `y≈80`. Expanded gallery Back/Share overlay unmounts. Tab labels keep
+`space.pageGutter` inset; the tab divider stays full-bleed. There is no
+compact thumbnail and no Figma scrolled Work frame. Page scroll is not
+snapped. Scroll-to-top when changing Work tabs is a follow-up. Native Work
+stays expanded-only.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 

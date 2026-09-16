@@ -205,16 +205,24 @@ compact only restyles the same avatar, handle and actions nodes. Reanimated
 `ReduceMotion.System`) interpolates those layout changes. Tabs are not in
 that animation.
 Compact row: avatar `20 / 12` 48×48, handle `76 / 26.5`, actions
-`y=12`, tabs `y≈80`. Web compact stack is `space.x3 + creatorCompactAvatar +
+`y=12`, tabs `y≈80`. Web compact stack is `space.x3 + size.header +
 space.x5` (80), plus tabs 26. Figma scrolled `526:14524` remains `76 / 58.5`
 under iPhone inset `y=44` / tabs `y=186`; those tokens stay canonical.
 Reduced motion keeps the same thresholds and snaps the layout change.
 
 ### Work identity header (web 390)
 
-Work does not morph a compact chrome row. Gallery Back/Share scroll with the
-hero. Title, author, and chips scroll with the page. Only Work tabs are
-`position: sticky` at `top: 0`. Native Work header stays expanded-only.
+Sticky Work header has two product states: `expanded` and `compact`. Expanded
+rest is gallery media 520, dots after `space.x3`, identity after `sectionGap`
+20, tabs after `space.x10` 40. Compact starts only when the tabs reach the
+viewport top: `scrollTop >= measured heroHeight`, reverse at `heroHeight - 20`.
+Hero is everything above the tabs. CSS sticky is `top: -heroHeight`. Compact
+chrome is a separate 80px Back/Share row (`FadeInUp` / `FadeOutUp`); tabs
+layout from `y≈0` to `y≈80` with Reanimated `LinearTransition`. Expanded
+gallery overlay Back/Share unmount at that park. Tab labels use
+`FigmaTabs` `contentInset={space.pageGutter}`; the tablist divider stays
+full-bleed. Gallery and identity are not animated. Native Work stays
+expanded-only.
 
 ### Auction/Product card states
 

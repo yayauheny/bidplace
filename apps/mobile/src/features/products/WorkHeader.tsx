@@ -3,8 +3,7 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 import { WorkGallery } from '../../components/figma/WorkGallery';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
-import { FigmaIconButton } from '../../components/figma/FigmaIconButton';
-import { FigmaGlassSurface } from '../../components/figma/FigmaGlassSurface';
+import { WorkBackControl, WorkShareControl } from './WorkActions';
 import type { WorkHeaderProps } from './work-header';
 import { WorkIdentity } from './WorkIdentity';
 
@@ -26,36 +25,13 @@ export function WorkHeader({
       <WorkGallery
         images={images}
         label={title}
-        leadingAction={
-          <FigmaGlassSurface
-            preset="controlGroup"
-            contentStyle={{ padding: designTokens.space.socialGroupY }}
-          >
-            <FigmaIconButton
-              icon="arrow-left-01"
-              iconSize={designTokens.size.socialGroupIcon}
-              label="Назад"
-              onPress={onBack}
-            />
-          </FigmaGlassSurface>
-        }
-        action={
-          <FigmaGlassSurface
-            preset="controlGroup"
-            contentStyle={{ padding: designTokens.space.socialGroupY }}
-          >
-            <FigmaIconButton
-              icon="share-04"
-              iconSize={designTokens.size.socialGroupIcon}
-              label="Поделиться работой"
-              onPress={onShare}
-            />
-          </FigmaGlassSurface>
-        }
+        leadingAction={<WorkBackControl onPress={onBack} />}
+        action={<WorkShareControl onPress={onShare} />}
       />
       <View
         style={{
           paddingHorizontal: designTokens.space.pageGutter,
+          paddingTop: designTokens.space.sectionGap,
           gap: designTokens.space.x10,
         }}
       >

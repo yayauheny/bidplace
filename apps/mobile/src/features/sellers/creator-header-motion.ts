@@ -1,15 +1,19 @@
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
-import { designTokens } from '@bidplace/design-tokens';
+import {
+  STICKY_HANDOFF_HYSTERESIS,
+  WEB_COMPACT_STACK,
+  findScrollBoundary as findLabeledScrollBoundary,
+  stickyHandoffThresholds,
+  stickyHeaderStateFromScroll,
+  type StickyHeaderState,
+} from '../../lib/sticky-handoff';
 
 export const CREATOR_COMPACT_SOCIAL_LIMIT = 2;
 export const CREATOR_SCROLL_TEST_ID = 'creator-scroll';
-export const CREATOR_HANDOFF_HYSTERESIS = 20;
-export const CREATOR_WEB_COMPACT_STACK =
-  designTokens.space.x3 +
-  designTokens.size.creatorCompactAvatar +
-  designTokens.space.x5;
+export const CREATOR_HANDOFF_HYSTERESIS = STICKY_HANDOFF_HYSTERESIS;
+export const CREATOR_WEB_COMPACT_STACK = WEB_COMPACT_STACK;
 
-export type CreatorHeaderState = 'expanded' | 'compact';
+export type CreatorHeaderState = StickyHeaderState;
 
 export type PublicSocialLink = {
   key: 'telegram' | 'instagram' | 'website';
@@ -53,12 +57,7 @@ export function listPublicSocialLinks(
 }
 
 export function creatorHandoffThresholds(heroHeight: number) {
-  const collapseAt = Math.max(0, heroHeight - CREATOR_WEB_COMPACT_STACK);
-  return {
-    collapseAt,
-    expandAt: Math.max(0, collapseAt - CREATOR_HANDOFF_HYSTERESIS),
-    compactStack: CREATOR_WEB_COMPACT_STACK,
-  };
+  return stickyHandoffThresholds(heroHeight);
 }
 
 export function creatorHeaderStateFromScroll(
@@ -66,51 +65,14 @@ export function creatorHeaderStateFromScroll(
   current: CreatorHeaderState,
   thresholds: { collapseAt: number; expandAt: number },
 ): CreatorHeaderState {
-  if (thresholds.collapseAt <= 0) {
-    return 'expanded';
-  }
-  if (scrollTop >= thresholds.collapseAt) {
-    return 'compact';
-  }
-  if (scrollTop <= thresholds.expandAt) {
-    return 'expanded';
-  }
-  return current;
+  return stickyHeaderStateFromScroll(scrollTop, current, thresholds);
 }
 
 export function findScrollBoundary(from: Element | null) {
-  if (!(from instanceof HTMLElement)) {
-    return null;
-  }
-  const labeled = from.closest(`[data-testid="${CREATOR_SCROLL_TEST_ID}"]`);
-  return labeled instanceof HTMLElement ? labeled : null;
+  return findLabeledScrollBoundary(from, CREATOR_SCROLL_TEST_ID);
 }
 
-function isVerticalScrollTarget(
-  target: EventTarget | null,
-  boundary: HTMLElement,
-) {
-  if (!(target instanceof HTMLElement) || !boundary.contains(target)) {
-    return false;
-  }
-  return target === boundary || target.scrollHeight > target.clientHeight + 1;
-}
-
-export function scrollTopFromEvent(event: Event, boundary: HTMLElement) {
-  return isVerticalScrollTarget(event.target, boundary)
-    ? (event.target as HTMLElement).scrollTop
-    : readCurrentScrollTop(boundary);
-}
-
-export function readCurrentScrollTop(boundary: HTMLElement) {
-  if (boundary.scrollHeight > boundary.clientHeight + 1) {
-    return boundary.scrollTop;
-  }
-  const nodes = boundary.querySelectorAll<HTMLElement>('*');
-  for (const node of nodes) {
-    if (node.scrollHeight > node.clientHeight + 1) {
-      return node.scrollTop;
-    }
-  }
-  return boundary.scrollTop;
-}
+export {
+  readCurrentScrollTop,
+  scrollTopFromEvent,
+} from '../../lib/sticky-handoff';

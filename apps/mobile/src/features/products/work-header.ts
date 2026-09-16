@@ -2,6 +2,8 @@ import type { Href } from 'expo-router';
 
 import type { FigmaTab } from '../../components/figma/figma-tabs';
 
+export const WORK_SCROLL_TEST_ID = 'product-scroll-view';
+
 export type WorkHeaderImage = { id: string; url: string };
 
 export type WorkHeaderProps = {

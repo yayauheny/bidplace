@@ -1,22 +1,13 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  Easing,
-  LinearTransition,
-  ReduceMotion,
-} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppText, ResilientRemoteImage } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { controlLayoutTransition } from '../../lib/layout-transition';
 import { CreatorSocialActions } from './CreatorSocialActions';
 import { CREATOR_WEB_COMPACT_STACK } from './creator-header-motion';
-
-const creatorIdentityLayout = LinearTransition.duration(
-  designTokens.motion.control,
-)
-  .easing(Easing.bezier(0.2, 0, 0, 1))
-  .reduceMotion(ReduceMotion.System);
 
 export function CreatorIdentity({
   profile,
@@ -69,7 +60,7 @@ export function CreatorIdentity({
       <Animated.View
         key="creator-avatar"
         testID="creator-avatar"
-        layout={creatorIdentityLayout}
+        layout={controlLayoutTransition}
         style={{ width: avatarSize, height: avatarSize }}
       >
         <ResilientRemoteImage
@@ -108,7 +99,7 @@ export function CreatorIdentity({
         <Animated.View
           key="creator-handle"
           testID="creator-handle"
-          layout={creatorIdentityLayout}
+          layout={controlLayoutTransition}
           style={
             compact
               ? { maxWidth: '100%', minWidth: 0 }
@@ -163,7 +154,7 @@ export function CreatorIdentity({
       <Animated.View
         key="creator-actions"
         testID="creator-actions"
-        layout={creatorIdentityLayout}
+        layout={controlLayoutTransition}
         style={
           compact
             ? { marginLeft: designTokens.space.x3 }

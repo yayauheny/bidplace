@@ -4,8 +4,36 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
-## 2026-09-16 — Creator identity uses Reanimated; Work tabs are sticky
+## 2026-09-16 — Work compact parks when tabs reach the viewport top
 
+- `Implemented` (mobile web): Work compact chrome mounts only after identity
+  and chips have scrolled out. Handoff is the measured tabs/hero boundary
+  (`scrollTop >= heroHeight`), reverse at `heroHeight - 20`. Compact Back/Share
+  are a separate 80px row; expanded gallery overlay unmounts. Tabs keep
+  `space.pageGutter` label inset with a full-bleed divider. Coverage:
+  `WorkHeader.web.tsx`, `WorkActions.tsx`, `FigmaTabs.web.tsx`,
+  `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: expanded Work rest (media 520, dots `x3`, identity
+  `sectionGap`, tabs `x10`), Creator header, gallery crop, native Work.
+
+## 2026-09-16 — Restore expanded Work vertical composition
+
+- `Implemented` (mobile web): Expanded Work rest again uses `sectionGap` 20
+  between gallery dots and identity, and `space.x10` 40 between chips and
+  tabs. Artwork viewport stays 390×520; dots stay below it. Coverage:
+  `WorkHeader.web.tsx`, `WorkHeader.tsx`, `e2e/work-header-motion.spec.ts`.
+- `Unchanged`: Creator header, Work compact coordinates, gallery crop,
+  chips/title/tabs typography.
+
+## 2026-09-16 — Work sticky handoff uses the same Reanimated park as Creator
+
+- `Implemented` (mobile web): Work sticky header is `expanded` / `compact`
+  from the measured park `heroHeight - 80` with 20px reverse hysteresis.
+  CSS sticky parks the header. One `WorkActions` Back/Share pair stays
+  mounted; compact restyles those nodes. Reanimated `LinearTransition`
+  interpolates that layout change. Gallery, identity and tabs are not
+  animated. Coverage: `WorkHeader.web.tsx`, `WorkActions.tsx`,
+  `e2e/work-header-motion.spec.ts`.
 - `Implemented` (mobile web): Creator sticky header is `expanded` / `compact`
   from the measured park `heroHeight - compactStack` with 20px reverse
   hysteresis. CSS sticky parks the header. One `CreatorIdentity` stays
@@ -13,10 +41,8 @@
   Reanimated `LinearTransition` interpolates that layout change. Tabs stay a
   normal sibling. Coverage: `CreatorHeader.web.tsx`, `CreatorIdentity.tsx`,
   `creator-header-motion.ts`, `e2e/author-header-motion.spec.ts`.
-- `Implemented` (mobile web): Work Back/Share stay on the gallery and
-  scroll away. Only Work tabs are sticky. Coverage: `WorkHeader.web.tsx`,
-  `e2e/work-header-motion.spec.ts`.
-- `Unchanged`: expanded Creator Figma layout, native headers, Figma 186/44.
+- `Unchanged`: expanded Creator and Work Figma rest layouts, native headers,
+  Figma 186/44.
 
 ## 2026-09-15 — onGlass chips paint a 1px outside gradient ring
 

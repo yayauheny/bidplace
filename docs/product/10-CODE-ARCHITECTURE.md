@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-14
+Последнее обновление: 2026-09-16
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## Applications and shared boundaries
@@ -30,10 +30,13 @@
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/
   Creator grids reuse `WorkCoverCardGrid` rather than duplicating card anatomy.
-  Cross-platform UI motion uses `react-native-reanimated`. Creator web sticky
-  positioning stays CSS. One Creator identity stays mounted; compact restyles
-  the same nodes and Reanimated `LinearTransition` interpolates the layout.
-  Work web tabs use CSS sticky without a compact overlay.
+  Cross-platform UI motion uses `react-native-reanimated`. Creator and Work
+  web sticky positioning stays CSS. Creator keeps one identity mounted and
+  restyles the same avatar/handle/actions nodes with `LinearTransition`.
+  Work uses two presentations: gallery overlay Back/Share while expanded, and
+  `WorkCompactNav` after the tabs reach the viewport top. Shared handoff math
+  lives in `apps/mobile/src/lib/sticky-handoff.ts`
+  (`stickyHandoffThresholds` for Creator, `workHandoffThresholds` for Work).
 - `apps/api/src/images/image-policy.ts` owns binary Cache-Control: private media is `no-store`; public Product images keyed by id are immutable; public seller photos and creation-step images (bytes replaced at a stable URL) use short revalidation.
 - `apps/api/src/core/image-store` is the media boundary. PostgreSQL retains media
   metadata, ownership, checksum and deterministic object key; S3-compatible storage

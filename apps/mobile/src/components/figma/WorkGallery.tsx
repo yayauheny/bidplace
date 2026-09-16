@@ -52,6 +52,7 @@ export function WorkGallery({
       style={{ gap: designTokens.space.x3 }}
     >
       <View
+        testID="work-gallery-media"
         style={{
           overflow: 'hidden',
           borderBottomLeftRadius: designTokens.radius.workGallery,

@@ -8,6 +8,7 @@ export type FigmaTabsProps = {
   label: string;
   panelId: string;
   align?: 'start' | 'center';
+  contentInset?: number;
 };
 
 export function figmaTabLabelColor(selected: boolean) {
