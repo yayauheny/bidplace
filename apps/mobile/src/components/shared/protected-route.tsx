@@ -1,10 +1,8 @@
 import { Redirect } from 'expo-router';
-import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { useState, type ReactNode } from 'react';
 
-import { designTokens } from '@bidplace/design-tokens';
-
-import { AppText, InfrastructureErrorState } from '../ui';
+import { AppShell } from '../layout';
+import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
 
 type ProtectedRouteProps = {
@@ -17,37 +15,26 @@ export function ProtectedRoute({
   requireAdmin = false,
 }: ProtectedRouteProps) {
   const auth = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  const pageStatus = !auth.ready || refreshing
+    ? 'loading'
+    : auth.status === 'error'
+      ? 'error'
+      : null;
 
-  if (!auth.ready) {
+  if (pageStatus) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: designTokens.color.canvas,
-        }}
-      >
-        <AppText role="bodySmall" tone="secondary">
-          Проверяем доступ…
-        </AppText>
-      </View>
-    );
-  }
-
-  if (auth.status === 'error') {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          backgroundColor: designTokens.color.canvas,
-        }}
-      >
-        <InfrastructureErrorState
-          onRetry={() => void auth.refreshSession()}
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus}
+          onRetry={() => {
+            setRefreshing(true);
+            void auth.refreshSession().finally(() => {
+              setRefreshing(false);
+            });
+          }}
         />
-      </View>
+      </AppShell>
     );
   }
 

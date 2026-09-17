@@ -6,13 +6,17 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout';
+import { AppShell, FormPageShell } from '../../components/layout';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import {
+  combineInfrastructurePageStatus,
+  infrastructurePageFetchStatus,
+} from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
   AppText,
   DestructiveButton,
   FormSection,
-  InfrastructureErrorState,
   PageState,
   PrimaryButton,
   SecondaryButton,
@@ -297,33 +301,41 @@ export function ProductDraftScreen({
     }
   };
 
-  if (categories.isLoading || (productId && productDetail.isLoading))
-    return (
-      <FormPageShell hideDock>
-        <PageState title="Загружаем предмет…" loading />
-      </FormPageShell>
-    );
-  if (productId && isNotFoundError(productDetail.error))
+  const categoriesStatus = infrastructurePageFetchStatus(categories);
+  const productFetchStatus = productId
+    ? infrastructurePageFetchStatus(productDetail)
+    : 'ready';
+  const pageStatus = combineInfrastructurePageStatus(
+    productId ? [categoriesStatus, productFetchStatus] : [categoriesStatus],
+  );
+
+  const retryDraftPage = () => {
+    void categories.refetch();
+    void productDetail.refetch();
+  };
+
+  if (productId && isNotFoundError(productDetail.error) && pageStatus !== 'loading') {
     return (
       <FormPageShell hideDock>
         <PageState title="Предмет не найден" />
       </FormPageShell>
     );
+  }
+
   if (
-    categories.isError ||
+    pageStatus !== 'ready' ||
     !categories.data ||
     (productId && (productDetail.isError || !productDetail.data || !existingProduct))
-  )
+  ) {
     return (
-      <FormPageShell hideDock>
-        <InfrastructureErrorState
-          onRetry={() => {
-            void categories.refetch();
-            void productDetail.refetch();
-          }}
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus === 'loading' ? 'loading' : 'error'}
+          onRetry={retryDraftPage}
         />
-      </FormPageShell>
+      </AppShell>
     );
+  }
 
   const editable = canOwnerEditProduct(existingProduct?.status);
   const productStatus = existingProduct?.status;

@@ -144,11 +144,21 @@ implementations.
 
 ### Page states
 
-`PageState` owns loading, empty, not-found and other screen-local messages.
-Recoverable infrastructure failures use `InfrastructureErrorState`, a thin
-wrapper over `PageState` with the canonical sentence and Retry. Feature screens
-pass only `onRetry`. `SessionAlert` stays a reusable banner primitive and is
-not mounted by public `AppShell`.
+`PageState` owns empty, not-found and other screen-local messages, plus compact
+inline loading copy where content chrome stays on screen. Blocking page fetch
+uses `InfrastructurePageStatus`: one `AnimatedBidplaceLogo` at 104px with
+semantic `motion` `loading` | `error`. Loading is the mark only (CSS bounce
+loop, 900ms, 16px, transform-only). Pending → error finishes the current bounce
+via `animationiteration`, then blinks the eyes group twice (520ms) and reveals
+canonical copy in `workTitle` (20/24 semibold, max 300px) plus a large outline
+«Повторить». Success unmounts immediately. `motion="glance"` is reserved for
+later dock interaction and is not wired here.
+`InfrastructureErrorState` keeps `presentation="page" | "inline"`; page mode
+composes `InfrastructurePageStatus`. Inline presentation keeps copy + outline
+retry without the logo, for Search, catalog lists, seller works tab, and author
+achievements. Feature screens pass only query status and `onRetry`.
+`SessionAlert` stays a reusable banner primitive and is not mounted by public
+`AppShell`.
 
 ## 4. Screen compositions
 

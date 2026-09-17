@@ -9,14 +9,14 @@ import type {
 } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout';
+import { AppShell, FormPageShell } from '../../components/layout';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import {
   AppText,
   FormSection,
   MotionPressable,
   PageHeader,
-  InfrastructureErrorState,
-  PageState,
   SecondaryButton,
 } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
@@ -253,19 +253,15 @@ export function AdminAnalyticsScreen() {
     ];
   }, [data]);
 
-  if (query.isLoading) {
+  const pageStatus = infrastructurePageFetchStatus(query);
+  if (pageStatus !== 'ready' || !data) {
     return (
-      <FormPageShell>
-        <PageState title="Загружаем аналитику…" loading />
-      </FormPageShell>
-    );
-  }
-
-  if (query.isError || !data) {
-    return (
-      <FormPageShell>
-        <InfrastructureErrorState onRetry={() => void query.refetch()} />
-      </FormPageShell>
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus === 'loading' ? 'loading' : 'error'}
+          onRetry={() => void query.refetch()}
+        />
+      </AppShell>
     );
   }
 

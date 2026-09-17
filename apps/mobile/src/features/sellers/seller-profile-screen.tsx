@@ -4,18 +4,19 @@ import * as ImagePicker from 'expo-image-picker';
 import { Link } from 'expo-router';
 import { Image as LocalPreviewImage, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import {
   AppText,
   FormSection,
   ImagePlaceholder,
   PageHeader,
-  InfrastructureErrorState,
-  PageState,
   PrimaryButton,
   ResilientRemoteImage,
   SecondaryButton,
 } from '../../components/ui';
 import {
+  AppShell,
   FormPageColumns,
   FormPageShell,
 } from '../../components/layout';
@@ -238,23 +239,20 @@ export function SellerProfileScreen() {
     setPhotoBlob(blob);
   };
 
-  if (query.isLoading) {
-    return (
-      <FormPageShell>
-        <PageState title="Загружаем профиль продавца…" loading />
-      </FormPageShell>
-    );
-  }
-
-  if (
+  const pageStatus = infrastructurePageFetchStatus(query);
+  const missingProfile =
     query.isError &&
-    (!(query.error instanceof ApiClientError) ||
-      query.error.kind !== 'not_found')
-  ) {
+    query.error instanceof ApiClientError &&
+    query.error.kind === 'not_found';
+
+  if (!missingProfile && pageStatus !== 'ready') {
     return (
-      <FormPageShell>
-        <InfrastructureErrorState onRetry={() => void query.refetch()} />
-      </FormPageShell>
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus}
+          onRetry={() => void query.refetch()}
+        />
+      </AppShell>
     );
   }
 

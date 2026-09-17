@@ -59,7 +59,7 @@ export function logInfrastructureError(
     return;
   }
 
-  console.error('[infrastructure-error]', {
+  console.info('[infrastructure-error]', {
     surface,
     kind: error.kind,
     status: error.status,

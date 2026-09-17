@@ -6,11 +6,10 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import {
-  InfrastructureErrorState,
-  PageState,
-  PrimaryButton,
-} from '../../components/ui';
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
+import { PageState, PrimaryButton } from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
@@ -68,15 +67,10 @@ export function PublicSellerScreen({
     enabled: Boolean(firstPage && sellerProfileId),
   });
 
-  if (query.isLoading) {
-    return (
-      <AppShell>
-        <PageState title="Загружаем работы автора…" loading />
-      </AppShell>
-    );
-  }
+  const pageStatus = infrastructurePageFetchStatus(query);
   if (
     query.isError &&
+    pageStatus !== 'loading' &&
     query.error instanceof ApiClientError &&
     query.error.kind === 'not_found'
   ) {
@@ -89,10 +83,13 @@ export function PublicSellerScreen({
       </AppShell>
     );
   }
-  if (query.isError || !firstPage || !author) {
+  if (pageStatus !== 'ready' || !firstPage || !author) {
     return (
       <AppShell>
-        <InfrastructureErrorState onRetry={() => void query.refetch()} />
+        <InfrastructurePageStatus
+          status={pageStatus === 'loading' ? 'loading' : 'error'}
+          onRetry={() => void query.refetch()}
+        />
       </AppShell>
     );
   }
@@ -177,6 +174,7 @@ export function PublicSellerScreen({
               <PageState title="Загружаем работы…" loading />
             ) : workQuery.isError ? (
               <InfrastructureErrorState
+                presentation="inline"
                 onRetry={() => void workQuery.refetch()}
               />
             ) : works.length === 0 ? (

@@ -7,7 +7,8 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import { AppText, InfrastructureErrorState, PageState } from '../../components/ui';
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
+import { AppText, PageState } from '../../components/ui';
 import {
   FigmaButton,
   FilterSortBar,
@@ -92,7 +93,10 @@ export function ProductListScreen({
     );
   } else if (query.isError) {
     content = (
-      <InfrastructureErrorState onRetry={() => void query.refetch()} />
+      <InfrastructureErrorState
+        presentation="inline"
+        onRetry={() => void query.refetch()}
+      />
     );
   } else if (query.items.length === 0) {
     content = (

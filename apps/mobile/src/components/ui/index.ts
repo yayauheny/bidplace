@@ -6,7 +6,6 @@ export * from './Button';
 export * from './FormSection';
 export * from './PageHeader';
 export * from './PageState';
-export * from './InfrastructureErrorState';
 export * from './ImagePlaceholder';
 export * from './MotionPressable';
 export * from './ProductGallery';

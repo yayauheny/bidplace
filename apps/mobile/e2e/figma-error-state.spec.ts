@@ -79,7 +79,75 @@ test('session check failure on Home keeps public content without infrastructure 
   }
 });
 
-test('search dual query failure renders one canonical error state', async ({
+test('page infrastructure state replaces Home chrome', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route('**/api/portfolio/home', async (route) => {
+    await route.abort('connectionrefused');
+  });
+  await page.route('**/api/auth/me', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ user: null }),
+    });
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByTestId('infrastructure-error-state-page')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Bidplace' })).toHaveCount(1);
+  await expect(
+    page.getByRole('link', { name: 'bidplace — на главную' }),
+  ).toHaveCount(0);
+  await expect(page.getByTestId('home-scroll')).toHaveCount(0);
+  await expect(page.getByText('Загружаем bidplace…')).toHaveCount(0);
+  await expect(page.getByText(infrastructureCopy)).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Повторить', exact: true }),
+  ).toHaveCount(1);
+});
+
+test('home pending uses the branded mark without loading copy', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let releaseHome: (() => void) | undefined;
+  const holdHome = new Promise<void>((resolve) => {
+    releaseHome = resolve;
+  });
+  await page.route('**/api/portfolio/home', async (route) => {
+    await holdHome;
+    await route.abort('connectionrefused');
+  });
+  await page.route('**/api/auth/me', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ user: null }),
+    });
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByTestId('infrastructure-page-status-loading')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Bidplace' })).toHaveCount(1);
+  await expect(page.getByText('Загружаем bidplace…')).toHaveCount(0);
+  await expect(page.getByText(infrastructureCopy)).toBeHidden();
+  await expect(
+    page.getByRole('button', { name: 'Повторить', exact: true }),
+  ).toBeHidden();
+
+  releaseHome?.();
+
+  await expect(page.getByTestId('infrastructure-error-state-page')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Bidplace' })).toHaveCount(1);
+  await expect(page.getByText(infrastructureCopy)).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Повторить', exact: true }),
+  ).toHaveCount(1);
+});
+
+test('search dual query failure keeps the field and one inline state', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -92,7 +160,13 @@ test('search dual query failure renders one canonical error state', async ({
 
   await page.goto('/search?q=dali');
 
-  await expect(page.getByText(infrastructureCopy)).toBeVisible();
+  await expect(page.getByTestId('infrastructure-error-state-inline')).toBeVisible();
+  await expect(page.getByTestId('infrastructure-error-state-page')).toHaveCount(0);
+  await expect(page.getByRole('img', { name: 'Bidplace' })).toHaveCount(0);
+  await expect(page.getByText('Поиск', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Ищите опубликованные работы и проверенных авторов.'),
+  ).toBeVisible();
   await expect(page.getByText(infrastructureCopy)).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Повторить', exact: true })).toHaveCount(1);
   await expect(page.getByRole('alert')).toHaveCount(1);

@@ -28,9 +28,22 @@ describe('resolvePublicWorkPageState', () => {
   it('keeps loading ahead of error branches', () => {
     expect(
       resolvePublicWorkPageState({
-        isLoading: true,
+        isPending: true,
+        isFetching: true,
         isError: true,
         error: missingWork,
+        data: undefined,
+      }),
+    ).toBe('loading');
+  });
+
+  it('keeps retrying a failed work load on the branded loading path', () => {
+    expect(
+      resolvePublicWorkPageState({
+        isPending: false,
+        isFetching: true,
+        isError: true,
+        error: networkError,
         data: undefined,
       }),
     ).toBe('loading');
@@ -39,7 +52,8 @@ describe('resolvePublicWorkPageState', () => {
   it('shows a deleted or unpublished work without a retry action', () => {
     expect(
       resolvePublicWorkPageState({
-        isLoading: false,
+        isPending: false,
+        isFetching: false,
         isError: true,
         error: missingWork,
         data: undefined,
@@ -50,7 +64,8 @@ describe('resolvePublicWorkPageState', () => {
   it('keeps transient failures on the retryable load-error path', () => {
     expect(
       resolvePublicWorkPageState({
-        isLoading: false,
+        isPending: false,
+        isFetching: false,
         isError: true,
         error: networkError,
         data: undefined,
@@ -61,7 +76,8 @@ describe('resolvePublicWorkPageState', () => {
   it('does not invent a ready page when the query has no work payload', () => {
     expect(
       resolvePublicWorkPageState({
-        isLoading: false,
+        isPending: false,
+        isFetching: false,
         isError: false,
         error: null,
         data: undefined,
@@ -72,9 +88,22 @@ describe('resolvePublicWorkPageState', () => {
   it('returns ready when a work payload is present', () => {
     expect(
       resolvePublicWorkPageState({
-        isLoading: false,
+        isPending: false,
+        isFetching: false,
         isError: false,
         error: null,
+        data: { work: { publicId: 'daliEstate1' } },
+      }),
+    ).toBe('ready');
+  });
+
+  it('keeps a loaded work on screen if a later refetch fails', () => {
+    expect(
+      resolvePublicWorkPageState({
+        isPending: false,
+        isFetching: false,
+        isError: true,
+        error: networkError,
         data: { work: { publicId: 'daliEstate1' } },
       }),
     ).toBe('ready');

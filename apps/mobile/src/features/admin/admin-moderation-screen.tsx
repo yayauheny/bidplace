@@ -6,15 +6,15 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { FormPageShell } from '../../components/layout';
+import { AppShell, FormPageShell } from '../../components/layout';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
 import {
   AppDialog,
   AppText,
   DestructiveButton,
   FormSection,
   PageHeader,
-  InfrastructureErrorState,
-  PageState,
   PrimaryButton,
   ResilientRemoteImage,
   SecondaryButton,
@@ -137,25 +137,23 @@ export function AdminModerationScreen() {
         ? products
         : null;
 
-  if (activeModerationQuery?.isLoading)
-    return (
-      <FormPageShell>
-        <PageState title="Загружаем модерацию…" loading />
-      </FormPageShell>
-    );
+  const pageStatus = activeModerationQuery
+    ? infrastructurePageFetchStatus(activeModerationQuery)
+    : 'ready';
   if (
-    activeModerationQuery?.isError ||
+    pageStatus !== 'ready' ||
     (moderationTab === 'authors' && !sellers.data) ||
     (moderationTab === 'works' && !products.data)
   )
     return (
-      <FormPageShell>
-        <InfrastructureErrorState
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus === 'loading' ? 'loading' : 'error'}
           onRetry={() => {
             void activeModerationQuery?.refetch();
           }}
         />
-      </FormPageShell>
+      </AppShell>
     );
 
   const confirm = () => {

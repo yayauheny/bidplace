@@ -6,7 +6,9 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
-import { InfrastructureErrorState, PageState, PrimaryButton } from '../../components/ui';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
+import { PageState, PrimaryButton } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
@@ -20,9 +22,19 @@ export function HomeScreen() {
     queryKey: ['portfolio-home'],
     queryFn: () => api.portfolio.home(),
   });
-  const loading = home.isLoading;
-  const failed = home.isError;
+  const pageStatus = infrastructurePageFetchStatus(home);
   const plan = homeSectionPlan(home.data);
+
+  if (pageStatus !== 'ready') {
+    return (
+      <AppShell>
+        <InfrastructurePageStatus
+          status={pageStatus}
+          onRetry={() => void home.refetch()}
+        />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -44,27 +56,17 @@ export function HomeScreen() {
           <BrandLogo profile />
         </View>
         <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
-          {loading ? <PageState title="Загружаем bidplace…" loading /> : null}
-          {failed ? (
-            <InfrastructureErrorState onRetry={() => void home.refetch()} />
-          ) : null}
-          {!loading && !failed && plan.opening ? (
-            <HomeOpening selection={plan.opening} />
-          ) : null}
-          {!loading && !failed && plan.showWorks ? (
-            <HomeNewWorks works={plan.works} />
-          ) : null}
-          {!loading && !failed && plan.showAuthors ? (
-            <HomeNewAuthors authors={plan.authors} />
-          ) : null}
-          {!loading && !failed && plan.showAuthorsLink ? (
+          {plan.opening ? <HomeOpening selection={plan.opening} /> : null}
+          {plan.showWorks ? <HomeNewWorks works={plan.works} /> : null}
+          {plan.showAuthors ? <HomeNewAuthors authors={plan.authors} /> : null}
+          {plan.showAuthorsLink ? (
             <PrimaryButton
               label="Все авторы"
               width="full"
               onPress={() => router.push('/authors')}
             />
           ) : null}
-          {!loading && !failed && plan.showEmpty ? (
+          {plan.showEmpty ? (
             <View style={{ gap: designTokens.space.sectionGap }}>
               <PageState
                 title="Пока здесь тихо"

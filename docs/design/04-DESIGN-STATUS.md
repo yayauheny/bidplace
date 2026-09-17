@@ -1,19 +1,64 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-17
+Последнее обновление: 2026-09-18
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-18 — Page loading → error motion lifecycle
+
+- `Implemented` (mobile web): one `InfrastructurePageStatus` instance owns
+  blocking loading and infrastructure error. Bounce is 900ms / 16px with a
+  rest after squash; pending → error finishes the current CSS iteration, then
+  a 520ms double eye blink with accepted error proportions. `motion="glance"`
+  exists for later dock use and is not wired. Catalog/Search inline loaders
+  stay compact. Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: 104px mark, `workTitle` copy, Retry outline large, dock.
+
+## 2026-09-18 — Infrastructure error proportions
+
+- `Implemented` (mobile web): page infrastructure state uses a 104px mark,
+  `workTitle` copy, `space.x8` logo→text gap, and a large outline Retry above
+  one dock reserve. Chosen over 96 (eyes too small) and 112 (too heavy vs the
+  compact message). Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: motion, retry ownership, canonical copy, button variant, dock.
+
+## 2026-09-18 — Loading → error visual lifecycle
+
+- `Implemented` (mobile web): blocking page fetch uses
+  `InfrastructurePageStatus` and one `AnimatedBidplaceLogo` (`motion`
+  `static` | `intro` | `loading` | `error`) at 104px. Loading shows the mark
+  only, with a CSS bounce loop. Pending → error finishes the current cycle,
+  then a double eye blink and canonical copy + outline Retry. Reduced motion
+  keeps a static mark. Inline Search/catalog/tab/form loaders are unchanged.
+  Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: error policy/copy, retry ownership, PageState empty/not-found,
+  SessionAlert.
+
 ## 2026-09-17 — Infrastructure error presentation
 
-- `Implemented` (mobile web): recoverable infrastructure failures use one
-  curated sentence, «Проверьте соединение и попробуйте ещё раз.», via
-  `InfrastructureErrorState` (`PageState` underneath). Public `AppShell` does
-  not mount `SessionAlert`. Protected routes own blocking session failure.
-  Status owner:
+- `Implemented` (mobile web): page-level infrastructure failures use
+  `AnimatedBidplaceLogo` intro at 112px, canonical copy with normal wrapping,
+  and a full-width outline retry CTA. Page state is a flex child of `AppShell`
+  with dock overlay clearance. Inline nested failures keep copy + outline
+  retry only (Search, catalogs, seller works tab, achievements). Public
+  `AppShell` does not mount `SessionAlert`. Protected routes own blocking
+  session failure. Status owner:
   [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
 - `Unchanged`: PageState / SessionAlert primitives, form validation copy,
   not-found empty states.
+
+## 2026-09-17 — Infrastructure error visual integration
+
+- `Implemented` (mobile web): `InfrastructureErrorState` moved to
+  `components/shared/` with `presentation="page" | "inline"`. Page mode is a
+  blocking `AppShell` child (Home, Work, Creator, ProtectedRoute, admin/form
+  loads). Inline mode is used when chrome stays useful (Search, works/authors
+  catalogs, seller works tab, author achievements). Coverage:
+  `infrastructure-error-presentation.ts`, `infrastructure-error-state.spec.ts`,
+  `figma-error-state.spec.ts`.
 
 ## 2026-09-17 — Work/Creator compact navigation glass
 

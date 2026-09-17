@@ -1,10 +1,10 @@
 import { ApiClientError } from '@bidplace/api-client';
 import { ApiErrorCode } from '@bidplace/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { isInfrastructureError } from './classify';
 import { INFRASTRUCTURE_ERROR_COPY } from './copy';
-import { getUserFacingErrorMessage } from './policy';
+import { getUserFacingErrorMessage, logInfrastructureError } from './policy';
 
 describe('mobile infrastructure error policy', () => {
   it('maps network, server and unexpected kinds to canonical copy', () => {
@@ -68,5 +68,35 @@ describe('mobile infrastructure error policy', () => {
     expect(getUserFacingErrorMessage(serverWithoutCode, 'fallback')).toBe(
       INFRASTRUCTURE_ERROR_COPY,
     );
+  });
+
+  it('logs infrastructure diagnostics without console.error', () => {
+    const network = new ApiClientError('Network request failed', {
+      kind: 'network',
+      status: 0,
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    logInfrastructureError(network, 'query');
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[infrastructure-error]',
+      expect.objectContaining({
+        surface: 'query',
+        kind: 'network',
+        status: 0,
+        code: null,
+        requestId: null,
+        message: 'Network request failed',
+      }),
+    );
+
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+    infoSpy.mockRestore();
   });
 });

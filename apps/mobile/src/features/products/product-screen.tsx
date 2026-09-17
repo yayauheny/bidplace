@@ -5,9 +5,9 @@ import { ScrollView, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
+import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import {
   AppText,
-  InfrastructureErrorState,
   PageState,
   ResilientRemoteImage,
   productMediaStyle,
@@ -59,12 +59,6 @@ export function ProductScreen({ publicId }: { publicId: string }) {
     enabled: Boolean(query.data),
   });
   const pageState = resolvePublicWorkPageState(query);
-  if (pageState === 'loading')
-    return (
-      <AppShell>
-        <PageState title="Загружаем работу…" loading />
-      </AppShell>
-    );
   if (pageState === 'not_found') {
     return (
       <AppShell>
@@ -75,10 +69,13 @@ export function ProductScreen({ publicId }: { publicId: string }) {
       </AppShell>
     );
   }
-  if (pageState === 'error' || !query.data)
+  if (pageState === 'loading' || pageState === 'error' || !query.data)
     return (
       <AppShell>
-        <InfrastructureErrorState onRetry={() => void query.refetch()} />
+        <InfrastructurePageStatus
+          status={pageState === 'loading' ? 'loading' : 'error'}
+          onRetry={() => void query.refetch()}
+        />
       </AppShell>
     );
   const { work, author, relatedWorks } = query.data;

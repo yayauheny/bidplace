@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-16
+Последнее обновление: 2026-09-18
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -70,6 +70,10 @@ a horizontal `WorkCoverCard` scroller from `home.newWorks`. После рабо�
 If Home content loads while `/api/auth/me` has an infrastructure failure, Home
 stays usable and public chrome does not show a session banner. Blocking session
 failure belongs to protected routes.
+Blocking page fetch (Home, Work, Creator, protected session, admin/form
+loads) shows only the Bidplace mark as a loading indicator. It does not use
+«Загружаем bidplace…» or other large loading titles. Compact inline loaders
+stay on Search, catalogs, seller works tab, and achievements.
 
 ## 5. Works and Authors discovery
 

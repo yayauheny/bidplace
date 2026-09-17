@@ -10,12 +10,8 @@ import {
   FilterSearchField,
   WorkCoverCardGrid,
 } from '../../components/figma';
-import {
-  AppText,
-  CreatorCardGrid,
-  InfrastructureErrorState,
-  PageState,
-} from '../../components/ui';
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
+import { AppText, CreatorCardGrid, PageState } from '../../components/ui';
 import { usePortfolioWorks } from '../products/use-portfolio-works';
 import { usePortfolioAuthors } from '../sellers/use-portfolio-authors';
 
@@ -91,6 +87,7 @@ export function SearchScreen({ query }: { query: string }) {
         {enabled ? (
           searchFailed ? (
             <InfrastructureErrorState
+              presentation="inline"
               onRetry={() => {
                 void works.refetch();
                 void authors.refetch();

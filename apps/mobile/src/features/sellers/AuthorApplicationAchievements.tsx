@@ -5,10 +5,10 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import {
   AppText,
   FormSection,
-  InfrastructureErrorState,
   ResilientRemoteImage,
   SecondaryButton,
   TextField,
@@ -94,6 +94,7 @@ export function AuthorApplicationAchievements({
       ) : null}
       {application.isError ? (
         <InfrastructureErrorState
+          presentation="inline"
           onRetry={() => void application.refetch()}
         />
       ) : null}

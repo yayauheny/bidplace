@@ -144,10 +144,16 @@ SellerProfile
   `message` is diagnostic, not UI copy. Unexpected errors become
   `internal_error` without leaking internals.
   Client transport lives in `packages/api-client/src/errors/`. Mobile
-  infrastructure UI policy lives in `apps/mobile/src/errors/` and presents
-  through `InfrastructureErrorState` on feature screens. Public `AppShell`
-  does not show session bootstrap chrome. `ProtectedRoute` owns blocking
-  session failure. `SessionAlert` remains an unused-for-now reusable primitive.
+  infrastructure UI policy lives in `apps/mobile/src/errors/`; presentation
+  lives in `apps/mobile/src/components/shared/InfrastructureErrorState.tsx`
+  (`presentation="page"` as an `AppShell` flex child, `presentation="inline"`
+  when screen chrome stays useful). Blocking page fetch loading/error share
+  `InfrastructurePageStatus` and one `AnimatedBidplaceLogo` instance
+  (`motion="loading" | "error"`). Diagnostics for handled infrastructure
+  failures use `console.info` via `logInfrastructureError`; Expo LogBox is not
+  used as UI. Public `AppShell` does not show session
+  bootstrap chrome. `ProtectedRoute` owns blocking session failure.
+  `SessionAlert` remains an unused-for-now reusable primitive.
   Validation, password, conflict, rate-limit and domain/not-found copy still
   use the older form mapper and are a future migration.
 - Public Work/Author catalog, ProductImage and seller-photo access share

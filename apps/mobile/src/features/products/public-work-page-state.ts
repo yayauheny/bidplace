@@ -1,5 +1,7 @@
 import { ApiClientError } from '@bidplace/api-client';
 
+import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
+
 export type PublicWorkPageState = 'loading' | 'not_found' | 'error' | 'ready';
 
 export function isPublicWorkMissing(error: unknown): boolean {
@@ -10,12 +12,14 @@ export function isPublicWorkMissing(error: unknown): boolean {
 }
 
 export function resolvePublicWorkPageState(query: {
-  isLoading: boolean;
+  isPending: boolean;
+  isFetching: boolean;
   isError: boolean;
   error: unknown;
   data: unknown;
 }): PublicWorkPageState {
-  if (query.isLoading) {
+  const fetchStatus = infrastructurePageFetchStatus(query);
+  if (fetchStatus === 'loading') {
     return 'loading';
   }
 
@@ -23,7 +27,7 @@ export function resolvePublicWorkPageState(query: {
     return 'not_found';
   }
 
-  if (query.isError || !query.data) {
+  if (fetchStatus === 'error' || !query.data) {
     return 'error';
   }
 

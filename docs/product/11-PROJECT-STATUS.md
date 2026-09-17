@@ -1,5 +1,77 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-18 — Page loading → error motion lifecycle
+
+- `Implemented` (mobile web): `InfrastructurePageStatus` is the shared page
+  composition for blocking fetch. One `AnimatedBidplaceLogo` instance
+  (`motion` `static | intro | loading | error | glance`) survives
+  pending → error: bounce stays until `animationiteration`, then error blink.
+  Bounce 900ms / 16px / squash 1.02×0.97 / rest 80–100%. Blink 520ms on the
+  eyes group, no delay. Success unmounts immediately. Fetch derivation treats
+  existing `data` as ready, including background refetch and a later failed
+  refetch. Reduced motion skips bounce/blink. Glance is not dock-wired.
+  Screens: Home, Work, Creator, ProtectedRoute, admin analytics/moderation,
+  seller profile, draft. Inline: Search, catalogs, seller works tab,
+  achievements. Coverage: `infrastructure-error-state.spec.ts`,
+  `public-work-page-state.spec.ts`.
+- `Unchanged`: accepted error proportions, Nest/api-client/mobile error
+  policy, FloatingDock, no interval/rAF/physics.
+
+## 2026-09-18 — Infrastructure error proportions
+
+- `Implemented` (mobile web): `InfrastructurePageStatus` page cluster is a
+  104px `AnimatedBidplaceLogo`, `workTitle` canonical copy (max 300px),
+  `space.x8` gap, and `SecondaryButton` `size="large"` `width="full"` with
+  `space.x5` horizontal padding. Dock clearance stays `size.dockReserve`.
+  Inline keeps copy + regular outline Retry, now also `workTitle`. Motion and
+  error policy are unchanged. Coverage: `infrastructure-error-state.spec.ts`.
+- `Unchanged`: bounce/blink CSS, refetch ownership, FloatingDock, outline
+  variant, canonical sentence.
+
+## 2026-09-18 — Branded page loading → error motion
+
+- `Implemented` (mobile web): blocking page fetch uses
+  `InfrastructurePageStatus` with one `AnimatedBidplaceLogo` at
+  `BIDPLACE_PAGE_LOGO_SIZE` (104). Semantic motion is
+  `static | intro | loading | error`. Loading is the mark only (CSS
+  `bidplace-logo-bounce`, 900ms, 16px lift, squash 1.02/0.97). Success
+  unmounts immediately. Pending → error pauses the bounce on
+  `animationiteration`, then a 520ms double blink on the
+  eyes group, then canonical
+  «Проверьте соединение и попробуйте ещё раз.» plus outline «Повторить».
+  Retry uses existing `refetch` / `refreshSession` (ProtectedRoute keeps a
+  local `refreshing` flag). Reduced motion: static mark, no bounce/blink.
+  Native: static mark. Screens: Home, Work, Creator, ProtectedRoute, admin
+  analytics/moderation, seller profile, product draft. Inline Search,
+  catalogs, seller works tab, achievements, and `PageState` compact loaders
+  are unchanged. Error architecture (`src/errors/`, QueryCache logging,
+  no SessionAlert) is unchanged. Coverage:
+  `infrastructure-error-state.spec.ts`, `public-work-page-state.spec.ts`,
+  `e2e/figma-error-state.spec.ts`.
+- `Unchanged`: Nest filter/mapper, api-client errors, canonical copy,
+  `presentation="inline"`, no interval/rAF/physics, no LogBox suppression.
+
+## 2026-09-17 — Infrastructure error visual integration
+
+- `Implemented` (mobile web): `InfrastructureErrorState` lives in
+  `apps/mobile/src/components/shared/` with `presentation="page"` (default) and
+  `presentation="inline"`. Page mode is an `AppShell` flex child:
+  `AnimatedBidplaceLogo` `motion="intro"` `size={112}`,
+  `INFRASTRUCTURE_ERROR_COPY` with normal wrapping, full-width outline retry
+  via `SecondaryButton` / `FigmaButton variant="outline"`. Home infrastructure
+  failure early-returns and does not render `BrandLogo` or Home scroll chrome.
+  Inline mode: copy + outline retry only, no logo, no dock reserve; used in
+  Search (field remains), works/authors catalogs, `AuthorApplicationAchievements`,
+  and seller works tab. Processed infrastructure failures log through
+  `console.info` in `logInfrastructureError` so Expo LogBox does not overlay
+  the canonical UI; `console.error` stays for real programming errors. Logo
+  animation is finite CSS on web; native falls back to static mark. Reduced
+  motion keeps static logo. Coverage: `infrastructure-error-state.spec.ts`,
+  `error-policy.spec.ts`, `figma-error-state.spec.ts`.
+- `Unchanged`: error policy/copy in `apps/mobile/src/errors/` (one canonical
+  sentence, no copy formatter), retry ownership in features, no session-alert
+  coordination, no timers/polling/rAF.
+
 ## 2026-09-17 — Infrastructure error ownership cleanup
 
 - `Implemented`: public pages no longer coordinate `showSessionAlert`. Public
