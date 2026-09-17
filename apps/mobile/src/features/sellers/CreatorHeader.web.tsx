@@ -5,7 +5,9 @@ import { StickyDockSurface } from '../../components/figma/StickyDockSurface';
 import { CreatorHero } from './CreatorHero';
 import { AuthorShare } from './AuthorShare';
 import type { CreatorHeaderProps } from './creator-header';
+import { revealTabPanelStartIfAbove } from '../../lib/reveal-tab-panel';
 import {
+  CREATOR_SCROLL_TEST_ID,
   creatorHandoffThresholds,
   creatorHeaderStateFromScroll,
   findScrollBoundary,
@@ -28,6 +30,7 @@ export function CreatorHeader({
 }: CreatorHeaderProps) {
   const header = useRef<HTMLDivElement>(null);
   const hero = useRef<HTMLDivElement>(null);
+  const previousTab = useRef(tab);
   const compactRef = useRef(false);
   const heroHeightRef = useRef(0);
   const [heroHeight, setHeroHeight] = useState(0);
@@ -105,6 +108,26 @@ export function CreatorHeader({
       boundary.removeEventListener('scroll', onScroll, { capture: true });
     };
   }, [profile.slug]);
+
+  useLayoutEffect(() => {
+    if (previousTab.current === tab) {
+      return;
+    }
+    previousTab.current = tab;
+    const panel =
+      document.getElementById(panelId) ??
+      document.querySelector('[data-testid="author-content"]');
+    const tabs = header.current?.querySelector('[role="tablist"]');
+    if (!(tabs instanceof HTMLElement)) {
+      return;
+    }
+    revealTabPanelStartIfAbove({
+      from: panel ?? tabs,
+      scrollTestId: CREATOR_SCROLL_TEST_ID,
+      panel,
+      desiredTop: tabs.getBoundingClientRect().bottom,
+    });
+  }, [tab, panelId]);
 
   return (
     <div

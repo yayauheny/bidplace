@@ -4,6 +4,12 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-17 — Work/Creator tab switch reveals the new panel start
+
+- `Implemented` (mobile web): in-session content-tab switches open the new
+  panel from its own start. Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+
 ## 2026-09-17 — Share bottom-sheet motion
 
 - `Implemented` (mobile web): Work and Creator Share use the shared bottom

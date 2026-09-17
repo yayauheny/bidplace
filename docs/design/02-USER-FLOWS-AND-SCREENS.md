@@ -115,7 +115,9 @@ changes their layout. Reanimated `LinearTransition` (`200ms`,
 nodes. Tabs sit below identity at `y≈80` and are not part of that
 animation. Compact canvas is a presentational `StickyDockSurface` filling a
 host owned by the Creator header (`stickyDock.fullHeight`), painted behind
-identity and tabs. Page scroll is not
+identity and tabs. In-session Works/About switches open the new panel from
+its own start under the current header, without reopening the hero.
+Direct loads stay at the page start. Page scroll is not
 snapped. Web compact chrome (~106px with tabs) is an intentional deviation
 from Figma iPhone `y=44` / tabs `y=186`. Canonical tokens
 `creatorCompactTop` 44 and `creatorCompactHeader` 186 stay Figma source.
@@ -137,8 +139,10 @@ while scrolling (CSS sticky). The full-width canvas dock appears only when
 tabs stick at `y≈80` under Back/Share. Identity and chips scroll away. Tab
 labels keep `space.pageGutter` inset; the tab divider stays full-bleed. There
 is no compact thumbnail and no Figma scrolled Work frame. Page scroll is not
-snapped. Scroll-to-top when changing Work tabs is a follow-up. Native Work
-stays expanded-only.
+snapped. In-session Story/Details/Payment switches open the new panel from
+its own start under the current chrome, without scrolling the page to top.
+Direct `?tab=` loads stay at the gallery top. Short Payment may undock if
+maxScroll shrinks; no fake min-height. Native Work stays expanded-only.
 
 Portfolio variant сохраняет визуальную галерею и информационные блоки. Tabs:
 

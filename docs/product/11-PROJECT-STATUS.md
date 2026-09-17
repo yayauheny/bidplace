@@ -1,5 +1,14 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-17 — Work/Creator in-session tab switches reveal panel start
+
+- `Implemented`: Web Work and Creator content-tab switches open the new
+  panel from its own start under the current header, without a page-top
+  jump. Direct Work `?tab=` loads stay at page top. Coverage:
+  `e2e/tab-switch-reveal.spec.ts`.
+- `Unchanged`: StickyDock, Creator park, native Work/Creator, wizards,
+  auction ProductTabs.
+
 ## 2026-09-17 — Share sheet bottom-sheet transition
 
 - `Implemented`: Share sheet now opens and closes with the accepted

@@ -7,6 +7,7 @@ import { StickyDockActionRow } from '../../components/figma/StickyDockActionRow'
 import { StickyDockSurface } from '../../components/figma/StickyDockSurface';
 import { stickyDockTabsStyle } from '../../components/figma/sticky-dock-action-row';
 import { WorkBackControl, WorkShareControl } from './WorkActions';
+import { revealTabPanelStartIfAbove } from '../../lib/reveal-tab-panel';
 import { WORK_SCROLL_TEST_ID, type WorkHeaderProps } from './work-header';
 import { WorkIdentity } from './WorkIdentity';
 
@@ -25,6 +26,7 @@ export function WorkHeader({
   children,
 }: WorkHeaderProps) {
   const sentinel = useRef<HTMLDivElement>(null);
+  const previousTab = useRef(tab);
   const [dockSurfaceActive, setDockSurfaceActive] = useState(false);
 
   useLayoutEffect(() => {
@@ -54,6 +56,27 @@ export function WorkHeader({
     observer.observe(marker);
     return () => observer.disconnect();
   }, [title]);
+
+  useLayoutEffect(() => {
+    if (previousTab.current === tab) {
+      return;
+    }
+    previousTab.current = tab;
+    const panel =
+      document.getElementById(panelId) ??
+      document.querySelector('[role="tabpanel"]');
+    const tabs = document.querySelector('[data-testid="work-sticky-tabs"]');
+    if (!(tabs instanceof HTMLElement)) {
+      return;
+    }
+    revealTabPanelStartIfAbove({
+      from: panel ?? tabs,
+      scrollTestId: WORK_SCROLL_TEST_ID,
+      panel,
+      desiredTop:
+        tabs.getBoundingClientRect().bottom + designTokens.space.sectionGap,
+    });
+  }, [tab, panelId]);
 
   return (
     <div

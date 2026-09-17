@@ -6,7 +6,7 @@ const webBaseURL = process.env.MOTION_BASE_URL ?? `http://127.0.0.1:${webPort}`;
 export default defineConfig({
   testDir: './e2e',
   testMatch:
-    /(?:author-header-motion|work-header-motion|share-sheet-motion)\.spec\.ts/,
+    /(?:author-header-motion|work-header-motion|share-sheet-motion|tab-switch-reveal)\.spec\.ts/,
   timeout: 90_000,
   workers: 1,
   projects: [
