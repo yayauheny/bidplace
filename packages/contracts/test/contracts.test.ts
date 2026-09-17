@@ -430,6 +430,14 @@ describe('shared contracts', () => {
     ).toBe(true);
     expect(
       apiErrorResponseSchema.safeParse({
+        status: 500,
+        code: ApiErrorCode.INTERNAL_ERROR,
+        message: 'Internal server error',
+        requestId: 'req-123',
+      }).success,
+    ).toBe(true);
+    expect(
+      apiErrorResponseSchema.safeParse({
         status: 400,
         code: 'UNKNOWN_CODE',
         message: 'nope',

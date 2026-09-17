@@ -1,6 +1,6 @@
 # bidplace — журнал решений
 
-Последнее обновление: 2026-09-15
+Последнее обновление: 2026-09-17
 
 Записи не удаляются. При пересмотре создаётся новая запись со ссылкой на старую.
 
@@ -1959,3 +1959,36 @@ shells. The founder selected the unified capsule already described in
 ### Revisit when
 
 Search overlay, cart, or a designer-approved second dock layout is in scope.
+
+## DEC-094 — Infrastructure errors have one layered path
+
+Date: 2026-09-17
+Status: Confirmed
+Source: explicit founder instruction before canonical infrastructure error UX
+Does not reopen validation, password, registration, conflict, rate-limit, or
+domain/not-found copy.
+
+### Decision
+
+Backend owns what happened. Frontend owns how it is shown. Backend `message`
+is not a UI contract.
+
+There is one Nest `ApiExceptionFilter`. Shared public shape stays
+`{ status, code, message, details?, requestId? }` in `packages/contracts`.
+Transport parsing lives in `packages/api-client/src/errors/`. Mobile
+infrastructure policy lives in `apps/mobile/src/errors/` and presents through
+`PageState`. `SessionAlert` remains the session-only banner when page content
+loaded. Feature domain errors stay in their modules.
+
+Infrastructure UI copy is one sentence: «Проверьте соединение и попробуйте ещё раз.»
+
+### Why
+
+Infrastructure copy, mappers and dual Home retry/banner were scattered across
+screens. A second filter, a giant error enum, or a coordinator/state machine
+would duplicate existing layers.
+
+### Revisit when
+
+Form validation and other public-kind `error.message` leaks are migrated off
+the old mapper, or a product-specific infrastructure title is required.

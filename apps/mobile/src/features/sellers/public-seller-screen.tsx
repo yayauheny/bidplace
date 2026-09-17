@@ -87,7 +87,7 @@ export function PublicSellerScreen({
   }
   if (query.isError || !firstPage || !author) {
     return (
-      <AppShell>
+      <AppShell showSessionAlert={false}>
         <PageState
           title="Не удалось загрузить работы автора"
           retry={() => void query.refetch()}

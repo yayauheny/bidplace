@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { getUserFacingErrorMessage } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import type { SafeRedirect } from './auth-redirect';
 import { AuthCard } from './auth-card';

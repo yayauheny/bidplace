@@ -76,7 +76,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   }
   if (pageState === 'error' || !query.data)
     return (
-      <AppShell>
+      <AppShell showSessionAlert={false}>
         <PageState
           title="Не удалось загрузить работу"
           retry={() => void query.refetch()}

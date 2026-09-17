@@ -12,7 +12,7 @@ import {
   SecondaryButton,
   TextField,
 } from '../../components/ui';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { getUserFacingErrorMessage } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 
 type AdminUser = Awaited<

@@ -103,6 +103,7 @@ describe('ApiExceptionFilter', () => {
       status: 500,
       code: ApiErrorCode.INTERNAL_ERROR,
       message: 'Internal server error',
+      requestId: 'req-123',
     });
     expect(captured.headers?.['X-Request-Id']).toBe('req-123');
     expect(JSON.stringify(captured.body)).not.toContain('relation');

@@ -13,7 +13,7 @@ import { BrandLogo } from './BrandLogo';
 
 export function AuthViewport({ children }: { children: ReactNode }) {
   return (
-    <AppShell>
+    <AppShell showSessionAlert={false}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

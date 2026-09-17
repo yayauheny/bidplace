@@ -106,7 +106,7 @@ export function PublicAuthorsScreen({
   }
 
   return (
-    <AppShell>
+    <AppShell showSessionAlert={!result.isError}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,

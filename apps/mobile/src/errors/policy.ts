@@ -1,9 +1,10 @@
 import {
   ApiClientError,
-  getApiErrorCode,
   type ApiClientErrorKind,
 } from '@bidplace/api-client';
-import { ApiErrorCode } from '@bidplace/contracts';
+
+import { isInfrastructureError } from './classify';
+import { INFRASTRUCTURE_ERROR_COPY } from './copy';
 
 const genericMessagesByKind: Record<ApiClientErrorKind, string> = {
   bad_request: 'Не удалось выполнить запрос.',
@@ -13,10 +14,9 @@ const genericMessagesByKind: Record<ApiClientErrorKind, string> = {
   not_found: 'Запрошенные данные не найдены.',
   conflict: 'Операцию не удалось выполнить из-за конфликта данных.',
   rate_limited: 'Слишком много запросов. Попробуйте немного позже.',
-  server: 'Сервис временно недоступен. Попробуйте позже.',
-  network:
-    'Не удалось связаться с сервером. Проверьте соединение и попробуйте снова.',
-  unexpected_response: 'Сервис вернул неожиданный ответ. Попробуйте позже.',
+  server: INFRASTRUCTURE_ERROR_COPY,
+  network: INFRASTRUCTURE_ERROR_COPY,
+  unexpected_response: INFRASTRUCTURE_ERROR_COPY,
 };
 
 const publicMessageKinds = new Set<ApiClientErrorKind>([
@@ -28,29 +28,14 @@ const publicMessageKinds = new Set<ApiClientErrorKind>([
   'rate_limited',
 ]);
 
-export function getErrorStatus(error: unknown): number | null {
-  return error instanceof ApiClientError ? error.status : null;
-}
-
-export function getErrorCode(error: unknown): string | null {
-  return getApiErrorCode(error);
-}
-
-export function isNotFoundError(error: unknown): boolean {
-  return getErrorStatus(error) === 404;
-}
-
-export function shouldClearSessionForError(error: unknown): boolean {
-  return (
-    error instanceof ApiClientError &&
-    (error.kind === 'unauthorized' || error.kind === 'forbidden')
-  );
-}
-
 export function getUserFacingErrorMessage(
   error: unknown,
   fallbackMessage: string,
 ): string {
+  if (isInfrastructureError(error)) {
+    return INFRASTRUCTURE_ERROR_COPY;
+  }
+
   if (error instanceof ApiClientError) {
     if (publicMessageKinds.has(error.kind) && error.message.trim()) {
       return error.message;
@@ -62,4 +47,25 @@ export function getUserFacingErrorMessage(
   return fallbackMessage;
 }
 
-export { ApiErrorCode };
+export function logInfrastructureError(
+  error: unknown,
+  surface: string,
+): void {
+  if (!isInfrastructureError(error)) {
+    return;
+  }
+
+  if (!(error instanceof ApiClientError)) {
+    return;
+  }
+
+  console.error('[infrastructure-error]', {
+    surface,
+    kind: error.kind,
+    status: error.status,
+    code: error.code,
+    requestId: error.requestId,
+    message: error.message,
+    cause: error.cause,
+  });
+}

@@ -46,7 +46,6 @@ export function ProtectedRoute({
       >
         <PageState
           title="Не удалось проверить доступ"
-          message={auth.sessionError ?? undefined}
           retry={() => void auth.refreshSession()}
         />
       </View>

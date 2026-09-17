@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
 import { AppText, SecondaryButton } from '../ui';
 import type { SessionAlertProps } from './SessionAlert';
 
@@ -29,9 +30,9 @@ export function SessionAlert({ visible, onRetry }: SessionAlertProps) {
       }}
     >
       <AppText role="bodySmall" tone="danger">
-        Не удалось проверить сессию
+        {INFRASTRUCTURE_ERROR_COPY}
       </AppText>
-      <SecondaryButton label="Повторить проверку сессии" onPress={onRetry} />
+      <SecondaryButton label="Повторить" onPress={onRetry} />
     </View>
   );
 }

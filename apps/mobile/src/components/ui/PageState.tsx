@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
+import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
 import { AppText } from './AppText';
 import { PrimaryButton } from './Button';
 import { getPageStateMode } from './page-state-contract';
@@ -59,7 +60,7 @@ export function PageState({
       </AppText>
       {message || mode === 'error' ? (
         <AppText role="bodySmall" tone="secondary" style={{ textAlign: 'center' }}>
-          {message ?? 'Проверьте соединение и повторите попытку.'}
+          {message ?? INFRASTRUCTURE_ERROR_COPY}
         </AppText>
       ) : null}
       {retry ? (

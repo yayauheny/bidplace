@@ -62,12 +62,17 @@ export const bidTooLowDetailsSchema = z
   })
   .strict();
 
+/**
+ * Public HTTP error contract. `code` is the stable client branch.
+ * `message` is diagnostic copy for logs, not UI copy.
+ */
 export const apiErrorResponseSchema = z
   .object({
     status: z.number().int().positive(),
     code: apiErrorCodeSchema,
     message: z.string().min(1),
     details: z.unknown().optional(),
+    requestId: z.string().min(1).optional(),
   })
   .strict();
 

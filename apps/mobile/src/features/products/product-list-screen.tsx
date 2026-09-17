@@ -92,9 +92,8 @@ export function ProductListScreen({
     );
   } else if (query.isError) {
     content = (
-      <PageState
+        <PageState
         title="Не удалось загрузить работы"
-        message="Проверьте соединение и повторите."
         retry={() => void query.refetch()}
       />
     );
@@ -127,7 +126,7 @@ export function ProductListScreen({
   }
 
   return (
-    <AppShell>
+    <AppShell showSessionAlert={!query.isError}>
       <ScrollView
         testID="catalog-scroll-view"
         contentContainerStyle={{

@@ -8,6 +8,7 @@ import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
 import { PageState, PrimaryButton } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
+import { useAuth } from '../../providers/auth-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
@@ -15,6 +16,7 @@ import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen() {
   const api = useApiClient();
+  const auth = useAuth();
   const router = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
@@ -25,7 +27,7 @@ export function HomeScreen() {
   const plan = homeSectionPlan(home.data);
 
   return (
-    <AppShell>
+    <AppShell showSessionAlert={!failed}>
       <ScrollView
         testID="home-scroll"
         contentContainerStyle={{
@@ -50,6 +52,9 @@ export function HomeScreen() {
               title="Не удалось загрузить главную"
               retry={() => {
                 void home.refetch();
+                if (auth.status === 'error') {
+                  void auth.refreshSession();
+                }
               }}
             />
           ) : null}

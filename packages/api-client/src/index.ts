@@ -6,8 +6,10 @@ import { createAuthClient } from './auth';
 import { createCategoriesClient } from './categories';
 export {
   ApiClientError,
+  classifyApiError,
   getApiErrorCode,
   getBidTooLowMinimum,
+  parseApiError,
   type ApiClientErrorKind,
 } from './errors';
 import { createImagesClient } from './images';

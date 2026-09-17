@@ -54,7 +54,7 @@ export function SearchScreen({ query }: { query: string }) {
   };
 
   return (
-    <AppShell>
+    <AppShell showSessionAlert={!works.isError && !authors.isError}>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,

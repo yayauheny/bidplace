@@ -156,8 +156,8 @@ export async function requestJson<T>(
 
   try {
     response = await context.fetchImpl(url.toString(), init);
-  } catch {
-    throw createNetworkError();
+  } catch (cause) {
+    throw createNetworkError(cause);
   }
 
   if (!response.ok) {
@@ -173,8 +173,8 @@ export async function requestJson<T>(
   try {
     const payload = (await response.json()) as unknown;
     return schema.parse(payload);
-  } catch {
-    throw createUnexpectedResponseError(response.status);
+  } catch (cause) {
+    throw createUnexpectedResponseError(response.status, cause);
   }
 }
 
@@ -213,8 +213,8 @@ export async function requestBlob(
 
   try {
     response = await context.fetchImpl(url.toString(), init);
-  } catch {
-    throw createNetworkError();
+  } catch (cause) {
+    throw createNetworkError(cause);
   }
 
   if (!response.ok) {

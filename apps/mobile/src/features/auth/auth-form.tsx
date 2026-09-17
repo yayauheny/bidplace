@@ -13,7 +13,7 @@ import { FigmaButton } from '../../components/figma/FigmaButton';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { useAnalytics } from '../../providers/analytics-provider';
 import { useAuth } from '../../providers/auth-provider';
-import { getUserFacingErrorMessage } from '../../lib/errors';
+import { getUserFacingErrorMessage } from '../../errors';
 import {
   loginFormSchema,
   registerFormSchema,

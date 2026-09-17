@@ -7,7 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { ApiErrorCode } from '@bidplace/contracts';
 
 import { AppText, PrimaryButton, TextButton, TextField } from '../../components/ui';
-import { getErrorCode, getUserFacingErrorMessage } from '../../lib/errors';
+import { getErrorCode, getUserFacingErrorMessage } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import { AuthCard } from './auth-card';
 import { resetPasswordFormSchema, type ResetPasswordFormValues } from './schemas';
