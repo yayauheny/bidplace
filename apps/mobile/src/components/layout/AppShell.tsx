@@ -7,25 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { OverlayHost } from './OverlayHost';
-import { SessionAlert } from './SessionAlert';
 import { FloatingDock } from '../figma/FloatingDock';
-import { useAuth } from '../../providers/auth-provider';
 
 export function AppShell({
   children,
   bottomAction,
   hideDock = false,
-  showSessionAlert = true,
 }: {
   children: ReactNode;
   bottomAction?: ReactNode;
   hideDock?: boolean;
-  showSessionAlert?: boolean;
 }) {
   const dockBlurTarget = useRef<View | null>(null);
   const isFocused = useIsFocused();
-  const auth = useAuth();
-  const sessionAlertVisible = showSessionAlert && auth.status === 'error';
 
   return (
     <OverlayHost>
@@ -48,10 +42,6 @@ export function AppShell({
             overflow: 'visible',
           }}
         >
-          <SessionAlert
-            visible={sessionAlertVisible}
-            onRetry={() => void auth.refreshSession()}
-          />
           {children}
           {bottomAction ? (
             <View

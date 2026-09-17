@@ -1,4 +1,5 @@
 import { ApiClientError } from '@bidplace/api-client';
+import { ApiErrorCode } from '@bidplace/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { isInfrastructureError } from './classify';
@@ -14,7 +15,7 @@ describe('mobile infrastructure error policy', () => {
     const server = new ApiClientError('Internal server error', {
       kind: 'server',
       status: 500,
-      code: 'internal_error',
+      code: ApiErrorCode.INTERNAL_ERROR,
     });
     const unexpected = new ApiClientError('Unexpected response from server', {
       kind: 'unexpected_response',
@@ -39,12 +40,12 @@ describe('mobile infrastructure error policy', () => {
     const unauthorized = new ApiClientError('Unauthorized', {
       kind: 'unauthorized',
       status: 401,
-      code: 'unauthorized',
+      code: ApiErrorCode.UNAUTHORIZED,
     });
     const validation = new ApiClientError('Email is required', {
       kind: 'validation',
       status: 400,
-      code: 'validation_error',
+      code: ApiErrorCode.VALIDATION_ERROR,
     });
 
     expect(isInfrastructureError(unauthorized)).toBe(false);
@@ -54,6 +55,18 @@ describe('mobile infrastructure error policy', () => {
     );
     expect(getUserFacingErrorMessage(validation, 'fallback')).toBe(
       'Email is required',
+    );
+  });
+
+  it('trusts api-client kind without a second INTERNAL_ERROR branch', () => {
+    const serverWithoutCode = new ApiClientError('Internal server error', {
+      kind: 'server',
+      status: 500,
+    });
+
+    expect(isInfrastructureError(serverWithoutCode)).toBe(true);
+    expect(getUserFacingErrorMessage(serverWithoutCode, 'fallback')).toBe(
+      INFRASTRUCTURE_ERROR_COPY,
     );
   });
 });

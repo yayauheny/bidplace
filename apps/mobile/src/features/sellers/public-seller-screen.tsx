@@ -6,7 +6,11 @@ import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import { PageState, PrimaryButton } from '../../components/ui';
+import {
+  InfrastructureErrorState,
+  PageState,
+  PrimaryButton,
+} from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
@@ -87,11 +91,8 @@ export function PublicSellerScreen({
   }
   if (query.isError || !firstPage || !author) {
     return (
-      <AppShell showSessionAlert={false}>
-        <PageState
-          title="Не удалось загрузить работы автора"
-          retry={() => void query.refetch()}
-        />
+      <AppShell>
+        <InfrastructureErrorState onRetry={() => void query.refetch()} />
       </AppShell>
     );
   }
@@ -175,9 +176,8 @@ export function PublicSellerScreen({
             ) : workQuery.isLoading ? (
               <PageState title="Загружаем работы…" loading />
             ) : workQuery.isError ? (
-              <PageState
-                title="Не удалось загрузить работы"
-                retry={() => void workQuery.refetch()}
+              <InfrastructureErrorState
+                onRetry={() => void workQuery.refetch()}
               />
             ) : works.length === 0 ? (
               <PageState

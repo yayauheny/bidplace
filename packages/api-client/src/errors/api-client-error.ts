@@ -15,7 +15,7 @@ export type ApiClientErrorKind =
 export class ApiClientError extends Error {
   readonly kind: ApiClientErrorKind;
   readonly status: number;
-  readonly code: ApiErrorCodeValue | string | null;
+  readonly code: ApiErrorCodeValue | null;
   readonly details: unknown;
   readonly requestId: string | null;
 
@@ -24,7 +24,7 @@ export class ApiClientError extends Error {
     options: {
       kind: ApiClientErrorKind;
       status: number;
-      code?: ApiErrorCodeValue | string | null;
+      code?: ApiErrorCodeValue | null;
       details?: unknown;
       requestId?: string | null;
       cause?: unknown;

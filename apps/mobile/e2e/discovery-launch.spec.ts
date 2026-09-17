@@ -193,7 +193,7 @@ test('Search renders real independent result, empty, and retry states', async ({
   );
   await page.goto(`/search?q=${encodeURIComponent(title)}&failure=1`);
   await expect(
-    page.getByText('Не удалось загрузить работы', { exact: true }),
+    page.getByText('Проверьте соединение и попробуйте ещё раз.', { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Повторить' })).toBeVisible();
 });

@@ -10,7 +10,12 @@ import {
   FilterSearchField,
   WorkCoverCardGrid,
 } from '../../components/figma';
-import { AppText, CreatorCardGrid, PageState } from '../../components/ui';
+import {
+  AppText,
+  CreatorCardGrid,
+  InfrastructureErrorState,
+  PageState,
+} from '../../components/ui';
 import { usePortfolioWorks } from '../products/use-portfolio-works';
 import { usePortfolioAuthors } from '../sellers/use-portfolio-authors';
 
@@ -40,12 +45,12 @@ export function SearchScreen({ query }: { query: string }) {
   const sellerItems = authors.items.map((item) => ({
     sellerProfile: item.author,
   }));
+  const searchFailed = enabled && (works.isError || authors.isError);
   const settledEmpty =
     enabled &&
+    !searchFailed &&
     !works.isPending &&
     !authors.isPending &&
-    !works.isError &&
-    !authors.isError &&
     works.items.length === 0 &&
     authors.items.length === 0;
 
@@ -54,7 +59,7 @@ export function SearchScreen({ query }: { query: string }) {
   };
 
   return (
-    <AppShell showSessionAlert={!works.isError && !authors.isError}>
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,
@@ -84,68 +89,67 @@ export function SearchScreen({ query }: { query: string }) {
           />
         </View>
         {enabled ? (
-          <>
-            <SearchResultSection title="Работы">
-              {works.isPending ? (
-                <PageState title="Ищем работы…" loading />
-              ) : works.isError ? (
+          searchFailed ? (
+            <InfrastructureErrorState
+              onRetry={() => {
+                void works.refetch();
+                void authors.refetch();
+              }}
+            />
+          ) : (
+            <>
+              <SearchResultSection title="Работы">
+                {works.isPending ? (
+                  <PageState title="Ищем работы…" loading />
+                ) : works.items.length > 0 ? (
+                  <View style={{ gap: designTokens.space.x5 }}>
+                    <WorkCoverCardGrid items={works.items} />
+                    {works.hasNextPage ? (
+                      <FigmaButton
+                        label="Показать ещё работы"
+                        variant="outline"
+                        width="full"
+                        loading={works.isFetchingNextPage}
+                        onPress={() => void works.fetchNextPage()}
+                      />
+                    ) : null}
+                  </View>
+                ) : (
+                  <AppText role="bodySmall" tone="secondary">
+                    Работы по запросу не найдены.
+                  </AppText>
+                )}
+              </SearchResultSection>
+              <SearchResultSection title="Авторы">
+                {authors.isPending ? (
+                  <PageState title="Ищем авторов…" loading />
+                ) : sellerItems.length > 0 ? (
+                  <View style={{ gap: designTokens.space.x5 }}>
+                    <CreatorCardGrid items={sellerItems} />
+                    {authors.hasNextPage ? (
+                      <FigmaButton
+                        label="Показать ещё авторов"
+                        variant="outline"
+                        width="full"
+                        loading={authors.isFetchingNextPage}
+                        onPress={() => void authors.fetchNextPage()}
+                      />
+                    ) : null}
+                  </View>
+                ) : (
+                  <AppText role="bodySmall" tone="secondary">
+                    Авторы по запросу не найдены.
+                  </AppText>
+                )}
+              </SearchResultSection>
+              {settledEmpty ? (
                 <PageState
-                  title="Не удалось загрузить работы"
-                  retry={() => void works.refetch()}
+                  title="Ничего не найдено"
+                  message={`По запросу «${query}» нет опубликованных работ и авторов.`}
                 />
-              ) : works.items.length > 0 ? (
-                <View style={{ gap: designTokens.space.x5 }}>
-                  <WorkCoverCardGrid items={works.items} />
-                  {works.hasNextPage ? (
-                    <FigmaButton
-                      label="Показать ещё работы"
-                      variant="outline"
-                      width="full"
-                      loading={works.isFetchingNextPage}
-                      onPress={() => void works.fetchNextPage()}
-                    />
-                  ) : null}
-                </View>
-              ) : (
-                <AppText role="bodySmall" tone="secondary">
-                  Работы по запросу не найдены.
-                </AppText>
-              )}
-            </SearchResultSection>
-            <SearchResultSection title="Авторы">
-              {authors.isPending ? (
-                <PageState title="Ищем авторов…" loading />
-              ) : authors.isError ? (
-                <PageState
-                  title="Не удалось загрузить авторов"
-                  retry={() => void authors.refetch()}
-                />
-              ) : sellerItems.length > 0 ? (
-                <View style={{ gap: designTokens.space.x5 }}>
-                  <CreatorCardGrid items={sellerItems} />
-                  {authors.hasNextPage ? (
-                    <FigmaButton
-                      label="Показать ещё авторов"
-                      variant="outline"
-                      width="full"
-                      loading={authors.isFetchingNextPage}
-                      onPress={() => void authors.fetchNextPage()}
-                    />
-                  ) : null}
-                </View>
-              ) : (
-                <AppText role="bodySmall" tone="secondary">
-                  Авторы по запросу не найдены.
-                </AppText>
-              )}
-            </SearchResultSection>
-            {settledEmpty ? (
-              <PageState
-                title="Ничего не найдено"
-                message={`По запросу «${query}» нет опубликованных работ и авторов.`}
-              />
-            ) : null}
-          </>
+              ) : null}
+            </>
+          )
         ) : (
           <PageState
             title="Введите запрос"

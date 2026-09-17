@@ -161,7 +161,9 @@ test('loading, error retry, broken media, long copy, zoom and motion', async ({
 
   home.failRemaining = 2;
   await page.goto('/');
-  await expect(page.getByText('Не удалось загрузить главную')).toBeVisible();
+  await expect(
+    page.getByText('Проверьте соединение и попробуйте ещё раз.'),
+  ).toBeVisible();
   await expect(page.getByText('Открытие недели', { exact: true })).toHaveCount(
     0,
   );

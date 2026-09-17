@@ -4,6 +4,36 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-17 — Infrastructure error presentation
+
+- `Implemented` (mobile web): recoverable infrastructure failures use one
+  curated sentence, «Проверьте соединение и попробуйте ещё раз.», via
+  `InfrastructureErrorState` (`PageState` underneath). Public `AppShell` does
+  not mount `SessionAlert`. Protected routes own blocking session failure.
+  Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: PageState / SessionAlert primitives, form validation copy,
+  not-found empty states.
+
+## 2026-09-17 — Work/Creator compact navigation glass
+
+- `Partial` (mobile web experiment): compact Work and Creator sticky chrome
+  use the same `FigmaGlassSurface preset="navigation"` material as
+  FloatingDock, full-width and square (`borderRadius: 0`). Work glass
+  follows the existing `StickyDockSurface` activation. Docked tabs are
+  transparent. Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: Work/Creator sticky physics, Back/Share geometry, dock
+  capsule shape.
+
+## 2026-09-17 — Local-only logo intro lab
+
+- `Partial` (lab only): `/dev/logo-motion` is a local experiment for a
+  one-shot fall/bounce then pupil glance on a single SVG Bidplace mark
+  at 112px. Bounce scales with the wrapper. It is not a production
+  loader or Home/dock treatment. Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+
 ## 2026-09-17 — Work/Creator tab switch reveals the new panel start
 
 - `Implemented` (mobile web): in-session content-tab switches open the new

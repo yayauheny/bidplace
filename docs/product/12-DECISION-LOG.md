@@ -1992,3 +1992,34 @@ would duplicate existing layers.
 
 Form validation and other public-kind `error.message` leaks are migrated off
 the old mapper, or a product-specific infrastructure title is required.
+
+## DEC-095 — Public session failure is silent; ProtectedRoute owns the UI
+
+Date: 2026-09-17
+Status: Confirmed
+Source: explicit founder instruction during infrastructure error cleanup
+Revises: presentation ownership under `DEC-094` only. Does not reopen backend
+filter, contracts, api-client kinds, or canonical copy.
+
+### Decision
+
+A loaded public page plus `/api/auth/me` infrastructure failure keeps public
+content. The session error is logged. Public chrome does not show SessionAlert.
+Auth state is not masked as guest: 401/403 stay anonymous; network/5xx stay
+`status='error'`.
+
+`ProtectedRoute` is the owner of blocking session failure and shows the
+canonical infrastructure state with Retry → `auth.refreshSession()`.
+
+Feature screens do not suppress or coordinate session alerts. Infrastructure
+UI is one sentence plus Retry, via `InfrastructureErrorState`.
+
+### Why
+
+Per-screen `showSessionAlert={!query.isError}` recreated scattered policy.
+New public pages should not need to know about session-bootstrap chrome.
+
+### Revisit when
+
+A contextual, non-chrome use of `SessionAlert` is required, or logo-motion is
+wired into `InfrastructureErrorState`.

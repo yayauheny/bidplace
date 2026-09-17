@@ -12,12 +12,14 @@ import {
   AppText,
   DestructiveButton,
   FormSection,
+  InfrastructureErrorState,
   PageState,
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
+import { isNotFoundError } from '../../errors';
 import {
   canOpenProductWizardStep,
   createProductWizardDraft,
@@ -301,16 +303,21 @@ export function ProductDraftScreen({
         <PageState title="Загружаем предмет…" loading />
       </FormPageShell>
     );
+  if (productId && isNotFoundError(productDetail.error))
+    return (
+      <FormPageShell hideDock>
+        <PageState title="Предмет не найден" />
+      </FormPageShell>
+    );
   if (
     categories.isError ||
     !categories.data ||
-    (productId && (!productDetail.data || !existingProduct))
+    (productId && (productDetail.isError || !productDetail.data || !existingProduct))
   )
     return (
       <FormPageShell hideDock>
-        <PageState
-          title="Не удалось загрузить предмет"
-          retry={() => {
+        <InfrastructureErrorState
+          onRetry={() => {
             void categories.refetch();
             void productDetail.refetch();
           }}

@@ -6,9 +6,8 @@ import { designTokens } from '@bidplace/design-tokens';
 
 import { BrandLogo } from '../../components/layout/BrandLogo';
 import { AppShell } from '../../components/layout';
-import { PageState, PrimaryButton } from '../../components/ui';
+import { InfrastructureErrorState, PageState, PrimaryButton } from '../../components/ui';
 import { useApiClient } from '../../providers/api-provider';
-import { useAuth } from '../../providers/auth-provider';
 import { HomeNewAuthors } from './home-new-authors';
 import { HomeNewWorks } from './home-new-works';
 import { HomeOpening } from './home-opening';
@@ -16,7 +15,6 @@ import { homeSectionPlan } from './home-sections';
 
 export function HomeScreen() {
   const api = useApiClient();
-  const auth = useAuth();
   const router = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
@@ -27,7 +25,7 @@ export function HomeScreen() {
   const plan = homeSectionPlan(home.data);
 
   return (
-    <AppShell showSessionAlert={!failed}>
+    <AppShell>
       <ScrollView
         testID="home-scroll"
         contentContainerStyle={{
@@ -48,15 +46,7 @@ export function HomeScreen() {
         <View style={{ gap: designTokens.space.homeSectionStack, minWidth: 0 }}>
           {loading ? <PageState title="Загружаем bidplace…" loading /> : null}
           {failed ? (
-            <PageState
-              title="Не удалось загрузить главную"
-              retry={() => {
-                void home.refetch();
-                if (auth.status === 'error') {
-                  void auth.refreshSession();
-                }
-              }}
-            />
+            <InfrastructureErrorState onRetry={() => void home.refetch()} />
           ) : null}
           {!loading && !failed && plan.opening ? (
             <HomeOpening selection={plan.opening} />

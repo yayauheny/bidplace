@@ -1,5 +1,87 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-17 — Infrastructure error ownership cleanup
+
+- `Implemented`: public pages no longer coordinate `showSessionAlert`. Public
+  `AppShell` has no session banner. If a public page loaded and `/api/auth/me`
+  failed as infrastructure, content stays usable, the failure is logged, and
+  no SessionAlert is shown. Auth state is unchanged: 401/403 → anonymous,
+  network/5xx → `status='error'`. `ProtectedRoute` owns blocking session
+  failure with `InfrastructureErrorState` and `auth.refreshSession()`.
+  Feature screens pass only `onRetry`. Search dual query failure is one
+  visual error. Mobile classification trusts api-client kinds (no extra
+  `INTERNAL_ERROR` branch). `ApiClientError.code` is
+  `ApiErrorCodeValue | null`. QueryCache/MutationCache still log query
+  events; AuthProvider logs `/me` separately. Coverage:
+  `apps/mobile/src/errors/error-policy.spec.ts`,
+  `packages/api-client/test/errors.test.ts`,
+  `e2e/figma-error-state.spec.ts`. This run: api-client 6, mobile unit 295,
+  typecheck/lint for api-client and mobile. Full Playwright webServer was not
+  started (Prisma migrate reset is blocked in this environment). Local Chromium
+  against Expo `:8090` confirmed: dual Home+session → one alert/one Retry;
+  session-only Home → usable, no infrastructure UI; protected `/profile` → one
+  canonical state; Search dual abort → one canonical state. Logo-motion is
+  not wired into this state.
+- `Partial` / future: form `getUserFacingErrorMessage` still renders backend
+  `message` for public kinds; next batch can add logo + layout + button to
+  `InfrastructureErrorState`.
+- `Unchanged`: Nest filter/mapper/logger, contracts `requestId`, api-client
+  `errors/` split, mobile `src/errors/`, canonical copy, QueryClient
+  `retry: 1`, `SessionAlert` / `PageState` primitives, no polling/rAF.
+
+## 2026-09-17 — Infrastructure error architecture
+
+- `Implemented`: one infrastructure error path without a second Nest filter.
+  Backend: existing `apps/api/src/core/errors/ApiExceptionFilter` plus
+  `error-response-mapper.ts` / `error-logger.ts`. Public contract
+  `apiErrorResponseSchema` gained optional `requestId`; `message` stays
+  diagnostic. Transport: `packages/api-client/src/errors/` (`ApiClientError`
+  keeps `cause` and `requestId`). Mobile policy: `apps/mobile/src/errors/`
+  maps infrastructure kinds to «Проверьте соединение и попробуйте ещё раз.»
+  Presentation ownership was cleaned up in the 2026-09-17 cleanup section
+  above (`InfrastructureErrorState`, no public SessionAlert).
+  TanStack Query stays `retry: 1` (public Work/Author still
+  `retryTransientPublicQuery`). Coverage: `api-exception.filter.spec.ts`,
+  contracts `apiErrorResponseSchema`, `packages/api-client/test/errors.test.ts`,
+  `apps/mobile/src/errors/error-policy.spec.ts`, `e2e/figma-error-state.spec.ts`.
+  This run: contracts 24, api-client 5, api unit 275, mobile unit 294,
+  typecheck/lint for api and mobile. Full Playwright webServer was not
+  started (Prisma migrate reset is blocked in this environment). Local
+  Chromium against Expo `:8090` confirmed dual Home+session failure shows
+  one `PageState` alert and one «Повторить».
+- `Partial` / future migration: form `getUserFacingErrorMessage` still renders
+  backend `message` for validation, unauthorized, forbidden, not-found,
+  conflict and rate-limited kinds. Domain/not-found PageState titles stay
+  screen-local.
+- `Unchanged`: `SessionAlert` / `PageState` primitives kept; QueryClient
+  does not add a second retry layer; no polling/rAF/interval retry.
+
+## 2026-09-17 — Work/Creator compact uses navigation glass
+
+- `Partial` (mobile web visual experiment): compact Work and Creator chrome
+  reuse `FigmaGlassSurface preset="navigation"` as a full-width square fill
+  (`borderRadius: 0`, flush to the page). Work still activates
+  `StickyDockSurface` with `surfaceActive = !entry.isIntersecting`; Creator
+  still parks and fades the same host on compact. Docked tabs use
+  `FigmaTabs surface="transparent"` so they do not paint a second canvas.
+  FloatingDock stays the capsule geometry with the same material.
+  Coverage: `StickyDockSurface.web.tsx`, `WorkHeader.web.tsx`,
+  `CreatorHeader.web.tsx`, `FigmaTabs.web.tsx`,
+  `e2e/work-header-motion.spec.ts`, `e2e/author-header-motion.spec.ts`.
+- `Unchanged`: Work persistent Back/Share, CSS sticky, sentinel, observer,
+  tab reveal, Creator hysteresis/park, native headers.
+
+## 2026-09-17 — Local-only Bidplace logo intro experiment
+
+- `Partial` (lab only): mobile-web `/dev/logo-motion` plays one finite
+  CSS intro on a single SVG copied from `bidplace-logo-master.svg`:
+  fall/bounce/settle on a transform wrapper (`size={112}` on the lab
+  page; component default stays 168), then a pupil-group glance.
+  Bounce uses `%` of the wrapper, not px. Body and white eyes stay
+  static. Replay remounts. Production `NODE_ENV` redirects the route
+  to `/`. Not wired to Home, AppShell, FloatingDock, auth, or the
+  loader. Native fallback is static.
+
 ## 2026-09-17 — Work/Creator in-session tab switches reveal panel start
 
 - `Implemented`: Web Work and Creator content-tab switches open the new
@@ -326,13 +408,11 @@
 
 ## 2026-09-14 — Mobile-web correction
 
-- `Implemented` (mobile web only): public AppShell shows an in-flow Yoga
-  `SessionAlert.web.tsx` (`View` + `accessibilityRole="alert"`), «Не удалось
-  проверить сессию» and «Повторить проверку сессии». Native SessionAlert is
-  null. Home catalog stays available when only `/api/auth/me` fails. The Home
-  API retry stays labelled «Повторить». Protected `/profile` keeps PageState
-  «Не удалось проверить доступ» without a second session banner. Coverage:
-  `figma-error-state.spec.ts`.
+- `Implemented` (mobile web only): public AppShell originally showed an in-flow
+  Yoga `SessionAlert.web.tsx`. That chrome was removed in the 2026-09-17
+  ownership cleanup; `SessionAlert` remains a primitive. Home catalog stays
+  available when only `/api/auth/me` fails. Protected `/profile` uses
+  `InfrastructureErrorState`. Coverage: `figma-error-state.spec.ts`.
 - `Implemented` (mobile web only): approved-author first mutation DELETE of a
   published achievement id forks a DRAFT via the exact created-id map, then
   POST adds to that draft. Public stays unchanged until submit → approve.
@@ -434,9 +514,8 @@
   `test:e2e` is the maintained Playwright gate and
   `test:e2e:stabilization` is the 38 visual Chromium+WebKit suite;
   `media-resilience.spec.ts` is restored without the obsolete header/login
-  assertion. Protected `/profile` keeps PageState «Не удалось проверить доступ»
-  + «Повторить». Public Home session alert/retry is the later mobile-web
-  correction, not this preservation commit. Coverage:
+  assertion. Protected `/profile` uses canonical infrastructure UI + «Повторить».
+  Public Home does not show a session banner. Coverage:
   `seller-profile-editable.spec.ts`, `figma-button-style.spec.ts`,
   `floating-dock.spec.ts`, `author-application-publication.spec.ts`,
   `author-revision-flow.spec.ts`, `media-resilience.spec.ts`,

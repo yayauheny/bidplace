@@ -67,6 +67,9 @@ curator row, profile button, or work card. Work cards показывают на�
 a horizontal `WorkCoverCard` scroller from `home.newWorks`. После работ —
 `Новые авторы` is Frame 47 geometry with `AuthorCoverCard` photos from
 `home.newAuthors` and «Смотреть все» → `/authors`.
+If Home content loads while `/api/auth/me` has an infrastructure failure, Home
+stays usable and public chrome does not show a session banner. Blocking session
+failure belongs to protected routes.
 
 ## 5. Works and Authors discovery
 
@@ -84,8 +87,9 @@ copy is the approved MVP strings; the visual role is `bodySmall` default ink
 
 На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
 после `Применить`; sheet хранит локальный draft до Apply/Reset. `/search?q=`
-показывает независимые loading/result/empty/error/retry/pagination состояния
-работ и авторов. Figma live-search overlay остаётся вне scope. Work `?tab=`
+показывает независимые loading/result/empty/pagination состояния работ и авторов.
+If either search query is an infrastructure failure, Search shows one canonical
+error and one Retry for both queries. Figma live-search overlay остаётся вне scope. Work `?tab=`
 is URL-owned; Author About is local state and is not a `?tab=` contract.
 
 ## 6. Creator profile
@@ -113,9 +117,10 @@ stays mounted; avatar, handle and actions keep the same nodes. Compact only
 changes their layout. Reanimated `LinearTransition` (`200ms`,
 `cubic-bezier(0.2, 0, 0, 1)`, `ReduceMotion.System`) interpolates those
 nodes. Tabs sit below identity at `y≈80` and are not part of that
-animation. Compact canvas is a presentational `StickyDockSurface` filling a
+animation. Compact chrome is a presentational `StickyDockSurface` filling a
 host owned by the Creator header (`stickyDock.fullHeight`), painted behind
-identity and tabs. In-session Works/About switches open the new panel from
+identity and tabs as full-width square navigation glass. See
+[`03-DESIGN-SYSTEM.md`](03-DESIGN-SYSTEM.md). In-session Works/About switches open the new panel from
 its own start under the current header, without reopening the hero.
 Direct loads stay at the page start. Page scroll is not
 snapped. Web compact chrome (~106px with tabs) is an intentional deviation
@@ -135,7 +140,7 @@ after `sectionGap` 20, tabs after `space.x10` 40.
 Web 390 Work sticky chrome shares Creator compact `stickyDock` geometry
 (action zone 80, controls 12/48/20, tabs 26) without sharing Creator park
 physics. Back/Share overlay the gallery at rest and remain the same nodes
-while scrolling (CSS sticky). The full-width canvas dock appears only when
+while scrolling (CSS sticky). The full-width square navigation-glass dock appears only when
 tabs stick at `y≈80` under Back/Share. Identity and chips scroll away. Tab
 labels keep `space.pageGutter` inset; the tab divider stays full-bleed. There
 is no compact thumbnail and no Figma scrolled Work frame. Page scroll is not

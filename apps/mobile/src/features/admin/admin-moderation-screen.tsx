@@ -13,6 +13,7 @@ import {
   DestructiveButton,
   FormSection,
   PageHeader,
+  InfrastructureErrorState,
   PageState,
   PrimaryButton,
   ResilientRemoteImage,
@@ -149,9 +150,8 @@ export function AdminModerationScreen() {
   )
     return (
       <FormPageShell>
-        <PageState
-          title="Не удалось загрузить модерацию"
-          retry={() => {
+        <InfrastructureErrorState
+          onRetry={() => {
             void activeModerationQuery?.refetch();
           }}
         />

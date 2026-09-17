@@ -7,7 +7,7 @@ import { ScrollView, View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell } from '../../components/layout';
-import { AppText, PageState } from '../../components/ui';
+import { AppText, InfrastructureErrorState, PageState } from '../../components/ui';
 import {
   FigmaButton,
   FilterSortBar,
@@ -92,10 +92,7 @@ export function ProductListScreen({
     );
   } else if (query.isError) {
     content = (
-        <PageState
-        title="Не удалось загрузить работы"
-        retry={() => void query.refetch()}
-      />
+      <InfrastructureErrorState onRetry={() => void query.refetch()} />
     );
   } else if (query.items.length === 0) {
     content = (
@@ -126,7 +123,7 @@ export function ProductListScreen({
   }
 
   return (
-    <AppShell showSessionAlert={!query.isError}>
+    <AppShell>
       <ScrollView
         testID="catalog-scroll-view"
         contentContainerStyle={{

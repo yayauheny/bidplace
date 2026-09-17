@@ -7,6 +7,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import { AppShell } from '../../components/layout';
 import {
   AppText,
+  InfrastructureErrorState,
   PageState,
   ResilientRemoteImage,
   productMediaStyle,
@@ -76,11 +77,8 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   }
   if (pageState === 'error' || !query.data)
     return (
-      <AppShell showSessionAlert={false}>
-        <PageState
-          title="Не удалось загрузить работу"
-          retry={() => void query.refetch()}
-        />
+      <AppShell>
+        <InfrastructureErrorState onRetry={() => void query.refetch()} />
       </AppShell>
     );
   const { work, author, relatedWorks } = query.data;

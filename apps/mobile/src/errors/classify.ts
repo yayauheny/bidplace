@@ -3,7 +3,6 @@ import {
   getApiErrorCode,
   type ApiClientErrorKind,
 } from '@bidplace/api-client';
-import { ApiErrorCode } from '@bidplace/contracts';
 
 const infrastructureKinds = new Set<ApiClientErrorKind>([
   'network',
@@ -15,7 +14,7 @@ export function getErrorStatus(error: unknown): number | null {
   return error instanceof ApiClientError ? error.status : null;
 }
 
-export function getErrorCode(error: unknown): string | null {
+export function getErrorCode(error: unknown) {
   return getApiErrorCode(error);
 }
 
@@ -31,12 +30,7 @@ export function shouldClearSessionForError(error: unknown): boolean {
 }
 
 export function isInfrastructureError(error: unknown): boolean {
-  if (!(error instanceof ApiClientError)) {
-    return false;
-  }
-
   return (
-    infrastructureKinds.has(error.kind) ||
-    error.code === ApiErrorCode.INTERNAL_ERROR
+    error instanceof ApiClientError && infrastructureKinds.has(error.kind)
   );
 }

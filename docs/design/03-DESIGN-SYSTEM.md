@@ -142,6 +142,14 @@ surface when media is absent or fails. It is decorative, pointer-inert and
 reduced-motion aware; Product and Creator do not own separate blur
 implementations.
 
+### Page states
+
+`PageState` owns loading, empty, not-found and other screen-local messages.
+Recoverable infrastructure failures use `InfrastructureErrorState`, a thin
+wrapper over `PageState` with the canonical sentence and Retry. Feature screens
+pass only `onRetry`. `SessionAlert` stays a reusable banner primitive and is
+not mounted by public `AppShell`.
+
 ## 4. Screen compositions
 
 | Composition      | Root     | Reuses                                        |
@@ -224,12 +232,13 @@ that host and stays transparent until Work tabs stick at
 `top: stickyDock.actionHeight`. Activation is
 `surfaceActive = !entry.isIntersecting` (observer root the product
 scrollport, top `rootMargin` `-stickyDock.actionHeight`). Then it fades to
-canvas (`motion.control`, `cubic-bezier(0.2, 0, 0, 1)`,
-`ReduceMotion.System`).
-Creator compact uses the same surface behind identity and tabs. Tab
-labels use `contentInset={space.pageGutter}`; the tablist divider stays
-full-bleed. Gallery and identity scroll away naturally. Native Work stays
-expanded-only.
+the shared navigation glass (`FigmaGlassSurface preset="navigation"`,
+`borderRadius: 0`, `motion.control`, `cubic-bezier(0.2, 0, 0, 1)`,
+`ReduceMotion.System`). Creator compact uses the same material behind
+identity and tabs. Docked tabs set `surface="transparent"` so they do not
+paint a second canvas. Tab labels use `contentInset={space.pageGutter}`;
+the tablist divider stays full-bleed. Gallery and identity scroll away
+naturally. Native Work stays expanded-only.
 
 ### Auction/Product card states
 

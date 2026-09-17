@@ -8,6 +8,7 @@ import { designTokens } from '@bidplace/design-tokens';
 import {
   AppText,
   FormSection,
+  InfrastructureErrorState,
   ResilientRemoteImage,
   SecondaryButton,
   TextField,
@@ -92,9 +93,9 @@ export function AuthorApplicationAchievements({
         </AppText>
       ) : null}
       {application.isError ? (
-        <AppText role="bodySmall" tone="danger">
-          Не удалось загрузить достижения
-        </AppText>
+        <InfrastructureErrorState
+          onRetry={() => void application.refetch()}
+        />
       ) : null}
       {achievements.map((item) => (
         <View key={item.id} style={{ gap: designTokens.space.x2 }}>

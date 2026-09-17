@@ -15,6 +15,7 @@ import {
   FormSection,
   MotionPressable,
   PageHeader,
+  InfrastructureErrorState,
   PageState,
   SecondaryButton,
 } from '../../components/ui';
@@ -263,10 +264,7 @@ export function AdminAnalyticsScreen() {
   if (query.isError || !data) {
     return (
       <FormPageShell>
-        <PageState
-          title="Не удалось загрузить аналитику"
-          retry={() => void query.refetch()}
-        />
+        <InfrastructureErrorState onRetry={() => void query.refetch()} />
       </FormPageShell>
     );
   }

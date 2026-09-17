@@ -14,6 +14,7 @@ import {
 import {
   AppText,
   CreatorCardGrid,
+  InfrastructureErrorState,
   PageState,
 } from '../../components/ui';
 import {
@@ -68,10 +69,7 @@ export function PublicAuthorsScreen({
     content = <PageState title="Загружаем авторов…" loading />;
   } else if (result.isError) {
     content = (
-      <PageState
-        title="Не удалось загрузить авторов"
-        retry={() => void result.refetch()}
-      />
+      <InfrastructureErrorState onRetry={() => void result.refetch()} />
     );
   } else if (result.items.length === 0) {
     content = (
@@ -106,7 +104,7 @@ export function PublicAuthorsScreen({
   }
 
   return (
-    <AppShell showSessionAlert={!result.isError}>
+    <AppShell>
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: designTokens.space.pageGutter,

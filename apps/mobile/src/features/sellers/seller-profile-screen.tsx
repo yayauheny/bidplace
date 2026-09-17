@@ -9,6 +9,7 @@ import {
   FormSection,
   ImagePlaceholder,
   PageHeader,
+  InfrastructureErrorState,
   PageState,
   PrimaryButton,
   ResilientRemoteImage,
@@ -252,10 +253,7 @@ export function SellerProfileScreen() {
   ) {
     return (
       <FormPageShell>
-        <PageState
-          title="Не удалось загрузить профиль"
-          retry={() => void query.refetch()}
-        />
+        <InfrastructureErrorState onRetry={() => void query.refetch()} />
       </FormPageShell>
     );
   }

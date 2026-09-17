@@ -114,4 +114,21 @@ describe('api-client errors', () => {
     expect(error.cause).toBe(cause);
     expect(error.message).toBe('Network request failed');
   });
+
+  it('leaves code null when the JSON body is not the API error contract', async () => {
+    const error = await throwApiClientResponseError(
+      jsonResponse(500, {
+        status: 500,
+        code: 'not_a_real_code',
+        message: 'nope',
+      }),
+    ).catch((value: unknown) => value);
+
+    expect(error).toMatchObject({
+      name: 'ApiClientError',
+      kind: 'server',
+      status: 500,
+      code: null,
+    });
+  });
 });

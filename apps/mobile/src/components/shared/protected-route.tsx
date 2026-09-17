@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppText, PageState } from '../ui';
+import { AppText, InfrastructureErrorState } from '../ui';
 import { useAuth } from '../../providers/auth-provider';
 
 type ProtectedRouteProps = {
@@ -44,9 +44,8 @@ export function ProtectedRoute({
           backgroundColor: designTokens.color.canvas,
         }}
       >
-        <PageState
-          title="Не удалось проверить доступ"
-          retry={() => void auth.refreshSession()}
+        <InfrastructureErrorState
+          onRetry={() => void auth.refreshSession()}
         />
       </View>
     );

@@ -14,7 +14,7 @@ export {
   throwApiClientResponseError,
 } from './parse';
 
-export function getApiErrorCode(error: unknown): string | null {
+export function getApiErrorCode(error: unknown) {
   return error instanceof ApiClientError ? error.code : null;
 }
 

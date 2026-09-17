@@ -39,7 +39,8 @@
   Shared handoff math lives in `apps/mobile/src/lib/sticky-handoff.ts`
   (`stickyHandoffThresholds` for Creator). Each screen host owns
   `stickyDock.fullHeight` placement. `StickyDockSurface` is a presentational
-  canvas fill (web opacity fade). Work activates it with an
+  `FigmaGlassSurface preset="navigation"` fill, square and full-width
+  (`borderRadius: 0`, web opacity fade). Work activates it with an
   IntersectionObserver sentinel (`rootMargin` top
   `-${stickyDock.actionHeight}px`, `surfaceActive = !entry.isIntersecting`);
   Creator activates it with compact.
@@ -135,11 +136,20 @@ SellerProfile
 
 ## Integrity and privacy
 
-- HTTP errors use one response shape `{ status, code, message, details? }` from
-  `ApiExceptionFilter`. Category codes (`bad_request`, `conflict`, …) remain the
-  default for plain Nest exceptions. Leftover listing/bid business codes remain in
-  the shared error enum. Clients branch on `code`, not `message`.
-  Unexpected errors become `internal_error` without leaking internals.
+- HTTP errors use one response shape `{ status, code, message, details?, requestId? }`
+  from the existing `ApiExceptionFilter` in `apps/api/src/core/errors/`
+  (`error-response-mapper.ts` + `error-logger.ts`). Category codes
+  (`bad_request`, `conflict`, …) remain the default for plain Nest exceptions.
+  Leftover listing/bid business codes remain in the shared error enum.
+  `message` is diagnostic, not UI copy. Unexpected errors become
+  `internal_error` without leaking internals.
+  Client transport lives in `packages/api-client/src/errors/`. Mobile
+  infrastructure UI policy lives in `apps/mobile/src/errors/` and presents
+  through `InfrastructureErrorState` on feature screens. Public `AppShell`
+  does not show session bootstrap chrome. `ProtectedRoute` owns blocking
+  session failure. `SessionAlert` remains an unused-for-now reusable primitive.
+  Validation, password, conflict, rate-limit and domain/not-found copy still
+  use the older form mapper and are a future migration.
 - Public Work/Author catalog, ProductImage and seller-photo access share
   approved Product/SellerProfile gates and contain no buyer contacts or seller
   internal identifiers. There is no public Listing, Bid history or Socket.IO

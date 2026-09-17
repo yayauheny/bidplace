@@ -2,7 +2,6 @@ import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import { INFRASTRUCTURE_ERROR_COPY } from '../../errors';
 import { AppText } from './AppText';
 import { PrimaryButton } from './Button';
 import { getPageStateMode } from './page-state-contract';
@@ -58,9 +57,9 @@ export function PageState({
       <AppText role="sectionTitle" style={{ textAlign: 'center' }}>
         {title}
       </AppText>
-      {message || mode === 'error' ? (
+      {message ? (
         <AppText role="bodySmall" tone="secondary" style={{ textAlign: 'center' }}>
-          {message ?? INFRASTRUCTURE_ERROR_COPY}
+          {message}
         </AppText>
       ) : null}
       {retry ? (
