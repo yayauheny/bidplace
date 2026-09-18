@@ -6,24 +6,30 @@
 
 ## 2026-09-18 — Global Back flicker
 
-- `Implemented` (mobile web): client-side Back from Work and Author no
-  longer flashes the outgoing page. Inactive stack screens stay laid out
-  and `inert`. Coverage: `e2e/back-navigation-lifecycle.spec.ts`.
+- `Implemented` (mobile web): client-side Back from Work, Author, and
+  Search results no longer flashes the outgoing page. Inactive stack
+  screens stay laid out and `inert`. Search overlay restores in the same
+  paint; dimmer close consumes one history step. Author Search row is
+  `[avatar][handle+description]`. Works catalog shows a history-first Back
+  after in-app navigation, not on a direct `/works` load. Coverage:
+  `e2e/back-navigation-lifecycle.spec.ts`.
   Status owner:
   [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
-- `Unchanged`: FloatingDock geometry, Search header chrome, Pen file.
+- `Unchanged`: FloatingDock geometry, Search header chrome, hover fill
+  tokens, Pen file.
 
 ## 2026-09-18 — Search overlay
 
 - `Partial` (mobile web): Search is a fullscreen overlay over the current
-  public page, not a landing screen. Dock Search opens it without
-  `router.push('/search')`. Chrome is `[search field][close]` plus
-  Категории / Авторы / Работы pills. Empty query lists the active tab;
-  typing live-searches. Category tiles use a no-media placeholder:
-  Category has no production image and the Figma 9-name taxonomy is not
-  seeded. `/search` is a compatibility host for the same overlay. X/Escape
-  dismiss overlay; browser Back follows history. Coverage:
-  `SearchOverlay.tsx`, `e2e/search-overlay.spec.ts`.
+  public page, not a landing screen. Dock Search opens one history entry on
+  the current route (`overlay=search`). Chrome is a white/canvas pill field
+  and close with a 0.5px `border`, plus Категории / Авторы / Работы pills
+  (Figma `439:4652` / `456:8298` / `456:8392`). Empty query lists the active
+  tab; typing live-searches. Back from a result restores tab and query.
+  Category tiles use a no-media placeholder: Category has no production
+  image and the Figma 9-name taxonomy is not seeded. `/search` is a
+  compatibility host for the same overlay; close falls back to Home.
+  Coverage: `SearchOverlay.tsx`, `e2e/search-overlay.spec.ts`.
   Status owner:
   [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
 - `Unchanged`: FloatingDock geometry/glass, FilterSheet catalog chrome,

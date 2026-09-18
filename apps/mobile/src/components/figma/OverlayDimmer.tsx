@@ -2,24 +2,18 @@ import { Pressable, View } from 'react-native';
 
 import { overlayDimmerStyle } from './overlay-dimmer';
 
+const dimmerProps = {
+  testID: 'overlay-dimmer',
+  accessible: false,
+  importantForAccessibility: 'no-hide-descendants' as const,
+};
+
 export function OverlayDimmer({ onPress }: { onPress?: () => void }) {
   if (!onPress) {
-    return (
-      <View
-        pointerEvents="none"
-        accessible={false}
-        importantForAccessibility="no-hide-descendants"
-        style={overlayDimmerStyle()}
-      />
-    );
+    return <View {...dimmerProps} style={overlayDimmerStyle()} />;
   }
 
   return (
-    <Pressable
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
-      onPress={onPress}
-      style={overlayDimmerStyle()}
-    />
+    <Pressable {...dimmerProps} onPress={onPress} style={overlayDimmerStyle()} />
   );
 }

@@ -1,7 +1,9 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { designTokens } from '@bidplace/design-tokens';
 import { FigmaTabs } from '../../components/figma/FigmaTabs';
+import { StickyDockActionRow } from '../../components/figma/StickyDockActionRow';
 import { StickyDockSurface } from '../../components/figma/StickyDockSurface';
+import { WorkBackControl } from '../products/WorkActions';
 import { CreatorHero } from './CreatorHero';
 import { AuthorShare } from './AuthorShare';
 import type { CreatorHeaderProps } from './creator-header';
@@ -23,6 +25,7 @@ const creatorDockLayer = {
 
 export function CreatorHeader({
   profile,
+  onBack,
   tabs,
   tab,
   onTabChange,
@@ -156,6 +159,20 @@ export function CreatorHeader({
         }}
       >
         <StickyDockSurface active={compact} />
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: compact ? offset : 0,
+          zIndex: designTokens.layer.chrome,
+          pointerEvents: 'none',
+        }}
+      >
+        <StickyDockActionRow testID="creator-sticky-actions">
+          <WorkBackControl testID="author-back" onPress={onBack} />
+        </StickyDockActionRow>
       </div>
       <div
         ref={hero}

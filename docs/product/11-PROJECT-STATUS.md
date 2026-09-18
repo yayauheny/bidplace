@@ -7,21 +7,29 @@
   hide API, so `patches/expo-router@57.0.4.patch` keeps inactive screens
   laid out (`display: flex`, `opacity: 0`, `pointerEvents: none`) and
   sets `inert` on the web Screen boundary. `global.css` does not override
-  navigator internals. Coverage: `e2e/back-navigation-lifecycle.spec.ts`
-  (flicker, inert, Tab isolation).
-- `Unchanged`: FloatingDock geometry, Search overlay contract from the
-  previous commit, no scenario flags. No Expo/React Navigation major bump.
+  navigator internals. Search overlay on web paints in the same commit via
+  a body portal (`search-overlay-surface.web.tsx`); outside click is owned
+  only by `useDismissibleOverlay` (visual-only `OverlayDimmer`). Works
+  catalog shows history-first `works-back` iff `router.canGoBack()`;
+  Author Search row is a flex `[avatar][handle+description]` row. Coverage:
+  `e2e/back-navigation-lifecycle.spec.ts` (flicker, inert, Tab isolation),
+  `e2e/search-overlay.spec.ts` (dimmer one-step close, Escape),
+  `works-catalog-back.spec.ts`, `author-search-row-style.spec.ts`.
+- `Unchanged`: `navigateBack` history-first contract, Search URL session
+  (`overlay`/`oq`/`otab`), FloatingDock geometry, no scenario flags
+  (`fromSearch` / `cameFromAuthor`). No Expo/React Navigation major bump.
 
 ## 2026-09-18 — Search overlay
 
 - `Partial` (mobile web): Figma Search is a fullscreen overlay over the
-  current public context. `SearchOverlayProvider` + `SearchOverlayHost` +
-  `SearchOverlay` reuse the `FilterSheet` Modal / `useDismissibleOverlay` /
-  shared `useOverlayFocusTrap` pattern without catalog Apply/Clear chrome.
-  FloatingDock Search opens the overlay and does not `router.push('/search')`.
-  One `SearchOverlayHost` lives in the root layout. Pathname change closes
-  the session. `/search?q=` is a compatibility route for the same overlay.
-  Live input (300ms debounce, trim for request only)
+  current public context. `SearchOverlayProvider` owns URL/history session
+  state (`overlay=search`, `oq`, `otab`); one `SearchOverlayHost` in the root
+  layout renders it. Dock Search `push`es one overlay entry on the current
+  route and does not `router.push('/search')`. Query/tab updates `replace`
+  that entry. Result links push Author/Work/filtered Works; Back restores
+  the Search tab and query. X/Escape/`navigateBack` return to the underlying
+  route; dedicated `/search?q=` close falls back to Home. Live input (300ms
+  debounce, trim for request only)
   queries the active tab: Categories via `GET /api/categories` plus client
   name/slug filter; Authors `usePortfolioAuthors` `sort=added`; Works
   `usePortfolioWorks` `sort=newest`. Empty query lists public data. Category
@@ -30,10 +38,10 @@
   `WorkCoverCardGrid`. Domain empty copy is «Категории/Авторы/Работы не
   найдены». Loading and infrastructure error stay inline
   (`presentation="inline"`). Overlay pagination is first-page only
-  (works 12 / authors 8). X/Escape dismiss overlay; browser Back follows
-  history. Coverage: `filter-categories.spec.ts`, `search-query.spec.ts`,
-  `flex-grid-rows.spec.ts`, `overlay-focus.spec.ts`,
-  `e2e/search-overlay.spec.ts` (client-side Back, `/search` dismiss).
+  (works 12 / authors 8). Search field/close use canvas + `border` 0.5px
+  (Figma `439:4789`). Coverage: `search-overlay-route.spec.ts`,
+  `search-overlay-header-style.spec.ts`, `navigate-back.spec.ts`,
+  `e2e/search-overlay.spec.ts` (history restore, `/search`, hover).
 - `Unchanged`: Nest/api-client contracts, category seed/taxonomy, catalog
   FilterSheet URL apply/reset, dock geometry/glass, branded page
   loading/error motion.

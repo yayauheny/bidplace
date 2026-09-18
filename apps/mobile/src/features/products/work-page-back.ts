@@ -1,13 +1,7 @@
-export type WorkPageBackRouter = {
-  canGoBack: () => boolean;
-  back: () => void;
-  replace: (href: '/works') => void;
-};
+import type { Href } from 'expo-router';
 
-export function navigateWorkPageBack(router: WorkPageBackRouter) {
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
-  router.replace('/works');
+import { navigateBack, type NavigateBackRouter } from '../../components/layout/navigate-back';
+
+export function navigateWorkPageBack(router: NavigateBackRouter) {
+  navigateBack(router, { fallbackHref: '/works' as Href });
 }

@@ -174,7 +174,7 @@ test('Search overlay live-updates without submit', async ({
   await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
   const overlay = page.getByTestId('search-overlay');
   await expect(overlay).toBeVisible();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/overlay=search/);
   await overlay.getByRole('tab', { name: 'Работы' }).click();
   const typed = page.waitForResponse((response) => {
     const url = new URL(response.url());

@@ -39,10 +39,11 @@ test('guest dock search, home, profile and plus stay inside the capsule', async 
 
   const dock = page.getByTestId('figma-floating-dock');
   await dock.getByLabel('Поиск').click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/overlay=search/);
   await expect(page.getByTestId('search-overlay')).toBeVisible();
   await page.getByRole('button', { name: 'Закрыть поиск' }).click();
   await expect(page.getByTestId('search-overlay')).toHaveCount(0);
+  await expect(page).not.toHaveURL(/overlay=search/);
 
   await dock.getByLabel('Главная').click();
   await expect(page).toHaveURL(/\/$/);

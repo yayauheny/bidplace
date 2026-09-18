@@ -3,16 +3,31 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react';
+import {
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+} from 'expo-router';
+
+import { navigateBack } from '../../components/layout/navigate-back';
+import { type SearchParam } from '../discovery/catalog-query';
+import { SEARCH_OVERLAY_DEFAULT_TAB } from './search-overlay-tabs';
+import {
+  parseSearchOverlayRoute,
+  searchOverlayCloseFallbackHref,
+  searchOverlayHref,
+  type SearchOverlayRouteState,
+  type SearchOverlaySession,
+} from './search-overlay-route';
 
 type SearchOverlayContextValue = {
   isOpen: boolean;
-  initialQuery: string;
-  sessionKey: number;
-  open: (options?: { query?: string }) => void;
+  state: SearchOverlayRouteState;
+  open: () => void;
   close: () => void;
+  replaceSession: (session: SearchOverlaySession) => void;
 };
 
 const SearchOverlayContext = createContext<SearchOverlayContextValue | null>(
@@ -20,23 +35,51 @@ const SearchOverlayContext = createContext<SearchOverlayContextValue | null>(
 );
 
 export function SearchOverlayProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [initialQuery, setInitialQuery] = useState('');
-  const [sessionKey, setSessionKey] = useState(0);
+  const pathname = usePathname();
+  const router = useRouter();
+  const params = useGlobalSearchParams() as Record<string, SearchParam>;
+  const state = parseSearchOverlayRoute(pathname, params);
 
-  const open = useCallback((options?: { query?: string }) => {
-    setInitialQuery(options?.query ?? '');
-    setSessionKey((current) => current + 1);
-    setIsOpen(true);
-  }, []);
+  const open = useCallback(() => {
+    if (state.open) return;
+    router.push(
+      searchOverlayHref(pathname, params, {
+        query: '',
+        tab: SEARCH_OVERLAY_DEFAULT_TAB,
+      }),
+    );
+  }, [params, pathname, router, state.open]);
 
   const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+    if (!state.open) return;
+    navigateBack(router, {
+      fallbackHref: searchOverlayCloseFallbackHref(pathname, params),
+    });
+  }, [params, pathname, router, state.open]);
+
+  const replaceSession = useCallback(
+    (session: SearchOverlaySession) => {
+      if (!state.open) return;
+      const href = searchOverlayHref(pathname, params, session);
+      const current = searchOverlayHref(pathname, params, {
+        query: state.query,
+        tab: state.tab,
+      });
+      if (href === current) return;
+      router.replace(href);
+    },
+    [params, pathname, router, state.open, state.query, state.tab],
+  );
 
   const value = useMemo(
-    () => ({ isOpen, initialQuery, sessionKey, open, close }),
-    [close, initialQuery, isOpen, open, sessionKey],
+    () => ({
+      isOpen: state.open,
+      state,
+      open,
+      close,
+      replaceSession,
+    }),
+    [close, open, replaceSession, state],
   );
 
   return (

@@ -94,8 +94,14 @@ copy is the approved MVP strings; the visual role is `bodySmall` default ink
 opens a fullscreen overlay over the current public page (`DEC-096`). Empty
 query shows the active tab’s public list; typing live-filters Categories
 client-side and sends `q` to Works/Authors after 300ms. `/search` remains a
-thin deep-link host for the same overlay. X and Escape dismiss overlay; browser
-Back follows history. Any pathname change closes Search. Active-tab infrastructure failure
+thin deep-link host for the same overlay. Opening Search adds one history
+entry on the current route; query/tab edits replace it. X and Escape return
+to the underlying entry. Back from an Author/Work/category result restores
+that Search session. Direct `/search` close falls back to Home. Work and
+Author detail Back follow history first (`navigateBack`), with `/works` or
+`/authors` only when the stack is empty. Works catalog shows the same
+history-first Back when `router.canGoBack()`, and hides it on a direct
+`/works` load. Active-tab infrastructure failure
 is one inline Retry; header, field and tabs stay. Category tiles have no
 production media yet. Work `?tab=`
 is URL-owned; Author About is local state and is not a `?tab=` contract.

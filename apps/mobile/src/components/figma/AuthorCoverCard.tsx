@@ -5,6 +5,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { getApiAssetUrl } from '../../lib/environment';
 import { useReducedMotion } from '../../lib/reduced-motion';
+import { coverHitDataset } from '../ui/interactive-hit-style';
 import { MotionPressable } from '../ui/MotionPressable';
 import { ResilientRemoteImage } from '../ui/ResilientRemoteImage';
 import { FigmaChip } from './FigmaChip';
@@ -49,6 +50,7 @@ export function AuthorCoverCard({
         accessibilityRole="link"
         accessibilityLabel={authorCoverAccessibilityLabel(content)}
         preset="card"
+        {...coverHitDataset()}
         style={{
           ...coverCardFrameStyle('author', size, frameRadius),
           justifyContent: 'space-between',

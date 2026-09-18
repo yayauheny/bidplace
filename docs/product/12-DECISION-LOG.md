@@ -2036,10 +2036,12 @@ Authors catalog URL filter contracts.
 ### Decision
 
 Search is a fullscreen overlay over the current public context, not a landing
-page. Dock Search opens the overlay without navigating. Close (X) and Escape
-return to the same underlying page. Browser Back follows browser history: the
-overlay is not a history entry, and it closes if the route changes. `/search`
-remains a deep-link compatibility host for the same overlay.
+page. Dock Search opens it as one history entry on the current public route.
+Close (X) and Escape return to the underlying entry. Query and tab edits
+replace the current Search entry. Result navigation pushes the detail route;
+Back restores Search from history. `/search` remains a deep-link compatibility
+host for the same overlay; close falls back to Home when there is no
+predecessor.
 
 Empty query shows the active tab’s public list. Typing live-searches: Categories
 are filtered client-side on name/slug; Authors and Works use existing `q` on
@@ -2055,6 +2057,19 @@ Dock Search does not push a history entry. X and Escape dismiss the overlay and
 keep the underlying route. Browser Back follows browser history; if that changes
 the route, the overlay closes as a consequence of leaving the page. Custom
 overlay `pushState` plumbing was rejected as fragile against Expo Router.
+
+### Revision 2026-09-18 — Search is route/history state
+
+Supersedes the previous Back revision: Search must be restorable. Opening Search
+from the dock creates exactly one history entry on the current public route
+(`overlay=search`, plus `oq` / `otab` when they differ from empty / Категории).
+Query and tab edits `replace` that entry, so typing does not stack Back. Result
+navigation pushes the Author/Work/Works-filter route; Back restores the Search
+session from that history entry. Ordinary detail Back is history-first with a
+canonical fallback only when the stack is empty (`/works`, `/authors`). Direct
+`/search` and `/search?q=` still host the same overlay; close falls back to Home
+when there is no predecessor. Search does not use scenario flags
+(`cameFromSearch`, category parent, and similar).
 
 ### Why
 

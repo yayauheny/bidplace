@@ -27,18 +27,28 @@
 - `apps/mobile` is an Expo Router client. React Query holds server state. There is
   no Socket.IO client in the mobile runtime. Public Search is a feature overlay
   (`apps/mobile/src/features/search/SearchOverlay.tsx`) with one
-  `SearchOverlayHost` in the root layout under `SearchOverlayProvider`.
+  `SearchOverlayHost` in the root layout. `SearchOverlayProvider` is the only
+  owner of Search session state: it is reconstructed from the current route
+  (`overlay=search`, `oq`, `otab`; `/search?q=` is the compatibility alias).
   Overlay focus trap lives
   in `useOverlayFocusTrap` and is shared with `FilterSheet`. Search reuses
   `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
   There is no `/search` API and no second catalog fetch layer. `/search` is a
-  compatibility route that opens the same overlay. Installed `expo-router@57.0.4`
-  web `NativeStackView` has no public option to keep inactive screens laid out
-  (`freezeOnBlur` is iOS/Android only; `@react-navigation/native-stack` is not a
-  direct dependency). `patches/expo-router@57.0.4.patch` keeps inactive web
+  compatibility route that opens the same overlay. On web the overlay host
+  paints through a synchronous `document.body` portal
+  (`search-overlay-surface.web.tsx`); native keeps RN `Modal`. This is so
+  Back restores Search in the same commit as the revealed route, not a
+  later Modal mount. Installed `expo-router@57.0.4` web `NativeStackView`
+  has no public option to keep inactive screens laid out (`freezeOnBlur`
+  is iOS/Android only; `@react-navigation/native-stack` is not a direct
+  dependency). `patches/expo-router@57.0.4.patch` keeps inactive web
   screens in layout (`display: flex`, `opacity: 0`, `pointerEvents: none`)
-  and sets `inert` on the Screen boundary. `AppShell` `useIsFocused()` only
-  mounts `FloatingDock` (body portal); it must not change page content.
+  and sets `inert` on the Screen boundary. Search outside click is owned
+  only by `useDismissibleOverlay`; the Search dimmer is visual. `AppShell`
+  `useIsFocused()` only mounts `FloatingDock` (body portal); it must not
+  change page content. Public Back controls use
+  `navigateBack({ fallbackHref })` from history, including Works catalog
+  (`router.canGoBack()`).
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/

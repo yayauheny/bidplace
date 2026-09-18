@@ -14,6 +14,7 @@ import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
 import { FloatingDockFrame } from './FloatingDockFrame';
 import {
+  SEARCH_DOCK_BUTTON_ID,
   dockItemAccessibility,
   figmaDockItems,
   isFigmaDockItemSelected,
@@ -116,6 +117,12 @@ function DockItem({
   const itemAccessibility = dockItemAccessibility(item.id, selected);
   const content = (
     <MotionPressable
+      {...(item.id === 'search'
+        ? ({
+            nativeID: SEARCH_DOCK_BUTTON_ID,
+            ...(Platform.OS === 'web' ? { id: SEARCH_DOCK_BUTTON_ID } : {}),
+          } as object)
+        : {})}
       accessibilityRole={itemAccessibility.role}
       accessibilityLabel={item.label}
       accessibilityState={itemAccessibility.accessibilityState}

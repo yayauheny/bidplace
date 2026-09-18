@@ -13,10 +13,8 @@ import { SearchPaneStatus } from './search-pane-status';
 
 export function CategoriesSearchPane({
   query,
-  onSelect,
 }: {
   query: string;
-  onSelect: () => void;
 }) {
   const api = useApiClient();
   const categories = useQuery({
@@ -55,7 +53,6 @@ export function CategoriesSearchPane({
                     id={category.id}
                     slug={category.slug}
                     name={category.name}
-                    onPress={onSelect}
                   />
                 ) : null}
               </View>

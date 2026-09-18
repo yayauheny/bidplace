@@ -15,6 +15,8 @@ import {
   FilterSortSheet,
   WorkCoverCardGrid,
 } from '../../components/figma';
+import { WorkBackControl } from './WorkActions';
+import { navigateWorksCatalogBack } from './works-catalog-back';
 import {
   CatalogFilterSheet,
   type CatalogFilterSection,
@@ -139,6 +141,14 @@ export function ProductListScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: designTokens.space.x2 }}>
+          {router.canGoBack() ? (
+            <View style={{ alignSelf: 'flex-start' }}>
+              <WorkBackControl
+                testID="works-back"
+                onPress={() => navigateWorksCatalogBack(router)}
+              />
+            </View>
+          ) : null}
           <AppText role="screenTitle">{title}</AppText>
           <AppText role="bodySmall">{WORKS_CATALOG_INTRO}</AppText>
         </View>

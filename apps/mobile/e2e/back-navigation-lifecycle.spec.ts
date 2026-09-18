@@ -64,9 +64,9 @@ test('Work → Author → Back does not flash Author or a collapsed Work gallery
   await expect(page).toHaveURL(/\/seller\//);
   await expect(page.getByTestId('creator-scroll')).toBeVisible();
 
-  const frames = await recordBackFrames(page, async () => {
-    await page.goBack();
-  });
+  const frames = await recordBackFrames(page, () =>
+    page.getByRole('button', { name: 'Назад' }).click(),
+  );
 
   expect(frames.some((frame) => frame.loading === 'visible')).toBe(false);
   expect(frames.at(-1)?.work).toBe('visible');
@@ -77,4 +77,61 @@ test('Work → Author → Back does not flash Author or a collapsed Work gallery
     frames.slice(workIndex).some((frame) => frame.author === 'visible'),
   ).toBe(false);
   expect(frames[workIndex]?.gallery).toBe('visible');
+});
+
+test('Search → Author → Back restores Search without a naked Home frame', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await overlay.getByRole('tab', { name: 'Авторы' }).click();
+  await overlay.getByRole('link', { name: /^@/ }).first().click();
+  await expect(page).toHaveURL(/\/seller\//);
+  await expect(page.getByTestId('creator-scroll')).toBeVisible();
+
+  const frames = await recordBackFrames(page, () =>
+    page.getByRole('button', { name: 'Назад' }).click(),
+  );
+
+  expect(frames.at(-1)?.overlay).toBe('visible');
+  expect(
+    frames.some(
+      (frame) =>
+        frame.author !== 'visible' &&
+        frame.overlay !== 'visible' &&
+        frame.home === 'visible',
+    ),
+  ).toBe(false);
+});
+
+test('direct Works catalog has no history Back control', async ({ page }) => {
+  await page.goto('/works');
+  await expect(page.getByTestId('catalog-scroll-view')).toBeVisible();
+  await expect(page.getByTestId('works-back')).toHaveCount(0);
+});
+
+test('Search → Work → Back restores Search without a Work flash after overlay', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await overlay.getByRole('tab', { name: 'Работы' }).click();
+  await overlay.locator('a[href^="/product/"]').first().click();
+  await expect(page).toHaveURL(/\/product\//);
+  await expect(page.getByTestId('product-scroll-view')).toBeVisible();
+
+  const frames = await recordBackFrames(page, () =>
+    page.getByRole('button', { name: 'Назад' }).click(),
+  );
+
+  expect(frames.at(-1)?.overlay).toBe('visible');
+  const overlayIndex = frames.findIndex((frame) => frame.overlay === 'visible');
+  expect(overlayIndex).toBeGreaterThanOrEqual(0);
+  expect(
+    frames.slice(overlayIndex).some((frame) => frame.work === 'visible'),
+  ).toBe(false);
 });

@@ -325,8 +325,10 @@ same column. 1024/1440 compositions are out of this wave.
 `SearchOverlay` over the current page (`DEC-096`) using the `FilterSheet` Modal
 pattern and the shared overlay focus trap: pill field + circular close, then
 Категории / Авторы / Работы chips. `FilterSearchField` stays the catalog field
-(floating label, radius 18). Overlay search is a pill `searchSurface` field
-because Figma Search is a stadium control, not that catalog field.
+(floating label, radius 18). Overlay search is a stadium canvas field with
+`border` `#DEDEDE` 0.5px (Figma `439:4789`), not `searchSurface` grey and not
+the catalog field. Author/Category/Work hits use a shared hover fill/ring
+(`ghostHover` / inset `border`) without changing layout.
 `WorkCoverCardGrid` may render one catalog column or a two-column overlay grid.
 The 64×64 search FAB and the
 288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the

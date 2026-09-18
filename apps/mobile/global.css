@@ -24,6 +24,7 @@ input:focus-visible,
 textarea:focus-visible,
 [role='button']:focus-visible,
 [role='link']:focus-visible,
+[role='tab']:focus-visible,
 [role='textbox']:focus-visible {
   outline: var(--bidplace-focus) solid 2px;
   outline-offset: 2px;
@@ -104,4 +105,18 @@ textarea:focus-visible,
   align-items: center;
   gap: var(--figma-dock-gap);
   padding: var(--figma-dock-padding);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-interactive-hit]:hover {
+    background-color: #f7f7f7;
+  }
+
+  [data-cover-hit]:hover {
+    box-shadow: inset 0 0 0 2px #dedede;
+  }
+}
+
+[data-interactive-hit]:active {
+  background-color: #e8e8e8;
 }

@@ -8,10 +8,8 @@ import { SearchPaneStatus } from './search-pane-status';
 
 export function WorksSearchPane({
   query,
-  onSelect,
 }: {
   query?: string;
-  onSelect: () => void;
 }) {
   const works = usePortfolioWorks(
     {
@@ -29,11 +27,7 @@ export function WorksSearchPane({
       emptyTitle="Работы не найдены"
       loading={<WorksSkeleton />}
     >
-      <WorkCoverCardGrid
-        items={works.items}
-        columns={2}
-        onItemPress={onSelect}
-      />
+      <WorkCoverCardGrid items={works.items} columns={2} />
     </SearchPaneStatus>
   );
 }

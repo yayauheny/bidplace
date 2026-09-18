@@ -8,10 +8,8 @@ import { SearchPaneStatus } from './search-pane-status';
 
 export function AuthorsSearchPane({
   query,
-  onSelect,
 }: {
   query?: string;
-  onSelect: () => void;
 }) {
   const authors = usePortfolioAuthors(
     {
@@ -36,7 +34,6 @@ export function AuthorsSearchPane({
             slug={item.author.slug}
             profilePhotoUrl={item.author.profilePhotoUrl}
             shortDescription={item.author.shortDescription}
-            onPress={onSelect}
           />
         ))}
       </View>

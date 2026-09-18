@@ -1,5 +1,7 @@
 import { figmaTokens } from '@bidplace/design-tokens';
 
+export const SEARCH_DOCK_BUTTON_ID = 'search-dock-button';
+
 export const figmaDockItemIds = ['home', 'search', 'plus', 'profile'] as const;
 
 export type FigmaDockItemId = (typeof figmaDockItemIds)[number];

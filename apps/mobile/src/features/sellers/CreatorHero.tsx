@@ -10,12 +10,14 @@ import { CreatorIdentity } from './CreatorIdentity';
 export type CreatorHeroProps = {
   profile: PortfolioWorkDetailResponse['author'];
   actions: ReactNode;
+  leadingAction?: ReactNode;
   compact?: boolean;
 };
 
 export function CreatorHero({
   profile,
   actions,
+  leadingAction,
   compact = false,
 }: CreatorHeroProps) {
   const tags = [
@@ -60,6 +62,26 @@ export function CreatorHero({
         imageUrl={profile.profilePhotoUrl}
         fullName={profile.fullName}
       />
+      {leadingAction ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            top: designTokens.stickyDock.controlTop,
+            left: 0,
+            right: 0,
+            zIndex: designTokens.layer.chrome,
+          }}
+        >
+          <View
+            style={{
+              paddingHorizontal: designTokens.stickyDock.controlInset,
+            }}
+          >
+            {leadingAction}
+          </View>
+        </View>
+      ) : null}
       <View
         style={{
           alignItems: 'center',

@@ -1,11 +1,12 @@
 import { useId, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
 import { designTokens } from '@bidplace/design-tokens';
 
-import { AppShell } from '../../components/layout';
+import { AppShell, navigateBack } from '../../components/layout';
 import { InfrastructureErrorState } from '../../components/shared/InfrastructureErrorState';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
 import { infrastructurePageFetchStatus } from '../../components/shared/infrastructure-page-status';
@@ -31,6 +32,7 @@ export function PublicSellerScreen({
   sort?: 'newest' | 'oldest';
 }) {
   const api = useApiClient();
+  const router = useRouter();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
   const query = useInfiniteQuery({
@@ -110,6 +112,7 @@ export function PublicSellerScreen({
         >
           <CreatorHeader
             profile={author}
+            onBack={() => navigateBack(router, { fallbackHref: '/authors' })}
             tabs={[
               {
                 value: 'works',

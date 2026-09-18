@@ -6,6 +6,13 @@ import { figmaTokens } from '@bidplace/design-tokens';
 import { FigmaIcon } from '../../components/figma/FigmaIcon';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { SearchOverlayTabs } from './SearchOverlayTabs';
+import {
+  searchOverlayCloseStyle,
+  searchOverlayFieldChromeStyle,
+  searchOverlayFieldInputStyle,
+  searchOverlayFieldRowStyle,
+  searchOverlayIconFrameStyle,
+} from './search-overlay-header-style';
 import { type SearchOverlayTab } from './search-overlay-tabs';
 
 export function SearchOverlayHeader({
@@ -23,29 +30,14 @@ export function SearchOverlayHeader({
 }) {
   return (
     <>
-      <View
-        style={{
-          width: '100%',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: figmaTokens.space.x3,
-        }}
-      >
+      <View style={searchOverlayFieldRowStyle()}>
         <SearchOverlayField value={query} onChangeText={onChangeQuery} />
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Закрыть поиск"
           onPress={onClose}
           preset="icon"
-          style={{
-            width: figmaTokens.size.input,
-            height: figmaTokens.size.input,
-            borderRadius: figmaTokens.radius.dock,
-            backgroundColor: figmaTokens.color.searchSurface,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-          }}
+          style={searchOverlayCloseStyle()}
         >
           <FigmaIcon name="x" size={figmaTokens.size.dockIcon} />
         </MotionPressable>
@@ -65,20 +57,8 @@ function SearchOverlayField({
   const inputRef = useRef<TextInputRef>(null);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        minWidth: 0,
-        height: figmaTokens.size.input,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: figmaTokens.space.x2,
-        paddingHorizontal: figmaTokens.space.x2,
-        borderRadius: figmaTokens.radius.dock,
-        backgroundColor: figmaTokens.color.searchSurface,
-      }}
-    >
-      <View style={{ padding: figmaTokens.space.iconPad }}>
+    <View style={searchOverlayFieldChromeStyle()}>
+      <View style={searchOverlayIconFrameStyle()}>
         <FigmaIcon name="search-01" size={figmaTokens.size.dockIcon} />
       </View>
       <TextInput
@@ -93,12 +73,14 @@ function SearchOverlayField({
         testID="search-overlay-query"
         onSubmitEditing={() => inputRef.current?.blur()}
         style={{
-          flex: 1,
-          minWidth: 0,
-          padding: 0,
-          color: figmaTokens.color.ink,
-          ...figmaTokens.typography.field,
-          ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+          ...searchOverlayFieldInputStyle(),
+          ...(Platform.OS === 'web'
+            ? ({
+                outlineStyle: 'none',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+              } as object)
+            : null),
         }}
       />
     </View>

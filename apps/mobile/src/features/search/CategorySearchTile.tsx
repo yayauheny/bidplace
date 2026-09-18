@@ -5,6 +5,10 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { AppText } from '../../components/ui/AppText';
 import { ImagePlaceholder } from '../../components/ui/ImagePlaceholder';
+import {
+  interactiveHitDataset,
+  interactiveHitFallbackStyle,
+} from '../../components/ui/interactive-hit-style';
 import { MotionPressable } from '../../components/ui/MotionPressable';
 import { toPortfolioWorksHref } from '../products/portfolio-works-query';
 
@@ -12,12 +16,10 @@ export function CategorySearchTile({
   id,
   slug,
   name,
-  onPress,
 }: {
   id: string;
   slug: string;
   name: string;
-  onPress?: () => void;
 }) {
   return (
     <Link href={toPortfolioWorksHref({ category: id })} asChild>
@@ -25,12 +27,15 @@ export function CategorySearchTile({
         accessibilityRole="link"
         accessibilityLabel={name}
         accessibilityHint={slug}
-        onPress={onPress}
+        testID="category-search-tile"
         preset="card"
-        style={{
+        {...interactiveHitDataset()}
+        style={({ hovered, pressed }) => ({
           width: '100%',
           gap: figmaTokens.space.x2,
-        }}
+          borderRadius: figmaTokens.radius.small,
+          ...interactiveHitFallbackStyle({ hovered, pressed }),
+        })}
       >
         <View
           style={{

@@ -62,14 +62,14 @@ export function useDismissibleOverlay({
       }
     };
 
-    document.addEventListener('keydown', closeOnEscape);
+    document.addEventListener('keydown', closeOnEscape, true);
     document.addEventListener('pointerdown', closeOnPointerDown);
     if (closeOnFocusIn) {
       document.addEventListener('focusin', closeOnFocusIn);
     }
 
     return () => {
-      document.removeEventListener('keydown', closeOnEscape);
+      document.removeEventListener('keydown', closeOnEscape, true);
       document.removeEventListener('pointerdown', closeOnPointerDown);
       if (closeOnFocusIn) {
         document.removeEventListener('focusin', closeOnFocusIn);

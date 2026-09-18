@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Platform, ScrollView } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -16,33 +16,43 @@ import {
   useDebouncedValue,
 } from './search-query';
 import {
-  SEARCH_OVERLAY_DEFAULT_TAB,
   searchOverlayTabPanelId,
   type SearchOverlayTab,
 } from './search-overlay-tabs';
+import { type SearchOverlaySession } from './search-overlay-route';
 
 export function SearchOverlay({
   initialQuery,
+  initialTab,
   onDismiss,
-  onSelect,
+  onSessionChange,
 }: {
   initialQuery: string;
+  initialTab: SearchOverlayTab;
   onDismiss: () => void;
-  onSelect: () => void;
+  onSessionChange: (session: SearchOverlaySession) => void;
 }) {
   const surfaceId = `search-overlay-${useId()}`;
   const [query, setQuery] = useState(initialQuery);
-  const [tab, setTab] = useState<SearchOverlayTab>(SEARCH_OVERLAY_DEFAULT_TAB);
+  const [tab, setTab] = useState<SearchOverlayTab>(initialTab);
   const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
   const requestQuery = searchRequestQuery(debouncedQuery);
-  const { restoreFocus } = useOverlayFocusTrap({
+  const skipInitialReplace = useRef(true);
+  useOverlayFocusTrap({
     open: true,
     surfaceId,
     restoreOnClose: false,
   });
 
+  useEffect(() => {
+    if (skipInitialReplace.current) {
+      skipInitialReplace.current = false;
+      return;
+    }
+    onSessionChange({ query, tab });
+  }, [onSessionChange, query, tab]);
+
   const dismiss = () => {
-    restoreFocus();
     onDismiss();
   };
 
@@ -73,15 +83,11 @@ export function SearchOverlay({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {tab === 'categories' ? (
-          <CategoriesSearchPane query={query} onSelect={onSelect} />
-        ) : null}
+        {tab === 'categories' ? <CategoriesSearchPane query={query} /> : null}
         {tab === 'authors' ? (
-          <AuthorsSearchPane query={requestQuery} onSelect={onSelect} />
+          <AuthorsSearchPane query={requestQuery} />
         ) : null}
-        {tab === 'works' ? (
-          <WorksSearchPane query={requestQuery} onSelect={onSelect} />
-        ) : null}
+        {tab === 'works' ? <WorksSearchPane query={requestQuery} /> : null}
       </ScrollView>
     </SearchOverlaySurface>
   );

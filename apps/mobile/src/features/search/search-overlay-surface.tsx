@@ -1,8 +1,7 @@
 import { type ReactNode } from 'react';
-import { Modal, Platform, View } from 'react-native';
+import { Modal, View } from 'react-native';
 
-import { OverlayDimmer } from '../../components/figma/OverlayDimmer';
-import { filterSheetPanelStyle } from '../../components/figma/filter-sheet-style';
+import { SearchOverlayLayer } from './search-overlay-layer';
 
 export function SearchOverlaySurface({
   surfaceId,
@@ -27,19 +26,9 @@ export function SearchOverlaySurface({
           alignItems: 'center',
         }}
       >
-        <OverlayDimmer onPress={onClose} />
-        <View
-          nativeID={surfaceId}
-          testID="search-overlay"
-          accessibilityViewIsModal
-          accessibilityLabel="Поиск"
-          style={filterSheetPanelStyle()}
-          {...(Platform.OS === 'web'
-            ? ({ role: 'dialog', 'aria-modal': true } as object)
-            : {})}
-        >
+        <SearchOverlayLayer surfaceId={surfaceId} onClose={onClose}>
           {children}
-        </View>
+        </SearchOverlayLayer>
       </View>
     </Modal>
   );

@@ -9,6 +9,9 @@ import {
   type SearchOverlayTab,
 } from './search-overlay-tabs';
 
+/** Figma `456:8247` — 6px between the three Search tabs. */
+const SEARCH_OVERLAY_TAB_GAP = 6;
+
 export function SearchOverlayTabs({
   tab,
   onChangeTab,
@@ -24,7 +27,7 @@ export function SearchOverlayTabs({
         width: '100%',
         marginTop: figmaTokens.space.x2,
         flexDirection: 'row',
-        gap: figmaTokens.space.x2,
+        gap: SEARCH_OVERLAY_TAB_GAP,
       }}
     >
       {searchOverlayTabs.map((item) => (
