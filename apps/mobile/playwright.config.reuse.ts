@@ -12,6 +12,10 @@ export default defineConfig({
   testDir: './e2e',
   globalTimeout: 12 * 60_000,
   workers: 1,
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
+  ],
   use: {
     baseURL: webBaseURL,
     trace: 'retain-on-failure',

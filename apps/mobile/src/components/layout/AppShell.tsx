@@ -57,6 +57,8 @@ export function AppShell({
           ) : null}
         </BlurTargetView>
         {!hideDock && isFocused ? (
+          // Focus only mounts the body-portaled dock so stacked screens do
+          // not paint multiple docks. It must not change page content.
           <FloatingDock blurTarget={dockBlurTarget} />
         ) : null}
       </SafeAreaView>

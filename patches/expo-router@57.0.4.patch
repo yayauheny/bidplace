@@ -1,0 +1,45 @@
+diff --git a/build/react-navigation/elements/Screen.js b/build/react-navigation/elements/Screen.js
+index 9bc9083cb24ad43f263c2408403612f41d918940..f7b873ba6255b5c4c90626414039745dd4322990 100644
+--- a/build/react-navigation/elements/Screen.js
++++ b/build/react-navigation/elements/Screen.js
+@@ -59,7 +59,7 @@ function Screen(props) {
+             setHeaderHeight(height);
+         });
+     }, [route.name]);
+-    return ((0, jsx_runtime_1.jsxs)(Background_1.Background, { "aria-hidden": !focused, style: [styles.container, style], 
++    return ((0, jsx_runtime_1.jsxs)(Background_1.Background, { "aria-hidden": !focused, inert: react_native_1.Platform.OS === 'web' ? !focused : undefined, style: [styles.container, style], 
+         // On Fabric we need to disable collapsing for the background to ensure
+         // that we won't render unnecessary views due to the view flattening.
+         collapsable: false, children: [headerShown ? ((0, jsx_runtime_1.jsx)(native_1.NavigationProvider, { route: route, navigation: navigation, children: (0, jsx_runtime_1.jsx)(react_native_1.View, { ref: headerRef, onLayout: (e) => {
+diff --git a/build/react-navigation/native-stack/views/NativeStackView.js b/build/react-navigation/native-stack/views/NativeStackView.js
+index c79e1fe689300110596914060f2668f42f76c351..8d663f4d3ad0c8d2bbdefb1e2f38d476eecb31f3 100644
+--- a/build/react-navigation/native-stack/views/NativeStackView.js
++++ b/build/react-navigation/native-stack/views/NativeStackView.js
+@@ -68,6 +68,11 @@ function NativeStackView({ state, descriptors, describe }) {
+             const { header, headerShown, headerBackIcon, headerBackImageSource, headerLeft, headerTransparent, headerBackTitle, presentation, contentStyle, ...rest } = options;
+             const nextPresentation = nextDescriptor?.options.presentation;
+             const isPreloaded = preloadedDescriptors[route.key] !== undefined && descriptors[route.key] === undefined;
++            const isLaidOut = !isPreloaded;
++            const isVisuallyActive = (isFocused ||
++                (nextPresentation != null &&
++                    TRANSPARENT_PRESENTATIONS.includes(nextPresentation))) &&
++                isLaidOut;
+             return ((0, jsx_runtime_1.jsx)(elements_1.Screen, { focused: isFocused, route: route, navigation: navigation, headerShown: headerShown, headerTransparent: headerTransparent, header: header !== undefined ? (header({
+                     back: headerBack,
+                     options,
+@@ -85,12 +90,9 @@ function NativeStackView({ state, descriptors, describe }) {
+                             : headerLeft, headerTransparent: headerTransparent })), style: [
+                     react_native_1.StyleSheet.absoluteFill,
+                     {
+-                        display: (isFocused ||
+-                            (nextPresentation != null &&
+-                                TRANSPARENT_PRESENTATIONS.includes(nextPresentation))) &&
+-                            !isPreloaded
+-                            ? 'flex'
+-                            : 'none',
++                        display: isLaidOut ? 'flex' : 'none',
++                        opacity: isVisuallyActive ? 1 : 0,
++                        pointerEvents: isVisuallyActive ? 'auto' : 'none',
+                     },
+                     presentation != null && TRANSPARENT_PRESENTATIONS.includes(presentation)
+                         ? { backgroundColor: 'transparent' }

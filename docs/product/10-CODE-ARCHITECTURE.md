@@ -32,7 +32,13 @@
   in `useOverlayFocusTrap` and is shared with `FilterSheet`. Search reuses
   `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
   There is no `/search` API and no second catalog fetch layer. `/search` is a
-  compatibility route that opens the same overlay.
+  compatibility route that opens the same overlay. Installed `expo-router@57.0.4`
+  web `NativeStackView` has no public option to keep inactive screens laid out
+  (`freezeOnBlur` is iOS/Android only; `@react-navigation/native-stack` is not a
+  direct dependency). `patches/expo-router@57.0.4.patch` keeps inactive web
+  screens in layout (`display: flex`, `opacity: 0`, `pointerEvents: none`)
+  and sets `inert` on the Screen boundary. `AppShell` `useIsFocused()` only
+  mounts `FloatingDock` (body portal); it must not change page content.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/

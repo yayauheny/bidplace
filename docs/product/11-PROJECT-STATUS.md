@@ -1,5 +1,17 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-18 — Global Back flicker
+
+- `Implemented` (mobile web): Back no longer flashes the outgoing public
+  page. Installed `expo-router@57.0.4` web `NativeStackView` has no public
+  hide API, so `patches/expo-router@57.0.4.patch` keeps inactive screens
+  laid out (`display: flex`, `opacity: 0`, `pointerEvents: none`) and
+  sets `inert` on the web Screen boundary. `global.css` does not override
+  navigator internals. Coverage: `e2e/back-navigation-lifecycle.spec.ts`
+  (flicker, inert, Tab isolation).
+- `Unchanged`: FloatingDock geometry, Search overlay contract from the
+  previous commit, no scenario flags. No Expo/React Navigation major bump.
+
 ## 2026-09-18 — Search overlay
 
 - `Partial` (mobile web): Figma Search is a fullscreen overlay over the

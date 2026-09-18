@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-18 — Global Back flicker
+
+- `Implemented` (mobile web): client-side Back from Work and Author no
+  longer flashes the outgoing page. Inactive stack screens stay laid out
+  and `inert`. Coverage: `e2e/back-navigation-lifecycle.spec.ts`.
+  Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: FloatingDock geometry, Search header chrome, Pen file.
+
 ## 2026-09-18 — Search overlay
 
 - `Partial` (mobile web): Search is a fullscreen overlay over the current
