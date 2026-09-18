@@ -83,7 +83,7 @@ test('Authors date-added label, URL, back, and pagination', async ({
   });
 });
 
-test('Search results, empty, partial error, and pagination', async ({
+test('Search overlay results, empty, and inline error', async ({
   page,
   request,
 }) => {
@@ -93,17 +93,30 @@ test('Search results, empty, partial error, and pagination', async ({
   };
   const title = payload.works[0]!.work.title;
 
-  await page.goto(`/search?q=${encodeURIComponent(title)}`);
-  await expect(page.getByRole('heading', { name: 'Работы' })).toBeVisible();
-  await expect(page.getByText(title).first()).toBeVisible();
-  const moreWorks = page.getByRole('button', { name: 'Показать ещё работы' });
-  const moreAuthors = page.getByRole('button', { name: 'Показать ещё авторов' });
-  if (await moreWorks.isVisible()) await moreWorks.click();
-  if (await moreAuthors.isVisible()) await moreAuthors.click();
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await overlay.getByRole('tab', { name: 'Работы' }).click();
+  const typed = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === '/api/works' &&
+      url.searchParams.get('q') === title &&
+      response.ok()
+    );
+  });
+  await overlay.getByTestId('search-overlay-query').fill(title);
+  await typed;
+  await expect(overlay.getByText(title).first()).toBeVisible();
+  await expect(
+    overlay.getByRole('button', { name: 'Показать ещё работы' }),
+  ).toHaveCount(0);
 
-  await page.goto('/search?q=no-results-zzzz');
-  await expect(page.getByText('Ничего не найдено', { exact: true })).toBeVisible();
+  await overlay.getByTestId('search-overlay-query').fill('no-results-zzzz');
+  await expect(overlay.getByText('Работы не найдены', { exact: true })).toBeVisible();
 
+  await overlay.getByRole('button', { name: 'Закрыть поиск' }).click();
   await page.route('**/api/works?**', (route) =>
     route.fulfill({
       status: 500,
@@ -111,7 +124,9 @@ test('Search results, empty, partial error, and pagination', async ({
       body: JSON.stringify({ error: 'test failure' }),
     }),
   );
-  await page.goto(`/search?q=${encodeURIComponent(title)}&failure=1`);
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const failed = page.getByTestId('search-overlay');
+  await failed.getByRole('tab', { name: 'Работы' }).click();
   await expect(
     page.getByText('Проверьте соединение и попробуйте ещё раз.', { exact: true }),
   ).toBeVisible();

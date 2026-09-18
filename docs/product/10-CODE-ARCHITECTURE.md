@@ -1,6 +1,6 @@
 # bidplace — архитектура кода
 
-Последнее обновление: 2026-09-17
+Последнее обновление: 2026-09-18
 Статус: Confirmed technical boundaries for the portfolio-first MVP implementation.
 
 ## Applications and shared boundaries
@@ -25,7 +25,14 @@
   `feature/commerce-runtime-archive` (`19eb40e`); Prisma Listing/Bid/Order tables
   remain as leftover safety data.
 - `apps/mobile` is an Expo Router client. React Query holds server state. There is
-  no Socket.IO client in the mobile runtime.
+  no Socket.IO client in the mobile runtime. Public Search is a feature overlay
+  (`apps/mobile/src/features/search/SearchOverlay.tsx`) with one
+  `SearchOverlayHost` in the root layout under `SearchOverlayProvider`.
+  Overlay focus trap lives
+  in `useOverlayFocusTrap` and is shared with `FilterSheet`. Search reuses
+  `GET /api/works`, `GET /api/authors` and `GET /api/categories`.
+  There is no `/search` API and no second catalog fetch layer. `/search` is a
+  compatibility route that opens the same overlay.
 - `apps/mobile/src/components/layout/AppShell.tsx` owns the shared safe-area responsive shell. `AppHeader` is one horizontal, role-aware composition with desktop navigation and a compact mobile navigation row; route screens remain responsible for their own scroll/content and business interactions.
 - `apps/mobile/src/components/ui` is the only runtime component system.
   Product tabs are controlled by Expo Router URL state, and related Product/

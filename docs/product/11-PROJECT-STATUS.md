@@ -1,5 +1,31 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-18 — Search overlay
+
+- `Partial` (mobile web): Figma Search is a fullscreen overlay over the
+  current public context. `SearchOverlayProvider` + `SearchOverlayHost` +
+  `SearchOverlay` reuse the `FilterSheet` Modal / `useDismissibleOverlay` /
+  shared `useOverlayFocusTrap` pattern without catalog Apply/Clear chrome.
+  FloatingDock Search opens the overlay and does not `router.push('/search')`.
+  One `SearchOverlayHost` lives in the root layout. Pathname change closes
+  the session. `/search?q=` is a compatibility route for the same overlay.
+  Live input (300ms debounce, trim for request only)
+  queries the active tab: Categories via `GET /api/categories` plus client
+  name/slug filter; Authors `usePortfolioAuthors` `sort=added`; Works
+  `usePortfolioWorks` `sort=newest`. Empty query lists public data. Category
+  tiles are a truthful no-media placeholder; Category has no image field and
+  seed still has one category. Compact AuthorSearchRow and 2-column
+  `WorkCoverCardGrid`. Domain empty copy is «Категории/Авторы/Работы не
+  найдены». Loading and infrastructure error stay inline
+  (`presentation="inline"`). Overlay pagination is first-page only
+  (works 12 / authors 8). X/Escape dismiss overlay; browser Back follows
+  history. Coverage: `filter-categories.spec.ts`, `search-query.spec.ts`,
+  `flex-grid-rows.spec.ts`, `overlay-focus.spec.ts`,
+  `e2e/search-overlay.spec.ts` (client-side Back, `/search` dismiss).
+- `Unchanged`: Nest/api-client contracts, category seed/taxonomy, catalog
+  FilterSheet URL apply/reset, dock geometry/glass, branded page
+  loading/error motion.
+
 ## 2026-09-18 — Page loading → error motion lifecycle
 
 - `Implemented` (mobile web): `InfrastructurePageStatus` is the shared page

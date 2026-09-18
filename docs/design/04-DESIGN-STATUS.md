@@ -4,6 +4,22 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-18 — Search overlay
+
+- `Partial` (mobile web): Search is a fullscreen overlay over the current
+  public page, not a landing screen. Dock Search opens it without
+  `router.push('/search')`. Chrome is `[search field][close]` plus
+  Категории / Авторы / Работы pills. Empty query lists the active tab;
+  typing live-searches. Category tiles use a no-media placeholder:
+  Category has no production image and the Figma 9-name taxonomy is not
+  seeded. `/search` is a compatibility host for the same overlay. X/Escape
+  dismiss overlay; browser Back follows history. Coverage:
+  `SearchOverlay.tsx`, `e2e/search-overlay.spec.ts`.
+  Status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: FloatingDock geometry/glass, FilterSheet catalog chrome,
+  Works/Authors URL filter contracts, branded page loading/error motion.
+
 ## 2026-09-18 — Page loading → error motion lifecycle
 
 - `Implemented` (mobile web): one `InfrastructurePageStatus` instance owns

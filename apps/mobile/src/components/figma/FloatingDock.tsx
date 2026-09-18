@@ -8,6 +8,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { useSellerCapability } from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
+import { useSearchOverlay } from '../../features/search/search-overlay-provider';
 import { getMobileCreateHref } from '../layout/header-chrome';
 import { MotionPressable } from '../ui/MotionPressable';
 import { FigmaIcon } from './FigmaIcon';
@@ -32,6 +33,7 @@ export function FloatingDock({
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const search = useSearchOverlay();
   const capability = useSellerCapability();
   const insets = useSafeAreaInsets();
   const items = auth.isAdmin
@@ -42,7 +44,11 @@ export function FloatingDock({
     <DockItem
       key={item.id}
       item={item}
-      selected={isFigmaDockItemSelected(item.id, pathname)}
+      selected={
+        item.id === 'search'
+          ? search.isOpen || isFigmaDockItemSelected(item.id, pathname)
+          : !search.isOpen && isFigmaDockItemSelected(item.id, pathname)
+      }
       href={dockHref(item, {
         pathname,
         isAuthenticated: auth.isAuthenticated,
@@ -50,16 +56,18 @@ export function FloatingDock({
         sellerStatus: capability.status,
       })}
       onPress={
-        item.id === 'plus'
-          ? () =>
-              router.push(
-                getMobileCreateHref({
-                  isAuthenticated: auth.isAuthenticated,
-                  sellerStatus: capability.status,
-                  returnPath: pathname || '/',
-                }),
-              )
-          : undefined
+        item.id === 'search'
+          ? () => search.open()
+          : item.id === 'plus'
+            ? () =>
+                router.push(
+                  getMobileCreateHref({
+                    isAuthenticated: auth.isAuthenticated,
+                    sellerStatus: capability.status,
+                    returnPath: pathname || '/',
+                  }),
+                )
+            : undefined
       }
     />
   ));
@@ -84,7 +92,7 @@ function dockHref(
     case 'home':
       return '/';
     case 'search':
-      return '/search';
+      return undefined;
     case 'profile':
       if (context.isAdmin) return '/admin';
       if (context.isAuthenticated) return '/profile';

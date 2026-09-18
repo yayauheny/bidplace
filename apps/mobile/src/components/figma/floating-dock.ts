@@ -48,6 +48,10 @@ export function dockItemAccessibility(
     return { role: 'button', accessibilityState: {} };
   }
 
+  if (id === 'search') {
+    return { role: 'button', accessibilityState: { selected } };
+  }
+
   return {
     role: 'link',
     accessibilityState: { selected },

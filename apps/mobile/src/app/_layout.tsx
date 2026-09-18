@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
+import { SearchOverlayHost } from '../features/search/search-overlay-host';
 import { AppProviders } from '../providers/app-providers';
 import '../../global.css';
 
@@ -49,6 +50,7 @@ export default function RootLayout() {
         <Stack.Screen name="(seller)" />
         <Stack.Screen name="(admin)" />
       </Stack>
+      <SearchOverlayHost />
     </AppProviders>
   );
 }

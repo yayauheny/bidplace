@@ -160,7 +160,7 @@ test('Authors filters and sort are server-backed and URL-owned', async ({
   });
 });
 
-test('Search renders real independent result, empty, and retry states', async ({
+test('Search overlay live-updates without submit', async ({
   page,
   request,
 }) => {
@@ -170,32 +170,31 @@ test('Search renders real independent result, empty, and retry states', async ({
   };
   const title = payload.works[0]!.work.title;
 
-  await page.goto(`/search?q=${encodeURIComponent(title)}`);
-  await expect(page.getByRole('heading', { name: 'Работы' })).toBeVisible();
-  await expect(page.getByText(title).first()).toBeVisible();
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await overlay.getByRole('tab', { name: 'Работы' }).click();
+  const typed = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === '/api/works' &&
+      url.searchParams.get('q') === title &&
+      response.ok()
+    );
+  });
+  await overlay.getByTestId('search-overlay-query').fill(title);
+  await typed;
+  await expect(overlay.getByText(title).first()).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.screenshot({
     path: resolve(e2eEvidenceDir, 'discovery/search-390.png'),
     fullPage: true,
   });
 
-  await page.goto('/search?q=no-results-zzzz');
-  await expect(
-    page.getByText('Ничего не найдено', { exact: true }),
-  ).toBeVisible();
-
-  await page.route('**/api/works?**', (route) =>
-    route.fulfill({
-      status: 500,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'test failure' }),
-    }),
-  );
-  await page.goto(`/search?q=${encodeURIComponent(title)}&failure=1`);
-  await expect(
-    page.getByText('Проверьте соединение и попробуйте ещё раз.', { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Повторить' })).toBeVisible();
+  await overlay.getByTestId('search-overlay-query').fill('no-results-zzzz');
+  await expect(overlay.getByText('Работы не найдены', { exact: true })).toBeVisible();
 });
 
 async function expectNoHorizontalOverflow(

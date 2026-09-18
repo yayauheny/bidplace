@@ -1,4 +1,4 @@
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
@@ -14,12 +14,14 @@ export function FigmaChoiceChip({
   selected,
   onPress,
   disabled = false,
+  stretch = false,
   accessibilityRole = 'button',
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
   disabled?: boolean;
+  stretch?: boolean;
   accessibilityRole?: 'button' | 'tab';
 }) {
   return (
@@ -30,17 +32,24 @@ export function FigmaChoiceChip({
       disabled={disabled}
       onPress={onPress}
       preset="button"
-      style={({ hovered, pressed }) =>
+      {...(Platform.OS === 'web' && accessibilityRole === 'tab'
+        ? ({ 'aria-selected': selected } as object)
+        : {})}
+      style={({ hovered, pressed }) => [
+        stretch ? { width: '100%' } : null,
         figmaChoiceChipStyle(
           selected,
           resolveInteraction({ disabled, hovered, pressed }),
-        )
-      }
+        ),
+      ]}
     >
       <Text
         numberOfLines={1}
         style={[
-          { color: figmaChoiceChipTextColor(selected) },
+          {
+            color: figmaChoiceChipTextColor(selected),
+            textAlign: stretch ? 'center' : 'left',
+          },
           figmaTokens.typography.choiceChip,
         ]}
       >

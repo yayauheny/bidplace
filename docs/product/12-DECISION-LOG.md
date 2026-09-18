@@ -2023,3 +2023,45 @@ New public pages should not need to know about session-bootstrap chrome.
 
 A contextual, non-chrome use of `SessionAlert` is required, or logo-motion is
 wired into `InfrastructureErrorState`.
+
+## DEC-096 — Search is a fullscreen overlay over the current public page
+
+Date: 2026-09-18
+Status: Confirmed
+Source: explicit founder instruction for the Figma Search overlay batch
+Revises: `DEC-085` / `DEC-086` only for Search overlay deferral. Catalog tabs
+Аукционы/Анонсы/Архив, cart and Geist stay deferred. Does not change Works or
+Authors catalog URL filter contracts.
+
+### Decision
+
+Search is a fullscreen overlay over the current public context, not a landing
+page. Dock Search opens the overlay without navigating. Close (X) and Escape
+return to the same underlying page. Browser Back follows browser history: the
+overlay is not a history entry, and it closes if the route changes. `/search`
+remains a deep-link compatibility host for the same overlay.
+
+Empty query shows the active tab’s public list. Typing live-searches: Categories
+are filtered client-side on name/slug; Authors and Works use existing `q` on
+`GET /api/authors` and `GET /api/works`. No `/search` API, no category backend
+`q`, and no category images in this batch. Default tab is Категории. One shared
+input query across tabs. Overlay pagination is first page only.
+
+Category visual fidelity is blocked until a taxonomy + media decision.
+
+### Revision 2026-09-18 — Browser Back
+
+Dock Search does not push a history entry. X and Escape dismiss the overlay and
+keep the underlying route. Browser Back follows browser history; if that changes
+the route, the overlay closes as a consequence of leaving the page. Custom
+overlay `pushState` plumbing was rejected as fragile against Expo Router.
+
+### Why
+
+The Figma Search frames are an overlay on the current page. A submit-only
+`/search` landing with stacked Works+Authors fought that contract.
+
+### Revisit when
+
+Category taxonomy and media are decided, or overlay result limits require
+in-overlay pagination.

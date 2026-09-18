@@ -90,10 +90,14 @@ copy is the approved MVP strings; the visual role is `bodySmall` default ink
 14/20/400/−1% `#2A2A2A` (`526:12957`, `526:13308`), not `textSecondary`.
 
 На mobile web `/works` и `/authors` коммитят фильтры и сортировку в URL только
-после `Применить`; sheet хранит локальный draft до Apply/Reset. `/search?q=`
-показывает независимые loading/result/empty/pagination состояния работ и авторов.
-If either search query is an infrastructure failure, Search shows one canonical
-error and one Retry for both queries. Figma live-search overlay остаётся вне scope. Work `?tab=`
+после `Применить`; sheet хранит локальный draft до Apply/Reset. Dock Search
+opens a fullscreen overlay over the current public page (`DEC-096`). Empty
+query shows the active tab’s public list; typing live-filters Categories
+client-side and sends `q` to Works/Authors after 300ms. `/search` remains a
+thin deep-link host for the same overlay. X and Escape dismiss overlay; browser
+Back follows history. Any pathname change closes Search. Active-tab infrastructure failure
+is one inline Retry; header, field and tabs stay. Category tiles have no
+production media yet. Work `?tab=`
 is URL-owned; Author About is local state and is not a `?tab=` contract.
 
 ## 6. Creator profile

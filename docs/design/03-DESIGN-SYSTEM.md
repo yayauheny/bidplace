@@ -1,6 +1,6 @@
 # bidplace — дизайн-система Pen v2
 
-Последнее обновление: 2026-09-17
+Последнее обновление: 2026-09-18
 
 Статус: **Figma mobile-web 390 tokens and primitives are the production visual layer; Pen measurements remain historical**
 
@@ -321,7 +321,14 @@ Values live in the only `designTokens` export (`figmaTokens` alias).
 same column. 1024/1440 compositions are out of this wave.
 
 `FloatingDock` is one 232×64 glass capsule: Главная / Поиск / Добавить /
-Профиль. Search is an item inside that capsule. The 64×64 search FAB and the
+Профиль. Search is an item inside that capsule. Dock Search opens a fullscreen
+`SearchOverlay` over the current page (`DEC-096`) using the `FilterSheet` Modal
+pattern and the shared overlay focus trap: pill field + circular close, then
+Категории / Авторы / Работы chips. `FilterSearchField` stays the catalog field
+(floating label, radius 18). Overlay search is a pill `searchSurface` field
+because Figma Search is a stadium control, not that catalog field.
+`WorkCoverCardGrid` may render one catalog column or a two-column overlay grid.
+The 64×64 search FAB and the
 288×64 five-icon cart pill are unused variants (`DEC-088`). Web portals the
 dock to `document.body` and uses CSS `backdrop-filter`. Native `expo-blur`
 files ship for Metro and are not part of the web claim.

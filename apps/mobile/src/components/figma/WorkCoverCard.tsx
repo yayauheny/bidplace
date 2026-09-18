@@ -27,12 +27,14 @@ export function WorkCoverCard({
   imageLabel,
   title,
   authorSlug,
+  onPress,
 }: {
   href: `/product/${string}`;
   imageUrl: string;
   imageLabel: string;
   title: string;
   authorSlug: string;
+  onPress?: () => void;
 }) {
   const overlay = getWorkCoverOverlay({ title, authorSlug });
   const reducedMotion = useReducedMotion();
@@ -43,6 +45,7 @@ export function WorkCoverCard({
         accessibilityRole="link"
         accessibilityLabel={workCoverAccessibilityLabel(overlay)}
         preset="card"
+        onPress={onPress}
         style={coverCardFrameStyle('work')}
       >
         {({ hovered, focused }) => (

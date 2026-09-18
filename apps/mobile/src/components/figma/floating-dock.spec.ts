@@ -52,7 +52,7 @@ describe('Figma floating dock', () => {
       ariaCurrent: 'page',
     });
     expect(dockItemAccessibility('search', false)).toEqual({
-      role: 'link',
+      role: 'button',
       accessibilityState: { selected: false },
     });
     expect(dockItemAccessibility('plus', false)).toEqual({

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Modal, Platform, ScrollView, View } from 'react-native';
 
 import { figmaTokens } from '@bidplace/design-tokens';
@@ -15,11 +15,7 @@ import {
   filterSheetTitleStyle,
 } from './filter-sheet-style';
 import { useDismissibleOverlay } from '../layout/use-dismissible-overlay';
-
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-type FocusTarget = { focus?: () => void };
+import { useOverlayFocusTrap } from '../layout/use-overlay-focus-trap';
 
 export function FilterSheet({
   open,
@@ -51,8 +47,6 @@ export function FilterSheet({
 }) {
   const titleId = useId();
   const dialogId = `filter-sheet-${titleId}`;
-  const openerRef = useRef<FocusTarget | null>(null);
-  const wasOpenRef = useRef(false);
 
   useDismissibleOverlay({
     open,
@@ -61,60 +55,12 @@ export function FilterSheet({
       Platform.OS === 'web' ? document.getElementById(dialogId) : null,
     ],
   });
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-
-    if (open) {
-      openerRef.current = document.activeElement as FocusTarget | null;
-    } else if (wasOpenRef.current) {
-      const opener = returnFocusRef?.current ?? openerRef.current;
-      requestAnimationFrame(() => opener?.focus?.());
-    }
-    wasOpenRef.current = open;
-  }, [open, returnFocusRef]);
-
-  useEffect(() => {
-    if (!open || Platform.OS !== 'web') return;
-    const root = document.getElementById(dialogId);
-    if (!root) return;
-
-    const focusables = () =>
-      Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (node) => node.tabIndex !== -1 && node.offsetParent !== null,
-      );
-
-    const first = focusables()[0];
-    first?.focus({ preventScroll: true });
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
-      const nodes = focusables();
-      if (nodes.length === 0) return;
-      const start = nodes[0];
-      const end = nodes[nodes.length - 1];
-      if (event.shiftKey && document.activeElement === start) {
-        event.preventDefault();
-        end.focus();
-      } else if (!event.shiftKey && document.activeElement === end) {
-        event.preventDefault();
-        start.focus();
-      }
-    };
-
-    const onFocusIn = (event: FocusEvent) => {
-      if (!root.contains(event.target as Node)) {
-        focusables()[0]?.focus({ preventScroll: true });
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown, true);
-    document.addEventListener('focusin', onFocusIn);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown, true);
-      document.removeEventListener('focusin', onFocusIn);
-    };
-  }, [dialogId, open]);
+  useOverlayFocusTrap({
+    open,
+    surfaceId: dialogId,
+    restoreOnClose: true,
+    returnFocusRef,
+  });
 
   return (
     <Modal

@@ -147,26 +147,28 @@ test('home pending uses the branded mark without loading copy', async ({
   ).toHaveCount(1);
 });
 
-test('search dual query failure keeps the field and one inline state', async ({
+test('search active-tab failure keeps chrome and one inline state', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route('**/api/works?**', async (route) => {
-    await route.abort('connectionrefused');
-  });
   await page.route('**/api/authors?**', async (route) => {
     await route.abort('connectionrefused');
   });
 
-  await page.goto('/search?q=dali');
+  await page.goto('/');
+  await page.getByTestId('figma-floating-dock').getByLabel('Поиск').click();
+  const overlay = page.getByTestId('search-overlay');
+  await expect(overlay).toBeVisible();
+  await overlay.getByRole('tab', { name: 'Авторы' }).click();
 
   await expect(page.getByTestId('infrastructure-error-state-inline')).toBeVisible();
   await expect(page.getByTestId('infrastructure-error-state-page')).toHaveCount(0);
-  await expect(page.getByRole('img', { name: 'Bidplace' })).toHaveCount(0);
-  await expect(page.getByText('Поиск', { exact: true })).toBeVisible();
+  await expect(overlay.getByRole('img', { name: 'Bidplace' })).toHaveCount(0);
+  await expect(overlay.getByTestId('search-overlay-query')).toBeVisible();
+  await expect(overlay.getByRole('tab', { name: 'Категории' })).toBeVisible();
   await expect(
     page.getByText('Ищите опубликованные работы и проверенных авторов.'),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(page.getByText(infrastructureCopy)).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Повторить', exact: true })).toHaveCount(1);
   await expect(page.getByRole('alert')).toHaveCount(1);

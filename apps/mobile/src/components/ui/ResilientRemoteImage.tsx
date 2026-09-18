@@ -36,7 +36,8 @@ export type ResilientRemoteImageComponent =
   | 'WorkCoverCard'
   | 'AuthorCoverCard'
   | 'AuthorIdentity'
-  | 'AuthorAtmosphere';
+  | 'AuthorAtmosphere'
+  | 'AuthorSearchRow';
 
 type ResilientRemoteImageProps = {
   uri: string;

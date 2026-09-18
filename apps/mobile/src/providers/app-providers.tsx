@@ -7,6 +7,7 @@ import { ApiProvider } from './api-provider';
 import { AuthProvider } from './auth-provider';
 import { QueryProvider } from './query-provider';
 import { ThemeProvider } from './theme-provider';
+import { SearchOverlayProvider } from '../features/search/search-overlay-provider';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
@@ -16,7 +17,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <ThemeProvider>
             <QueryProvider>
               <AuthProvider>
-                <AnalyticsProvider>{children}</AnalyticsProvider>
+                <AnalyticsProvider>
+                  <SearchOverlayProvider>{children}</SearchOverlayProvider>
+                </AnalyticsProvider>
               </AuthProvider>
             </QueryProvider>
           </ThemeProvider>
