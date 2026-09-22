@@ -8,6 +8,7 @@ import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { ImagesService } from '../../src/images/images.service';
 import { ProductsService } from '../../src/products/products.service';
+import { SellersService } from '../../src/sellers/sellers.service';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -189,6 +190,7 @@ function createServices() {
     products: new ProductsService(prisma as never, new PublicIdService()),
     images: new ImagesService(prisma as never, imageStore),
     admin: new AdminModerationService(prisma as never),
+    sellers: new SellersService(prisma as never, imageStore),
   };
 }
 
@@ -214,6 +216,86 @@ async function holdProductAndMutate(
 }
 
 describe('Product write atomicity against PostgreSQL', () => {
+  it('keeps the editing revision canonical from draft save through approval', async () => {
+    const { owner, product: seed } = await createSubmitReadyProduct();
+    const { products, admin, sellers } = createServices();
+    const seedProduct = await prisma.product.findUniqueOrThrow({
+      where: { id: seed.id },
+      select: { categoryId: true },
+    });
+    const adminUser = await prisma.user.create({
+      data: {
+        email: `admin.${randomUUID()}@write-race.test`,
+        passwordHash: 'test',
+        displayName: 'Admin',
+        role: 'admin',
+      },
+    });
+
+    const created = await products.create(owner.id, {
+      categoryId: seedProduct.categoryId,
+      title: 'Initial canonical draft',
+      story: 'Initial canonical story',
+      uniqueness: 'One',
+    });
+    const productId = created.product.id;
+    const createdProduct = await prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+      select: { publicId: true, editingRevisionId: true },
+    });
+    if (!createdProduct.editingRevisionId) {
+      throw new Error('Created Product editing revision is missing');
+    }
+    const image = await prisma.productImage.create({
+      data: {
+        productId,
+        position: 0,
+        mimeType: 'image/png',
+        byteLength: png.byteLength,
+        data: png,
+        checksum: 'b'.repeat(64),
+      },
+    });
+    await prisma.productRevisionImage.create({
+      data: {
+        revisionId: createdProduct.editingRevisionId,
+        imageId: image.id,
+        position: 0,
+      },
+    });
+
+    await products.update(owner.id, productId, {
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+    expect(
+      (await sellers.getProduct(owner.id, productId)).product,
+    ).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+
+    await products.submit(owner.id, productId);
+    expect(
+      await prisma.productRevision.findUniqueOrThrow({
+        where: { id: createdProduct.editingRevisionId },
+        select: { title: true, story: true, status: true },
+      }),
+    ).toEqual({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+      status: 'PENDING_REVIEW',
+    });
+
+    await admin.updateProductStatus(adminUser.id, productId, {
+      status: 'APPROVED',
+    });
+    expect(await products.getPortfolio(createdProduct.publicId)).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+  });
+
   it('keeps a late field write from mutating a Product after submit wins the row', async () => {
     const { owner, product } = await createSubmitReadyProduct();
     const { products } = createServices();
@@ -267,9 +349,7 @@ describe('Product write atomicity against PostgreSQL', () => {
       where: { productId: product.id },
       select: { id: true, byteLength: true },
     });
-    expect(remaining).toEqual([
-      { id: imageId, byteLength: png.byteLength },
-    ]);
+    expect(remaining).toEqual([{ id: imageId, byteLength: png.byteLength }]);
   });
 
   it('does not persist a late image upload after submit and leaves no orphaned bytes', async () => {

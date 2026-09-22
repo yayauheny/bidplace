@@ -671,6 +671,7 @@ describe('SellersService', () => {
             id: '5db1f3d4-45f2-4f85-80ad-ad29b23b896a',
             version: 2,
             status: 'DRAFT',
+            updatedAt: new Date('2026-07-18T01:00:00.000Z'),
             categoryId: null,
             title: 'Draft title',
             story: 'Draft story',
@@ -716,6 +717,7 @@ describe('SellersService', () => {
       id: '5db1f3d4-45f2-4f85-80ad-ad29b23b896a',
       version: 2,
       status: 'DRAFT',
+      updatedAt: '2026-07-18T01:00:00.000Z',
     });
   });
 

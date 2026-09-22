@@ -13,9 +13,12 @@
 - `Implemented` (API/contracts): owner detail exposes editing revision metadata
   and projects its fields/gallery while preserving the public Product status.
   An approved/archived Work forks an editable revision on the first field save;
-  later field and image writes are limited to editable revision statuses and
-  remain locked during moderation or an active Listing. Revision gallery order
-  no longer mutates the published gallery.
+  every editable field save mirrors the persisted author values to the active
+  `ProductRevision`, which is the submit/moderation payload. Owner detail also
+  exposes the editing revision `updatedAt`; clean forms hydrate on that token
+  and dirty forms retain local input. Later field and image writes are limited
+  to editable revision statuses and remain locked during moderation or an
+  active Listing. Revision gallery order no longer mutates the published gallery.
 - `Implemented` (MVP boundary): editor writes only category, title, technique,
   materials, dimensions, year, uniqueness and optional story. Packaging,
   delivery, condition, provenance, city, weight and repeated process blocks are
@@ -24,7 +27,10 @@
 - Coverage: `product-draft-form.spec.ts`, `product-draft-state.spec.ts`,
   `product-draft-wizard.spec.ts`, `products.service.spec.ts`,
   `images.service.spec.ts`, `sellers.service.spec.ts`, contracts tests, and
-  `e2e/product-creation-wizard.spec.ts` for save-before-submit and close/reopen.
+  `e2e/product-creation-wizard.spec.ts` for save-before-submit and close/reopen;
+  `product-write-atomicity.integration.spec.ts` and
+  `rejected-product-recovery.integration.spec.ts` cover canonical revision
+  persistence through review/publication when PostgreSQL is available.
 - `Unchanged`: cabinet/list entry points are outside this batch; public Work,
   moderation transitions, Listing locks, commerce persistence, and canonical
   Pen/Figma sources are unchanged.

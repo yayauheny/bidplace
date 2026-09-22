@@ -41,6 +41,7 @@ export const productRevisionOwnerSelect = {
   id: true,
   version: true,
   status: true,
+  updatedAt: true,
   categoryId: true,
   title: true,
   story: true,

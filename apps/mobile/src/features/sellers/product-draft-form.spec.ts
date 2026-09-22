@@ -48,16 +48,7 @@ describe('product draft form lifecycle', () => {
     });
   });
 
-  it('does not overwrite dirty input during an ordinary refetch', () => {
-    expect(
-      shouldHydrateProductDraft({
-        hydratedProductId: persistedProduct.id,
-        hydratedUpdatedAt: persistedProduct.updatedAt,
-        nextProductId: persistedProduct.id,
-        nextUpdatedAt: '2026-09-21T11:00:00.000Z',
-        isDirty: true,
-      }),
-    ).toBe(false);
+  it('hydrates a clean form when the persisted editing revision is newer', () => {
     expect(
       shouldHydrateProductDraft({
         hydratedProductId: persistedProduct.id,
@@ -67,6 +58,18 @@ describe('product draft form lifecycle', () => {
         isDirty: false,
       }),
     ).toBe(true);
+  });
+
+  it('does not overwrite dirty input when the persisted editing revision is newer', () => {
+    expect(
+      shouldHydrateProductDraft({
+        hydratedProductId: persistedProduct.id,
+        hydratedUpdatedAt: persistedProduct.updatedAt,
+        nextProductId: persistedProduct.id,
+        nextUpdatedAt: '2026-09-21T11:00:00.000Z',
+        isDirty: true,
+      }),
+    ).toBe(false);
   });
 
   it('builds writes through the canonical contract and omits legacy commerce fields', () => {

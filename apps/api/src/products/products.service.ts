@@ -305,6 +305,16 @@ export class ProductsService {
         });
       }
       assertProductWritable(product, userId, 'edit');
+      if (!product.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const editingRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { status: true },
+      });
+      if (!canAuthorEditRevision(editingRevision.status)) {
+        throw new ConflictException('Product revision cannot be edited');
+      }
 
       const written = await tx.product.updateMany({
         where: { id, ...writableProductWhere },
@@ -322,11 +332,20 @@ export class ProductsService {
         throw new ConflictException('Product cannot be edited');
       }
 
-      const updated = await tx.product.findUniqueOrThrow({
-        where: { id },
-        select: productSelect,
+      const [updated, persistedRevision] = await Promise.all([
+        tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        }),
+        tx.productRevision.update({
+          where: { id: product.editingRevisionId },
+          data: revisionData,
+          select: productRevisionOwnerSelect,
+        }),
+      ]);
+      return productResponseSchema.parse({
+        product: toOwnerContractProduct(updated, persistedRevision),
       });
-      return toProductResponse(updated);
     });
   }
 
@@ -431,7 +450,27 @@ export class ProductsService {
 
       assertProductWritable(current, userId, 'submit');
 
-      const missingFields = missingProductApprovalFields(current);
+      if (!current.editingRevisionId) {
+        throw new ConflictException('Product editing revision is missing');
+      }
+      const editingRevision = await tx.productRevision.findUniqueOrThrow({
+        where: { id: current.editingRevisionId },
+        select: {
+          status: true,
+          title: true,
+          categoryId: true,
+          images: { select: { imageId: true }, take: 1 },
+        },
+      });
+      assertProductRevisionTransition(
+        'author',
+        editingRevision.status,
+        'PENDING_REVIEW',
+      );
+      const missingFields = missingProductApprovalFields({
+        ...editingRevision,
+        images: editingRevision.images.map(({ imageId }) => ({ id: imageId })),
+      });
       if (missingFields.length > 0) {
         throw new ConflictException(
           `Product is missing required fields: ${missingFields.join(', ')}`,
@@ -445,18 +484,21 @@ export class ProductsService {
       if (moved.count !== 1) {
         throw new ConflictException('Product cannot be submitted for review');
       }
-      if (!current.editingRevisionId) {
-        throw new ConflictException('Product editing revision is missing');
-      }
       await tx.productRevision.update({
         where: { id: current.editingRevisionId },
         data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
       });
 
-      const updated = await tx.product.findUniqueOrThrow({
-        where: { id },
-        select: productSelect,
-      });
+      const [updated, submittedRevision] = await Promise.all([
+        tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        }),
+        tx.productRevision.findUniqueOrThrow({
+          where: { id: current.editingRevisionId },
+          select: productRevisionOwnerSelect,
+        }),
+      ]);
 
       await tx.auditEvent.create({
         data: {
@@ -469,7 +511,9 @@ export class ProductsService {
         },
       });
 
-      return toProductResponse(updated);
+      return productResponseSchema.parse({
+        product: toOwnerContractProduct(updated, submittedRevision),
+      });
     });
   }
 

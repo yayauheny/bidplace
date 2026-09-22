@@ -750,6 +750,7 @@ export class SellersService {
             id: product.editingRevision.id,
             version: product.editingRevision.version,
             status: product.editingRevision.status,
+            updatedAt: product.editingRevision.updatedAt.toISOString(),
           }
         : null,
       creationIntro: product.creationIntro ?? null,

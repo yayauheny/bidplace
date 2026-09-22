@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { categorySchema } from './category';
 import { productStatusSchema } from './enums';
-import { uuidSchema } from './primitives';
+import { isoDateTimeSchema, uuidSchema } from './primitives';
 import { creationStepSchema, productSchema } from './product';
 
 export const categoryListResponseSchema = z
@@ -25,6 +25,7 @@ export const sellerProductDetailResponseSchema = z
         id: uuidSchema,
         version: z.number().int().positive(),
         status: productStatusSchema,
+        updatedAt: isoDateTimeSchema,
       })
       .strict()
       .nullable(),

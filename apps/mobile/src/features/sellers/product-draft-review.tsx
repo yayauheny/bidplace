@@ -14,6 +14,7 @@ export type ProductDraftReviewStepProps = {
 
   wizardSubmitted: boolean;
   submitPending: boolean;
+  submitError: boolean;
   onSubmitPress: () => void;
   onBackToStory: () => void;
 };
@@ -26,6 +27,7 @@ export function ProductDraftReviewStep({
   submitLabel,
   wizardSubmitted,
   submitPending,
+  submitError,
   onSubmitPress,
   onBackToStory,
 }: ProductDraftReviewStepProps) {
@@ -51,6 +53,12 @@ export function ProductDraftReviewStep({
           onPress={() => onSubmitPress()}
         />
       )}
+      {submitError ? (
+        <AppText role="bodySmall" tone="danger">
+          Не удалось отправить предмет на модерацию. Проверьте обязательные поля
+          и попробуйте ещё раз.
+        </AppText>
+      ) : null}
       <SecondaryButton
         label="Назад к истории создания"
         disabled={submitPending || wizardSubmitted}

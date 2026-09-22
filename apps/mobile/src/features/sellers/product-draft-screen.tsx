@@ -99,6 +99,8 @@ export function ProductDraftScreen({
     enabled: Boolean(productId),
   });
   const existingProduct = productDetail.data?.product;
+  const persistedRevisionUpdatedAt =
+    productDetail.data?.editingRevision?.updatedAt;
   const isCreationFlow = flow === 'creation' || !productId;
   const wizardDraft = createProductWizardDraft(existingProduct ?? null);
   const requestedStep = parseProductWizardStepParam(stepParam);
@@ -129,7 +131,7 @@ export function ProductDraftScreen({
         hydratedProductId: hydratedProductId.current,
         hydratedUpdatedAt: hydratedUpdatedAt.current,
         nextProductId: existingProduct.id,
-        nextUpdatedAt: existingProduct.updatedAt,
+        nextUpdatedAt: persistedRevisionUpdatedAt ?? existingProduct.updatedAt,
         isDirty: form.formState.isDirty,
       })
     ) {
@@ -137,8 +139,14 @@ export function ProductDraftScreen({
     }
     form.reset(productToDraftFormValues(existingProduct));
     hydratedProductId.current = existingProduct.id;
-    hydratedUpdatedAt.current = existingProduct.updatedAt;
-  }, [existingProduct, form, form.formState.isDirty]);
+    hydratedUpdatedAt.current =
+      persistedRevisionUpdatedAt ?? existingProduct.updatedAt;
+  }, [
+    existingProduct,
+    form,
+    form.formState.isDirty,
+    persistedRevisionUpdatedAt,
+  ]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -626,6 +634,7 @@ export function ProductDraftScreen({
           submitLabel={submitLabel}
           wizardSubmitted={wizardSubmitted}
           submitPending={submit.isPending || save.isPending}
+          submitError={submit.isError}
           onSubmitPress={() => void submitCurrentForm()}
           onBackToStory={() => void moveToWizardStep(productWizardStep.story)}
         />

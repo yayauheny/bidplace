@@ -63,6 +63,34 @@ function createWritePrisma(options: {
   updateManyCount?: number;
   extraTx?: Record<string, unknown>;
 }) {
+  const revision = {
+    id: 'revision-id',
+    version: 1,
+    status: (options.product?.status as string | undefined) ?? 'DRAFT',
+    categoryId: options.product?.categoryId ?? null,
+    title: options.product?.title ?? null,
+    story: options.product?.story ?? null,
+    technique: null,
+    materials: null,
+    dimensions: null,
+    weight: null,
+    year: null,
+    condition: options.product?.condition ?? null,
+    uniqueness: options.product?.uniqueness ?? null,
+    provenance: options.product?.provenance ?? null,
+    city: options.product?.city ?? null,
+    packaging: options.product?.packaging ?? null,
+    deliveryInfo: options.product?.deliveryInfo ?? null,
+    images: [],
+    updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+  };
+  const revisionForApproval = {
+    ...revision,
+    images:
+      (options.product?.images as Array<{ id: string }> | undefined)
+        ?.slice(0, 1)
+        .map(({ id }) => ({ imageId: id })) ?? [],
+  };
   const tx = {
     $queryRaw: vi
       .fn()
@@ -88,7 +116,14 @@ function createWritePrisma(options: {
       update: vi.fn(),
       create: vi.fn(),
     },
-    productRevision: { update: vi.fn() },
+    productRevision: {
+      findUniqueOrThrow: vi
+        .fn()
+        .mockImplementation((args) =>
+          args.select?.images?.take === 1 ? revisionForApproval : revision,
+        ),
+      update: vi.fn().mockResolvedValue(revision),
+    },
     ...options.extraTx,
   };
   const prisma = {
@@ -221,6 +256,11 @@ describe('ProductsService', () => {
         data: { title: 'Corrected title' },
       }),
     );
+    expect(tx.productRevision.update).toHaveBeenCalledWith({
+      where: { id: 'revision-id' },
+      data: { title: 'Corrected title' },
+      select: expect.any(Object),
+    });
   });
 
   it('keeps approved and pending-review Products locked for owner edits', async () => {
