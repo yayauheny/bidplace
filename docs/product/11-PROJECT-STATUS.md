@@ -1,5 +1,34 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-22 — Work editor persistence and revision lifecycle
+
+- `Implemented` (mobile web): the Work editor has one React Hook Form model
+  hydrated from the owner React Query detail. Ordinary refetch does not reset
+  dirty input. Step changes, explicit close, in-app navigation and submit persist
+  current form values; browser unload warns while values are dirty. Submit is an
+  ordered update → submit operation and does not continue after a failed save.
+  Reopening `/products/:id` restores the saved draft. The creation flow is
+  URL-owned and consists of Work details, gallery, one optional plain-text story,
+  and review.
+- `Implemented` (API/contracts): owner detail exposes editing revision metadata
+  and projects its fields/gallery while preserving the public Product status.
+  An approved/archived Work forks an editable revision on the first field save;
+  later field and image writes are limited to editable revision statuses and
+  remain locked during moderation or an active Listing. Revision gallery order
+  no longer mutates the published gallery.
+- `Implemented` (MVP boundary): editor writes only category, title, technique,
+  materials, dimensions, year, uniqueness and optional story. Packaging,
+  delivery, condition, provenance, city, weight and repeated process blocks are
+  absent from this UI; legacy persistence/contracts remain available outside
+  the portfolio editor.
+- Coverage: `product-draft-form.spec.ts`, `product-draft-state.spec.ts`,
+  `product-draft-wizard.spec.ts`, `products.service.spec.ts`,
+  `images.service.spec.ts`, `sellers.service.spec.ts`, contracts tests, and
+  `e2e/product-creation-wizard.spec.ts` for save-before-submit and close/reopen.
+- `Unchanged`: cabinet/list entry points are outside this batch; public Work,
+  moderation transitions, Listing locks, commerce persistence, and canonical
+  Pen/Figma sources are unchanged.
+
 ## 2026-09-18 — Global Back flicker
 
 - `Implemented` (mobile web): Back no longer flashes the outgoing public

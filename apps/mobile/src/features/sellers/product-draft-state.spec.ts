@@ -7,14 +7,18 @@ import {
 } from './product-draft-state';
 
 describe('product draft owner recovery', () => {
-  it('hydrates rejected and correction drafts as editable and keeps approved products locked', () => {
+  it('hydrates drafts and editable published revisions without opening pending revisions', () => {
     expect(canOwnerEditProduct(undefined)).toBe(true);
     expect(canOwnerEditProduct('DRAFT')).toBe(true);
     expect(canOwnerEditProduct('CHANGES_REQUESTED')).toBe(true);
     expect(canOwnerEditProduct('REJECTED')).toBe(true);
     expect(canOwnerEditProduct('PENDING_REVIEW')).toBe(false);
     expect(canOwnerEditProduct('APPROVED')).toBe(false);
-    expect(canOwnerEditProduct('ARCHIVED')).toBe(false);
+    expect(canOwnerEditProduct('APPROVED', 'APPROVED')).toBe(true);
+    expect(canOwnerEditProduct('APPROVED', 'DRAFT')).toBe(true);
+    expect(canOwnerEditProduct('APPROVED', 'CHANGES_REQUESTED')).toBe(true);
+    expect(canOwnerEditProduct('APPROVED', 'PENDING_REVIEW')).toBe(false);
+    expect(canOwnerEditProduct('ARCHIVED', 'REJECTED')).toBe(true);
   });
 
   it('shows the latest rejection or correction reason only while the form is recoverable', () => {

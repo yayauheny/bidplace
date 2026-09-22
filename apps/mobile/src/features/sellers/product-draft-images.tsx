@@ -93,7 +93,7 @@ export type ProductDraftImagesStepProps = {
   editable: boolean;
   isCreationFlow: boolean;
   wizardStep: number;
-  wizardCanOpenCreation: boolean;
+  wizardCanOpenStory: boolean;
 
   reorderPending: boolean;
   removePending: boolean;
@@ -107,7 +107,7 @@ export type ProductDraftImagesStepProps = {
   onDeleteImage: (imageId: string) => void;
 
   onBackToAbout: () => void;
-  onContinueToCreation: () => void;
+  onContinueToStory: () => void;
 };
 
 export function ProductDraftImagesStep({
@@ -116,7 +116,7 @@ export function ProductDraftImagesStep({
   editable,
   isCreationFlow,
   wizardStep,
-  wizardCanOpenCreation,
+  wizardCanOpenStory,
   reorderPending,
   removePending,
   uploadPending,
@@ -127,7 +127,7 @@ export function ProductDraftImagesStep({
   onMoveImage,
   onDeleteImage,
   onBackToAbout,
-  onContinueToCreation,
+  onContinueToStory,
 }: ProductDraftImagesStepProps) {
   const showWizardNavigation =
     isCreationFlow && wizardStep === productWizardStep.images;
@@ -192,12 +192,11 @@ export function ProductDraftImagesStep({
           />
           <PrimaryButton
             label="Продолжить к истории создания"
-            disabled={!wizardCanOpenCreation}
-            onPress={() => onContinueToCreation()}
+            disabled={!wizardCanOpenStory}
+            onPress={() => onContinueToStory()}
           />
         </View>
       ) : null}
     </View>
   );
 }
-

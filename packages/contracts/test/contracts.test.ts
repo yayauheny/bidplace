@@ -161,7 +161,8 @@ describe('shared contracts', () => {
     const openingWork = { ...work, author };
 
     expect(
-      portfolioWorkListItemSchema.safeParse({ work, author, note: 'x' }).success,
+      portfolioWorkListItemSchema.safeParse({ work, author, note: 'x' })
+        .success,
     ).toBe(false);
     expect(
       portfolioHomeResponseSchema.safeParse({
@@ -470,5 +471,16 @@ describe('shared contracts', () => {
         creationSteps: [],
       }).success,
     ).toBe(false);
+    expect(
+      sellerProductDetailResponseSchema.shape.editingRevision.safeParse({
+        id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+        version: 2,
+        status: 'DRAFT',
+      }).success,
+    ).toBe(true);
+    expect(
+      sellerProductDetailResponseSchema.shape.editingRevision.safeParse(null)
+        .success,
+    ).toBe(true);
   });
 });

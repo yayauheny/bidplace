@@ -72,7 +72,9 @@ function createWritePrisma(options: {
       findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue(options.responseProduct ?? options.product),
-      update: vi.fn().mockResolvedValue(options.responseProduct ?? options.product),
+      update: vi
+        .fn()
+        .mockResolvedValue(options.responseProduct ?? options.product),
       updateMany: vi.fn().mockResolvedValue({
         count: options.updateManyCount ?? 1,
       }),
@@ -91,8 +93,7 @@ function createWritePrisma(options: {
   };
   const prisma = {
     $transaction: vi.fn(
-      async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
     ),
   };
   return { prisma, tx };
@@ -151,7 +152,9 @@ describe('ProductsService', () => {
         create: productCreate,
         update: vi.fn().mockResolvedValue(product),
       },
-      productRevision: { create: vi.fn().mockResolvedValue({ id: 'revision-id' }) },
+      productRevision: {
+        create: vi.fn().mockResolvedValue({ id: 'revision-id' }),
+      },
       $transaction: vi.fn(async (callback: (tx: unknown) => unknown) =>
         callback({
           product: {
@@ -274,14 +277,28 @@ describe('ProductsService', () => {
         updateMany: vi.fn(),
       },
       productRevision: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue(publishedRevision),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce(publishedRevision)
+          .mockResolvedValueOnce({
+            ...publishedRevision,
+            id: 'revision-editing',
+            status: 'DRAFT',
+            images: [
+              {
+                position: 0,
+                image: approvedProduct.images[0],
+              },
+            ],
+          }),
         create: vi.fn().mockResolvedValue({ id: 'revision-editing' }),
         update: vi.fn(),
       },
     };
     const prisma = {
       $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const service = new ProductsService(prisma as never, {} as never);
@@ -312,6 +329,46 @@ describe('ProductsService', () => {
       where: { id: product.id },
       data: { editingRevisionId: 'revision-editing' },
     });
+  });
+
+  it('rejects edits to a submitted revision while keeping the published Work visible', async () => {
+    const current = {
+      ...ownerProduct('APPROVED'),
+      editingRevisionId: 'revision-editing',
+      publishedRevisionId: 'revision-published',
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
+      product: {
+        findUnique: vi.fn().mockResolvedValue(current),
+        findUniqueOrThrow: vi.fn(),
+        update: vi.fn(),
+        updateMany: vi.fn(),
+      },
+      productRevision: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ status: 'PENDING_REVIEW' }),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+
+    await expect(
+      new ProductsService(prisma as never, {} as never).update(
+        'owner-id',
+        product.id,
+        { title: 'Too late' },
+      ),
+    ).rejects.toThrow('Product revision cannot be edited');
+    expect(tx.productRevision.update).not.toHaveBeenCalled();
+    expect(tx.product.updateMany).not.toHaveBeenCalled();
   });
 
   it('resubmits a rejected Product to pending review without creating a duplicate', async () => {
@@ -355,7 +412,7 @@ describe('ProductsService', () => {
     };
     const editingRevision = {
       status: 'DRAFT' as const,
-      title: approvedProduct.title,
+      title: 'Draft title',
       story: approvedProduct.story,
       categoryId: approvedProduct.categoryId,
       condition: approvedProduct.condition,
@@ -366,6 +423,23 @@ describe('ProductsService', () => {
       deliveryInfo: approvedProduct.deliveryInfo,
       images: [{ imageId: approvedProduct.images[0]!.id }],
     };
+    const submittedRevision = {
+      id: 'revision-editing',
+      version: 2,
+      ...editingRevision,
+      status: 'PENDING_REVIEW' as const,
+      technique: null,
+      materials: null,
+      dimensions: null,
+      weight: null,
+      year: null,
+      images: [
+        {
+          position: 0,
+          image: approvedProduct.images[0],
+        },
+      ],
+    };
     const response = { ...approvedProduct, status: 'APPROVED' as const };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
@@ -375,14 +449,18 @@ describe('ProductsService', () => {
         updateMany: vi.fn(),
       },
       productRevision: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue(editingRevision),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce(editingRevision)
+          .mockResolvedValueOnce(submittedRevision),
         update: vi.fn(),
       },
       auditEvent: { create: vi.fn() },
     };
     const prisma = {
       $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
 
@@ -392,6 +470,7 @@ describe('ProductsService', () => {
     ).submit('owner-id', product.id);
 
     expect(result.product.status).toBe('APPROVED');
+    expect(result.product.title).toBe('Draft title');
     expect(tx.product.updateMany).not.toHaveBeenCalled();
     expect(tx.productRevision.update).toHaveBeenCalledWith({
       where: { id: 'revision-editing' },
@@ -403,6 +482,34 @@ describe('ProductsService', () => {
         newStatus: 'PENDING_REVIEW',
       }),
     });
+  });
+
+  it('keeps an approved Work revision locked by an active Listing', async () => {
+    const current = {
+      ...ownerProduct('APPROVED'),
+      editingRevisionId: 'revision-editing',
+      publishedRevisionId: 'revision-published',
+      listings: [{ id: 'listing-id' }],
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: product.id }]),
+      product: { findUnique: vi.fn().mockResolvedValue(current) },
+      productRevision: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
+    };
+    const prisma = {
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+      ),
+    };
+
+    await expect(
+      new ProductsService(prisma as never, {} as never).submit(
+        'owner-id',
+        product.id,
+      ),
+    ).rejects.toThrow('Product is locked by an active Listing');
+    expect(tx.productRevision.update).not.toHaveBeenCalled();
   });
 
   it('denies submit for approved Products and other owners', async () => {
@@ -435,11 +542,13 @@ describe('ProductsService', () => {
       product: ownerProduct('PENDING_REVIEW'),
     });
     await expect(
-      new ProductsService(pending.prisma as never, {} as never).replaceCreationStory(
-        'owner-id',
-        product.id,
-        { intro: 'Intro', steps: [] },
-      ),
+      new ProductsService(
+        pending.prisma as never,
+        {} as never,
+      ).replaceCreationStory('owner-id', product.id, {
+        intro: 'Intro',
+        steps: [],
+      }),
     ).rejects.toThrow('Product creation story is locked');
     expect(pending.tx.product.updateMany).not.toHaveBeenCalled();
 
@@ -447,11 +556,10 @@ describe('ProductsService', () => {
       product: ownerProduct('DRAFT', [{ id: 'listing-id' }]),
     });
     await expect(
-      new ProductsService(listed.prisma as never, {} as never).reorderCreationSteps(
-        'owner-id',
-        product.id,
-        [],
-      ),
+      new ProductsService(
+        listed.prisma as never,
+        {} as never,
+      ).reorderCreationSteps('owner-id', product.id, []),
     ).rejects.toThrow('Product is locked by an active Listing');
   });
 

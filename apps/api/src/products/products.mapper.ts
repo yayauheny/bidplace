@@ -37,6 +37,30 @@ export const productRevisionGallerySelect = {
   },
 } satisfies Prisma.ProductRevisionSelect;
 
+export const productRevisionOwnerSelect = {
+  id: true,
+  version: true,
+  status: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  packaging: true,
+  deliveryInfo: true,
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productRevisionImageSelect,
+  },
+} satisfies Prisma.ProductRevisionSelect;
+
 export const productSelect = {
   id: true,
   publicId: true,
@@ -144,6 +168,37 @@ export function toContractProduct(product: ProductRecord): Product {
     })),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
+  };
+}
+
+export type ProductRevisionOwnerRecord = Prisma.ProductRevisionGetPayload<{
+  select: typeof productRevisionOwnerSelect;
+}>;
+
+export function toOwnerContractProduct(
+  product: ProductRecord,
+  editingRevision: ProductRevisionOwnerRecord | null | undefined,
+): Product {
+  const base = toContractProduct(product);
+  if (!editingRevision) return base;
+  const editingImages = toRevisionGalleryImages(editingRevision);
+  return {
+    ...base,
+    categoryId: editingRevision.categoryId ?? null,
+    title: editingRevision.title ?? null,
+    story: editingRevision.story ?? null,
+    technique: editingRevision.technique ?? null,
+    materials: editingRevision.materials ?? null,
+    dimensions: editingRevision.dimensions ?? null,
+    weight: editingRevision.weight ?? null,
+    year: editingRevision.year ?? null,
+    condition: editingRevision.condition ?? null,
+    uniqueness: editingRevision.uniqueness ?? null,
+    provenance: editingRevision.provenance ?? null,
+    city: editingRevision.city ?? null,
+    packaging: editingRevision.packaging ?? null,
+    deliveryInfo: editingRevision.deliveryInfo ?? null,
+    images: editingImages ? toImageContracts(editingImages) : base.images,
   };
 }
 

@@ -1,5 +1,6 @@
 import {
   creationStoryResponseSchema,
+  productResponseSchema,
   type CreationStoryWriteRequest,
   type PortfolioWorksQuery,
   type ProductStatus,
@@ -18,9 +19,11 @@ import { PrismaService, runReadCommittedTransaction } from '../core/database';
 import { PublicIdService } from '../core/public-id';
 import {
   portfolioCatalogProductSelect,
+  productRevisionOwnerSelect,
   productSelect,
   toCreationStepContract,
   toImageContracts,
+  toOwnerContractProduct,
   toProductResponse,
   toRevisionGalleryImages,
   type PortfolioCatalogProductRecord,
@@ -38,10 +41,11 @@ import {
   productWriteGuardSelect,
   writableProductWhere,
 } from './product-write-guard';
+import { portfolioDirectProductWhere } from './public-visibility';
 import {
-  portfolioDirectProductWhere,
-} from './public-visibility';
-import { assertProductRevisionTransition } from './product-revision-state';
+  assertProductRevisionTransition,
+  canAuthorEditRevision,
+} from './product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
 import { toPublicSellerProfile } from '../sellers/seller-profile.mapper';
 
@@ -228,6 +232,9 @@ export class ProductsService {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+        if (product.listings.length > 0) {
+          throw new ConflictException('Product is locked by an active Listing');
+        }
         let editingRevisionId = product.editingRevisionId;
         if (product.editingRevisionId === product.publishedRevisionId) {
           const published = await tx.productRevision.findUniqueOrThrow({
@@ -269,17 +276,33 @@ export class ProductsService {
             where: { id: product.id },
             data: { editingRevisionId },
           });
+        } else {
+          const editingRevision = await tx.productRevision.findUniqueOrThrow({
+            where: { id: editingRevisionId },
+            select: { status: true },
+          });
+          if (!canAuthorEditRevision(editingRevision.status)) {
+            throw new ConflictException('Product revision cannot be edited');
+          }
         }
 
         await tx.productRevision.update({
           where: { id: editingRevisionId },
           data: revisionData,
         });
-        const updated = await tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
+        const [updated, editingRevision] = await Promise.all([
+          tx.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
+          }),
+          tx.productRevision.findUniqueOrThrow({
+            where: { id: editingRevisionId },
+            select: productRevisionOwnerSelect,
+          }),
+        ]);
+        return productResponseSchema.parse({
+          product: toOwnerContractProduct(updated, editingRevision),
         });
-        return toProductResponse(updated);
       }
       assertProductWritable(product, userId, 'edit');
 
@@ -340,6 +363,9 @@ export class ProductsService {
           throw new ForbiddenException('Product is not owned by user');
         }
         assertApprovedSeller(current.sellerProfile.status as SellerStatus);
+        if (current.listings.length > 0) {
+          throw new ConflictException('Product is locked by an active Listing');
+        }
 
         const editingRevision = await tx.productRevision.findUniqueOrThrow({
           where: { id: current.editingRevisionId },
@@ -378,10 +404,16 @@ export class ProductsService {
           where: { id: current.editingRevisionId },
           data: { status: 'PENDING_REVIEW', submittedAt: new Date() },
         });
-        const updated = await tx.product.findUniqueOrThrow({
-          where: { id },
-          select: productSelect,
-        });
+        const [updated, submittedRevision] = await Promise.all([
+          tx.product.findUniqueOrThrow({
+            where: { id },
+            select: productSelect,
+          }),
+          tx.productRevision.findUniqueOrThrow({
+            where: { id: current.editingRevisionId },
+            select: productRevisionOwnerSelect,
+          }),
+        ]);
         await tx.auditEvent.create({
           data: {
             actorUserId: userId,
@@ -392,7 +424,9 @@ export class ProductsService {
             reason: null,
           },
         });
-        return toProductResponse(updated);
+        return productResponseSchema.parse({
+          product: toOwnerContractProduct(updated, submittedRevision),
+        });
       }
 
       assertProductWritable(current, userId, 'submit');

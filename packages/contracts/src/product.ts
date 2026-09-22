@@ -86,20 +86,20 @@ export const productSchema = z
 
 export const productWriteRequestSchema = z
   .object({
-    categoryId: uuidSchema.optional(),
-    title: z.string().trim().min(1).optional(),
-    story: z.string().trim().min(1).optional(),
+    categoryId: uuidSchema.nullable().optional(),
+    title: z.string().trim().min(1).nullable().optional(),
+    story: z.string().trim().min(1).nullable().optional(),
     technique: z.string().trim().min(1).nullable().optional(),
     materials: z.string().trim().min(1).nullable().optional(),
     dimensions: z.string().trim().min(1).nullable().optional(),
     weight: z.string().trim().min(1).nullable().optional(),
     year: z.number().int().min(0).max(9999).nullable().optional(),
-    condition: z.string().trim().min(1).optional(),
-    uniqueness: z.string().trim().min(1).optional(),
-    provenance: z.string().trim().min(1).optional(),
-    city: z.string().trim().min(1).optional(),
-    packaging: z.string().trim().min(1).optional(),
-    deliveryInfo: z.string().trim().min(1).optional(),
+    condition: z.string().trim().min(1).nullable().optional(),
+    uniqueness: z.string().trim().min(1).nullable().optional(),
+    provenance: z.string().trim().min(1).nullable().optional(),
+    city: z.string().trim().min(1).nullable().optional(),
+    packaging: z.string().trim().min(1).nullable().optional(),
+    deliveryInfo: z.string().trim().min(1).nullable().optional(),
     creationIntro: z.string().trim().min(1).max(5000).nullable().optional(),
   })
   .strict();

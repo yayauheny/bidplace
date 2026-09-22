@@ -41,10 +41,7 @@ describe('SellersService', () => {
           callback(tx),
       ),
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     await expect(
       service.addAchievement('user-id', { body: 'First exhibition' }),
@@ -82,10 +79,7 @@ describe('SellersService', () => {
           callback(tx),
       ),
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     await expect(
       service.create(
@@ -297,10 +291,7 @@ describe('SellersService', () => {
           update: vi.fn(),
         },
       };
-      const service = new SellersService(
-        prisma as never,
-        imageStore as never,
-      );
+      const service = new SellersService(prisma as never, imageStore as never);
 
       await expect(
         service.update('user-id', { fullName: 'Updated seller' }),
@@ -403,10 +394,7 @@ describe('SellersService', () => {
           callback(tx),
       ),
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     await service.update('user-id', { fullName: 'Updated seller' });
 
@@ -457,10 +445,7 @@ describe('SellersService', () => {
         }),
       },
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     const result = await service.update('user-id', {
       fullName: 'Updated seller',
@@ -615,10 +600,7 @@ describe('SellersService', () => {
       },
       auditEvent: { findFirst: vi.fn().mockResolvedValue(null) },
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     const result = await service.getProduct(
       'owner-id',
@@ -647,6 +629,94 @@ describe('SellersService', () => {
         },
       }),
     );
+  });
+
+  it('returns the editable revision fields and gallery to the owner', async () => {
+    const draftImage = {
+      id: '2f8fc6d7-4c7a-4f9e-9f75-b8eafed0c2b1',
+      mimeType: 'image/png',
+      byteLength: 4,
+      checksum: '1'.repeat(64),
+      width: 2,
+      height: 2,
+    };
+    const prisma = {
+      product: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+          publicId: 'publicId001',
+          sellerProfileId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          categoryId: null,
+          title: 'Published title',
+          story: null,
+          technique: null,
+          materials: null,
+          dimensions: null,
+          weight: null,
+          year: null,
+          condition: null,
+          uniqueness: null,
+          provenance: null,
+          city: null,
+          packaging: null,
+          deliveryInfo: null,
+          publishedAt: new Date('2026-07-18T00:00:00.000Z'),
+          status: 'APPROVED',
+          editingRevisionId: 'editing-revision-id',
+          publishedRevisionId: 'published-revision-id',
+          createdAt: new Date('2026-07-18T00:00:00.000Z'),
+          updatedAt: new Date('2026-07-18T00:00:00.000Z'),
+          images: [],
+          editingRevision: {
+            id: '5db1f3d4-45f2-4f85-80ad-ad29b23b896a',
+            version: 2,
+            status: 'DRAFT',
+            categoryId: null,
+            title: 'Draft title',
+            story: 'Draft story',
+            technique: null,
+            materials: null,
+            dimensions: null,
+            weight: null,
+            year: null,
+            condition: null,
+            uniqueness: null,
+            provenance: null,
+            city: null,
+            packaging: null,
+            deliveryInfo: null,
+            images: [{ position: 0, image: draftImage }],
+          },
+          creationIntro: null,
+          creationSteps: [],
+        }),
+      },
+      auditEvent: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const service = new SellersService(prisma as never, imageStore as never);
+
+    const result = await service.getProduct(
+      'owner-id',
+      'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+    );
+
+    expect(result.product).toMatchObject({
+      status: 'APPROVED',
+      title: 'Draft title',
+      story: 'Draft story',
+      images: [
+        {
+          id: draftImage.id,
+          position: 0,
+          url: `/api/images/${draftImage.id}`,
+        },
+      ],
+    });
+    expect(result.editingRevision).toEqual({
+      id: '5db1f3d4-45f2-4f85-80ad-ad29b23b896a',
+      version: 2,
+      status: 'DRAFT',
+    });
   });
 
   it('exposes the latest rejection reason without rewriting audit history', async () => {
@@ -687,10 +757,7 @@ describe('SellersService', () => {
         delete: vi.fn(),
       },
     };
-    const service = new SellersService(
-      prisma as never,
-      imageStore as never,
-    );
+    const service = new SellersService(prisma as never, imageStore as never);
 
     const result = await service.getProduct(
       'owner-id',

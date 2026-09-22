@@ -5,47 +5,39 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 
-import type { DraftCreationStep } from './product-draft-creation';
-
 export type ProductDraftReviewStepProps = {
   editable: boolean;
-  existingProductTitle: string | null | undefined;
+  title: string;
   existingProductImagesLength: number;
-  creationSteps: DraftCreationStep[];
+  hasStory: boolean;
   submitLabel: string;
 
   wizardSubmitted: boolean;
   submitPending: boolean;
   onSubmitPress: () => void;
-  onBackToCreation: () => void;
+  onBackToStory: () => void;
 };
 
 export function ProductDraftReviewStep({
   editable,
-  existingProductTitle,
+  title,
   existingProductImagesLength,
-  creationSteps,
+  hasStory,
   submitLabel,
   wizardSubmitted,
   submitPending,
   onSubmitPress,
-  onBackToCreation,
+  onBackToStory,
 }: ProductDraftReviewStepProps) {
   return (
     <FormSection
       title="Проверка перед модерацией"
       description="Проверьте обязательные поля, изображения и историю создания. После отправки редактирование будет ограничено статусом модерации."
     >
-      <AppText role="label">
-        Название: {existingProductTitle ?? 'Не заполнено'}
-      </AppText>
+      <AppText role="label">Название: {title.trim() || 'Не заполнено'}</AppText>
       <AppText role="bodySmall" tone="secondary">
-        Изображения: {existingProductImagesLength}/10 · Этапы истории:{' '}
-        {
-          creationSteps.filter(
-            (step) => step.title.trim() && step.body.trim(),
-          ).length
-        }
+        Изображения: {existingProductImagesLength}/10 · История:{' '}
+        {hasStory ? 'заполнена' : 'не заполнена'}
       </AppText>
       {wizardSubmitted ? (
         <AppText role="bodySmall" tone="success">
@@ -62,9 +54,8 @@ export function ProductDraftReviewStep({
       <SecondaryButton
         label="Назад к истории создания"
         disabled={submitPending || wizardSubmitted}
-        onPress={() => onBackToCreation()}
+        onPress={() => onBackToStory()}
       />
     </FormSection>
   );
 }
-

@@ -14,12 +14,7 @@ import {
 type StepOneErrors = {
   categoryId?: string;
   title?: string;
-  story?: string;
   year?: string;
-  uniqueness?: string;
-  provenance?: string;
-  city?: string;
-  deliveryInfo?: string;
 };
 
 export type ProductDraftAboutStepProps = {
@@ -38,27 +33,13 @@ export type ProductDraftAboutStepProps = {
   onChangeMaterials: (value: string) => void;
   dimensions: string;
   onChangeDimensions: (value: string) => void;
-  weight: string;
-  onChangeWeight: (value: string) => void;
   year: string;
   onChangeYear: (value: string) => void;
 
-  city: string;
-  onChangeCity: (value: string) => void;
-  packaging: string;
-  onChangePackaging: (value: string) => void;
-  deliveryInfo: string;
-  onChangeDeliveryInfo: (value: string) => void;
-
   title: string;
   onChangeTitle: (value: string) => void;
-  story: string;
-  onChangeStory: (value: string) => void;
   uniqueness: string;
   onChangeUniqueness: (value: string) => void;
-  condition: string;
-  provenance: string;
-  onChangeProvenance: (value: string) => void;
 
   stepOneAttempted: boolean;
   stepOneErrors: StepOneErrors;
@@ -86,25 +67,12 @@ export function ProductDraftAboutStep({
   onChangeMaterials,
   dimensions,
   onChangeDimensions,
-  weight,
-  onChangeWeight,
   year,
   onChangeYear,
-  city,
-  onChangeCity,
-  packaging,
-  onChangePackaging,
-  deliveryInfo,
-  onChangeDeliveryInfo,
   title,
   onChangeTitle,
-  story,
-  onChangeStory,
   uniqueness,
   onChangeUniqueness,
-  condition,
-  provenance,
-  onChangeProvenance,
   stepOneAttempted,
   stepOneErrors,
   canSaveStepOne,
@@ -149,13 +117,6 @@ export function ProductDraftAboutStep({
                 editable={editable}
               />
               <TextField
-                label="Вес"
-                value={weight}
-                onChangeText={onChangeWeight}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
                 label="Год создания"
                 value={year}
                 onChangeText={onChangeYear}
@@ -163,37 +124,6 @@ export function ProductDraftAboutStep({
                 keyboardType="number-pad"
                 editable={editable}
                 error={stepOneAttempted ? stepOneErrors.year : undefined}
-              />
-            </FormSection>
-            <FormSection title="Логистика">
-              <TextField
-                label="Город"
-                value={city}
-                onChangeText={onChangeCity}
-                placeholder="Город"
-                editable={editable}
-                required
-                error={stepOneAttempted ? stepOneErrors.city : undefined}
-              />
-              <TextField
-                label="Упаковка"
-                value={packaging}
-                onChangeText={onChangePackaging}
-                placeholder="Необязательно"
-                multiline
-                editable={editable}
-              />
-              <TextField
-                label="Передача или доставка"
-                value={deliveryInfo}
-                onChangeText={onChangeDeliveryInfo}
-                placeholder="Передача или доставка"
-                multiline
-                editable={editable}
-                required
-                error={
-                  stepOneAttempted ? stepOneErrors.deliveryInfo : undefined
-                }
               />
             </FormSection>
           </>
@@ -234,40 +164,11 @@ export function ProductDraftAboutStep({
             error={stepOneAttempted ? stepOneErrors.title : undefined}
           />
           <TextField
-            label="История предмета"
-            value={story}
-            onChangeText={onChangeStory}
-            placeholder="История предмета"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.story : undefined}
-          />
-          <TextField
             label="Уникальность или тираж"
             value={uniqueness}
             onChangeText={onChangeUniqueness}
-            placeholder="Уникальность или тираж"
             editable={editable}
-            required
-            error={
-              stepOneAttempted ? stepOneErrors.uniqueness : undefined
-            }
-          />
-          {condition ? (
-            <AppText role="bodySmall" tone="secondary">
-              Состояние: {condition}
-            </AppText>
-          ) : null}
-          <TextField
-            label="Происхождение"
-            value={provenance}
-            onChangeText={onChangeProvenance}
-            placeholder="Происхождение"
-            multiline
-            editable={editable}
-            required
-            error={stepOneAttempted ? stepOneErrors.provenance : undefined}
+            placeholder="Необязательно"
           />
         </FormSection>
       </FormPageColumns>
@@ -279,7 +180,8 @@ export function ProductDraftAboutStep({
         </AppText>
       ) : null}
 
-      {editable && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {editable &&
+      (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <PrimaryButton
           label={titleLabel}
           loading={saveIsPending}
@@ -307,7 +209,8 @@ export function ProductDraftAboutStep({
         />
       ) : null}
 
-      {saveIsError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {saveIsError &&
+      (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <AppText role="bodySmall" tone="danger">
           Не удалось сохранить предмет.
         </AppText>
@@ -315,4 +218,3 @@ export function ProductDraftAboutStep({
     </>
   );
 }
-
