@@ -290,7 +290,9 @@ describe('Product write atomicity against PostgreSQL', () => {
     await admin.updateProductStatus(adminUser.id, productId, {
       status: 'APPROVED',
     });
-    expect(await products.getPortfolio(createdProduct.publicId)).toMatchObject({
+    expect(
+      (await products.getPortfolio(createdProduct.publicId)).product,
+    ).toMatchObject({
       title: 'Latest canonical draft',
       story: 'Latest canonical story',
     });

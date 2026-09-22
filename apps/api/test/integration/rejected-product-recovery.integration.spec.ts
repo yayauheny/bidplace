@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { portfolioWorkDetailResponseSchema } from '@bidplace/contracts';
 import type { PrismaClient } from '@bidplace/database';
 
 import {
@@ -318,9 +319,10 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
 
     const publicWork = await clients.guest.get(`/works/${rejected.publicId}`);
     expect(publicWork.status).toBe(200);
-    expect((await publicWork.json()) as { title: string }).toMatchObject({
-      title: 'Corrected recovery work',
-    });
+    const publicWorkBody = portfolioWorkDetailResponseSchema.parse(
+      await publicWork.json(),
+    );
+    expect(publicWorkBody.work.title).toBe('Corrected recovery work');
   });
 
   it('revokes rejected Product writes when the seller is no longer approved', async () => {
