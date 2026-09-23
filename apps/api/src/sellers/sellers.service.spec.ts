@@ -9,6 +9,18 @@ const imageStore = {
   delete: vi.fn(),
 };
 
+function ownerRecord(now: Date) {
+  return {
+    id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
+    userId: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61', slug: 'seller-slug',
+    fullName: 'Updated seller', sellerType: 'creator', discipline: 'Керамика', country: 'BY', city: 'Minsk',
+    practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null,
+    shortDescription: 'Updated description', handoffContactType: null, handoffContactValue: null, handoffInitiator: null,
+    status: 'CHANGES_REQUESTED', createdAt: now, updatedAt: now,
+    editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', version: 1, status: 'CHANGES_REQUESTED', updatedAt: now, slug: 'seller-slug', discipline: 'Керамика', fullName: 'Updated seller', country: 'BY', city: 'Minsk', practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null, shortDescription: 'Updated description' },
+  };
+}
+
 describe('SellersService', () => {
   it('adds an achievement after locking the editable profile revision', async () => {
     const tx = {
@@ -143,7 +155,8 @@ describe('SellersService', () => {
           editingRevision: {
             id: 'c0d82a10-3170-49eb-904f-a8bc87d311a5',
             version: 1,
-            status: 'PENDING_REVIEW',
+            status: 'DRAFT',
+            updatedAt: now,
             slug: 'seller-slug',
             discipline: 'Керамика',
             fullName: 'Seller',
@@ -184,16 +197,12 @@ describe('SellersService', () => {
       'user-id',
       {
         slug: 'seller-slug',
-        sellerType: 'creator',
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
         city: 'Minsk',
         socialLink: 'https://example.com/seller',
         shortDescription: 'Description',
-        handoffContactType: 'TELEGRAM',
-        handoffContactValue: '@seller',
-        handoffInitiator: 'BUYER_CONTACTS_SELLER',
       },
       { buffer: Buffer.from([1, 2, 3]), mimeType: 'image/png' },
     );
@@ -203,7 +212,7 @@ describe('SellersService', () => {
     expect(tx.sellerProfileRevision.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         sellerProfileId: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
-        status: 'PENDING_REVIEW',
+        status: 'DRAFT',
       }),
     });
     expect(put).toHaveBeenCalledWith(
@@ -419,6 +428,15 @@ describe('SellersService', () => {
 
   it('allows edits only when SellerProfile is CHANGES_REQUESTED', async () => {
     const now = new Date('2026-07-24T00:00:00.000Z');
+    const record = ownerRecord(now);
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: record.id }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
+        update: vi.fn(), findUniqueOrThrow: vi.fn().mockResolvedValue(record),
+      },
+      sellerProfileRevision: { update: vi.fn() },
+    };
     const prisma = {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({
@@ -444,6 +462,7 @@ describe('SellersService', () => {
           updatedAt: now,
         }),
       },
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
     };
     const service = new SellersService(prisma as never, imageStore as never);
 
@@ -451,7 +470,7 @@ describe('SellersService', () => {
       fullName: 'Updated seller',
     });
 
-    expect(prisma.sellerProfile.update).toHaveBeenCalledWith(
+    expect(tx.sellerProfile.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5' },
         data: expect.objectContaining({ fullName: 'Updated seller' }),
@@ -462,7 +481,9 @@ describe('SellersService', () => {
 
   it('updates seller photo metadata and bytes in one transaction', async () => {
     const now = new Date('2026-07-24T00:00:00.000Z');
+    const record = ownerRecord(now);
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: record.id }]),
       sellerProfile: {
         update: vi.fn().mockResolvedValue({
           id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -481,7 +502,10 @@ describe('SellersService', () => {
           createdAt: now,
           updatedAt: now,
         }),
+        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
+      sellerProfileRevision: { update: vi.fn() },
     };
     const prisma = {
       sellerProfile: {

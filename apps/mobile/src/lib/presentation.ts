@@ -1,4 +1,5 @@
 export const sellerStatusLabels = {
+  DRAFT: 'Черновик',
   APPROVED: 'Одобрен',
   PENDING_REVIEW: 'На модерации',
   CHANGES_REQUESTED: 'Нужны правки',

@@ -4,6 +4,7 @@ export const USER_ROLES = ['admin', 'user'] as const;
 export const USER_STATUSES = ['active', 'banned'] as const;
 export const SELLER_TYPES = ['creator', 'influencer'] as const;
 export const SELLER_STATUSES = [
+  'DRAFT',
   'PENDING_REVIEW',
   'APPROVED',
   'CHANGES_REQUESTED',

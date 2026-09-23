@@ -21,6 +21,9 @@ export function isSellerProfileFormEditable(
     return false;
   }
   if (profile.status === 'CHANGES_REQUESTED') return true;
+  if (profile.status === 'DRAFT') {
+    return isEditableProfileRevisionStatus(editingRevision?.status);
+  }
   if (profile.status === 'REJECTED') {
     return isEditableProfileRevisionStatus(editingRevision?.status);
   }

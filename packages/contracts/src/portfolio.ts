@@ -2,9 +2,12 @@ import { z } from 'zod';
 
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
-import { productStatusSchema } from './enums';
-import { sellerProfileRevisionStatusSchema } from './enums';
-import { slugSchema, uuidSchema } from './primitives';
+import {
+  productStatusSchema,
+  sellerProfileRevisionStatusSchema,
+  sellerStatusSchema,
+} from './enums';
+import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
 
@@ -191,13 +194,7 @@ export const portfolioAuthorApplicationSchema = z
     discipline: publicText,
     practice: z.string().trim().min(1).nullable(),
     shortDescription: publicText,
-    status: z.enum([
-      'PENDING_REVIEW',
-      'APPROVED',
-      'CHANGES_REQUESTED',
-      'REJECTED',
-      'SUSPENDED',
-    ]),
+    status: sellerStatusSchema,
   })
   .strict();
 
@@ -209,6 +206,7 @@ export const portfolioAuthorApplicationResponseSchema = z
         id: uuidSchema,
         version: z.number().int().positive(),
         status: sellerProfileRevisionStatusSchema,
+        updatedAt: isoDateTimeSchema,
       })
       .strict()
       .nullable(),

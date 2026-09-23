@@ -69,6 +69,7 @@ export const sellerProfileOwnerSelect = {
       id: true,
       version: true,
       status: true,
+      updatedAt: true,
       slug: true,
       discipline: true,
       fullName: true,
@@ -243,6 +244,7 @@ export function toSellerProfileResponse(
           id: editingRevision.id,
           version: editingRevision.version,
           status: editingRevision.status,
+          updatedAt: editingRevision.updatedAt.toISOString(),
         }
       : null,
   });

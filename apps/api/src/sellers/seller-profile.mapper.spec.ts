@@ -74,6 +74,7 @@ describe('toSellerProfileResponse', () => {
         id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',
         version: 2,
         status: 'DRAFT',
+        updatedAt: now,
         slug: 'draft-slug',
         discipline: 'Живопись',
         fullName: 'Draft name',
@@ -99,6 +100,7 @@ describe('toSellerProfileResponse', () => {
       id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',
       version: 2,
       status: 'DRAFT',
+      updatedAt: now.toISOString(),
     });
   });
 });
