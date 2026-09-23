@@ -23,14 +23,9 @@ export function isNotFoundError(error: unknown): boolean {
 }
 
 export function shouldClearSessionForError(error: unknown): boolean {
-  return (
-    error instanceof ApiClientError &&
-    (error.kind === 'unauthorized' || error.kind === 'forbidden')
-  );
+  return error instanceof ApiClientError && error.kind === 'unauthorized';
 }
 
 export function isInfrastructureError(error: unknown): boolean {
-  return (
-    error instanceof ApiClientError && infrastructureKinds.has(error.kind)
-  );
+  return error instanceof ApiClientError && infrastructureKinds.has(error.kind);
 }

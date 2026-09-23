@@ -50,6 +50,10 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
+When a guest opens a protected internal route, Login receives its validated
+pathname and query as `redirectTo`; successful authentication returns to that
+route. External targets and auth routes are never restored.
+
 Phone chrome is one 232×64 four-item glass dock: Home, Search, Add, Profile
 (`DEC-088`). Search lives inside the capsule. Cart and the unused split-search
 FAB are not production items. Public share aliases `/works/:id` and

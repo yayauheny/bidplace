@@ -145,7 +145,7 @@ SellerProfile
   interleaves published non-cover `ProductImage` rows between paragraphs.
   `ProductCreationStep` remains owner-only and is not a public History CMS;
 - persisted entities expose `createdAt` and `updatedAt`; append-only audit records retain immutable business facts;
-- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance. OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
+- buyer accepts a versioned service-rules text; `auth.service.ts` stores the acceptance and `POST /api/auth/rules/accept` returns the canonical `{ user }` auth response. Mobile derives session capability from one React Query `['user', 'me']` record. A structured 401 from any query or mutation clears that record and user/seller/admin caches once; 403 and infrastructure errors preserve the authenticated state. OTP and password-reset deliver mail through shared `MailTransport` (`SmtpMailTransport` on the production security profile, `LocalMailTransport` otherwise) with a test-only OTP bypass that can activate only for `NODE_ENV=test` and `APP_ENV=local`;
 - leftover Listing/Bid/Order rows remain in Prisma. Hide/unhide and admin
   seller/product moderation still fail closed when a `SCHEDULED` or `LIVE`
   Listing exists (`hasBlockingListing`). There is no listing/bid/order HTTP,

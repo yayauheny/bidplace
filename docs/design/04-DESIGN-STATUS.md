@@ -1,8 +1,16 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-22
+Последнее обновление: 2026-09-23
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-23 — Auth return path
+
+- `Implemented` (mobile web behavior): a guest redirected from a protected
+  internal route returns to its original pathname and query after Login.
+  Unsafe external, data, JavaScript and auth-route targets fall back to Home.
+  This changes routing state only; the Auth screens, shared visual primitives,
+  tokens and canonical Pen file are unchanged.
 
 ## 2026-09-22 — Work editor persistence
 

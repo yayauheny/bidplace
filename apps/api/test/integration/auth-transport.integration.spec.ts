@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
+import { CURRENT_RULES_VERSION } from '@bidplace/contracts';
 
 import {
   createIntegrationDatabaseContext,
@@ -50,6 +51,25 @@ function cookiePair(setCookie: string): string {
 }
 
 describe('auth HTTP transport', () => {
+  it('returns the accepted rules version in the authenticated user response', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const client = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.0.2.1',
+    );
+    await login(client, fixture.buyer);
+
+    const acceptance = await client.post('/auth/rules/accept', {
+      rulesVersion: CURRENT_RULES_VERSION,
+    });
+
+    expect(acceptance.status).toBe(201);
+    expect((await acceptance.json()).user.acceptedRulesVersion).toBe(
+      CURRENT_RULES_VERSION,
+    );
+  });
+
   it('registers over HTTP with normalized identity fields, establishes a session and rejects duplicates without a write', async () => {
     await createPermissionFixture(prisma);
     const client = new HttpTestClient(

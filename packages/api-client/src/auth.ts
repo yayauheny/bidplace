@@ -1,5 +1,6 @@
 import {
   acceptRulesRequestSchema,
+  acceptRulesResponseSchema,
   authResponseSchema,
   emailOtpVerifyRequestSchema,
   forgotPasswordRequestSchema,
@@ -38,13 +39,22 @@ export function createAuthClient(context: RequestContext) {
       return requestJson(context, '/api/auth/me', meResponseSchema);
     },
     getRules() {
-      return requestJson(context, '/api/auth/rules', serviceRulesResponseSchema);
+      return requestJson(
+        context,
+        '/api/auth/rules',
+        serviceRulesResponseSchema,
+      );
     },
     acceptRules(input: { rulesVersion: string }) {
-      return requestJson(context, '/api/auth/rules/accept', authResponseSchema, {
-        method: 'POST',
-        body: acceptRulesRequestSchema.parse(input),
-      });
+      return requestJson(
+        context,
+        '/api/auth/rules/accept',
+        acceptRulesResponseSchema,
+        {
+          method: 'POST',
+          body: acceptRulesRequestSchema.parse(input),
+        },
+      );
     },
     logout() {
       return requestJson(context, '/api/auth/logout', logoutResponseSchema, {
@@ -63,16 +73,26 @@ export function createAuthClient(context: RequestContext) {
       });
     },
     forgotPassword(input: { email: string }) {
-      return requestJson(context, '/api/auth/password/forgot', okResponseSchema, {
-        method: 'POST',
-        body: forgotPasswordRequestSchema.parse(input),
-      });
+      return requestJson(
+        context,
+        '/api/auth/password/forgot',
+        okResponseSchema,
+        {
+          method: 'POST',
+          body: forgotPasswordRequestSchema.parse(input),
+        },
+      );
     },
     resetPassword(input: { token: string; password: string }) {
-      return requestJson(context, '/api/auth/password/reset', okResponseSchema, {
-        method: 'POST',
-        body: resetPasswordRequestSchema.parse(input),
-      });
+      return requestJson(
+        context,
+        '/api/auth/password/reset',
+        okResponseSchema,
+        {
+          method: 'POST',
+          body: resetPasswordRequestSchema.parse(input),
+        },
+      );
     },
   };
 }

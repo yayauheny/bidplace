@@ -1,6 +1,7 @@
 import {
   type AuthTokenPayload,
   acceptRulesRequestSchema,
+  acceptRulesResponseSchema,
   authResponseSchema,
   loginRequestSchema,
   meResponseSchema,
@@ -119,7 +120,9 @@ export class AuthController {
 
     const input = parseBody(acceptRulesRequestSchema, body);
 
-    return this.authService.acceptRules(auth.sub, input);
+    return acceptRulesResponseSchema.parse(
+      await this.authService.acceptRules(auth.sub, input),
+    );
   }
 
   @UseGuards(BearerAuthGuard)
