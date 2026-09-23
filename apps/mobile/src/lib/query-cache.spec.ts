@@ -6,7 +6,6 @@ import {
   clearAuthenticatedSession,
   clearAuthScopedDataExceptSession,
   productKeys,
-  clearAuthScopedQueries,
   isAuthScopedQueryKey,
 } from './query-cache';
 
@@ -19,20 +18,24 @@ describe('query cache auth boundaries', () => {
     expect(isAuthScopedQueryKey(productKeys.categories)).toBe(false);
   });
 
-  it('removes only auth-scoped query data', async () => {
+  it('removes only non-session auth-scoped query data', async () => {
     const queryClient = new QueryClient();
 
     queryClient.setQueryData(['products', 'list'], { page: 1 });
     queryClient.setQueryData(productKeys.categories, ['art']);
+    queryClient.setQueryData(authKeys.session, { id: 'user-1' });
     queryClient.setQueryData(['seller', 'products'], [{ id: 'product-1' }]);
     queryClient.setQueryData(['admin', 'users'], [{ id: 'user-1' }]);
 
-    await clearAuthScopedQueries(queryClient);
+    await clearAuthScopedDataExceptSession(queryClient);
 
     expect(queryClient.getQueryData(['products', 'list'])).toEqual({ page: 1 });
     expect(queryClient.getQueryData(productKeys.categories)).toEqual(['art']);
     expect(queryClient.getQueryData(['seller', 'products'])).toBeUndefined();
     expect(queryClient.getQueryData(['admin', 'users'])).toBeUndefined();
+    expect(queryClient.getQueryData(authKeys.session)).toEqual({
+      id: 'user-1',
+    });
   });
 
   it('makes the session anonymous while removing protected query data', async () => {

@@ -1,6 +1,7 @@
 import { ApiClientError } from '@bidplace/api-client';
 import { ApiErrorCode } from '@bidplace/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
 
 import { authKeys } from './query-cache';
 import { createAppQueryClient } from './query-client';
@@ -34,6 +35,9 @@ describe('application query client session recovery', () => {
     ).rejects.toBe(unauthorized);
 
     expect(attempts).toBe(1);
+    await vi.waitFor(() => {
+      expect(queryClient.getQueryData(authKeys.session)).toBeNull();
+    });
     expect(queryClient.getQueryData(authKeys.session)).toBeNull();
   });
 
@@ -48,5 +52,47 @@ describe('application query client session recovery', () => {
     await expect(mutation.execute(undefined)).rejects.toBe(unauthorized);
 
     expect(queryClient.getQueryData(authKeys.session)).toBeNull();
+  });
+
+  it('keeps the active session observer through unauthorized recovery', async () => {
+    const queryClient = seedAuthenticatedState();
+    let meRequests = 0;
+    const observer = new QueryObserver(queryClient, {
+      queryKey: authKeys.session,
+      enabled: false,
+      queryFn: async () => {
+        meRequests += 1;
+        throw unauthorized;
+      },
+    });
+    const sessionQuery = queryClient
+      .getQueryCache()
+      .find({ queryKey: authKeys.session, exact: true });
+    const states: Array<unknown> = [];
+    const unsubscribe = observer.subscribe((result) => {
+      states.push(result.data);
+    });
+
+    await expect(observer.refetch({ throwOnError: true })).rejects.toBe(
+      unauthorized,
+    );
+    await vi.waitFor(() => {
+      expect(observer.getCurrentResult().data).toBeNull();
+    });
+
+    expect(
+      queryClient.getQueryCache().find({
+        queryKey: authKeys.session,
+        exact: true,
+      }),
+    ).toBe(sessionQuery);
+    expect(observer.getCurrentResult().data).toBeNull();
+    expect(states).toContain(null);
+    expect(meRequests).toBe(1);
+
+    queryClient.setQueryData(authKeys.session, { id: 'logged-in-user' });
+    expect(observer.getCurrentResult().data).toEqual({ id: 'logged-in-user' });
+    expect(meRequests).toBe(1);
+    unsubscribe();
   });
 });

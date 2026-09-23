@@ -5,8 +5,9 @@
 - `Implemented` (mobile web): `AuthProvider` derives the current user from one
   React Query `['user', 'me']` record. Login and registration write their
   returned user to that record without a second `/me` request; logout clears it
-  even if the server call fails. Query and mutation failures clear session and
-  user/seller/admin data only for structured 401 responses. A 403 or an
+  even if the server call fails. Logout and structured 401 recovery preserve
+  that active query entry, cancel its in-flight request, and set its data to
+  `null` while clearing other user/seller/admin data. A 403 or an
   infrastructure failure leaves a valid session intact, and unauthorized
   requests do not retry.
 - `Implemented` (contracts/API): `POST /api/auth/rules/accept` has one

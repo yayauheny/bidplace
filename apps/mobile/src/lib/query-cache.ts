@@ -17,18 +17,6 @@ export function isAuthScopedQueryKey(queryKey: QueryKey): boolean {
   return typeof root === 'string' && authScopedRoots.has(root);
 }
 
-export async function clearAuthScopedQueries(
-  queryClient: QueryClient,
-): Promise<void> {
-  await queryClient.cancelQueries({
-    predicate: (query) => isAuthScopedQueryKey(query.queryKey),
-  });
-
-  queryClient.removeQueries({
-    predicate: (query) => isAuthScopedQueryKey(query.queryKey),
-  });
-}
-
 export async function clearAuthScopedDataExceptSession(
   queryClient: QueryClient,
 ): Promise<void> {
@@ -43,11 +31,10 @@ export async function clearAuthScopedDataExceptSession(
 export async function clearAuthenticatedSession(
   queryClient: QueryClient,
 ): Promise<void> {
+  await queryClient.cancelQueries({
+    queryKey: authKeys.session,
+    exact: true,
+  });
+  await clearAuthScopedDataExceptSession(queryClient);
   queryClient.setQueryData(authKeys.session, null);
-
-  try {
-    await clearAuthScopedQueries(queryClient);
-  } finally {
-    queryClient.setQueryData(authKeys.session, null);
-  }
 }
