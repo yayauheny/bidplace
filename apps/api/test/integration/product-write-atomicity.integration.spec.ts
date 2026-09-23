@@ -217,12 +217,8 @@ async function holdProductAndMutate(
 
 describe('Product write atomicity against PostgreSQL', () => {
   it('keeps the editing revision canonical from draft save through approval', async () => {
-    const { owner, product: seed } = await createSubmitReadyProduct();
+    const { owner, product } = await createSubmitReadyProduct();
     const { products, admin, sellers } = createServices();
-    const seedProduct = await prisma.product.findUniqueOrThrow({
-      where: { id: seed.id },
-      select: { categoryId: true },
-    });
     const adminUser = await prisma.user.create({
       data: {
         email: `admin.${randomUUID()}@write-race.test`,
@@ -232,53 +228,21 @@ describe('Product write atomicity against PostgreSQL', () => {
       },
     });
 
-    const created = await products.create(owner.id, {
-      categoryId: seedProduct.categoryId,
-      title: 'Initial canonical draft',
-      story: 'Initial canonical story',
-      uniqueness: 'One',
-    });
-    const productId = created.product.id;
-    const createdProduct = await prisma.product.findUniqueOrThrow({
-      where: { id: productId },
-      select: { publicId: true, editingRevisionId: true },
-    });
-    if (!createdProduct.editingRevisionId) {
-      throw new Error('Created Product editing revision is missing');
-    }
-    const image = await prisma.productImage.create({
-      data: {
-        productId,
-        position: 0,
-        mimeType: 'image/png',
-        byteLength: png.byteLength,
-        data: png,
-        checksum: 'b'.repeat(64),
-      },
-    });
-    await prisma.productRevisionImage.create({
-      data: {
-        revisionId: createdProduct.editingRevisionId,
-        imageId: image.id,
-        position: 0,
-      },
-    });
-
-    await products.update(owner.id, productId, {
+    await products.update(owner.id, product.id, {
       title: 'Latest canonical draft',
       story: 'Latest canonical story',
     });
     expect(
-      (await sellers.getProduct(owner.id, productId)).product,
+      (await sellers.getProduct(owner.id, product.id)).product,
     ).toMatchObject({
       title: 'Latest canonical draft',
       story: 'Latest canonical story',
     });
 
-    await products.submit(owner.id, productId);
+    await products.submit(owner.id, product.id);
     expect(
       await prisma.productRevision.findUniqueOrThrow({
-        where: { id: createdProduct.editingRevisionId },
+        where: { id: product.editingRevisionId },
         select: { title: true, story: true, status: true },
       }),
     ).toEqual({
@@ -287,11 +251,11 @@ describe('Product write atomicity against PostgreSQL', () => {
       status: 'PENDING_REVIEW',
     });
 
-    await admin.updateProductStatus(adminUser.id, productId, {
+    await admin.updateProductStatus(adminUser.id, product.id, {
       status: 'APPROVED',
     });
     expect(
-      (await products.getPortfolio(createdProduct.publicId)).product,
+      (await products.getPortfolio(product.publicId)).product,
     ).toMatchObject({
       title: 'Latest canonical draft',
       story: 'Latest canonical story',
