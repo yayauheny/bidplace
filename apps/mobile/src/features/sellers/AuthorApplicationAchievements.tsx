@@ -25,6 +25,9 @@ export function AuthorApplicationAchievements({
   const api = useApiClient();
   const queryClient = useQueryClient();
   const [body, setBody] = useState('');
+  const [year, setYear] = useState('');
+  const [month, setMonth] = useState('');
+  const [day, setDay] = useState('');
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [imageLabel, setImageLabel] = useState<string | null>(null);
   const application = useQuery({
@@ -36,11 +39,21 @@ export function AuthorApplicationAchievements({
   const addAchievement = useMutation({
     mutationFn: () =>
       api.portfolio.addAuthorAchievement(
-        { body: body.trim() },
+        {
+          body: body.trim(),
+          occurredDate: {
+            year: Number(year),
+            month: Number(month),
+            day: day.trim() ? Number(day) : null,
+          },
+        },
         imageBlob ?? undefined,
       ),
     onSuccess: async () => {
       setBody('');
+      setYear('');
+      setMonth('');
+      setDay('');
       setImageBlob(null);
       setImageLabel(null);
       await Promise.all([
@@ -113,9 +126,9 @@ export function AuthorApplicationAchievements({
               }}
             />
           ) : null}
-          {item.occurredAt ? (
+          {item.occurredDate ? (
             <AppText role="caption" tone="secondary">
-              {formatAchievementDate(item.occurredAt)}
+              {formatAchievementDate(item.occurredDate)}
             </AppText>
           ) : null}
           <AppText role="bodySmall">{item.body}</AppText>
@@ -138,6 +151,9 @@ export function AuthorApplicationAchievements({
       ))}
       {editable ? (
         <>
+          <TextField label="Год" value={year} onChangeText={setYear} placeholder="2025" editable={!achievementsBusy} />
+          <TextField label="Месяц" value={month} onChangeText={setMonth} placeholder="3" editable={!achievementsBusy} />
+          <TextField label="День (необязательно)" value={day} onChangeText={setDay} placeholder="17" editable={!achievementsBusy} />
           <TextField
             label="Описание достижения"
             value={body}
@@ -158,7 +174,7 @@ export function AuthorApplicationAchievements({
           <SecondaryButton
             label="Сохранить достижение"
             width="block"
-            disabled={!body.trim() || achievementsBusy}
+            disabled={!body.trim() || !year.trim() || !month.trim() || achievementsBusy}
             loading={addAchievement.isPending}
             onPress={() => addAchievement.mutate()}
           />

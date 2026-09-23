@@ -26,6 +26,17 @@ enum SellerProfileRevisionStatus {
   REJECTED
 }
 
+enum AuthorApplicationStage {
+  CONTACTS
+  ABOUT
+  ACHIEVEMENTS
+}
+
+enum AchievementDatePrecision {
+  MONTH
+  DAY
+}
+
 enum ProductStatus {
   DRAFT
   PENDING_REVIEW
@@ -112,7 +123,7 @@ model SellerProfile {
   userId              String              @unique @map("user_id") @db.Uuid
   slug                String              @unique @db.VarChar(120)
   sellerType          String              @map("seller_type")
-  discipline          String              @default("Автор") @db.VarChar(160)
+  discipline          String?             @db.VarChar(160)
   fullName            String              @map("full_name") @db.VarChar(160)
   country             String              @db.VarChar(80)
   city                String?             @db.VarChar(160)
@@ -127,11 +138,13 @@ model SellerProfile {
   telegramUrl         String?             @map("telegram_url") @db.VarChar(255)
   instagramUrl        String?             @map("instagram_url") @db.VarChar(255)
   websiteUrl          String?             @map("website_url") @db.VarChar(255)
-  shortDescription    String              @map("short_description") @db.Text
+  publicEmail         String?             @map("public_email") @db.VarChar(254)
+  shortDescription    String?             @map("short_description") @db.Text
   handoffContactType  HandoffContactType? @map("handoff_contact_type")
   handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
   handoffInitiator    HandoffInitiator?   @map("handoff_initiator")
   status              SellerProfileStatus @default(DRAFT)
+  applicationStage    AuthorApplicationStage? @map("application_stage")
   editingRevisionId   String?             @unique @map("editing_revision_id") @db.Uuid
   publishedRevisionId String?             @unique @map("published_revision_id") @db.Uuid
   createdAt           DateTime            @default(now()) @map("created_at")
@@ -152,7 +165,7 @@ model SellerProfileRevision {
   version         Int
   status          SellerProfileRevisionStatus @default(DRAFT)
   slug            String              @db.VarChar(120)
-  discipline      String              @db.VarChar(160)
+  discipline      String?             @db.VarChar(160)
   fullName        String              @map("full_name") @db.VarChar(160)
   country         String              @db.VarChar(80)
   city            String?             @db.VarChar(160)
@@ -162,7 +175,8 @@ model SellerProfileRevision {
   telegramUrl     String?             @map("telegram_url") @db.VarChar(255)
   instagramUrl    String?             @map("instagram_url") @db.VarChar(255)
   websiteUrl      String?             @map("website_url") @db.VarChar(255)
-  shortDescription String              @map("short_description") @db.Text
+  publicEmail     String?             @map("public_email") @db.VarChar(254)
+  shortDescription String?             @map("short_description") @db.Text
   profilePhotoMimeType String?         @map("profile_photo_mime_type") @db.VarChar(100)
   profilePhotoByteLength Int?          @map("profile_photo_byte_length")
   profilePhotoChecksum String?         @map("profile_photo_checksum") @db.Char(64)
@@ -188,6 +202,7 @@ model SellerProfileRevisionAchievement {
   revisionId  String                @map("revision_id") @db.Uuid
   position    Int
   occurredAt  DateTime?             @map("occurred_at")
+  occurredAtPrecision AchievementDatePrecision? @map("occurred_at_precision")
   body        String                @db.Text
   mimeType    String?               @map("mime_type") @db.VarChar(100)
   byteLength  Int?                  @map("byte_length")

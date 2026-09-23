@@ -23,6 +23,7 @@ describe('toSellerProfileResponse', () => {
       telegramUrl: null,
       instagramUrl: null,
       websiteUrl: null,
+      publicEmail: 'maker@example.com',
       shortDescription: 'Short',
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@seller',
@@ -86,6 +87,7 @@ describe('toSellerProfileResponse', () => {
         telegramUrl: null,
         instagramUrl: null,
         websiteUrl: null,
+        publicEmail: 'draft@example.com',
         shortDescription: 'Draft bio',
       },
     } as never);
@@ -118,12 +120,14 @@ describe('toPublicSellerProfile', () => {
       telegramUrl: 'https://t.me/maker',
       instagramUrl: 'https://instagram.com/maker',
       websiteUrl: null,
+      publicEmail: 'maker@example.com',
       shortDescription: 'Short bio',
       publishedRevision: {
         achievements: [
           {
             id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
             occurredAt: new Date('2025-03-02T00:00:00.000Z'),
+            occurredAtPrecision: 'DAY',
             body: 'Групповая выставка',
             mimeType: null,
             byteLength: null,
@@ -142,7 +146,7 @@ describe('toPublicSellerProfile', () => {
       achievements: [
         {
           id: '3b2e93b2-1428-40fc-a15a-b9cd98e422b6',
-          occurredAt: '2025-03-02T00:00:00.000Z',
+          occurredDate: { year: 2025, month: 3, day: 2 },
           body: 'Групповая выставка',
           image: null,
         },

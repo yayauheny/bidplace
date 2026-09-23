@@ -42,6 +42,7 @@ async function login(client: HttpTestClient, email: string, password: string) {
 function achievementForm(body: string, withImage = false) {
   const form = new FormData();
   form.set('body', body);
+  form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
   if (withImage) {
     form.append(
       'image',

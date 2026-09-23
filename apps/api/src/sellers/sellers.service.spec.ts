@@ -22,6 +22,69 @@ function ownerRecord(now: Date) {
 }
 
 describe('SellersService', () => {
+  it('advances an active draft only through its server-owned onboarding stage', async () => {
+    const now = new Date('2026-07-24T00:00:00.000Z');
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'DRAFT',
+          applicationStage: 'CONTACTS',
+          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+        }),
+        update: vi.fn(),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'seller-profile-id',
+            status: 'DRAFT',
+            applicationStage: 'CONTACTS',
+            editingRevision: { id: 'revision-id', status: 'DRAFT' },
+          })
+          .mockResolvedValueOnce(ownerRecord(now)),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = new SellersService(prisma as never, imageStore as never);
+
+    await expect(service.advanceApplicationStage('user-id')).resolves.toMatchObject({
+      sellerProfile: { status: 'CHANGES_REQUESTED' },
+    });
+    expect(tx.sellerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'seller-profile-id' },
+      data: { applicationStage: 'ABOUT' },
+    });
+  });
+
+  it('does not advance About until server-side required fields exist', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id', status: 'DRAFT', applicationStage: 'ABOUT',
+          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+        }),
+        update: vi.fn(),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          id: 'seller-profile-id',
+          status: 'DRAFT',
+          applicationStage: 'ABOUT',
+          editingRevision: { id: 'revision-id', status: 'DRAFT', discipline: null, shortDescription: null },
+        }),
+      },
+    };
+    const prisma = { $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)) };
+    const service = new SellersService(prisma as never, imageStore as never);
+
+    await expect(service.advanceApplicationStage('user-id')).rejects.toThrow(
+      'Author profile is missing required fields',
+    );
+    expect(tx.sellerProfile.update).not.toHaveBeenCalled();
+  });
+
   it('adds an achievement after locking the editable profile revision', async () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: 'seller-profile-id' }]),
@@ -42,7 +105,8 @@ describe('SellersService', () => {
         count: vi.fn().mockResolvedValue(2),
         create: vi.fn().mockResolvedValue({
           id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-          occurredAt: null,
+          occurredAt: new Date('2025-03-01T00:00:00.000Z'),
+          occurredAtPrecision: 'MONTH',
           body: 'First exhibition',
         }),
       },
@@ -56,11 +120,14 @@ describe('SellersService', () => {
     const service = new SellersService(prisma as never, imageStore as never);
 
     await expect(
-      service.addAchievement('user-id', { body: 'First exhibition' }),
+      service.addAchievement('user-id', {
+        body: 'First exhibition',
+        occurredDate: { year: 2025, month: 3, day: null },
+      }),
     ).resolves.toEqual({
       achievement: {
         id: 'dc6c9612-cf38-48aa-b328-011f1b093b6c',
-        occurredAt: null,
+        occurredDate: { year: 2025, month: 3, day: null },
         body: 'First exhibition',
         image: null,
       },

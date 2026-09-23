@@ -180,15 +180,18 @@ Portfolio variant сохраняет визуальную галерею и ин
 
 ## 8. Author application
 
-Четыре визуальных шага допустимы:
+Четыре URL-owned шага:
 
 1. photo/name/slug/location;
-2. optional public socials;
+2. optional public Telegram, Instagram, HTTPS website and author-provided email;
 3. short about, practice and directions;
 4. optional achievements.
 
-Auth email не подставляется как public email. Выход сохраняет непустой draft; dialog
-не говорит, что пользователь потеряет возможность продавать.
+Сервер хранит private resume boundary: draft открывается на последнем
+разблокированном шаге, а прямой locked URL ограничивается этой границей. Auth email
+не подставляется как public email. Выход сохраняет валидный dirty draft без
+продвижения шага; dialog различает уже сохранённый черновик и несохранённый Step 1
+input. Achievements показывают месяц без придуманного дня.
 
 ## 9. Work creation
 

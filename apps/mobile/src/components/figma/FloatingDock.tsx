@@ -96,7 +96,9 @@ function dockHref(
       return undefined;
     case 'profile':
       if (context.isAdmin) return '/admin';
-      if (context.isAuthenticated) return '/profile';
+      if (context.isAuthenticated) {
+        return context.sellerStatus === null ? '/profile?intro=1' : '/profile';
+      }
       return '/login';
     case 'plus':
       return undefined;

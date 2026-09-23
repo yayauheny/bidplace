@@ -1,10 +1,13 @@
-import { sellerPublicUrlSchema } from '@bidplace/contracts';
+import { sellerPublicEmailSchema, sellerPublicUrlSchema } from '@bidplace/contracts';
+
+import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 
 type PublicLinkField =
   | 'socialLink'
   | 'telegramUrl'
   | 'instagramUrl'
-  | 'websiteUrl';
+  | 'websiteUrl'
+  | 'publicEmail';
 
 export type ProfileFieldErrors = Partial<Record<PublicLinkField | 'city', string>>;
 
@@ -21,21 +24,33 @@ export function getProfileFieldErrors(fields: {
   telegramUrl: string;
   instagramUrl: string;
   websiteUrl: string;
+  publicEmail?: string;
 }): ProfileFieldErrors {
   const errors: ProfileFieldErrors = {};
   if (!fields.city.trim()) {
     errors.city = 'Укажите город';
   }
-  const publicFields: PublicLinkField[] = [
+  const publicFields: Array<'socialLink' | 'websiteUrl'> = [
     'socialLink',
-    'telegramUrl',
-    'instagramUrl',
     'websiteUrl',
   ];
 
   for (const field of publicFields) {
     const error = getPublicLinkError(fields[field]);
     if (error) errors[field] = error;
+  }
+
+  if (fields.telegramUrl.trim() && normalizeTelegram(fields.telegramUrl) === undefined) {
+    errors.telegramUrl = 'Введите Telegram username или HTTPS-ссылку';
+  }
+  if (fields.instagramUrl.trim() && normalizeInstagram(fields.instagramUrl) === undefined) {
+    errors.instagramUrl = 'Введите Instagram username или HTTPS-ссылку';
+  }
+  if (
+    fields.publicEmail?.trim() &&
+    !sellerPublicEmailSchema.safeParse(fields.publicEmail).success
+  ) {
+    errors.publicEmail = 'Введите корректный email';
   }
 
   return errors;

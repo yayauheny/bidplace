@@ -62,11 +62,11 @@ import {
 
 function assertProfileRevisionReadyToSubmit(revision: {
   slug: string;
-  discipline: string;
+  discipline: string | null;
   fullName: string;
   country: string;
   city: string | null;
-  shortDescription: string;
+  shortDescription: string | null;
   profilePhotoMimeType: string | null;
   profilePhotoByteLength: number | null;
   profilePhotoChecksum: string | null;
@@ -121,6 +121,7 @@ function publicProfileRevisionData(input: SellerProfileUpdateRequest) {
       ? { instagramUrl: input.instagramUrl }
       : {}),
     ...(input.websiteUrl !== undefined ? { websiteUrl: input.websiteUrl } : {}),
+    ...(input.publicEmail !== undefined ? { publicEmail: input.publicEmail } : {}),
     ...(input.shortDescription !== undefined
       ? { shortDescription: input.shortDescription }
       : {}),
@@ -156,10 +157,14 @@ export class SellersService {
         editingRevision: {
           select: {
             achievements: {
-              orderBy: { position: 'asc' },
+              orderBy: [
+                { occurredAt: { sort: 'desc', nulls: 'last' } },
+                { position: 'asc' },
+              ],
               select: {
                 id: true,
                 occurredAt: true,
+                occurredAtPrecision: true,
                 body: true,
                 mimeType: true,
                 byteLength: true,
@@ -215,7 +220,7 @@ export class SellersService {
             userId,
             slug: input.slug,
             sellerType: 'creator',
-            discipline: input.discipline,
+            discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
             city: input.city,
@@ -225,8 +230,10 @@ export class SellersService {
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
-            shortDescription: input.shortDescription,
+            publicEmail: input.publicEmail ?? null,
+            shortDescription: input.shortDescription ?? null,
             status: 'DRAFT',
+            applicationStage: 'CONTACTS',
             handoffContactType: null,
             handoffContactValue: null,
             handoffInitiator: null,
@@ -260,7 +267,7 @@ export class SellersService {
             version: 1,
             status: 'DRAFT',
             slug: input.slug,
-            discipline: input.discipline,
+            discipline: input.discipline ?? null,
             fullName: input.fullName,
             country: input.country,
             city: input.city,
@@ -270,7 +277,8 @@ export class SellersService {
             telegramUrl: input.telegramUrl ?? null,
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
-            shortDescription: input.shortDescription,
+            publicEmail: input.publicEmail ?? null,
+            shortDescription: input.shortDescription ?? null,
             profilePhotoMimeType: profilePhoto.mimeType,
             profilePhotoByteLength: profilePhoto.buffer.byteLength,
             profilePhotoChecksum: createHash('sha256')
@@ -455,8 +463,43 @@ export class SellersService {
       if (profile.status !== 'APPROVED') {
         await tx.sellerProfile.update({
           where: { id: profile.id },
-          data: { status: 'PENDING_REVIEW' },
+          data: { status: 'PENDING_REVIEW', applicationStage: null },
         });
+      }
+      return tx.sellerProfile.findUniqueOrThrow({
+        where: { id: profile.id },
+        select: sellerProfileOwnerSelect,
+      });
+    }).then(toSellerProfileResponse);
+  }
+
+  async advanceApplicationStage(userId: string) {
+    return runReadCommittedTransaction(this.prisma, async (tx) => {
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const profile = await tx.sellerProfile.findUniqueOrThrow({
+        where: { id: editing.profileId },
+        include: { editingRevision: true },
+      });
+      if (profile.status !== 'DRAFT' || !profile.editingRevision) {
+        throw new ConflictException('Author onboarding is not active');
+      }
+      const stage = profile.applicationStage;
+      if (stage === 'CONTACTS') {
+        await tx.sellerProfile.update({
+          where: { id: profile.id },
+          data: { applicationStage: 'ABOUT' },
+        });
+      } else if (stage === 'ABOUT') {
+        const revision = profile.editingRevision;
+        if (!revision.discipline || !revision.shortDescription) {
+          throw new ConflictException('Author profile is missing required fields');
+        }
+        await tx.sellerProfile.update({
+          where: { id: profile.id },
+          data: { applicationStage: 'ACHIEVEMENTS' },
+        });
+      } else {
+        throw new ConflictException('Author onboarding cannot advance');
       }
       return tx.sellerProfile.findUniqueOrThrow({
         where: { id: profile.id },
@@ -479,7 +522,15 @@ export class SellersService {
         data: {
           revisionId: editing.revisionId,
           position,
-          occurredAt: input.occurredAt ? new Date(input.occurredAt) : null,
+          occurredAt: new Date(
+            Date.UTC(
+              input.occurredDate.year,
+              input.occurredDate.month - 1,
+              input.occurredDate.day ?? 1,
+            ),
+          ),
+          occurredAtPrecision:
+            input.occurredDate.day === null ? 'MONTH' : 'DAY',
           body: input.body,
           mimeType: image?.mimeType ?? null,
           byteLength: image?.buffer.byteLength ?? null,
@@ -504,7 +555,11 @@ export class SellersService {
       return portfolioAchievementResponseSchema.parse({
         achievement: {
           id: achievement.id,
-          occurredAt: achievement.occurredAt?.toISOString() ?? null,
+          occurredDate: {
+            year: input.occurredDate.year,
+            month: input.occurredDate.month,
+            day: input.occurredDate.day,
+          },
           body: achievement.body,
           image: image
             ? {

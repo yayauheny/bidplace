@@ -12,6 +12,18 @@
   This changes routing state only; the Auth screens, shared visual primitives,
   tokens and canonical Pen file are unchanged.
 
+## 2026-09-23 — Resumable Author onboarding
+
+- `Implemented` (mobile web behavior): `/profile` uses four URL-owned onboarding
+  steps. The server returns the private resume boundary, so malformed or locked
+  step URLs clamp safely while earlier unlocked steps remain available. The
+  explicit Become Author entry opens an intro dialog; existing drafts resume
+  without it. Dirty input is protected from background refetch.
+- `Implemented`: Contacts collect only optional public Telegram, Instagram,
+  HTTPS website and author-provided email. The public About content renders the
+  email only when approved; month-only achievements do not invent a day.
+- `Needs verification`: 390px visual/device and full browser flow acceptance.
+
 ## 2026-09-22 — Work editor persistence
 
 - `Implemented` (mobile web behavior): Work creation uses three content panels
@@ -652,7 +664,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | Product Creation | `cK8kD`  | exported/readable | existing fields only                  | implemented | verified               |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields                | implemented | verified               |
 | Creator Profile  | `MqUMz`  | exported/readable | current public links                  | partial     | pending visual/data QA |
-| Profile Creation | `JOjIY`  | responsive staged flow | two-step author draft: identity, optional links and achievements | partial | pending visual/device QA |
+| Profile Creation | `JOjIY`  | responsive staged flow | four-step resumable author draft: identity, contacts, about, achievements | partial | pending visual/device QA |
 | Admin Moderation | `NRlEW`  | responsive queue/review states | Authors/Works admin contracts | partial | pending visual/device QA |
 
 ## Shared component matrix

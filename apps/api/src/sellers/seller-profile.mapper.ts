@@ -15,14 +15,19 @@ export const publicSellerProfileSelect = {
   telegramUrl: true,
   instagramUrl: true,
   websiteUrl: true,
+  publicEmail: true,
   shortDescription: true,
   publishedRevision: {
     select: {
       achievements: {
-        orderBy: [{ occurredAt: 'desc' }, { position: 'asc' }],
+        orderBy: [
+          { occurredAt: { sort: 'desc', nulls: 'last' } },
+          { position: 'asc' },
+        ],
         select: {
           id: true,
           occurredAt: true,
+          occurredAtPrecision: true,
           body: true,
           mimeType: true,
           byteLength: true,
@@ -53,11 +58,13 @@ export const sellerProfileResponseSelect = {
   telegramUrl: true,
   instagramUrl: true,
   websiteUrl: true,
+  publicEmail: true,
   shortDescription: true,
   handoffContactType: true,
   handoffContactValue: true,
   handoffInitiator: true,
   status: true,
+  applicationStage: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.SellerProfileSelect;
@@ -81,6 +88,7 @@ export const sellerProfileOwnerSelect = {
       telegramUrl: true,
       instagramUrl: true,
       websiteUrl: true,
+      publicEmail: true,
       shortDescription: true,
     },
   },
@@ -126,6 +134,7 @@ export function sellerProfilePhotoUrl(slug: string): string {
 export function toPortfolioAchievement(achievement: {
   id: string;
   occurredAt: Date | null;
+  occurredAtPrecision?: 'MONTH' | 'DAY' | null;
   body: string;
   mimeType: string | null;
   byteLength: number | null;
@@ -134,7 +143,16 @@ export function toPortfolioAchievement(achievement: {
 }) {
   return {
     id: achievement.id,
-    occurredAt: achievement.occurredAt?.toISOString() ?? null,
+    occurredDate: achievement.occurredAt
+      ? {
+          year: achievement.occurredAt.getUTCFullYear(),
+          month: achievement.occurredAt.getUTCMonth() + 1,
+          day:
+            achievement.occurredAtPrecision === 'MONTH'
+              ? null
+              : achievement.occurredAt.getUTCDate(),
+        }
+      : null,
     body: achievement.body,
     image:
       achievement.mimeType &&
@@ -156,6 +174,9 @@ export function toPublicSellerProfile(
     publishedRevision?: PublicSellerProfileRecord['publishedRevision'];
   },
 ) {
+  if (!sellerProfile.discipline || !sellerProfile.shortDescription) {
+    throw new Error('Published SellerProfile is missing required fields');
+  }
   return {
     id: sellerProfile.id,
     slug: sellerProfile.slug,
@@ -171,6 +192,7 @@ export function toPublicSellerProfile(
     telegramUrl: sellerProfile.telegramUrl ?? null,
     instagramUrl: sellerProfile.instagramUrl ?? null,
     websiteUrl: sellerProfile.websiteUrl ?? null,
+    publicEmail: sellerProfile.publicEmail ?? null,
     shortDescription: sellerProfile.shortDescription,
     achievements:
       sellerProfile.publishedRevision?.achievements.map(toPortfolioAchievement) ??
@@ -215,6 +237,7 @@ export function toSellerProfileResponse(
         telegramUrl: editingRevision.telegramUrl,
         instagramUrl: editingRevision.instagramUrl,
         websiteUrl: editingRevision.websiteUrl,
+        publicEmail: editingRevision.publicEmail,
         shortDescription: editingRevision.shortDescription,
       }
     : {};
@@ -235,6 +258,8 @@ export function toSellerProfileResponse(
         null,
       websiteUrl:
         (publicFields.websiteUrl ?? sellerProfileResponse.websiteUrl) ?? null,
+      publicEmail:
+        (publicFields.publicEmail ?? sellerProfileResponse.publicEmail) ?? null,
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),

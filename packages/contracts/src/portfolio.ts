@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
 import {
+  authorApplicationStageSchema,
   productStatusSchema,
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
@@ -23,7 +24,25 @@ export const portfolioAchievementImageSchema = z
 export const portfolioAchievementSchema = z
   .object({
     id: uuidSchema,
-    occurredAt: z.string().datetime().nullable(),
+    occurredDate: z
+      .object({
+        year: z.number().int().min(1).max(9_999),
+        month: z.number().int().min(1).max(12),
+        day: z.number().int().min(1).max(31).nullable(),
+      })
+      .strict()
+      .superRefine((value, context) => {
+        if (value.day === null) return;
+        const date = new Date(Date.UTC(value.year, value.month, 0));
+        if (value.day > date.getUTCDate()) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['day'],
+            message: 'Achievement day must be valid for its month and year',
+          });
+        }
+      })
+      .nullable(),
     body: publicText,
     image: portfolioAchievementImageSchema.nullable(),
   })
@@ -63,6 +82,7 @@ export const portfolioAuthorSchema = z
     telegramUrl: z.string().url().nullable(),
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
+    publicEmail: z.string().email().nullable().optional(),
     shortDescription: publicText,
     achievements: z.array(portfolioAchievementSchema),
     sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:[-_][a-z0-9]+)*$/),
@@ -191,12 +211,30 @@ export const portfolioAuthorApplicationSchema = z
     fullName: publicText,
     country: publicText,
     city: publicText.nullable(),
-    discipline: publicText,
+    discipline: publicText.nullable(),
     practice: z.string().trim().min(1).nullable(),
-    shortDescription: publicText,
+    shortDescription: publicText.nullable(),
     status: sellerStatusSchema,
+    applicationStage: authorApplicationStageSchema.nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((application, context) => {
+    if (application.status === 'DRAFT') return;
+    if (!application.discipline) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['discipline'],
+        message: 'A non-draft application requires a discipline',
+      });
+    }
+    if (!application.shortDescription) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['shortDescription'],
+        message: 'A non-draft application requires a short description',
+      });
+    }
+  });
 
 export const portfolioAuthorApplicationResponseSchema = z
   .object({
@@ -214,9 +252,21 @@ export const portfolioAuthorApplicationResponseSchema = z
   })
   .strict();
 
+const portfolioAchievementOccurredDateWriteSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  },
+  portfolioAchievementSchema.shape.occurredDate.unwrap(),
+);
+
 export const portfolioAchievementWriteRequestSchema = z
   .object({
-    occurredAt: z.string().datetime().nullable().optional(),
+    occurredDate: portfolioAchievementOccurredDateWriteSchema,
     body: publicText.max(4_000),
   })
   .strict();

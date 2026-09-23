@@ -129,7 +129,10 @@ export async function requestJson<T>(
           continue;
         }
 
-        formData.append(key, String(value));
+        formData.append(
+          key,
+          typeof value === 'object' ? JSON.stringify(value) : String(value),
+        );
       }
 
       body = formData;

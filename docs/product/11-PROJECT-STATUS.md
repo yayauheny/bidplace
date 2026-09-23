@@ -1758,7 +1758,7 @@ remaining product boundaries still apply.
 
 ## Intentional MVP boundaries
 
-## Author application drafts — 2026-09-23
+## Author onboarding and resumable drafts — 2026-09-23
 
 - `Implemented`: `SellerProfile.status` and `SellerProfileRevision.status` now
   begin as `DRAFT`; `POST /api/seller/profile` persists the profile photo and
@@ -1768,11 +1768,18 @@ remaining product boundaries still apply.
   the saved revision and parent to `PENDING_REVIEW` only after server-side
   requirements pass. Drafts are excluded from `/api/admin/seller-profiles` and
   existing public predicates continue to expose only approved authors.
-- `Implemented`: `SellerProfileScreen` is a two-step, URL-owned (`?step=1|2`)
-  author application. Step 1 persists a photo and required author details before
-  Step 2; links are optional, and final submission saves before requesting
-  moderation. Current MVP author creation no longer collects commerce handoff
-  data. Mobile/device acceptance remains Needs verification.
+- `Implemented`: `SellerProfileScreen` is a four-step, URL-owned author
+  application: basic information, optional public contacts, required author
+  information, then optional achievements. `SellerProfile.applicationStage`
+  is private, server-owned resume state; guarded advancement prevents a draft
+  from skipping locked steps and submission clears it only after complete
+  server validation in the existing locked transaction.
+- `Implemented`: partial `DRAFT` profiles keep only step-three fields nullable
+  and remain excluded from public discovery and moderation. `publicEmail` is
+  explicit author-provided data, normalized and published only with an approved
+  author; it is never derived from `User.email`. Achievement dates preserve
+  month versus day precision, with undated legacy records remaining undated.
+  Mobile/device and Playwright acceptance remain Needs verification.
 
 - Only `ListingType.AUCTION` and `BYN` exist.
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
