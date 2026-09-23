@@ -286,15 +286,12 @@ describe('shared contracts', () => {
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {
     const base = {
       slug: 'creator',
-      sellerType: 'creator' as const,
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
       city: 'Minsk',
       socialLink: 'https://example.com/creator',
       shortDescription: 'About creator',
-      handoffContactType: 'TELEGRAM' as const,
-      handoffContactValue: '@creator_name',
     };
 
     expect(sellerProfileCreateRequestSchema.safeParse(base).success).toBe(true);
@@ -341,15 +338,12 @@ describe('shared contracts', () => {
   ])('accepts only HTTPS public seller URLs: %s', (socialLink, expected) => {
     const parsed = sellerProfileCreateRequestSchema.safeParse({
       slug: 'creator',
-      sellerType: 'creator',
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
       city: 'Minsk',
       socialLink,
       shortDescription: 'About creator',
-      handoffContactType: 'TELEGRAM',
-      handoffContactValue: '@creator_name',
     });
     expect(parsed.success).toBe(expected);
   });
@@ -357,14 +351,11 @@ describe('shared contracts', () => {
   it('accepts each structured public link independently and rejects empty strings', () => {
     const base = {
       slug: 'creator',
-      sellerType: 'creator' as const,
       discipline: 'Керамика',
       fullName: 'Creator',
       country: 'BY',
       city: 'Minsk',
       shortDescription: 'About creator',
-      handoffContactType: 'TELEGRAM' as const,
-      handoffContactValue: '@creator_name',
     };
 
     expect(
@@ -393,11 +384,10 @@ describe('shared contracts', () => {
     ).toBe(false);
   });
 
-  it('still accepts Telegram and Instagram handle forms on private handoff', () => {
+  it('rejects future-commerce handoff fields in author creation', () => {
     expect(
       sellerProfileCreateRequestSchema.safeParse({
         slug: 'creator',
-        sellerType: 'creator',
         discipline: 'Керамика',
         fullName: 'Creator',
         country: 'BY',
@@ -407,21 +397,7 @@ describe('shared contracts', () => {
         handoffContactType: 'TELEGRAM',
         handoffContactValue: '@creator_name',
       }).success,
-    ).toBe(true);
-    expect(
-      sellerProfileCreateRequestSchema.safeParse({
-        slug: 'creator',
-        sellerType: 'creator',
-        discipline: 'Керамика',
-        fullName: 'Creator',
-        country: 'BY',
-        city: 'Minsk',
-        socialLink: 'https://example.com/creator',
-        shortDescription: 'About creator',
-        handoffContactType: 'INSTAGRAM',
-        handoffContactValue: '@creator.name',
-      }).success,
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('accepts unified API errors with business codes and optional details', () => {

@@ -1758,6 +1758,22 @@ remaining product boundaries still apply.
 
 ## Intentional MVP boundaries
 
+## Author application drafts — 2026-09-23
+
+- `Implemented`: `SellerProfile.status` and `SellerProfileRevision.status` now
+  begin as `DRAFT`; `POST /api/seller/profile` persists the profile photo and
+  canonical editing revision without submitting either for moderation.
+  `SellersService.update` updates the unpublished parent mirror and editing
+  revision together under the existing row lock; `submitProfileRevision` moves
+  the saved revision and parent to `PENDING_REVIEW` only after server-side
+  requirements pass. Drafts are excluded from `/api/admin/seller-profiles` and
+  existing public predicates continue to expose only approved authors.
+- `Implemented`: `SellerProfileScreen` is a two-step, URL-owned (`?step=1|2`)
+  author application. Step 1 persists a photo and required author details before
+  Step 2; links are optional, and final submission saves before requesting
+  moderation. Current MVP author creation no longer collects commerce handoff
+  data. Mobile/device acceptance remains Needs verification.
+
 - Only `ListingType.AUCTION` and `BYN` exist.
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.

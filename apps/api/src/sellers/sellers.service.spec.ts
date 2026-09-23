@@ -143,7 +143,8 @@ describe('SellersService', () => {
           editingRevision: {
             id: 'c0d82a10-3170-49eb-904f-a8bc87d311a5',
             version: 1,
-            status: 'PENDING_REVIEW',
+            status: 'DRAFT',
+            updatedAt: now,
             slug: 'seller-slug',
             discipline: 'Керамика',
             fullName: 'Seller',
@@ -184,16 +185,12 @@ describe('SellersService', () => {
       'user-id',
       {
         slug: 'seller-slug',
-        sellerType: 'creator',
         discipline: 'Керамика',
         fullName: 'Seller',
         country: 'BY',
         city: 'Minsk',
         socialLink: 'https://example.com/seller',
         shortDescription: 'Description',
-        handoffContactType: 'TELEGRAM',
-        handoffContactValue: '@seller',
-        handoffInitiator: 'BUYER_CONTACTS_SELLER',
       },
       { buffer: Buffer.from([1, 2, 3]), mimeType: 'image/png' },
     );
@@ -203,7 +200,7 @@ describe('SellersService', () => {
     expect(tx.sellerProfileRevision.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         sellerProfileId: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
-        status: 'PENDING_REVIEW',
+        status: 'DRAFT',
       }),
     });
     expect(put).toHaveBeenCalledWith(

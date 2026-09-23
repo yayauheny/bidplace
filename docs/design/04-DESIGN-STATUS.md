@@ -652,7 +652,7 @@ Creator / Profile / MVP v1`): centered hero, 120px avatar, handle/copy,
 | Product Creation | `cK8kD`  | exported/readable | existing fields only                  | implemented | verified               |
 | Product Bids     | `XIzHe`  | exported/readable | compatible core fields                | implemented | verified               |
 | Creator Profile  | `MqUMz`  | exported/readable | current public links                  | partial     | pending visual/data QA |
-| Profile Creation | `JOjIY`  | responsive staged flow | public identity/links + private handoff | partial | pending visual/device QA |
+| Profile Creation | `JOjIY`  | responsive staged flow | two-step author draft: identity, optional links and achievements | partial | pending visual/device QA |
 | Admin Moderation | `NRlEW`  | responsive queue/review states | Authors/Works admin contracts | partial | pending visual/device QA |
 
 ## Shared component matrix

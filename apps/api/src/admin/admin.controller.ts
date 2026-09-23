@@ -95,6 +95,7 @@ export class AdminController {
   @Get('seller-profiles')
   async listSellers() {
     const sellerProfiles = await this.prisma.sellerProfile.findMany({
+      where: { status: { not: 'DRAFT' } },
       select: sellerProfileResponseSelect,
       orderBy: { createdAt: 'asc' },
     });

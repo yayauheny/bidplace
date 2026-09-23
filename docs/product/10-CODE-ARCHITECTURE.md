@@ -203,6 +203,13 @@ SellerProfile
 
 ## Runtime topology and extension boundary
 
+`SellerProfile` keeps the current owner-facing mirror for unpublished author
+applications while `SellerProfileRevision` is the canonical moderation payload.
+Editable draft, changes-requested and rejected saves lock the profile and update
+both records in one transaction. A parent `DRAFT` is private and excluded from
+moderation and public author predicates; submission is the only transition to
+`PENDING_REVIEW`.
+
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):

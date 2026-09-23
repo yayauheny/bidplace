@@ -74,6 +74,7 @@ describe('toSellerProfileResponse', () => {
         id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',
         version: 2,
         status: 'DRAFT',
+        updatedAt: now,
         slug: 'draft-slug',
         discipline: 'Живопись',
         fullName: 'Draft name',
@@ -93,12 +94,13 @@ describe('toSellerProfileResponse', () => {
     expect(response.sellerProfile.fullName).toBe('Draft name');
     expect(response.sellerProfile.city).toBe('Grodno');
     expect(response.sellerProfile.profilePhotoUrl).toBe(
-      '/api/sellers/live-slug/photo',
+      '/api/sellers/draft-slug/photo',
     );
     expect(response.editingRevision).toEqual({
       id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',
       version: 2,
       status: 'DRAFT',
+      updatedAt: now.toISOString(),
     });
   });
 });

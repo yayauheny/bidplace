@@ -214,8 +214,8 @@ export class SellersService {
           data: {
             userId,
             slug: input.slug,
-            sellerType: input.sellerType,
-            ...(input.discipline ? { discipline: input.discipline } : {}),
+            sellerType: 'creator',
+            discipline: input.discipline,
             fullName: input.fullName,
             country: input.country,
             city: input.city,
@@ -226,9 +226,10 @@ export class SellersService {
             instagramUrl: input.instagramUrl ?? null,
             websiteUrl: input.websiteUrl ?? null,
             shortDescription: input.shortDescription,
-            handoffContactType: input.handoffContactType,
-            handoffContactValue: input.handoffContactValue,
-            handoffInitiator: input.handoffInitiator ?? 'BUYER_CONTACTS_SELLER',
+            status: 'DRAFT',
+            handoffContactType: null,
+            handoffContactValue: null,
+            handoffInitiator: null,
             profilePhotoMimeType: profilePhoto.mimeType,
             profilePhotoByteLength: profilePhoto.buffer.byteLength,
             profilePhotoChecksum: createHash('sha256')
@@ -239,7 +240,8 @@ export class SellersService {
           select: sellerProfileOwnerSelect,
         });
 
-        await this.imageStore.put(
+        await putStoredImage(
+          this.imageStore,
           imageKey.sellerPhoto(created.id),
           {
             bytes: profilePhoto.buffer,
@@ -256,9 +258,9 @@ export class SellersService {
           data: {
             sellerProfileId: created.id,
             version: 1,
-            status: 'PENDING_REVIEW',
+            status: 'DRAFT',
             slug: input.slug,
-            discipline: input.discipline ?? 'Автор',
+            discipline: input.discipline,
             fullName: input.fullName,
             country: input.country,
             city: input.city,
@@ -275,7 +277,6 @@ export class SellersService {
               .update(profilePhoto.buffer)
               .digest('hex'),
             profilePhotoObjectKey: imageKey.sellerPhoto(created.id),
-            submittedAt: new Date(),
           },
         });
         await tx.sellerProfile.update({
@@ -372,6 +373,7 @@ export class SellersService {
     }
 
     if (
+      current.status !== 'DRAFT' &&
       current.status !== 'CHANGES_REQUESTED' &&
       current.status !== 'REJECTED'
     ) {
@@ -380,60 +382,45 @@ export class SellersService {
 
     const data = Object.fromEntries(
       Object.entries(input).filter(([, value]) => value !== undefined),
-    );
-
-    if (profilePhoto) {
-      Object.assign(data, {
-        profilePhotoMimeType: profilePhoto.mimeType,
-        profilePhotoByteLength: profilePhoto.buffer.byteLength,
-        profilePhotoChecksum: createHash('sha256')
-          .update(profilePhoto.buffer)
-          .digest('hex'),
-      });
-    }
+    ) as Prisma.SellerProfileUpdateInput;
 
     try {
-      if (profilePhoto) {
-        const sellerProfile = await this.prisma.$transaction(async (tx) => {
-          const updated = await tx.sellerProfile.update({
-            where: { id: current.id },
-            data,
-            select: sellerProfileOwnerSelect,
-          });
-
-          await this.imageStore.put(
-            imageKey.sellerPhoto(current.id),
-            {
-              bytes: profilePhoto.buffer,
-              mimeType: profilePhoto.mimeType,
-            },
-            tx,
-          );
-          if (updated.editingRevision?.id) {
-            await tx.sellerProfileRevision.update({
-              where: { id: updated.editingRevision.id },
-              data: {
+      const sellerProfile = await runReadCommittedTransaction(
+        this.prisma,
+        async (tx) => {
+          const editing = await ensureEditableEditingRevision(tx, userId);
+          const profilePhotoData = profilePhoto
+            ? {
                 profilePhotoMimeType: profilePhoto.mimeType,
                 profilePhotoByteLength: profilePhoto.buffer.byteLength,
                 profilePhotoChecksum: createHash('sha256')
                   .update(profilePhoto.buffer)
                   .digest('hex'),
-                profilePhotoObjectKey: imageKey.sellerPhoto(current.id),
-              },
-            });
+                profilePhotoObjectKey: imageKey.sellerPhoto(editing.profileId),
+              }
+            : {};
+          await tx.sellerProfile.update({
+            where: { id: editing.profileId },
+            data: { ...data, ...profilePhotoData },
+          });
+          await tx.sellerProfileRevision.update({
+            where: { id: editing.revisionId },
+            data: { ...publicProfileRevisionData(input), ...profilePhotoData },
+          });
+          if (profilePhoto) {
+            await putStoredImage(
+              this.imageStore,
+              imageKey.sellerPhoto(editing.profileId),
+              { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
+              tx,
+            );
           }
-
-          return updated;
-        });
-
-        return toSellerProfileResponse(sellerProfile);
-      }
-
-      const sellerProfile = await this.prisma.sellerProfile.update({
-        where: { id: current.id },
-        data,
-        select: sellerProfileOwnerSelect,
-      });
+          return tx.sellerProfile.findUniqueOrThrow({
+            where: { id: editing.profileId },
+            select: sellerProfileOwnerSelect,
+          });
+        },
+      );
 
       return toSellerProfileResponse(sellerProfile);
     } catch (error: unknown) {
@@ -453,24 +440,13 @@ export class SellersService {
 
   async submitProfileRevision(userId: string) {
     return runReadCommittedTransaction(this.prisma, async (tx) => {
-      const profile = await tx.sellerProfile.findUnique({
-        where: { userId },
+      const editing = await ensureEditableEditingRevision(tx, userId);
+      const profile = await tx.sellerProfile.findUniqueOrThrow({
+        where: { id: editing.profileId },
         include: { editingRevision: true },
       });
-      if (!profile?.editingRevision) {
-        throw new NotFoundException('Seller profile revision not found');
-      }
-      if (profile.status === 'SUSPENDED') {
-        throw new ForbiddenException('Seller profile is suspended');
-      }
       const revision = profile.editingRevision;
-      if (
-        !['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(revision.status)
-      ) {
-        throw new ConflictException(
-          'Seller profile revision cannot be submitted',
-        );
-      }
+      if (!revision) throw new NotFoundException('Seller profile revision not found');
       assertProfileRevisionReadyToSubmit(revision);
       await tx.sellerProfileRevision.update({
         where: { id: revision.id },

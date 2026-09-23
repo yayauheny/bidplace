@@ -57,9 +57,9 @@ export const sellerProfileSchema = z
     instagramUrl: sellerPublicUrlSchema.nullable(),
     websiteUrl: sellerPublicUrlSchema.nullable(),
     shortDescription: z.string().trim().min(1),
-    handoffContactType: handoffContactTypeSchema,
-    handoffContactValue: z.string().trim().min(1),
-    handoffInitiator: handoffInitiatorSchema,
+    handoffContactType: handoffContactTypeSchema.nullable(),
+    handoffContactValue: z.string().trim().min(1).nullable(),
+    handoffInitiator: handoffInitiatorSchema.nullable(),
     status: sellerStatusSchema,
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
@@ -110,6 +110,23 @@ export const publicSellerProfileSchema = sellerProfileSchema
       )
       .optional(),
   });
+
+export const sellerProfileCreateRequestSchema = z
+  .object({
+    slug: slugSchema,
+    discipline: sellerDisciplineSchema,
+    fullName: z.string().trim().min(1),
+    country: z.string().trim().min(1),
+    city: z.string().trim().min(1),
+    practice: z.string().trim().min(1).nullable().optional(),
+    biography: z.string().trim().min(1).nullable().optional(),
+    socialLink: sellerPublicUrlSchema.nullable().optional(),
+    telegramUrl: sellerPublicUrlSchema.nullable().optional(),
+    instagramUrl: sellerPublicUrlSchema.nullable().optional(),
+    websiteUrl: sellerPublicUrlSchema.nullable().optional(),
+    shortDescription: z.string().trim().min(1),
+  })
+  .strict();
 
 const sellerProfileBaseWriteSchema = z
   .object({
@@ -168,8 +185,6 @@ const sellerProfileBaseWriteSchema = z
       });
     }
   });
-
-export const sellerProfileCreateRequestSchema = sellerProfileBaseWriteSchema;
 
 export const sellerProfileUpdateRequestSchema = z
   .object({
@@ -252,6 +267,7 @@ export const sellerProfileResponseSchema = z
         id: uuidSchema,
         version: z.number().int().positive(),
         status: sellerProfileRevisionStatusSchema,
+        updatedAt: isoDateTimeSchema,
       })
       .strict()
       .nullable(),

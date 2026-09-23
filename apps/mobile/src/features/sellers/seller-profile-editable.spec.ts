@@ -8,6 +8,7 @@ import {
 describe('seller profile cabinet editable matrix', () => {
   it.each([
     [undefined, undefined, true],
+    [{ status: 'DRAFT' }, { status: 'DRAFT' }, true],
     [{ status: 'CHANGES_REQUESTED' }, { status: 'PENDING_REVIEW' }, true],
     [{ status: 'APPROVED' }, { status: 'DRAFT' }, true],
     [{ status: 'APPROVED' }, { status: 'CHANGES_REQUESTED' }, true],

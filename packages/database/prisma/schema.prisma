@@ -10,6 +10,7 @@ datasource db {
 }
 
 enum SellerProfileStatus {
+  DRAFT
   PENDING_REVIEW
   APPROVED
   CHANGES_REQUESTED
@@ -129,8 +130,8 @@ model SellerProfile {
   shortDescription    String              @map("short_description") @db.Text
   handoffContactType  HandoffContactType? @map("handoff_contact_type")
   handoffContactValue String?             @map("handoff_contact_value") @db.VarChar(255)
-  handoffInitiator    HandoffInitiator    @default(BUYER_CONTACTS_SELLER) @map("handoff_initiator")
-  status              SellerProfileStatus @default(PENDING_REVIEW)
+  handoffInitiator    HandoffInitiator?   @map("handoff_initiator")
+  status              SellerProfileStatus @default(DRAFT)
   editingRevisionId   String?             @unique @map("editing_revision_id") @db.Uuid
   publishedRevisionId String?             @unique @map("published_revision_id") @db.Uuid
   createdAt           DateTime            @default(now()) @map("created_at")
