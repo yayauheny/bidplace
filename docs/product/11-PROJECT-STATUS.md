@@ -1,5 +1,18 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-23 — Mobile Expo production build
+
+- `Implemented` (mobile web): Expo export uses the plain Expo Metro and Babel
+  configuration. The unused NativeWind/Tailwind integration
+  (`nativewind`, `react-native-css-interop`, Tailwind config and declarations)
+  was removed after a full mobile-source consumer inventory found no NativeWind
+  runtime or utility-class consumers. `global.css` remains imported by the root
+  layout and retains focus, reduced-motion, glass, hover/active and font CSS.
+  `pnpm --filter @bidplace/mobile build` completes its web bundle without the
+  previous `react-native-css-interop` `parseAspectRatio` crash.
+- `Unchanged`: Work editor, product behavior, React Native style props and all
+  visual values.
+
 ## 2026-09-22 — Work editor persistence and revision lifecycle
 
 - `Implemented` (mobile web): the Work editor has one React Hook Form model

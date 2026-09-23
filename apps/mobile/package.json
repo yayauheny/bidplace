@@ -32,7 +32,6 @@
     "inline-style-prefixer": "^7.0.1",
     "lucide-react-native": "1.27.0",
     "memoize-one": "^6.0.0",
-    "nativewind": "4.2.1",
     "nullthrows": "^1.1.1",
     "postcss-value-parser": "^4.2.0",
     "qrcode": "1.5.4",
@@ -40,7 +39,6 @@
     "react-dom": "19.2.3",
     "react-hook-form": "7.81.0",
     "react-native": "0.86.0",
-    "react-native-css-interop": "0.2.1",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",
@@ -56,8 +54,6 @@
     "@types/qrcode": "1.5.5",
     "@types/react": "~18.3.18",
     "jsqr": "1.4.0",
-    "prettier-plugin-tailwindcss": "0.5.11",
-    "tailwindcss": "3.4.17",
     "typescript": "~6.0.3"
   },
   "scripts": {
