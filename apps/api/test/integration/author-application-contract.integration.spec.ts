@@ -8,6 +8,7 @@ import {
 } from './http-test-app';
 import {
   createPermissionFixture,
+  fixturePasswordHash,
   permissionImage,
   resetPermissionFixture,
 } from './permission-fixtures';
@@ -36,6 +37,16 @@ afterAll(async () => {
 async function login(client: HttpTestClient, email: string, password: string) {
   const response = await client.post('/auth/login', { email, password });
   expect(response.status).toBe(201);
+}
+
+async function createAdminClient() {
+  const admin = await prisma.user.create({
+    data: { email: `author-draft-admin-${Date.now()}@wave3.test`, passwordHash: fixturePasswordHash, displayName: 'Author draft admin', role: 'admin' },
+    select: { email: true },
+  });
+  const client = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+  await login(client, admin.email, 'password123');
+  return client;
 }
 
 function applicationForm(overrides: Record<string, string | null> = {}) {
@@ -99,6 +110,10 @@ describe('author application HTTP contract', () => {
     expect(stored.status).toBe('DRAFT');
     expect(stored.editingRevision).toMatchObject({ status: 'DRAFT', submittedAt: null });
 
+    const admin = await createAdminClient();
+    const draftQueue = (await (await admin.get('/admin/seller-profiles')).json()) as { sellerProfiles: Array<{ id: string }> };
+    expect(draftQueue.sellerProfiles.map((item) => item.id)).not.toContain(body.sellerProfile.id);
+
     const mine = await applicant.get('/seller/profile');
     expect(mine.status).toBe(200);
     const mineBody = (await mine.json()) as {
@@ -128,6 +143,13 @@ describe('author application HTTP contract', () => {
     expect(submitted.status).toBe('PENDING_REVIEW');
     expect(submitted.editingRevision?.status).toBe('PENDING_REVIEW');
     expect(submitted.editingRevision?.submittedAt).toBeInstanceOf(Date);
+
+    const pendingQueue = (await (await admin.get('/admin/seller-profiles')).json()) as { sellerProfiles: Array<{ id: string }> };
+    expect(pendingQueue.sellerProfiles.map((item) => item.id)).toContain(body.sellerProfile.id);
+    expect((await admin.patch(`/admin/seller-profiles/${body.sellerProfile.id}/status`, { status: 'APPROVED' })).status).toBe(200);
+    const published = await applicant.get(`/authors/${body.sellerProfile.slug}`);
+    expect(published.status).toBe(200);
+    expect(((await published.json()) as { author: { fullName: string; shortDescription: string } }).author).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description' });
   });
 
   it('keeps the published public projection unchanged while the owner sees draft fields', async () => {

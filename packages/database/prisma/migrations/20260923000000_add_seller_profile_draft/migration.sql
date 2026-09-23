@@ -1,6 +1,1 @@
 ALTER TYPE "SellerProfileStatus" ADD VALUE IF NOT EXISTS 'DRAFT' BEFORE 'PENDING_REVIEW';
-
-ALTER TABLE "seller_profiles"
-  ALTER COLUMN "status" SET DEFAULT 'DRAFT',
-  ALTER COLUMN "handoff_initiator" DROP DEFAULT,
-  ALTER COLUMN "handoff_initiator" DROP NOT NULL;

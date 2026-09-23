@@ -11,3 +11,11 @@ export function canOpenSellerProfileStep(
 ): boolean {
   return step === 1 || hasPersistedDraft;
 }
+
+export function shouldShowSellerProfileAchievements(
+  hasProfile: boolean,
+  isApplicationWizard: boolean,
+  step: 1 | 2,
+): boolean {
+  return hasProfile && (!isApplicationWizard || step === 2);
+}

@@ -18,7 +18,7 @@ import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import { getProfileFieldErrors } from './profile-validation';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
-import { resolveSellerProfileStep } from './seller-profile-wizard';
+import { resolveSellerProfileStep, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', shortDescription: '' };
 
@@ -127,7 +127,8 @@ export function SellerProfileScreen() {
       </FormSection>}>
         <SellerProfileFormSteps profileStep={profileStep} showAllSteps={!isApplicationWizard} editable={editable} fields={fields} fieldErrors={errors} update={(key, value) => form.setValue(key, value, { shouldDirty: true })} />
       </FormPageColumns>
-      {(isApplicationWizard && profileStep === 2) ? <><SellerProfileVerificationSection fields={fields} />{profile ? <AuthorApplicationAchievements editable={editable} /> : null}</> : null}
+      {(isApplicationWizard && profileStep === 2) ? <SellerProfileVerificationSection fields={fields} /> : null}
+      {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={editable} /> : null}
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
       {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails} onPress={() => void save().then(() => router.push('/profile?step=2'))} label="Продолжить" width="block" /> : null}
       {isApplicationWizard && profileStep === 2 && editable ? <>
