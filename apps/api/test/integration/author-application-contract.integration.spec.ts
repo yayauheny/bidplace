@@ -124,6 +124,16 @@ describe('author application HTTP contract', () => {
     expect(mineBody.sellerProfile.status).toBe('DRAFT');
     expect(mineBody.editingRevision?.status).toBe('DRAFT');
 
+    const applicationDraft = (await (
+      await applicant.get('/author/application')
+    ).json()) as {
+      application: { status: string };
+      editingRevision: { status: string; updatedAt: string } | null;
+    };
+    expect(applicationDraft.application.status).toBe('DRAFT');
+    expect(applicationDraft.editingRevision?.status).toBe('DRAFT');
+    expect(applicationDraft.editingRevision?.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
     const update = new FormData();
     update.set('fullName', 'Latest draft author');
     update.set('shortDescription', 'Latest draft description');
@@ -135,7 +145,17 @@ describe('author application HTTP contract', () => {
     expect(canonical.fullName).toBe('Latest draft author');
     expect(canonical.editingRevision).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description' });
 
-    expect((await applicant.post('/author/application/submit')).status).toBe(201);
+    const submitResponse = await applicant.post('/author/application/submit');
+    expect(submitResponse.status).toBe(201);
+    const applicationSubmitted = (await submitResponse.json()) as {
+      application: { status: string };
+      editingRevision: { status: string; updatedAt: string } | null;
+    };
+    expect(applicationSubmitted.application.status).toBe('PENDING_REVIEW');
+    expect(applicationSubmitted.editingRevision?.status).toBe('PENDING_REVIEW');
+    expect(applicationSubmitted.editingRevision?.updatedAt).toMatch(
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
     const submitted = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: body.sellerProfile.id },
       select: { status: true, editingRevision: { select: { status: true, submittedAt: true } } },

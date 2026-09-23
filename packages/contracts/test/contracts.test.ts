@@ -252,6 +252,32 @@ describe('shared contracts', () => {
     ).toBe(false);
   });
 
+  it('accepts draft and submitted application revisions with their hydration token', () => {
+    for (const status of ['DRAFT', 'PENDING_REVIEW'] as const) {
+      expect(
+        portfolioAuthorApplicationResponseSchema.safeParse({
+          application: {
+            slug: 'author',
+            fullName: 'Author',
+            country: 'Belarus',
+            city: 'Minsk',
+            discipline: 'Painting',
+            practice: null,
+            shortDescription: 'Bio',
+            status,
+          },
+          editingRevision: {
+            id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
+            version: 1,
+            status,
+            updatedAt: '2026-09-23T00:00:00.000Z',
+          },
+          achievements: [],
+        }).success,
+      ).toBe(true);
+    }
+  });
+
   it('accepts a draft Product without art-only fields', () => {
     expect(
       productWriteRequestSchema.safeParse({ title: 'Personal item' }).success,

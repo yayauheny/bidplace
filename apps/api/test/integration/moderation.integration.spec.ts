@@ -40,14 +40,11 @@ afterAll(async () => {
 function applicationForm(): FormData {
   const form = new FormData();
   form.set('slug', '  wave3-applicant  ');
-  form.set('sellerType', 'creator');
+  form.set('discipline', 'Керамика');
   form.set('fullName', '  Applicant Creator  ');
   form.set('country', ' BY ');
   form.set('city', ' Minsk ');
-  form.set('socialLink', 'https://example.com/applicant');
   form.set('shortDescription', '  Applicant description  ');
-  form.set('handoffContactType', 'TELEGRAM');
-  form.set('handoffContactValue', '  @wave3_applicant  ');
   form.set(
     'profilePhoto',
     new Blob([permissionImage], { type: 'image/png' }),
@@ -137,7 +134,7 @@ async function adminAndApplicant(fixture: PermissionFixture) {
 }
 
 describe('seller application and moderation audit over HTTP and PostgreSQL', () => {
-  it('normalizes and persists a real seller application as PENDING_REVIEW', async () => {
+  it('normalizes and persists a real seller application as DRAFT', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(
       http.baseUrl,
@@ -157,8 +154,8 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       fullName: 'Applicant Creator',
       country: 'BY',
       shortDescription: 'Applicant description',
-      handoffContactValue: '@wave3_applicant',
-      status: 'PENDING_REVIEW',
+      handoffContactValue: null,
+      status: 'DRAFT',
     });
     expect(persisted.profilePhotoByteLength).toBe(
       Buffer.from(persisted.profilePhotoData).byteLength,
@@ -171,6 +168,9 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     const { admin, adminClient, applicantClient } =
       await adminAndApplicant(fixture);
     const profile = await createApplication(applicantClient);
+    expect(
+      (await applicantClient.post('/author/application/submit')).status,
+    ).toBe(201);
 
     expect(
       (
