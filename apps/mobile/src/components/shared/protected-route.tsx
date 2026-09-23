@@ -1,9 +1,15 @@
-import { Redirect } from 'expo-router';
+import {
+  Redirect,
+  useGlobalSearchParams,
+  usePathname,
+  useSegments,
+} from 'expo-router';
 import { useState, type ReactNode } from 'react';
 
 import { AppShell } from '../layout';
 import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
+import { getProtectedRedirect } from '../../features/auth/auth-redirect';
 
 type ProtectedRouteProps = {
   children: ReactNode;
@@ -15,12 +21,16 @@ export function ProtectedRoute({
   requireAdmin = false,
 }: ProtectedRouteProps) {
   const auth = useAuth();
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  const segments = useSegments();
   const [refreshing, setRefreshing] = useState(false);
-  const pageStatus = !auth.ready || refreshing
-    ? 'loading'
-    : auth.status === 'error'
-      ? 'error'
-      : null;
+  const pageStatus =
+    !auth.ready || refreshing
+      ? 'loading'
+      : auth.status === 'error'
+        ? 'error'
+        : null;
 
   if (pageStatus) {
     return (
@@ -39,7 +49,17 @@ export function ProtectedRoute({
   }
 
   if (!auth.isAuthenticated) {
-    return <Redirect href="/login" />;
+    const dynamicParamNames = segments.flatMap((segment) => {
+      const match = /^\[\.\.\.(.+)\]$|^\[(.+)\]$/.exec(segment);
+      return match ? [match[1] ?? match[2]!] : [];
+    });
+    const redirectTo = getProtectedRedirect(
+      pathname,
+      params,
+      dynamicParamNames,
+    );
+
+    return <Redirect href={{ pathname: '/login', params: { redirectTo } }} />;
   }
 
   if (requireAdmin && !auth.canModerate) {

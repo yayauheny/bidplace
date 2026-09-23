@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { authResponseSchema } from './auth';
 import { isoDateTimeSchema } from './primitives';
 
 export const CURRENT_RULES_VERSION = 'MVP_RULES_V1' as const;
@@ -26,11 +27,7 @@ export const acceptRulesRequestSchema = z
   })
   .strict();
 
-export const acceptRulesResponseSchema = z
-  .object({
-    ok: z.literal(true),
-  })
-  .strict();
+export const acceptRulesResponseSchema = authResponseSchema;
 
 export type ServiceRules = z.infer<typeof serviceRulesSchema>;
 export type ServiceRulesResponse = z.infer<typeof serviceRulesResponseSchema>;

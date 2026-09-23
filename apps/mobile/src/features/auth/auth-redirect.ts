@@ -1,9 +1,15 @@
 export type SafeRedirect = `/${string}`;
+type SearchParams = Record<string, string | string[] | undefined>;
 
 const DEFAULT_REDIRECT: SafeRedirect = '/';
 const INTERNAL_ORIGIN = 'https://bidplace.local';
 
-const AUTH_PATHS = new Set(['/login', '/register', '/forgot-password', '/reset-password']);
+const AUTH_PATHS = new Set([
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+]);
 
 export function getSafeRedirect(
   rawParam: string | string[] | null | undefined,
@@ -33,4 +39,27 @@ export function getSafeRedirect(
   } catch {
     return DEFAULT_REDIRECT;
   }
+}
+
+export function getProtectedRedirect(
+  pathname: string,
+  params: SearchParams,
+  dynamicParamNames: readonly string[],
+): SafeRedirect {
+  const dynamicParams = new Set(dynamicParamNames);
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (dynamicParams.has(key) || value === undefined) {
+      continue;
+    }
+
+    for (const item of Array.isArray(value) ? value : [value]) {
+      search.append(key, item);
+    }
+  }
+
+  const serializedSearch = search.toString();
+  const suffix = serializedSearch ? `?${serializedSearch}` : '';
+  return getSafeRedirect(`${pathname}${suffix}`);
 }

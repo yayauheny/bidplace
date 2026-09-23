@@ -1,5 +1,23 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-23 — Auth session recovery and redirects
+
+- `Implemented` (mobile web): `AuthProvider` derives the current user from one
+  React Query `['user', 'me']` record. Login and registration write their
+  returned user to that record without a second `/me` request; logout clears it
+  even if the server call fails. Query and mutation failures clear session and
+  user/seller/admin data only for structured 401 responses. A 403 or an
+  infrastructure failure leaves a valid session intact, and unauthorized
+  requests do not retry.
+- `Implemented` (contracts/API): `POST /api/auth/rules/accept` has one
+  `{ user }` response contract across controller, contracts and API client;
+  the obsolete `{ ok: true }` shape is rejected. Protected routes preserve a
+  validated internal pathname and query in `redirectTo`; external, data,
+  JavaScript and auth-route targets resolve to `/`.
+- Coverage: `unauthorized-session-recovery.spec.ts`, `query-client.spec.ts`,
+  `auth-redirect.spec.ts`, contracts and API-client response tests, and
+  `auth-transport.integration.spec.ts`.
+
 ## 2026-09-23 — Mobile Expo production build
 
 - `Implemented` (mobile web): Expo export uses the plain Expo Metro and Babel

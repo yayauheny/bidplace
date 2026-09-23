@@ -2,9 +2,11 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 
 import {
+  authKeys,
+  clearAuthenticatedSession,
+  clearAuthScopedDataExceptSession,
   productKeys,
   clearAuthScopedQueries,
-  invalidateAuthScopedQueries,
   isAuthScopedQueryKey,
 } from './query-cache';
 
@@ -33,25 +35,31 @@ describe('query cache auth boundaries', () => {
     expect(queryClient.getQueryData(['admin', 'users'])).toBeUndefined();
   });
 
-  it('invalidates only auth-scoped queries', async () => {
+  it('makes the session anonymous while removing protected query data', async () => {
     const queryClient = new QueryClient();
-    const sellerQuery = queryClient.getQueryCache().build(queryClient, {
-      queryKey: ['seller', 'products'],
-      queryFn: async () => [],
-      initialData: [],
+    queryClient.setQueryData(authKeys.session, { id: 'user-1' });
+    queryClient.setQueryData(['seller', 'products'], [{ id: 'product-1' }]);
+    queryClient.setQueryData(['products', 'list'], { page: 1 });
+
+    await clearAuthenticatedSession(queryClient);
+
+    expect(queryClient.getQueryData(authKeys.session)).toBeNull();
+    expect(queryClient.getQueryData(['seller', 'products'])).toBeUndefined();
+    expect(queryClient.getQueryData(['products', 'list'])).toEqual({ page: 1 });
+  });
+
+  it('keeps an accepted session response while clearing other protected data', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(authKeys.session, { id: 'user-1' });
+    queryClient.setQueryData(['user', 'profile'], { id: 'user-1' });
+    queryClient.setQueryData(['seller', 'products'], [{ id: 'product-1' }]);
+
+    await clearAuthScopedDataExceptSession(queryClient);
+
+    expect(queryClient.getQueryData(authKeys.session)).toEqual({
+      id: 'user-1',
     });
-    const publicQuery = queryClient.getQueryCache().build(queryClient, {
-      queryKey: ['products', 'list'],
-      queryFn: async () => [],
-      initialData: [],
-    });
-
-    expect(sellerQuery.state.isInvalidated).toBe(false);
-    expect(publicQuery.state.isInvalidated).toBe(false);
-
-    await invalidateAuthScopedQueries(queryClient);
-
-    expect(sellerQuery.state.isInvalidated).toBe(true);
-    expect(publicQuery.state.isInvalidated).toBe(false);
+    expect(queryClient.getQueryData(['user', 'profile'])).toBeUndefined();
+    expect(queryClient.getQueryData(['seller', 'products'])).toBeUndefined();
   });
 });

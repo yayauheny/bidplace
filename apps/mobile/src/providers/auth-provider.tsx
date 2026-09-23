@@ -2,9 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react';
 
@@ -14,18 +12,14 @@ import type {
   RegisterRequest,
   User,
 } from '@bidplace/contracts';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useApiClient } from './api-provider';
 import {
-  clearAuthScopedQueries,
-  invalidateAuthScopedQueries,
+  authKeys,
+  clearAuthenticatedSession,
+  clearAuthScopedDataExceptSession,
 } from '../lib/query-cache';
-import {
-  isInfrastructureError,
-  logInfrastructureError,
-  shouldClearSessionForError,
-} from '../errors';
 
 type AuthStatus = 'anonymous' | 'authenticated' | 'error';
 
@@ -46,73 +40,33 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function rememberSessionFailure(error: unknown, surface: string) {
-  if (isInfrastructureError(error)) {
-    logInfrastructureError(error, surface);
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const api = useApiClient();
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<AuthStatus>('anonymous');
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState(false);
+  const sessionQuery = useQuery({
+    queryKey: authKeys.session,
+    queryFn: async () => (await api.auth.me()).user,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const user = sessionQuery.data ?? null;
+  const status: AuthStatus = sessionQuery.isError
+    ? 'error'
+    : user
+      ? 'authenticated'
+      : 'anonymous';
+  const ready = sessionQuery.isSuccess || sessionQuery.isError;
 
-  useEffect(() => {
-    let active = true;
+  const clearSession = useCallback(async () => {
+    await clearAuthenticatedSession(queryClient);
+  }, [queryClient]);
 
-    api.auth
-      .me()
-      .then(({ user: nextUser }) => {
-        if (!active) {
-          return;
-        }
-
-        setUser(nextUser);
-        setStatus('authenticated');
-      })
-      .catch((error) => {
-        if (!active) return;
-        setUser(null);
-        if (shouldClearSessionForError(error)) {
-          setStatus('anonymous');
-          return;
-        }
-        rememberSessionFailure(error, 'auth.me');
-        setStatus('error');
-      })
-      .finally(() => {
-        if (active) {
-          setReady(true);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [api]);
-
-  const clearSession = useCallback(() => {
-    setUser(null);
-    setStatus('anonymous');
-  }, []);
-
-  const syncSession = useCallback(
-    async () => {
-      try {
-        const { user: verifiedUser } = await api.auth.me();
-        await clearAuthScopedQueries(queryClient);
-        setUser(verifiedUser);
-        setStatus('authenticated');
-        await invalidateAuthScopedQueries(queryClient);
-      } catch (error) {
-        await clearAuthScopedQueries(queryClient);
-        clearSession();
-        throw error;
-      }
+  const setAuthenticatedSession = useCallback(
+    async (nextUser: User) => {
+      await clearAuthScopedDataExceptSession(queryClient);
+      queryClient.setQueryData(authKeys.session, nextUser);
     },
-    [api, clearSession, queryClient],
+    [queryClient],
   );
 
   const value = useMemo<AuthContextValue>(
@@ -126,37 +80,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canModerate: user?.role === 'admin',
       login: async (input: LoginRequest) => {
         const response = await api.auth.login(input);
-        await syncSession();
+        await setAuthenticatedSession(response.user);
         return response;
       },
       register: async (input: RegisterRequest) => {
         const response = await api.auth.register(input);
-        await syncSession();
+        await setAuthenticatedSession(response.user);
         return response;
       },
       logout: async () => {
         try {
           await api.auth.logout();
         } finally {
-          await clearAuthScopedQueries(queryClient);
-          clearSession();
+          await clearSession();
         }
       },
       refreshSession: async () => {
-        try {
-          const response = await api.auth.me();
-          setUser(response.user);
-          setStatus('authenticated');
-        } catch (error) {
-          if (shouldClearSessionForError(error)) {
-            await clearAuthScopedQueries(queryClient);
-            clearSession();
-            return;
-          }
-          rememberSessionFailure(error, 'auth.refreshSession');
-          setUser(null);
-          setStatus('error');
-        }
+        await sessionQuery.refetch();
       },
       clearSession,
     }),
@@ -165,8 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearSession,
       queryClient,
       ready,
-      status,
-      syncSession,
+      sessionQuery,
+      setAuthenticatedSession,
       user,
     ],
   );

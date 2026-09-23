@@ -5,6 +5,10 @@ export const productKeys = {
   categories: ['products', 'categories'] as const,
 };
 
+export const authKeys = {
+  session: ['user', 'me'] as const,
+};
+
 const authScopedRoots = new Set(['user', 'seller', 'admin']);
 
 export function isAuthScopedQueryKey(queryKey: QueryKey): boolean {
@@ -25,10 +29,25 @@ export async function clearAuthScopedQueries(
   });
 }
 
-export async function invalidateAuthScopedQueries(
+export async function clearAuthScopedDataExceptSession(
   queryClient: QueryClient,
 ): Promise<void> {
-  await queryClient.invalidateQueries({
-    predicate: (query) => isAuthScopedQueryKey(query.queryKey),
-  });
+  const predicate = (query: { queryKey: QueryKey }) =>
+    isAuthScopedQueryKey(query.queryKey) &&
+    !(query.queryKey[0] === 'user' && query.queryKey[1] === 'me');
+
+  await queryClient.cancelQueries({ predicate });
+  queryClient.removeQueries({ predicate });
+}
+
+export async function clearAuthenticatedSession(
+  queryClient: QueryClient,
+): Promise<void> {
+  queryClient.setQueryData(authKeys.session, null);
+
+  try {
+    await clearAuthScopedQueries(queryClient);
+  } finally {
+    queryClient.setQueryData(authKeys.session, null);
+  }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   adminProductStatusUpdateRequestSchema,
   adminSellerStatusUpdateRequestSchema,
+  acceptRulesResponseSchema,
   ApiErrorCode,
   apiErrorResponseSchema,
   isEditableProductStatus,
@@ -49,6 +50,27 @@ describe('shared contracts', () => {
         privateTag: ['draft'],
       }).success,
     ).toBe(false);
+  });
+
+  it('uses the authenticated user response for rules acceptance', () => {
+    const user = {
+      id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+      email: 'seller@example.com',
+      phone: '+375291234567',
+      emailVerifiedAt: null,
+      phoneVerifiedAt: null,
+      acceptedRulesVersion: 'MVP_RULES_V1',
+      displayName: 'Seller',
+      role: 'user',
+      status: 'active',
+      createdAt: '2026-09-23T00:00:00.000Z',
+      updatedAt: '2026-09-23T00:00:00.000Z',
+    };
+
+    expect(acceptRulesResponseSchema.parse({ user })).toEqual({ user });
+    expect(acceptRulesResponseSchema.safeParse({ ok: true }).success).toBe(
+      false,
+    );
   });
 
   it('keeps portfolio public work responses free of commerce fields', () => {
