@@ -16,19 +16,10 @@ async function fillAuthorApplication(page: Page, slug: string, city: string) {
   await page.getByLabel('Дисциплина').fill('Керамика');
   await page.getByLabel('Страна').fill('BY');
   await page.getByLabel('Город').fill(city);
-  await page.getByLabel('Публичная ссылка').fill(`https://example.com/${slug}`);
   await page.getByLabel('Короткое описание').fill('Авторская практика.');
   await page.getByRole('button', { name: 'Продолжить' }).click();
-  await expect(page.getByText('Шаг 2 из 3')).toBeVisible();
-  await page.getByLabel('Telegram').fill(`https://t.me/${slug.replaceAll('-', '_')}`);
-  await page.getByLabel('Instagram').fill(`https://instagram.com/${slug}`);
-  await page.getByLabel('Сайт').fill(`https://example.com/${slug}`);
-  await page
-    .getByLabel('Основная публичная ссылка')
-    .fill(`https://example.com/${slug}`);
-  await page.getByRole('button', { name: 'Продолжить' }).click();
-  await expect(page.getByText('Шаг 3 из 3')).toBeVisible();
-  await page.getByLabel('Контакт для передачи').fill('@handoff_creator');
+  await expect(page).toHaveURL(/\/profile\?step=2/);
+  await expect(page.getByText('Шаг 2 из 2')).toBeVisible();
 }
 
 test('author application without city cannot continue and city=null is rejected', async ({
@@ -47,7 +38,6 @@ test('author application without city cannot continue and city=null is rejected'
     await page.getByLabel('URL-slug').fill(slug);
     await page.getByLabel('Дисциплина').fill('Керамика');
     await page.getByLabel('Страна').fill('BY');
-    await page.getByLabel('Публичная ссылка').fill(`https://example.com/${slug}`);
     await page.getByLabel('Короткое описание').fill('Авторская практика.');
     await expect(page.getByRole('button', { name: 'Продолжить' })).toBeDisabled();
 
@@ -56,15 +46,11 @@ test('author application without city cannot continue and city=null is rejected'
       {
         multipart: {
           slug,
-          sellerType: 'creator',
           fullName: 'Без города',
           country: 'BY',
           city: '',
+          discipline: 'Керамика',
           shortDescription: 'Авторская практика.',
-          socialLink: `https://example.com/${slug}`,
-          handoffContactType: 'TELEGRAM',
-          handoffContactValue: '@handoff_creator',
-          handoffInitiator: 'BUYER_CONTACTS_SELLER',
           profilePhoto: 'e2e/fixtures/profile-photo.png',
         },
       },
@@ -86,13 +72,11 @@ test('city application is approved and appears in the public authors catalog', a
   try {
     await page.goto('/profile');
     await fillAuthorApplication(page, slug, 'Минск');
-    const created = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/seller/profile') &&
-        response.request().method() === 'POST',
-    );
-    await page.getByRole('button', { name: 'Создать профиль' }).click();
-    expect((await created).ok()).toBeTruthy();
+    await expect(page.getByRole('button', { name: 'Сохранить черновик' })).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/\/profile\?step=2/);
+    await page.getByRole('button', { name: 'Сохранить черновик' }).click();
+    await page.getByRole('button', { name: 'Отправить на проверку' }).click();
     await expect(page.getByText('На модерации')).toBeVisible();
 
     const mine = await context.request.get(`${e2eApiBaseURL}/api/seller/profile`);

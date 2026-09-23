@@ -18,12 +18,9 @@ import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
 import { getProfileFieldErrors } from './profile-validation';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
+import { resolveSellerProfileStep } from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', shortDescription: '' };
-
-function resolveStep(value: string | string[] | undefined): 1 | 2 {
-  return value === '2' ? 2 : 1;
-}
 
 function toFields(profile: {
   slug: string; fullName: string; discipline: string; country: string; city: string | null;
@@ -52,7 +49,7 @@ export function SellerProfileScreen() {
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
   const hydrationToken = editingRevision?.updatedAt ?? profile?.updatedAt;
-  const requestedStep = resolveStep(step);
+  const requestedStep = resolveSellerProfileStep(step, Boolean(profile));
   const isApplicationWizard = !profile || ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(profile.status);
   const profileStep = isApplicationWizard ? requestedStep : 1;
   const editable = isSellerProfileFormEditable(profile, editingRevision);
@@ -75,8 +72,8 @@ export function SellerProfileScreen() {
   }, [applicationPhoto.data, photoBlob, profile]);
 
   useEffect(() => {
-    if (requestedStep === 2 && !profile) router.setParams({ step: '1' });
-  }, [profile, requestedStep, router]);
+    if (step === '2' && requestedStep === 1) router.setParams({ step: '1' });
+  }, [requestedStep, router, step]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
@@ -86,11 +83,17 @@ export function SellerProfileScreen() {
   const payload = () => ({ slug: fields.slug, fullName: fields.fullName, discipline: fields.discipline, country: fields.country, city: fields.city.trim(), practice: fields.practice.trim() || null, socialLink: fields.socialLink.trim() || null, telegramUrl: fields.telegramUrl.trim() || null, instagramUrl: fields.instagramUrl.trim() || null, websiteUrl: fields.websiteUrl.trim() || null, shortDescription: fields.shortDescription.trim() });
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (profile) return api.sellers.updateProfile(payload(), photoBlob ?? undefined);
+      const current = queryClient.getQueryData<typeof query.data>(['seller', 'profile']);
+      if (current?.sellerProfile) return api.sellers.updateProfile(payload(), photoBlob ?? undefined);
       if (!photoBlob) throw new Error('Profile photo is required');
       return api.sellers.createProfile(payload(), photoBlob);
     },
-    onSuccess: (saved) => { form.reset(toFields(saved.sellerProfile)); setPhotoBlob(null); invalidate(); },
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['seller', 'profile'], saved);
+      form.reset(toFields(saved.sellerProfile));
+      setPhotoBlob(null);
+      invalidate();
+    },
   });
   const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication(), onSuccess: invalidate });
 
@@ -116,7 +119,7 @@ export function SellerProfileScreen() {
         <PageHeader title="Профиль автора" description={!profile ? 'Заполните профиль и сохраните черновик до отправки на модерацию.' : undefined} />
         {profile ? <AppText role="caption" tone={profile.status === 'APPROVED' ? 'success' : profile.status === 'REJECTED' ? 'danger' : 'secondary'}>{presentEnum(profile.status, sellerStatusLabels, 'Неизвестный статус')}</AppText> : null}
       </View>
-      {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} onStepChange={(next) => router.setParams({ step: String(next) })} /> : null}
+      {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} hasPersistedDraft={Boolean(profile)} onStepChange={(next) => router.setParams({ step: String(next) })} /> : null}
       <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
         <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!editable} width="block" onPress={() => void choosePhoto()} />

@@ -19,12 +19,12 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
-export function SellerProfileCreationStepSelector({ profileStep, onStepChange }: { profileStep: number; onStepChange: (step: 1 | 2) => void }) {
+export function SellerProfileCreationStepSelector({ profileStep, hasPersistedDraft, onStepChange }: { profileStep: number; hasPersistedDraft: boolean; onStepChange: (step: 1 | 2) => void }) {
   return <FormSection title="Заявка автора" description="Сохраните черновик и отправьте его на проверку, когда всё будет готово.">
     <View accessibilityRole="tablist" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
       {(['Об авторе', 'Ссылки и достижения'] as const).map((label, index) => {
         const step = (index + 1) as 1 | 2;
-        return <SecondaryButton key={label} label={`${step}. ${label}`} disabled={step > profileStep} onPress={() => onStepChange(step)} />;
+        return <SecondaryButton key={label} label={`${step}. ${label}`} disabled={step === 2 && !hasPersistedDraft} onPress={() => onStepChange(step)} />;
       })}
     </View>
     <AppText role="metadata" tone="secondary">Шаг {profileStep} из 2</AppText>

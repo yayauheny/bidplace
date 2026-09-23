@@ -94,7 +94,7 @@ describe('toSellerProfileResponse', () => {
     expect(response.sellerProfile.fullName).toBe('Draft name');
     expect(response.sellerProfile.city).toBe('Grodno');
     expect(response.sellerProfile.profilePhotoUrl).toBe(
-      '/api/sellers/draft-slug/photo',
+      '/api/sellers/live-slug/photo',
     );
     expect(response.editingRevision).toEqual({
       id: '2a0d82a1-0317-49eb-904f-a8bc87d311a5',

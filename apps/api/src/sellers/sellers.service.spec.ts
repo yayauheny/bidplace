@@ -17,7 +17,7 @@ function ownerRecord(now: Date) {
     practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null,
     shortDescription: 'Updated description', handoffContactType: null, handoffContactValue: null, handoffInitiator: null,
     status: 'CHANGES_REQUESTED', createdAt: now, updatedAt: now,
-    editingRevision: { id: 'revision-id', version: 1, status: 'CHANGES_REQUESTED', updatedAt: now, slug: 'seller-slug', discipline: 'Керамика', fullName: 'Updated seller', country: 'BY', city: 'Minsk', practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null, shortDescription: 'Updated description' },
+    editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', version: 1, status: 'CHANGES_REQUESTED', updatedAt: now, slug: 'seller-slug', discipline: 'Керамика', fullName: 'Updated seller', country: 'BY', city: 'Minsk', practice: null, biography: null, socialLink: 'https://example.com/seller', telegramUrl: null, instagramUrl: null, websiteUrl: null, shortDescription: 'Updated description' },
   };
 }
 
@@ -432,7 +432,7 @@ describe('SellersService', () => {
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([{ id: record.id }]),
       sellerProfile: {
-        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'revision-id', publishedRevisionId: null, editingRevision: { id: 'revision-id', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
+        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
         update: vi.fn(), findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
       sellerProfileRevision: { update: vi.fn() },
@@ -502,7 +502,7 @@ describe('SellersService', () => {
           createdAt: now,
           updatedAt: now,
         }),
-        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'revision-id', publishedRevisionId: null, editingRevision: { id: 'revision-id', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
+        findUnique: vi.fn().mockResolvedValue({ id: record.id, status: 'CHANGES_REQUESTED', editingRevisionId: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', publishedRevisionId: null, editingRevision: { id: 'f3e4cc9c-d42a-4fda-8c2e-7ed73a4ef05a', status: 'CHANGES_REQUESTED' }, publishedRevision: null }),
         findUniqueOrThrow: vi.fn().mockResolvedValue(record),
       },
       sellerProfileRevision: { update: vi.fn() },

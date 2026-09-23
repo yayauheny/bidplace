@@ -235,7 +235,7 @@ export function toSellerProfileResponse(
         null,
       websiteUrl:
         (publicFields.websiteUrl ?? sellerProfileResponse.websiteUrl) ?? null,
-      profilePhotoUrl: sellerProfilePhotoUrl(publicFields.slug ?? sellerProfile.slug),
+      profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),
     },
