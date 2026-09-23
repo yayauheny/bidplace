@@ -8,6 +8,7 @@ import { PublicIdService } from '../../src/core/public-id';
 import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { ImagesService } from '../../src/images/images.service';
 import { ProductsService } from '../../src/products/products.service';
+import { SellersService } from '../../src/sellers/sellers.service';
 import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
@@ -100,6 +101,7 @@ async function createSubmitReadyProduct(
       sellerType: 'creator',
       fullName: 'Owner',
       country: 'BY',
+      city: 'Minsk',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: png.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
@@ -189,6 +191,7 @@ function createServices() {
     products: new ProductsService(prisma as never, new PublicIdService()),
     images: new ImagesService(prisma as never, imageStore),
     admin: new AdminModerationService(prisma as never),
+    sellers: new SellersService(prisma as never, imageStore),
   };
 }
 
@@ -214,6 +217,52 @@ async function holdProductAndMutate(
 }
 
 describe('Product write atomicity against PostgreSQL', () => {
+  it('keeps the editing revision canonical from draft save through approval', async () => {
+    const { owner, product } = await createSubmitReadyProduct();
+    const { products, admin, sellers } = createServices();
+    const adminUser = await prisma.user.create({
+      data: {
+        email: `admin.${randomUUID()}@write-race.test`,
+        passwordHash: 'test',
+        displayName: 'Admin',
+        role: 'admin',
+      },
+    });
+
+    await products.update(owner.id, product.id, {
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+    expect(
+      (await sellers.getProduct(owner.id, product.id)).product,
+    ).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+
+    await products.submit(owner.id, product.id);
+    expect(
+      await prisma.productRevision.findUniqueOrThrow({
+        where: { id: product.editingRevisionId },
+        select: { title: true, story: true, status: true },
+      }),
+    ).toEqual({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+      status: 'PENDING_REVIEW',
+    });
+
+    await admin.updateProductStatus(adminUser.id, product.id, {
+      status: 'APPROVED',
+    });
+    expect(
+      (await products.getPortfolio(product.publicId)).product,
+    ).toMatchObject({
+      title: 'Latest canonical draft',
+      story: 'Latest canonical story',
+    });
+  });
+
   it('keeps a late field write from mutating a Product after submit wins the row', async () => {
     const { owner, product } = await createSubmitReadyProduct();
     const { products } = createServices();
@@ -267,9 +316,7 @@ describe('Product write atomicity against PostgreSQL', () => {
       where: { productId: product.id },
       select: { id: true, byteLength: true },
     });
-    expect(remaining).toEqual([
-      { id: imageId, byteLength: png.byteLength },
-    ]);
+    expect(remaining).toEqual([{ id: imageId, byteLength: png.byteLength }]);
   });
 
   it('does not persist a late image upload after submit and leaves no orphaned bytes', async () => {

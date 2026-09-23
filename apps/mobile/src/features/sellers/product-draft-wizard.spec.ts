@@ -27,7 +27,7 @@ describe('product draft wizard accessibility', () => {
     expect(canOpenProductWizardStep(productWizardStep.images, noProduct)).toBe(
       false,
     );
-    expect(canOpenProductWizardStep(productWizardStep.creation, noProduct)).toBe(
+    expect(canOpenProductWizardStep(productWizardStep.story, noProduct)).toBe(
       false,
     );
     expect(canOpenProductWizardStep(productWizardStep.review, noProduct)).toBe(
@@ -46,10 +46,7 @@ describe('product draft wizard accessibility', () => {
       canOpenProductWizardStep(productWizardStep.images, productWithoutImages),
     ).toBe(true);
     expect(
-      canOpenProductWizardStep(
-        productWizardStep.creation,
-        productWithoutImages,
-      ),
+      canOpenProductWizardStep(productWizardStep.story, productWithoutImages),
     ).toBe(false);
     expect(
       canOpenProductWizardStep(productWizardStep.review, productWithoutImages),
@@ -61,16 +58,13 @@ describe('product draft wizard accessibility', () => {
       resolveProductWizardStep(productWizardStep.review, productWithoutImages),
     ).toBe(productWizardStep.images);
     expect(
-      resolveProductWizardStep(
-        productWizardStep.creation,
-        productWithoutImages,
-      ),
+      resolveProductWizardStep(productWizardStep.story, productWithoutImages),
     ).toBe(productWizardStep.images);
   });
 
   it('opens all steps when a draft has at least one image', () => {
     expect(
-      canOpenProductWizardStep(productWizardStep.creation, productWithImages),
+      canOpenProductWizardStep(productWizardStep.story, productWithImages),
     ).toBe(true);
     expect(
       canOpenProductWizardStep(productWizardStep.review, productWithImages),
@@ -91,7 +85,7 @@ describe('product draft wizard accessibility', () => {
       canOpenProductWizardStep(productWizardStep.images, productWithImages),
     ).toBe(true);
     expect(
-      canOpenProductWizardStep(productWizardStep.creation, productWithImages),
+      canOpenProductWizardStep(productWizardStep.story, productWithImages),
     ).toBe(true);
     expect(
       canOpenProductWizardStep(productWizardStep.review, productWithImages),
@@ -99,8 +93,10 @@ describe('product draft wizard accessibility', () => {
   });
 
   it('parses URL step params without treating them as already resolved', () => {
-    expect(parseProductWizardStepParam(undefined)).toBe(productWizardStep.about);
-    expect(parseProductWizardStepParam('3')).toBe(productWizardStep.creation);
+    expect(parseProductWizardStepParam(undefined)).toBe(
+      productWizardStep.about,
+    );
+    expect(parseProductWizardStepParam('3')).toBe(productWizardStep.story);
     expect(parseProductWizardStepParam('0')).toBe(0);
     expect(parseProductWizardStepParam('99')).toBe(99);
     expect(parseProductWizardStepParam(['4'])).toBe(productWizardStep.review);
@@ -141,16 +137,16 @@ describe('product draft wizard accessibility', () => {
   });
 
   it('builds the creation-flow product href without inventing extra params', () => {
-    expect(createProductWizardHref('abc123xyz', productWizardStep.review)).toEqual(
-      {
-        pathname: '/(seller)/products/[id]',
-        params: {
-          id: 'abc123xyz',
-          flow: 'creation',
-          step: '4',
-        },
+    expect(
+      createProductWizardHref('abc123xyz', productWizardStep.review),
+    ).toEqual({
+      pathname: '/(seller)/products/[id]',
+      params: {
+        id: 'abc123xyz',
+        flow: 'creation',
+        step: '4',
       },
-    );
+    });
   });
 
   it('keeps the form-level incomplete message distinct from field errors', () => {

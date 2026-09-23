@@ -3,9 +3,11 @@ import { createHash } from 'node:crypto';
 import {
   ConflictException,
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { type ProductStatus, type SellerStatus } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
 
 import { PrismaService, runReadCommittedTransaction } from '../core/database';
@@ -19,9 +21,10 @@ import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import {
   assertProductWritable,
   lockProductRowForUpdate,
-  productWriteGuardSelect,
   type ProductWriteGuardKind,
 } from '../products/product-write-guard';
+import { canAuthorEditRevision } from '../products/product-revision-state';
+import { assertApprovedSeller } from '../sellers/seller-capability';
 
 @Injectable()
 export class ImagesService {
@@ -79,7 +82,7 @@ export class ImagesService {
         const row = await tx.productImage.create({
           data: {
             productId,
-            position: start + index,
+            position: freshProduct.nextProductImagePosition + index,
             mimeType: file.mimeType,
             byteLength: file.buffer.byteLength,
             data: emptyImageBytes,
@@ -135,10 +138,15 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
-        id: true,
-        position: true,
-      });
+      const locked = await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+        {
+          id: true,
+          position: true,
+        },
+      );
       if (!locked.images.some((image) => image.id === imageId)) {
         throw new NotFoundException('Image not found');
       }
@@ -160,34 +168,35 @@ export class ImagesService {
       const revisionReferences = await tx.productRevisionImage.count({
         where: { imageId },
       });
-      const remainingRevisionImages =
-        await tx.productRevisionImage.findMany({
-          where: { revisionId: locked.editingRevisionId },
-          select: { imageId: true },
-          orderBy: { position: 'asc' },
-        });
+      const remainingRevisionImages = await tx.productRevisionImage.findMany({
+        where: { revisionId: locked.editingRevisionId },
+        select: { imageId: true },
+        orderBy: { position: 'asc' },
+      });
       if (revisionReferences === 0) {
         await this.imageStore.delete(imageKey.productImage(imageId), tx);
         await tx.productImage.delete({ where: { id: imageId } });
-        const temporaryBase = remaining.length + 1;
+        if (!locked.usesRevisionImageOrder) {
+          const temporaryBase = remaining.length + 1;
 
-        await Promise.all(
-          remaining.map((image, index) =>
-            tx.productImage.update({
-              where: { id: image.id },
-              data: { position: temporaryBase + index },
-            }),
-          ),
-        );
+          await Promise.all(
+            remaining.map((image, index) =>
+              tx.productImage.update({
+                where: { id: image.id },
+                data: { position: temporaryBase + index },
+              }),
+            ),
+          );
 
-        await Promise.all(
-          remaining.map((image, index) =>
-            tx.productImage.update({
-              where: { id: image.id },
-              data: { position: index },
-            }),
-          ),
-        );
+          await Promise.all(
+            remaining.map((image, index) =>
+              tx.productImage.update({
+                where: { id: image.id },
+                data: { position: index },
+              }),
+            ),
+          );
+        }
       }
 
       await this.reindexRevisionImages(
@@ -220,9 +229,14 @@ export class ImagesService {
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      const locked = await this.requireWritableOwnerInTx(tx, userId, productId, {
-        id: true,
-      });
+      const locked = await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+        {
+          id: true,
+        },
+      );
       const knownLockedIds = new Set(locked.images.map((image) => image.id));
       if (
         imageIds.length !== knownLockedIds.size ||
@@ -236,31 +250,31 @@ export class ImagesService {
       if (!locked.editingRevisionId) {
         throw new ConflictException('Product editing revision is missing');
       }
-      const temporaryBase = locked.images.length;
+      if (!locked.usesRevisionImageOrder) {
+        const temporaryBase = locked.images.length;
 
-      await Promise.all(
-        imageIds.map((id, index) =>
-          tx.productImage.update({
-            where: { id },
-            data: { position: temporaryBase + index },
-          }),
-        ),
-      );
+        await Promise.all(
+          imageIds.map((id, index) =>
+            tx.productImage.update({
+              where: { id },
+              data: { position: temporaryBase + index },
+            }),
+          ),
+        );
+      }
 
-      await this.reindexRevisionImages(
-        tx,
-        locked.editingRevisionId,
-        imageIds,
-      );
+      await this.reindexRevisionImages(tx, locked.editingRevisionId, imageIds);
 
-      await Promise.all(
-        imageIds.map((id, index) =>
-          tx.productImage.update({
-            where: { id },
-            data: { position: index },
-          }),
-        ),
-      );
+      if (!locked.usesRevisionImageOrder) {
+        await Promise.all(
+          imageIds.map((id, index) =>
+            tx.productImage.update({
+              where: { id },
+              data: { position: index },
+            }),
+          ),
+        );
+      }
     });
 
     return { ok: true as const };
@@ -272,23 +286,37 @@ export class ImagesService {
     stepId: string,
     file: RawImageUpload,
   ) {
-    await this.requireEditableOwner(this.prisma, userId, productId, {
-      id: true,
-    });
+    await this.requireEditableOwner(
+      this.prisma,
+      userId,
+      productId,
+      {
+        id: true,
+      },
+      'creation-story',
+    );
     const step = await this.prisma.productCreationStep.findFirst({
       where: { id: stepId, productId },
       select: { id: true },
     });
     if (!step) throw new NotFoundException('Creation step not found');
 
-    const validatedFiles = await validateAndNormalizeProductImageUploads([file]);
+    const validatedFiles = await validateAndNormalizeProductImageUploads([
+      file,
+    ]);
     const validated = validatedFiles[0];
     if (!validated) {
       throw new BadRequestException('An image is required');
     }
 
     await runReadCommittedTransaction(this.prisma, async (tx) => {
-      await this.requireWritableOwnerInTx(tx, userId, productId, { id: true });
+      await this.requireWritableOwnerInTx(
+        tx,
+        userId,
+        productId,
+        { id: true },
+        'creation-story',
+      );
       const currentStep = await tx.productCreationStep.findFirst({
         where: { id: stepId, productId },
         select: { id: true },
@@ -336,12 +364,7 @@ export class ImagesService {
         },
       },
     });
-    if (
-      !step ||
-      !step.mimeType ||
-      !step.byteLength ||
-      !step.checksum
-    ) {
+    if (!step || !step.mimeType || !step.byteLength || !step.checksum) {
       throw new NotFoundException('Creation step image not found');
     }
 
@@ -400,8 +423,7 @@ export class ImagesService {
       image.product.sellerProfile.status === 'APPROVED' &&
       image.product.publishedRevisionId !== null &&
       image.revisions.some(
-        ({ revisionId }) =>
-          revisionId === image.product.publishedRevisionId,
+        ({ revisionId }) => revisionId === image.product.publishedRevisionId,
       );
 
     if (!isOwner && !isAdmin && !isPublic) {
@@ -425,9 +447,10 @@ export class ImagesService {
     userId: string,
     productId: string,
     imageSelect: { id?: true; position?: true; byteLength?: true },
+    kind: ProductWriteGuardKind = 'images',
   ) {
     await lockProductRowForUpdate(tx, productId);
-    return this.requireEditableOwner(tx, userId, productId, imageSelect);
+    return this.requireEditableOwner(tx, userId, productId, imageSelect, kind);
   }
 
   private async reindexRevisionImages(
@@ -459,19 +482,84 @@ export class ImagesService {
     client: Pick<Prisma.TransactionClient, 'product'>,
     userId: string,
     productId: string,
-    imageSelect: { id?: true; position?: true; byteLength?: true },
+    _imageSelect: { id?: true; position?: true; byteLength?: true },
     kind: ProductWriteGuardKind = 'images',
   ) {
     const product = await client.product.findUnique({
       where: { id: productId },
       select: {
-        ...productWriteGuardSelect,
+        id: true,
+        status: true,
+        sellerProfile: { select: { userId: true, status: true } },
+        listings: {
+          where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+          select: { id: true },
+          take: 1,
+        },
         editingRevisionId: true,
-        images: { select: imageSelect },
+        publishedRevisionId: true,
+        images: {
+          select: { id: true, position: true, byteLength: true },
+        },
+        editingRevision: {
+          select: {
+            status: true,
+            images: {
+              orderBy: { position: 'asc' },
+              select: {
+                position: true,
+                image: {
+                  select: { id: true, position: true, byteLength: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
-    assertProductWritable(product, userId, kind);
-    return product;
+    if (
+      product &&
+      (product.status === 'APPROVED' || product.status === 'ARCHIVED')
+    ) {
+      if (product.sellerProfile.userId !== userId) {
+        throw new ForbiddenException('Product is not owned by user');
+      }
+      assertApprovedSeller(product.sellerProfile.status as SellerStatus);
+      if (product.listings.length > 0) {
+        throw new ConflictException('Product is locked by an active Listing');
+      }
+      if (
+        kind !== 'images' ||
+        !product.editingRevisionId ||
+        product.editingRevisionId === product.publishedRevisionId ||
+        !product.editingRevision ||
+        !canAuthorEditRevision(product.editingRevision.status as ProductStatus)
+      ) {
+        throw new ForbiddenException('Product images are locked');
+      }
+    } else {
+      assertProductWritable(product, userId, kind);
+    }
+
+    const revisionImages = product.editingRevision?.images.map(
+      ({ position, image }) => ({
+        ...image,
+        position,
+      }),
+    );
+    const images = revisionImages ?? product.images;
+    const nextProductImagePosition = product.images.reduce(
+      (next, image) => Math.max(next, image.position + 1),
+      0,
+    );
+
+    return {
+      ...product,
+      images,
+      nextProductImagePosition,
+      usesRevisionImageOrder:
+        product.status === 'APPROVED' || product.status === 'ARCHIVED',
+    };
   }
 }

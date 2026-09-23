@@ -1,8 +1,27 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-18
+Последнее обновление: 2026-09-22
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-22 — Work editor persistence
+
+- `Implemented` (mobile web behavior): Work creation uses three content panels
+  plus review: details, main gallery, optional plain-text story, review. The
+  editor restores persisted values by id, protects dirty input from background
+  refetch, saves before step/in-app route exit, warns on browser unload, and
+  persists the exact current form before moderation submit. Save failure keeps
+  the author in the editor.
+- `Implemented` (scope cleanup): the editor no longer shows packaging,
+  delivery, condition, provenance, city, weight or repeated process-media
+  blocks. Existing shared form/page primitives and tokens are reused; no new
+  visual system or local one-off styling was added.
+- Coverage: `product-draft-form.spec.ts`, `product-draft-wizard.spec.ts`, and
+  `e2e/product-creation-wizard.spec.ts` cover dirty refetch, step navigation,
+  save-before-submit and close/reopen. Product status owner:
+  [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
+- `Unchanged`: public Figma surfaces, dock, cabinet, native/desktop acceptance,
+  design tokens, and canonical Pen file.
 
 ## 2026-09-18 — Global Back flicker
 

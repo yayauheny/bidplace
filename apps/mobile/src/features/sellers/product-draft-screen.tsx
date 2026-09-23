@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import { useForm, type FieldPath, type FieldPathValue } from 'react-hook-form';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
@@ -21,9 +24,28 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
+import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { isNotFoundError } from '../../errors';
+import { ProductDraftAboutStep } from './product-draft-about';
+import {
+  emptyProductDraftFormValues,
+  persistProductDraftBeforeSubmit,
+  productDraftFormSchema,
+  productDraftRequiredErrors,
+  productDraftToWriteRequest,
+  productToDraftFormValues,
+  shouldHydrateProductDraft,
+  type ProductDraftFormValues,
+} from './product-draft-form';
+import { ProductDraftImagesStep } from './product-draft-images';
+import { ProductDraftReviewStep } from './product-draft-review';
+import {
+  canOwnerEditProduct,
+  ownerModerationReasonNotice,
+  ownerProductSubmitLabel,
+} from './product-draft-state';
+import { ProductDraftStoryStep } from './product-draft-story';
 import {
   canOpenProductWizardStep,
   createProductWizardDraft,
@@ -34,22 +56,6 @@ import {
   shouldRewriteProductWizardStepParam,
   type ProductWizardStepParam,
 } from './product-draft-wizard';
-import { ProductDraftAboutStep } from './product-draft-about';
-import { ProductDraftCreationStep } from './product-draft-creation';
-import { ProductDraftImagesStep } from './product-draft-images';
-import { ProductDraftReviewStep } from './product-draft-review';
-import {
-  canOwnerEditProduct,
-  ownerModerationReasonNotice,
-  ownerProductSubmitLabel,
-} from './product-draft-state';
-
-type DraftCreationStep = {
-  id?: string;
-  title: string;
-  body: string;
-  imageUrl?: string | null;
-};
 
 export function ProductDraftScreen({
   productId,
@@ -62,7 +68,27 @@ export function ProductDraftScreen({
 }) {
   const api = useApiClient();
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const form = useForm<ProductDraftFormValues>({
+    defaultValues: emptyProductDraftFormValues,
+    resolver: zodResolver(productDraftFormSchema),
+    mode: 'onChange',
+  });
+  const values = form.watch();
+  const hydratedProductId = useRef<string | null>(null);
+  const hydratedUpdatedAt = useRef<string | null>(null);
+  const pendingNavigation = useRef<(() => void) | null>(null);
+  const [pendingNavigationVersion, setPendingNavigationVersion] = useState(0);
+  const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
+    null,
+  );
+  const [imageSelectionError, setImageSelectionError] = useState<string | null>(
+    null,
+  );
+  const [stepOneAttempted, setStepOneAttempted] = useState(false);
+  const [wizardSubmitted, setWizardSubmitted] = useState(false);
+
   const categories = useQuery({
     queryKey: ['products', 'categories'],
     queryFn: () => api.categories.list(),
@@ -73,37 +99,8 @@ export function ProductDraftScreen({
     enabled: Boolean(productId),
   });
   const existingProduct = productDetail.data?.product;
-  const [initializedProductId, setInitializedProductId] = useState<
-    string | null
-  >(null);
-  const [categoryId, setCategoryId] = useState('');
-  const [title, setTitle] = useState('');
-  const [story, setStory] = useState('');
-  const [technique, setTechnique] = useState('');
-  const [materials, setMaterials] = useState('');
-  const [dimensions, setDimensions] = useState('');
-  const [weight, setWeight] = useState('');
-  const [year, setYear] = useState('');
-  const [condition, setCondition] = useState('');
-  const [uniqueness, setUniqueness] = useState('');
-  const [provenance, setProvenance] = useState('');
-  const [city, setCity] = useState('');
-  const [packaging, setPackaging] = useState('');
-  const [deliveryInfo, setDeliveryInfo] = useState('');
-  const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
-    null,
-  );
-  const [creationIntro, setCreationIntro] = useState('');
-  const [creationSteps, setCreationSteps] = useState<DraftCreationStep[]>([]);
-  const [creationStorySaved, setCreationStorySaved] = useState(true);
-  const [imageSelectionError, setImageSelectionError] = useState<string | null>(
-    null,
-  );
-  const [creationImageSelectionError, setCreationImageSelectionError] =
-    useState<string | null>(null);
-  const [stepOneAttempted, setStepOneAttempted] = useState(false);
-  const [creationAttempted, setCreationAttempted] = useState(false);
-  const [wizardSubmitted, setWizardSubmitted] = useState(false);
+  const persistedRevisionUpdatedAt =
+    productDetail.data?.editingRevision?.updatedAt;
   const isCreationFlow = flow === 'creation' || !productId;
   const wizardDraft = createProductWizardDraft(existingProduct ?? null);
   const requestedStep = parseProductWizardStepParam(stepParam);
@@ -116,140 +113,101 @@ export function ProductDraftScreen({
     if (!shouldRewriteProductWizardStepParam(stepParam, resolvedStep)) return;
     router.setParams({ flow: 'creation', step: String(resolvedStep) });
   }, [
-    productId,
+    existingProduct,
     isCreationFlow,
     productDetail.isLoading,
-    existingProduct,
+    productId,
     requestedStep,
+    router,
     stepParam,
     wizardDraft.hasProduct,
     wizardDraft.imageCount,
-    router,
   ]);
 
   useEffect(() => {
-    if (!existingProduct || initializedProductId === existingProduct.id) return;
-    setInitializedProductId(existingProduct.id);
-    setCategoryId(existingProduct.categoryId ?? '');
-    setTitle(existingProduct.title ?? '');
-    setStory(existingProduct.story ?? '');
-    setTechnique(existingProduct.technique ?? '');
-    setMaterials(existingProduct.materials ?? '');
-    setDimensions(existingProduct.dimensions ?? '');
-    setWeight(existingProduct.weight ?? '');
-    setYear(existingProduct.year?.toString() ?? '');
-    setCondition(existingProduct.condition ?? '');
-    setUniqueness(existingProduct.uniqueness ?? '');
-    setProvenance(existingProduct.provenance ?? '');
-    setCity(existingProduct.city ?? '');
-    setPackaging(existingProduct.packaging ?? '');
-    setDeliveryInfo(existingProduct.deliveryInfo ?? '');
-    setCreationIntro(productDetail.data?.creationIntro ?? '');
-    const persistedSteps = productDetail.data?.creationSteps ?? [];
-    setCreationSteps(
-      persistedSteps.length > 0
-        ? persistedSteps.map((step) => ({
-            id: step.id,
-            title: step.title,
-            body: step.body,
-            imageUrl: step.image?.url ?? null,
-          }))
-        : [],
-    );
-    setCreationStorySaved(true);
-  }, [existingProduct, initializedProductId, productDetail.data]);
+    if (!existingProduct) return;
+    if (
+      !shouldHydrateProductDraft({
+        hydratedProductId: hydratedProductId.current,
+        hydratedUpdatedAt: hydratedUpdatedAt.current,
+        nextProductId: existingProduct.id,
+        nextUpdatedAt: persistedRevisionUpdatedAt ?? existingProduct.updatedAt,
+        isDirty: form.formState.isDirty,
+      })
+    ) {
+      return;
+    }
+    form.reset(productToDraftFormValues(existingProduct));
+    hydratedProductId.current = existingProduct.id;
+    hydratedUpdatedAt.current =
+      persistedRevisionUpdatedAt ?? existingProduct.updatedAt;
+  }, [
+    existingProduct,
+    form,
+    form.formState.isDirty,
+    persistedRevisionUpdatedAt,
+  ]);
 
-  const input = () => ({
-    categoryId: categoryId || undefined,
-    title: title || undefined,
-    story: story || undefined,
-    technique: technique || null,
-    materials: materials || null,
-    dimensions: dimensions || null,
-    weight: weight || null,
-    year: parsedYear,
-    condition: condition || undefined,
-    uniqueness: uniqueness || undefined,
-    provenance: provenance || undefined,
-    city: city || undefined,
-    packaging: packaging || undefined,
-    deliveryInfo: deliveryInfo || undefined,
-  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!form.formState.isDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [form.formState.isDirty]);
+
+  useEffect(() => {
+    if (form.formState.isDirty || !pendingNavigation.current) return;
+    const navigate = pendingNavigation.current;
+    pendingNavigation.current = null;
+    navigate();
+  }, [form.formState.isDirty, pendingNavigationVersion]);
+
   const save = useMutation({
-    mutationFn: () =>
+    mutationFn: (currentValues: ProductDraftFormValues) =>
       existingProduct
-        ? api.products.update(existingProduct.id, input())
-        : api.products.create(input()),
+        ? api.products.update(
+            existingProduct.id,
+            productDraftToWriteRequest(currentValues),
+          )
+        : api.products.create(productDraftToWriteRequest(currentValues)),
     onSuccess: ({ product }) => {
-      const productQueryId = existingProduct?.id ?? product.id;
+      form.reset(productToDraftFormValues(product));
+      hydratedProductId.current = product.id;
+      hydratedUpdatedAt.current = product.updatedAt;
       void queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
       void queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', productQueryId],
+        queryKey: ['seller', 'product', product.id],
       });
-      if (!existingProduct) {
-        router.replace(
-          createProductWizardHref(product.id, productWizardStep.images),
-        );
-        return;
-      }
-      if (isCreationFlow) {
-        router.setParams({
-          flow: 'creation',
-          step: String(productWizardStep.images),
-        });
-      }
     },
   });
   const submit = useMutation({
-    mutationFn: (id: string) => api.products.submit(id),
-    onSuccess: async () => {
+    mutationFn: ({
+      id,
+      currentValues,
+    }: {
+      id: string;
+      currentValues: ProductDraftFormValues;
+    }) =>
+      persistProductDraftBeforeSubmit(
+        () =>
+          api.products.update(id, productDraftToWriteRequest(currentValues)),
+        () => api.products.submit(id),
+      ),
+    onSuccess: async ({ product }) => {
+      form.reset(productToDraftFormValues(product));
+      hydratedProductId.current = product.id;
+      hydratedUpdatedAt.current = product.updatedAt;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
         queryClient.invalidateQueries({
-          queryKey: ['seller', 'product', existingProduct?.id],
+          queryKey: ['seller', 'product', product.id],
         }),
       ]);
       setWizardSubmitted(true);
-    },
-  });
-  const replaceCreation = useMutation({
-    mutationFn: () =>
-      api.products.replaceCreation(existingProduct!.id, {
-        intro: creationIntro.trim() || null,
-        steps: creationSteps.map((step) => ({
-          ...(step.id ? { id: step.id } : {}),
-          title: step.title.trim(),
-          body: step.body.trim(),
-        })),
-      }),
-    onSuccess: ({ creation }) => {
-      setCreationSteps(
-        creation.steps.map((step) => ({
-          id: step.id,
-          title: step.title,
-          body: step.body,
-          imageUrl: step.image?.url ?? null,
-        })),
-      );
-      setCreationAttempted(false);
-      setCreationStorySaved(true);
-    },
-  });
-  const uploadCreationStepImage = useMutation({
-    mutationFn: ({ stepId, image }: { stepId: string; image: Blob }) =>
-      api.images.addCreationStepImage(existingProduct!.id, stepId, image),
-    onSuccess: (_result, variables) => {
-      setCreationImageSelectionError(null);
-      setCreationSteps((current) =>
-        current.map((step) =>
-          step.id === variables.stepId
-            ? {
-                ...step,
-                imageUrl: `/api/creation-steps/${variables.stepId}/image`,
-              }
-            : step,
-        ),
-      );
     },
   });
   const upload = useMutation({
@@ -275,8 +233,98 @@ export function ProductDraftScreen({
         queryKey: ['seller', 'product', existingProduct?.id],
       }),
   });
+
+  const setField = <K extends FieldPath<ProductDraftFormValues>>(
+    field: K,
+    value: FieldPathValue<ProductDraftFormValues, K>,
+  ) => {
+    form.setValue(field, value, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  };
+
+  const persistCurrentForm = async () => {
+    const valid = await form.trigger();
+    if (!valid) return false;
+    try {
+      await save.mutateAsync(form.getValues());
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const navigateAfterPersist = (navigate: () => void) => {
+    pendingNavigation.current = navigate;
+    setPendingNavigationVersion((version) => version + 1);
+  };
+
+  usePreventRemove(form.formState.isDirty, ({ data }) => {
+    void persistCurrentForm().then((persisted) => {
+      if (persisted) {
+        navigateAfterPersist(() => navigation.dispatch(data.action));
+      }
+    });
+  });
+
+  const moveToWizardStep = async (nextStep: number) => {
+    if (!existingProduct) return;
+    if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
+    if (nextStep === wizardStep) return;
+    if (form.formState.isDirty && !(await persistCurrentForm())) return;
+    router.setParams({ flow: 'creation', step: String(nextStep) });
+  };
+
+  const saveAbout = async () => {
+    setStepOneAttempted(true);
+    const requiredErrors = productDraftRequiredErrors(form.getValues());
+    if (
+      isCreationFlow &&
+      Object.values(requiredErrors).some((error) => error !== undefined)
+    ) {
+      return;
+    }
+    if (!(await persistCurrentForm())) return;
+    const persistedId = existingProduct?.id ?? hydratedProductId.current;
+    if (!isCreationFlow || !persistedId) return;
+    if (!existingProduct) {
+      navigateAfterPersist(() =>
+        router.replace(
+          createProductWizardHref(persistedId, productWizardStep.images),
+        ),
+      );
+      return;
+    }
+    router.setParams({
+      flow: 'creation',
+      step: String(productWizardStep.images),
+    });
+  };
+
+  const saveAndClose = async () => {
+    if (form.formState.isDirty) {
+      if (!(await persistCurrentForm())) return;
+      navigateAfterPersist(() => router.replace('/profile'));
+      return;
+    }
+    router.replace('/profile');
+  };
+
+  const submitCurrentForm = async () => {
+    if (!existingProduct) return;
+    const valid = await form.trigger();
+    if (!valid) return;
+    submit.mutate({
+      id: existingProduct.id,
+      currentValues: form.getValues(),
+    });
+  };
+
   const chooseImages = async () => {
     if (!existingProduct) return;
+    if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
     setImageSelectionError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -308,13 +356,16 @@ export function ProductDraftScreen({
   const pageStatus = combineInfrastructurePageStatus(
     productId ? [categoriesStatus, productFetchStatus] : [categoriesStatus],
   );
-
   const retryDraftPage = () => {
     void categories.refetch();
     void productDetail.refetch();
   };
 
-  if (productId && isNotFoundError(productDetail.error) && pageStatus !== 'loading') {
+  if (
+    productId &&
+    isNotFoundError(productDetail.error) &&
+    pageStatus !== 'loading'
+  ) {
     return (
       <FormPageShell hideDock>
         <PageState title="Предмет не найден" />
@@ -325,7 +376,8 @@ export function ProductDraftScreen({
   if (
     pageStatus !== 'ready' ||
     !categories.data ||
-    (productId && (productDetail.isError || !productDetail.data || !existingProduct))
+    (productId &&
+      (productDetail.isError || !productDetail.data || !existingProduct))
   ) {
     return (
       <AppShell>
@@ -337,82 +389,35 @@ export function ProductDraftScreen({
     );
   }
 
-  const editable = canOwnerEditProduct(existingProduct?.status);
+  const editingRevisionStatus = productDetail.data?.editingRevision?.status;
+  const editable = canOwnerEditProduct(
+    existingProduct?.status,
+    editingRevisionStatus,
+  );
   const productStatus = existingProduct?.status;
+  const editorStatus =
+    productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
+      ? editingRevisionStatus
+      : productStatus;
   const moderationNotice = ownerModerationReasonNotice(
-    productStatus,
+    editorStatus,
     productDetail.data?.lastModerationReason,
   );
-  const submitLabel = ownerProductSubmitLabel(productStatus);
-  const reorder = (imageId: string, direction: -1 | 1) => {
+  const submitLabel = ownerProductSubmitLabel(editorStatus);
+  const requiredErrors = productDraftRequiredErrors(values);
+  const yearError = form.formState.errors.year?.message;
+  const stepOneErrors = { ...requiredErrors, year: yearError };
+  const canSaveStepOne =
+    Object.values(requiredErrors).every((error) => error === undefined) &&
+    !yearError;
+
+  const reorder = async (imageId: string, direction: -1 | 1) => {
     if (!existingProduct) return;
+    if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
     const ids = existingProduct.images.map((image) => image.id);
     const index = ids.indexOf(imageId);
     [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
     reorderImages.mutate(ids);
-  };
-  const updateCreationStep = (
-    index: number,
-    field: keyof DraftCreationStep,
-    value: string,
-  ) => {
-    setCreationStorySaved(false);
-    setCreationSteps((current) =>
-      current.map((step, stepIndex) =>
-        stepIndex === index ? { ...step, [field]: value } : step,
-      ),
-    );
-  };
-  const parsedYear = year.trim() ? Number(year) : null;
-  const stepOneErrors = {
-    categoryId: categoryId ? undefined : 'Выберите категорию',
-    title: title.trim() ? undefined : 'Введите название',
-    story: story.trim() ? undefined : 'Добавьте описание работы',
-    year:
-      parsedYear === null ||
-      (Number.isInteger(parsedYear) && parsedYear >= 0 && parsedYear <= 9999)
-        ? undefined
-        : 'Введите год числом от 0 до 9999',
-    uniqueness: uniqueness.trim()
-      ? undefined
-      : 'Укажите уникальность или тираж',
-    provenance: provenance.trim() ? undefined : 'Укажите происхождение',
-    city: city.trim() ? undefined : 'Укажите город',
-    deliveryInfo: deliveryInfo.trim()
-      ? undefined
-      : 'Опишите передачу или доставку',
-  };
-  const canSaveStepOne = Object.values(stepOneErrors).every(
-    (error) => error === undefined,
-  );
-  const canSaveCreation = creationSteps.every(
-    (step) => step.title.trim().length > 0 && step.body.trim().length > 0,
-  );
-  const moveToWizardStep = (step: number) => {
-    if (!existingProduct) return;
-    if (!canOpenProductWizardStep(step, wizardDraft)) return;
-    if (step === wizardStep) return;
-    router.setParams({ flow: 'creation', step: String(step) });
-  };
-  const chooseCreationStepImage = async (stepId: string) => {
-    setCreationImageSelectionError(null);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-        quality: 1,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const response = await fetch(result.assets[0].uri);
-      if (!response.ok)
-        throw new Error('Selected process image could not be read');
-      const image = await response.blob();
-      uploadCreationStepImage.mutate({ stepId, image });
-    } catch {
-      setCreationImageSelectionError(
-        'Не удалось прочитать фотографию этапа. Выберите файл ещё раз.',
-      );
-    }
   };
 
   return (
@@ -436,16 +441,16 @@ export function ProductDraftScreen({
           >
             {['О работе', 'Изображения', 'История создания', 'Проверка'].map(
               (label, index) => {
-                const step = index + 1;
+                const currentStep = index + 1;
                 return (
                   <SecondaryButton
                     key={label}
-                    label={`${step}. ${label}`}
+                    label={`${currentStep}. ${label}`}
                     disabled={
                       wizardSubmitted ||
-                      !canOpenProductWizardStep(step, wizardDraft)
+                      !canOpenProductWizardStep(currentStep, wizardDraft)
                     }
-                    onPress={() => moveToWizardStep(step)}
+                    onPress={() => void moveToWizardStep(currentStep)}
                   />
                 );
               },
@@ -453,22 +458,25 @@ export function ProductDraftScreen({
           </View>
           {existingProduct ? (
             <AppText role="metadata" tone="secondary">
-              Шаг {wizardStep} из 4 ·{' '}
-              {existingProduct.title ?? 'Без названия'}
+              Шаг {wizardStep} из 4 · {values.title.trim() || 'Без названия'}
             </AppText>
           ) : null}
+          <SecondaryButton
+            label={form.formState.isDirty ? 'Сохранить и закрыть' : 'Закрыть'}
+            loading={save.isPending}
+            disabled={submit.isPending}
+            onPress={() => void saveAndClose()}
+          />
         </FormSection>
       ) : null}
+
       <View style={{ gap: designTokens.space.x2 }}>
         <AppText role="screenTitle">
           {existingProduct ? 'Редактировать предмет' : 'Новый предмет'}
         </AppText>
         <AppText role="bodySmall" tone="secondary">
-          Черновик можно сохранить неполным. Для модерации нужны обязательные
-          поля и хотя бы одно изображение.
-        </AppText>
-        <AppText role="bodySmall" tone="secondary">
-          Автором предмета публично будет указан ваш профиль продавца.
+          Черновик можно сохранить неполным. Для модерации нужны название,
+          категория и хотя бы одно изображение.
         </AppText>
       </View>
 
@@ -485,17 +493,17 @@ export function ProductDraftScreen({
           <AppText
             role="bodySmall"
             tone={
-              productStatus === 'APPROVED'
+              editorStatus === 'APPROVED'
                 ? 'success'
-                : productStatus === 'CHANGES_REQUESTED' ||
-                    productStatus === 'REJECTED'
+                : editorStatus === 'CHANGES_REQUESTED' ||
+                    editorStatus === 'REJECTED'
                   ? 'danger'
                   : 'secondary'
             }
           >
-            {productStatus
+            {editorStatus
               ? presentEnum(
-                  productStatus,
+                  editorStatus,
                   productStatusLabels,
                   'Неизвестный статус предмета',
                 )
@@ -505,17 +513,17 @@ export function ProductDraftScreen({
             label="Обновить"
             onPress={() => void productDetail.refetch()}
           />
-          {productStatus !== 'APPROVED' && editable ? (
+          {editable ? (
             <PrimaryButton
               label={submitLabel}
               loading={submit.isPending}
-              disabled={existingProduct.images.length < 1}
-              onPress={() => submit.mutate(existingProduct.id)}
+              disabled={existingProduct.images.length < 1 || save.isPending}
+              onPress={() => void submitCurrentForm()}
             />
           ) : null}
-          {productStatus !== 'APPROVED' && existingProduct.images.length < 1 ? (
+          {submit.isError ? (
             <AppText role="bodySmall" tone="danger">
-              Добавьте хотя бы одно изображение перед отправкой.
+              Не удалось сохранить и отправить предмет на модерацию.
             </AppText>
           ) : null}
         </FormSection>
@@ -533,64 +541,46 @@ export function ProductDraftScreen({
           wizardStep={wizardStep}
           editable={editable}
           categories={categories.data.categories}
-          categoryId={categoryId}
-          onChangeCategoryId={setCategoryId}
-          technique={technique}
-          onChangeTechnique={setTechnique}
-          materials={materials}
-          onChangeMaterials={setMaterials}
-          dimensions={dimensions}
-          onChangeDimensions={setDimensions}
-          weight={weight}
-          onChangeWeight={setWeight}
-          year={year}
-          onChangeYear={setYear}
-          city={city}
-          onChangeCity={setCity}
-          packaging={packaging}
-          onChangePackaging={setPackaging}
-          deliveryInfo={deliveryInfo}
-          onChangeDeliveryInfo={setDeliveryInfo}
-          title={title}
-          onChangeTitle={setTitle}
-          story={story}
-          onChangeStory={setStory}
-          uniqueness={uniqueness}
-          onChangeUniqueness={setUniqueness}
-          condition={condition}
-          provenance={provenance}
-          onChangeProvenance={setProvenance}
+          categoryId={values.categoryId}
+          onChangeCategoryId={(value) => setField('categoryId', value)}
+          technique={values.technique}
+          onChangeTechnique={(value) => setField('technique', value)}
+          materials={values.materials}
+          onChangeMaterials={(value) => setField('materials', value)}
+          dimensions={values.dimensions}
+          onChangeDimensions={(value) => setField('dimensions', value)}
+          year={values.year}
+          onChangeYear={(value) => setField('year', value)}
+          title={values.title}
+          onChangeTitle={(value) => setField('title', value)}
+          uniqueness={values.uniqueness}
+          onChangeUniqueness={(value) => setField('uniqueness', value)}
           stepOneAttempted={stepOneAttempted}
           stepOneErrors={stepOneErrors}
           canSaveStepOne={canSaveStepOne}
           saveIsPending={save.isPending}
           saveIsError={save.isError}
-          onSavePress={() => {
-            if (isCreationFlow) {
-              setStepOneAttempted(true);
-              if (!canSaveStepOne) return;
-            }
-            save.mutate();
-          }}
+          onSavePress={() => void saveAbout()}
           wizardCanOpenImages={canOpenProductWizardStep(
             productWizardStep.images,
             wizardDraft,
           )}
           onContinueToImages={() =>
-            moveToWizardStep(productWizardStep.images)
+            void moveToWizardStep(productWizardStep.images)
           }
         />
       ) : null}
 
-      {existingProduct && (!isCreationFlow || wizardStep === productWizardStep.images) ? (
+      {existingProduct &&
+      (!isCreationFlow || wizardStep === productWizardStep.images) ? (
         <ProductDraftImagesStep
           images={existingProduct.images}
-          productStatus={productStatus}
+          productStatus={editorStatus}
           editable={editable}
           isCreationFlow={isCreationFlow}
           wizardStep={wizardStep}
-          wizardCanOpenCreation={canOpenProductWizardStep(
-            productWizardStep.creation,
+          wizardCanOpenStory={canOpenProductWizardStep(
+            productWizardStep.story,
             wizardDraft,
           )}
           reorderPending={reorderImages.isPending}
@@ -602,53 +592,33 @@ export function ProductDraftScreen({
           onChooseImages={() => void chooseImages()}
           onMoveImage={reorder}
           onDeleteImage={(imageId) => setImagePendingDelete(imageId)}
-          onBackToAbout={() => moveToWizardStep(productWizardStep.about)}
-          onContinueToCreation={() =>
-            moveToWizardStep(productWizardStep.creation)
+          onBackToAbout={() => void moveToWizardStep(productWizardStep.about)}
+          onContinueToStory={() =>
+            void moveToWizardStep(productWizardStep.story)
           }
         />
       ) : null}
 
       {isCreationFlow &&
-      wizardStep === productWizardStep.creation &&
+      wizardStep === productWizardStep.story &&
       existingProduct ? (
-        <ProductDraftCreationStep
+        <ProductDraftStoryStep
           editable={editable}
-          creationIntro={creationIntro}
-          onChangeCreationIntro={(value) => {
-            setCreationIntro(value);
-            setCreationStorySaved(false);
-          }}
-          creationSteps={creationSteps}
-          creationAttempted={creationAttempted}
-          updateCreationStep={updateCreationStep}
-          onDeleteCreationStep={(index) => {
-            setCreationStorySaved(false);
-            setCreationSteps((current) =>
-              current.filter((_item, stepIndex) => stepIndex !== index),
-            );
-          }}
-          onAddCreationStep={() => {
-            setCreationStorySaved(false);
-            setCreationSteps((current) => [...current, { title: '', body: '' }]);
-          }}
-          replaceCreationPending={replaceCreation.isPending}
-          replaceCreationError={replaceCreation.isError}
-          creationStorySaved={creationStorySaved}
-          onSaveCreationPress={() => {
-            setCreationAttempted(true);
-            if (!canSaveCreation) return;
-            replaceCreation.mutate();
-          }}
-          uploadCreationStepImagePending={uploadCreationStepImage.isPending}
-          uploadCreationStepImageError={uploadCreationStepImage.isError}
-          creationImageSelectionError={creationImageSelectionError}
-          onChooseCreationStepImage={(stepId) => {
-            void chooseCreationStepImage(stepId);
-          }}
-          onBackToImages={() => moveToWizardStep(productWizardStep.images)}
-          onContinueToReview={() =>
-            moveToWizardStep(productWizardStep.review)
+          story={values.story}
+          onChangeStory={(value) => setField('story', value)}
+          savePending={save.isPending}
+          saveError={save.isError}
+          onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
+          onSaveAndContinue={() =>
+            void (async () => {
+              if (form.formState.isDirty && !(await persistCurrentForm())) {
+                return;
+              }
+              router.setParams({
+                flow: 'creation',
+                step: String(productWizardStep.review),
+              });
+            })()
           }
         />
       ) : null}
@@ -658,16 +628,15 @@ export function ProductDraftScreen({
       existingProduct ? (
         <ProductDraftReviewStep
           editable={editable}
-          existingProductTitle={existingProduct.title}
+          title={values.title}
           existingProductImagesLength={existingProduct.images.length}
-          creationSteps={creationSteps}
+          hasStory={Boolean(values.story.trim())}
           submitLabel={submitLabel}
           wizardSubmitted={wizardSubmitted}
-          submitPending={submit.isPending}
-          onSubmitPress={() => submit.mutate(existingProduct.id)}
-          onBackToCreation={() =>
-            moveToWizardStep(productWizardStep.creation)
-          }
+          submitPending={submit.isPending || save.isPending}
+          submitError={submit.isError}
+          onSubmitPress={() => void submitCurrentForm()}
+          onBackToStory={() => void moveToWizardStep(productWizardStep.story)}
         />
       ) : null}
 
@@ -681,10 +650,19 @@ export function ProductDraftScreen({
           label="Удалить изображение"
           loading={removeImage.isPending}
           onPress={() => {
-            if (imagePendingDelete)
-              removeImage.mutate(imagePendingDelete, {
-                onSuccess: () => setImagePendingDelete(null),
-              });
+            if (imagePendingDelete) {
+              void (async () => {
+                if (
+                  editorStatus === 'APPROVED' &&
+                  !(await persistCurrentForm())
+                ) {
+                  return;
+                }
+                removeImage.mutate(imagePendingDelete, {
+                  onSuccess: () => setImagePendingDelete(null),
+                });
+              })();
+            }
           }}
         />
         <SecondaryButton
@@ -696,5 +674,3 @@ export function ProductDraftScreen({
     </FormPageShell>
   );
 }
-
- 

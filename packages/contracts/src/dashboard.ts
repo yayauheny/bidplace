@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { categorySchema } from './category';
+import { productStatusSchema } from './enums';
+import { isoDateTimeSchema, uuidSchema } from './primitives';
 import { creationStepSchema, productSchema } from './product';
 
 export const categoryListResponseSchema = z
@@ -18,6 +20,15 @@ export const sellerProductListResponseSchema = z
 export const sellerProductDetailResponseSchema = z
   .object({
     product: productSchema,
+    editingRevision: z
+      .object({
+        id: uuidSchema,
+        version: z.number().int().positive(),
+        status: productStatusSchema,
+        updatedAt: isoDateTimeSchema,
+      })
+      .strict()
+      .nullable(),
     creationIntro: z.string().trim().min(1).nullable(),
     creationSteps: z.array(creationStepSchema),
     lastModerationReason: z.string().nullable(),

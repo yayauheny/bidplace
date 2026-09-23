@@ -1,7 +1,7 @@
 export const productWizardStep = {
   about: 1,
   images: 2,
-  creation: 3,
+  story: 3,
   review: 4,
 } as const;
 
@@ -63,7 +63,7 @@ export function canOpenProductWizardStep(
       return true;
     case productWizardStep.images:
       return draft.hasProduct;
-    case productWizardStep.creation:
+    case productWizardStep.story:
     case productWizardStep.review:
       return draft.hasProduct && draft.imageCount > 0;
     default:

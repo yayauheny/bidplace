@@ -23,6 +23,7 @@ function createApprovedProduct(
   return {
     id: 'product-id',
     editingRevisionId: 'revision-id',
+    publishedRevisionId: null as string | null,
     status: 'DRAFT',
     sellerProfile: {
       userId: 'owner-id',
@@ -30,6 +31,10 @@ function createApprovedProduct(
     },
     listings: [] as Array<{ id: string }>,
     images,
+    editingRevision: {
+      status: 'DRAFT',
+      images: images.map((image) => ({ position: image.position, image })),
+    },
   };
 }
 
@@ -44,26 +49,25 @@ function createPrismaForAdd(options: {
       : (options.product ?? createApprovedProduct([]));
 
   const tx = {
-    $queryRaw: vi.fn().mockResolvedValue(
-      productPayload ? [{ id: 'product-id' }] : [],
-    ),
+    $queryRaw: vi
+      .fn()
+      .mockResolvedValue(productPayload ? [{ id: 'product-id' }] : []),
     product: {
       findUnique: vi.fn().mockResolvedValue(productPayload),
     },
     productImage: { create, update: vi.fn() },
     productRevisionImage: { create: vi.fn() },
   };
-    const prisma = {
-      product: {
-        findUnique: vi.fn().mockResolvedValue(productPayload),
-      },
-      $transaction: vi.fn(
-        async (callback: (client: typeof tx) => Promise<unknown>) =>
-          callback(tx),
-      ),
-    };
+  const prisma = {
+    product: {
+      findUnique: vi.fn().mockResolvedValue(productPayload),
+    },
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx),
+    ),
+  };
 
-    return { prisma, tx, create };
+  return { prisma, tx, create };
 }
 
 function createImageStoreMock() {
@@ -96,7 +100,10 @@ describe('ImagesService', () => {
         })),
       ),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('owner-id', 'product-id', [
@@ -114,7 +121,10 @@ describe('ImagesService', () => {
     const { prisma } = createPrismaForAdd({
       product: createApprovedProduct([], 'PENDING'),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('owner-id', 'product-id', [
@@ -130,7 +140,10 @@ describe('ImagesService', () => {
     const { prisma } = createPrismaForAdd({
       product: createApprovedProduct([]),
     });
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.add('other-user-id', 'product-id', [
@@ -144,7 +157,12 @@ describe('ImagesService', () => {
 
   it('locks image writes when the Product is approved', async () => {
     const { prisma } = createPrismaForAdd({
-      product: { ...createApprovedProduct([]), status: 'APPROVED' },
+      product: {
+        ...createApprovedProduct([]),
+        status: 'APPROVED',
+        publishedRevisionId: 'revision-id',
+        editingRevision: { status: 'APPROVED', images: [] },
+      },
     });
     const service = new ImagesService(
       prisma as never,
@@ -158,6 +176,37 @@ describe('ImagesService', () => {
     ).rejects.toThrow('Product images are locked');
     expect(validateAndNormalizeProductImageUploads).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('writes images only to an editable revision of an approved Product', async () => {
+    const product = {
+      ...createApprovedProduct([]),
+      status: 'APPROVED',
+      publishedRevisionId: 'published-revision',
+      editingRevisionId: 'editing-revision',
+      images: [{ id: 'published-image', position: 0, byteLength: 1 }],
+      editingRevision: { status: 'DRAFT', images: [] },
+    };
+    const { prisma, tx } = createPrismaForAdd({ product });
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await service.add('owner-id', 'product-id', [
+      { buffer: Buffer.from([1]), mimetype: 'image/png' },
+    ]);
+
+    expect(tx.productImage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ position: 1 }),
+    });
+    expect(tx.productRevisionImage.create).toHaveBeenCalledWith({
+      data: {
+        revisionId: 'editing-revision',
+        imageId: 'image-id',
+        position: 0,
+      },
+    });
   });
 
   it('allows image writes when the Product is rejected', async () => {
@@ -343,13 +392,67 @@ describe('ImagesService', () => {
         } as never),
       ),
     };
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await service.reorder('owner-id', 'product-id', ['image-b', 'image-a']);
 
     expect(update.mock.calls.map(([args]) => args.data.position)).toEqual([
       2, 3, 0, 1,
     ]);
+  });
+
+  it('reorders an approved Work draft without changing Product image positions', async () => {
+    const productImageUpdate = vi.fn().mockResolvedValue({});
+    const revisionImageUpdate = vi.fn().mockResolvedValue({});
+    const productRow = {
+      id: 'product-id',
+      editingRevisionId: 'editing-revision',
+      publishedRevisionId: 'published-revision',
+      status: 'APPROVED',
+      sellerProfile: { userId: 'owner-id', status: 'APPROVED' },
+      listings: [],
+      images: [
+        { id: 'published-image', position: 0, byteLength: 1 },
+        { id: 'image-a', position: 1, byteLength: 1 },
+        { id: 'image-b', position: 2, byteLength: 1 },
+      ],
+      editingRevision: {
+        status: 'DRAFT',
+        images: [
+          {
+            position: 0,
+            image: { id: 'image-a', position: 1, byteLength: 1 },
+          },
+          {
+            position: 1,
+            image: { id: 'image-b', position: 2, byteLength: 1 },
+          },
+        ],
+      },
+    };
+    const prisma = {
+      product: { findUnique: vi.fn().mockResolvedValue(productRow) },
+      $transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
+        callback({
+          $queryRaw: vi.fn().mockResolvedValue([{ id: 'product-id' }]),
+          product: { findUnique: vi.fn().mockResolvedValue(productRow) },
+          productImage: { update: productImageUpdate },
+          productRevisionImage: { update: revisionImageUpdate },
+        } as never),
+      ),
+    };
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
+
+    await service.reorder('owner-id', 'product-id', ['image-b', 'image-a']);
+
+    expect(productImageUpdate).not.toHaveBeenCalled();
+    expect(revisionImageUpdate).toHaveBeenCalledTimes(4);
   });
 
   it('reindexes remaining images through temporary positions when removing one', async () => {
@@ -389,10 +492,12 @@ describe('ImagesService', () => {
           productRevisionImage: {
             deleteMany: vi.fn(),
             count: vi.fn().mockResolvedValue(0),
-            findMany: vi.fn().mockResolvedValue([
-              { imageId: 'image-b' },
-              { imageId: 'image-c' },
-            ]),
+            findMany: vi
+              .fn()
+              .mockResolvedValue([
+                { imageId: 'image-b' },
+                { imageId: 'image-c' },
+              ]),
             update: vi.fn(),
           },
         } as never),
@@ -404,7 +509,10 @@ describe('ImagesService', () => {
     await service.remove('owner-id', 'product-id', 'image-a');
 
     expect(findMany).toHaveBeenCalledTimes(1);
-    expect(imageStore.delete).toHaveBeenCalledWith('product-image:image-a', expect.anything());
+    expect(imageStore.delete).toHaveBeenCalledWith(
+      'product-image:image-a',
+      expect.anything(),
+    );
     expect(deleteImage).toHaveBeenCalledWith({ where: { id: 'image-a' } });
     expect(update.mock.calls.map(([args]) => args.data.position)).toEqual([
       3, 4, 0, 1,
@@ -455,10 +563,12 @@ describe('ImagesService', () => {
           productRevisionImage: {
             deleteMany: vi.fn(),
             count: vi.fn().mockResolvedValue(0),
-            findMany: vi.fn().mockResolvedValue([
-              { imageId: 'image-b' },
-              { imageId: 'image-c' },
-            ]),
+            findMany: vi
+              .fn()
+              .mockResolvedValue([
+                { imageId: 'image-b' },
+                { imageId: 'image-c' },
+              ]),
             update: vi.fn(),
           },
         } as never),
@@ -550,7 +660,10 @@ describe('ImagesService', () => {
         } as never),
       ),
     };
-    const service = new ImagesService(prisma as never, createImageStoreMock() as never);
+    const service = new ImagesService(
+      prisma as never,
+      createImageStoreMock() as never,
+    );
 
     await expect(
       service.reorder('owner-id', 'product-id', ['image-b', 'image-a']),
@@ -601,8 +714,9 @@ describe('ImagesService', () => {
       productCreationStep: {
         findFirst: vi.fn().mockResolvedValue({ id: stepId }),
       },
-      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
-        callback(tx),
+      $transaction: vi.fn(
+        async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
       ),
     };
     const imageStore = createImageStoreMock();
@@ -620,12 +734,10 @@ describe('ImagesService', () => {
       },
     ]);
 
-    await service.addCreationStepImage(
-      'owner-id',
-      'product-id',
-      stepId,
-      { buffer: Buffer.from('raw'), mimetype: 'image/jpeg' },
-    );
+    await service.addCreationStepImage('owner-id', 'product-id', stepId, {
+      buffer: Buffer.from('raw'),
+      mimetype: 'image/jpeg',
+    });
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(order).toEqual(['update', 'put']);

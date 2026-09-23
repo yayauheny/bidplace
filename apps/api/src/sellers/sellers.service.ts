@@ -31,9 +31,11 @@ import {
 } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
 import {
+  productRevisionOwnerSelect,
   productSelect,
-  toContractProduct,
   toCreationStepContract,
+  toContractProduct,
+  toOwnerContractProduct,
 } from '../products/products.mapper';
 import {
   portfolioCatalogProductWhere,
@@ -710,6 +712,7 @@ export class SellersService {
       where: { id: productId, sellerProfile: { userId } },
       select: {
         ...productSelect,
+        editingRevision: { select: productRevisionOwnerSelect },
         creationIntro: true,
         creationSteps: {
           orderBy: { position: 'asc' },
@@ -741,7 +744,15 @@ export class SellersService {
     });
 
     return sellerProductDetailResponseSchema.parse({
-      product: toContractProduct(product),
+      product: toOwnerContractProduct(product, product.editingRevision),
+      editingRevision: product.editingRevision
+        ? {
+            id: product.editingRevision.id,
+            version: product.editingRevision.version,
+            status: product.editingRevision.status,
+            updatedAt: product.editingRevision.updatedAt.toISOString(),
+          }
+        : null,
       creationIntro: product.creationIntro ?? null,
       creationSteps: product.creationSteps.map(toCreationStepContract),
       lastModerationReason: latestReason?.reason ?? null,
@@ -831,7 +842,10 @@ export class SellersService {
       },
       select: publicSellerProfileSelect,
     });
-    if (!sellerProfile || (options.requireCity && !sellerProfile.city?.trim())) {
+    if (
+      !sellerProfile ||
+      (options.requireCity && !sellerProfile.city?.trim())
+    ) {
       return null;
     }
     return {

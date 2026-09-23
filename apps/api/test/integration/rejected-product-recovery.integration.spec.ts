@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { portfolioWorkDetailResponseSchema } from '@bidplace/contracts';
 import type { PrismaClient } from '@bidplace/database';
 
 import {
@@ -193,9 +194,11 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
         .status,
     ).toBe(404);
     expect(
-      (await clients.admin.patch(`/products/${rejected.id}`, {
-        title: 'Admin rewrite',
-      })).status,
+      (
+        await clients.admin.patch(`/products/${rejected.id}`, {
+          title: 'Admin rewrite',
+        })
+      ).status,
     ).toBe(403);
     expect(
       (
@@ -297,6 +300,29 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
     expect(reloadedBody.lastModerationReason).toBe(
       'Provenance could not be confirmed',
     );
+
+    expect(
+      await prisma.productRevision.findUniqueOrThrow({
+        where: { productId_version: { productId: rejected.id, version: 1 } },
+        select: { title: true, status: true },
+      }),
+    ).toEqual({
+      title: 'Corrected recovery work',
+      status: 'PENDING_REVIEW',
+    });
+
+    const approval = await clients.admin.patch(
+      `/admin/products/${rejected.id}/status`,
+      { status: 'APPROVED' },
+    );
+    expect(approval.status).toBe(200);
+
+    const publicWork = await clients.guest.get(`/works/${rejected.publicId}`);
+    expect(publicWork.status).toBe(200);
+    const publicWorkBody = portfolioWorkDetailResponseSchema.parse(
+      await publicWork.json(),
+    );
+    expect(publicWorkBody.work.title).toBe('Corrected recovery work');
   });
 
   it('revokes rejected Product writes when the seller is no longer approved', async () => {

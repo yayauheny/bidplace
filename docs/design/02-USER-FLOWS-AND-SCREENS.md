@@ -1,6 +1,6 @@
 # bidplace — пользовательские потоки и экраны First MVP
 
-Последнее обновление: 2026-09-18
+Последнее обновление: 2026-09-22
 Статус: Confirmed product/UI scope for mobile-web 390 Figma cutover
 Product contract: [`../product/05-MVP-RFC.md`](../product/05-MVP-RFC.md)
 
@@ -188,14 +188,23 @@ Auth email не подставляется как public email. Выход со�
 
 ## 9. Work creation
 
-Три шага:
+Три content-шага и отдельная проверка:
 
-1. main images + title;
-2. category, dimensions, material/technique, edition fact and creation date/year;
-3. optional plain-text creation story.
+1. title, category, dimensions, material/technique, edition fact and creation date/year;
+2. main images;
+3. optional plain-text creation story;
+4. review and moderation submit.
 
-CTA: `Отправить на проверку`. Main gallery и future process media — разные сущности.
-Повторяющиеся photo/text stages и video находятся после MVP.
+Шаг хранится в URL. Поля принадлежат одной форме; server detail остаётся
+источником сохранённого состояния. Переход между шагами, Close, in-app Back и
+submit сначала сохраняют dirty values; browser unload предупреждает о
+несохранённых изменениях. Обычный query refetch не перезаписывает dirty input.
+Save failure оставляет автора на текущем экране. Повторное открытие
+`/products/:id` восстанавливает сохранённую editing revision.
+
+CTA: `Отправить на модерацию`. Main gallery и future process media — разные сущности.
+Packaging, delivery, condition, provenance, city, weight, повторяющиеся photo/text
+stages и video не входят в portfolio MVP editor.
 
 ## 10. Required states
 
