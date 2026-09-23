@@ -101,6 +101,7 @@ async function createSubmitReadyProduct(
       sellerType: 'creator',
       fullName: 'Owner',
       country: 'BY',
+      city: 'Minsk',
       profilePhotoMimeType: 'image/png',
       profilePhotoByteLength: png.byteLength,
       profilePhotoChecksum: '0'.repeat(64),
