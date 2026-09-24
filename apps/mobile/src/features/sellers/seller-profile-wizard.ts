@@ -29,6 +29,19 @@ export function canOpenSellerProfileStep(
   return step <= resumeSellerProfileStep(profile);
 }
 
+export function previousSellerProfileStep(
+  step: 1 | 2 | 3 | 4,
+): 1 | 2 | 3 {
+  return Math.max(1, step - 1) as 1 | 2 | 3;
+}
+
+export function shouldSaveBeforeSellerProfileBack(
+  isDirty: boolean,
+  hasPhotoChange: boolean,
+): boolean {
+  return isDirty || hasPhotoChange;
+}
+
 export function shouldAdvanceSellerApplication(
   profile: ProfileState,
   visibleStep: 2 | 3,

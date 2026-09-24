@@ -19,7 +19,7 @@ import { getProfileFieldErrors } from './profile-validation';
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
-import { resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', publicEmail: '', shortDescription: '' };
 
@@ -147,6 +147,14 @@ export function SellerProfileScreen() {
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) await save();
     router.replace('/');
   };
+  const goToPreviousStep = async () => {
+    if (profileStep <= 1) return;
+    if (shouldSaveBeforeSellerProfileBack(form.formState.isDirty, Boolean(photoBlob))) {
+      if (!canSave) return;
+      await save();
+    }
+    router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
+  };
   const requestExit = () => {
     if (!form.formState.isDirty && !photoBlob) router.replace('/');
     else setExitOpen(true);
@@ -162,7 +170,7 @@ export function SellerProfileScreen() {
         {isApplicationWizard ? <SecondaryButton label="Закрыть" onPress={requestExit} /> : null}
       </View>
       {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} /> : null}
-      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" onPress={() => router.back()} /> : null}
+      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending} onPress={() => void goToPreviousStep()} /> : null}
       {(!isApplicationWizard || profileStep === 1) ? <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
         <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!editable} width="block" onPress={() => void choosePhoto()} />
@@ -188,7 +196,7 @@ export function SellerProfileScreen() {
         <PrimaryButton label="Начать" width="block" onPress={() => router.replace('/profile?step=1')} />
         <SecondaryButton label="Позже" width="block" onPress={() => router.replace('/')} />
       </AppDialog>
-      <AppDialog open={exitOpen} title="Выйти из заявки?" description={profile ? 'Ваш черновик сохранён. Вы сможете продолжить позже.' : exitDescription} onClose={() => setExitOpen(false)}>
+      <AppDialog open={exitOpen} title="Выйти из заявки?" description={profile ? (form.formState.isDirty || photoBlob ? 'Последние изменения ещё не сохранены. Сохранить их перед выходом?' : 'Ваш черновик сохранён. Вы сможете продолжить позже.') : exitDescription} onClose={() => setExitOpen(false)}>
         <PrimaryButton label={canPersistBeforeExit ? 'Сохранить и выйти' : 'Выйти без сохранения'} loading={saveMutation.isPending} width="block" onPress={() => void exit()} />
         <SecondaryButton label="Продолжить заполнение" disabled={saveMutation.isPending} width="block" onPress={() => setExitOpen(false)} />
       </AppDialog>

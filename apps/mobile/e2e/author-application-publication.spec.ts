@@ -77,14 +77,14 @@ test('city application is approved and appears in the public authors catalog', a
     await expect(page.getByLabel('Telegram')).toHaveValue('https://t.me/city_author');
     await page.getByRole('button', { name: 'Продолжить' }).click();
     await expect(page).toHaveURL(/\/profile\?step=3/);
-    await page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).fill('Керамика');
-    await page.getByRole('textbox', { name: 'Практика', exact: true }).fill('Авторская керамика');
-    await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).fill('Авторская практика.');
+    await page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).last().fill('Керамика');
+    await page.getByRole('textbox', { name: 'Практика', exact: true }).last().fill('Авторская керамика');
+    await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).last().fill('Авторская практика.');
     await page.getByRole('button', { name: 'Закрыть' }).click();
     await page.getByRole('button', { name: 'Сохранить и выйти' }).click();
     await page.goto('/profile');
     await expect(page.getByRole('progressbar').getByText('Шаг 3 из 4')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Дисциплина *', exact: true })).toHaveValue('Керамика');
+    await expect(page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).last()).toHaveValue('Керамика');
     await page.getByRole('button', { name: 'Продолжить' }).click();
     await expect(page).toHaveURL(/\/profile\?step=4/);
     await expect(page.getByRole('button', { name: 'Сохранить черновик' })).toBeVisible();

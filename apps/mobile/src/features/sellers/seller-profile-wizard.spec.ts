@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canOpenSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { canOpenSellerProfileStep, previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 describe('seller profile draft wizard', () => {
   it('keeps Step 1 for malformed and unpersisted Step 2 URLs', () => {
@@ -31,6 +31,22 @@ describe('seller profile draft wizard', () => {
     expect(shouldShowSellerProfileAchievements(true, false, 1)).toBe(true);
     expect(shouldShowSellerProfileAchievements(true, true, 1)).toBe(false);
     expect(shouldShowSellerProfileAchievements(true, true, 4)).toBe(true);
+  });
+
+  it.each([
+    [4, 3],
+    [3, 2],
+    [2, 1],
+  ] as const)('maps internal Back from Step %i to Step %i', (step, expected) => {
+    expect(previousSellerProfileStep(step)).toBe(expected);
+  });
+
+  it.each([
+    [false, false, false],
+    [true, false, true],
+    [false, true, true],
+  ] as const)('detects when Back must persist the profile form', (isDirty, hasPhotoChange, expected) => {
+    expect(shouldSaveBeforeSellerProfileBack(isDirty, hasPhotoChange)).toBe(expected);
   });
 
   it.each([
