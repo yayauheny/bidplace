@@ -8,7 +8,7 @@ import {
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import { achievementOccurredDateSchema, isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
 
@@ -24,25 +24,7 @@ export const portfolioAchievementImageSchema = z
 export const portfolioAchievementSchema = z
   .object({
     id: uuidSchema,
-    occurredDate: z
-      .object({
-        year: z.number().int().min(1).max(9_999),
-        month: z.number().int().min(1).max(12),
-        day: z.number().int().min(1).max(31).nullable(),
-      })
-      .strict()
-      .superRefine((value, context) => {
-        if (value.day === null) return;
-        const date = new Date(Date.UTC(value.year, value.month, 0));
-        if (value.day > date.getUTCDate()) {
-          context.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['day'],
-            message: 'Achievement day must be valid for its month and year',
-          });
-        }
-      })
-      .nullable(),
+    occurredDate: achievementOccurredDateSchema.nullable(),
     body: publicText,
     image: portfolioAchievementImageSchema.nullable(),
   })
@@ -215,7 +197,7 @@ export const portfolioAuthorApplicationSchema = z
     practice: z.string().trim().min(1).nullable(),
     shortDescription: publicText.nullable(),
     status: sellerStatusSchema,
-    applicationStage: authorApplicationStageSchema.nullable().optional(),
+    applicationStage: authorApplicationStageSchema.nullable(),
   })
   .strict()
   .superRefine((application, context) => {

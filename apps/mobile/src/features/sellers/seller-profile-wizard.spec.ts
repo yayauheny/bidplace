@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canOpenSellerProfileStep, resolveSellerProfileStep, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { canOpenSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 describe('seller profile draft wizard', () => {
   it('keeps Step 1 for malformed and unpersisted Step 2 URLs', () => {
@@ -31,5 +31,17 @@ describe('seller profile draft wizard', () => {
     expect(shouldShowSellerProfileAchievements(true, false, 1)).toBe(true);
     expect(shouldShowSellerProfileAchievements(true, true, 1)).toBe(false);
     expect(shouldShowSellerProfileAchievements(true, true, 4)).toBe(true);
+  });
+
+  it.each([
+    [{ status: 'DRAFT', applicationStage: 'ABOUT' as const }, 2, false],
+    [{ status: 'DRAFT', applicationStage: 'ACHIEVEMENTS' as const }, 2, false],
+    [{ status: 'DRAFT', applicationStage: 'ACHIEVEMENTS' as const }, 3, false],
+    [{ status: 'CHANGES_REQUESTED', applicationStage: null }, 2, false],
+    [{ status: 'REJECTED', applicationStage: null }, 3, false],
+    [{ status: 'DRAFT', applicationStage: 'CONTACTS' as const }, 2, true],
+    [{ status: 'DRAFT', applicationStage: 'ABOUT' as const }, 3, true],
+  ] as const)('advances only the matching draft boundary for %o on Step %i', (profile, step, expected) => {
+    expect(shouldAdvanceSellerApplication(profile, step)).toBe(expected);
   });
 });

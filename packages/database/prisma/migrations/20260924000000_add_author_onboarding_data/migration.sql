@@ -3,6 +3,7 @@ CREATE TYPE "AchievementDatePrecision" AS ENUM ('MONTH', 'DAY');
 
 ALTER TABLE "seller_profiles"
   ALTER COLUMN "discipline" DROP NOT NULL,
+  ALTER COLUMN "discipline" DROP DEFAULT,
   ALTER COLUMN "short_description" DROP NOT NULL,
   ADD COLUMN "application_stage" "AuthorApplicationStage",
   ADD COLUMN "public_email" VARCHAR(254);

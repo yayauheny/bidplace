@@ -7,19 +7,17 @@ import {
   createBuyerFixture,
 } from './support/e2e-fixtures';
 
-async function fillAuthorApplication(page: Page, slug: string, city: string) {
+async function completeBasics(page: Page, slug: string, city: string) {
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Добавить фото' }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
   await page.getByLabel('Имя или название').fill('Автор с городом');
-  await page.getByLabel('URL-slug').fill(slug);
-  await page.getByLabel('Дисциплина').fill('Керамика');
+  await page.getByLabel('Никнейм').fill(slug);
   await page.getByLabel('Страна').fill('BY');
   await page.getByLabel('Город').fill(city);
-  await page.getByLabel('Короткое описание').fill('Авторская практика.');
   await page.getByRole('button', { name: 'Продолжить' }).click();
   await expect(page).toHaveURL(/\/profile\?step=2/);
-  await expect(page.getByText('Шаг 2 из 2')).toBeVisible();
+  await expect(page.getByRole('progressbar').getByText('Шаг 2 из 4')).toBeVisible();
 }
 
 test('author application without city cannot continue and city=null is rejected', async ({
@@ -35,10 +33,8 @@ test('author application without city cannot continue and city=null is rejected'
     await page.getByRole('button', { name: 'Добавить фото' }).click();
     await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
     await page.getByLabel('Имя или название').fill('Без города');
-    await page.getByLabel('URL-slug').fill(slug);
-    await page.getByLabel('Дисциплина').fill('Керамика');
+    await page.getByLabel('Никнейм').fill(slug);
     await page.getByLabel('Страна').fill('BY');
-    await page.getByLabel('Короткое описание').fill('Авторская практика.');
     await expect(page.getByRole('button', { name: 'Продолжить' })).toBeDisabled();
 
     const rejected = await context.request.post(
@@ -49,8 +45,6 @@ test('author application without city cannot continue and city=null is rejected'
           fullName: 'Без города',
           country: 'BY',
           city: '',
-          discipline: 'Керамика',
-          shortDescription: 'Авторская практика.',
           profilePhoto: 'e2e/fixtures/profile-photo.png',
         },
       },
@@ -71,10 +65,31 @@ test('city application is approved and appears in the public authors catalog', a
 
   try {
     await page.goto('/profile');
-    await fillAuthorApplication(page, slug, 'Минск');
+    await completeBasics(page, slug, 'Минск');
+    await page.getByRole('button', { name: 'Закрыть' }).click();
+    await page.goto('/profile');
+    await expect(page.getByRole('progressbar').getByText('Шаг 2 из 4')).toBeVisible();
+    await page.getByLabel('Telegram').fill('@city_author');
+    await page.getByRole('button', { name: 'Закрыть' }).click();
+    await page.getByRole('button', { name: 'Сохранить и выйти' }).click();
+    await page.goto('/profile');
+    await expect(page.getByRole('progressbar').getByText('Шаг 2 из 4')).toBeVisible();
+    await expect(page.getByLabel('Telegram')).toHaveValue('https://t.me/city_author');
+    await page.getByRole('button', { name: 'Продолжить' }).click();
+    await expect(page).toHaveURL(/\/profile\?step=3/);
+    await page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).fill('Керамика');
+    await page.getByRole('textbox', { name: 'Практика', exact: true }).fill('Авторская керамика');
+    await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).fill('Авторская практика.');
+    await page.getByRole('button', { name: 'Закрыть' }).click();
+    await page.getByRole('button', { name: 'Сохранить и выйти' }).click();
+    await page.goto('/profile');
+    await expect(page.getByRole('progressbar').getByText('Шаг 3 из 4')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Дисциплина *', exact: true })).toHaveValue('Керамика');
+    await page.getByRole('button', { name: 'Продолжить' }).click();
+    await expect(page).toHaveURL(/\/profile\?step=4/);
     await expect(page.getByRole('button', { name: 'Сохранить черновик' })).toBeVisible();
     await page.reload();
-    await expect(page).toHaveURL(/\/profile\?step=2/);
+    await expect(page).toHaveURL(/\/profile\?step=4/);
     await page.getByRole('button', { name: 'Сохранить черновик' }).click();
     await page.getByRole('button', { name: 'Отправить на проверку' }).click();
     await expect(page.getByText('На модерации')).toBeVisible();

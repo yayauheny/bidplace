@@ -9,6 +9,7 @@ import {
   sellerTypeSchema,
 } from './enums';
 import {
+  achievementOccurredDateSchema,
   httpsUrlSchema,
   isoDateTimeSchema,
   slugSchema,
@@ -46,20 +47,6 @@ export const sellerPublicEmailSchema = z
   .max(254)
   .transform((value) => value.toLowerCase());
 
-const achievementOccurredDateSchema = z
-  .object({
-    year: z.number().int().min(1).max(9_999),
-    month: z.number().int().min(1).max(12),
-    day: z.number().int().min(1).max(31).nullable(),
-  })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.day === null) return;
-    if (value.day > new Date(Date.UTC(value.year, value.month, 0)).getUTCDate()) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ['day'], message: 'Invalid achievement date' });
-    }
-  });
-
 export const sellerProfileSchema = z
   .object({
     id: uuidSchema,
@@ -83,7 +70,7 @@ export const sellerProfileSchema = z
     handoffContactValue: z.string().trim().min(1).nullable(),
     handoffInitiator: handoffInitiatorSchema.nullable(),
     status: sellerStatusSchema,
-    applicationStage: authorApplicationStageSchema.nullable().optional(),
+    applicationStage: authorApplicationStageSchema.nullable(),
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })

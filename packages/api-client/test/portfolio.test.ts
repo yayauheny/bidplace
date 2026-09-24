@@ -12,6 +12,7 @@ const authorApplication = {
     practice: null,
     shortDescription: 'Bio',
     status: 'PENDING_REVIEW',
+    applicationStage: null,
   },
   editingRevision: {
     id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',

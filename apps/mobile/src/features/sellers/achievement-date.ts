@@ -2,11 +2,15 @@ type AchievementDate = { year: number; month: number; day: number | null };
 
 export function formatAchievementDate(value: AchievementDate): string {
   const date = new Date(Date.UTC(value.year, value.month - 1, value.day ?? 1));
-  const month = new Intl.DateTimeFormat('ru-RU', {
+  const formatter = new Intl.DateTimeFormat('ru-RU', {
+    day: value.day === null ? undefined : 'numeric',
     month: 'long',
+    year: value.day === null ? undefined : 'numeric',
     timeZone: 'UTC',
-  }).format(date);
-  return `${month[0].toUpperCase()}${month.slice(1)}, ${date.getUTCFullYear()}`;
+  });
+  const formatted = formatter.format(date);
+  if (value.day !== null) return formatted;
+  return `${formatted[0].toUpperCase()}${formatted.slice(1)}, ${date.getUTCFullYear()}`;
 }
 
 export function formatAuthorAchievementLabel(value: AchievementDate): string {

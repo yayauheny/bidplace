@@ -29,6 +29,17 @@ export function canOpenSellerProfileStep(
   return step <= resumeSellerProfileStep(profile);
 }
 
+export function shouldAdvanceSellerApplication(
+  profile: ProfileState,
+  visibleStep: 2 | 3,
+): boolean {
+  if (profile?.status !== 'DRAFT') return false;
+  return (
+    (visibleStep === 2 && profile.applicationStage === 'CONTACTS') ||
+    (visibleStep === 3 && profile.applicationStage === 'ABOUT')
+  );
+}
+
 export function shouldShowSellerProfileAchievements(
   hasProfile: boolean,
   isApplicationWizard: boolean,

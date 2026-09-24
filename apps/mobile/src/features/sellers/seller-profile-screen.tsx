@@ -19,7 +19,7 @@ import { getProfileFieldErrors } from './profile-validation';
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
-import { resolveSellerProfileStep, resumeSellerProfileStep, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', publicEmail: '', shortDescription: '' };
 
@@ -54,7 +54,6 @@ export function SellerProfileScreen() {
   const requestedStep = resolveSellerProfileStep(step, profile);
   const isApplicationWizard = !profile || ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(profile.status);
   const profileStep = isApplicationWizard ? requestedStep : 1;
-  const unlockedStep = resumeSellerProfileStep(profile);
   const editable = isSellerProfileFormEditable(profile, editingRevision);
   const canSubmitRevision = canSubmitSellerProfileRevision(profile, editingRevision);
   const applicationPhoto = useQuery({ queryKey: ['seller', 'application-photo', profile?.id, hydrationToken], queryFn: () => api.portfolio.getAuthorApplicationPhoto(), enabled: Boolean(profile) && !photoBlob, retry: false });
@@ -116,6 +115,13 @@ export function SellerProfileScreen() {
   const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication(), onSuccess: invalidate });
 
   const save = async () => saveMutation.mutateAsync();
+  const continueFromStep = async (visibleStep: 2 | 3) => {
+    const saved = await save();
+    if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
+      await advanceMutation.mutateAsync();
+    }
+    router.push(`/profile?step=${visibleStep + 1}`);
+  };
   const choosePhoto = async () => {
     if (!editable) return;
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
@@ -141,44 +147,48 @@ export function SellerProfileScreen() {
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) await save();
     router.replace('/');
   };
+  const requestExit = () => {
+    if (!form.formState.isDirty && !photoBlob) router.replace('/');
+    else setExitOpen(true);
+  };
 
   return <FormPageShell hideDock={isApplicationWizard}>
     <View style={{ gap: designTokens.space.x5 }}>
-      <View style={{ gap: designTokens.space.x2 }}>
-        <PageHeader title="Профиль автора" description={!profile ? 'Заполните профиль и сохраните черновик до отправки на модерацию.' : undefined} />
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: designTokens.space.x3 }}>
+        <View style={{ flex: 1, gap: designTokens.space.x2 }}>
+          <PageHeader title="Профиль автора" description={!profile ? 'Заполните профиль и сохраните черновик до отправки на модерацию.' : undefined} />
         {profile ? <AppText role="caption" tone={profile.status === 'APPROVED' ? 'success' : profile.status === 'REJECTED' ? 'danger' : 'secondary'}>{presentEnum(profile.status, sellerStatusLabels, 'Неизвестный статус')}</AppText> : null}
+        </View>
+        {isApplicationWizard ? <SecondaryButton label="Закрыть" onPress={requestExit} /> : null}
       </View>
-      {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} unlockedStep={unlockedStep} onStepChange={(next) => router.push(`/profile?step=${next}`)} /> : null}
-      <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
+      {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} /> : null}
+      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" onPress={() => router.back()} /> : null}
+      {(!isApplicationWizard || profileStep === 1) ? <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
         <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!editable} width="block" onPress={() => void choosePhoto()} />
         {!profile ? <AppText role="bodySmall" tone="secondary">Фото обязательно для сохранения заявки.</AppText> : null}
       </FormSection>}>
         <SellerProfileFormSteps profileStep={profileStep} showAllSteps={!isApplicationWizard} editable={editable} fields={fields} fieldErrors={errors} update={(key, value) => form.setValue(key, value, { shouldDirty: true })} />
-      </FormPageColumns>
+      </FormPageColumns> : <SellerProfileFormSteps profileStep={profileStep} showAllSteps={false} editable={editable} fields={fields} fieldErrors={errors} update={(key, value) => form.setValue(key, value, { shouldDirty: true })} />}
       {(isApplicationWizard && profileStep === 4) ? <SellerProfileVerificationSection fields={fields} /> : null}
       {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={editable} /> : null}
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
       {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails} onPress={() => void save().then(() => router.push('/profile?step=2'))} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave} onPress={() => void save().then(() => advanceMutation.mutateAsync()).then(() => router.push('/profile?step=3'))} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout} onPress={() => void save().then(() => advanceMutation.mutateAsync()).then(() => router.push('/profile?step=4'))} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout} onPress={() => void continueFromStep(3)} label="Продолжить" width="block" /> : null}
       {isApplicationWizard && profileStep === 4 && editable ? <>
         <PrimaryButton loading={saveMutation.isPending} disabled={!canSave} onPress={() => void save()} label="Сохранить черновик" width="block" />
         {canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending} disabled={saveMutation.isPending || submitMutation.isPending || !canSave} onPress={() => void save().then(() => submitMutation.mutateAsync())} label="Отправить на проверку" width="block" /> : null}
       </> : null}
       {!isApplicationWizard && editable ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave} onPress={() => void save()} label="Сохранить" width="block" /> : null}
       {profile?.status === 'APPROVED' ? <Link href="/products/new" asChild><PrimaryButton label="Создать предмет" width="block" onPress={() => undefined} /></Link> : null}
-      {isApplicationWizard ? <SecondaryButton label="Выйти" width="block" onPress={() => {
-        if (!form.formState.isDirty && !photoBlob) router.replace('/');
-        else setExitOpen(true);
-      }} /> : null}
       {saveMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось сохранить профиль</AppText> : null}
       {submitMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось отправить заявку: заполните обязательные поля и попробуйте снова.</AppText> : null}
-      <AppDialog open={intro === '1' && missingProfile} title="Стать автором" description="Заполните четыре шага. Черновик сохраняется и его можно продолжить позже." onClose={() => router.replace('/profile')}>
-        <PrimaryButton label="Начать заявку" width="block" onPress={() => router.replace('/profile?step=1')} />
+      <AppDialog open={intro === '1' && missingProfile} title="Стать автором на Bidplace" description="Создайте профиль автора, расскажите о себе и публикуйте свои работы." onClose={() => router.replace('/profile')}>
+        <PrimaryButton label="Начать" width="block" onPress={() => router.replace('/profile?step=1')} />
         <SecondaryButton label="Позже" width="block" onPress={() => router.replace('/')} />
       </AppDialog>
-      <AppDialog open={exitOpen} title="Выйти из заявки?" description={exitDescription} onClose={() => setExitOpen(false)}>
+      <AppDialog open={exitOpen} title="Выйти из заявки?" description={profile ? 'Ваш черновик сохранён. Вы сможете продолжить позже.' : exitDescription} onClose={() => setExitOpen(false)}>
         <PrimaryButton label={canPersistBeforeExit ? 'Сохранить и выйти' : 'Выйти без сохранения'} loading={saveMutation.isPending} width="block" onPress={() => void exit()} />
         <SecondaryButton label="Продолжить заполнение" disabled={saveMutation.isPending} width="block" onPress={() => setExitOpen(false)} />
       </AppDialog>

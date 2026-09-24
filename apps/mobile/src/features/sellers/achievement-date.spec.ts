@@ -12,6 +12,10 @@ describe('formatAchievementDate', () => {
   ])('formats %o without fabricating a day', (value, expected) => {
     expect(formatAchievementDate(value)).toBe(expected);
   });
+
+  it('keeps an author-provided day in the owner format', () => {
+    expect(formatAchievementDate({ year: 2025, month: 3, day: 17 })).toContain('17');
+  });
 });
 
 describe('formatAuthorAchievementLabel', () => {

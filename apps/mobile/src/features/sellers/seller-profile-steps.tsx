@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { designTokens } from '@bidplace/design-tokens';
 
 import type { ProfileFieldErrors } from './profile-validation';
-import { AppText, FormSection, SecondaryButton, TextField } from '../../components/ui';
+import { AppText, FormSection, TextField } from '../../components/ui';
 
 export type ProfileFields = {
   slug: string;
@@ -20,16 +20,13 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
-export function SellerProfileCreationStepSelector({ profileStep, unlockedStep, onStepChange }: { profileStep: number; unlockedStep: number; onStepChange: (step: 1 | 2 | 3 | 4) => void }) {
-  return <FormSection title="Заявка автора" description="Сохраните черновик и отправьте его на проверку, когда всё будет готово.">
-    <View accessibilityRole="tablist" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: designTokens.space.x2 }}>
-      {(['Основная информация', 'Контакты', 'Об авторе', 'Выставки и достижения'] as const).map((label, index) => {
-        const step = (index + 1) as 1 | 2 | 3 | 4;
-        return <SecondaryButton key={label} label={`${step}. ${label}`} disabled={step > unlockedStep} onPress={() => onStepChange(step)} />;
-      })}
+export function SellerProfileCreationStepSelector({ profileStep }: { profileStep: number }) {
+  return <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 4, now: profileStep }} style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
+    <View style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
+      {[1, 2, 3, 4].map((step) => <View key={step} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: step <= profileStep ? designTokens.color.ink : designTokens.color.border }} />)}
     </View>
     <AppText role="metadata" tone="secondary">Шаг {profileStep} из 4</AppText>
-  </FormSection>;
+  </View>;
 }
 
 export function SellerProfileFormSteps({ profileStep, showAllSteps, editable, fields, fieldErrors, update }: { profileStep: number; showAllSteps: boolean; editable: boolean; fields: ProfileFields; fieldErrors: ProfileFieldErrors; update: (key: keyof ProfileFields, value: string) => void }) {

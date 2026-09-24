@@ -58,12 +58,13 @@ describe('toSellerProfileResponse', () => {
       discipline: 'Керамика',
       country: 'BY',
       city: 'Minsk',
-      practice: null,
+      practice: 'Published practice',
       biography: null,
       socialLink: 'https://example.com/live',
-      telegramUrl: null,
+      telegramUrl: 'https://t.me/published',
       instagramUrl: null,
       websiteUrl: null,
+      publicEmail: 'published@example.com',
       shortDescription: 'Live bio',
       handoffContactType: 'TELEGRAM',
       handoffContactValue: '@seller',
@@ -87,7 +88,7 @@ describe('toSellerProfileResponse', () => {
         telegramUrl: null,
         instagramUrl: null,
         websiteUrl: null,
-        publicEmail: 'draft@example.com',
+        publicEmail: null,
         shortDescription: 'Draft bio',
       },
     } as never);
@@ -95,6 +96,9 @@ describe('toSellerProfileResponse', () => {
     expect(response.sellerProfile.status).toBe('APPROVED');
     expect(response.sellerProfile.fullName).toBe('Draft name');
     expect(response.sellerProfile.city).toBe('Grodno');
+    expect(response.sellerProfile.practice).toBeNull();
+    expect(response.sellerProfile.telegramUrl).toBeNull();
+    expect(response.sellerProfile.publicEmail).toBeNull();
     expect(response.sellerProfile.profilePhotoUrl).toBe(
       '/api/sellers/live-slug/photo',
     );

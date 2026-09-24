@@ -241,25 +241,37 @@ export function toSellerProfileResponse(
         shortDescription: editingRevision.shortDescription,
       }
     : {};
+  const revisionOwnsFields = Boolean(editingRevision);
 
   return sellerProfileResponseSchema.parse({
     sellerProfile: {
       ...sellerProfileResponse,
       ...publicFields,
+      applicationStage: sellerProfileResponse.applicationStage ?? null,
       city:
-        (publicFields.city ?? sellerProfileResponse.city)?.trim() || null,
-      practice: (publicFields.practice ?? sellerProfileResponse.practice) ?? null,
-      biography:
-        (publicFields.biography ?? sellerProfileResponse.biography) ?? null,
-      telegramUrl:
-        (publicFields.telegramUrl ?? sellerProfileResponse.telegramUrl) ?? null,
-      instagramUrl:
-        (publicFields.instagramUrl ?? sellerProfileResponse.instagramUrl) ??
-        null,
-      websiteUrl:
-        (publicFields.websiteUrl ?? sellerProfileResponse.websiteUrl) ?? null,
-      publicEmail:
-        (publicFields.publicEmail ?? sellerProfileResponse.publicEmail) ?? null,
+        (revisionOwnsFields ? publicFields.city : sellerProfileResponse.city)
+          ?.trim() || null,
+      practice: revisionOwnsFields
+        ? publicFields.practice
+        : sellerProfileResponse.practice,
+      biography: revisionOwnsFields
+        ? publicFields.biography
+        : sellerProfileResponse.biography,
+      socialLink: revisionOwnsFields
+        ? publicFields.socialLink
+        : sellerProfileResponse.socialLink,
+      telegramUrl: revisionOwnsFields
+        ? publicFields.telegramUrl
+        : sellerProfileResponse.telegramUrl,
+      instagramUrl: revisionOwnsFields
+        ? publicFields.instagramUrl
+        : sellerProfileResponse.instagramUrl,
+      websiteUrl: revisionOwnsFields
+        ? publicFields.websiteUrl
+        : sellerProfileResponse.websiteUrl,
+      publicEmail: revisionOwnsFields
+        ? publicFields.publicEmail ?? null
+        : sellerProfileResponse.publicEmail ?? null,
       profilePhotoUrl: sellerProfilePhotoUrl(sellerProfile.slug),
       createdAt: sellerProfile.createdAt.toISOString(),
       updatedAt: sellerProfile.updatedAt.toISOString(),

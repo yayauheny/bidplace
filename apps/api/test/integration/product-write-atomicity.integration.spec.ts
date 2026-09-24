@@ -100,6 +100,7 @@ async function createSubmitReadyProduct(
       slug: `write-race-${suffix}`,
       sellerType: 'creator',
       fullName: 'Owner',
+      discipline: 'Ceramics',
       country: 'BY',
       city: 'Minsk',
       profilePhotoMimeType: 'image/png',
