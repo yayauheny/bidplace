@@ -89,6 +89,12 @@ export class PortfolioController {
     return this.portfolio.submitApplication(auth.sub);
   }
 
+  @Post('author/application/advance')
+  @UseGuards(BearerAuthGuard)
+  advanceApplication(@CurrentUser() auth: { sub: string }) {
+    return this.portfolio.advanceApplication(auth.sub);
+  }
+
   @Get('author/application/photo')
   @UseGuards(BearerAuthGuard)
   async getApplicationPhoto(

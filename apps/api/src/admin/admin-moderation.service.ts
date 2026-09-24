@@ -368,7 +368,7 @@ export class AdminModerationService {
 
   private publishedSellerProfileData(revision: {
     slug: string;
-    discipline: string;
+    discipline: string | null;
     fullName: string;
     country: string;
     city: string | null;
@@ -378,7 +378,8 @@ export class AdminModerationService {
     telegramUrl: string | null;
     instagramUrl: string | null;
     websiteUrl: string | null;
-    shortDescription: string;
+    publicEmail: string | null;
+    shortDescription: string | null;
   }) {
     return {
       slug: revision.slug,
@@ -392,6 +393,7 @@ export class AdminModerationService {
       telegramUrl: revision.telegramUrl,
       instagramUrl: revision.instagramUrl,
       websiteUrl: revision.websiteUrl,
+      publicEmail: revision.publicEmail,
       shortDescription: revision.shortDescription,
     };
   }

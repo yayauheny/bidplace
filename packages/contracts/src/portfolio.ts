@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { paginationMetaSchema, paginationQuerySchema } from './pagination';
 import { productImageSchema } from './product';
 import {
+  authorApplicationStageSchema,
   productStatusSchema,
   sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
 } from './enums';
-import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import { achievementOccurredDateSchema, isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
 
 const publicText = z.string().trim().min(1);
 
@@ -23,7 +24,7 @@ export const portfolioAchievementImageSchema = z
 export const portfolioAchievementSchema = z
   .object({
     id: uuidSchema,
-    occurredAt: z.string().datetime().nullable(),
+    occurredDate: achievementOccurredDateSchema.nullable(),
     body: publicText,
     image: portfolioAchievementImageSchema.nullable(),
   })
@@ -63,6 +64,7 @@ export const portfolioAuthorSchema = z
     telegramUrl: z.string().url().nullable(),
     instagramUrl: z.string().url().nullable(),
     websiteUrl: z.string().url().nullable(),
+    publicEmail: z.string().email().nullable().optional(),
     shortDescription: publicText,
     achievements: z.array(portfolioAchievementSchema),
     sharePath: z.string().regex(/^\/authors\/[a-z0-9]+(?:[-_][a-z0-9]+)*$/),
@@ -191,12 +193,30 @@ export const portfolioAuthorApplicationSchema = z
     fullName: publicText,
     country: publicText,
     city: publicText.nullable(),
-    discipline: publicText,
+    discipline: publicText.nullable(),
     practice: z.string().trim().min(1).nullable(),
-    shortDescription: publicText,
+    shortDescription: publicText.nullable(),
     status: sellerStatusSchema,
+    applicationStage: authorApplicationStageSchema.nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((application, context) => {
+    if (application.status === 'DRAFT') return;
+    if (!application.discipline) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['discipline'],
+        message: 'A non-draft application requires a discipline',
+      });
+    }
+    if (!application.shortDescription) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['shortDescription'],
+        message: 'A non-draft application requires a short description',
+      });
+    }
+  });
 
 export const portfolioAuthorApplicationResponseSchema = z
   .object({
@@ -214,9 +234,21 @@ export const portfolioAuthorApplicationResponseSchema = z
   })
   .strict();
 
+const portfolioAchievementOccurredDateWriteSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  },
+  portfolioAchievementSchema.shape.occurredDate.unwrap(),
+);
+
 export const portfolioAchievementWriteRequestSchema = z
   .object({
-    occurredAt: z.string().datetime().nullable().optional(),
+    occurredDate: portfolioAchievementOccurredDateWriteSchema,
     body: publicText.max(4_000),
   })
   .strict();

@@ -237,6 +237,7 @@ export class PortfolioService {
         practice: profile.practice,
         shortDescription: profile.shortDescription,
         status: profile.status,
+        applicationStage: profile.applicationStage,
       },
       editingRevision: response.editingRevision,
       achievements: await this.sellers.listEditingAchievements(userId),
@@ -245,6 +246,11 @@ export class PortfolioService {
 
   async submitApplication(userId: string) {
     await this.sellers.submitProfileRevision(userId);
+    return this.getApplication(userId);
+  }
+
+  async advanceApplication(userId: string) {
+    await this.sellers.advanceApplicationStage(userId);
     return this.getApplication(userId);
   }
 
@@ -348,18 +354,19 @@ function toPortfolioAuthor(profile: {
   fullName: string;
   country: string;
   city: string | null;
-  discipline: string;
+  discipline: string | null;
   practice: string | null;
   biography?: string | null;
   profilePhotoUrl: string;
   telegramUrl: string | null;
   instagramUrl: string | null;
   websiteUrl: string | null;
-  shortDescription: string;
+  publicEmail: string | null;
+  shortDescription: string | null;
   achievements?:
     | Array<{
         id: string;
-        occurredAt: string | null;
+        occurredDate: { year: number; month: number; day: number | null } | null;
         body: string;
         image?: {
           url: string;
@@ -370,6 +377,9 @@ function toPortfolioAuthor(profile: {
       }>
     | undefined;
 }) {
+  if (!profile.discipline || !profile.shortDescription) {
+    throw new Error('Public author is missing required fields');
+  }
   return {
     id: profile.id,
     slug: profile.slug,
@@ -383,6 +393,7 @@ function toPortfolioAuthor(profile: {
     telegramUrl: profile.telegramUrl,
     instagramUrl: profile.instagramUrl,
     websiteUrl: profile.websiteUrl,
+    publicEmail: profile.publicEmail,
     shortDescription: profile.shortDescription,
     achievements: profile.achievements ?? [],
     sharePath: `/authors/${profile.slug}`,

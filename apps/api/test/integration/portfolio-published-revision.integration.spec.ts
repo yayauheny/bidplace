@@ -228,6 +228,7 @@ describe('portfolio published revision HTTP transport', () => {
 
     const gif = new FormData();
     gif.set('body', 'Show');
+    gif.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
     gif.append(
       'image',
       new Blob(
@@ -249,6 +250,7 @@ describe('portfolio published revision HTTP transport', () => {
       (() => {
         const form = new FormData();
         form.set('body', 'Show');
+        form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
         form.append(
           'image',
           new Blob([permissionImage], { type: 'image/png' }),
@@ -279,6 +281,7 @@ describe('portfolio published revision HTTP transport', () => {
     const created = await owner.post('/author/application/achievements', (() => {
       const form = new FormData();
       form.set('body', 'Show text only');
+      form.set('occurredDate', JSON.stringify({ year: 2025, month: 3, day: null }));
       return form;
     })());
     expect(created.status).toBe(201);

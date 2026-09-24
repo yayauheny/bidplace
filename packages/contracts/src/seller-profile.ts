@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  authorApplicationStageSchema,
   handoffContactTypeSchema,
   handoffInitiatorSchema,
   sellerProfileRevisionStatusSchema,
@@ -8,6 +9,7 @@ import {
   sellerTypeSchema,
 } from './enums';
 import {
+  achievementOccurredDateSchema,
   httpsUrlSchema,
   isoDateTimeSchema,
   slugSchema,
@@ -38,6 +40,12 @@ const sellerProfilePhotoUrlSchema = z
 
 export const sellerDisciplineSchema = z.string().trim().min(1).max(160);
 export const sellerPublicUrlSchema = httpsUrlSchema;
+export const sellerPublicEmailSchema = z
+  .string()
+  .trim()
+  .email()
+  .max(254)
+  .transform((value) => value.toLowerCase());
 
 export const sellerProfileSchema = z
   .object({
@@ -45,7 +53,7 @@ export const sellerProfileSchema = z
     userId: uuidSchema,
     slug: slugSchema,
     sellerType: sellerTypeSchema,
-    discipline: sellerDisciplineSchema,
+    discipline: sellerDisciplineSchema.nullable(),
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     city: z.string().trim().min(1).nullable(),
@@ -56,11 +64,13 @@ export const sellerProfileSchema = z
     telegramUrl: sellerPublicUrlSchema.nullable(),
     instagramUrl: sellerPublicUrlSchema.nullable(),
     websiteUrl: sellerPublicUrlSchema.nullable(),
-    shortDescription: z.string().trim().min(1),
+    publicEmail: sellerPublicEmailSchema.nullable(),
+    shortDescription: z.string().trim().min(1).nullable(),
     handoffContactType: handoffContactTypeSchema.nullable(),
     handoffContactValue: z.string().trim().min(1).nullable(),
     handoffInitiator: handoffInitiatorSchema.nullable(),
     status: sellerStatusSchema,
+    applicationStage: authorApplicationStageSchema.nullable(),
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })
@@ -82,15 +92,18 @@ export const publicSellerProfileSchema = sellerProfileSchema
     telegramUrl: true,
     instagramUrl: true,
     websiteUrl: true,
+    publicEmail: true,
     shortDescription: true,
   })
   .extend({
+    discipline: sellerDisciplineSchema,
+    shortDescription: z.string().trim().min(1),
     achievements: z
       .array(
         z
           .object({
             id: uuidSchema,
-            occurredAt: isoDateTimeSchema.nullable(),
+            occurredDate: achievementOccurredDateSchema.nullable(),
             body: z.string().trim().min(1),
             image: z
               .object({
@@ -114,17 +127,18 @@ export const publicSellerProfileSchema = sellerProfileSchema
 export const sellerProfileCreateRequestSchema = z
   .object({
     slug: slugSchema,
-    discipline: sellerDisciplineSchema,
     fullName: z.string().trim().min(1),
     country: z.string().trim().min(1),
     city: z.string().trim().min(1),
+    discipline: sellerDisciplineSchema.optional(),
     practice: z.string().trim().min(1).nullable().optional(),
     biography: z.string().trim().min(1).nullable().optional(),
     socialLink: sellerPublicUrlSchema.nullable().optional(),
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
-    shortDescription: z.string().trim().min(1),
+    publicEmail: sellerPublicEmailSchema.nullable().optional(),
+    shortDescription: z.string().trim().min(1).optional(),
   })
   .strict();
 
@@ -142,6 +156,7 @@ const sellerProfileBaseWriteSchema = z
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
+    publicEmail: sellerPublicEmailSchema.nullable().optional(),
     shortDescription: z.string().trim().min(1),
     handoffContactType: handoffContactTypeSchema,
     handoffContactValue: z.string().trim().min(1),
@@ -200,6 +215,7 @@ export const sellerProfileUpdateRequestSchema = z
     telegramUrl: sellerPublicUrlSchema.nullable().optional(),
     instagramUrl: sellerPublicUrlSchema.nullable().optional(),
     websiteUrl: sellerPublicUrlSchema.nullable().optional(),
+    publicEmail: sellerPublicEmailSchema.nullable().optional(),
     shortDescription: z.string().trim().min(1).optional(),
     handoffContactType: handoffContactTypeSchema.optional(),
     handoffContactValue: z.string().trim().min(1).optional(),

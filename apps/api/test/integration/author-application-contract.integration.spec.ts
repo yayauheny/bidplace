@@ -86,16 +86,17 @@ describe('author application HTTP contract', () => {
 
     const created = await applicant.post(
       '/seller/profile',
-      applicationForm(),
+      applicationForm({ discipline: null, shortDescription: null }),
     );
     expect(created.status).toBe(201);
     const body = (await created.json()) as {
-      sellerProfile: { id: string; slug: string; city: string; socialLink: string | null; status: string };
+      sellerProfile: { id: string; slug: string; city: string; socialLink: string | null; status: string; applicationStage: string | null };
       editingRevision: { status: string; id: string } | null;
     };
     expect(body.sellerProfile.city).toBe('Minsk');
     expect(body.sellerProfile.socialLink).toBeNull();
     expect(body.sellerProfile.status).toBe('DRAFT');
+    expect(body.sellerProfile.applicationStage).toBe('CONTACTS');
     expect(body.editingRevision?.status).toBe('DRAFT');
 
     const publicDraft = await applicant.get(`/authors/${body.sellerProfile.slug}`);
@@ -103,11 +104,12 @@ describe('author application HTTP contract', () => {
 
     const stored = await prisma.sellerProfile.findUniqueOrThrow({
       where: { userId: fixture.buyer.id },
-      select: { socialLink: true, city: true, status: true, editingRevision: { select: { status: true, submittedAt: true } } },
+      select: { socialLink: true, city: true, status: true, applicationStage: true, editingRevision: { select: { status: true, submittedAt: true } } },
     });
     expect(stored.city).toBe('Minsk');
     expect(stored.socialLink).toBeNull();
     expect(stored.status).toBe('DRAFT');
+    expect(stored.applicationStage).toBe('CONTACTS');
     expect(stored.editingRevision).toMatchObject({ status: 'DRAFT', submittedAt: null });
 
     const admin = await createAdminClient();
@@ -127,31 +129,48 @@ describe('author application HTTP contract', () => {
     const applicationDraft = (await (
       await applicant.get('/author/application')
     ).json()) as {
-      application: { status: string };
+      application: { status: string; applicationStage: string | null; discipline: string | null; shortDescription: string | null };
       editingRevision: { status: string; updatedAt: string } | null;
     };
     expect(applicationDraft.application.status).toBe('DRAFT');
+    expect(applicationDraft.application.applicationStage).toBe('CONTACTS');
+    expect(applicationDraft.application.discipline).toBeNull();
+    expect(applicationDraft.application.shortDescription).toBeNull();
     expect(applicationDraft.editingRevision?.status).toBe('DRAFT');
     expect(applicationDraft.editingRevision?.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
+    const contactsAdvance = await applicant.post('/author/application/advance');
+    expect(contactsAdvance.status).toBe(201);
+    expect(((await contactsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ABOUT');
+    expect((await applicant.post('/author/application/advance')).status).toBe(409);
+
     const update = new FormData();
     update.set('fullName', 'Latest draft author');
+    update.set('discipline', 'Керамика');
     update.set('shortDescription', 'Latest draft description');
+    update.set('publicEmail', 'PUBLIC@EXAMPLE.COM');
     expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
+
+    const achievementsAdvance = await applicant.post('/author/application/advance');
+    expect(achievementsAdvance.status).toBe(201);
+    expect(((await achievementsAdvance.json()) as { application: { applicationStage: string | null } }).application.applicationStage).toBe('ACHIEVEMENTS');
     const canonical = await prisma.sellerProfile.findUniqueOrThrow({
       where: { id: body.sellerProfile.id },
-      select: { fullName: true, editingRevision: { select: { fullName: true, shortDescription: true } } },
+      select: { fullName: true, publicEmail: true, applicationStage: true, editingRevision: { select: { fullName: true, shortDescription: true, publicEmail: true } } },
     });
     expect(canonical.fullName).toBe('Latest draft author');
-    expect(canonical.editingRevision).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description' });
+    expect(canonical.publicEmail).toBe('public@example.com');
+    expect(canonical.applicationStage).toBe('ACHIEVEMENTS');
+    expect(canonical.editingRevision).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description', publicEmail: 'public@example.com' });
 
     const submitResponse = await applicant.post('/author/application/submit');
     expect(submitResponse.status).toBe(201);
     const applicationSubmitted = (await submitResponse.json()) as {
-      application: { status: string };
+      application: { status: string; applicationStage: string | null };
       editingRevision: { status: string; updatedAt: string } | null;
     };
     expect(applicationSubmitted.application.status).toBe('PENDING_REVIEW');
+    expect(applicationSubmitted.application.applicationStage).toBeNull();
     expect(applicationSubmitted.editingRevision?.status).toBe('PENDING_REVIEW');
     expect(applicationSubmitted.editingRevision?.updatedAt).toMatch(
       /^\d{4}-\d{2}-\d{2}T/,
@@ -169,7 +188,7 @@ describe('author application HTTP contract', () => {
     expect((await admin.patch(`/admin/seller-profiles/${body.sellerProfile.id}/status`, { status: 'APPROVED' })).status).toBe(200);
     const published = await applicant.get(`/authors/${body.sellerProfile.slug}`);
     expect(published.status).toBe(200);
-    expect(((await published.json()) as { author: { fullName: string; shortDescription: string } }).author).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description' });
+    expect(((await published.json()) as { author: { fullName: string; shortDescription: string; publicEmail: string | null } }).author).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description', publicEmail: 'public@example.com' });
   });
 
   it('keeps the published public projection unchanged while the owner sees draft fields', async () => {

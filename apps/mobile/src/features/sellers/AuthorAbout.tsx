@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import type { PortfolioWorkDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
@@ -21,6 +21,16 @@ export function AuthorAbout({
       />
       {author.practice ? (
         <AboutSection title="Практика и подход" body={author.practice} />
+      ) : null}
+      {author.publicEmail ? (
+        <View style={{ gap: designTokens.space.x2 }}>
+          <AppText role="profileHeading" accessibilityRole="header">
+            Контакты
+          </AppText>
+          <Pressable onPress={() => void Linking.openURL(`mailto:${author.publicEmail}`)}>
+            <AppText role="bodySmall">{author.publicEmail}</AppText>
+          </Pressable>
+        </View>
       ) : null}
       {author.achievements.length > 0 ? (
         <View style={{ gap: designTokens.space.sectionGap }}>
@@ -57,10 +67,10 @@ function AchievementCard({
         gap: designTokens.space.x3,
       }}
     >
-      {item.occurredAt ? (
+      {item.occurredDate ? (
         <View style={{ gap: designTokens.space.x1 }}>
           <AppText role="achievementDate" style={{ textAlign: 'center' }}>
-            {formatAuthorAchievementLabel(item.occurredAt)}
+            {formatAuthorAchievementLabel(item.occurredDate)}
           </AppText>
           <View
             aria-hidden

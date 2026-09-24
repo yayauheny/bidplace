@@ -7,18 +7,22 @@ import {
 
 describe('formatAchievementDate', () => {
   it.each([
-    ['2026-08-01T00:00:00.000Z', 'Август, 2026'],
-    ['2016-12-31T23:00:00.000Z', 'Декабрь, 2016'],
-  ])('formats %s without shifting its UTC month', (value, expected) => {
+    [{ year: 2026, month: 8, day: null }, 'Август, 2026'],
+    [{ year: 2016, month: 12, day: null }, 'Декабрь, 2016'],
+  ])('formats %o without fabricating a day', (value, expected) => {
     expect(formatAchievementDate(value)).toBe(expected);
+  });
+
+  it('keeps an author-provided day in the owner format', () => {
+    expect(formatAchievementDate({ year: 2025, month: 3, day: 17 })).toContain('17');
   });
 });
 
 describe('formatAuthorAchievementLabel', () => {
   it.each([
-    ['2026-04-01T00:00:00.000Z', '04.2026'],
-    ['2016-12-31T23:00:00.000Z', '12.2016'],
-  ])('uses the public MM.YYYY label from 621:19580', (value, expected) => {
+    [{ year: 2026, month: 4, day: null }, '04.2026'],
+    [{ year: 2016, month: 12, day: 31 }, '31.12.2016'],
+  ])('uses a day only when the author provided one', (value, expected) => {
     expect(formatAuthorAchievementLabel(value)).toBe(expected);
   });
 });

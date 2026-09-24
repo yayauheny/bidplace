@@ -168,6 +168,7 @@ describe('shared contracts', () => {
       telegramUrl: null,
       instagramUrl: null,
       websiteUrl: null,
+      publicEmail: null,
       biography: null,
       shortDescription: 'Bio',
       achievements: [],
@@ -265,6 +266,7 @@ describe('shared contracts', () => {
             practice: null,
             shortDescription: 'Bio',
             status,
+            applicationStage: status === 'DRAFT' ? 'CONTACTS' : null,
           },
           editingRevision: {
             id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5',
@@ -276,6 +278,48 @@ describe('shared contracts', () => {
         }).success,
       ).toBe(true);
     }
+  });
+
+  it('allows private partial drafts but keeps submitted applications complete', () => {
+    const draft = {
+      application: {
+        slug: 'author',
+        fullName: 'Author',
+        country: 'Belarus',
+        city: 'Minsk',
+        discipline: null,
+        practice: null,
+        shortDescription: null,
+        status: 'DRAFT',
+        applicationStage: 'CONTACTS',
+      },
+      editingRevision: null,
+      achievements: [],
+    };
+
+    expect(portfolioAuthorApplicationResponseSchema.safeParse(draft).success).toBe(true);
+    expect(
+      portfolioAuthorApplicationResponseSchema.safeParse({
+        ...draft,
+        application: { ...draft.application, status: 'PENDING_REVIEW' },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('normalizes public email and rejects impossible achievement calendar dates', () => {
+    expect(
+      sellerProfileCreateRequestSchema.parse({
+        slug: 'author', fullName: 'Author', country: 'Belarus', city: 'Minsk',
+        publicEmail: ' AUTHOR@EXAMPLE.COM ',
+      }).publicEmail,
+    ).toBe('author@example.com');
+    expect(
+      portfolioAuthorApplicationResponseSchema.safeParse({
+        application: { slug: 'author', fullName: 'Author', country: 'Belarus', city: 'Minsk', discipline: 'Painting', practice: null, shortDescription: 'Bio', status: 'PENDING_REVIEW', applicationStage: null },
+        editingRevision: null,
+        achievements: [{ id: '0a0d82a1-0317-49eb-904f-a8bc87d311a5', occurredDate: { year: 2025, month: 2, day: 29 }, body: 'Exhibition', image: null }],
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts a draft Product without art-only fields', () => {

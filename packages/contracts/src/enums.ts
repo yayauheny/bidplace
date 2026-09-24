@@ -18,6 +18,12 @@ export const SELLER_PROFILE_REVISION_STATUSES = [
   'CHANGES_REQUESTED',
   'REJECTED',
 ] as const;
+export const AUTHOR_APPLICATION_STAGES = [
+  'CONTACTS',
+  'ABOUT',
+  'ACHIEVEMENTS',
+] as const;
+export const ACHIEVEMENT_DATE_PRECISIONS = ['MONTH', 'DAY'] as const;
 export const PRODUCT_STATUSES = [
   'DRAFT',
   'PENDING_REVIEW',
@@ -69,6 +75,10 @@ export const sellerStatusSchema = z.enum(SELLER_STATUSES);
 export const sellerProfileRevisionStatusSchema = z.enum(
   SELLER_PROFILE_REVISION_STATUSES,
 );
+export const authorApplicationStageSchema = z.enum(AUTHOR_APPLICATION_STAGES);
+export const achievementDatePrecisionSchema = z.enum(
+  ACHIEVEMENT_DATE_PRECISIONS,
+);
 export const productStatusSchema = z.enum(PRODUCT_STATUSES);
 export const listingTypeSchema = z.enum(LISTING_TYPES);
 export const listingStatusSchema = z.enum(LISTING_STATUSES);
@@ -84,6 +94,12 @@ export type SellerType = z.infer<typeof sellerTypeSchema>;
 export type SellerStatus = z.infer<typeof sellerStatusSchema>;
 export type SellerProfileRevisionStatus = z.infer<
   typeof sellerProfileRevisionStatusSchema
+>;
+export type AuthorApplicationStage = z.infer<
+  typeof authorApplicationStageSchema
+>;
+export type AchievementDatePrecision = z.infer<
+  typeof achievementDatePrecisionSchema
 >;
 export type ProductStatus = z.infer<typeof productStatusSchema>;
 export type ListingType = z.infer<typeof listingTypeSchema>;

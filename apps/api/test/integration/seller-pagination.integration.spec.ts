@@ -52,6 +52,7 @@ describe('Public work pagination PostgreSQL behavior', () => {
         slug: `seller-${suffix}`,
         sellerType: 'creator',
         fullName: 'Seller',
+        discipline: 'Ceramics',
         country: 'BY',
         city: 'Minsk',
         profilePhotoMimeType: 'image/png',

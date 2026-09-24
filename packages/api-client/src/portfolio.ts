@@ -84,6 +84,14 @@ export function createPortfolioClient(context: RequestContext) {
         { method: 'POST' },
       );
     },
+    advanceAuthorApplication() {
+      return requestJson(
+        context,
+        '/api/author/application/advance',
+        portfolioAuthorApplicationResponseSchema,
+        { method: 'POST' },
+      );
+    },
     addAuthorAchievement(
       input: PortfolioAchievementWriteRequest,
       image?: Blob,

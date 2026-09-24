@@ -1,21 +1,62 @@
+type ProfileState = {
+  status: string;
+  applicationStage?: 'CONTACTS' | 'ABOUT' | 'ACHIEVEMENTS' | null;
+} | null | undefined;
+
+export function resumeSellerProfileStep(profile: ProfileState): 1 | 2 | 3 | 4 {
+  if (!profile) return 1;
+  if (profile.status === 'CHANGES_REQUESTED' || profile.status === 'REJECTED') return 4;
+  if (profile.status !== 'DRAFT') return 1;
+  if (profile.applicationStage === 'ACHIEVEMENTS') return 4;
+  if (profile.applicationStage === 'ABOUT') return 3;
+  return 2;
+}
+
 export function resolveSellerProfileStep(
   requestedStep: string | string[] | undefined,
-  hasPersistedDraft: boolean,
-): 1 | 2 {
-  return requestedStep === '2' && hasPersistedDraft ? 2 : 1;
+  profile: ProfileState,
+): 1 | 2 | 3 | 4 {
+  const resume = resumeSellerProfileStep(profile);
+  const parsed = typeof requestedStep === 'string' ? Number(requestedStep) : NaN;
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 4) return resume;
+  return Math.min(parsed, resume) as 1 | 2 | 3 | 4;
 }
 
 export function canOpenSellerProfileStep(
-  step: 1 | 2,
-  hasPersistedDraft: boolean,
+  step: 1 | 2 | 3 | 4,
+  profile: ProfileState,
 ): boolean {
-  return step === 1 || hasPersistedDraft;
+  return step <= resumeSellerProfileStep(profile);
+}
+
+export function previousSellerProfileStep(
+  step: 1 | 2 | 3 | 4,
+): 1 | 2 | 3 {
+  return Math.max(1, step - 1) as 1 | 2 | 3;
+}
+
+export function shouldSaveBeforeSellerProfileBack(
+  isDirty: boolean,
+  hasPhotoChange: boolean,
+): boolean {
+  return isDirty || hasPhotoChange;
+}
+
+export function shouldAdvanceSellerApplication(
+  profile: ProfileState,
+  visibleStep: 2 | 3,
+): boolean {
+  if (profile?.status !== 'DRAFT') return false;
+  return (
+    (visibleStep === 2 && profile.applicationStage === 'CONTACTS') ||
+    (visibleStep === 3 && profile.applicationStage === 'ABOUT')
+  );
 }
 
 export function shouldShowSellerProfileAchievements(
   hasProfile: boolean,
   isApplicationWizard: boolean,
-  step: 1 | 2,
+  step: 1 | 2 | 3 | 4,
 ): boolean {
-  return hasProfile && (!isApplicationWizard || step === 2);
+  return hasProfile && (!isApplicationWizard || step === 4);
 }
