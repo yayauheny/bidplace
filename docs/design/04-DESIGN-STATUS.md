@@ -9,8 +9,9 @@
 - `Implemented` (mobile web behavior): approved and suspended Authors use the
   owner-only `/cabinet` route for their Works. Cards distinguish the live public
   Work from an in-progress editing revision, show moderation feedback when it
-  is current, and expose edit, hide and restore actions. Empty state, loading,
-  retry and incremental page loading use existing primitives and tokens.
+  is current, and expose edit, hide and restore actions. Incremental loading
+  appends pages owned by React Query; suspended Authors have inspection-only
+  controls. Empty state, loading and retry use existing primitives and tokens.
 - `Unchanged`: public Author/Work visual compositions, dock geometry, native
   and desktop acceptance, and the canonical Pen file.
 

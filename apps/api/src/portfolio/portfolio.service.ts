@@ -285,105 +285,128 @@ export class PortfolioService {
       throw new ForbiddenException('Author cabinet is unavailable');
     }
     const where = { sellerProfile: { userId } };
-    const [products, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-        select: {
-          id: true,
-          publicId: true,
-          title: true,
-          status: true,
-          updatedAt: true,
-          images: {
-            orderBy: { position: 'asc' },
-            take: 1,
-            select: {
-              id: true,
-              position: true,
-              mimeType: true,
-              byteLength: true,
-              checksum: true,
-              width: true,
-              height: true,
+    const offset = (query.page - 1) * query.limit;
+    const [pageRows, total] = await Promise.all([
+      this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          effectiveUpdatedAt: Date;
+          moderationMessage: string | null;
+        }>
+      >`
+        SELECT
+          product.id,
+          GREATEST(product.updated_at, COALESCE(revision.updated_at, product.updated_at)) AS "effectiveUpdatedAt",
+          moderation.reason AS "moderationMessage"
+        FROM products AS product
+        INNER JOIN seller_profiles AS seller
+          ON seller.id = product.seller_profile_id
+        LEFT JOIN product_revisions AS revision
+          ON revision.id = product.editing_revision_id
+        LEFT JOIN LATERAL (
+          SELECT audit.reason
+          FROM audit_events AS audit
+          WHERE audit.target_type::text = 'PRODUCT'
+            AND audit.target_id = product.id
+            AND audit.new_status IN ('CHANGES_REQUESTED', 'REJECTED')
+            AND (
+              audit.new_status = product.status::text
+              OR audit.new_status = revision.status::text
+            )
+          ORDER BY audit.created_at DESC, audit.id DESC
+          LIMIT 1
+        ) AS moderation ON TRUE
+        WHERE seller.user_id = ${userId}::uuid
+        ORDER BY
+          GREATEST(product.updated_at, COALESCE(revision.updated_at, product.updated_at)) DESC,
+          product.id DESC
+        OFFSET ${offset}
+        LIMIT ${query.limit}
+      `,
+      this.prisma.product.count({ where }),
+    ]);
+    const productIds = pageRows.map((row) => row.id);
+    const products = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            publicId: true,
+            title: true,
+            status: true,
+            images: {
+              orderBy: { position: 'asc' },
+              take: 1,
+              select: {
+                id: true,
+                position: true,
+                mimeType: true,
+                byteLength: true,
+                checksum: true,
+                width: true,
+                height: true,
+              },
             },
-          },
-          editingRevision: {
-            select: {
-              status: true,
-              images: {
-                orderBy: { position: 'asc' },
-                take: 1,
-                select: {
-                  position: true,
-                  image: {
-                    select: {
-                      id: true,
-                      mimeType: true,
-                      byteLength: true,
-                      checksum: true,
-                      width: true,
-                      height: true,
+            editingRevision: {
+              select: {
+                title: true,
+                status: true,
+                images: {
+                  orderBy: { position: 'asc' },
+                  take: 1,
+                  select: {
+                    position: true,
+                    image: {
+                      select: {
+                        id: true,
+                        mimeType: true,
+                        byteLength: true,
+                        checksum: true,
+                        width: true,
+                        height: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-    const reasons = products.length
-      ? await this.prisma.auditEvent.findMany({
-          where: {
-            targetType: 'PRODUCT',
-            targetId: { in: products.map((product) => product.id) },
-            reason: { not: null },
-          },
-          orderBy: { createdAt: 'desc' },
-          select: { targetId: true, newStatus: true, reason: true },
         })
       : [];
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
+    );
 
     return portfolioCabinetWorksResponseSchema.parse({
-      works: products.map((product) => {
+      works: pageRows.flatMap((row) => {
+        const product = productsById.get(row.id);
+        if (!product) return [];
         const revision = product.editingRevision;
-        const relevantStatuses = [product.status, revision?.status].filter(
-          (status): status is 'CHANGES_REQUESTED' | 'REJECTED' =>
-            status === 'CHANGES_REQUESTED' || status === 'REJECTED',
-        );
-        const moderationMessage = reasons.find(
-          (reason) =>
-            reason.targetId === product.id &&
-            reason.reason !== null &&
-            relevantStatuses.includes(
-              reason.newStatus as 'CHANGES_REQUESTED' | 'REJECTED',
-            ),
-        )?.reason;
         const revisionImage = revision?.images[0];
-        const image = revisionImage
-          ? { ...revisionImage.image, position: revisionImage.position }
-          : product.images[0];
-        return {
-          id: product.id,
-          publicId: product.publicId,
-          title: product.title,
-          status: product.status,
-          editingRevisionStatus: revision?.status ?? null,
-          updatedAt: product.updatedAt.toISOString(),
-          moderationMessage: moderationMessage ?? null,
-          coverImage: image
-            ? {
-                ...image,
-                url: `/api/images/${image.id}`,
-                width: image.width ?? null,
-                height: image.height ?? null,
-              }
-            : null,
-        };
+        const image = revision
+          ? revisionImage
+            ? { ...revisionImage.image, position: revisionImage.position }
+            : null
+          : (product.images[0] ?? null);
+        return [
+          {
+            id: product.id,
+            publicId: product.publicId,
+            title: revision ? revision.title : product.title,
+            status: product.status,
+            editingRevisionStatus: revision?.status ?? null,
+            updatedAt: row.effectiveUpdatedAt.toISOString(),
+            moderationMessage: row.moderationMessage,
+            coverImage: image
+              ? {
+                  ...image,
+                  url: `/api/images/${image.id}`,
+                  width: image.width ?? null,
+                  height: image.height ?? null,
+                }
+              : null,
+          },
+        ];
       }),
       pagination: { page: query.page, limit: query.limit, total },
     });

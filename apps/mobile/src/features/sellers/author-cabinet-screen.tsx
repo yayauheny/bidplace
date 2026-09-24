@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { Link, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
@@ -24,8 +28,10 @@ import {
 } from '../../hooks/use-seller-capability';
 import { useApiClient } from '../../providers/api-provider';
 import {
+  AUTHOR_CABINET_PAGE_SIZE,
   authorCabinetPrimaryAction,
-  authorCabinetQuery,
+  authorCabinetVisibilityActions,
+  authorCabinetWorksFromPages,
   authorCabinetWorkState,
 } from './author-cabinet-state';
 
@@ -34,11 +40,19 @@ export function AuthorCabinetScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const capability = useSellerCapability();
-  const [page, setPage] = useState(1);
   const [pendingHideId, setPendingHideId] = useState<string | null>(null);
-  const query = useQuery({
-    queryKey: ['seller', 'cabinet', 'works', authorCabinetQuery(page)],
-    queryFn: () => api.portfolio.listCabinetWorks(authorCabinetQuery(page)),
+  const query = useInfiniteQuery({
+    queryKey: ['seller', 'cabinet', 'works'],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      api.portfolio.listCabinetWorks({
+        page: pageParam,
+        limit: AUTHOR_CABINET_PAGE_SIZE,
+      }),
+    getNextPageParam: (page) =>
+      page.pagination.page * page.pagination.limit < page.pagination.total
+        ? page.pagination.page + 1
+        : undefined,
     enabled: isAuthorCabinetAvailable(capability.status),
   });
 
@@ -104,12 +118,8 @@ export function AuthorCabinetScreen() {
     );
   }
 
-  const response = query.data;
-  const pendingHide = response?.works.find((work) => work.id === pendingHideId);
-  const canLoadMore = response
-    ? response.pagination.page * response.pagination.limit <
-      response.pagination.total
-    : false;
+  const works = authorCabinetWorksFromPages(query.data?.pages ?? []);
+  const pendingHide = works.find((work) => work.id === pendingHideId);
 
   return (
     <FormPageShell>
@@ -129,7 +139,11 @@ export function AuthorCabinetScreen() {
         <View style={{ gap: designTokens.space.x2 }}>
           <Link href="/profile" asChild>
             <SecondaryButton
-              label="Редактировать профиль"
+              label={
+                capability.status === 'SUSPENDED'
+                  ? 'Открыть профиль'
+                  : 'Редактировать профиль'
+              }
               width="block"
               onPress={() => undefined}
             />
@@ -153,13 +167,13 @@ export function AuthorCabinetScreen() {
             </>
           ) : null}
         </View>
-        {!response?.works.length ? (
+        {!works.length ? (
           <PageState
             title="У вас пока нет работ."
             message="Создайте первую работу, чтобы отправить её на модерацию."
           />
         ) : (
-          response?.works.map((work) => (
+          works.map((work) => (
             <View
               key={work.id}
               style={{
@@ -203,19 +217,29 @@ export function AuthorCabinetScreen() {
               </View>
               <Link href={`/products/${work.id}`} asChild>
                 <PrimaryButton
-                  label={authorCabinetPrimaryAction(work.status)}
+                  label={authorCabinetPrimaryAction({
+                    status: work.status,
+                    editingRevisionStatus: work.editingRevisionStatus,
+                    isSuspended: capability.status === 'SUSPENDED',
+                  })}
                   width="block"
                   onPress={() => undefined}
                 />
               </Link>
-              {work.status === 'APPROVED' ? (
+              {authorCabinetVisibilityActions({
+                status: work.status,
+                isSuspended: capability.status === 'SUSPENDED',
+              }).canHide ? (
                 <SecondaryButton
                   label="Скрыть"
                   width="block"
                   onPress={() => setPendingHideId(work.id)}
                 />
               ) : null}
-              {work.status === 'ARCHIVED' ? (
+              {authorCabinetVisibilityActions({
+                status: work.status,
+                isSuspended: capability.status === 'SUSPENDED',
+              }).canRestore ? (
                 <SecondaryButton
                   label="Вернуть в профиль"
                   width="block"
@@ -229,11 +253,13 @@ export function AuthorCabinetScreen() {
             </View>
           ))
         )}
-        {canLoadMore ? (
+        {query.hasNextPage ? (
           <SecondaryButton
             label="Показать ещё"
             width="block"
-            onPress={() => setPage((current) => current + 1)}
+            loading={query.isFetchingNextPage}
+            disabled={query.isFetchingNextPage}
+            onPress={() => void query.fetchNextPage()}
           />
         ) : null}
         {visibility.isError ? (

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useForm, type FieldPath, type FieldPathValue } from 'react-hook-form';
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -57,6 +57,28 @@ import {
   type ProductWizardStepParam,
 } from './product-draft-wizard';
 
+function NativeProductDraftNavigationGuard({
+  isDirty,
+  persistCurrentForm,
+  navigateAfterPersist,
+}: {
+  isDirty: boolean;
+  persistCurrentForm: () => Promise<boolean>;
+  navigateAfterPersist: (navigate: () => void) => void;
+}) {
+  const navigation = useNavigation();
+
+  usePreventRemove(isDirty, ({ data }) => {
+    void persistCurrentForm().then((persisted) => {
+      if (persisted) {
+        navigateAfterPersist(() => navigation.dispatch(data.action));
+      }
+    });
+  });
+
+  return null;
+}
+
 export function ProductDraftScreen({
   productId,
   flow,
@@ -68,7 +90,6 @@ export function ProductDraftScreen({
 }) {
   const api = useApiClient();
   const router = useRouter();
-  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const form = useForm<ProductDraftFormValues>({
     defaultValues: emptyProductDraftFormValues,
@@ -261,14 +282,6 @@ export function ProductDraftScreen({
     setPendingNavigationVersion((version) => version + 1);
   };
 
-  usePreventRemove(form.formState.isDirty, ({ data }) => {
-    void persistCurrentForm().then((persisted) => {
-      if (persisted) {
-        navigateAfterPersist(() => navigation.dispatch(data.action));
-      }
-    });
-  });
-
   const moveToWizardStep = async (nextStep: number) => {
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
@@ -422,6 +435,13 @@ export function ProductDraftScreen({
 
   return (
     <FormPageShell hideDock>
+      {Platform.OS !== 'web' ? (
+        <NativeProductDraftNavigationGuard
+          isDirty={form.formState.isDirty}
+          persistCurrentForm={persistCurrentForm}
+          navigateAfterPersist={navigateAfterPersist}
+        />
+      ) : null}
       {isCreationFlow ? (
         <FormSection
           title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}

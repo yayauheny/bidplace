@@ -8,11 +8,12 @@
   profile, Work creation and owner Work editing.
 - `Implemented` (API/contracts): the paginated owner-scoped cabinet projection
   returns every owner Work state, parent visibility, editing-revision status,
-  relevant moderation reason and an owner-visible cover image without calling
-  the full Work detail once per card. Drafts, review states and archived Works
-  remain private; approved Works remain the sole public state. Authors can
-  hide an approved Work and restore an archived Work through the existing
-  guarded visibility endpoints.
+  current moderation reason and an owner-visible editing-revision title/gallery
+  without calling the full Work detail once per card. It orders and paginates by
+  the effective latest parent-or-editing-revision timestamp. Drafts, review
+  states and archived Works remain private; approved Works remain the sole
+  public state. Authors can hide an approved Work and restore an archived Work
+  through the existing guarded visibility endpoints.
 - `Deferred`: buyer cabinet, commerce and final cabinet-specific visual polish.
 
 ## 2026-09-23 — Auth session recovery and redirects

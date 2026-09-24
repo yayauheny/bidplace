@@ -15,6 +15,13 @@ describe('PortfolioService', () => {
       sellerProfile: {
         findUnique: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
       },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          effectiveUpdatedAt: new Date('2026-09-24T10:00:00.000Z'),
+          moderationMessage: null,
+        },
+      ]),
       product: {
         findMany: vi.fn().mockResolvedValue([
           {
@@ -22,24 +29,15 @@ describe('PortfolioService', () => {
             publicId: 'cabinetwork',
             title: 'Published work',
             status: 'APPROVED',
-            updatedAt: new Date('2026-09-24T10:00:00.000Z'),
             images: [],
             editingRevision: {
+              title: null,
               status: 'CHANGES_REQUESTED',
               images: [],
             },
           },
         ]),
         count: vi.fn().mockResolvedValue(21),
-      },
-      auditEvent: {
-        findMany: vi.fn().mockResolvedValue([
-          {
-            targetId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
-            newStatus: 'CHANGES_REQUESTED',
-            reason: 'Please clarify the dimensions.',
-          },
-        ]),
       },
     };
     const service = new PortfolioService(
@@ -55,18 +53,21 @@ describe('PortfolioService', () => {
         {
           id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
           publicId: 'cabinetwork',
-          title: 'Published work',
+          title: null,
           status: 'APPROVED',
           editingRevisionStatus: 'CHANGES_REQUESTED',
           updatedAt: '2026-09-24T10:00:00.000Z',
-          moderationMessage: 'Please clarify the dimensions.',
+          moderationMessage: null,
           coverImage: null,
         },
       ],
       pagination: { page: 2, limit: 20, total: 21 },
     });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     expect(prisma.product.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 20, take: 20 }),
+      expect.objectContaining({
+        where: { id: { in: ['2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1'] } },
+      }),
     );
     expect(products.listProducts).not.toHaveBeenCalled();
     expect(products.getProduct).not.toHaveBeenCalled();

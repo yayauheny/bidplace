@@ -283,6 +283,9 @@ export type PortfolioAuthorsQuery = z.output<
 export type PortfolioCabinetWorksQuery = z.output<
   typeof portfolioCabinetWorksQuerySchema
 >;
+export type PortfolioCabinetWorksResponse = z.output<
+  typeof portfolioCabinetWorksResponseSchema
+>;
 export type PortfolioDiscoveryFacetsResponse = z.output<
   typeof portfolioDiscoveryFacetsResponseSchema
 >;
