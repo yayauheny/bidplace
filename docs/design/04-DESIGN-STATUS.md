@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-24 — Author Cabinet
+
+- `Implemented` (mobile web behavior): approved and suspended Authors use the
+  owner-only `/cabinet` route for their Works. Cards distinguish the live public
+  Work from an in-progress editing revision, show moderation feedback when it
+  is current, and expose edit, hide and restore actions. Incremental loading
+  appends pages owned by React Query; suspended Authors have inspection-only
+  controls. Empty state, loading and retry use existing primitives and tokens.
+- `Unchanged`: public Author/Work visual compositions, dock geometry, native
+  and desktop acceptance, and the canonical Pen file.
+
 ## 2026-09-23 — Auth return path
 
 - `Implemented` (mobile web behavior): a guest redirected from a protected
@@ -29,7 +40,8 @@
 - `Implemented` (mobile web behavior): Work creation uses three content panels
   plus review: details, main gallery, optional plain-text story, review. The
   editor restores persisted values by id, protects dirty input from background
-  refetch, saves before step/in-app route exit, warns on browser unload, and
+  refetch, saves before step/in-app route exit and browser Back, warns on
+  browser unload, and
   persists the exact current form before moderation submit. Save failure keeps
   the author in the editor.
 - `Implemented` (scope cleanup): the editor no longer shows packaging,
@@ -38,7 +50,7 @@
   visual system or local one-off styling was added.
 - Coverage: `product-draft-form.spec.ts`, `product-draft-wizard.spec.ts`, and
   `e2e/product-creation-wizard.spec.ts` cover dirty refetch, step navigation,
-  save-before-submit and close/reopen. Product status owner:
+  browser Back, save-before-submit and close/reopen. Product status owner:
   [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
 - `Unchanged`: public Figma surfaces, dock, cabinet, native/desktop acceptance,
   design tokens, and canonical Pen file.

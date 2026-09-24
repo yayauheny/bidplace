@@ -178,13 +178,20 @@ export const portfolioCabinetWorkSchema = z
     publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
     title: z.string().trim().min(1).nullable(),
     status: productStatusSchema,
+    editingRevisionStatus: productStatusSchema.nullable(),
     updatedAt: z.string().datetime(),
     moderationMessage: z.string().nullable(),
+    coverImage: productImageSchema.nullable(),
   })
   .strict();
 
+export const portfolioCabinetWorksQuerySchema = paginationQuerySchema.strict();
+
 export const portfolioCabinetWorksResponseSchema = z
-  .object({ works: z.array(portfolioCabinetWorkSchema) })
+  .object({
+    works: z.array(portfolioCabinetWorkSchema),
+    pagination: paginationMetaSchema,
+  })
   .strict();
 
 export const portfolioAuthorApplicationSchema = z
@@ -272,6 +279,12 @@ export type PortfolioAchievementWriteRequest = z.infer<
 export type PortfolioWorksQuery = z.output<typeof portfolioWorksQuerySchema>;
 export type PortfolioAuthorsQuery = z.output<
   typeof portfolioAuthorsQuerySchema
+>;
+export type PortfolioCabinetWorksQuery = z.output<
+  typeof portfolioCabinetWorksQuerySchema
+>;
+export type PortfolioCabinetWorksResponse = z.output<
+  typeof portfolioCabinetWorksResponseSchema
 >;
 export type PortfolioDiscoveryFacetsResponse = z.output<
   typeof portfolioDiscoveryFacetsResponseSchema

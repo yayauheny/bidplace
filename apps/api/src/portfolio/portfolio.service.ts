@@ -9,10 +9,12 @@ import {
   portfolioWorksResponseSchema,
   type PortfolioAuthorsQuery,
   type PortfolioWorksQuery,
+  type PortfolioCabinetWorksQuery,
   type PortfolioAchievementWriteRequest,
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -274,22 +276,140 @@ export class PortfolioService {
     return this.sellers.getAchievementImage(id, userId, role);
   }
 
-  async listCabinetWorks(userId: string) {
-    const response = await this.sellers.listProducts(userId);
-    const works = await Promise.all(
-      response.products.map(async (product) => {
-        const detail = await this.sellers.getProduct(userId, product.id);
-        return {
-          id: product.id,
-          publicId: product.publicId,
-          title: product.title,
-          status: product.status,
-          updatedAt: product.updatedAt,
-          moderationMessage: detail.lastModerationReason,
-        };
-      }),
+  async listCabinetWorks(userId: string, query: PortfolioCabinetWorksQuery) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { status: true },
+    });
+    if (seller?.status !== 'APPROVED' && seller?.status !== 'SUSPENDED') {
+      throw new ForbiddenException('Author cabinet is unavailable');
+    }
+    const where = { sellerProfile: { userId } };
+    const offset = (query.page - 1) * query.limit;
+    const [pageRows, total] = await Promise.all([
+      this.prisma.$queryRaw<
+        Array<{
+          id: string;
+          effectiveUpdatedAt: Date;
+          moderationMessage: string | null;
+        }>
+      >`
+        SELECT
+          product.id,
+          GREATEST(product.updated_at, COALESCE(revision.updated_at, product.updated_at)) AS "effectiveUpdatedAt",
+          moderation.reason AS "moderationMessage"
+        FROM products AS product
+        INNER JOIN seller_profiles AS seller
+          ON seller.id = product.seller_profile_id
+        LEFT JOIN product_revisions AS revision
+          ON revision.id = product.editing_revision_id
+        LEFT JOIN LATERAL (
+          SELECT audit.reason
+          FROM audit_events AS audit
+          WHERE audit.target_type::text = 'PRODUCT'
+            AND audit.target_id = product.id
+            AND audit.new_status IN ('CHANGES_REQUESTED', 'REJECTED')
+            AND (
+              audit.new_status = product.status::text
+              OR audit.new_status = revision.status::text
+            )
+          ORDER BY audit.created_at DESC, audit.id DESC
+          LIMIT 1
+        ) AS moderation ON TRUE
+        WHERE seller.user_id = ${userId}::uuid
+        ORDER BY
+          GREATEST(product.updated_at, COALESCE(revision.updated_at, product.updated_at)) DESC,
+          product.id DESC
+        OFFSET ${offset}
+        LIMIT ${query.limit}
+      `,
+      this.prisma.product.count({ where }),
+    ]);
+    const productIds = pageRows.map((row) => row.id);
+    const products = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            publicId: true,
+            title: true,
+            status: true,
+            images: {
+              orderBy: { position: 'asc' },
+              take: 1,
+              select: {
+                id: true,
+                position: true,
+                mimeType: true,
+                byteLength: true,
+                checksum: true,
+                width: true,
+                height: true,
+              },
+            },
+            editingRevision: {
+              select: {
+                title: true,
+                status: true,
+                images: {
+                  orderBy: { position: 'asc' },
+                  take: 1,
+                  select: {
+                    position: true,
+                    image: {
+                      select: {
+                        id: true,
+                        mimeType: true,
+                        byteLength: true,
+                        checksum: true,
+                        width: true,
+                        height: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        })
+      : [];
+    const productsById = new Map(
+      products.map((product) => [product.id, product]),
     );
-    return portfolioCabinetWorksResponseSchema.parse({ works });
+
+    return portfolioCabinetWorksResponseSchema.parse({
+      works: pageRows.flatMap((row) => {
+        const product = productsById.get(row.id);
+        if (!product) return [];
+        const revision = product.editingRevision;
+        const revisionImage = revision?.images[0];
+        const image = revision
+          ? revisionImage
+            ? { ...revisionImage.image, position: revisionImage.position }
+            : null
+          : (product.images[0] ?? null);
+        return [
+          {
+            id: product.id,
+            publicId: product.publicId,
+            title: revision ? revision.title : product.title,
+            status: product.status,
+            editingRevisionStatus: revision?.status ?? null,
+            updatedAt: row.effectiveUpdatedAt.toISOString(),
+            moderationMessage: row.moderationMessage,
+            coverImage: image
+              ? {
+                  ...image,
+                  url: `/api/images/${image.id}`,
+                  width: image.width ?? null,
+                  height: image.height ?? null,
+                }
+              : null,
+          },
+        ];
+      }),
+      pagination: { page: query.page, limit: query.limit, total },
+    });
   }
 }
 

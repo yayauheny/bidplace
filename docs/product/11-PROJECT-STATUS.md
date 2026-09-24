@@ -1,5 +1,21 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-24 — Author Cabinet
+
+- `Implemented` (mobile web): `/cabinet` is the management home for approved
+  and suspended Authors. It uses the existing owner profile query for access,
+  redirects applicants to `/profile`, and links to profile editing, public
+  profile, Work creation and owner Work editing.
+- `Implemented` (API/contracts): the paginated owner-scoped cabinet projection
+  returns every owner Work state, parent visibility, editing-revision status,
+  current moderation reason and an owner-visible editing-revision title/gallery
+  without calling the full Work detail once per card. It orders and paginates by
+  the effective latest parent-or-editing-revision timestamp. Drafts, review
+  states and archived Works remain private; approved Works remain the sole
+  public state. Authors can hide an approved Work and restore an archived Work
+  through the existing guarded visibility endpoints.
+- `Deferred`: buyer cabinet, commerce and final cabinet-specific visual polish.
+
 ## 2026-09-23 — Auth session recovery and redirects
 
 - `Implemented` (mobile web): `AuthProvider` derives the current user from one
@@ -36,8 +52,9 @@
 
 - `Implemented` (mobile web): the Work editor has one React Hook Form model
   hydrated from the owner React Query detail. Ordinary refetch does not reset
-  dirty input. Step changes, explicit close, in-app navigation and submit persist
-  current form values; browser unload warns while values are dirty. Submit is an
+  dirty input. Step changes, explicit close, in-app navigation, browser Back
+  and submit persist current form values; browser unload warns while values are
+  dirty. Submit is an
   ordered update → submit operation and does not continue after a failed save.
   Reopening `/products/:id` restores the saved draft. The creation flow is
   URL-owned and consists of Work details, gallery, one optional plain-text story,

@@ -24,6 +24,33 @@ const authorApplication = {
 };
 
 describe('portfolio client', () => {
+  it('requests the paginated owner cabinet contract', async () => {
+    const calls: RequestInfo[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      fetchImpl: async (input) => {
+        calls.push(input);
+        return new Response(
+          JSON.stringify({
+            works: [],
+            pagination: { page: 2, limit: 20, total: 21 },
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      },
+    });
+
+    await expect(
+      client.portfolio.listCabinetWorks({ page: 2 }),
+    ).resolves.toEqual({
+      works: [],
+      pagination: { page: 2, limit: 20, total: 21 },
+    });
+    expect(String(calls[0])).toContain(
+      '/api/author/cabinet/works?page=2&limit=20',
+    );
+  });
+
   it('parses submitted author applications with the revision hydration token', async () => {
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
