@@ -1,0 +1,60 @@
+name: Portfolio Release Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  browser-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: auction
+          POSTGRES_PASSWORD: auction
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U auction -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      APP_ENV: local
+      E2E_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
+      DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
+      JWT_SECRET: ci-release-gate-jwt-secret
+      TEST_EMAIL_BYPASS: 'false'
+      CORS_ORIGIN: http://localhost:8081
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.7.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Root verification
+        run: pnpm verify
+      - name: Verify disposable E2E database fence
+        run: pnpm --filter @bidplace/mobile test:e2e-fence
+      - name: Install browser
+        run: pnpm --filter @bidplace/mobile exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Run maintained browser suite
+        run: pnpm --filter @bidplace/mobile exec playwright test --project=${{ matrix.browser }}
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.browser }}-release-gate-evidence
+          path: |
+            apps/mobile/playwright-report
+            apps/mobile/test-results
+          if-no-files-found: ignore

@@ -197,6 +197,19 @@ describe('NODE_ENV × APP_ENV matrix', () => {
     ).toThrow('MEDIA_STORAGE_PROVIDER=s3 is required in production');
   });
 
+  it('fails closed when production S3 configuration is incomplete', () => {
+    stubMissingEnvFile();
+
+    expect(() =>
+      loadServerEnv({
+        ...productionSecurityEnv,
+        NODE_ENV: 'production',
+        APP_ENV: 'production',
+        S3_SECRET_ACCESS_KEY: '',
+      }),
+    ).toThrow('S3_SECRET_ACCESS_KEY is required when MEDIA_STORAGE_PROVIDER=s3');
+  });
+
   it('rejects production builds without required SMTP config', () => {
     stubMissingEnvFile();
 

@@ -2,8 +2,8 @@
 
 **Mode:** read only  
 **Branch:** `feature/portfolio-mvp-release`  
-**Commit:** `69307f8d5017fd2fddda6edf1e1dc49b678f5c57`  
-**Date:** 2026-09-21
+**Commit:** `eef669b7c343c52a14b8abfb3db42dbaeda4f6af`
+**Date:** 2026-09-24
 
 ## Scope and method
 
@@ -20,13 +20,16 @@ A second checkout at `/Users/yayauheny/projects/bidplace-portfolio-mvp-release` 
 
 ## Baseline verdict
 
-**NEEDS_REVIEW before MVP release.** The public portfolio read path and revision locking are materially stronger than the historical snapshot. The author completion loop is still incomplete in mobile, auth recovery remains split from React Query, the author/work wizards retain loss-prone local state, and the root release gate omits mobile tests and Playwright.
+**NEEDS_EXTERNAL_EVIDENCE before MVP release.** The author cabinet, author draft
+resume, Work revision persistence and React Query session ownership are now on the
+current branch. Root verification includes mobile unit tests and the disposable E2E
+fence; maintained Chromium and manual Chromium/WebKit gates are defined separately.
 
 The largest documentation risk is that `05-MVP-RFC.md` says the commerce runtime is preserved fail-closed while `AppModule` exposes no commerce modules or routes. Historical sections of `11-PROJECT-STATUS.md` still describe removed paths as implemented. Current runtime and current product status need one explicit reconciliation.
 
 ## Evidence limits
 
-- No claim of green typecheck, lint, unit, integration, build or Playwright.
-- No production/staging provider, CORS, backup, restore, SMTP or S3 evidence was inspected.
+- Source inspection does not substitute for a green CI run or browser matrix.
+- No production/staging provider, backup, restore, SMTP or S3 preflight has been executed.
 - Dead-code labels require no current production importer; test-only consumers are called out separately.
 - Visual findings are architecture/semantics findings from code and current design documents, not pixel-parity claims.

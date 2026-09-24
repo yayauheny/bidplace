@@ -1,5 +1,32 @@
 # bidplace — текущий статус проекта
 
+> The dated entries below are historical implementation records. The 2026-09-24
+> snapshot is authoritative for the executable portfolio runtime; retained
+> commerce-schema references below do not mean that Listing, Bid, Order,
+> lifecycle, realtime, discovery or activity modules are currently booted.
+
+## 2026-09-24 — Portfolio release gate and runtime boundary
+
+- `Implemented`: root `pnpm verify` now includes API, contracts, API-client and
+  mobile unit suites plus the disposable-E2E database fence. The maintained full
+  browser suite is intentionally separate: Chromium runs on pull requests to and
+  pushes of `feature/portfolio-mvp-release`; the manual Portfolio Release Gate
+  runs both Chromium and WebKit after the same frozen install and root verify.
+- `Implemented`: production Compose fixes `MEDIA_STORAGE_PROVIDER=s3`, forwards
+  all five required S3 settings and keeps SMTP credentials optional for
+  `SMTP_AUTH_MODE=none`. `pnpm ops:media-preflight` only creates, checksums and
+  deletes one uniquely named object beneath its configured isolated prefix.
+  `pnpm ops:staging-smoke` performs read-only API readiness/public-list and SPA
+  deep-link checks from explicit staging URLs.
+- `Implemented`: executable portfolio runtime is Health, Auth, Analytics,
+  Products, OTP, Password Reset, Admin, Images, Sellers and Portfolio (with
+  core infrastructure and Categories). Listing, Bid, Order, lifecycle, realtime,
+  discovery and activity modules are not imported by `AppModule`; their Prisma
+  schema is retained as historical data, never restored as a runtime claim.
+- `Deferred`: successful external S3 preflight, staging smoke, backup restore
+  drill and the manual WebKit gate require provisioned deployment credentials and
+  environment URLs; they are release operations, not source-only evidence.
+
 ## 2026-09-24 — Author Cabinet
 
 - `Implemented` (mobile web): `/cabinet` is the management home for approved

@@ -1,5 +1,12 @@
 # Frontend and design delta
 
+## 2026-09-24 status note
+
+The historical findings below are an index, not a current release verdict.
+The current branch includes the author cabinet, server-resumable onboarding,
+RHF Work editing and React Query session recovery. Revalidate any remaining
+finding against those paths before scheduling UI cleanup.
+
 ### FE-01 / Two active component generations remain
 
 **CONFIRMED · P2**

@@ -1,5 +1,13 @@
 # Backend architecture delta
 
+## 2026-09-24 status note
+
+The current release baseline includes the locked canonical Work revision write
+path and server-owned author-application stages. Production configuration fails
+closed for S3, and Compose forwards the complete S3 configuration. This document
+retains unresolved architecture candidates only; revalidate older sections before
+using them as implementation prompts.
+
 ### BE-01 / Product revision writes gained row locking but still miss the state guard
 
 **PARTIAL · P1**

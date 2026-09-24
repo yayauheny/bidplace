@@ -24,6 +24,17 @@
 | LOGIC:BL-10 — admin reads in controller                     | **CONFIRMED**                       | `apps/api/src/admin/admin.controller.ts` contains Prisma selects, filtering and projection logic.                                                                          |
 | CROSS:T7 — stale architecture/status references             | **CONFIRMED, broader**              | current owner docs describe commerce modules and tests absent from the current source tree and `AppModule`.                                                                |
 
+## 2026-09-24 release delta
+
+| Historical finding | Current status | Current evidence |
+| --- | --- | --- |
+| CROSS:T1 — mobile checks absent from release gate | **RESOLVED in source** | root `package.json :: verify` includes mobile `test` and `test:e2e-fence`; browser suites are explicit workflows. |
+| M-LOGIC-01 — no mobile cabinet | **RESOLVED** | `apps/mobile/src/app/(seller)/cabinet.tsx` and `features/sellers/author-cabinet-screen.tsx`. |
+| M-LOGIC-02/06/13 — editor persistence | **RESOLVED for current path** | `ProductDraftScreen` uses RHF and owner revision hydration; API integration tests cover save → submit → publish. |
+| M-LOGIC-03/04 — session ownership/redirect | **RESOLVED** | `AuthProvider` observes `authKeys.session`; structured 401 clears other scoped data while preserving the query entry. |
+| M-LOGIC-05 — volatile author application | **RESOLVED** | application stage is server-owned and `/profile` resolves URL steps from draft progress. |
+| CROSS:T7 — runtime/docs mismatch | **RESOLVED in current architecture/status** | `AppModule` product-module boundary and retained Prisma commerce data are stated explicitly. |
+
 ## Current high-value findings
 
 ### CUR-01 / Rules acceptance contract is executable but incompatible

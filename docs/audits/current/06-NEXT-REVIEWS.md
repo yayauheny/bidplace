@@ -2,7 +2,7 @@
 
 Run these as independent read-only reviews first. Each scope is small enough for a separate task and produces a fix-ready decision pack.
 
-## 1. Author MVP completion loop — P0
+## 1. Author MVP completion loop — RESOLVED; follow-up review only
 
 **Scope:** mobile cabinet route/navigation, cabinet contract/projection, hide/unhide, moderation reason, create/edit return paths.
 
@@ -15,7 +15,7 @@ Files:
 
 Acceptance: route/state matrix from application approval through create, close, reopen, submit, changes requested, publish, hide and unhide; no implementation.
 
-## 2. Work editor persistence and product-scope alignment — P0
+## 2. Work editor persistence and product-scope alignment — PARTIAL follow-up
 
 **Scope:** dirty hydration, save-before-submit, close-save, four-step creation story, packaging/delivery, validation ownership.
 
@@ -27,7 +27,7 @@ Files:
 
 Acceptance: one canonical state owner, exact fields kept/removed from UI/API, migration-data boundary, test matrix.
 
-## 3. Auth, OTP and legal contract — P0/P1
+## 3. Auth, OTP and legal contract — P1
 
 **Scope:** `/me` cache ownership, global 401 handling, safe deep-link return, OTP gate for author writes, rules acceptance response.
 
@@ -39,13 +39,13 @@ Files:
 
 Acceptance: explicit server invariants and redirect/error matrix; distinguish founder/legal decisions from code defects.
 
-## 4. Application draft persistence — P1
+## 4. Application draft persistence — RESOLVED; regression review only
 
 **Scope:** local step loss, server DRAFT semantics, URL step, photo handling, create versus submit endpoints.
 
 Acceptance: reload/Back/close behavior and minimum API change; preserve revision concurrency fixes.
 
-## 5. Release gate and isolated E2E — P1
+## 5. Release gate and isolated E2E — external evidence required
 
 **Scope:** root `verify`, CI workflow, mobile Vitest, e2e fence, Playwright subsets, disposable DB cleanup.
 

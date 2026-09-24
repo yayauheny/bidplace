@@ -1,0 +1,61 @@
+name: Browser E2E
+
+on:
+  pull_request:
+    branches: [feature/portfolio-mvp-release]
+  push:
+    branches: [feature/portfolio-mvp-release, main, master]
+
+concurrency:
+  group: browser-e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: auction
+          POSTGRES_PASSWORD: auction
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U auction -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      APP_ENV: local
+      E2E_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
+      DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
+      JWT_SECRET: ci-browser-e2e-jwt-secret
+      TEST_EMAIL_BYPASS: 'false'
+      CORS_ORIGIN: http://localhost:8081
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.7.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify disposable E2E database fence
+        run: pnpm --filter @bidplace/mobile test:e2e-fence
+      - name: Install Chromium
+        run: pnpm --filter @bidplace/mobile exec playwright install --with-deps chromium
+      - name: Run maintained Chromium suite
+        run: pnpm --filter @bidplace/mobile exec playwright test --project=chromium
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-e2e-evidence
+          path: |
+            apps/mobile/playwright-report
+            apps/mobile/test-results
+          if-no-files-found: ignore
