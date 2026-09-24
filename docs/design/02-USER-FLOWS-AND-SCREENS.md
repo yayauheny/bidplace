@@ -122,6 +122,12 @@ is URL-owned; Author About is local state and is not a `?tab=` contract.
 видит только автор в кабинете. Sold/unsold taxonomy вернётся вместе с commerce и не
 восстанавливает один общий public `Архив`.
 
+`/cabinet` — owner-management home одобренного или ограниченного автора: profile
+summary, переход в редактор профиля, все собственные Works и их текущие moderation
+states. Карточка хранит раздельно public Product state и editing-revision state;
+скрытие и восстановление меняют только public visibility. Buyer cabinet не входит в
+portfolio MVP.
+
 `Об авторе` поддерживает about, practice и optional achievements timeline. Пустые
 секции скрываются. Bottom navigation учитывает safe area и не закрывает текст/cards.
 

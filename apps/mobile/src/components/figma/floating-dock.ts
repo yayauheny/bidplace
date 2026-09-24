@@ -61,10 +61,7 @@ export function dockItemAccessibility(
   };
 }
 
-export function isFigmaDockItemSelected(
-  id: FigmaDockItemId,
-  pathname: string,
-) {
+export function isFigmaDockItemSelected(id: FigmaDockItemId, pathname: string) {
   switch (id) {
     case 'home':
       return pathname === '/' || pathname === '';
@@ -78,6 +75,8 @@ export function isFigmaDockItemSelected(
       return (
         pathname === '/profile' ||
         pathname.startsWith('/profile/') ||
+        pathname === '/cabinet' ||
+        pathname.startsWith('/cabinet/') ||
         pathname === '/login' ||
         pathname.startsWith('/login') ||
         pathname === '/admin' ||

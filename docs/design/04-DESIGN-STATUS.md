@@ -4,6 +4,16 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-24 — Author Cabinet
+
+- `Implemented` (mobile web behavior): approved and suspended Authors use the
+  owner-only `/cabinet` route for their Works. Cards distinguish the live public
+  Work from an in-progress editing revision, show moderation feedback when it
+  is current, and expose edit, hide and restore actions. Empty state, loading,
+  retry and incremental page loading use existing primitives and tokens.
+- `Unchanged`: public Author/Work visual compositions, dock geometry, native
+  and desktop acceptance, and the canonical Pen file.
+
 ## 2026-09-23 — Auth return path
 
 - `Implemented` (mobile web behavior): a guest redirected from a protected

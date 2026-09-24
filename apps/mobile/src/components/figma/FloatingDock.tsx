@@ -6,7 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { figmaTokens } from '@bidplace/design-tokens';
 
-import { useSellerCapability } from '../../hooks/use-seller-capability';
+import {
+  authorProfileDestination,
+  useSellerCapability,
+} from '../../hooks/use-seller-capability';
 import { useAuth } from '../../providers/auth-provider';
 import { useSearchOverlay } from '../../features/search/search-overlay-provider';
 import { getMobileCreateHref } from '../layout/header-chrome';
@@ -97,7 +100,7 @@ function dockHref(
     case 'profile':
       if (context.isAdmin) return '/admin';
       if (context.isAuthenticated) {
-        return context.sellerStatus === null ? '/profile?intro=1' : '/profile';
+        return authorProfileDestination(context.sellerStatus) as Href;
       }
       return '/login';
     case 'plus':

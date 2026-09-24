@@ -9,6 +9,19 @@ type SellerProfile = Awaited<
   ReturnType<ApiClient['sellers']['getMyProfile']>
 >['sellerProfile'];
 
+export function isAuthorCabinetAvailable(
+  status: SellerProfile['status'] | null,
+) {
+  return status === 'APPROVED' || status === 'SUSPENDED';
+}
+
+export function authorProfileDestination(
+  status: SellerProfile['status'] | null,
+): '/cabinet' | '/profile' | '/profile?intro=1' {
+  if (status === null) return '/profile?intro=1';
+  return isAuthorCabinetAvailable(status) ? '/cabinet' : '/profile';
+}
+
 export function useSellerCapability() {
   const api = useApiClient();
   const auth = useAuth();

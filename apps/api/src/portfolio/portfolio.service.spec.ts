@@ -1,9 +1,94 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PortfolioService } from './portfolio.service';
 
 describe('PortfolioService', () => {
+  it('projects one paginated cabinet query without per-work detail reads', async () => {
+    const products = { listProducts: vi.fn(), getProduct: vi.fn() };
+    const sellers = { getProduct: vi.fn() };
+    const prisma = {
+      sellerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ status: 'APPROVED' }),
+      },
+      product: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            publicId: 'cabinetwork',
+            title: 'Published work',
+            status: 'APPROVED',
+            updatedAt: new Date('2026-09-24T10:00:00.000Z'),
+            images: [],
+            editingRevision: {
+              status: 'CHANGES_REQUESTED',
+              images: [],
+            },
+          },
+        ]),
+        count: vi.fn().mockResolvedValue(21),
+      },
+      auditEvent: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            targetId: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+            newStatus: 'CHANGES_REQUESTED',
+            reason: 'Please clarify the dimensions.',
+          },
+        ]),
+      },
+    };
+    const service = new PortfolioService(
+      products as never,
+      sellers as never,
+      prisma as never,
+    );
+
+    await expect(
+      service.listCabinetWorks('owner-id', { page: 2, limit: 20 }),
+    ).resolves.toEqual({
+      works: [
+        {
+          id: '2c03a90b-4e8e-4a3c-8f5f-7cf4f7f3d7d1',
+          publicId: 'cabinetwork',
+          title: 'Published work',
+          status: 'APPROVED',
+          editingRevisionStatus: 'CHANGES_REQUESTED',
+          updatedAt: '2026-09-24T10:00:00.000Z',
+          moderationMessage: 'Please clarify the dimensions.',
+          coverImage: null,
+        },
+      ],
+      pagination: { page: 2, limit: 20, total: 21 },
+    });
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 20, take: 20 }),
+    );
+    expect(products.listProducts).not.toHaveBeenCalled();
+    expect(products.getProduct).not.toHaveBeenCalled();
+    expect(sellers.getProduct).not.toHaveBeenCalled();
+  });
+
+  it('does not expose the cabinet to an author outside the cabinet status matrix', async () => {
+    const service = new PortfolioService(
+      {} as never,
+      {} as never,
+      {
+        sellerProfile: {
+          findUnique: vi.fn().mockResolvedValue({ status: 'PENDING_REVIEW' }),
+        },
+      } as never,
+    );
+
+    await expect(
+      service.listCabinetWorks('owner-id', { page: 1, limit: 20 }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
   it('lists portfolio works from the published-revision projection', async () => {
     const products = {
       listPortfolio: vi.fn().mockResolvedValue({

@@ -9,10 +9,12 @@ import {
   portfolioWorksResponseSchema,
   type PortfolioAuthorsQuery,
   type PortfolioWorksQuery,
+  type PortfolioCabinetWorksQuery,
   type PortfolioAchievementWriteRequest,
 } from '@bidplace/contracts';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -274,22 +276,117 @@ export class PortfolioService {
     return this.sellers.getAchievementImage(id, userId, role);
   }
 
-  async listCabinetWorks(userId: string) {
-    const response = await this.sellers.listProducts(userId);
-    const works = await Promise.all(
-      response.products.map(async (product) => {
-        const detail = await this.sellers.getProduct(userId, product.id);
+  async listCabinetWorks(userId: string, query: PortfolioCabinetWorksQuery) {
+    const seller = await this.prisma.sellerProfile.findUnique({
+      where: { userId },
+      select: { status: true },
+    });
+    if (seller?.status !== 'APPROVED' && seller?.status !== 'SUSPENDED') {
+      throw new ForbiddenException('Author cabinet is unavailable');
+    }
+    const where = { sellerProfile: { userId } };
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+        select: {
+          id: true,
+          publicId: true,
+          title: true,
+          status: true,
+          updatedAt: true,
+          images: {
+            orderBy: { position: 'asc' },
+            take: 1,
+            select: {
+              id: true,
+              position: true,
+              mimeType: true,
+              byteLength: true,
+              checksum: true,
+              width: true,
+              height: true,
+            },
+          },
+          editingRevision: {
+            select: {
+              status: true,
+              images: {
+                orderBy: { position: 'asc' },
+                take: 1,
+                select: {
+                  position: true,
+                  image: {
+                    select: {
+                      id: true,
+                      mimeType: true,
+                      byteLength: true,
+                      checksum: true,
+                      width: true,
+                      height: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    const reasons = products.length
+      ? await this.prisma.auditEvent.findMany({
+          where: {
+            targetType: 'PRODUCT',
+            targetId: { in: products.map((product) => product.id) },
+            reason: { not: null },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { targetId: true, newStatus: true, reason: true },
+        })
+      : [];
+
+    return portfolioCabinetWorksResponseSchema.parse({
+      works: products.map((product) => {
+        const revision = product.editingRevision;
+        const relevantStatuses = [product.status, revision?.status].filter(
+          (status): status is 'CHANGES_REQUESTED' | 'REJECTED' =>
+            status === 'CHANGES_REQUESTED' || status === 'REJECTED',
+        );
+        const moderationMessage = reasons.find(
+          (reason) =>
+            reason.targetId === product.id &&
+            reason.reason !== null &&
+            relevantStatuses.includes(
+              reason.newStatus as 'CHANGES_REQUESTED' | 'REJECTED',
+            ),
+        )?.reason;
+        const revisionImage = revision?.images[0];
+        const image = revisionImage
+          ? { ...revisionImage.image, position: revisionImage.position }
+          : product.images[0];
         return {
           id: product.id,
           publicId: product.publicId,
           title: product.title,
           status: product.status,
-          updatedAt: product.updatedAt,
-          moderationMessage: detail.lastModerationReason,
+          editingRevisionStatus: revision?.status ?? null,
+          updatedAt: product.updatedAt.toISOString(),
+          moderationMessage: moderationMessage ?? null,
+          coverImage: image
+            ? {
+                ...image,
+                url: `/api/images/${image.id}`,
+                width: image.width ?? null,
+                height: image.height ?? null,
+              }
+            : null,
         };
       }),
-    );
-    return portfolioCabinetWorksResponseSchema.parse({ works });
+      pagination: { page: query.page, limit: query.limit, total },
+    });
   }
 }
 

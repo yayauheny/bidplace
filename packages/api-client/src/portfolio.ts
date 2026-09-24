@@ -3,6 +3,7 @@ import {
   portfolioAuthorsQuerySchema,
   portfolioAuthorsResponseSchema,
   portfolioAuthorApplicationResponseSchema,
+  portfolioCabinetWorksQuerySchema,
   portfolioCabinetWorksResponseSchema,
   portfolioDiscoveryFacetsResponseSchema,
   portfolioHomeResponseSchema,
@@ -15,6 +16,7 @@ import {
   productResponseSchema,
   type PortfolioAchievementWriteRequest,
   type PortfolioAuthorsQuery,
+  type PortfolioCabinetWorksQuery,
   type PortfolioWorksQuery,
 } from '@bidplace/contracts';
 
@@ -118,11 +120,12 @@ export function createPortfolioClient(context: RequestContext) {
         { method: 'DELETE' },
       );
     },
-    listCabinetWorks() {
+    listCabinetWorks(query?: Partial<PortfolioCabinetWorksQuery>) {
       return requestJson(
         context,
         '/api/author/cabinet/works',
         portfolioCabinetWorksResponseSchema,
+        { query: portfolioCabinetWorksQuerySchema.parse(query ?? {}) },
       );
     },
     hideWork(id: string) {

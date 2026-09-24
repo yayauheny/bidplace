@@ -1,5 +1,20 @@
 # bidplace — текущий статус проекта
 
+## 2026-09-24 — Author Cabinet
+
+- `Implemented` (mobile web): `/cabinet` is the management home for approved
+  and suspended Authors. It uses the existing owner profile query for access,
+  redirects applicants to `/profile`, and links to profile editing, public
+  profile, Work creation and owner Work editing.
+- `Implemented` (API/contracts): the paginated owner-scoped cabinet projection
+  returns every owner Work state, parent visibility, editing-revision status,
+  relevant moderation reason and an owner-visible cover image without calling
+  the full Work detail once per card. Drafts, review states and archived Works
+  remain private; approved Works remain the sole public state. Authors can
+  hide an approved Work and restore an archived Work through the existing
+  guarded visibility endpoints.
+- `Deferred`: buyer cabinet, commerce and final cabinet-specific visual polish.
+
 ## 2026-09-23 — Auth session recovery and redirects
 
 - `Implemented` (mobile web): `AuthProvider` derives the current user from one

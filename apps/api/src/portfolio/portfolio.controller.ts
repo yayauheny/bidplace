@@ -16,6 +16,7 @@ import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   portfolioAuthorsQuerySchema,
+  portfolioCabinetWorksQuerySchema,
   portfolioAchievementWriteRequestSchema,
   portfolioWorksQuerySchema,
 } from '@bidplace/contracts';
@@ -187,7 +188,10 @@ export class PortfolioController {
 
   @Get('author/cabinet/works')
   @UseGuards(BearerAuthGuard)
-  cabinetWorks(@CurrentUser() auth: { sub: string }) {
-    return this.portfolio.listCabinetWorks(auth.sub);
+  cabinetWorks(@CurrentUser() auth: { sub: string }, @Query() query: unknown) {
+    return this.portfolio.listCabinetWorks(
+      auth.sub,
+      parseBody(portfolioCabinetWorksQuerySchema, query),
+    );
   }
 }
