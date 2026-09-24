@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { useForm, type FieldPath, type FieldPathValue } from 'react-hook-form';
-import { useRouter } from 'expo-router';
-import { Platform, View } from 'react-native';
+import { useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/build/react-navigation/core';
+import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
@@ -57,27 +57,7 @@ import {
   type ProductWizardStepParam,
 } from './product-draft-wizard';
 
-function NativeProductDraftNavigationGuard({
-  isDirty,
-  persistCurrentForm,
-  navigateAfterPersist,
-}: {
-  isDirty: boolean;
-  persistCurrentForm: () => Promise<boolean>;
-  navigateAfterPersist: (navigate: () => void) => void;
-}) {
-  const navigation = useNavigation();
-
-  usePreventRemove(isDirty, ({ data }) => {
-    void persistCurrentForm().then((persisted) => {
-      if (persisted) {
-        navigateAfterPersist(() => navigation.dispatch(data.action));
-      }
-    });
-  });
-
-  return null;
-}
+const productDraftHistoryGuardKey = '__bidplaceProductDraftGuard';
 
 export function ProductDraftScreen({
   productId,
@@ -90,6 +70,7 @@ export function ProductDraftScreen({
 }) {
   const api = useApiClient();
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const form = useForm<ProductDraftFormValues>({
     defaultValues: emptyProductDraftFormValues,
@@ -100,6 +81,12 @@ export function ProductDraftScreen({
   const hydratedProductId = useRef<string | null>(null);
   const hydratedUpdatedAt = useRef<string | null>(null);
   const pendingNavigation = useRef<(() => void) | null>(null);
+  const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
+  const browserNavigation = useRef<{
+    id: string;
+    restoring: boolean;
+    allow: boolean;
+  } | null>(null);
   const [pendingNavigationVersion, setPendingNavigationVersion] = useState(0);
   const [imagePendingDelete, setImagePendingDelete] = useState<string | null>(
     null,
@@ -266,7 +253,7 @@ export function ProductDraftScreen({
     });
   };
 
-  const persistCurrentForm = async () => {
+  const persistCurrentForm = useCallback(async () => {
     const valid = await form.trigger();
     if (!valid) return false;
     try {
@@ -275,12 +262,74 @@ export function ProductDraftScreen({
     } catch {
       return false;
     }
-  };
+  }, [form, save]);
+  persistCurrentFormRef.current = persistCurrentForm;
 
-  const navigateAfterPersist = (navigate: () => void) => {
+  const navigateAfterPersist = useCallback((navigate: () => void) => {
     pendingNavigation.current = navigate;
     setPendingNavigationVersion((version) => version + 1);
-  };
+  }, []);
+
+  usePreventRemove(form.formState.isDirty, ({ data }) => {
+    void persistCurrentForm().then((persisted) => {
+      if (persisted) {
+        navigateAfterPersist(() => navigation.dispatch(data.action));
+      }
+    });
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !form.formState.isDirty) return;
+
+    const guard = {
+      id: `${productId ?? 'new'}:${Date.now()}`,
+      restoring: false,
+      allow: false,
+    };
+    browserNavigation.current = guard;
+    window.history.pushState(
+      { ...(window.history.state ?? {}), [productDraftHistoryGuardKey]: guard.id },
+      '',
+      window.location.href,
+    );
+
+    const persistAndContinueBrowserBack = () => {
+      void persistCurrentFormRef.current().then((persisted) => {
+        if (!persisted) return;
+        guard.allow = true;
+        window.history.go(-2);
+      });
+    };
+    const onPopState = (event: PopStateEvent) => {
+      if (event.state?.[productDraftHistoryGuardKey] === guard.id) {
+        if (guard.restoring) {
+          guard.restoring = false;
+          persistAndContinueBrowserBack();
+        }
+        return;
+      }
+      if (guard.allow) {
+        guard.allow = false;
+        return;
+      }
+      guard.restoring = true;
+      window.history.go(1);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      if (browserNavigation.current === guard) {
+        browserNavigation.current = null;
+      }
+      if (
+        !guard.allow &&
+        window.history.state?.[productDraftHistoryGuardKey] === guard.id
+      ) {
+        window.history.back();
+      }
+    };
+  }, [form.formState.isDirty, productId]);
 
   const moveToWizardStep = async (nextStep: number) => {
     if (!existingProduct) return;
@@ -435,13 +484,6 @@ export function ProductDraftScreen({
 
   return (
     <FormPageShell hideDock>
-      {Platform.OS !== 'web' ? (
-        <NativeProductDraftNavigationGuard
-          isDirty={form.formState.isDirty}
-          persistCurrentForm={persistCurrentForm}
-          navigateAfterPersist={navigateAfterPersist}
-        />
-      ) : null}
       {isCreationFlow ? (
         <FormSection
           title={wizardSubmitted ? 'Предмет отправлен' : 'Создание предмета'}

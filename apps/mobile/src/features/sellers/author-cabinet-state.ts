@@ -15,25 +15,37 @@ export function authorCabinetWorksFromPages(
   return pages.flatMap((page) => page.works);
 }
 
+function authorCabinetRevisionState(
+  prefix: 'Опубликовано' | 'Скрыто',
+  editingRevisionStatus: string | null,
+) {
+  if (editingRevisionStatus === 'PENDING_REVIEW') {
+    return `${prefix} · изменения на модерации`;
+  }
+  if (editingRevisionStatus === 'CHANGES_REQUESTED') {
+    return `${prefix} · нужны правки`;
+  }
+  if (editingRevisionStatus === 'REJECTED') {
+    return `${prefix} · изменения отклонены`;
+  }
+  if (editingRevisionStatus === 'DRAFT') {
+    return `${prefix} · есть новая версия`;
+  }
+  return prefix;
+}
+
 export function authorCabinetWorkState(input: {
   status: string;
   editingRevisionStatus: string | null;
 }) {
-  if (input.status === 'ARCHIVED') return 'Скрыто';
+  if (input.status === 'ARCHIVED') {
+    return authorCabinetRevisionState('Скрыто', input.editingRevisionStatus);
+  }
   if (input.status === 'APPROVED') {
-    if (input.editingRevisionStatus === 'PENDING_REVIEW') {
-      return 'Опубликовано · изменения на модерации';
-    }
-    if (input.editingRevisionStatus === 'CHANGES_REQUESTED') {
-      return 'Опубликовано · нужны правки';
-    }
-    if (input.editingRevisionStatus === 'REJECTED') {
-      return 'Опубликовано · изменения отклонены';
-    }
-    if (input.editingRevisionStatus === 'DRAFT') {
-      return 'Опубликовано · есть новая версия';
-    }
-    return 'Опубликовано';
+    return authorCabinetRevisionState(
+      'Опубликовано',
+      input.editingRevisionStatus,
+    );
   }
   if (input.status === 'PENDING_REVIEW') return 'На модерации';
   if (input.status === 'CHANGES_REQUESTED') return 'Нужны правки';
@@ -47,10 +59,7 @@ export function authorCabinetPrimaryAction(input: {
   isSuspended: boolean;
 }) {
   if (input.isSuspended || input.status === 'PENDING_REVIEW') return 'Открыть';
-  if (
-    input.status === 'APPROVED' &&
-    input.editingRevisionStatus === 'PENDING_REVIEW'
-  ) {
+  if (input.editingRevisionStatus === 'PENDING_REVIEW') {
     return 'Открыть';
   }
   return 'Редактировать';

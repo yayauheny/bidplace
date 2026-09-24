@@ -40,7 +40,8 @@
 - `Implemented` (mobile web behavior): Work creation uses three content panels
   plus review: details, main gallery, optional plain-text story, review. The
   editor restores persisted values by id, protects dirty input from background
-  refetch, saves before step/in-app route exit, warns on browser unload, and
+  refetch, saves before step/in-app route exit and browser Back, warns on
+  browser unload, and
   persists the exact current form before moderation submit. Save failure keeps
   the author in the editor.
 - `Implemented` (scope cleanup): the editor no longer shows packaging,
@@ -49,7 +50,7 @@
   visual system or local one-off styling was added.
 - Coverage: `product-draft-form.spec.ts`, `product-draft-wizard.spec.ts`, and
   `e2e/product-creation-wizard.spec.ts` cover dirty refetch, step navigation,
-  save-before-submit and close/reopen. Product status owner:
+  browser Back, save-before-submit and close/reopen. Product status owner:
   [`../product/11-PROJECT-STATUS.md`](../product/11-PROJECT-STATUS.md).
 - `Unchanged`: public Figma surfaces, dock, cabinet, native/desktop acceptance,
   design tokens, and canonical Pen file.

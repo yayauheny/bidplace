@@ -39,6 +39,16 @@ async function uploadFirstProductImage(page: Page) {
   await expect(page.getByText('1/10 изображений')).toBeVisible();
 }
 
+async function createEditableProduct(page: Page, title: string) {
+  await page.goto('/products/new');
+  await fillProductStepOne(page, title);
+  const product = await createDraftThroughStepOne(page);
+  await page.goto('/profile');
+  await page.goto(`/products/${product.id}`);
+  await expect(page.getByLabel('Название')).toHaveValue(title);
+  return product;
+}
+
 test.describe('product creation wizard navigation', () => {
   test('keeps later steps open after returning to step 1', async ({
     browser,
@@ -381,6 +391,99 @@ test.describe('product creation wizard navigation', () => {
 
       await page.goto(`/products/${product.id}`);
       await expect(page.getByLabel('Название')).toHaveValue(savedTitle);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('persists a dirty Work before browser Back and restores its values', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    const { seller } = await createSellerFixture();
+    const { context, page } = await authenticatedPage(browser, seller);
+    const title = `Browser back ${Date.now()}`;
+    const changedTitle = `${title} saved`;
+
+    try {
+      const product = await createEditableProduct(page, title);
+      await page.getByLabel('Название').fill(changedTitle);
+      const saveResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/products/${product.id}`) &&
+          response.request().method() === 'PATCH',
+      );
+
+      await page.evaluate(() => history.back());
+      expect((await saveResponse).ok()).toBeTruthy();
+      await expect(page).toHaveURL(/\/profile$/);
+
+      await page.goto(`/products/${product.id}`);
+      await expect(page.getByLabel('Название')).toHaveValue(changedTitle);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('blocks browser Back and retains dirty input when persistence fails', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    const { seller } = await createSellerFixture();
+    const { context, page } = await authenticatedPage(browser, seller);
+    const title = `Browser back failure ${Date.now()}`;
+    const changedTitle = `${title} unsaved`;
+
+    try {
+      const product = await createEditableProduct(page, title);
+      await page.getByLabel('Название').fill(changedTitle);
+      await page.route(`**/api/products/${product.id}`, (route) =>
+        route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'internal_error' }),
+        }),
+      );
+      const failedSave = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/products/${product.id}`) &&
+          response.request().method() === 'PATCH',
+      );
+
+      await page.evaluate(() => history.back());
+      expect((await failedSave).status()).toBe(500);
+      await expect(page).toHaveURL(new RegExp(`/products/${product.id}$`));
+      await expect(page.getByLabel('Название')).toHaveValue(changedTitle);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('allows browser Back from a clean Work without saving', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    const { seller } = await createSellerFixture();
+    const { context, page } = await authenticatedPage(browser, seller);
+    const title = `Browser back clean ${Date.now()}`;
+    const writes: string[] = [];
+
+    try {
+      await createEditableProduct(page, title);
+      const onRequest = (request: { method(): string; url(): string }) => {
+        if (
+          request.method() === 'PATCH' &&
+          new URL(request.url()).pathname.startsWith('/api/products/')
+        ) {
+          writes.push(request.url());
+        }
+      };
+      page.on('request', onRequest);
+
+      await page.evaluate(() => history.back());
+      await expect(page).toHaveURL(/\/profile$/);
+      page.off('request', onRequest);
+      expect(writes).toEqual([]);
     } finally {
       await context.close();
     }

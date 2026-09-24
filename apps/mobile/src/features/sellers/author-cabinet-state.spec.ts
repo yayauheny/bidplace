@@ -9,19 +9,67 @@ import {
 } from './author-cabinet-state';
 
 describe('author cabinet state', () => {
-  it('keeps parent visibility and editing revision status distinct', () => {
+  it.each([
+    ['APPROVED', 'APPROVED', 'Опубликовано', 'Редактировать'],
+    ['APPROVED', 'DRAFT', 'Опубликовано · есть новая версия', 'Редактировать'],
+    [
+      'APPROVED',
+      'PENDING_REVIEW',
+      'Опубликовано · изменения на модерации',
+      'Открыть',
+    ],
+    ['APPROVED', 'CHANGES_REQUESTED', 'Опубликовано · нужны правки', 'Редактировать'],
+    [
+      'APPROVED',
+      'REJECTED',
+      'Опубликовано · изменения отклонены',
+      'Редактировать',
+    ],
+    ['ARCHIVED', 'APPROVED', 'Скрыто', 'Редактировать'],
+    ['ARCHIVED', 'DRAFT', 'Скрыто · есть новая версия', 'Редактировать'],
+    [
+      'ARCHIVED',
+      'PENDING_REVIEW',
+      'Скрыто · изменения на модерации',
+      'Открыть',
+    ],
+    ['ARCHIVED', 'CHANGES_REQUESTED', 'Скрыто · нужны правки', 'Редактировать'],
+    [
+      'ARCHIVED',
+      'REJECTED',
+      'Скрыто · изменения отклонены',
+      'Редактировать',
+    ],
+  ])(
+    'shows %s with %s editing revision as %s and %s',
+    (status, editingRevisionStatus, state, action) => {
+      expect(
+        authorCabinetWorkState({ status, editingRevisionStatus }),
+      ).toBe(state);
+      expect(
+        authorCabinetPrimaryAction({
+          status,
+          editingRevisionStatus,
+          isSuspended: false,
+        }),
+      ).toBe(action);
+    },
+  );
+
+  it('keeps suspended authors inspection-only', () => {
     expect(
-      authorCabinetWorkState({
-        status: 'APPROVED',
-        editingRevisionStatus: 'PENDING_REVIEW',
+      authorCabinetPrimaryAction({
+        status: 'ARCHIVED',
+        editingRevisionStatus: 'APPROVED',
+        isSuspended: true,
       }),
-    ).toBe('Опубликовано · изменения на модерации');
+    ).toBe('Открыть');
     expect(
-      authorCabinetWorkState({
-        status: 'APPROVED',
-        editingRevisionStatus: 'DRAFT',
+      authorCabinetVisibilityActions({
+        status: 'ARCHIVED',
+        isSuspended: true,
       }),
-    ).toBe('Опубликовано · есть новая версия');
+    ).toEqual({ canHide: false, canRestore: false });
   });
 
   it('uses the canonical owner pagination size', () => {
@@ -50,32 +98,4 @@ describe('author cabinet state', () => {
     ).toEqual([...first, ...second].map((item) => item.title));
   });
 
-  it('shows rejected revisions and does not promise editing while pending or suspended', () => {
-    expect(
-      authorCabinetWorkState({
-        status: 'APPROVED',
-        editingRevisionStatus: 'REJECTED',
-      }),
-    ).toBe('Опубликовано · изменения отклонены');
-    expect(
-      authorCabinetPrimaryAction({
-        status: 'APPROVED',
-        editingRevisionStatus: 'PENDING_REVIEW',
-        isSuspended: false,
-      }),
-    ).toBe('Открыть');
-    expect(
-      authorCabinetPrimaryAction({
-        status: 'ARCHIVED',
-        editingRevisionStatus: 'APPROVED',
-        isSuspended: true,
-      }),
-    ).toBe('Открыть');
-    expect(
-      authorCabinetVisibilityActions({
-        status: 'ARCHIVED',
-        isSuspended: true,
-      }),
-    ).toEqual({ canHide: false, canRestore: false });
-  });
 });

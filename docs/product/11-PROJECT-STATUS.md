@@ -52,8 +52,9 @@
 
 - `Implemented` (mobile web): the Work editor has one React Hook Form model
   hydrated from the owner React Query detail. Ordinary refetch does not reset
-  dirty input. Step changes, explicit close, in-app navigation and submit persist
-  current form values; browser unload warns while values are dirty. Submit is an
+  dirty input. Step changes, explicit close, in-app navigation, browser Back
+  and submit persist current form values; browser unload warns while values are
+  dirty. Submit is an
   ordered update → submit operation and does not continue after a failed save.
   Reopening `/products/:id` restores the saved draft. The creation flow is
   URL-owned and consists of Work details, gallery, one optional plain-text story,
