@@ -1,8 +1,9 @@
-import assert from 'node:assert/strict';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { runMediaPreflight } from './lib/media-preflight.mjs';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const requireFromApi = createRequire(
@@ -32,7 +33,6 @@ if (!/^[-a-zA-Z0-9/_]+$/.test(prefix) || prefix.startsWith('/')) {
 
 const bytes = Buffer.from(`bidplace-media-preflight:${randomUUID()}`);
 const key = `${prefix.replace(/\/$/, '')}/${randomUUID()}`;
-const checksum = createHash('sha256').update(bytes).digest('hex');
 const client = new S3Client({
   endpoint: process.env.S3_ENDPOINT,
   region: process.env.S3_REGION,
@@ -44,24 +44,13 @@ const client = new S3Client({
 });
 
 try {
-  await client.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: key,
-      Body: bytes,
-    }),
-  );
-  const response = await client.send(
-    new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }),
-  );
-  assert(response.Body, 'S3 preflight read returned no object body');
-  const readChecksum = createHash('sha256')
-    .update(await response.Body.transformToByteArray())
-    .digest('hex');
-  assert.equal(readChecksum, checksum, 'S3 preflight checksum mismatch');
-  await client.send(
-    new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }),
-  );
+  await runMediaPreflight({
+    client,
+    commands: { DeleteObjectCommand, GetObjectCommand, PutObjectCommand },
+    bucket: process.env.S3_BUCKET,
+    key,
+    bytes,
+  });
   console.log(
     JSON.stringify({ status: 'ok', provider: 's3', prefix }, null, 2),
   );

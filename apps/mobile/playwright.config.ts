@@ -52,7 +52,10 @@ export default defineConfig({
       cwd: '../..',
       url: webBaseURL,
       reuseExistingServer: false,
-      env: { EXPO_PUBLIC_API_URL: apiBaseURL },
+      env: {
+        NODE_ENV: 'development',
+        EXPO_PUBLIC_API_URL: apiBaseURL,
+      },
     },
   ],
 });

@@ -9,8 +9,6 @@ on:
       - 'fix/**'
       - 'feat/**'
   pull_request:
-    branches:
-      - feature/portfolio-mvp-release
 
 concurrency:
   group: verify-${{ github.workflow }}-${{ github.ref }}

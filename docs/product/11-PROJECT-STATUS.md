@@ -611,8 +611,8 @@
   `AdminRecoveryPanel` is gone. Admin analytics UI matches the portfolio
   overview contract.
 - `Unchanged`: Prisma Listing/Bid/Order models, applied migrations and seed
-  auction fixtures. `scripts/ops/commerce-inventory.mjs` and
-  `test:ops-inventory` remain. Archive
+  auction fixtures. `scripts/ops/commerce-inventory.mjs` and the
+  `test:ops` script remain. Archive
   `feature/commerce-runtime-archive` @ `19eb40e` is not modified.
 - `Partial` vs `05-MVP-RFC.md`: the RFC still describes `DEC-084` fail-closed
   commerce runtime. `DEC-087` is the accepted physical-removal direction for

@@ -17,10 +17,10 @@ jobs:
         env:
           POSTGRES_USER: auction
           POSTGRES_PASSWORD: auction
-          POSTGRES_DB: postgres
+          POSTGRES_DB: bidplace_integration
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U auction -d postgres"
+          --health-cmd "pg_isready -U auction -d bidplace_integration"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -28,7 +28,7 @@ jobs:
       NODE_ENV: test
       APP_ENV: local
       E2E_DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
-      DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_e2e?schema=public
+      DATABASE_URL: postgresql://auction:auction@localhost:5432/bidplace_integration?schema=public
       JWT_SECRET: ci-release-gate-jwt-secret
       TEST_EMAIL_BYPASS: 'false'
       CORS_ORIGIN: http://localhost:8081

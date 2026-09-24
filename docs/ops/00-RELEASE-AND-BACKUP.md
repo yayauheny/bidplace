@@ -31,7 +31,7 @@ pnpm verify
 ```
 
 `pnpm verify` runs, in order: `db:generate`, `typecheck`, `lint`, all unit suites
-(including mobile), the read-only ops inventory test, the disposable E2E database
+(including mobile), the ops-script unit suite, the disposable E2E database
 fence, `test:integration`, and `build`. Maintained browser tests remain separate
 because they create a disposable database and start local services.
 
@@ -155,7 +155,7 @@ Evidence checklist:
 - [ ] `pnpm ops:verify-restore` prints table counts and verifies sample `ProductImage.checksum` values
 - [ ] `curl -sf localhost:3001/api/health/ready` succeeds against the primary database after deploy smoke
 - [ ] `MEDIA_PREFLIGHT_PREFIX='ops/preflight/restore-drill' pnpm ops:media-preflight`
-  succeeds against the intended bucket and leaves no test object behind
+      succeeds against the intended bucket and leaves no test object behind
 
 ## Staging smoke
 
