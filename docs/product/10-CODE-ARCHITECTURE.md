@@ -84,9 +84,10 @@
 - `packages/database` owns Prisma schema, additive migrations and deterministic local/test seed. Demo seed may run only with `NODE_ENV=development|test`, `APP_ENV=local` and `ALLOW_DESTRUCTIVE_DEMO_SEED=true`; production-like profiles fail before writes. Local seed is the Figma Home catalog (four public authors plus `pixelp`, nine public works including two demo vex works, no Listing/Bid/Order rows). User-facing seed copy is production-quality (`DEC-092`). `CuratorSelection` points at Dali (`daliEstate1` / `pixelp`) with curator `vex` and the Figma `note`. Pre-production amendment of the unreleased `curator_selections` CREATE TABLE (`note TEXT`, `curator_seller_profile_id`, `DEC-090`/`DEC-091`) is the only in-place migration edit; after first production apply, further columns are additive. Seller `biography` is an additive column (`20260914200000_add_seller_biography`). This does not authorize editing commerce/baseline migrations (`DEC-087`). `scripts/ops/commerce-inventory.mjs` is a read-only leftover-listing inventory; it is not a write path and is not a staging/production dry-run unless that environment is the connected target.
 - `apps/api/src/core/config/env-profile.ts` owns the `NODE_ENV` × `APP_ENV` predicates. `APP_ENV=production` requires `NODE_ENV=production`; `NODE_ENV=production` cannot combine with `APP_ENV=local`. Production SMTP, service rules, password-reset URL, JWT length and test-bypass prohibitions apply when either variable is `production`. Staging keeps its previous requirement shape: production security only when `NODE_ENV=production`.
 - Release automation is deliberately layered: root `pnpm verify` is the local and
-  standard CI gate (including mobile unit tests and the E2E database fence),
-  `.github/workflows/browser-e2e.yml` owns maintained Chromium browser coverage,
-  and the manual `portfolio-release-gate.yml` owns the full Chromium/WebKit
+  standard automatic CI gate (including mobile unit tests and the E2E database
+  fence). Full browser E2E is not run automatically on pull requests or pushes:
+  `.github/workflows/browser-e2e.yml` is a manual `workflow_dispatch` Chromium
+  gate, and the manual `portfolio-release-gate.yml` owns the full Chromium/WebKit
   release matrix. Browser setup always targets disposable `bidplace_e2e` under
   `NODE_ENV=test` and `APP_ENV=local`.
 

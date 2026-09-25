@@ -35,7 +35,7 @@ pnpm verify
 fence, `test:integration`, and `build`. Maintained browser tests remain separate
 because they create a disposable database and start local services.
 
-GitHub Actions runs the same gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml).
+GitHub Actions runs the same deterministic gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml). Full browser E2E is intentionally **not** part of automatic CI/CD because it is slow and resource-heavy. Chromium E2E remains available as a manual `workflow_dispatch` workflow in [`.github/workflows/browser-e2e.yml`](../../.github/workflows/browser-e2e.yml), while the full Chromium/WebKit matrix remains a manual release gate.
 
 ## Deploy (single-replica Compose)
 

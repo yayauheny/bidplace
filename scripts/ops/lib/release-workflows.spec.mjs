@@ -14,15 +14,14 @@ test('Verify retains general pull request coverage and release branch pushes', a
   assert.match(workflow, /- feature\/portfolio-mvp-release/);
 });
 
-test('browser workflow limits Chromium E2E to release-targeted pull requests', async () => {
+test('browser workflow is manual-only and retains sharded Chromium coverage', async () => {
   const workflow = await readFile(
     resolve(root, '.github/workflows/browser-e2e.yml'),
     'utf8',
   );
-  assert.match(
-    workflow,
-    /pull_request:\s*\n\s*branches: \[feature\/portfolio-mvp-release\]/,
-  );
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /pull_request:/);
+  assert.doesNotMatch(workflow, /push:/);
   assert.match(workflow, /--project=chromium/);
   assert.match(workflow, /shard: \[1, 2, 3, 4\]/);
   assert.match(workflow, /--shard=\$\{\{ matrix\.shard \}\}\/4/);

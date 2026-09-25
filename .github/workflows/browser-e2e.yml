@@ -1,10 +1,7 @@
 name: Browser E2E
 
 on:
-  pull_request:
-    branches: [feature/portfolio-mvp-release]
-  push:
-    branches: [feature/portfolio-mvp-release, main, master]
+  workflow_dispatch:
 
 concurrency:
   group: browser-e2e-${{ github.workflow }}-${{ github.ref }}
