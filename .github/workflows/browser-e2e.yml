@@ -13,7 +13,11 @@ concurrency:
 jobs:
   chromium:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:16-alpine
@@ -49,12 +53,12 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter @bidplace/mobile exec playwright install --with-deps chromium
       - name: Run maintained Chromium suite
-        run: pnpm --filter @bidplace/mobile exec playwright test --project=chromium
+        run: pnpm --filter @bidplace/mobile exec playwright test --project=chromium --shard=${{ matrix.shard }}/4
       - name: Upload failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: chromium-e2e-evidence
+          name: chromium-e2e-shard-${{ matrix.shard }}
           path: |
             apps/mobile/playwright-report
             apps/mobile/test-results

@@ -24,6 +24,10 @@ test('browser workflow limits Chromium E2E to release-targeted pull requests', a
     /pull_request:\s*\n\s*branches: \[feature\/portfolio-mvp-release\]/,
   );
   assert.match(workflow, /--project=chromium/);
+  assert.match(workflow, /shard: \[1, 2, 3, 4\]/);
+  assert.match(workflow, /--shard=\$\{\{ matrix\.shard \}\}\/4/);
+  assert.match(workflow, /name: chromium-e2e-shard-\$\{\{ matrix\.shard \}\}/);
+  assert.match(workflow, /timeout-minutes: 30/);
 });
 
 test('manual release gate verifies before preparing a separate E2E database', async () => {
@@ -44,6 +48,14 @@ test('manual release gate verifies before preparing a separate E2E database', as
     workflow.indexOf('run: pnpm verify') < workflow.indexOf('test:e2e-fence'),
   );
   assert.match(workflow, /browser: \[chromium, webkit\]/);
+  assert.match(workflow, /shard: \[1, 2, 3, 4\]/);
+  assert.match(workflow, /needs: verify/);
+  assert.match(workflow, /--shard=\$\{\{ matrix\.shard \}\}\/4/);
+  assert.match(
+    workflow,
+    /name: \$\{\{ matrix\.browser \}\}-release-gate-shard-\$\{\{ matrix\.shard \}\}/,
+  );
+  assert.equal((workflow.match(/timeout-minutes: 30/g) ?? []).length, 2);
 });
 
 test('all database-backed Playwright configs build before prepare', async () => {
