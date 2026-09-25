@@ -45,3 +45,18 @@ test('manual release gate verifies before preparing a separate E2E database', as
   );
   assert.match(workflow, /browser: \[chromium, webkit\]/);
 });
+
+test('all database-backed Playwright configs build before prepare', async () => {
+  const configPaths = [
+    'apps/mobile/playwright.config.ts',
+    'apps/mobile/playwright.stabilization.config.ts',
+    'apps/mobile/playwright.config.reuse.ts',
+  ];
+  for (const configPath of configPaths) {
+    const config = await readFile(resolve(root, configPath), 'utf8');
+    const buildIndex = config.indexOf('corepack pnpm --filter @bidplace/api... build');
+    const prepareIndex = config.indexOf('node apps/mobile/e2e/prepare.mjs');
+    assert.ok(buildIndex >= 0, `${configPath} must build API workspace dependencies`);
+    assert.ok(prepareIndex > buildIndex, `${configPath} must prepare after build`);
+  }
+});
