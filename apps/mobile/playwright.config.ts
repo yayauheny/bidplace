@@ -48,7 +48,7 @@ export default defineConfig({
       },
     },
     {
-      command: `corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
+      command: `corepack pnpm --filter @bidplace/design-tokens build && corepack pnpm --filter @bidplace/mobile exec expo start --web --clear --port ${webPort}`,
       cwd: '../..',
       url: webBaseURL,
       reuseExistingServer: false,
