@@ -73,6 +73,52 @@ function applicationForm(overrides: Record<string, string | null> = {}) {
 }
 
 describe('author application HTTP contract', () => {
+  it('requires verified email for Author writes while keeping public reads available', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const approved = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true },
+    });
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    await login(applicant, fixture.buyer.email, fixture.buyer.password);
+
+    const create = await applicant.post('/seller/profile', applicationForm());
+    expect(create.status).toBe(403);
+    expect((await create.json()) as { message: string }).toMatchObject({
+      message: 'Email verification is required',
+    });
+    expect(
+      (await guest.get(`/authors/${approved.slug}`)).status,
+    ).not.toBe(403);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: new Date() },
+    });
+    expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    const update = new FormData();
+    update.set('fullName', 'Blocked draft author');
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
+    expect((await applicant.post('/author/application/advance')).status).toBe(403);
+    expect((await applicant.post('/author/application/submit')).status).toBe(403);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: new Date() },
+    });
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
+  });
+
   it('persists a private draft, synchronizes updates, then submits the same revision', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');

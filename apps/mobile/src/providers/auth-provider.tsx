@@ -34,7 +34,7 @@ type AuthContextValue = {
   readonly login: (input: LoginRequest) => Promise<AuthResponse>;
   readonly register: (input: RegisterRequest) => Promise<AuthResponse>;
   readonly logout: () => Promise<void>;
-  readonly refreshSession: () => Promise<void>;
+  readonly refreshSession: () => Promise<User | null>;
   readonly clearSession: () => void;
 };
 
@@ -96,7 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       refreshSession: async () => {
-        await sessionQuery.refetch();
+        const result = await sessionQuery.refetch();
+        return result.data ?? null;
       },
       clearSession,
     }),

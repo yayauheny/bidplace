@@ -4,7 +4,7 @@ import { ProtectedRoute } from '../../components/shared/protected-route';
 
 export default function SellerLayout() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requireVerifiedEmail>
       <Stack screenOptions={{ headerShown: false }} />
     </ProtectedRoute>
   );

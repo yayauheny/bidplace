@@ -38,20 +38,20 @@ Impact: correctness / concurrency.
 Suggested direction: retain; review only call sites that bypass this helper.  
 Related old findings: LOGIC:BL-12.
 
-### BE-03 / Email verification is not an author-write invariant
+### BE-03 / Email verification is an Author-write invariant
 
-**CONFIRMED · P1**
+**RESOLVED in code · HIGH confidence**
 
 Evidence:
 
-- `apps/api/src/otp/otp.service.ts :: verify()`
-- `apps/api/src/sellers/sellers.service.ts :: create(), submitProfileRevision()`
-- `apps/api/src/products/products.service.ts :: create(), submit()`
+- `apps/api/src/auth/verified-email.guard.ts :: VerifiedEmailGuard`
+- `apps/api/src/{sellers,products,images,portfolio}/*controller.ts :: Author write routes`
 
-Finding: OTP persists `emailVerifiedAt`, but author application and Work write paths do not read it. Fixtures with verified users can conceal this gap.
+Finding: the shared guard reads `User.emailVerifiedAt` after Bearer authentication
+and blocks Author/profile, Work, image, and achievement mutations with 403.
 
-Impact: correctness / security / product contract.  
-Suggested direction: first decide the exact author gate, then enforce it once in the server capability boundary and cover it over HTTP+DB.  
+Impact: security / product contract.
+Suggested direction: retain HTTP integration coverage and prove SMTP delivery separately.
 Related old findings: LOGIC:BL-03, CROSS:B4, CROSS:T2.
 
 ### BE-04 / Application submit has two public routes

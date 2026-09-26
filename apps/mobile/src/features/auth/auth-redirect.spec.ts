@@ -20,6 +20,7 @@ describe('auth redirects', () => {
     'data:text/html,test',
     '/login?redirectTo=/seller/work/123/edit',
     '/register',
+    '/verify-email?redirectTo=/profile',
   ])('rejects unsafe or auth-loop redirects: %s', (redirectTo) => {
     expect(getSafeRedirect(redirectTo)).toBe('/');
   });

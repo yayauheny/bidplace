@@ -228,6 +228,14 @@ Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/
 
 ## Verification
 
+### Author email verification boundary
+
+`VerifiedEmailGuard` runs after `BearerAuthGuard` on authenticated Author
+application, Work, and related media mutations. It reads `User.emailVerifiedAt`
+from persistence and returns 403 for an unverified session; read/public routes
+remain outside this boundary. Mobile keeps `/me` in `['user','me']` as the sole
+session owner after OTP verification.
+
 The current 2026-08-10 verification is: typecheck/build 7/7 workspaces, lint
 2/2, contracts 7/7, API unit 145/145, mobile unit 113/113, isolated PostgreSQL
 integration 39/39, E2E fence and disposable Chromium Playwright 35/35. The

@@ -26,6 +26,7 @@ import {
   BearerAuthGuard,
   CurrentUser,
   OptionalBearerAuthGuard,
+  VerifiedEmailGuard,
 } from '../auth';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 import {
@@ -85,13 +86,13 @@ export class PortfolioController {
   }
 
   @Post('author/application/submit')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   submitApplication(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.submitApplication(auth.sub);
   }
 
   @Post('author/application/advance')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   advanceApplication(@CurrentUser() auth: { sub: string }) {
     return this.portfolio.advanceApplication(auth.sub);
   }
@@ -117,7 +118,7 @@ export class PortfolioController {
   }
 
   @Post('author/application/achievements')
-  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:achievement-upload',
     limit: 10,
@@ -147,7 +148,7 @@ export class PortfolioController {
   }
 
   @Delete('author/application/achievements/:id')
-  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:achievement-delete',
     limit: 10,

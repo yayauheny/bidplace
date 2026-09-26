@@ -1731,6 +1731,17 @@ verification.
 
 ## Auth logout resilience — 2026-07-30
 
+## Author email verification gate — 2026-09-26
+
+- `Implemented`: `VerifiedEmailGuard` checks persisted `User.emailVerifiedAt`
+  after Bearer authentication on Author application/profile, Work, image, and
+  achievement mutations. Existing unverified drafts and legacy unverified
+  approved authors fail closed, while public and owner reads remain available.
+- `Implemented`: authenticated `/verify-email` reuses the existing OTP API,
+  refreshes `['user','me']` after success, and returns only to a validated
+  internal Author destination. Full production SMTP delivery remains `Needs
+  verification` in staging.
+
 - `Implemented`: `POST /auth/logout` uses `LogoutAuthGuard` to identify only a valid current session. It always clears the session cookie, including when the submitted cookie is missing, expired, malformed, or stale; server-side session invalidation runs only for an authenticated current session. `apps/api/src/auth/logout-auth.guard.spec.ts` covers invalid, stale, and current tokens.
 
 ## Auction browser E2E — 2026-07-28

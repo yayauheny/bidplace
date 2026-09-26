@@ -18,7 +18,12 @@ import {
   sellerProfileUpdateRequestSchema,
 } from '@bidplace/contracts';
 
-import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
+import {
+  BearerAuthGuard,
+  CurrentUser,
+  OptionalBearerAuthGuard,
+  VerifiedEmailGuard,
+} from '../auth';
 import { parseBody } from '../core/validation';
 import {
   getImageCacheControl,
@@ -40,7 +45,7 @@ export class SellersController {
   }
 
   @Post('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -70,7 +75,7 @@ export class SellersController {
   }
 
   @Patch('seller/profile')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   @UseInterceptors(
     FilesInterceptor('profilePhoto', 1, {
       limits: {
@@ -94,7 +99,7 @@ export class SellersController {
   }
 
   @Post('seller/profile/submit')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   submitProfileRevision(@CurrentUser() auth: { sub: string }) {
     return this.sellers.submitProfileRevision(auth.sub);
   }
