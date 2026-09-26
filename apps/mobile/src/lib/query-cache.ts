@@ -2,7 +2,10 @@ import { QueryClient, type QueryKey } from '@tanstack/react-query';
 
 export const productKeys = {
   all: ['products'] as const,
-  categories: ['products', 'categories'] as const,
+};
+
+export const categoryKeys = {
+  all: ['categories'] as const,
 };
 
 export const authKeys = {

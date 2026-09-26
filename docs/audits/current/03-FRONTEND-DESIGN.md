@@ -38,85 +38,87 @@ Impact: dead-code / maintainability.
 Suggested direction: a removal review should first separate any reusable redirect/accessibility helpers from the dead render tree.  
 Related old findings: M-LOGIC-11, DS-03.
 
-### FE-03 / Public author performs duplicate work queries
+### FE-03 / Public author query ownership
 
-**CONFIRMED · P2**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
-- `apps/mobile/src/features/sellers/public-seller-screen.tsx :: PublicSellerScreen()`
 - `apps/mobile/src/features/sellers/use-author-works.ts :: useAuthorWorks()`
+- `apps/mobile/src/app/(public)/seller/[slug].tsx :: PublicSellerRoute()`
 
-Finding: the unfiltered query always runs; selecting a category enables a second infinite query. Category and About tab are not URL state.
+Finding: one infinite query owns the Author header, Works, category and pagination. A valid `category` is URL-owned; malformed values are omitted before the API call. About remains local UI state under the current product decision.
 
-Impact: performance / UX / maintainability.  
-Suggested direction: one query keyed by URL-owned sort/category; defer tab URL only if the product decision remains open.  
+Impact: resolved performance / UX / maintainability.
+Suggested direction: retain the single-owner boundary for later Author query work.
 Related old findings: M-LOGIC-09.
 
-### FE-04 / Categories have two cache identities
+### FE-04 / Category cache identity
 
-**CONFIRMED · P2**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
-- `apps/mobile/src/lib/query-cache.ts :: productKeys.categories`
+- `apps/mobile/src/lib/query-cache.ts :: categoryKeys.all`
+- `apps/mobile/src/features/products/product-list-screen.tsx :: categories query`
 - `apps/mobile/src/features/sellers/product-draft-screen.tsx :: categories query`
+- `apps/mobile/src/features/sellers/public-seller-screen.tsx :: categories query`
 - `apps/mobile/src/features/search/panes/CategoriesSearchPane.tsx :: categories query`
 
-Finding: the same endpoint is cached as both `['categories']` and `['products','categories']`; `productKeys.categories` does not cover all live consumers.
+Finding: every live mobile consumer of `api.categories.list()` now uses the exported `categoryKeys.all` identity.
 
-Impact: performance / maintainability.  
-Suggested direction: use one exported key/factory across all consumers.  
+Impact: resolved performance / maintainability.
+Suggested direction: add future category consumers to this key.
 Related old findings: M-LOGIC-08.
 
-### FE-05 / Work wizard reimplements form state already supplied by installed tools
+### FE-05 / Work wizard form ownership
 
-**CONFIRMED · P1**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
 - `apps/mobile/src/features/sellers/product-draft-screen.tsx :: ProductDraftScreen()`
 - `apps/mobile/package.json :: react-hook-form, @hookform/resolvers, zod`
 
-Finding: 15+ field states, hydration sentinels and manual validation recreate dirty/reset/submission behavior. This causes the stale-submit and refetch-overwrite risks.
+Finding: the current Work editor uses RHF for current edits and persisted revision timestamps for hydration; the historical local-state finding no longer describes release behavior.
 
-Impact: correctness / maintainability.  
-Suggested direction: use the existing RHF + contract-derived Zod pattern, with query data as persisted truth.  
+Impact: resolved correctness / maintainability.
+Suggested direction: retain RHF and query ownership in future editor changes.
 Related old findings: VAL:D8, M-LOGIC-02, M-LOGIC-13.
 
-### FE-06 / Application wizard is volatile
+### FE-06 / Application wizard persistence
 
-**CONFIRMED · P1**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
 - `apps/mobile/src/features/sellers/seller-profile-screen.tsx :: SellerProfileScreen()`
 - `apps/mobile/src/features/sellers/seller-profile-steps.tsx :: SellerProfileCreationStepSelector`
 
-Finding: step and fields are local; only step 3 creates the profile. Reload, close or browser Back before creation loses earlier input.
+Finding: onboarding stages and resume boundaries are server-owned; URL steps and persisted draft transitions replace the historical volatile flow.
 
-Impact: correctness / UX.  
-Suggested direction: review server draft semantics first, then URL-own the step and persist each completed boundary.  
+Impact: resolved correctness / UX.
+Suggested direction: preserve guarded server advancement.
 Related old findings: M-LOGIC-05, CROSS:G1.
 
-### FE-07 / Protected redirects discard the destination
+### FE-07 / Protected redirect destination
 
-**CONFIRMED · P1**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
 - `apps/mobile/src/components/shared/protected-route.tsx :: ProtectedRoute()`
 - `apps/mobile/src/features/auth/auth-form.tsx :: LoginForm()`
 
-Finding: ProtectedRoute sends guests to `/login` without a return URL although auth forms and `getSafeRedirect` already support it.
+Finding: protected routes retain a safe internal destination and authentication consumes it through the existing redirect helper.
 
-Impact: UX.  
-Suggested direction: construct the current local pathname/search as the existing safe `redirectTo`.  
+Impact: resolved UX.
+Suggested direction: retain safe redirect normalization for new protected routes.
 Related old findings: M-LOGIC-04.
 
-### FE-08 / Search overlay is cleaner but intentionally incomplete
+### FE-08 / Search overlay pagination
 
-**CONFIRMED · P2 product completeness**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
@@ -124,10 +126,10 @@ Evidence:
 - `apps/mobile/src/features/search/panes/WorksSearchPane.tsx :: WorksSearchPane()`
 - `docs/product/11-PROJECT-STATUS.md :: fullscreen search entry`
 
-Finding: URL-owned overlay state, debounce, focus trap and pane errors replace several historical search defects. Works/authors hooks are infinite queries, but the overlay exposes no next-page action and therefore shows only loaded first pages.
+Finding: Works and Authors search panes expose `Показать ещё` only while their existing infinite query has a next page. Loaded rows remain visible while the next page is fetched.
 
-Impact: UX.  
-Suggested direction: decide whether MVP search is preview or complete results, then add navigation or pagination without duplicating search logic.  
+Impact: resolved UX.
+Suggested direction: keep the explicit pagination model; no infinite-scroll behavior is introduced.
 Related old findings: UX-02, UX-05.
 
 ### FE-09 / Design token layer is healthy but aliases hide migration state

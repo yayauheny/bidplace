@@ -27,6 +27,7 @@ import {
 import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
+import { categoryKeys } from '../../lib/query-cache';
 import { ProductDraftAboutStep } from './product-draft-about';
 import {
   emptyProductDraftFormValues,
@@ -98,7 +99,7 @@ export function ProductDraftScreen({
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
 
   const categories = useQuery({
-    queryKey: ['products', 'categories'],
+    queryKey: categoryKeys.all,
     queryFn: () => api.categories.list(),
   });
   const productDetail = useQuery({

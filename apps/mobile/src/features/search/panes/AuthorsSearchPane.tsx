@@ -4,6 +4,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { usePortfolioAuthors } from '../../sellers/use-portfolio-authors';
 import { AuthorSearchRow } from '../AuthorSearchRow';
+import { FigmaButton } from '../../../components/figma/FigmaButton';
 import { SearchPaneStatus } from './search-pane-status';
 
 export function AuthorsSearchPane({
@@ -36,6 +37,15 @@ export function AuthorsSearchPane({
             shortDescription={item.author.shortDescription}
           />
         ))}
+        {authors.hasNextPage ? (
+          <FigmaButton
+            label="Показать ещё"
+            variant="outline"
+            width="full"
+            loading={authors.isFetchingNextPage}
+            onPress={() => void authors.fetchNextPage()}
+          />
+        ) : null}
       </View>
     </SearchPaneStatus>
   );

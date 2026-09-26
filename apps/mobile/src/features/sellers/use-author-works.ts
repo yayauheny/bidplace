@@ -1,19 +1,24 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { useApiClient } from '../../providers/api-provider';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
 
-export function useAuthorWorks(slug: string, sort: 'newest' | 'oldest') {
+export const publicAuthorKeys = {
+  detail: (
+    slug: string,
+    sort: 'newest' | 'oldest',
+    category?: string,
+  ) => ['public-author', slug, { sort, category }] as const,
+};
+
+export function useAuthorWorks(
+  slug: string,
+  sort: 'newest' | 'oldest',
+  category?: string,
+) {
   const api = useApiClient();
-  const [category, setCategory] = useState<string>();
-  const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => api.categories.list(),
-    retry: retryTransientPublicQuery,
-  });
-  const filtered = useInfiniteQuery({
-    queryKey: ['public-author', slug, { sort, category }],
+  return useInfiniteQuery({
+    queryKey: publicAuthorKeys.detail(slug, sort, category),
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
       api.portfolio.getAuthor(slug, {
@@ -26,8 +31,7 @@ export function useAuthorWorks(slug: string, sort: 'newest' | 'oldest') {
       page.pagination.page * page.pagination.limit < page.pagination.total
         ? page.pagination.page + 1
         : undefined,
-    enabled: Boolean(slug && category),
+    enabled: Boolean(slug),
     retry: retryTransientPublicQuery,
   });
-  return { category, setCategory, categories, filtered };
 }

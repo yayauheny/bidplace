@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { WorkCoverCardGrid } from '../../../components/figma/WorkCoverCardGrid';
+import { FigmaButton } from '../../../components/figma/FigmaButton';
 import { usePortfolioWorks } from '../../products/use-portfolio-works';
 import { SearchPaneStatus } from './search-pane-status';
 
@@ -27,7 +28,18 @@ export function WorksSearchPane({
       emptyTitle="Работы не найдены"
       loading={<WorksSkeleton />}
     >
-      <WorkCoverCardGrid items={works.items} columns={2} />
+      <View style={{ gap: figmaTokens.space.x3 }}>
+        <WorkCoverCardGrid items={works.items} columns={2} />
+        {works.hasNextPage ? (
+          <FigmaButton
+            label="Показать ещё"
+            variant="outline"
+            width="full"
+            loading={works.isFetchingNextPage}
+            onPress={() => void works.fetchNextPage()}
+          />
+        ) : null}
+      </View>
     </SearchPaneStatus>
   );
 }

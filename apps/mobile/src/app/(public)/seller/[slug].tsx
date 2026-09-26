@@ -1,17 +1,20 @@
 import { useLocalSearchParams } from 'expo-router';
-import type { PortfolioWorksQuery } from '@bidplace/contracts';
 
+import { toPublicAuthorRouteState } from '../../../features/sellers/public-author-query';
 import { PublicSellerScreen } from '../../../features/sellers/public-seller-screen';
 
 export default function PublicSellerRoute() {
-  const { slug, sort } = useLocalSearchParams<{
+  const { slug, sort, category } = useLocalSearchParams<{
     slug: string;
-    sort?: PortfolioWorksQuery['sort'];
+    sort?: string;
+    category?: string;
   }>();
+  const state = toPublicAuthorRouteState({ sort, category });
   return (
     <PublicSellerScreen
       slug={slug}
-      sort={sort === 'oldest' ? 'oldest' : 'newest'}
+      sort={state.sort}
+      category={state.category}
     />
   );
 }

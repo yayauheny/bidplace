@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 
@@ -14,6 +14,7 @@ import { PageState, PrimaryButton } from '../../components/ui';
 import { WorkCoverCardGrid } from '../../components/figma/WorkCoverCardGrid';
 import { useTrackSellerView } from '../../lib/analytics/use-track-views';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
+import { categoryKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 
 import { useAuthorWorks } from './use-author-works';
@@ -27,39 +28,28 @@ import { type AuthorPublicTab } from './author-public-tabs';
 export function PublicSellerScreen({
   slug,
   sort = 'newest',
+  category,
 }: {
   slug: string;
   sort?: 'newest' | 'oldest';
+  category?: string;
 }) {
   const api = useApiClient();
   const router = useRouter();
   const panelId = useId();
   const [tab, setTab] = useState<AuthorPublicTab>('works');
-  const query = useInfiniteQuery({
-    queryKey: ['public-author', slug, { sort }],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.getAuthor(slug, {
-        sort,
-        page: pageParam,
-        limit: 20,
-      }),
-    getNextPageParam: (lastPage) => {
-      const loaded = lastPage.pagination.page * lastPage.pagination.limit;
-      return loaded < lastPage.pagination.total
-        ? lastPage.pagination.page + 1
-        : undefined;
-    },
-    enabled: Boolean(slug),
+  const categories = useQuery({
+    queryKey: categoryKeys.all,
+    queryFn: () => api.categories.list(),
     retry: retryTransientPublicQuery,
   });
-  const { category, setCategory, categories, filtered } = useAuthorWorks(
+  const query = useAuthorWorks(
     slug,
     sort,
+    category,
   );
-  const workQuery = category ? filtered : query;
   const firstPage = query.data?.pages[0];
-  const works = workQuery.data?.pages.flatMap((page) => page.works) ?? [];
+  const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
 
@@ -158,14 +148,14 @@ export function PublicSellerScreen({
                   <FigmaChoiceChip
                     label="Все"
                     selected={!category}
-                    onPress={() => setCategory(undefined)}
+                    onPress={() => router.setParams({ category: undefined })}
                   />
                   {categories.data?.categories.map((item) => (
                     <FigmaChoiceChip
                       key={item.id}
                       label={item.name}
                       selected={category === item.id}
-                      onPress={() => setCategory(item.id)}
+                      onPress={() => router.setParams({ category: item.id })}
                     />
                   ))}
                 </ScrollView>
@@ -173,12 +163,12 @@ export function PublicSellerScreen({
             ) : null}
             {tab === 'about' ? (
               <AuthorAbout author={author} />
-            ) : workQuery.isLoading ? (
+            ) : query.isLoading ? (
               <PageState title="Загружаем работы…" loading />
-            ) : workQuery.isError ? (
+            ) : query.isError ? (
               <InfrastructureErrorState
                 presentation="inline"
-                onRetry={() => void workQuery.refetch()}
+                onRetry={() => void query.refetch()}
               />
             ) : works.length === 0 ? (
               <PageState
@@ -191,12 +181,12 @@ export function PublicSellerScreen({
             ) : (
               <>
                 <WorkCoverCardGrid items={works} />
-                {workQuery.hasNextPage ? (
+                {query.hasNextPage ? (
                   <PrimaryButton
                     label="Смотреть все"
                     width="full"
-                    loading={workQuery.isFetchingNextPage}
-                    onPress={() => void workQuery.fetchNextPage()}
+                    loading={query.isFetchingNextPage}
+                    onPress={() => void query.fetchNextPage()}
                   />
                 ) : null}
               </>
