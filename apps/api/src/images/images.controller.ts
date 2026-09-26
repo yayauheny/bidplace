@@ -15,7 +15,12 @@ import {
 import { Buffer } from 'node:buffer';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { productImageOrderRequestSchema } from '@bidplace/contracts';
-import { BearerAuthGuard, CurrentUser, OptionalBearerAuthGuard } from '../auth';
+import {
+  BearerAuthGuard,
+  CurrentUser,
+  OptionalBearerAuthGuard,
+  VerifiedEmailGuard,
+} from '../auth';
 import { parseBody } from '../core/validation';
 import { RateLimit } from '../core/rate-limit/rate-limit.decorator';
 import { RateLimitGuard } from '../core/rate-limit/rate-limit.guard';
@@ -44,7 +49,7 @@ export class ImagesController {
   constructor(private readonly images: ImagesService) {}
 
   @Post('products/:productId/images')
-  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:product-upload',
     limit: 10,
@@ -72,7 +77,7 @@ export class ImagesController {
   }
 
   @Post('products/:productId/creation-steps/:stepId/image')
-  @UseGuards(BearerAuthGuard, RateLimitGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard, RateLimitGuard)
   @RateLimit({
     keyPrefix: 'images:creation-step-upload',
     limit: 10,
@@ -105,7 +110,7 @@ export class ImagesController {
   }
 
   @Delete('products/:productId/images/:imageId')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   remove(
     @CurrentUser() auth: { sub: string },
     @Param('productId') productId: string,
@@ -115,7 +120,7 @@ export class ImagesController {
   }
 
   @Patch('products/:productId/images/order')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   reorder(
     @CurrentUser() auth: { sub: string },
     @Param('productId') productId: string,

@@ -1,5 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
+import { readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   createHttpTestApp,
@@ -20,14 +23,20 @@ import {
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
 let prisma: PrismaClient;
+let emailFilePath: string;
 
 beforeAll(async () => {
+  emailFilePath = join(tmpdir(), `bidplace-author-email-${Date.now()}.jsonl`);
+  process.env.TEST_EMAIL_FILE = emailFilePath;
   database = await createIntegrationDatabaseContext();
   prisma = database.prisma;
   http = await createHttpTestApp(database.databaseUrl, 'http://localhost:8081');
 });
 
-afterEach(async () => resetPermissionFixture(prisma));
+afterEach(async () => {
+  await resetPermissionFixture(prisma);
+  await rm(emailFilePath, { force: true });
+});
 
 afterAll(async () => {
   await http?.close();
@@ -72,7 +81,93 @@ function applicationForm(overrides: Record<string, string | null> = {}) {
   return form;
 }
 
+async function readVerificationCode(): Promise<string> {
+  const contents = await readFile(emailFilePath, 'utf8');
+  const line = contents.trim().split('\n').at(-1);
+  const payload = JSON.parse(line!) as { code?: string };
+  expect(payload.code).toMatch(/^\d{6}$/);
+  return payload.code!;
+}
+
 describe('author application HTTP contract', () => {
+  it('requires verified email for Author writes while keeping public reads available', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const approved = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true },
+    });
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    await login(applicant, fixture.buyer.email, fixture.buyer.password);
+
+    const create = await applicant.post('/seller/profile', applicationForm());
+    expect(create.status).toBe(403);
+    expect((await create.json()) as { message: string }).toMatchObject({
+      message: 'Email verification is required',
+    });
+    expect(
+      (await guest.get(`/authors/${approved.slug}`)).status,
+    ).not.toBe(403);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: new Date() },
+    });
+    expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    const update = new FormData();
+    update.set('fullName', 'Blocked draft author');
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
+    expect((await applicant.post('/author/application/advance')).status).toBe(403);
+    expect((await applicant.post('/author/application/submit')).status).toBe(403);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: new Date() },
+    });
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
+  });
+
+  it('allows an existing Author draft to continue after OTP verification', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    await login(applicant, fixture.buyer.email, fixture.buyer.password);
+    expect((await applicant.post('/seller/profile', applicationForm())).status).toBe(201);
+
+    await prisma.user.update({
+      where: { id: fixture.buyer.id },
+      data: { emailVerifiedAt: null },
+    });
+    const update = new FormData();
+    update.set('fullName', 'Blocked until OTP');
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(403);
+
+    expect((await applicant.post('/auth/email/request')).status).toBe(201);
+    expect(
+      (
+        await applicant.post('/auth/email/verify', {
+          code: await readVerificationCode(),
+        })
+      ).status,
+    ).toBe(201);
+    await expect(
+      prisma.user.findUniqueOrThrow({
+        where: { id: fixture.buyer.id },
+        select: { emailVerifiedAt: true },
+      }),
+    ).resolves.toMatchObject({ emailVerifiedAt: expect.any(Date) });
+
+    expect((await applicant.patch('/seller/profile', update)).status).toBe(200);
+  });
+
   it('persists a private draft, synchronizes updates, then submits the same revision', async () => {
     const fixture = await createPermissionFixture(prisma);
     const applicant = new HttpTestClient(http.baseUrl, 'http://localhost:8081');

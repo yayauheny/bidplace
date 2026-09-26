@@ -9,6 +9,7 @@ const AUTH_PATHS = new Set([
   '/register',
   '/forgot-password',
   '/reset-password',
+  '/verify-email',
 ]);
 
 export function getSafeRedirect(

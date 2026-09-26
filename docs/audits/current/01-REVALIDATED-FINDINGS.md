@@ -18,29 +18,23 @@ below has one current status.
 
 ## Current release findings
 
-### CUR-01 / Email verification is not an enforced author-flow invariant
+### CUR-01 / Email verification before Author writes
 
-**RELEASE BLOCKER / PRODUCT DECISION · confirmed**
+**RESOLVED in code · SMTP delivery remains external evidence**
 
 Evidence:
 
-- `docs/product/05-MVP-RFC.md :: Author candidate, Auth`
-- `apps/api/src/otp/otp.service.ts :: verify()`
-- `apps/api/src/sellers/sellers.service.ts :: create()`
-- `apps/api/src/products/products.service.ts :: create()`
-- `apps/mobile/src/app :: route inventory`
+- `apps/api/src/auth/verified-email.guard.ts :: VerifiedEmailGuard`
+- `apps/api/src/{sellers,products,images,portfolio}/*controller.ts :: Author mutations`
+- `apps/mobile/src/app/verify-email.tsx`, `components/shared/protected-route.tsx`
 
-Finding: the RFC sequence says an author confirms email before the application,
-but Seller creation does not require `User.emailVerifiedAt`, Product creation
-only requires an approved Seller profile, and mobile has no verification route.
-OTP support exists but does not currently establish the sequence as a server
-invariant or a complete UI path.
+Finding: authenticated unverified users receive `403 Email verification is required`
+for Author and Work writes. Seller routes preserve a safe internal destination,
+then `/verify-email` reuses the existing OTP endpoints and refreshes `['user','me']`.
 
-Impact: release readiness / product contract.
+Impact: product contract / security.
 
-Suggested direction: founder decides whether verification is mandatory before
-author application, before submission, or deferred; implement the selected
-server boundary and UI flow in a separate change.
+Suggested direction: retain the server gate; prove production SMTP delivery in staging.
 
 Related old findings: CROSS:B4, LOGIC:BL-03.
 

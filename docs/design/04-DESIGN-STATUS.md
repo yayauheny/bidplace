@@ -4,6 +4,15 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-26 — Author email verification
+
+- `Implemented` (mobile web behavior): seller-route access for an unverified
+  authenticated user opens `/verify-email`, preserves only a safe internal
+  return path, and uses the existing AuthViewport, AuthCard, form controls and
+  OTP endpoints. Successful confirmation refreshes the canonical session before
+  return. Public routes remain ungated.
+- `Needs verification`: real SMTP delivery and mobile-device visual acceptance.
+
 ## 2026-09-24 — Author Cabinet
 
 - `Implemented` (mobile web behavior): approved and suspended Authors use the

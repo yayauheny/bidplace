@@ -13,7 +13,7 @@ import {
   creationStoryWriteRequestSchema,
 } from '@bidplace/contracts';
 
-import { BearerAuthGuard, CurrentUser } from '../auth';
+import { BearerAuthGuard, CurrentUser, VerifiedEmailGuard } from '../auth';
 import { parseBody } from '../core/validation';
 import { ProductsService } from './products.service';
 
@@ -22,7 +22,7 @@ export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Post()
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   create(@CurrentUser() auth: { sub: string }, @Body() body: unknown) {
     return this.products.create(
       auth.sub,
@@ -31,25 +31,25 @@ export class ProductsController {
   }
 
   @Post(':id/submit')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   submit(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.products.submit(auth.sub, id);
   }
 
   @Post(':id/hide')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   hide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.products.hide(auth.sub, id);
   }
 
   @Post(':id/unhide')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   unhide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
     return this.products.unhide(auth.sub, id);
   }
 
   @Patch(':id')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   update(
     @CurrentUser() auth: { sub: string },
     @Param('id') id: string,
@@ -63,7 +63,7 @@ export class ProductsController {
   }
 
   @Put(':id/creation')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   replaceCreation(
     @CurrentUser() auth: { sub: string },
     @Param('id') id: string,
@@ -77,7 +77,7 @@ export class ProductsController {
   }
 
   @Patch(':id/creation/order')
-  @UseGuards(BearerAuthGuard)
+  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   reorderCreation(
     @CurrentUser() auth: { sub: string },
     @Param('id') id: string,
