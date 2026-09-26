@@ -9,7 +9,7 @@ finding against those paths before scheduling UI cleanup.
 
 ### FE-01 / Two active component generations remain
 
-**RESOLVED · 2026-09-26**
+**CONFIRMED · P2**
 
 Evidence:
 
@@ -24,13 +24,13 @@ Related old findings: DS-01, DS-02, DS-04.
 
 ### FE-02 / Legacy header/navigation tree is unreachable
 
-**CONFIRMED · P2**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
-- `apps/mobile/src/components/layout/AppHeader.tsx :: AppHeader()`
-- `apps/mobile/src/components/layout/AppShell.tsx :: AppShell()`
 - `apps/mobile/src/components/layout/index.ts :: exports`
+- `apps/mobile/src/components/layout/AppShell.tsx :: AppShell()`
+- `apps/mobile/src/components/figma/FloatingDock.tsx :: FloatingDock()`
 
 Finding: the unreachable AppHeader render tree and its tree-only helpers/tests were removed. AppShell, FloatingDock, BrandLogo, OverlayHost, focus/overlay helpers and `getMobileCreateHref` remain live.
 
@@ -154,7 +154,8 @@ Related old findings: DS-01.
 Evidence:
 
 - `apps/mobile/src/components/ui/index.ts :: exports`
-- `AmbientImageBackground.tsx`, `EditorialSection.tsx`, `ProductGallery.tsx`, `Skeleton.tsx`
+- `AmbientImageBackground.tsx`, `EditorialSection.tsx`, `ProductGallery.tsx`, `Skeleton.tsx` (removed)
+- `apps/mobile/src/features/products/portfolio-work-adapter.ts` (removed)
 
 Finding: unreachable generic UI primitives and the test-only portfolio adapter were removed with their barrel exports and mirror tests.
 
