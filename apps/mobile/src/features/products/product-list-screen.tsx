@@ -30,6 +30,7 @@ import {
 import { usePortfolioWorks } from './use-portfolio-works';
 import { WORKS_CATALOG_INTRO } from '../../lib/portfolio-copy';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
+import { categoryKeys } from '../../lib/query-cache';
 
 const sortOptions: Array<{ value: PortfolioCatalogSort; label: string }> = [
   { value: 'newest', label: 'Сначала новые' },
@@ -48,7 +49,7 @@ export function ProductListScreen({
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const categories = useQuery({
-    queryKey: ['categories'],
+    queryKey: categoryKeys.all,
     queryFn: () => api.categories.list(),
     retry: retryTransientPublicQuery,
   });

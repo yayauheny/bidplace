@@ -1,8 +1,17 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-23
+Последнее обновление: 2026-09-26
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-26 — Public-query and search pagination behavior
+
+- `Implemented` (mobile web behavior): public Author category chips now persist
+  as a validated URL parameter and change the single active Author query. Search
+  Works and Authors use the existing explicit outline `Показать ещё` action while
+  further result pages exist; prior rows remain visible during loading.
+- `Unchanged`: visual primitives, tokens, dock, header, card composition and the
+  canonical Pen file. Browser E2E remains manual-only.
 
 ## 2026-09-26 — Author email verification
 

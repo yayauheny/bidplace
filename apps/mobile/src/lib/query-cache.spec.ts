@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   authKeys,
+  categoryKeys,
   clearAuthenticatedSession,
   clearAuthScopedDataExceptSession,
-  productKeys,
   isAuthScopedQueryKey,
 } from './query-cache';
 
@@ -15,14 +15,14 @@ describe('query cache auth boundaries', () => {
     expect(isAuthScopedQueryKey(['admin', 'users'])).toBe(true);
     expect(isAuthScopedQueryKey(['user', 'session'])).toBe(true);
     expect(isAuthScopedQueryKey(['products', 'list'])).toBe(false);
-    expect(isAuthScopedQueryKey(productKeys.categories)).toBe(false);
+    expect(isAuthScopedQueryKey(categoryKeys.all)).toBe(false);
   });
 
   it('removes only non-session auth-scoped query data', async () => {
     const queryClient = new QueryClient();
 
     queryClient.setQueryData(['products', 'list'], { page: 1 });
-    queryClient.setQueryData(productKeys.categories, ['art']);
+    queryClient.setQueryData(categoryKeys.all, ['art']);
     queryClient.setQueryData(authKeys.session, { id: 'user-1' });
     queryClient.setQueryData(['seller', 'products'], [{ id: 'product-1' }]);
     queryClient.setQueryData(['admin', 'users'], [{ id: 'user-1' }]);
@@ -30,7 +30,7 @@ describe('query cache auth boundaries', () => {
     await clearAuthScopedDataExceptSession(queryClient);
 
     expect(queryClient.getQueryData(['products', 'list'])).toEqual({ page: 1 });
-    expect(queryClient.getQueryData(productKeys.categories)).toEqual(['art']);
+    expect(queryClient.getQueryData(categoryKeys.all)).toEqual(['art']);
     expect(queryClient.getQueryData(['seller', 'products'])).toBeUndefined();
     expect(queryClient.getQueryData(['admin', 'users'])).toBeUndefined();
     expect(queryClient.getQueryData(authKeys.session)).toEqual({

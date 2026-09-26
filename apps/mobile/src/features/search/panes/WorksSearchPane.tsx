@@ -3,8 +3,10 @@ import { View } from 'react-native';
 import { figmaTokens } from '@bidplace/design-tokens';
 
 import { WorkCoverCardGrid } from '../../../components/figma/WorkCoverCardGrid';
+import { FigmaButton } from '../../../components/figma/FigmaButton';
 import { usePortfolioWorks } from '../../products/use-portfolio-works';
 import { SearchPaneStatus } from './search-pane-status';
+import { searchPaginationView } from './search-pagination';
 
 export function WorksSearchPane({
   query,
@@ -17,6 +19,7 @@ export function WorksSearchPane({
       sort: 'newest',
     },
   );
+  const pagination = searchPaginationView(works);
 
   return (
     <SearchPaneStatus
@@ -27,7 +30,18 @@ export function WorksSearchPane({
       emptyTitle="Работы не найдены"
       loading={<WorksSkeleton />}
     >
-      <WorkCoverCardGrid items={works.items} columns={2} />
+      <View style={{ gap: figmaTokens.space.x3 }}>
+        <WorkCoverCardGrid items={pagination.items} columns={2} />
+        {pagination.nextPage ? (
+          <FigmaButton
+            label={pagination.nextPage.label}
+            variant="outline"
+            width="full"
+            loading={pagination.nextPage.loading}
+            onPress={() => void works.fetchNextPage()}
+          />
+        ) : null}
+      </View>
     </SearchPaneStatus>
   );
 }

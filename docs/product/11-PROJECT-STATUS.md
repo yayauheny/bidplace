@@ -1846,6 +1846,15 @@ remaining product boundaries still apply.
   month versus day precision, with undated legacy records remaining undated.
   Mobile/device and Playwright acceptance remain Needs verification.
 
+## Mobile query normalization — 2026-09-26
+
+- `Implemented`: `categoryKeys.all` is the sole React Query identity for
+  `api.categories.list()` in the Work editor, catalog, public Author and Search.
+  Public Author category selection is a validated URL parameter and one infinite
+  query owns the current Author header and Work pages.
+- `Implemented`: Search Works and Authors expose explicit next-page loading with
+  the current React Query infinite queries. Browser E2E policy remains manual-only.
+
 - Only `ListingType.AUCTION` and `BYN` exist.
 - No `Lot`, central `Auction`, Buy Now, reserve price, reserve UI or USD fixture remains in the runtime model.
 - Payment, delivery, chat, automatic winner replacement and notifications are not implemented.

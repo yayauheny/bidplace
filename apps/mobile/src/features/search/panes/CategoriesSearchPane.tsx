@@ -5,6 +5,7 @@ import { figmaTokens } from '@bidplace/design-tokens';
 
 import { paddedGridRows } from '../../../components/figma/flex-grid-rows';
 import { retryTransientPublicQuery } from '../../../lib/query-retry';
+import { categoryKeys } from '../../../lib/query-cache';
 import { useApiClient } from '../../../providers/api-provider';
 import { CategorySearchTile } from '../CategorySearchTile';
 import { filterCategoriesByQuery } from '../filter-categories';
@@ -18,7 +19,7 @@ export function CategoriesSearchPane({
 }) {
   const api = useApiClient();
   const categories = useQuery({
-    queryKey: ['categories'],
+    queryKey: categoryKeys.all,
     queryFn: () => api.categories.list(),
     retry: retryTransientPublicQuery,
   });
