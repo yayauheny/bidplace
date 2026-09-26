@@ -18,6 +18,7 @@ import { categoryKeys } from '../../lib/query-cache';
 import { useApiClient } from '../../providers/api-provider';
 
 import { useAuthorWorks } from './use-author-works';
+import { authorWorksArePending } from './public-author-works-state';
 import { FigmaChoiceChip } from '../../components/figma/FigmaChoiceChip';
 
 import { AuthorAbout } from './AuthorAbout';
@@ -52,6 +53,7 @@ export function PublicSellerScreen({
   const works = query.data?.pages.flatMap((page) => page.works) ?? [];
   const author = firstPage?.author;
   const sellerProfileId = author?.id;
+  const worksPending = authorWorksArePending(query);
 
   useTrackSellerView({
     sellerProfileId,
@@ -107,7 +109,9 @@ export function PublicSellerScreen({
               {
                 value: 'works',
                 label: 'Работы',
-                count: firstPage.pagination.total,
+                count: query.isPlaceholderData
+                  ? undefined
+                  : firstPage.pagination.total,
               },
               { value: 'about', label: 'Об авторе' },
             ]}
@@ -163,7 +167,7 @@ export function PublicSellerScreen({
             ) : null}
             {tab === 'about' ? (
               <AuthorAbout author={author} />
-            ) : query.isLoading ? (
+            ) : worksPending ? (
               <PageState title="Загружаем работы…" loading />
             ) : query.isError ? (
               <InfrastructureErrorState

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { toPublicAuthorRouteState } from './public-author-query';
+import { authorWorksArePending } from './public-author-works-state';
 import { publicAuthorKeys } from './use-author-works';
 
 describe('public author route state', () => {
@@ -35,5 +36,17 @@ describe('public author route state', () => {
         category: 'dc4be8c7-bf43-4c1f-94a3-81802ca0cbbb',
       },
     ]);
+  });
+
+  it('keeps author metadata available while hiding a previous category projection', () => {
+    expect(
+      authorWorksArePending({ isLoading: false, isPlaceholderData: true }),
+    ).toBe(true);
+    expect(
+      authorWorksArePending({ isLoading: true, isPlaceholderData: false }),
+    ).toBe(true);
+    expect(
+      authorWorksArePending({ isLoading: false, isPlaceholderData: false }),
+    ).toBe(false);
   });
 });

@@ -1,21 +1,39 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const worksPane = readFileSync(join(here, 'WorksSearchPane.tsx'), 'utf8');
-const authorsPane = readFileSync(join(here, 'AuthorsSearchPane.tsx'), 'utf8');
+import { searchPaginationView } from './search-pagination';
 
 describe('search result pagination', () => {
-  it.each([
-    ['works', worksPane],
-    ['authors', authorsPane],
-  ])('%s exposes the next-page action without replacing loaded rows', (_, pane) => {
-    expect(pane).toContain('label="Показать ещё"');
-    expect(pane).toContain('hasNextPage');
-    expect(pane).toContain('isFetchingNextPage');
-    expect(pane).toContain('fetchNextPage()');
+  it('keeps loaded results while the next page is fetched', () => {
+    const items = [{ id: 'first' }, { id: 'second' }];
+
+    expect(
+      searchPaginationView({
+        items,
+        hasNextPage: true,
+        isFetchingNextPage: true,
+      }),
+    ).toEqual({
+      items,
+      nextPage: { label: 'Показать ещё', loading: true },
+    });
+  });
+
+  it('shows the same explicit action for Works and Authors only when another page exists', () => {
+    for (const items of [[{ id: 'work' }], [{ id: 'author' }]]) {
+      expect(
+        searchPaginationView({
+          items,
+          hasNextPage: true,
+          isFetchingNextPage: false,
+        }).nextPage,
+      ).toEqual({ label: 'Показать ещё', loading: false });
+      expect(
+        searchPaginationView({
+          items,
+          hasNextPage: false,
+          isFetchingNextPage: false,
+        }).nextPage,
+      ).toBeNull();
+    }
   });
 });

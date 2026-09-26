@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 
 import { useApiClient } from '../../providers/api-provider';
 import { retryTransientPublicQuery } from '../../lib/query-retry';
@@ -20,6 +20,7 @@ export function useAuthorWorks(
   return useInfiniteQuery({
     queryKey: publicAuthorKeys.detail(slug, sort, category),
     initialPageParam: 1,
+    placeholderData: keepPreviousData,
     queryFn: ({ pageParam }) =>
       api.portfolio.getAuthor(slug, {
         sort,
