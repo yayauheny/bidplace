@@ -84,19 +84,20 @@ Impact: performance / maintainability.
 Suggested direction: project the required owner fields, including current moderation reason, in one bounded query.  
 Related old findings: LOGIC:BL-02, BL-10.
 
-### BE-06 / Admin controller owns persistence projections
+### BE-06 / Admin controller persistence projections
 
-**CONFIRMED · P2**
+**RESOLVED · verified 2026-09-26**
 
 Evidence:
 
-- `apps/api/src/admin/admin.controller.ts :: listSellerProfiles(), listProducts()`
-- `apps/api/src/admin/admin-moderation.service.ts`
+- `apps/api/src/admin/admin.controller.ts :: listSellers(), listProducts(), updateProduct()`
+- `apps/api/src/admin/admin-moderation.service.ts :: listSellerProfiles(), listProducts(), updateProductStatusAndReadback()`
+- `apps/api/src/admin/admin-moderation.service.spec.ts :: projects non-draft sellers..., projects product moderation context..., returns the canonical product response...`
 
-Finding: controller-level Prisma selects and derived moderation projections make HTTP and persistence concerns change together.
+Finding: HTTP handlers delegate all moderation persistence projections and product-status readback to the existing moderation service. The controller has no Prisma dependency; the service retains batched listing/reason queries and reads the canonical product response after its transaction commits.
 
 Impact: maintainability / testability.  
-Suggested direction: move current list/query behavior into the existing moderation service without adding a repository layer.  
+Suggested direction: retain the service boundary; keep contracts and moderation transition rules covered at this seam.
 Related old findings: LOGIC:BL-10.
 
 ### BE-07 / Work creation retains commerce/process fields outside current RFC

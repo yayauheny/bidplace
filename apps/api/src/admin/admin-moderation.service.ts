@@ -1,6 +1,8 @@
 import {
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
+  adminProductsResponseSchema,
+  adminSellerProfilesResponseSchema,
   type SellerProfileRevisionStatus,
 } from '@bidplace/contracts';
 import {
@@ -15,20 +17,122 @@ import {
   runReadCommittedTransaction,
   runSerializableTransaction,
 } from '../core/database';
+import {
+  productSelect,
+  toContractProduct,
+  toProductResponse,
+} from '../products/products.mapper';
 import { missingProductApprovalFields } from '../products/product-requirements';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import {
   sellerProfileAuthSelect,
   sellerProfileResponseSelect,
+  toSellerProfileResponse,
 } from '../sellers/seller-profile.mapper';
 import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
+
+const adminProductSelect = {
+  ...productSelect,
+  creationIntro: true,
+  creationSteps: {
+    orderBy: { position: 'asc' },
+    select: {
+      id: true,
+      position: true,
+      title: true,
+      body: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+      width: true,
+      height: true,
+    },
+  },
+  sellerProfile: { select: { slug: true, fullName: true, status: true } },
+  listings: {
+    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
+    select: { status: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
+} satisfies import('@bidplace/database').Prisma.ProductSelect;
 
 @Injectable()
 export class AdminModerationService {
   private readonly logger = new Logger(AdminModerationService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async listSellerProfiles() {
+    const sellerProfiles = await this.prisma.sellerProfile.findMany({
+      where: { status: { not: 'DRAFT' } },
+      select: sellerProfileResponseSelect,
+      orderBy: { createdAt: 'asc' },
+    });
+    const ids = sellerProfiles.map(({ id }) => id);
+    const [blockingSellers, reasons] = await Promise.all([
+      this.prisma.sellerProfile.findMany({
+        where: {
+          id: { in: ids },
+          products: {
+            some: {
+              listings: { some: { status: { in: ['SCHEDULED', 'LIVE'] } } },
+            },
+          },
+        },
+        select: { id: true },
+      }),
+      this.latestModerationReasons('SELLER_PROFILE', ids),
+    ]);
+    const blockingSellerIds = new Set(blockingSellers.map(({ id }) => id));
+
+    return adminSellerProfilesResponseSchema.parse({
+      sellerProfiles: sellerProfiles.map((sellerProfile) => ({
+        ...toSellerProfileResponse(sellerProfile).sellerProfile,
+        lastModerationReason: reasons.get(sellerProfile.id) ?? null,
+        hasBlockingListing: blockingSellerIds.has(sellerProfile.id),
+      })),
+    });
+  }
+
+  async listProducts() {
+    const products = await this.prisma.product.findMany({
+      select: adminProductSelect,
+      orderBy: { createdAt: 'asc' },
+    });
+    const reasons = await this.latestModerationReasons(
+      'PRODUCT',
+      products.map(({ id }) => id),
+    );
+
+    return adminProductsResponseSchema.parse({
+      products: products.map((product) => ({
+        ...toContractProduct(product),
+        sellerProfile: product.sellerProfile,
+        creationIntro: product.creationIntro ?? null,
+        creationSteps: product.creationSteps.map((step) => ({
+          id: step.id,
+          position: step.position,
+          title: step.title,
+          body: step.body,
+          image:
+            step.mimeType && step.byteLength && step.checksum
+              ? {
+                  url: `/api/creation-steps/${step.id}/image`,
+                  mimeType: step.mimeType,
+                  byteLength: step.byteLength,
+                  checksum: step.checksum,
+                  width: step.width,
+                  height: step.height,
+                }
+              : null,
+        })),
+        hasBlockingListing: product.listings.length > 0,
+        lastModerationReason: reasons.get(product.id) ?? null,
+      })),
+    });
+  }
 
   async updateSellerStatus(
     adminUserId: string,
@@ -301,6 +405,42 @@ export class AdminModerationService {
 
       return updated;
     });
+  }
+
+  async updateProductStatusAndReadback(
+    adminUserId: string,
+    productId: string,
+    input: AdminProductStatusUpdateRequest,
+  ) {
+    const product = await this.updateProductStatus(adminUserId, productId, input);
+    return toProductResponse(
+      await this.prisma.product.findUniqueOrThrow({
+        where: { id: product.id },
+        select: productSelect,
+      }),
+    );
+  }
+
+  private async latestModerationReasons(
+    targetType: 'SELLER_PROFILE' | 'PRODUCT',
+    targetIds: string[],
+  ) {
+    const auditEvents = await this.prisma.auditEvent.findMany({
+      where: {
+        targetType,
+        targetId: { in: targetIds },
+        reason: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { targetId: true, reason: true },
+    });
+    const reasons = new Map<string, string>();
+    for (const event of auditEvents) {
+      if (event.reason && !reasons.has(event.targetId)) {
+        reasons.set(event.targetId, event.reason);
+      }
+    }
+    return reasons;
   }
 
   private isAllowedSellerTransition(current: string, next: string): boolean {
