@@ -5,6 +5,16 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-26 — Backend API boundary cleanup
+
+- `Implemented`: `POST /api/author/application/submit` is the single public
+  application submit endpoint and retains its verified-email protection and
+  existing Seller-service transition. The removed `/api/seller/profile/submit`
+  route has no current runtime consumer.
+- `Implemented`: Portfolio public GET handlers use query validation, and active
+  Work, image, creation-step, owner Work and achievement UUID parameters reject
+  malformed values with HTTP 400 while valid unknown UUIDs retain HTTP 404.
+
 ## 2026-09-24 — Portfolio release gate and runtime boundary
 
 - `Implemented`: root `pnpm verify` now includes API, contracts, API-client and

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -32,19 +33,28 @@ export class ProductsController {
 
   @Post(':id/submit')
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
-  submit(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  submit(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.products.submit(auth.sub, id);
   }
 
   @Post(':id/hide')
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
-  hide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  hide(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.products.hide(auth.sub, id);
   }
 
   @Post(':id/unhide')
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
-  unhide(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  unhide(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.products.unhide(auth.sub, id);
   }
 
@@ -52,7 +62,7 @@ export class ProductsController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   update(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
     return this.products.update(
@@ -66,7 +76,7 @@ export class ProductsController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   replaceCreation(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
     return this.products.replaceCreationStory(
@@ -80,7 +90,7 @@ export class ProductsController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   reorderCreation(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: unknown,
   ) {
     return this.products.reorderCreationSteps(

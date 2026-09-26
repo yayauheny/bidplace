@@ -260,6 +260,7 @@ describe('author application HTTP contract', () => {
 
     const submitResponse = await applicant.post('/author/application/submit');
     expect(submitResponse.status).toBe(201);
+    expect((await applicant.post('/seller/profile/submit')).status).toBe(404);
     const applicationSubmitted = (await submitResponse.json()) as {
       application: { status: string; applicationStage: string | null };
       editingRevision: { status: string; updatedAt: string } | null;

@@ -1,6 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { PrismaClient } from '@bidplace/database';
 import {
+  ApiErrorCode,
+  apiErrorResponseSchema,
   portfolioAuthorDetailResponseSchema,
   portfolioAuthorsResponseSchema,
   portfolioDiscoveryFacetsResponseSchema,
@@ -41,6 +43,35 @@ afterAll(async () => {
 });
 
 describe('portfolio HTTP route surface', () => {
+  it('preserves public query results and validation errors', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const seller = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true },
+    });
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+
+    for (const path of [
+      '/works?page=1&limit=1&sort=newest',
+      '/authors?page=1&limit=1&sort=added',
+      `/authors/${seller.slug}?page=1&limit=1&sort=newest`,
+    ]) {
+      expect((await guest.get(path)).status).toBe(200);
+    }
+
+    for (const path of [
+      '/works?page=not-a-page',
+      '/authors?page=not-a-page',
+      `/authors/${seller.slug}?page=not-a-page`,
+    ]) {
+      const response = await guest.get(path);
+      expect(response.status).toBe(400);
+      expect(apiErrorResponseSchema.parse(await response.json()).code).toBe(
+        ApiErrorCode.VALIDATION_ERROR,
+      );
+    }
+  });
+
   it('returns 404 for removed catalog and commerce routes and 200 for contract-valid portfolio reads', async () => {
     const fixture = await createPermissionFixture(prisma);
     const product = await prisma.product.findUniqueOrThrow({
