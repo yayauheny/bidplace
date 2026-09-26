@@ -9,15 +9,14 @@ import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
 import { AuthCard } from './auth-card';
+import {
+  emailVerificationRequestErrorMessage,
+  normalizeEmailVerificationCode,
+  verificationDestination,
+  verifyEmailAndRefresh,
+} from './author-email-verification';
 
 type VerifyEmailFormProps = { redirectTo: SafeRedirect; autoRequest: boolean };
-
-function requestErrorMessage(error: unknown): string {
-  if (getErrorStatus(error) === 409) {
-    return 'Код уже отправлен. Попробуйте запросить новый немного позже.';
-  }
-  return getUserFacingErrorMessage(error, 'Не удалось отправить код.');
-}
 
 export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProps) {
   const api = useApiClient();
@@ -37,7 +36,12 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
       await api.auth.requestEmailVerification();
       setNotice('Код отправлен на вашу почту.');
     } catch (requestError) {
-      setError(requestErrorMessage(requestError));
+      setError(
+        emailVerificationRequestErrorMessage(
+          getErrorStatus(requestError),
+          getUserFacingErrorMessage(requestError, 'Не удалось отправить код.'),
+        ),
+      );
     } finally {
       setRequesting(false);
     }
@@ -57,13 +61,19 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     setVerifying(true);
     setError(null);
     try {
-      await api.auth.verifyEmailVerification({ code });
-      const user = await auth.refreshSession();
-      if (!user?.emailVerifiedAt) {
+      const result = await verifyEmailAndRefresh({
+        code,
+        verify: async (value) => {
+          await api.auth.verifyEmailVerification({ code: value });
+        },
+        refreshSession: auth.refreshSession,
+      });
+      const destination = verificationDestination(result === 'verified', redirectTo);
+      if (!destination) {
         setError('Не удалось обновить статус подтверждения. Попробуйте ещё раз.');
         return;
       }
-      router.replace(redirectTo as Href);
+      router.replace(destination as Href);
     } catch (verifyError) {
       setError(getUserFacingErrorMessage(verifyError, 'Не удалось подтвердить email.'));
     } finally {
@@ -80,7 +90,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         <TextField
           label="Код из письма"
           value={code}
-          onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
+          onChangeText={(value) => setCode(normalizeEmailVerificationCode(value))}
           keyboardType="number-pad"
           autoComplete="one-time-code"
           maxLength={6}

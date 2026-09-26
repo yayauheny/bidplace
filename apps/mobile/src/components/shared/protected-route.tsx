@@ -11,6 +11,7 @@ import { AppShell } from '../layout';
 import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
 import { getProtectedRedirect } from '../../features/auth/auth-redirect';
+import { resolveProtectedRouteAccess } from '../../features/auth/author-email-verification';
 
 type ProtectedRouteProps = {
   children: ReactNode;
@@ -57,11 +58,17 @@ export function ProtectedRoute({
   });
   const redirectTo = getProtectedRedirect(pathname, params, dynamicParamNames);
 
-  if (!auth.isAuthenticated) {
+  const access = resolveProtectedRouteAccess({
+    isAuthenticated: auth.isAuthenticated,
+    emailVerifiedAt: auth.user?.emailVerifiedAt,
+    requireVerifiedEmail,
+  });
+
+  if (access === 'login') {
     return <Redirect href={{ pathname: '/login', params: { redirectTo } }} />;
   }
 
-  if (requireVerifiedEmail && !auth.user?.emailVerifiedAt) {
+  if (access === 'verify-email') {
     return (
       <Redirect
         href={`/verify-email?redirectTo=${encodeURIComponent(redirectTo)}` as Href}
