@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  ParseUUIDPipe,
   Post,
   Res,
   UploadedFiles,
@@ -98,12 +99,6 @@ export class SellersController {
     );
   }
 
-  @Post('seller/profile/submit')
-  @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
-  submitProfileRevision(@CurrentUser() auth: { sub: string }) {
-    return this.sellers.submitProfileRevision(auth.sub);
-  }
-
   @Get('seller/products')
   @UseGuards(BearerAuthGuard)
   listProducts(@CurrentUser() auth: { sub: string }) {
@@ -112,7 +107,10 @@ export class SellersController {
 
   @Get('seller/products/:id')
   @UseGuards(BearerAuthGuard)
-  getProduct(@CurrentUser() auth: { sub: string }, @Param('id') id: string) {
+  getProduct(
+    @CurrentUser() auth: { sub: string },
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     return this.sellers.getProduct(auth.sub, id);
   }
 

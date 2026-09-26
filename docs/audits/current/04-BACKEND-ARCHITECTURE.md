@@ -8,19 +8,21 @@ closed for S3, and Compose forwards the complete S3 configuration. This document
 retains unresolved architecture candidates only; revalidate older sections before
 using them as implementation prompts.
 
-### BE-01 / Product revision writes gained row locking but still miss the state guard
+### BE-01 / Product revision writes enforce editing state
 
-**PARTIAL · P1**
+**RESOLVED · verified 2026-09-26**
 
 Evidence:
 
+- `apps/api/src/products/products.service.ts :: update()`
 - `apps/api/src/products/product-write-guard.ts :: lockProductRowForUpdate()`
-- `apps/api/src/products/products.service.ts :: update(), submit()`
+- `apps/api/src/products/product-revision-state.ts :: canAuthorEditRevision()`
+- `apps/api/test/integration/product-write-atomicity.integration.spec.ts`
 
-Finding: Product row locking and conditional writes improve concurrency. The published-product update branch still writes the editing revision without checking `canAuthorEditRevision()`, so a submitted revision remains mutable.
+Finding: Product writes lock the row and check the active revision's author-editable state before updating parent or revision fields. Submitted `PENDING_REVIEW` revisions are not writable.
 
 Impact: correctness / concurrency.  
-Suggested direction: retain the row lock, enforce the revision state inside it, and cover PATCH during `PENDING_REVIEW`.  
+Suggested direction: retain the lock and state check.
 Related old findings: LOGIC:BL-01, BL-14.
 
 ### BE-02 / Seller revision fork now locks profile and revision rows
@@ -54,34 +56,35 @@ Impact: security / product contract.
 Suggested direction: retain HTTP integration coverage and prove SMTP delivery separately.
 Related old findings: LOGIC:BL-03, CROSS:B4, CROSS:T2.
 
-### BE-04 / Application submit has two public routes
+### BE-04 / Author application submission has one public route
 
-**CONFIRMED · P2**
+**RESOLVED · verified 2026-09-26**
 
 Evidence:
 
 - `apps/api/src/portfolio/portfolio.controller.ts :: submitApplication()`
-- `apps/api/src/sellers/sellers.controller.ts :: submitProfileRevision()`
+- `apps/api/src/portfolio/portfolio.service.ts :: submitApplication()`
+- `apps/api/src/sellers/sellers.service.ts :: submitProfileRevision()`
 
-Finding: two URLs expose the same transition and can drift in guards, rate limits, docs and clients.
+Finding: `POST /api/author/application/submit` is the sole public route. It retains the verified-email guard and delegates to the existing Seller service transition; the former Seller HTTP duplicate is absent.
 
 Impact: maintainability / API consistency.  
-Suggested direction: select one canonical route; keep an explicit compatibility adapter only if a real consumer requires it.  
+Suggested direction: retain the one-route, one-transition boundary.
 Related old findings: LOGIC:BL-07.
 
-### BE-05 / Portfolio cabinet performs N+1 owner-detail reads
+### BE-05 / Portfolio cabinet uses bounded owner projections
 
-**CONFIRMED · P2**
+**RESOLVED · verified 2026-09-26**
 
 Evidence:
 
 - `apps/api/src/portfolio/portfolio.service.ts :: listCabinetWorks()`
-- `apps/api/src/sellers/sellers.service.ts :: listProducts(), getProduct()`
+- `apps/api/test/integration/author-cabinet.integration.spec.ts`
 
-Finding: cabinet lists products, then calls `getProduct` once per item only to obtain moderation reason. Cost grows linearly and the endpoint has no pagination.
+Finding: the cabinet pages ordered product IDs and moderation reason in one bounded query, then loads the page projection in one batched product query. It does not call owner Work detail once per card.
 
 Impact: performance / maintainability.  
-Suggested direction: project the required owner fields, including current moderation reason, in one bounded query.  
+Suggested direction: retain page bounds and batched projection.
 Related old findings: LOGIC:BL-02, BL-10.
 
 ### BE-06 / Admin controller persistence projections
@@ -116,34 +119,35 @@ Impact: product consistency / maintainability.
 Suggested direction: decide HTTP/UI support separately from database retention; do not drop data without inventory.  
 Related old findings: LOGIC:BL-11, M-LOGIC-07, VAL:D14.
 
-### BE-08 / Query parsing uses body semantics and naming
+### BE-08 / Portfolio GET queries use query validation
 
-**CONFIRMED · P3**
+**RESOLVED · verified 2026-09-26**
 
 Evidence:
 
 - `apps/api/src/portfolio/portfolio.controller.ts :: listWorks(), listAuthors(), getAuthor()`
-- `apps/api/src/core/validation :: parseBody(), parseQuery()`
+- `apps/api/src/core/validation :: parseQuery()`
+- `apps/api/test/integration/portfolio-route-surface.integration.spec.ts`
 
-Finding: portfolio query objects are passed through `parseBody` while admin uses `parseQuery`. Even if both currently delegate to Zod similarly, this obscures the transport boundary and error semantics.
+Finding: public Portfolio GET inputs pass through `parseQuery`. Valid filters retain their response shape and invalid queries retain the structured 400 validation error.
 
 Impact: maintainability / validation consistency.  
-Suggested direction: use the query parser for query inputs and keep one error mapping.  
+Suggested direction: retain the transport-specific parser.
 Related old findings: VAL:D12.
 
-### BE-09 / Route parameters rely on service/database failure shapes
+### BE-09 / Active UUID-backed routes validate parameters at the boundary
 
-**NEEDS_REVIEW · P3**
+**RESOLVED for current Portfolio/Work runtime · verified 2026-09-26**
 
 Evidence:
 
-- `apps/api/src/products/products.controller.ts :: @Param('id')`
-- `apps/api/src/images/images.controller.ts :: productId, stepId, imageId params`
+- `apps/api/src/{products,images,sellers,portfolio}/*controller.ts :: ParseUUIDPipe`
+- `apps/api/test/integration/uuid-params.integration.spec.ts`
 
-Finding: UUID-like params are forwarded as strings. Several code paths interpolate them as PostgreSQL UUIDs, so malformed values may surface as infrastructure errors rather than stable 4xx responses.
+Finding: before validation, malformed Product, image, creation-step, owner Work and achievement IDs returned 500 through raw UUID casts or Prisma. The current active routes reject malformed UUIDv4 values with 400 and retain 404 for valid unknown IDs.
 
 Impact: correctness / API consistency.  
-Suggested direction: probe representative malformed params over HTTP before adding broad validation.  
+Suggested direction: use the same explicit boundary validation for future UUID-backed Portfolio/Work routes.
 Related old findings: validation audit hypotheses.
 
 ### BE-10 / Commerce data remains while commerce runtime is unassembled

@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Res,
@@ -68,7 +69,8 @@ export class ImagesController {
   )
   async add(
     @CurrentUser() auth: { sub: string },
-    @Param('productId') productId: string,
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
     if (!files.length)
@@ -96,8 +98,9 @@ export class ImagesController {
   )
   async addCreationStepImage(
     @CurrentUser() auth: { sub: string },
-    @Param('productId') productId: string,
-    @Param('stepId') stepId: string,
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+    @Param('stepId', new ParseUUIDPipe({ version: '4' })) stepId: string,
     @UploadedFiles() files: RawImageUpload[] = [],
   ) {
     if (!files.length) throw new BadRequestException('An image is required');
@@ -113,8 +116,9 @@ export class ImagesController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   remove(
     @CurrentUser() auth: { sub: string },
-    @Param('productId') productId: string,
-    @Param('imageId') imageId: string,
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
+    @Param('imageId', new ParseUUIDPipe({ version: '4' })) imageId: string,
   ) {
     return this.images.remove(auth.sub, productId, imageId);
   }
@@ -123,7 +127,8 @@ export class ImagesController {
   @UseGuards(BearerAuthGuard, VerifiedEmailGuard)
   reorder(
     @CurrentUser() auth: { sub: string },
-    @Param('productId') productId: string,
+    @Param('productId', new ParseUUIDPipe({ version: '4' }))
+    productId: string,
     @Body() body: unknown,
   ) {
     return this.images.reorder(
@@ -136,7 +141,7 @@ export class ImagesController {
   @Get('images/:id')
   @UseGuards(OptionalBearerAuthGuard)
   async get(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
     @Res()
     response: {
@@ -157,7 +162,7 @@ export class ImagesController {
   @Get('creation-steps/:stepId/image')
   @UseGuards(OptionalBearerAuthGuard)
   async getCreationStepImage(
-    @Param('stepId') stepId: string,
+    @Param('stepId', new ParseUUIDPipe({ version: '4' })) stepId: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
     @Res()
     response: {

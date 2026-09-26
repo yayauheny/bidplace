@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Res,
@@ -21,7 +22,7 @@ import {
   portfolioWorksQuerySchema,
 } from '@bidplace/contracts';
 
-import { parseBody } from '../core/validation';
+import { parseBody, parseQuery } from '../core/validation';
 import {
   BearerAuthGuard,
   CurrentUser,
@@ -55,7 +56,7 @@ export class PortfolioController {
   @Get('works')
   listWorks(@Query() query: unknown) {
     return this.portfolio.listWorks(
-      parseBody(portfolioWorksQuerySchema, query),
+      parseQuery(portfolioWorksQuerySchema, query),
     );
   }
 
@@ -67,7 +68,7 @@ export class PortfolioController {
   @Get('authors')
   listAuthors(@Query() query: unknown) {
     return this.portfolio.listAuthors(
-      parseBody(portfolioAuthorsQuerySchema, query),
+      parseQuery(portfolioAuthorsQuerySchema, query),
     );
   }
 
@@ -75,7 +76,7 @@ export class PortfolioController {
   getAuthor(@Param('slug') slug: string, @Query() query: unknown) {
     return this.portfolio.getAuthor(
       slug,
-      parseBody(portfolioWorksQuerySchema, query),
+      parseQuery(portfolioWorksQuerySchema, query),
     );
   }
 
@@ -157,7 +158,7 @@ export class PortfolioController {
   })
   deleteAchievement(
     @CurrentUser() auth: { sub: string },
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
     return this.portfolio.deleteAchievement(auth.sub, id);
   }
@@ -165,7 +166,7 @@ export class PortfolioController {
   @Get('author-achievements/:id/image')
   @UseGuards(OptionalBearerAuthGuard)
   async getAchievementImage(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentUser() auth: { sub: string; role: string } | undefined,
     @Res()
     response: {
