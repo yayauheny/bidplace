@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - feature/portfolio-mvp-release
       - 'fix/**'
       - 'feat/**'
   pull_request:

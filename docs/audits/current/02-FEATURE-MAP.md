@@ -10,9 +10,9 @@
 | Search overlay             | root `SearchOverlayHost`, `features/search` | portfolio list APIs, categories          | portfolio/categories     | Live, first loaded page only       |
 | Authentication             | `app/(auth)/*`                              | auth/password-reset                      | `auth`, `password-reset` | Live                               |
 | Email OTP                  | no route/screen                             | OTP client/contracts                     | `otp`                    | Backend/client only                |
-| Author application/profile | `app/(seller)/profile.tsx`                  | sellers + portfolio wrappers             | `sellers`, `portfolio`   | Live, draft persistence incomplete |
+| Author application/profile | `app/(seller)/profile.tsx`                  | sellers + portfolio wrappers             | `sellers`, `portfolio`   | Live, server-resumable draft       |
 | Work creation/edit         | `app/(seller)/products/*`                   | products/images                          | `products`, `images`     | Live, four-step implementation     |
-| Author cabinet             | no route                                    | portfolio cabinet + products hide/unhide | `portfolio`, `products`  | Backend/client only                |
+| Author cabinet             | `app/(seller)/cabinet.tsx`                  | portfolio cabinet + products hide/unhide | `portfolio`, `products`  | Live                               |
 | Admin moderation/analytics | `app/(admin)/*`                             | admin                                    | `admin`, `analytics`     | Live                               |
 | Commerce                   | no mobile route                             | retained schema/types vary               | no imported API module   | Runtime absent; docs conflict      |
 
@@ -23,9 +23,9 @@
 | Catalog filters/search     | URL + React Query                                   | Good reference pattern.                                                    |
 | Search overlay session     | `overlay`, `oq`, `otab` URL params + local debounce | Bounded and tested; panes expose only loaded first page.                   |
 | Public author tab/category | component `useState`                                | Back/Forward and share do not restore it; category creates a second query. |
-| Auth user/session          | `AuthProvider` local state                          | Duplicates server resource ownership outside React Query.                  |
-| Work form                  | 15+ local states synchronized by effects            | Dirty/save semantics are implicit.                                         |
-| Application form/step      | local object + `profileStep`                        | Steps 1–2 are not persisted or URL-owned.                                  |
+| Auth user/session          | React Query `['user', 'me']`                        | Stable active query survives anonymous recovery.                            |
+| Work form                  | React Hook Form + owner detail query                 | Clean newer revision hydrates; dirty form is retained.                     |
+| Application form/step      | RHF + URL step + server application stage            | Resume boundary is server-owned.                                           |
 | Images/revision status     | React Query                                         | Server remains authoritative; row locks are present.                       |
 
 ## Dependency observations

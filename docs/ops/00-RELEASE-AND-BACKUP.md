@@ -8,7 +8,9 @@ Operational runbook for the pilot single-replica stack. Product contracts remain
 
 - One API replica and one PostgreSQL instance.
 - Auction lifecycle cron and in-process rate limits assume a single scheduler.
-- Product images live in PostgreSQL `BYTEA`; backup is a database dump, not separate object storage.
+- Product image metadata, checksums and object keys live in PostgreSQL; production
+  image bytes live in S3-compatible object storage. A database dump alone does
+  not restore media bytes.
 - Mobile web is built and hosted separately (`expo export` or static host). The Compose `app` profile ships API + Postgres only.
 
 ## Toolchain and clean checkout gate
@@ -28,9 +30,12 @@ pnpm docker:up
 pnpm verify
 ```
 
-`pnpm verify` runs, in order: `db:generate`, `typecheck`, `lint`, `test:unit`, `test:integration`, and `build`.
+`pnpm verify` runs, in order: `db:generate`, `typecheck`, `lint`, all unit suites
+(including mobile), the ops-script unit suite, the disposable E2E database
+fence, `test:integration`, and `build`. Maintained browser tests remain separate
+because they create a disposable database and start local services.
 
-GitHub Actions runs the same gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml).
+GitHub Actions runs the same deterministic gate on push and pull requests via [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml). Full browser E2E is intentionally **not** part of automatic CI/CD because it is slow and resource-heavy. Chromium E2E remains available as a manual `workflow_dispatch` workflow in [`.github/workflows/browser-e2e.yml`](../../.github/workflows/browser-e2e.yml), while the full Chromium/WebKit matrix remains a manual release gate.
 
 ## Deploy (single-replica Compose)
 
@@ -50,12 +55,11 @@ Ensure root `.env` includes the production keys the API container validates when
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_AUTH_MODE`, `SMTP_FROM`
 - `PASSWORD_RESET_URL_BASE`
 - `SERVICE_RULES_OWNER`, `SERVICE_RULES_CONTACT`, `SERVICE_RULES_TEXT`
+- `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
 - optional: `CORS_ORIGIN` (defaults to `http://localhost:8081`)
 
-When `SMTP_AUTH_MODE=login`, add `SMTP_USERNAME` and `SMTP_PASSWORD` to the
-`api` service `environment` in [`docker-compose.yml`](../../docker-compose.yml)
-(or a compose override). The default compose file omits them so
-`SMTP_AUTH_MODE=none` does not inject empty credential strings.
+When `SMTP_AUTH_MODE=login`, set `SMTP_USERNAME` and `SMTP_PASSWORD` in `.env`.
+Compose forwards both; empty values normalize to absent for `SMTP_AUTH_MODE=none`.
 
 ```bash
 # Build and start API + Postgres
@@ -70,6 +74,13 @@ curl -sf http://localhost:3001/api/health/ready
 ```
 
 `GET /api/health` is liveness only. `GET /api/health/ready` returns `503` when PostgreSQL is unreachable or the probe times out (2s).
+
+Before serving traffic, run a media provider smoke against an isolated prefix;
+it writes, reads/checksums and deletes only its own random object:
+
+```bash
+MEDIA_PREFLIGHT_PREFIX='ops/preflight/staging' pnpm ops:media-preflight
+```
 
 Compose reads the required keys from `.env` at the repo root. Default local Postgres URL inside Compose is:
 
@@ -131,7 +142,7 @@ SOURCE_DATABASE_URL='postgresql://auction:auction@127.0.0.1:5432/bidplace?schema
 TARGET_DATABASE_URL='postgresql://auction:auction@127.0.0.1:5432/bidplace_restore?schema=public' \
   pnpm ops:restore backups/bidplace-<timestamp>.dump
 
-# 3. Integrity checks (counts + sample image checksums)
+# 3. Integrity checks (database counts + metadata checksums)
 pnpm --filter @bidplace/database build
 TARGET_DATABASE_URL='postgresql://auction:auction@127.0.0.1:5432/bidplace_restore?schema=public' \
   pnpm ops:verify-restore
@@ -143,6 +154,21 @@ Evidence checklist:
 - [ ] `pnpm ops:restore` creates `bidplace_restore` and completes without error
 - [ ] `pnpm ops:verify-restore` prints table counts and verifies sample `ProductImage.checksum` values
 - [ ] `curl -sf localhost:3001/api/health/ready` succeeds against the primary database after deploy smoke
+- [ ] `MEDIA_PREFLIGHT_PREFIX='ops/preflight/restore-drill' pnpm ops:media-preflight`
+      succeeds against the intended bucket and leaves no test object behind
+
+## Staging smoke
+
+The staging smoke is read-only: it checks health/readiness, public Home/Works/
+Authors API reads and verifies that SPA host routes for login, Works, Authors,
+profile and cabinet are not host-level 404s. It does not authenticate, create
+data or invoke object storage.
+
+```bash
+STAGING_API_URL='https://api.staging.example' \
+STAGING_WEB_URL='https://staging.example' \
+pnpm ops:staging-smoke
+```
 
 ## Deferred (post-pilot)
 

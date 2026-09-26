@@ -105,7 +105,7 @@ docs/
 
 ### Требования
 
-- Node.js 22 (см. [`.nvmrc`](.nvmrc); `engines.node` в `package.json`)
+- Node.js 22.x (см. [`.nvmrc`](.nvmrc); `engines.node` в `package.json`)
 - pnpm 11.7.0 (`corepack enable` или установка вручную)
 - Docker Desktop или Docker Engine (PostgreSQL для dev, integration и restore drill)
 
@@ -127,7 +127,7 @@ pnpm docker:up
 pnpm verify
 ```
 
-`pnpm verify` выполняет `db:generate`, `typecheck`, `lint`, `test:unit`, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
+`pnpm verify` выполняет `db:generate`, `typecheck`, `lint`, `test:unit`, `test:ops`, E2E database fence, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
 
 Операционный runbook (deploy, backup, restore drill): [`docs/ops/00-RELEASE-AND-BACKUP.md`](docs/ops/00-RELEASE-AND-BACKUP.md).
 
@@ -139,7 +139,7 @@ pnpm verify
 - `pnpm typecheck` — прогнать TypeScript checks
 - `pnpm test:unit` — unit-тесты API и contracts
 - `pnpm test:integration` — integration-тесты API (нужен PostgreSQL)
-- `pnpm verify` — полный gate: generate, typecheck, lint, unit, integration, build
+- `pnpm verify` — полный gate: generate, typecheck, lint, unit, ops, E2E fence, integration, build
 - `pnpm ops:backup` — `pg_dump` backup текущей БД
 - `pnpm ops:restore` — restore dump в отдельную БД (`TARGET_DATABASE_URL` обязателен)
 - `pnpm ops:verify-restore` — counts и sample checksum после restore
