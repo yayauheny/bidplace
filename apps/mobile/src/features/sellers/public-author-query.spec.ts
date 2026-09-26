@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { toPublicAuthorRouteState } from './public-author-query';
 import { authorWorksArePending } from './public-author-works-state';
-import { publicAuthorKeys } from './use-author-works';
+import {
+  canReusePreviousAuthorData,
+  publicAuthorKeys,
+} from './use-author-works';
 
 describe('public author route state', () => {
   it('keeps only a valid category UUID for the author API query', () => {
@@ -36,6 +39,40 @@ describe('public author route state', () => {
         category: 'dc4be8c7-bf43-4c1f-94a3-81802ca0cbbb',
       },
     ]);
+  });
+
+  it('reuses a previous category result only for the same Author', () => {
+    expect(
+      canReusePreviousAuthorData(
+        {
+          queryKey: publicAuthorKeys.detail(
+            'anna',
+            'newest',
+            'dc4be8c7-bf43-4c1f-94a3-81802ca0cbbb',
+          ),
+        },
+        'anna',
+      ),
+    ).toBe(true);
+  });
+
+  it('reuses a previous sort result only for the same Author', () => {
+    expect(
+      canReusePreviousAuthorData(
+        { queryKey: publicAuthorKeys.detail('anna', 'oldest') },
+        'anna',
+      ),
+    ).toBe(true);
+  });
+
+  it('never reuses a different Author or missing previous query', () => {
+    expect(
+      canReusePreviousAuthorData(
+        { queryKey: publicAuthorKeys.detail('anna', 'newest') },
+        'boris',
+      ),
+    ).toBe(false);
+    expect(canReusePreviousAuthorData(undefined, 'boris')).toBe(false);
   });
 
   it('keeps author metadata available while hiding a previous category projection', () => {
