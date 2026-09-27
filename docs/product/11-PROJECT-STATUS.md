@@ -5,6 +5,22 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-27 — Overlay focus dismissal
+
+- `Needs verification` (mobile web): `useDismissibleOverlay` registers a
+  `focusin` listener only when `closeOnFocusIn` is true and removes that same
+  listener. SearchOverlay, FilterSheet and FilterMenu still omit the option, so
+  moving focus no longer closes them. Escape and outside pointer dismissal are
+  unchanged. FilterSheet keeps `restoreOnClose: true`. SearchOverlay keeps
+  `restoreOnClose: false`.
+- Coverage: `use-dismissible-overlay.spec.ts` mounts the hook for omitted/false,
+  true, inside/outside focus, cleanup and reopen. Those false cases fail on the
+  previous shadowed listener.
+- `Needs verification`: Chromium/WebKit `e2e/search-overlay.spec.ts` did not
+  start. The fenced default database rejected user `auction` on
+  `127.0.0.1:5432`. No other database was used.
+- `Unchanged`: focus trap, portal, overlay history and outside-click ownership.
+
 ## 2026-09-26 — Backend API boundary cleanup
 
 - `Implemented`: `POST /api/author/application/submit` is the single public

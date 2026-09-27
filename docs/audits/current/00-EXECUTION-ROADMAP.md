@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-27. **Статус документа:** готов к использованию; scopes R01–R30 ещё не запущены.
+**Сохранён:** 2026-09-27. **Статус документа:** R01 — `NEEDS_VERIFICATION`; scopes R02–R30 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -187,7 +187,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Тесты:** реальный lifecycle hook: false/true, focus внутри/снаружи, cleanup и повторное открытие. Не ограничиваться pure helper.
 - **Validation:** V-MOBILE; V-BROWSER для `search-overlay.spec.ts`; V-DIFF.
 - **STOP:** исправление требует перестройки focus ownership — вынести в R14.
-- **Done/status:** D03 → `VERIFIED`; T04 остаётся `PARTIAL`.
+- **Done/status:** D03 → `NEEDS_VERIFICATION`; T04 остаётся `PARTIAL`. Hook lifecycle подтверждён; Playwright `search-overlay.spec.ts` не стартовал, потому что disposable DB отклонила credentials `auction`.
 - **Отчёт:** G, включая доказательство различия true/false.
 
 ### R02. Показывать в moderation queue именно проверяемую ревизию
@@ -816,6 +816,28 @@ remaining limitations:
 blocked-by:
 ```
 
+### R01 evidence
+
+```text
+scope: R01
+finding IDs: D03; overlay seam of T04
+status: NEEDS_VERIFICATION
+base SHA: e166d6e6310ce30977f402b3c657f1f062811414
+commit: sole commit on fix/overlay-focus-dismiss; parent e166d6e6310ce30977f402b3c657f1f062811414
+changed contracts: none. closeOnFocusIn stays optional and defaults to false. SearchOverlay, FilterSheet and FilterMenu still omit it. FilterSheet restoreOnClose stays true. SearchOverlay restoreOnClose stays false.
+tests/scenarios: mounted useDismissibleOverlay — omitted/false does not register focusin and does not close on inside or outside focus; true closes once on outside focus and ignores inside focus; cleanup removes the same listener; reopen registers again and closes once; false still closes once on Escape (with restoreFocus) and outside pointerdown, and ignores inside pointerdown. The omitted/false listener assertions fail on the previous shadowed callback.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (396 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 1
+runtime environment: Node v24.17.0, pnpm 11.7.0. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency.
+evidence links: apps/mobile/src/components/layout/use-dismissible-overlay.ts; apps/mobile/src/components/layout/use-dismissible-overlay.spec.ts
+remaining limitations: Playwright webServer exited before any browser test. prepare.mjs failed with PrismaClientInitializationError: authentication failed for user auction at 127.0.0.1:5432. The fenced default URL was not replaced.
+blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5432/bidplace_e2e
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -878,37 +900,37 @@ blocked-by:
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
 
-| Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                        |
-| ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | E0/E1; после: revision queue + security integration          |
-| D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                          |
-| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | QUEUED             | —                                                            | E0 runtime reproduction; после: actual hook lifecycle        |
-| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                          |
-| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                             |
-| D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                         |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes           |
-| D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | QUEUED             | —                                                            | E2; live UI, cleanup при server failure, public redirect     |
-| C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | QUEUED             | R01/R04/R05–R07                                              | E0 graph+rg; повторный consumer inventory                    |
-| C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | QUEUED             | R04; consumer verification                                   | E0/E1; export inventory и package builds                     |
-| C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | QUEUED             | R09; Metro/native verification                               | E0/E1; clean install + bundles                               |
-| C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | QUEUED             | R04/R09                                                      | E0/E1; primitive behavior + media guards                     |
-| C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | QUEUED             | R11                                                          | E0/E1 manifests; isolated builds/typecheck                   |
-| A01     | S3 side effects внутри retryable DB transaction                              | P1 / HIGH             | W6 → R22                             | DECISION_REQUIRED  | R10/R18; consistency decision                                | E0; fake-store failure matrix, затем implementation          |
-| A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | DECISION_REQUIRED  | R18/R21; consistency guarantee                               | E0 static risk; требуется controlled concurrency             |
-| A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                  |
-| A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                             |
-| A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                |
-| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | QUEUED             | R01/R09                                                      | E0/E1; focus/animation/browser regressions                   |
-| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                |
-| L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                      |
-| L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | QUEUED             | согласовать включение с R07                                  | E0/E1; cancellation/error-classification tests               |
-| S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                        |
-| S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                          |
-| T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | QUEUED             | —                                                            | E0/E1; discovered tests + build output                       |
-| T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                |
-| T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; оба актуализированных browser specs                   |
-| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | BLOCKED — частично | UI части готовы к работе; полное закрытие зависит от A01/A02 | Поведенческие regressions по каждому seam; Plan недостаточен |
-| T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix             |
+| Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                                          |
+| ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | E0/E1; после: revision queue + security integration                            |
+| D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                                            |
+| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | NEEDS_VERIFICATION | —                                                            | Hook lifecycle passed; Playwright search-overlay blocked on disposable DB auth |
+| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |
+| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
+| D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
+| D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | QUEUED             | —                                                            | E2; live UI, cleanup при server failure, public redirect                       |
+| C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | QUEUED             | R01/R04/R05–R07                                              | E0 graph+rg; повторный consumer inventory                                      |
+| C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | QUEUED             | R04; consumer verification                                   | E0/E1; export inventory и package builds                                       |
+| C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | QUEUED             | R09; Metro/native verification                               | E0/E1; clean install + bundles                                                 |
+| C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | QUEUED             | R04/R09                                                      | E0/E1; primitive behavior + media guards                                       |
+| C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | QUEUED             | R11                                                          | E0/E1 manifests; isolated builds/typecheck                                     |
+| A01     | S3 side effects внутри retryable DB transaction                              | P1 / HIGH             | W6 → R22                             | DECISION_REQUIRED  | R10/R18; consistency decision                                | E0; fake-store failure matrix, затем implementation                            |
+| A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | DECISION_REQUIRED  | R18/R21; consistency guarantee                               | E0 static risk; требуется controlled concurrency                               |
+| A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                                    |
+| A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
+| A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
+| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | QUEUED             | R01/R09                                                      | E0/E1; focus/animation/browser regressions                                     |
+| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
+| L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                                        |
+| L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | QUEUED             | согласовать включение с R07                                  | E0/E1; cancellation/error-classification tests                                 |
+| S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |
+| S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
+| T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | QUEUED             | —                                                            | E0/E1; discovered tests + build output                                         |
+| T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
+| T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; оба актуализированных browser specs                                     |
+| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 покрыл overlay hook lifecycle; browser seam и остальные seams открыты      |
+| T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
 
 **TOTAL FINDINGS: 29**
 
