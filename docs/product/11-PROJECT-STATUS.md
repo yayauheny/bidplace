@@ -9,7 +9,9 @@
 
 - `Needs verification` (mobile web): an authenticated user can press «Выйти»
   on the live account destinations. The author cabinet, admin moderation, and
-  email verification call `AuthProvider.logout()`. On the author profile, a
+  email verification call `AuthProvider.logout()`. On email verification, logout
+  and a new code request or confirmation cannot run together, so confirmation
+  cannot call `refreshSession` after logout has started. On the author profile, a
   dirty form or a newly selected photo opens the existing exit dialog first.
   «Продолжить заполнение» does not log out. When the draft can be saved, logout
   runs only after that save succeeds. A failed save stays on the form. A clean
@@ -18,7 +20,8 @@
   including when the server logout fails. That failure is not presented as a
   confirmed server-session invalidation.
 - Coverage: `account-logout-button.spec.ts`, `seller-profile-logout.spec.ts`,
-  `account-logout-reachability.spec.ts`, and `auth-provider-logout.spec.ts`.
+  `account-logout-reachability.spec.ts`, `verify-email-logout.spec.ts`, and
+  `auth-provider-logout.spec.ts`.
 - `Needs verification`: Chromium/WebKit `e2e/account-logout.spec.ts` did not
   start. The fenced default database rejected user `auction` on
   `127.0.0.1:5432`. No other database was used.
