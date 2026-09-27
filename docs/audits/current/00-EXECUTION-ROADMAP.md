@@ -4,9 +4,9 @@
 
 **Источник:** последний полный аудит в этой беседе, baseline `7d2d547`. Исходный аудит и существующие audit-файлы сохраняются.
 
-**Результат планирования:** 28 findings распределены по семи волнам и 29 небольшим scopes: 23 Implementation и 6 Plan.
+**Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-27. **Статус документа:** готов к использованию; scopes R01–R29 ещё не запущены.
+**Сохранён:** 2026-09-27. **Статус документа:** готов к использованию; scopes R01–R30 ещё не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -57,7 +57,7 @@ audited baseline: 7d2d547
 
 ### Общий implementation prompt G
 
-**Каждая карточка R01–R29 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
+**Каждая карточка R01–R30 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
 
 > Выполни только указанный scope.
 >
@@ -151,15 +151,15 @@ git -c core.fsmonitor=false status --short
 
 ## 2. Волны и зависимости
 
-| Волна  | Назначение                                                     | Scopes  |
-| ------ | -------------------------------------------------------------- | ------- |
-| Wave 1 | Correctness и небольшие проверки высокой ценности              | R01–R04 |
-| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08 |
-| Wave 3 | Подтверждённый dead code, dependencies и бесполезные параметры | R09–R13 |
-| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17 |
-| Wave 5 | Узкие read models и ограничение стоимости запросов             | R18–R21 |
-| Wave 6 | Отдельные архитектурные решения                                | R22–R27 |
-| Wave 7 | Остаточный test cleanup                                        | R28–R29 |
+| Волна  | Назначение                                                     | Scopes       |
+| ------ | -------------------------------------------------------------- | ------------ |
+| Wave 1 | Correctness и небольшие проверки высокой ценности              | R01–R04, R30 |
+| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08      |
+| Wave 3 | Подтверждённый dead code, dependencies и бесполезные параметры | R09–R13      |
+| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17      |
+| Wave 5 | Узкие read models и ограничение стоимости запросов             | R18–R21      |
+| Wave 6 | Отдельные архитектурные решения                                | R22–R27      |
+| Wave 7 | Остаточный test cleanup                                        | R28–R29      |
 
 Волны задают приоритет, а не обязательный глобальный барьер. Явные зависимости карточек обязательны. Тесты нового поведения входят в production scope сразу; Wave 7 не является местом для откладывания regression coverage.
 
@@ -248,6 +248,27 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** database assertion не выражает реальный контракт — не сохранять его ради количества тестов; зафиксировать и удалить с объяснением, сохранив discovery остальных meaningful tests.
 - **Done/status:** T01 → `VERIFIED`.
 - **Отчёт:** G с discovered counts до/после и проверкой build output.
+
+### R30. Вернуть доступный logout в живой account/profile flow
+
+- **Модель:** Terra Medium.
+- **Режим:** Implementation.
+- **Base:** B.
+- **Branch:** `fix/account-logout-entry`.
+- **Findings:** D08 · P1 · HIGH — auth logout существует в AuthProvider/API, но в текущем runtime отсутствует доступный пользователю UI entry point.
+- **Происхождение:** targeted read-only review [PR #12](https://github.com/yayauheny/bidplace/pull/12), сравнение `014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`. Это НЕ regression PR #12: UI callers уже находились в unreachable legacy tree на его base.
+- **Dependencies:** нет. R30 относится к Wave 1; номер добавлен без перенумерации R01–R29.
+- **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/providers/auth-provider.tsx`, `AuthProvider.logout`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/lib/query-cache.ts`, `clearAuthenticatedSession`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/figma/FloatingDock.tsx`, `dockHref`; живые `/profile`, `/cabinet`, `/admin` screens.
+- **Phase 0:** повторно проверить отсутствие live logout callers; проследить account/profile destination для пользователя без профиля, кандидата, approved/suspended автора и admin. Проверить существующие session cleanup, error policy, protected-route guards и design owners; выбрать место действия внутри текущего account/profile flow, доступное соответствующим authenticated ролям, включая admin account destination.
+- **Исправить:** добавить доступное действие «Выйти» с existing UI primitive и вызовом существующего `auth.logout()`. На время операции блокировать повторное нажатие. После завершения local cleanup выполнять `router.replace('/')` и при успехе, и при server logout failure; rejection обработать по существующей error policy без unhandled promise rejection или пустого catch.
+- **Механизм:** существующие AuthProvider, React Query session cleanup и Expo Router `replace`; не вызывать logout API напрямую из UI и не заводить второй session state.
+- **Не менять:** legacy AccountMenu/MobileHeader не возвращать; не перестраивать dock, onboarding и navigation tree; не менять API/session protocol, серверную авторизацию или дизайн-систему. Новая библиотека не нужна.
+- **Инварианты:** сохранить `AuthProvider.logout` cleanup в `finally`, включая отмену session queries и очистку private cache при server failure. До перехода в публичное состояние local session должна быть очищена; Back не должен раскрывать protected данные. Guest не видит logout. Не представлять локальный выход при сетевом сбое как доказанную серверную invalidation; dirty формы остаются под существующими unsaved-change guards.
+- **Тесты:** behavioral test живого UI: authenticated пользователь находит logout и запускает его; success и rejected server logout оба очищают local session/private cache и переводят на `/`; guest не видит действие; повторное нажатие не создаёт второй запрос; protected route после выхода недоступен. Проверить reachability действия для указанных account destinations; не заменять тест source-text assertion.
+- **Validation:** V-MOBILE; V-BROWSER для добавленного logout scenario в Chromium/WebKit; V-DIFF. Сохранить regression coverage текущего session cleanup.
+- **STOP:** действие недоступно части authenticated ролей; proposed fix обходит существующий cleanup или dirty guard; требуется новый account route, auth protocol либо восстановление legacy tree — остановить расширение scope и зафиксировать blocker.
+- **Done/status:** D08 → `VERIFIED` только после behavioral и browser checks; до выполнения `QUEUED`, при неполных проверках `NEEDS_VERIFICATION`.
+- **Отчёт:** G с доступными account destinations, evidence для success/server failure и явной отметкой «предсуществующий дефект, не regression PR #12».
 
 ### Wave 2 — lifecycle/state/query
 
@@ -343,8 +364,8 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Findings:** mobile часть C01; dead-helper часть T02.
 - **Dependencies:** R01, R05–R07.
 - **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/CatalogGrid.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-about.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/SessionAlert.tsx` и platform variant.
-- **Phase 0:** повторить route/import/export graph с platform resolution и dynamic references.
-- **Разрешённые кандидаты:** перечисленные компоненты; `lib/formatters.ts`, `lib/canonical-share-url.ts`, `lib/media.ts`; `button-layout.ts`, `ambient-image-background-style.ts`; старые `auth-layout`, `form-page-layout`, `author-layout`, `catalog-layout`; неиспользуемый direct re-export `CreatorCardGrid`, если повторная проверка подтверждает.
+- **Phase 0:** повторить route/import/export graph с platform resolution и dynamic references. По targeted review PR #12 отдельно перепроверить `OverlayPortal` и его positioning helpers в `overlay-geometry.ts`, а также subtree `FilterMenu` → `focusable-anchor`. Различать barrel/module import и реальный render/call path; смонтированный `OverlayHost` не считать unreachable целиком из-за отсутствия consumers `OverlayPortal`.
+- **Разрешённые кандидаты:** перечисленные компоненты; `lib/formatters.ts`, `lib/canonical-share-url.ts`, `lib/media.ts`; `button-layout.ts`, `ambient-image-background-style.ts` и `ambient-image-background-style.spec.ts`; старые `auth-layout`, `form-page-layout`, `author-layout`, `catalog-layout`; неиспользуемый direct re-export `CreatorCardGrid`; `OverlayPortal`, `getBottomEndPosition`/`getBottomStartPosition` из `overlay-geometry.ts` и относящиеся к ним tests; `FilterMenu` → `focusable-anchor` (`assignFocusableAnchorRef`, `FocusableAnchor`), если повторная проверка подтверждает unreachable status. Сейчас это только кандидаты R09: никаких удалений при обновлении roadmap.
 - **Исправить:** удалить только подтверждённые unreachable symbols/files и ставшие бессмысленными тесты/barrel exports.
 - **Замена:** отсутствует — ответственность уже отсутствует либо выполняется действующим кодом.
 - **Не менять:** routes, active error UI, Figma masters, runtime-compatible adapters.
@@ -846,7 +867,7 @@ blocked-by:
 
 ### Проверка документа — 2026-09-27
 
-- Сохранены все 28 исходных ID и 29 prompts; 23 Implementation и 6 Plan.
+- Сохранены все 28 исходных ID; после targeted review PR #12 добавлен D08. Итого 29 findings и 30 prompts; 24 Implementation и 6 Plan. Существующие scopes не перенумерованы; дополнены только кандидаты R09 и новый Wave 1 scope R30.
 - Проверены обязательные поля prompts, существование явно указанных абсолютных путей, соответствие coverage matrix карточкам и отсутствие циклов prerequisites.
 - Проверки документа: структурная проверка Python, `pnpm exec prettier --check docs/audits/current/00-EXECUTION-ROADMAP.md`, `git diff --check`.
 - Production code, тесты, manifests, исходные audit-файлы и canonical product/design documents не изменены. Product statuses не обновлялись, поскольку поведение системы не менялось.
@@ -854,7 +875,7 @@ blocked-by:
 
 ## 6. Полная coverage matrix
 
-`E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass. Это evidence наличия finding, не его исправления.
+`E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
 
 | Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                        |
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -865,6 +886,7 @@ blocked-by:
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                             |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                         |
 | D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes           |
+| D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | QUEUED             | —                                                            | E2; live UI, cleanup при server failure, public redirect     |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | QUEUED             | R01/R04/R05–R07                                              | E0 graph+rg; повторный consumer inventory                    |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | QUEUED             | R04; consumer verification                                   | E0/E1; export inventory и package builds                     |
 | C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | QUEUED             | R09; Metro/native verification                               | E0/E1; clean install + bundles                               |
@@ -887,9 +909,9 @@ blocked-by:
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | BLOCKED — частично | UI части готовы к работе; полное закрытие зависит от A01/A02 | Поведенческие regressions по каждому seam; Plan недостаточен |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix             |
 
-**TOTAL FINDINGS: 28**
+**TOTAL FINDINGS: 29**
 
-**ASSIGNED: 28**
+**ASSIGNED: 29**
 
 **BLOCKED/DECISION: 8 — 7 требуют решения, T04 частично зависит от этих решений**
 
