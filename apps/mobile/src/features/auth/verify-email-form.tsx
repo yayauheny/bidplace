@@ -8,6 +8,7 @@ import { getErrorStatus, getUserFacingErrorMessage } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
+import { AccountLogoutButton } from './AccountLogoutButton';
 import { AuthCard } from './auth-card';
 import {
   emailVerificationRequestErrorMessage,
@@ -100,6 +101,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
         <PrimaryButton label="Подтвердить" width="full" loading={verifying} disabled={requesting} onPress={() => void verify()} />
         <SecondaryButton label={requesting ? 'Отправляем код…' : 'Отправить код'} width="full" disabled={verifying || requesting} onPress={() => void requestCode()} />
+        <AccountLogoutButton />
       </View>
     </AuthCard>
   );

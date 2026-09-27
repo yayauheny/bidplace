@@ -27,6 +27,7 @@ import {
   useSellerCapability,
 } from '../../hooks/use-seller-capability';
 import { useApiClient } from '../../providers/api-provider';
+import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import {
   AUTHOR_CABINET_PAGE_SIZE,
   authorCabinetPrimaryAction,
@@ -89,6 +90,7 @@ export function AuthorCabinetScreen() {
     return (
       <AppShell>
         <InfrastructurePageStatus status="loading" onRetry={() => undefined} />
+        <AccountLogoutButton />
       </AppShell>
     );
   }
@@ -103,6 +105,7 @@ export function AuthorCabinetScreen() {
             })
           }
         />
+        <AccountLogoutButton />
       </AppShell>
     );
   }
@@ -114,6 +117,7 @@ export function AuthorCabinetScreen() {
           status="error"
           onRetry={() => void query.refetch()}
         />
+        <AccountLogoutButton />
       </AppShell>
     );
   }
@@ -166,6 +170,7 @@ export function AuthorCabinetScreen() {
               </Link>
             </>
           ) : null}
+          <AccountLogoutButton />
         </View>
         {!works.length ? (
           <PageState

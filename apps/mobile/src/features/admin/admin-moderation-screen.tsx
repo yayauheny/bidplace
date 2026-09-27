@@ -29,6 +29,7 @@ import {
   sellerStatusLabels,
   sellerTypeLabels,
 } from '../../lib/presentation';
+import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { ModerationCard } from './ModerationCard';
 import { AdminUsersPanel } from './AdminUsersPanel';
 
@@ -153,6 +154,7 @@ export function AdminModerationScreen() {
             void activeModerationQuery?.refetch();
           }}
         />
+        <AccountLogoutButton />
       </AppShell>
     );
 
@@ -220,6 +222,7 @@ export function AdminModerationScreen() {
         label="Аналитика"
         onPress={() => router.push('/(admin)/analytics')}
       />
+      <AccountLogoutButton />
       <FormSection
         title="Очередь модерации"
         description="Авторы и работы — отдельные домены с server-owned статусами и причинами решений."
