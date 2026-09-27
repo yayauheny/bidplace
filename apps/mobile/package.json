@@ -9,7 +9,6 @@
     "@bidplace/design-tokens": "workspace:*",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/onest": "0.4.1",
-    "@gorhom/bottom-sheet": "5.2.14",
     "@hookform/resolvers": "5.4.0",
     "@hugeicons/core-free-icons": "4.3.2",
     "@hugeicons/react-native": "1.0.16",

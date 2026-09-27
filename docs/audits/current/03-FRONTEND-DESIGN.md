@@ -24,18 +24,18 @@ Related old findings: DS-01, DS-02, DS-04.
 
 ### FE-02 / Legacy header/navigation tree is unreachable
 
-**CONFIRMED · P2**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
-- `apps/mobile/src/components/layout/AppHeader.tsx :: AppHeader()`
-- `apps/mobile/src/components/layout/AppShell.tsx :: AppShell()`
 - `apps/mobile/src/components/layout/index.ts :: exports`
+- `apps/mobile/src/components/layout/AppShell.tsx :: AppShell()`
+- `apps/mobile/src/components/figma/FloatingDock.tsx :: FloatingDock()`
 
-Finding: AppShell mounts the floating dock and no route mounts AppHeader. AccountMenu, DiscoveryMenu, HeaderSearch, MobileHeader and related layout helpers survive through internal imports and tests only.
+Finding: the unreachable AppHeader render tree and its tree-only helpers/tests were removed. AppShell, FloatingDock, BrandLogo, OverlayHost, focus/overlay helpers and `getMobileCreateHref` remain live.
 
-Impact: dead-code / maintainability.  
-Suggested direction: a removal review should first separate any reusable redirect/accessibility helpers from the dead render tree.  
+Impact: resolved dead-code / maintainability.
+Suggested direction: preserve the retained shared layout infrastructure.
 Related old findings: M-LOGIC-11, DS-03.
 
 ### FE-03 / Public author query ownership
@@ -149,15 +149,16 @@ Related old findings: DS-01.
 
 ### FE-10 / Generic UI exports contain likely dead primitives
 
-**CONFIRMED for reachability · P3**
+**RESOLVED · 2026-09-26**
 
 Evidence:
 
 - `apps/mobile/src/components/ui/index.ts :: exports`
-- `AmbientImageBackground.tsx`, `EditorialSection.tsx`, `ProductGallery.tsx`, `Skeleton.tsx`
+- `AmbientImageBackground.tsx`, `EditorialSection.tsx`, `ProductGallery.tsx`, `Skeleton.tsx` (removed)
+- `apps/mobile/src/features/products/portfolio-work-adapter.ts` (removed)
 
-Finding: these primitives have no production importer outside their barrel; similarly, `portfolio-work-adapter` is test-only. Keeping them exported makes dead code appear supported.
+Finding: unreachable generic UI primitives and the test-only portfolio adapter were removed with their barrel exports and mirror tests.
 
-Impact: dead-code / maintainability.  
-Suggested direction: validate dynamic/import-barrel consumers with typecheck, then remove as one bounded cleanup.  
+Impact: resolved dead-code / maintainability.
+Suggested direction: revalidate reachability before adding any replacement primitive.
 Related old findings: DS-15, M-LOGIC-11.
