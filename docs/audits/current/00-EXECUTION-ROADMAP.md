@@ -823,16 +823,16 @@ scope: R01
 finding IDs: D03; overlay seam of T04
 status: NEEDS_VERIFICATION
 base SHA: e166d6e6310ce30977f402b3c657f1f062811414
-commit: sole commit on fix/overlay-focus-dismiss; parent e166d6e6310ce30977f402b3c657f1f062811414
+commit: 3edbf99feadc79be0f514283b1f793348c68b1c9 plus the correction commit on fix/overlay-focus-dismiss whose parent is that SHA
 changed contracts: none. closeOnFocusIn stays optional and defaults to false. SearchOverlay, FilterSheet and FilterMenu still omit it. FilterSheet restoreOnClose stays true. SearchOverlay restoreOnClose stays false.
-tests/scenarios: mounted useDismissibleOverlay — omitted/false does not register focusin and does not close on inside or outside focus; true closes once on outside focus and ignores inside focus; cleanup removes the same listener; reopen registers again and closes once; false still closes once on Escape (with restoreFocus) and outside pointerdown, and ignores inside pointerdown. The omitted/false listener assertions fail on the previous shadowed callback.
+tests/scenarios: mounted useDismissibleOverlay — omitted/false does not register focusin and does not close on inside or outside focus; true closes once on outside focus and ignores inside focus; cleanup removes the same listener; reopen starts open, closes on outside focus, removes that listener when open becomes false, registers a different listener when opened again, and the next outside focus adds exactly one onClose('focusin'); false still closes once on Escape (with restoreFocus) and outside pointerdown, and ignores inside pointerdown. The omitted/false listener assertions fail on the previous shadowed callback.
 validation commands and exit codes:
-  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0
-  pnpm --filter @bidplace/mobile lint → 0
-  pnpm --filter @bidplace/mobile test → 0 (396 tests)
-  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (396 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
   EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 1
-runtime environment: Node v24.17.0, pnpm 11.7.0. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency.
+runtime environment: supported V-MOBILE re-run used Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. An earlier local run used Node v24.17.0 and is not supported-runtime verification. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency. Playwright was not repeated.
 evidence links: apps/mobile/src/components/layout/use-dismissible-overlay.ts; apps/mobile/src/components/layout/use-dismissible-overlay.spec.ts
 remaining limitations: Playwright webServer exited before any browser test. prepare.mjs failed with PrismaClientInitializationError: authentication failed for user auction at 127.0.0.1:5432. The fenced default URL was not replaced.
 blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5432/bidplace_e2e

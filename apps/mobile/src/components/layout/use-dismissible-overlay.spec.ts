@@ -206,7 +206,7 @@ describe('useDismissibleOverlay focusin lifecycle', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('registers focusin again after the overlay is reopened', () => {
+  it('registers a new focusin listener after close and reopen', () => {
     const listeners = trackFocusIn();
     const targets = installTargets();
     const onClose = vi.fn();
@@ -216,22 +216,31 @@ describe('useDismissibleOverlay focusin lifecycle', () => {
       onClose,
       getSurfaces: targets.getSurfaces,
     };
-    const view = mountProbe({ ...props, open: false });
+    const view = mountProbe(props);
 
-    expect(listeners.added).toHaveLength(0);
-
-    view.rerender(props);
     focus(targets.outside);
+    const firstListener = listeners.added[0];
 
-    expect(listeners.added).toHaveLength(1);
+    expect(listeners.added).toEqual([firstListener]);
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledWith('focusin');
 
     view.rerender({ ...props, open: false });
+    focus(targets.inside);
+
+    expect(listeners.removed).toEqual([firstListener]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    view.rerender(props);
+    const reopenedListener = listeners.added[1];
+
+    expect(listeners.added).toEqual([firstListener, reopenedListener]);
+    expect(reopenedListener).not.toBe(firstListener);
+
     focus(targets.outside);
 
-    expect(listeners.removed).toEqual(listeners.added);
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenNthCalledWith(2, 'focusin');
     view.unmount();
   });
 
