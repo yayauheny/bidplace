@@ -16,6 +16,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { productModerationRequest } from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -93,9 +94,10 @@ describe('portfolio published revision HTTP transport', () => {
     expect((await owner.post(`/products/${productId}/submit`)).status).toBe(201);
     expect(
       (
-        await adminClient.patch(`/admin/products/${productId}/status`, {
-          status: 'APPROVED',
-        })
+        await adminClient.patch(
+          `/admin/products/${productId}/status`,
+          await productModerationRequest(prisma, productId, 'APPROVED'),
+        )
       ).status,
     ).toBe(200);
 

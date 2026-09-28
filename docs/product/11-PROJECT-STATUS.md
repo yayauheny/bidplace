@@ -5,6 +5,36 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-28 — Admin revision review
+
+- `Needs verification`: the admin queue reads an explicit review target and
+  keeps parent publication status separate. Review actions send the revision
+  the moderator saw. The seller photo reloads when that revision's `updatedAt`
+  or photo checksum changes, drops the previous object URL, and shows a visible
+  failure if the bytes cannot be fetched or decoded. Work images are fetched by
+  the mobile API client with `credentials: 'include'`. That client does not set
+  an Authorization bearer token; the image checksum is the reload identity.
+  Achievement images stay on the direct `/api/author-achievements/:id/image`
+  URL. `OptionalBearerAuthGuard` accepts the session cookie or a bearer token,
+  and `getAchievementImage` allows an admin to read a non-public image. A new
+  achievement row changes that URL, so the card loads the replacement. An
+  achievement shows `occurredDate` through the existing month/day formatter; a
+  null date adds no date text.
+- Coverage: `AdminRevisionPhoto.spec.ts`, `admin-moderation-screen.spec.ts`,
+  admin service/controller/mapper specs, and
+  `moderation-revision-projection.integration.spec.ts`. The photo and date
+  regressions failed before the correction and passed after it. The admin
+  screen test now checks that an achievement image URL from the review target
+  is rendered and replaced when the achievement id changes. The browser fixture
+  adds a decodable pending-only achievement PNG beside the published one.
+- Browser verification: `e2e/admin-revision-moderation.spec.ts` was not run.
+  Chromium and WebKit are NOT RUN. The spec asserts decoded pending achievement
+  bytes on the admin card, the published achievement before approval, a guest
+  404 for the pending image, and the published image after approval.
+  `prepare.mjs` was not allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: review and visibility transitions, publication, audit, public
+  and owner projections, and PATCH response envelopes.
+
 ## 2026-09-27 — Account logout
 
 - `Verified` (mobile web): an authenticated user can press «Выйти»

@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-27. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; scopes R02–R29 не запущены.
+**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; scopes R03–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -207,7 +207,8 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Тесты:** approved parent/pending revision появляется в очереди; данные отличаются от опубликованных; approve/reject/changes requested относятся к revision; hide/suspend относятся к parent; owner/admin/public visibility.
 - **Validation:** V-API, V-MOBILE, contracts/api-client package checks, V-INTEGRATION, targeted moderation browser scenario.
 - **STOP:** требуется изменить смысл review/visibility transitions или canonical parent/revision ownership.
-- **Done/status:** D01 → `VERIFIED`; T04 → `PARTIAL`.
+- **Done/status:** D01 → `VERIFIED` only after the browser scenario; T04 → `PARTIAL`.
+- **Actual:** D01 → `NEEDS_VERIFICATION`. See the R02 evidence record. T04 stays `PARTIAL`.
 - **Отчёт:** G с before/after DTO и доказательством отсутствия public leakage.
 
 ### R03. Дать approved автору отправить новую ревизию
@@ -860,6 +861,36 @@ remaining limitations: none for D08. Chromium and WebKit both passed the maintai
 blocked-by: none
 ```
 
+### R02 evidence
+
+```text
+scope: R02
+finding IDs: D01; queue seam of T04
+status: NEEDS_VERIFICATION
+base SHA: 91a06a90f0d3e22f344c2692e2e920003cafbdb4
+commit: none. The correction is uncommitted on fix/moderation-revision-projection.
+changed contracts: admin list items expose parent status and an explicit review target. Status requests require that target. PATCH response envelopes are unchanged. No new public media contract.
+tests/scenarios: AdminRevisionPhoto keeps profileId and revisionId, refetches when updatedAt and checksum change, drops the previous object URL, ignores a late response, revokes object URLs, and shows a visible state for fetch and decode failure. The production admin screen passes the new photo identity through. Achievement cards show day precision, month precision, and no date when occurredDate is null. These regressions failed on the previous photo effect and date-less card, then passed. The admin screen passes the achievement image URL into the image element and replaces that URL when the achievement id changes. The browser fixture adds a decodable pending-only achievement PNG. Before approval the guest scenario keeps the published achievement and expects 404 for the pending image. After approval it expects the pending achievement and its bytes. API integration covers pending photo and pending-only product image privacy. Browser media assertions exist but were not executed. Achievement image transport was not changed: the mobile API client uses credentials include and does not set an Authorization bearer token; the achievement endpoint accepts the session cookie or a bearer token. No runtime defect in that path was confirmed.
+validation commands and exit codes:
+  pnpm --filter @bidplace/mobile exec vitest run src/features/admin/AdminRevisionPhoto.spec.ts src/features/admin/admin-moderation-screen.spec.ts → 1 before the correction (4 failed: one fetch instead of two, no decode error, photo identity not passed, achievement date absent) and 0 after (10 passed) on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (428 tests) on Node v22.20.0
+  pnpm --filter @bidplace/api exec vitest run src/admin/admin-moderation.service.spec.ts src/admin/admin.controller.spec.ts src/admin/admin-moderation.mapper.spec.ts → 0 (19 tests) on Node v22.20.0
+  pnpm --filter @bidplace/contracts test → 0 (30 tests) on Node v22.20.0
+  pnpm --filter @bidplace/api-client test → 0 (14 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/api lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' --filter='@bidplace/api...' → 0 on Node v22.20.0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (23 files, 76 tests) on Node v22.20.0. An earlier parallel run timed out two beforeAll database hooks; the isolated rerun and the following full rerun passed. No assertion in the media or projection specs failed.
+  pnpm --filter @bidplace/mobile exec vitest run src/features/admin/admin-moderation-screen.spec.ts → 0 (6 passed) on Node v22.20.0 after the achievement image wiring test
+  pnpm --filter @bidplace/mobile exec eslint src/features/admin/admin-moderation-screen.spec.ts e2e/admin-revision-moderation.spec.ts e2e/support/revision-moderation-fixture.ts → 0 on Node v22.20.0
+  Chromium and WebKit admin-revision-moderation.spec.ts → NOT RUN
+runtime environment: Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. Component specs use the installed vitest jsdom environment. Integration used the disposable postgres:16-alpine container bidplace-r02-postgres on 127.0.0.1:5432 and per-run itest schemas via prisma migrate deploy. prisma migrate reset was not run.
+evidence links: apps/mobile/src/features/admin/AdminRevisionPhoto.tsx; apps/mobile/src/features/admin/admin-moderation-screen.tsx; apps/mobile/src/features/admin/AdminRevisionPhoto.spec.ts; apps/mobile/src/features/admin/admin-moderation-screen.spec.ts; apps/mobile/e2e/support/revision-moderation-fixture.ts; apps/mobile/e2e/admin-revision-moderation.spec.ts
+remaining limitations: browser decode of the author photo, work gallery, and pending-only achievement image was not executed. Guest 404 and post-approval achievement visibility were not executed. D01 is not VERIFIED. T04 stays PARTIAL. Same-id achievement byte replacement is not a write path; a new image is a new achievement id and URL.
+blocked-by: explicit user consent to prisma migrate reset of the disposable bidplace_e2e database used by apps/mobile/e2e/prepare.mjs. This correction did not grant that consent.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -924,7 +955,7 @@ blocked-by: none
 
 | Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                                          |
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | E0/E1; после: revision queue + security integration                            |
+| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | Current R02 evidence: NEEDS_VERIFICATION. Browser media scenario NOT RUN. |
 | D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                                            |
 | D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |

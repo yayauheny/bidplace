@@ -1,8 +1,18 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-26
+Последнее обновление: 2026-09-28
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-28 — Admin review content
+
+- `Needs verification` (mobile web behavior): an admin author card shows the
+  achievement date that approval publishes. Month precision stays month and
+  year. A null date is omitted. The achievement image is the review target's
+  direct image URL. The revision photo follows the current review target, and
+  work images follow each image checksum.
+- `Unchanged`: the moderation card layout, shared tokens, and the canonical Pen
+  file. Browser visual acceptance was not run.
 
 ## 2026-09-26 — Public-query and search pagination behavior
 

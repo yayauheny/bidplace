@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   type AdminProductStatusUpdateRequest,
   type AdminSellerStatusUpdateRequest,
@@ -17,57 +19,38 @@ import {
   runReadCommittedTransaction,
   runSerializableTransaction,
 } from '../core/database';
-import {
-  productSelect,
-  toContractProduct,
-  toProductResponse,
-} from '../products/products.mapper';
+import { ImageStore } from '../core/image-store';
+import { productSelect, toProductResponse } from '../products/products.mapper';
 import { missingProductApprovalFields } from '../products/product-requirements';
 import { assertProductRevisionTransition } from '../products/product-revision-state';
 import { lockProductRowForUpdate } from '../products/product-write-guard';
 import {
   sellerProfileAuthSelect,
   sellerProfileResponseSelect,
-  toSellerProfileResponse,
 } from '../sellers/seller-profile.mapper';
 import { assertSellerProfileRevisionTransition } from '../sellers/seller-profile-revision-state';
-
-const adminProductSelect = {
-  ...productSelect,
-  creationIntro: true,
-  creationSteps: {
-    orderBy: { position: 'asc' },
-    select: {
-      id: true,
-      position: true,
-      title: true,
-      body: true,
-      mimeType: true,
-      byteLength: true,
-      checksum: true,
-      width: true,
-      height: true,
-    },
-  },
-  sellerProfile: { select: { slug: true, fullName: true, status: true } },
-  listings: {
-    where: { status: { in: ['SCHEDULED', 'LIVE'] } },
-    select: { status: true },
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-  },
-} satisfies import('@bidplace/database').Prisma.ProductSelect;
+import {
+  adminProductListSelect,
+  adminSellerListSelect,
+  adminSellerRevisionSelect,
+  selectSellerRevisionPhotoSource,
+  toAdminProduct,
+  toAdminSellerProfile,
+} from './admin-moderation.mapper';
 
 @Injectable()
 export class AdminModerationService {
   private readonly logger = new Logger(AdminModerationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly imageStore: ImageStore,
+  ) {}
 
   async listSellerProfiles() {
     const sellerProfiles = await this.prisma.sellerProfile.findMany({
       where: { status: { not: 'DRAFT' } },
-      select: sellerProfileResponseSelect,
+      select: adminSellerListSelect,
       orderBy: { createdAt: 'asc' },
     });
     const ids = sellerProfiles.map(({ id }) => id);
@@ -88,17 +71,19 @@ export class AdminModerationService {
     const blockingSellerIds = new Set(blockingSellers.map(({ id }) => id));
 
     return adminSellerProfilesResponseSchema.parse({
-      sellerProfiles: sellerProfiles.map((sellerProfile) => ({
-        ...toSellerProfileResponse(sellerProfile).sellerProfile,
-        lastModerationReason: reasons.get(sellerProfile.id) ?? null,
-        hasBlockingListing: blockingSellerIds.has(sellerProfile.id),
-      })),
+      sellerProfiles: sellerProfiles.map((sellerProfile) =>
+        toAdminSellerProfile(
+          sellerProfile,
+          reasons.get(sellerProfile.id) ?? null,
+          blockingSellerIds.has(sellerProfile.id),
+        ),
+      ),
     });
   }
 
   async listProducts() {
     const products = await this.prisma.product.findMany({
-      select: adminProductSelect,
+      select: adminProductListSelect,
       orderBy: { createdAt: 'asc' },
     });
     const reasons = await this.latestModerationReasons(
@@ -107,31 +92,51 @@ export class AdminModerationService {
     );
 
     return adminProductsResponseSchema.parse({
-      products: products.map((product) => ({
-        ...toContractProduct(product),
-        sellerProfile: product.sellerProfile,
-        creationIntro: product.creationIntro ?? null,
-        creationSteps: product.creationSteps.map((step) => ({
-          id: step.id,
-          position: step.position,
-          title: step.title,
-          body: step.body,
-          image:
-            step.mimeType && step.byteLength && step.checksum
-              ? {
-                  url: `/api/creation-steps/${step.id}/image`,
-                  mimeType: step.mimeType,
-                  byteLength: step.byteLength,
-                  checksum: step.checksum,
-                  width: step.width,
-                  height: step.height,
-                }
-              : null,
-        })),
-        hasBlockingListing: product.listings.length > 0,
-        lastModerationReason: reasons.get(product.id) ?? null,
-      })),
+      products: products.map((product) =>
+        toAdminProduct(product, reasons.get(product.id) ?? null),
+      ),
     });
+  }
+
+  async getSellerRevisionPhoto(profileId: string, revisionId: string) {
+    const revision = await this.prisma.sellerProfileRevision.findFirst({
+      where: { id: revisionId, sellerProfileId: profileId },
+      select: {
+        ...adminSellerRevisionSelect,
+        sellerProfile: {
+          select: {
+            id: true,
+            profilePhotoMimeType: true,
+            profilePhotoByteLength: true,
+            profilePhotoChecksum: true,
+            profilePhotoObjectKey: true,
+          },
+        },
+      },
+    });
+    if (!revision) {
+      throw new NotFoundException('Seller revision photo not found');
+    }
+    const source = selectSellerRevisionPhotoSource(
+      revision,
+      revision.sellerProfile,
+    );
+    if (!source) {
+      throw new NotFoundException('Seller revision photo not found');
+    }
+    const stored = await this.imageStore.get(source.objectKey);
+    const checksum = stored
+      ? createHash('sha256').update(stored.bytes).digest('hex')
+      : null;
+    if (
+      !stored ||
+      stored.mimeType !== source.mimeType ||
+      stored.bytes.byteLength !== source.byteLength ||
+      checksum !== source.checksum
+    ) {
+      throw new NotFoundException('Seller revision photo not found');
+    }
+    return { mimeType: source.mimeType, bytes: stored.bytes };
   }
 
   async updateSellerStatus(
@@ -151,13 +156,12 @@ export class AdminModerationService {
       }
 
       const editingRevision = sellerProfile.editingRevision;
-      const isRevisionReview =
-        editingRevision?.status === 'PENDING_REVIEW' &&
-        ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status);
+      const isRevisionReview = input.target.kind === 'revision';
       const isVisibilityTransition =
         (sellerProfile.status === 'APPROVED' &&
           input.status === 'SUSPENDED') ||
         (sellerProfile.status === 'SUSPENDED' && input.status === 'APPROVED');
+      this.assertFreshSellerTarget(sellerProfile, input);
 
       if (
         !isRevisionReview &&
@@ -190,6 +194,9 @@ export class AdminModerationService {
       }
 
       if (isRevisionReview) {
+        if (!editingRevision) {
+          throw new ConflictException('Moderation target is stale');
+        }
         const revisionStatus = input.status as SellerProfileRevisionStatus;
         assertSellerProfileRevisionTransition(
           'admin',
@@ -314,12 +321,11 @@ export class AdminModerationService {
       }
 
       const editingRevision = product.editingRevision;
-      const isRevisionReview =
-        editingRevision?.status === 'PENDING_REVIEW' &&
-        ['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status);
+      const isRevisionReview = input.target.kind === 'revision';
       const isVisibilityTransition =
         (product.status === 'APPROVED' && input.status === 'ARCHIVED') ||
         (product.status === 'ARCHIVED' && input.status === 'APPROVED');
+      this.assertFreshProductTarget(product, input);
 
       if (!isRevisionReview && !isVisibilityTransition) {
         this.logger.warn(
@@ -329,6 +335,9 @@ export class AdminModerationService {
       }
 
       if (isRevisionReview) {
+        if (!editingRevision) {
+          throw new ConflictException('Moderation target is stale');
+        }
         assertProductRevisionTransition(
           'admin',
           editingRevision.status,
@@ -419,6 +428,91 @@ export class AdminModerationService {
         select: productSelect,
       }),
     );
+  }
+
+  private assertFreshSellerTarget(
+    sellerProfile: {
+      status: string;
+      updatedAt: Date;
+      editingRevision: { id: string; status: string; updatedAt: Date } | null;
+    },
+    input: AdminSellerStatusUpdateRequest,
+  ) {
+    if (input.target.kind === 'revision') {
+      const revision = sellerProfile.editingRevision;
+      if (
+        !revision ||
+        revision.id !== input.target.id ||
+        !this.sameInstant(revision.updatedAt, input.target.updatedAt) ||
+        revision.status !== 'PENDING_REVIEW' ||
+        !['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status)
+      ) {
+        this.logger.warn(
+          `Blocked stale seller revision target=${sellerProfile.editingRevision?.id ?? 'none'}`,
+        );
+        throw new ConflictException('Moderation target is stale');
+      }
+      return;
+    }
+
+    if (
+      sellerProfile.status !== input.target.status ||
+      !this.sameInstant(sellerProfile.updatedAt, input.target.updatedAt)
+    ) {
+      this.logger.warn('Blocked stale seller parent target');
+      throw new ConflictException('Moderation target is stale');
+    }
+    if (sellerProfile.editingRevision && !this.isSellerVisibility(sellerProfile.status, input.status)) {
+      this.logger.warn(
+        'Blocked parent target that would review an editing revision',
+      );
+      throw new ConflictException('Seller profile transition is not allowed');
+    }
+  }
+
+  private assertFreshProductTarget(
+    product: {
+      status: string;
+      updatedAt: Date;
+      editingRevision: { id: string; status: string; updatedAt: Date } | null;
+    },
+    input: AdminProductStatusUpdateRequest,
+  ) {
+    if (input.target.kind === 'revision') {
+      const revision = product.editingRevision;
+      if (
+        !revision ||
+        revision.id !== input.target.id ||
+        !this.sameInstant(revision.updatedAt, input.target.updatedAt) ||
+        revision.status !== 'PENDING_REVIEW' ||
+        !['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(input.status)
+      ) {
+        this.logger.warn(
+          `Blocked stale product revision target=${product.editingRevision?.id ?? 'none'}`,
+        );
+        throw new ConflictException('Moderation target is stale');
+      }
+      return;
+    }
+
+    if (
+      product.status !== input.target.status ||
+      !this.sameInstant(product.updatedAt, input.target.updatedAt)
+    ) {
+      this.logger.warn('Blocked stale product parent target');
+      throw new ConflictException('Moderation target is stale');
+    }
+  }
+
+  private isSellerVisibility(parentStatus: string, next: string) {
+    return (
+      (parentStatus === 'APPROVED' && next === 'SUSPENDED') ||
+      (parentStatus === 'SUSPENDED' && next === 'APPROVED')
+    );
+  }
+
+  private sameInstant(value: Date, expected: string) {
+    return value.getTime() === new Date(expected).getTime();
   }
 
   private async latestModerationReasons(

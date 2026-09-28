@@ -23,7 +23,7 @@ import {
   type AdminUsersLookupQuery,
 } from '@bidplace/contracts';
 
-import { requestJson, type RequestContext } from './request';
+import { requestBlob, requestJson, type RequestContext } from './request';
 
 export function createAdminClient(context: RequestContext) {
   return {
@@ -40,6 +40,15 @@ export function createAdminClient(context: RequestContext) {
         '/api/admin/products',
         adminProductsResponseSchema,
       );
+    },
+    getSellerRevisionPhoto(profileId: string, revisionId: string) {
+      return requestBlob(
+        context,
+        `/api/admin/seller-profiles/${profileId}/revisions/${revisionId}/photo`,
+      );
+    },
+    getProductImage(imageId: string) {
+      return requestBlob(context, `/api/images/${imageId}`);
     },
     getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {
       const parsed = adminAnalyticsQuerySchema.parse(query);

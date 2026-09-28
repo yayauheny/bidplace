@@ -242,12 +242,15 @@ describe('Product write atomicity against PostgreSQL', () => {
     });
 
     await products.submit(owner.id, product.id);
-    expect(
-      await prisma.productRevision.findUniqueOrThrow({
-        where: { id: product.editingRevisionId },
-        select: { title: true, story: true, status: true },
-      }),
-    ).toEqual({
+    const submitted = await prisma.productRevision.findUniqueOrThrow({
+      where: { id: product.editingRevisionId! },
+      select: { id: true, title: true, story: true, status: true, updatedAt: true },
+    });
+    expect({
+      title: submitted.title,
+      story: submitted.story,
+      status: submitted.status,
+    }).toEqual({
       title: 'Latest canonical draft',
       story: 'Latest canonical story',
       status: 'PENDING_REVIEW',
@@ -255,6 +258,11 @@ describe('Product write atomicity against PostgreSQL', () => {
 
     await admin.updateProductStatus(adminUser.id, product.id, {
       status: 'APPROVED',
+      target: {
+        kind: 'revision',
+        id: submitted.id,
+        updatedAt: submitted.updatedAt.toISOString(),
+      },
     });
     expect(
       (await products.getPortfolio(product.publicId)).product,

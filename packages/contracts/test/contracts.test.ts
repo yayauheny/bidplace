@@ -338,19 +338,38 @@ describe('shared contracts', () => {
   it('rejects an unknown listing leftover status', () => {
     expect(listingStatusSchema.safeParse('active').success).toBe(false);
   });
-  it('requires a reason for limiting admin actions', () => {
+  it('requires a reason and an explicit target for limiting admin actions', () => {
+    const sellerParent = {
+      kind: 'parent' as const,
+      status: 'APPROVED' as const,
+      updatedAt: '2026-09-26T12:00:00.000Z',
+    };
+    const productParent = {
+      kind: 'parent' as const,
+      status: 'APPROVED' as const,
+      updatedAt: '2026-09-26T12:00:00.000Z',
+    };
     expect(
-      adminSellerStatusUpdateRequestSchema.safeParse({ status: 'SUSPENDED' })
-        .success,
+      adminSellerStatusUpdateRequestSchema.safeParse({
+        status: 'SUSPENDED',
+        target: sellerParent,
+      }).success,
     ).toBe(false);
     expect(
       adminProductStatusUpdateRequestSchema.safeParse({
         status: 'CHANGES_REQUESTED',
+        target: productParent,
       }).success,
     ).toBe(false);
     expect(
       adminSellerStatusUpdateRequestSchema.safeParse({ status: 'APPROVED' })
         .success,
+    ).toBe(false);
+    expect(
+      adminSellerStatusUpdateRequestSchema.safeParse({
+        status: 'APPROVED',
+        target: sellerParent,
+      }).success,
     ).toBe(true);
   });
   it('keeps discipline validation aligned with the VARCHAR(160) column', () => {

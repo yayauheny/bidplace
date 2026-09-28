@@ -19,6 +19,7 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import { productModerationRequest } from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -313,7 +314,7 @@ describe('rejected Product recovery over HTTP and PostgreSQL', () => {
 
     const approval = await clients.admin.patch(
       `/admin/products/${rejected.id}/status`,
-      { status: 'APPROVED' },
+      await productModerationRequest(prisma, rejected.id, 'APPROVED'),
     );
     expect(approval.status).toBe(200);
 

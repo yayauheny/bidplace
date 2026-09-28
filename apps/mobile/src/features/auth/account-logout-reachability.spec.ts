@@ -24,6 +24,10 @@ vi.mock('react-native', () => ({
   ScrollView: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
 }));
 
+vi.mock('expo-image', () => ({
+  Image: () => null,
+}));
+
 vi.mock('expo-router', () => ({
   useRouter: () => ({
     replace: harness.replace,
