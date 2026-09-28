@@ -7,6 +7,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { View } from 'react-native';
 
+import type { Product, SellerProductDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
@@ -27,7 +28,8 @@ import {
 import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { categoryKeys } from '../../lib/query-cache';
+import { canWritePrivateCache, categoryKeys } from '../../lib/query-cache';
+import { persistedFieldOverrides } from './reconcile-saved-fields';
 import { ProductDraftAboutStep } from './product-draft-about';
 import {
   emptyProductDraftFormValues,
@@ -81,6 +83,10 @@ export function ProductDraftScreen({
   const values = form.watch();
   const hydratedProductId = useRef<string | null>(null);
   const hydratedUpdatedAt = useRef<string | null>(null);
+  const persistedProductId = useRef<string | null>(productId ?? null);
+  const transitionLock = useRef(false);
+  const imageSelection = useRef(0);
+  const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
   const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
   const browserNavigation = useRef<{
@@ -104,7 +110,19 @@ export function ProductDraftScreen({
   });
   const productDetail = useQuery({
     queryKey: ['seller', 'product', productId],
-    queryFn: () => api.sellers.getProduct(productId!),
+    queryFn: async () => {
+      const result = await api.sellers.getProduct(productId!);
+      if (!canWritePrivateCache(queryClient)) {
+        const current = queryClient.getQueryData<SellerProductDetailResponse>([
+          'seller',
+          'product',
+          productId,
+        ]);
+        if (current) return current;
+        throw new Error('Private cache is closed');
+      }
+      return result;
+    },
     enabled: Boolean(productId),
   });
   const existingProduct = productDetail.data?.product;
@@ -175,22 +193,72 @@ export function ProductDraftScreen({
     navigate();
   }, [form.formState.isDirty, pendingNavigationVersion]);
 
-  const save = useMutation({
-    mutationFn: (currentValues: ProductDraftFormValues) =>
-      existingProduct
-        ? api.products.update(
-            existingProduct.id,
-            productDraftToWriteRequest(currentValues),
-          )
-        : api.products.create(productDraftToWriteRequest(currentValues)),
-    onSuccess: ({ product }) => {
-      form.reset(productToDraftFormValues(product));
-      hydratedProductId.current = product.id;
-      hydratedUpdatedAt.current = product.updatedAt;
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
-      void queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', product.id],
+  const beginLockedTransition = () => {
+    if (transitionLock.current) return false;
+    transitionLock.current = true;
+    setInputsLocked(true);
+    return true;
+  };
+
+  const endLockedTransition = () => {
+    transitionLock.current = false;
+    setInputsLocked(false);
+  };
+
+  const rememberSavedProduct = (
+    product: Product,
+    submitted: ProductDraftFormValues,
+  ) => {
+    persistedProductId.current = product.id;
+    const cached = queryClient.getQueryData<SellerProductDetailResponse>([
+      'seller',
+      'product',
+      product.id,
+    ]);
+    hydratedProductId.current = product.id;
+    hydratedUpdatedAt.current =
+      cached?.editingRevision?.updatedAt ??
+      cached?.product.updatedAt ??
+      product.updatedAt;
+    const persisted = productToDraftFormValues(product);
+    const overrides = persistedFieldOverrides(
+      submitted,
+      form.getValues(),
+      persisted,
+    );
+    form.reset(persisted);
+    for (const field of Object.keys(overrides) as Array<
+      keyof ProductDraftFormValues
+    >) {
+      const value = overrides[field];
+      if (value === undefined) continue;
+      form.setValue(field, value, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
       });
+    }
+  };
+
+  const invalidateSavedProduct = async (savedProductId: string) => {
+    if (!canWritePrivateCache(queryClient)) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', savedProductId],
+      }),
+    ]);
+  };
+
+  const save = useMutation({
+    mutationFn: (currentValues: ProductDraftFormValues) => {
+      const id = persistedProductId.current;
+      const body = productDraftToWriteRequest(currentValues);
+      return id ? api.products.update(id, body) : api.products.create(body);
+    },
+    onSuccess: ({ product }, submitted) => {
+      rememberSavedProduct(product, submitted);
+      void invalidateSavedProduct(product.id);
     },
   });
   const submit = useMutation({
@@ -206,47 +274,57 @@ export function ProductDraftScreen({
           api.products.update(id, productDraftToWriteRequest(currentValues)),
         () => api.products.submit(id),
       ),
-    onSuccess: async ({ product }) => {
-      form.reset(productToDraftFormValues(product));
-      hydratedProductId.current = product.id;
-      hydratedUpdatedAt.current = product.updatedAt;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['seller', 'product', product.id],
-        }),
-      ]);
+    onSuccess: async ({ product }, variables) => {
+      rememberSavedProduct(product, variables.currentValues);
+      await invalidateSavedProduct(product.id);
       setWizardSubmitted(true);
     },
   });
   const upload = useMutation({
-    mutationFn: (images: Blob[]) => api.images.add(existingProduct!.id, images),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: (images: Blob[]) => {
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      return api.images.add(id, images);
+    },
+    onSuccess: () => {
+      if (!canWritePrivateCache(queryClient)) return;
+      return queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', persistedProductId.current],
+      });
+    },
   });
   const removeImage = useMutation({
-    mutationFn: (imageId: string) =>
-      api.images.remove(existingProduct!.id, imageId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: (imageId: string) => {
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      return api.images.remove(id, imageId);
+    },
+    onSuccess: () => {
+      if (!canWritePrivateCache(queryClient)) return;
+      return queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', persistedProductId.current],
+      });
+    },
   });
   const reorderImages = useMutation({
-    mutationFn: (imageIds: string[]) =>
-      api.images.reorder(existingProduct!.id, imageIds),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: (imageIds: string[]) => {
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      return api.images.reorder(id, imageIds);
+    },
+    onSuccess: () => {
+      if (!canWritePrivateCache(queryClient)) return;
+      return queryClient.invalidateQueries({
+        queryKey: ['seller', 'product', persistedProductId.current],
+      });
+    },
   });
 
   const setField = <K extends FieldPath<ProductDraftFormValues>>(
     field: K,
     value: FieldPathValue<ProductDraftFormValues, K>,
   ) => {
+    if (transitionLock.current) return;
     form.setValue(field, value, {
       shouldDirty: true,
       shouldTouch: true,
@@ -254,27 +332,38 @@ export function ProductDraftScreen({
     });
   };
 
-  const persistCurrentForm = useCallback(async () => {
-    const valid = await form.trigger();
-    if (!valid) return false;
+  const persistCurrentForm = useCallback(async (mode: 'ordinary' | 'transition' = 'ordinary') => {
+    if (mode === 'transition') {
+      if (!beginLockedTransition()) return false;
+    } else if (transitionLock.current) {
+      return false;
+    }
+    const snapshot = form.getValues();
+    if (!productDraftFormSchema.safeParse(snapshot).success) {
+      await form.trigger();
+      if (mode === 'transition') endLockedTransition();
+      return false;
+    }
     try {
-      await save.mutateAsync(form.getValues());
+      await save.mutateAsync(snapshot);
       return true;
     } catch {
+      if (mode === 'transition') endLockedTransition();
       return false;
     }
   }, [form, save]);
-  persistCurrentFormRef.current = persistCurrentForm;
+  persistCurrentFormRef.current = () => persistCurrentForm('transition');
 
   const navigateAfterPersist = useCallback((navigate: () => void) => {
     pendingNavigation.current = navigate;
     setPendingNavigationVersion((version) => version + 1);
   }, []);
 
-  usePreventRemove(form.formState.isDirty, ({ data }) => {
-    void persistCurrentForm().then((persisted) => {
+  usePreventRemove(form.formState.isDirty && !inputsLocked, ({ data }) => {
+    void persistCurrentForm('transition').then((persisted) => {
       if (persisted) {
         navigateAfterPersist(() => navigation.dispatch(data.action));
+        endLockedTransition();
       }
     });
   });
@@ -298,6 +387,7 @@ export function ProductDraftScreen({
       void persistCurrentFormRef.current().then((persisted) => {
         if (!persisted) return;
         guard.allow = true;
+        endLockedTransition();
         window.history.go(-2);
       });
     };
@@ -333,61 +423,86 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty, productId]);
 
   const moveToWizardStep = async (nextStep: number) => {
+    if (transitionLock.current) return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
-    if (form.formState.isDirty && !(await persistCurrentForm())) return;
+    if (form.formState.isDirty && !(await persistCurrentForm('transition'))) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
+    endLockedTransition();
   };
 
   const saveAbout = async () => {
+    if (transitionLock.current) return;
     setStepOneAttempted(true);
-    const requiredErrors = productDraftRequiredErrors(form.getValues());
+    const snapshot = form.getValues();
+    const requiredErrors = productDraftRequiredErrors(snapshot);
     if (
       isCreationFlow &&
       Object.values(requiredErrors).some((error) => error !== undefined)
     ) {
       return;
     }
-    if (!(await persistCurrentForm())) return;
-    const persistedId = existingProduct?.id ?? hydratedProductId.current;
-    if (!isCreationFlow || !persistedId) return;
+    if (!(await persistCurrentForm(isCreationFlow ? 'transition' : 'ordinary'))) return;
+    if (!isCreationFlow) return;
+    const persistedId = persistedProductId.current;
+    if (!persistedId) {
+      endLockedTransition();
+      return;
+    }
     if (!existingProduct) {
       navigateAfterPersist(() =>
         router.replace(
           createProductWizardHref(persistedId, productWizardStep.images),
         ),
       );
+      endLockedTransition();
       return;
     }
     router.setParams({
       flow: 'creation',
       step: String(productWizardStep.images),
     });
+    endLockedTransition();
   };
 
   const saveAndClose = async () => {
+    if (transitionLock.current) return;
     if (form.formState.isDirty) {
-      if (!(await persistCurrentForm())) return;
+      if (!(await persistCurrentForm('transition'))) return;
       navigateAfterPersist(() => router.replace('/profile'));
+      endLockedTransition();
       return;
     }
     router.replace('/profile');
   };
 
   const submitCurrentForm = async () => {
-    if (!existingProduct) return;
-    const valid = await form.trigger();
-    if (!valid) return;
-    submit.mutate({
-      id: existingProduct.id,
-      currentValues: form.getValues(),
-    });
+    if (!beginLockedTransition()) return;
+    const id = persistedProductId.current;
+    if (!id) {
+      endLockedTransition();
+      return;
+    }
+    const snapshot = form.getValues();
+    if (!productDraftFormSchema.safeParse(snapshot).success) {
+      await form.trigger();
+      endLockedTransition();
+      return;
+    }
+    try {
+      await submit.mutateAsync({ id, currentValues: snapshot });
+    } catch {
+      endLockedTransition();
+    }
   };
 
   const chooseImages = async () => {
-    if (!existingProduct) return;
-    if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
+    if (transitionLock.current || !existingProduct) return;
+    const selection = imageSelection.current + 1;
+    imageSelection.current = selection;
+    if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary'))) return;
+    if (selection !== imageSelection.current || transitionLock.current) return;
     setImageSelectionError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -396,6 +511,7 @@ export function ProductDraftScreen({
         selectionLimit: 10,
         quality: 1,
       });
+      if (selection !== imageSelection.current || transitionLock.current) return;
       if (result.canceled) return;
       const images = await Promise.all(
         result.assets.map(async (asset) => {
@@ -404,8 +520,10 @@ export function ProductDraftScreen({
           return response.blob();
         }),
       );
+      if (selection !== imageSelection.current || transitionLock.current) return;
       upload.mutate(images);
     } catch {
+      if (selection !== imageSelection.current || transitionLock.current) return;
       setImageSelectionError(
         'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
       );
@@ -527,7 +645,7 @@ export function ProductDraftScreen({
           <SecondaryButton
             label={form.formState.isDirty ? 'Сохранить и закрыть' : 'Закрыть'}
             loading={save.isPending}
-            disabled={submit.isPending}
+            disabled={submit.isPending || inputsLocked}
             onPress={() => void saveAndClose()}
           />
         </FormSection>
@@ -580,7 +698,7 @@ export function ProductDraftScreen({
             <PrimaryButton
               label={submitLabel}
               loading={submit.isPending}
-              disabled={existingProduct.images.length < 1 || save.isPending}
+              disabled={existingProduct.images.length < 1 || save.isPending || inputsLocked}
               onPress={() => void submitCurrentForm()}
             />
           ) : null}
@@ -602,7 +720,7 @@ export function ProductDraftScreen({
         <ProductDraftAboutStep
           isCreationFlow={isCreationFlow}
           wizardStep={wizardStep}
-          editable={editable}
+          editable={editable && !inputsLocked}
           categories={categories.data.categories}
           categoryId={values.categoryId}
           onChangeCategoryId={(value) => setField('categoryId', value)}
@@ -639,7 +757,7 @@ export function ProductDraftScreen({
         <ProductDraftImagesStep
           images={existingProduct.images}
           productStatus={editorStatus}
-          editable={editable}
+          editable={editable && !inputsLocked}
           isCreationFlow={isCreationFlow}
           wizardStep={wizardStep}
           wizardCanOpenStory={canOpenProductWizardStep(
@@ -666,7 +784,7 @@ export function ProductDraftScreen({
       wizardStep === productWizardStep.story &&
       existingProduct ? (
         <ProductDraftStoryStep
-          editable={editable}
+          editable={editable && !inputsLocked}
           story={values.story}
           onChangeStory={(value) => setField('story', value)}
           savePending={save.isPending}
@@ -674,13 +792,15 @@ export function ProductDraftScreen({
           onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
           onSaveAndContinue={() =>
             void (async () => {
-              if (form.formState.isDirty && !(await persistCurrentForm())) {
+              if (transitionLock.current) return;
+              if (form.formState.isDirty && !(await persistCurrentForm('transition'))) {
                 return;
               }
               router.setParams({
                 flow: 'creation',
                 step: String(productWizardStep.review),
               });
+              endLockedTransition();
             })()
           }
         />
@@ -690,7 +810,7 @@ export function ProductDraftScreen({
       wizardStep === productWizardStep.review &&
       existingProduct ? (
         <ProductDraftReviewStep
-          editable={editable}
+          editable={editable && !inputsLocked}
           title={values.title}
           existingProductImagesLength={existingProduct.images.length}
           hasStory={Boolean(values.story.trim())}

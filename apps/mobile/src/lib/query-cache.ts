@@ -31,6 +31,12 @@ export async function clearAuthScopedDataExceptSession(
   queryClient.removeQueries({ predicate });
 }
 
+export function canWritePrivateCache(queryClient: QueryClient): boolean {
+  const session = queryClient.getQueryState(authKeys.session);
+  if (!session) return true;
+  return session.data != null;
+}
+
 export async function clearAuthenticatedSession(
   queryClient: QueryClient,
 ): Promise<void> {
