@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; scopes R03–R29 не запущены.
+**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; scopes R04–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -229,6 +229,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE, оба named E2E в Chromium/WebKit; связанные API integration tests.
 - **STOP:** сервер не поддерживает требуемый transition либо UI требует нового продуктового flow.
 - **Done/status:** D02 и T03 → `VERIFIED` только после browser checks; T04 → `PARTIAL`.
+- **Actual:** D02 и T03 → `NEEDS_VERIFICATION`. See the R03 evidence record. T04 stays `PARTIAL`. D01 stays `NEEDS_VERIFICATION`.
 - **Отчёт:** G с перечнем заменённых устаревших ожиданий.
 
 ### R04. Вернуть выпавшие тесты в discovery
@@ -891,6 +892,32 @@ remaining limitations: browser decode of the author photo, work gallery, and pen
 blocked-by: explicit user consent to prisma migrate reset of the disposable bidplace_e2e database used by apps/mobile/e2e/prepare.mjs. This correction did not grant that consent.
 ```
 
+### R03 evidence
+
+```text
+scope: R03
+finding IDs: D02, T03; submit seam of T04
+status: NEEDS_VERIFICATION
+base SHA: 1be9c2816367e495d564839bd6842e0f1a71448e
+commit: 0721df59ff0323dd8c65da738f0a440e20e93355; correction commit on fix/author-revision-submit
+changed contracts: none. Seller revision transitions and publication are unchanged. Admin moderation requests stay on the R02 target.
+tests/scenarios: SellerProfileScreen shows submit for an approved parent with DRAFT, CHANGES_REQUESTED, or REJECTED editing revision; pending revision hides submit and disables fields. A delayed save does not submit. A failed save does not submit and can be retried. save() null during an in-flight save or logout does not submit or navigate. Two presses in one turn run one save-then-submit. While submit stays pending, Save, Logout, Close, and a second Submit do not start. Success shows the pending profile without navigation. A rejected submit shows the error and allows retry. The initial wizard still submits. Logout regressions in seller-profile-logout.spec.ts passed. Correction: after a successful submit, a delayed getMyProfile used to leave the cache DRAFT and accept a second save-then-submit. The screen now copies the confirmed revision from the submit response into the owner profile cache before clearing the operation guard. refetchQueries does not use throwOnError, and the screen does not write the submit snapshot again after that read. A stale older snapshot does not restore editing. A failed refetch leaves the already written pending snapshot, does not reopen submit, and does not leave logout blocked. The delayed-refetch regressions failed on 0721df5 and passed after the correction. A newer APPROVED, CHANGES_REQUESTED, or REJECTED snapshot replaces that pending state. Browser specs were rewritten for the nickname/four-step application and for an approved fixture, but were not executed.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (443 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile exec vitest run src/features/sellers/seller-profile-submit.spec.ts src/features/sellers/seller-profile-logout.spec.ts → 0 (24 tests) after the correction; 3 failed and 21 passed on 0721df5; cleanup re-run → 0 (27 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
+  git diff --check → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/author-application-contract.integration.spec.ts test/integration/author-achievement-revision.integration.spec.ts → 0 (2 files, 6 tests) on Node v22.20.0
+  Chromium author-revision-flow.spec.ts and author-achievement-revision.spec.ts → NOT RUN
+  WebKit author-revision-flow.spec.ts and author-achievement-revision.spec.ts → NOT RUN
+runtime environment: Node v22.20.0, matching root engines >=22 <23. Integration used disposable postgres:16-alpine bidplace-r02-postgres on 127.0.0.1:5432, database bidplace_integration, and per-run itest schemas via prisma migrate deploy. prisma migrate reset was not run.
+evidence links: apps/mobile/src/features/sellers/seller-profile-screen.tsx; apps/mobile/src/features/sellers/seller-profile-submit.spec.ts; apps/mobile/e2e/author-revision-flow.spec.ts; apps/mobile/e2e/author-achievement-revision.spec.ts; apps/mobile/e2e/support/e2e-fixtures.ts
+remaining limitations: Chromium and WebKit were not run, so D02 and T03 are not VERIFIED. T04 stays PARTIAL. D01 was not verified by this scope.
+blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -956,7 +983,7 @@ blocked-by: explicit user consent to prisma migrate reset of the disposable bidp
 | Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                                          |
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | Current R02 evidence: NEEDS_VERIFICATION. Browser media scenario NOT RUN. |
-| D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                                            |
+| D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.             |
 | D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
@@ -981,8 +1008,8 @@ blocked-by: explicit user consent to prisma migrate reset of the disposable bidp
 | S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | QUEUED             | —                                                            | E0/E1; discovered tests + build output                                         |
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
-| T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; оба актуализированных browser specs                                     |
-| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; queue/submit/save/S3/visibility открыты |
+| T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
+| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; R03 submit UI is NEEDS_VERIFICATION; queue/save/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
 
 **TOTAL FINDINGS: 29**

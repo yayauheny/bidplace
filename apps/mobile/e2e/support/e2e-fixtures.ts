@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -342,6 +342,98 @@ export async function createSellerFixture(
   });
   await prisma.$disconnect();
   return { seller, categoryId: category.id, slug };
+}
+
+export async function createApprovedAuthorFixture(): Promise<{
+  author: E2EUser;
+  sellerProfileId: string;
+  slug: string;
+  fullName: string;
+  achievement: { id: string; body: string };
+}> {
+  const suffix = randomUUID().slice(0, 8);
+  const prisma = new PrismaClient({
+    datasources: { db: { url: databaseUrl } },
+  });
+  const author = await createUser(
+    prisma,
+    uniqueEmail('author', suffix),
+    `author-${suffix}`,
+  );
+  const photo = readFileSync(
+    resolve(__dirname, '../fixtures/profile-photo.png'),
+  );
+  const photoChecksum = createHash('sha256').update(photo).digest('hex');
+  const slug = `author-${suffix}`;
+  const fullName = `Опубликованный автор ${suffix}`;
+  const achievementId = randomUUID();
+  const achievementBody = `Первая выставка ${suffix}`;
+  const profile = await prisma.sellerProfile.create({
+    data: {
+      userId: author.id,
+      slug,
+      sellerType: 'creator',
+      fullName,
+      discipline: 'Керамика',
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Опубликованная биография',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: photoChecksum,
+      profilePhotoData: photo,
+      status: 'APPROVED',
+    },
+  });
+  const revision = await prisma.sellerProfileRevision.create({
+    data: {
+      sellerProfileId: profile.id,
+      version: 1,
+      status: 'APPROVED',
+      slug,
+      discipline: 'Керамика',
+      fullName,
+      country: 'BY',
+      city: 'Minsk',
+      shortDescription: 'Опубликованная биография',
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: photo.byteLength,
+      profilePhotoChecksum: photoChecksum,
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      profilePhotoData: photo,
+    },
+  });
+  await prisma.sellerProfileRevisionAchievement.create({
+    data: {
+      id: achievementId,
+      revisionId: revision.id,
+      position: 0,
+      occurredAt: new Date(Date.UTC(2024, 5, 2)),
+      occurredAtPrecision: 'DAY',
+      body: achievementBody,
+      mimeType: 'image/png',
+      byteLength: photo.byteLength,
+      checksum: photoChecksum,
+      objectKey: `seller-achievement:${achievementId}`,
+      data: photo,
+    },
+  });
+  await prisma.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      profilePhotoObjectKey: `seller-photo:${profile.id}`,
+      publishedRevisionId: revision.id,
+      editingRevisionId: revision.id,
+    },
+  });
+  await prisma.$disconnect();
+  return {
+    author,
+    sellerProfileId: profile.id,
+    slug,
+    fullName,
+    achievement: { id: achievementId, body: achievementBody },
+  };
 }
 
 export async function createBuyerFixture(): Promise<{ buyer: E2EUser }> {

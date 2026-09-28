@@ -6,146 +6,92 @@ import { e2eApiBaseURL } from './support/e2e-env';
 import { fillControl } from './support/fill-control';
 import {
   createAdminModerationFixture,
-  createBuyerFixture,
+  createApprovedAuthorFixture,
 } from './support/e2e-fixtures';
 
-test('approved author can delete a published achievement then add a draft', async ({
+test('approved author replaces a published achievement without publishing the draft', async ({
   browser,
 }) => {
   test.setTimeout(120_000);
-  const { buyer } = await createBuyerFixture();
   const { admin } = await createAdminModerationFixture();
-  const { context, page } = await authenticatedPage(browser, buyer);
-  const slug = `achieve-${Date.now()}`;
+  const author = await createApprovedAuthorFixture();
+  const { context, page } = await authenticatedPage(browser, author.author);
+  const draftBody = `Вторая выставка ${author.slug}`;
 
   try {
     await page.goto('/profile');
-    const chooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Добавить фото' }).click();
-    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await expect(
-      page.getByRole('button', { name: 'Изменить фото' }),
-    ).toBeVisible();
-    await fillControl(page.getByLabel('Имя или название'), 'Автор достижений');
-    await fillControl(page.getByLabel('URL-slug'), slug);
-    await fillControl(page.getByLabel('Дисциплина'), 'Керамика');
-    await fillControl(page.getByLabel('Страна'), 'BY');
-    await fillControl(page.getByLabel('Город'), 'Минск');
-    await fillControl(
-      page.getByLabel('Публичная ссылка'),
-      `https://example.com/${slug}`,
-    );
-    await fillControl(
-      page.getByLabel('Короткое описание'),
-      'Первая биография.',
-    );
-    await page.getByRole('button', { name: 'Продолжить' }).click();
-    await fillControl(
-      page.getByLabel('Telegram'),
-      `https://t.me/${slug.replaceAll('-', '_')}`,
-    );
-    await fillControl(
-      page.getByLabel('Instagram'),
-      `https://instagram.com/${slug}`,
-    );
-    await fillControl(page.getByLabel('Сайт'), `https://example.com/${slug}`);
-    await fillControl(
-      page.getByLabel('Основная публичная ссылка'),
-      `https://example.com/${slug}`,
-    );
-    await page.getByRole('button', { name: 'Продолжить' }).click();
-    await fillControl(
-      page.getByLabel('Контакт для передачи'),
-      '@handoff_creator',
-    );
-    await page.getByRole('button', { name: 'Создать профиль' }).click();
-    await expect(page.getByText('На модерации')).toBeVisible();
-
-    const mine = await context.request.get(
-      `${e2eApiBaseURL}/api/seller/profile`,
-    );
-    const created = (await mine.json()) as { sellerProfile: { id: string } };
-    const { context: adminContext } = await authenticatedPage(browser, admin);
-    expect(
-      (
-        await moderateSeller(
-          adminContext.request,
-          created.sellerProfile.id,
-        )
-      ).ok(),
-    ).toBeTruthy();
-
-    await page.goto('/profile');
     await expect(page.getByText('Выставки и достижения')).toBeVisible();
-    const achievementField = page.getByLabel('Описание достижения');
-    await achievementField.scrollIntoViewIfNeeded();
-    await fillControl(achievementField, 'Первая выставка');
-    await page.getByRole('button', { name: 'Сохранить достижение' }).click();
-    await expect(page.getByText('Первая выставка')).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
-    ).toBeVisible();
-    await page
-      .getByRole('button', { name: 'Отправить на проверку', exact: true })
-      .click();
-    await expect(
-      page.getByText('Заявка на проверке', { exact: false }),
-    ).toBeVisible();
-    expect(
-      (
-        await moderateSeller(
-          adminContext.request,
-          created.sellerProfile.id,
-        )
-      ).ok(),
-    ).toBeTruthy();
-
-    await page.goto('/profile');
-    await expect(page.getByText('Первая выставка')).toBeVisible();
+    await expect(page.getByText(author.achievement.body)).toBeVisible();
     await page.getByRole('button', { name: 'Удалить' }).click();
-    await expect(page.getByText('Первая выставка')).toHaveCount(0);
+    await expect(page.getByText(author.achievement.body)).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
     ).toBeVisible();
 
     const guest = await browser.newPage();
     await guest.setViewportSize({ width: 390, height: 844 });
-    await guest.goto(`/authors/${slug}`);
+    await guest.goto(`/authors/${author.slug}`);
     await guest.getByRole('tab', { name: 'Об авторе' }).click();
-    await expect(guest.getByText('Автор достижений')).toBeVisible();
-    await expect(guest.getByText('Первая выставка')).toBeVisible();
-    await expect(guest.getByText('Вторая выставка')).toHaveCount(0);
+    await expect(guest.getByText(author.fullName)).toBeVisible();
+    await expect(guest.getByText(author.achievement.body)).toBeVisible();
+    await expect(guest.getByText(draftBody)).toHaveCount(0);
+    const publishedImage = await guest.request.get(
+      `${e2eApiBaseURL}/api/author-achievements/${author.achievement.id}/image`,
+    );
+    expect(publishedImage.status()).toBe(200);
 
-    await fillControl(achievementField, 'Вторая выставка');
+    const achievementPhoto = page.getByRole('button', { name: 'Добавить фото (необязательно)' });
+    await expect(achievementPhoto).toBeEnabled();
+    const chooserPromise = page.waitForEvent('filechooser');
+    await achievementPhoto.click();
+    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+    await fillControl(page.getByLabel('Год'), '2026');
+    await fillControl(page.getByLabel('Месяц'), '4');
+    await fillControl(page.getByLabel('Описание достижения'), draftBody);
     await page.getByRole('button', { name: 'Сохранить достижение' }).click();
-    await expect(page.getByText('Вторая выставка')).toBeVisible();
+    await expect(page.getByText(draftBody)).toBeVisible();
+
+    const application = await context.request.get(
+      `${e2eApiBaseURL}/api/author/application`,
+    );
+    expect(application.ok()).toBeTruthy();
+    const draft = (await application.json()) as {
+      achievements: Array<{ id: string; body: string; image: { url: string } | null }>;
+    };
+    const pending = draft.achievements.find((item) => item.body === draftBody);
+    expect(pending?.image?.url).toBeTruthy();
+    const pendingImage = await guest.request.get(
+      `${e2eApiBaseURL}${pending?.image?.url}`,
+    );
+    expect(pendingImage.status()).toBe(404);
     await guest.reload();
     await guest.getByRole('tab', { name: 'Об авторе' }).click();
-    await expect(guest.getByText('Первая выставка')).toBeVisible();
-    await expect(guest.getByText('Вторая выставка')).toHaveCount(0);
+    await expect(guest.getByText(author.achievement.body)).toBeVisible();
+    await expect(guest.getByText(draftBody)).toHaveCount(0);
     await guest.close();
 
-    await page
-      .getByRole('button', { name: 'Отправить на проверку', exact: true })
-      .click();
+    await page.getByRole('button', { name: 'Отправить на проверку', exact: true }).click();
+    await expect(page.getByText('Заявка на проверке')).toBeVisible();
     await expect(
-      page.getByText('Заявка на проверке', { exact: false }),
-    ).toBeVisible();
+      page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
+    ).toHaveCount(0);
 
+    const { context: adminContext } = await authenticatedPage(browser, admin);
     expect(
-      (
-        await moderateSeller(
-          adminContext.request,
-          created.sellerProfile.id,
-        )
-      ).ok(),
+      (await moderateSeller(adminContext.request, author.sellerProfileId)).ok(),
     ).toBeTruthy();
     await adminContext.close();
 
-    await page.goto(`/authors/${slug}`);
+    await page.goto(`/authors/${author.slug}`);
     await page.getByRole('tab', { name: 'Об авторе' }).click();
-    await expect(page.getByText('Вторая выставка')).toBeVisible();
-    await expect(page.getByText('Первая выставка')).toHaveCount(0);
+    await expect(page.getByText(draftBody)).toBeVisible();
+    await expect(page.getByText(author.achievement.body)).toHaveCount(0);
+    const reader = await browser.newPage();
+    const publishedDraftImage = await reader.request.get(
+      `${e2eApiBaseURL}${pending?.image?.url}`,
+    );
+    expect(publishedDraftImage.status()).toBe(200);
+    await reader.close();
   } finally {
     await context.close();
   }

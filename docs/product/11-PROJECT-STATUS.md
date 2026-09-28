@@ -5,6 +5,32 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-28 — Author revision submit
+
+- `Needs verification` (mobile web): an approved author sees «Отправить на проверку»
+  on the live `/profile` screen when `canSubmitSellerProfileRevision` allows the
+  editing revision. The same handler serves that action and the final step of
+  the initial application. It saves first, submits only after a saved result,
+  and keeps one synchronous guard around the whole cycle. A successful submit
+  response updates the owner profile cache to the confirmed revision before
+  that guard clears. The following profile read is not used to write that
+  snapshot again. A failed read or an older snapshot leaves the confirmed
+  pending revision in place. A newer approved, changes-requested, or rejected
+  revision replaces it. A pending revision hides the
+  action and disables editing. The approved parent stays public until a
+  moderator approves the revision.
+- Coverage: `seller-profile-submit.spec.ts` and the existing logout regressions
+  in `seller-profile-logout.spec.ts`. `author-revision-flow.spec.ts` keeps one
+  four-step onboarding submit and starts the approved edit from
+  `createApprovedAuthorFixture`. `author-achievement-revision.spec.ts` uses the
+  same fixture and still checks that a draft achievement and its image stay
+  private until approval.
+- Browser verification: those two Playwright specs were not run. Chromium and
+  WebKit are NOT RUN. `apps/mobile/e2e/prepare.mjs` resets disposable
+  `bidplace_e2e`, and this task did not include consent for that reset.
+- `Unchanged`: seller revision transitions, publication, R30 logout exclusion,
+  and the admin review target.
+
 ## 2026-09-28 — Admin revision review
 
 - `Needs verification`: the admin queue reads an explicit review target and
