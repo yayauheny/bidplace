@@ -511,10 +511,17 @@ async function publicSearchFixtures(
   ).json()) as {
     categories: Array<{ id: string; name: string }>;
   };
+  const work = worksPayload.works[0]!.work;
+  const category = categoriesPayload.categories.find((item) => item.id === work.categoryId);
+  if (!category) {
+    throw new Error(
+      `No public category matches work ${work.publicId} categoryId ${work.categoryId}`,
+    );
+  }
   return {
-    work: worksPayload.works[0]!.work,
+    work,
     author: authorsPayload.authors[0]!.author,
-    category: categoriesPayload.categories[0]!,
+    category,
   };
 }
 

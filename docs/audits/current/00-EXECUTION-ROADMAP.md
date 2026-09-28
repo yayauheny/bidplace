@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-27. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; scopes R02–R29 не запущены.
+**Сохранён:** 2026-09-28. **Статус документа:** R01 — D03 `VERIFIED`, T04 `PARTIAL`; R30 — D08 `VERIFIED`; scopes R02–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -187,7 +187,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Тесты:** реальный lifecycle hook: false/true, focus внутри/снаружи, cleanup и повторное открытие. Не ограничиваться pure helper.
 - **Validation:** V-MOBILE; V-BROWSER для `search-overlay.spec.ts`; V-DIFF.
 - **STOP:** исправление требует перестройки focus ownership — вынести в R14.
-- **Done/status:** D03 → `NEEDS_VERIFICATION`; T04 остаётся `PARTIAL`. Hook lifecycle подтверждён; Playwright `search-overlay.spec.ts` не стартовал, потому что disposable DB отклонила credentials `auction`.
+- **Done/status:** D03 → `VERIFIED`; T04 остаётся `PARTIAL`. Hook lifecycle подтверждён. Полный `search-overlay.spec.ts` прошёл Chromium 17/17 и WebKit 17/17. Предыдущий browser failure был mismatch fixture (`categories[0]` без опубликованных работ), не regression `closeOnFocusIn`.
 - **Отчёт:** G, включая доказательство различия true/false.
 
 ### R02. Показывать в moderation queue именно проверяемую ревизию
@@ -268,7 +268,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Тесты:** behavioral test живого UI: authenticated пользователь находит logout и запускает его; success и rejected server logout оба очищают local session/private cache и переводят на `/`; guest не видит действие; повторное нажатие не создаёт второй запрос; protected route после выхода недоступен. Проверить reachability действия для указанных account destinations; не заменять тест source-text assertion.
 - **Validation:** V-MOBILE; V-BROWSER для добавленного logout scenario в Chromium/WebKit; V-DIFF. Сохранить regression coverage текущего session cleanup.
 - **STOP:** действие недоступно части authenticated ролей; proposed fix обходит существующий cleanup или dirty guard; требуется новый account route, auth protocol либо восстановление legacy tree — остановить расширение scope и зафиксировать blocker.
-- **Done/status:** D08 → `NEEDS_VERIFICATION`. Behavioral logout checks passed. Chromium/WebKit did not start because the disposable database rejected user `auction`.
+- **Done/status:** D08 → `VERIFIED`. Behavioral logout checks passed. `account-logout.spec.ts` — Chromium 4/4, WebKit 4/4.
 - **Отчёт:** G с доступными account destinations, evidence для success/server failure и явной отметкой «предсуществующий дефект, не regression PR #12».
 
 ### Wave 2 — lifecycle/state/query
@@ -821,7 +821,7 @@ blocked-by:
 ```text
 scope: R01
 finding IDs: D03; overlay seam of T04
-status: NEEDS_VERIFICATION
+status: VERIFIED
 base SHA: e166d6e6310ce30977f402b3c657f1f062811414
 commit: 3edbf99feadc79be0f514283b1f793348c68b1c9 plus the correction commit on fix/overlay-focus-dismiss whose parent is that SHA
 changed contracts: none. closeOnFocusIn stays optional and defaults to false. SearchOverlay, FilterSheet and FilterMenu still omit it. FilterSheet restoreOnClose stays true. SearchOverlay restoreOnClose stays false.
@@ -831,11 +831,11 @@ validation commands and exit codes:
   pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
   pnpm --filter @bidplace/mobile test → 0 (396 tests) on Node v22.20.0
   pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
-  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 1
-runtime environment: supported V-MOBILE re-run used Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. An earlier local run used Node v24.17.0 and is not supported-runtime verification. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency. Playwright was not repeated.
-evidence links: apps/mobile/src/components/layout/use-dismissible-overlay.ts; apps/mobile/src/components/layout/use-dismissible-overlay.spec.ts
-remaining limitations: Playwright webServer exited before any browser test. prepare.mjs failed with PrismaClientInitializationError: authentication failed for user auction at 127.0.0.1:5432. The fenced default URL was not replaced.
-blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5432/bidplace_e2e
+  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 0 (34 passed: Chromium 17/17, WebKit 17/17) on Node v22.20.0
+runtime environment: supported V-MOBILE re-run used Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. An earlier local run used Node v24.17.0 and is not supported-runtime verification. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency. Browser verification used apps/mobile/playwright.config.ts and disposable postgresql://auction@127.0.0.1:5432/bidplace_e2e.
+evidence links: apps/mobile/src/components/layout/use-dismissible-overlay.ts; apps/mobile/src/components/layout/use-dismissible-overlay.spec.ts; apps/mobile/e2e/search-overlay.spec.ts
+remaining limitations: T04 stays PARTIAL because the other seams remain. The earlier Chromium and WebKit failure of “Back from a Category result restores Search, then keeps Works filters” was a test-fixture mismatch, not a closeOnFocusIn regression. publicSearchFixtures took /api/works?limit=1 and categories[0] independently. categories[0] was “E2E art” (90e71e40-53ec-4e61-a8f0-f51d2c24b433) and returned 0 works. The published work aliceGlass1 has categoryId 63c5413b-40e3-4803-93d1-a1ad8f132aaa (“Авторские работы”), and that filter returned 9 works including aliceGlass1. The fixture now selects that matching category and throws if it is missing.
+blocked-by: none
 ```
 
 ### R30 evidence
@@ -926,7 +926,7 @@ blocked-by: none
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | E0/E1; после: revision queue + security integration                            |
 | D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                                            |
-| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | NEEDS_VERIFICATION | —                                                            | Hook lifecycle passed; Playwright search-overlay blocked on disposable DB auth |
+| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle passed; search-overlay Chromium 17/17, WebKit 17/17. Prior fail was fixture mismatch, not closeOnFocusIn |
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |

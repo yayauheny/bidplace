@@ -34,7 +34,7 @@
 
 ## 2026-09-27 — Overlay focus dismissal
 
-- `Needs verification` (mobile web): `useDismissibleOverlay` registers a
+- `Implemented` (mobile web): `useDismissibleOverlay` registers a
   `focusin` listener only when `closeOnFocusIn` is true and removes that same
   listener. SearchOverlay, FilterSheet and FilterMenu still omit the option, so
   moving focus no longer closes them. Escape and outside pointer dismissal are
@@ -43,9 +43,11 @@
 - Coverage: `use-dismissible-overlay.spec.ts` mounts the hook for omitted/false,
   true, inside/outside focus, cleanup and reopen. Those false cases fail on the
   previous shadowed listener.
-- `Needs verification`: Chromium/WebKit `e2e/search-overlay.spec.ts` did not
-  start. The fenced default database rejected user `auction` on
-  `127.0.0.1:5432`. No other database was used.
+- `Implemented`: Chromium 17/17 and WebKit 17/17 for `e2e/search-overlay.spec.ts`
+  against disposable `bidplace_e2e` on `127.0.0.1:5432`. The earlier failure of
+  the category Back test was a fixture mismatch (`categories[0]` had no
+  published works), not a `closeOnFocusIn` regression. No other database was
+  used.
 - `Unchanged`: focus trap, portal, overlay history and outside-click ownership.
 
 ## 2026-09-26 — Backend API boundary cleanup
