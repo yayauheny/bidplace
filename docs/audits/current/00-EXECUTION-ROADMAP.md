@@ -821,9 +821,9 @@ blocked-by:
 ```text
 scope: R01
 finding IDs: D03; overlay seam of T04
-status: NEEDS_VERIFICATION
+status: VERIFIED
 base SHA: e166d6e6310ce30977f402b3c657f1f062811414
-commit: 3edbf99feadc79be0f514283b1f793348c68b1c9 plus the correction commit on fix/overlay-focus-dismiss whose parent is that SHA
+commit: 3edbf99feadc79be0f514283b1f793348c68b1c9 plus correction 9a1dd2bed09f7492937226564c72efb2ad67a4da
 changed contracts: none. closeOnFocusIn stays optional and defaults to false. SearchOverlay, FilterSheet and FilterMenu still omit it. FilterSheet restoreOnClose stays true. SearchOverlay restoreOnClose stays false.
 tests/scenarios: mounted useDismissibleOverlay — omitted/false does not register focusin and does not close on inside or outside focus; true closes once on outside focus and ignores inside focus; cleanup removes the same listener; reopen starts open, closes on outside focus, removes that listener when open becomes false, registers a different listener when opened again, and the next outside focus adds exactly one onClose('focusin'); false still closes once on Escape (with restoreFocus) and outside pointerdown, and ignores inside pointerdown. The omitted/false listener assertions fail on the previous shadowed callback.
 validation commands and exit codes:
@@ -831,11 +831,11 @@ validation commands and exit codes:
   pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
   pnpm --filter @bidplace/mobile test → 0 (396 tests) on Node v22.20.0
   pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
-  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 1
-runtime environment: supported V-MOBILE re-run used Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. An earlier local run used Node v24.17.0 and is not supported-runtime verification. Hook spec uses the jsdom environment already installed with vitest 4.1.10. No new dependency. Playwright was not repeated.
+  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/search-overlay.spec.ts --project=chromium --project=webkit → 0 (Chromium 17/17, WebKit 17/17; 34 passed)
+runtime environment: supported V-MOBILE and browser verification used Node v22.20.0, matching root engines >=22 <23, and pnpm 11.7.0. Hook spec uses the jsdom environment already installed with vitest 4.1.10. Browser verification used apps/mobile/playwright.config.ts against an explicitly disposable postgres:16-alpine bidplace_e2e database.
 evidence links: apps/mobile/src/components/layout/use-dismissible-overlay.ts; apps/mobile/src/components/layout/use-dismissible-overlay.spec.ts
-remaining limitations: Playwright webServer exited before any browser test. prepare.mjs failed with PrismaClientInitializationError: authentication failed for user auction at 127.0.0.1:5432. The fenced default URL was not replaced.
-blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5432/bidplace_e2e
+remaining limitations: none for D03. After the disposable DB issue was resolved, one category-history browser scenario exposed an E2E fixture mismatch: publicSearchFixtures selected categories[0] independently from the chosen published work, so that category could contain no works. The fixture now selects the category matching work.categoryId; production overlay code and assertions were unchanged.
+blocked-by: none
 ```
 
 ### R30 evidence
@@ -926,7 +926,7 @@ blocked-by: none
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | E0/E1; после: revision queue + security integration                            |
 | D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; после: rendered action + E2E                                            |
-| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | NEEDS_VERIFICATION | —                                                            | Hook lifecycle passed; Playwright search-overlay blocked on disposable DB auth |
+| D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
@@ -951,7 +951,7 @@ blocked-by: none
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | QUEUED             | —                                                            | E0/E1; discovered tests + build output                                         |
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | QUEUED             | R02                                                          | E0/E1; оба актуализированных browser specs                                     |
-| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 покрыл overlay hook lifecycle; browser seam и остальные seams открыты      |
+| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; queue/submit/save/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
 
 **TOTAL FINDINGS: 29**
