@@ -192,6 +192,28 @@ function response(parentStatus: string, revisionStatus: string, updatedAt?: stri
   };
 }
 
+function submitResponse(
+  parentStatus: string,
+  revisionStatus: string,
+  updatedAt = '2026-09-28T00:00:00.000Z',
+) {
+  return {
+    application: {
+      slug: 'author',
+      fullName: 'Author Name',
+      country: 'BY',
+      city: 'Minsk',
+      discipline: 'Painting',
+      practice: null,
+      shortDescription: 'Short description',
+      status: parentStatus,
+      applicationStage: parentStatus === 'PENDING_REVIEW' ? null : 'ACHIEVEMENTS',
+    },
+    editingRevision: revision(revisionStatus, updatedAt),
+    achievements: [],
+  };
+}
+
 function mount() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -274,7 +296,9 @@ beforeEach(() => {
   harness.getAuthorApplicationPhoto.mockResolvedValue(new Blob(['png'], { type: 'image/png' }));
   harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
   harness.updateProfile.mockImplementation(async () => response('APPROVED', 'DRAFT'));
-  harness.submitAuthorApplication.mockImplementation(async () => response('APPROVED', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+  harness.submitAuthorApplication.mockImplementation(async () =>
+    submitResponse('APPROVED', 'PENDING_REVIEW'),
+  );
 });
 
 afterEach(() => {
@@ -469,7 +493,7 @@ describe('seller profile revision submit', () => {
     harness.params = { step: '4' };
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
     let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
-    let resolveSubmit: (value: ReturnType<typeof response>) => void = () => undefined;
+    let resolveSubmit: (value: ReturnType<typeof submitResponse>) => void = () => undefined;
     harness.updateProfile.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -516,7 +540,7 @@ describe('seller profile revision submit', () => {
 
     harness.getMyProfile.mockResolvedValue(response('DRAFT', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
     await act(async () => {
-      resolveSubmit(response('DRAFT', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+      resolveSubmit(submitResponse('DRAFT', 'PENDING_REVIEW'));
       await Promise.resolve();
     });
     await until(
@@ -583,6 +607,129 @@ describe('seller profile revision submit', () => {
     expect(harness.replace).not.toHaveBeenCalled();
     expect(harness.push).not.toHaveBeenCalled();
     expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not reopen submit while the profile refetch is delayed after a successful submit', async () => {
+    const pendingProfile = response('APPROVED', 'PENDING_REVIEW', '2026-09-28T00:00:00.000Z');
+    const delayed: Array<(value: ReturnType<typeof response>) => void> = [];
+    let profileCalls = 0;
+    harness.getMyProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          profileCalls += 1;
+          if (profileCalls === 1) {
+            resolve(response('APPROVED', 'DRAFT'));
+            return;
+          }
+          delayed.push(resolve);
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      'submit action',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'first submit');
+    await until(view.container, () => delayed.length > 0, 'delayed profile refetch');
+    const submitAgain = findButton(view.container, 'Отправить на проверку');
+    const saveAgain = findButton(view.container, 'Сохранить');
+    if (submitAgain instanceof HTMLButtonElement && !submitAgain.disabled) {
+      act(() => {
+        submitAgain.click();
+      });
+    }
+    if (saveAgain instanceof HTMLButtonElement && !saveAgain.disabled) {
+      act(() => {
+        saveAgain.click();
+      });
+    }
+    await flush();
+    expect(submitAgain === undefined || (submitAgain instanceof HTMLButtonElement && submitAgain.disabled)).toBe(true);
+    expect(saveAgain === undefined || (saveAgain instanceof HTMLButtonElement && saveAgain.disabled)).toBe(true);
+    expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(view.container.textContent).toContain('Заявка на проверке');
+
+    await act(async () => {
+      for (const resolve of delayed.splice(0)) resolve(pendingProfile);
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Заявка на проверке');
+    expect(view.container.textContent).toContain('Одобрен');
+    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('keeps the submitted revision pending when a later profile snapshot is stale', async () => {
+    const delayed: Array<(value: ReturnType<typeof response>) => void> = [];
+    let profileCalls = 0;
+    harness.getMyProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          profileCalls += 1;
+          if (profileCalls === 1) {
+            resolve(response('APPROVED', 'DRAFT'));
+            return;
+          }
+          delayed.push(resolve);
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      'submit action',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(view.container, () => harness.submitAuthorApplication.mock.calls.length === 1, 'first submit');
+    await until(view.container, () => delayed.length > 0, 'stale profile refetch');
+    await act(async () => {
+      for (const resolve of delayed.splice(0)) resolve(response('APPROVED', 'DRAFT'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Заявка на проверке');
+    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    expect(findButton(view.container, 'Сохранить')).toBeUndefined();
+    const city = view.container.querySelector('[aria-label="Город"]');
+    expect(city).toBeInstanceOf(HTMLInputElement);
+    expect((city as HTMLInputElement).disabled).toBe(true);
+    expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not offer another submit when the profile refetch fails, and logout stays available', async () => {
+    let profileCalls = 0;
+    harness.getMyProfile.mockImplementation(() => {
+      profileCalls += 1;
+      if (profileCalls === 1) return Promise.resolve(response('APPROVED', 'DRAFT'));
+      return Promise.reject(new Error('profile refetch failed'));
+    });
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      'submit action',
+    );
+    click(view.container, 'Отправить на проверку');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Заявка на проверке') === true,
+      'pending after failed refetch',
+    );
+    expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+    expect(buttonDisabled(view.container, 'Выйти')).toBe(false);
+    click(view.container, 'Выйти');
+    await flush();
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     view.unmount();
   });
 });

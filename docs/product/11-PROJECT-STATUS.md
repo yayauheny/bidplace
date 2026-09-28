@@ -11,9 +11,12 @@
   on the live `/profile` screen when `canSubmitSellerProfileRevision` allows the
   editing revision. The same handler serves that action and the final step of
   the initial application. It saves first, submits only after a saved result,
-  and keeps one synchronous guard around the whole cycle. A pending revision
-  hides the action and disables editing. The approved parent stays public until
-  a moderator approves the revision.
+  and keeps one synchronous guard around the whole cycle. A successful submit
+  response updates the owner profile cache to the confirmed revision before
+  that guard clears. A later profile refetch that fails, or an older snapshot,
+  does not reopen editing or a second submit. A pending revision hides the
+  action and disables editing. The approved parent stays public until a
+  moderator approves the revision.
 - Coverage: `seller-profile-submit.spec.ts` and the existing logout regressions
   in `seller-profile-logout.spec.ts`. `author-revision-flow.spec.ts` keeps one
   four-step onboarding submit and starts the approved edit from

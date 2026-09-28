@@ -6,6 +6,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image as LocalPreviewImage, View } from 'react-native';
 
 import { ApiClientError } from '@bidplace/api-client';
+import type { SellerProfileResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 import { AppShell, FormPageColumns, FormPageShell } from '../../components/layout';
 import { InfrastructurePageStatus } from '../../components/shared/InfrastructurePageStatus';
@@ -25,6 +26,80 @@ import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfil
 import { previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', publicEmail: '', shortDescription: '' };
+const sellerProfileQueryKey = ['seller', 'profile'] as const;
+
+type SubmittedAuthorApplication = {
+  application: {
+    slug: string;
+    fullName: string;
+    country: string;
+    city: string | null;
+    discipline: string | null;
+    practice: string | null;
+    shortDescription: string | null;
+    status: SellerProfileResponse['sellerProfile']['status'];
+    applicationStage: SellerProfileResponse['sellerProfile']['applicationStage'];
+  };
+  editingRevision: {
+    id: string;
+    version: number;
+    status: string;
+    updatedAt: string;
+  } | null;
+};
+
+function withSubmittedRevision(
+  current: SellerProfileResponse | undefined,
+  submitted: SubmittedAuthorApplication,
+): SellerProfileResponse | undefined {
+  const revision = submitted.editingRevision;
+  if (!current?.sellerProfile || !revision || revision.status !== 'PENDING_REVIEW') {
+    return current;
+  }
+  return {
+    sellerProfile: {
+      ...current.sellerProfile,
+      slug: submitted.application.slug,
+      fullName: submitted.application.fullName,
+      country: submitted.application.country,
+      city: submitted.application.city,
+      discipline: submitted.application.discipline,
+      practice: submitted.application.practice,
+      shortDescription: submitted.application.shortDescription,
+      status: submitted.application.status,
+      applicationStage: submitted.application.applicationStage,
+    },
+    editingRevision: {
+      id: revision.id,
+      version: revision.version,
+      status: 'PENDING_REVIEW',
+      updatedAt: revision.updatedAt,
+    },
+  };
+}
+
+function isSellerProfileResponse(value: unknown): value is SellerProfileResponse {
+  if (!value || typeof value !== 'object') return false;
+  return 'sellerProfile' in value && 'editingRevision' in value;
+}
+
+function keepConfirmedPendingProfile(previous: unknown, next: unknown): unknown {
+  if (!isSellerProfileResponse(previous) || previous.editingRevision?.status !== 'PENDING_REVIEW') {
+    return next;
+  }
+  if (!isSellerProfileResponse(next) || !next.editingRevision) return previous;
+  const confirmedAt = Date.parse(previous.editingRevision.updatedAt);
+  const incomingAt = Date.parse(next.editingRevision.updatedAt);
+  if (!Number.isFinite(incomingAt) || incomingAt < confirmedAt) return previous;
+  if (
+    next.editingRevision.id === previous.editingRevision.id &&
+    next.editingRevision.status !== 'PENDING_REVIEW' &&
+    incomingAt <= confirmedAt
+  ) {
+    return previous;
+  }
+  return next;
+}
 
 function toFields(profile: {
   slug: string; fullName: string; discipline: string | null; country: string; city: string | null;
@@ -36,7 +111,12 @@ function toFields(profile: {
 
 function useProfileData() {
   const api = useApiClient();
-  return useQuery({ queryKey: ['seller', 'profile'], queryFn: () => api.sellers.getMyProfile(), retry: false });
+  return useQuery({
+    queryKey: sellerProfileQueryKey,
+    queryFn: () => api.sellers.getMyProfile(),
+    retry: false,
+    structuralSharing: keepConfirmedPendingProfile,
+  });
 }
 
 export function SellerProfileScreen() {
@@ -94,7 +174,7 @@ export function SellerProfileScreen() {
   }, [intro, profile, router]);
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
   };
@@ -102,13 +182,13 @@ export function SellerProfileScreen() {
   const createPayload = () => ({ slug: fields.slug, fullName: fields.fullName, country: fields.country, city: fields.city.trim() });
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const current = queryClient.getQueryData<typeof query.data>(['seller', 'profile']);
+      const current = queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey);
       if (current?.sellerProfile) return api.sellers.updateProfile(payload(), photoBlob ?? undefined);
       if (!photoBlob) throw new Error('Profile photo is required');
       return api.sellers.createProfile(createPayload(), photoBlob);
     },
     onSuccess: (saved) => {
-      queryClient.setQueryData(['seller', 'profile'], saved);
+      queryClient.setQueryData(sellerProfileQueryKey, saved);
       form.reset(toFields(saved.sellerProfile));
       setPhotoBlob(null);
       invalidate();
@@ -119,10 +199,10 @@ export function SellerProfileScreen() {
     onSuccess: (saved) => {
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
-      queryClient.setQueryData(['seller', 'profile'], (current: typeof query.data) => current ? { ...current, sellerProfile: { ...current.sellerProfile, applicationStage: saved.application.applicationStage } } : current);
+      queryClient.setQueryData(sellerProfileQueryKey, (current: SellerProfileResponse | undefined) => current ? { ...current, sellerProfile: { ...current.sellerProfile, applicationStage: saved.application.applicationStage } } : current);
     },
   });
-  const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication(), onSuccess: invalidate });
+  const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication() });
 
   const save = async (source?: 'revision-submit') => {
     if (logoutStarted.current || saveInFlight.current) return null;
@@ -149,7 +229,21 @@ export function SellerProfileScreen() {
     try {
       const saved = await save('revision-submit');
       if (!saved) return;
-      await submitMutation.mutateAsync();
+      const submitted = await submitMutation.mutateAsync();
+      await queryClient.cancelQueries({ queryKey: sellerProfileQueryKey }, { revert: false });
+      queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
+        withSubmittedRevision(current, submitted),
+      );
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      try {
+        await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
+      } catch (error) {
+        logInfrastructureError(error, 'seller-profile-submit');
+        queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
+          withSubmittedRevision(current, submitted) ?? current,
+        );
+      }
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-submit');
     } finally {
