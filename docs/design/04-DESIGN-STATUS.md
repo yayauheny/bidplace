@@ -4,6 +4,18 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-28 — Owner editor save and cabinet refresh
+
+- `Needs verification` (mobile web behavior): an ordinary work or profile save
+  keeps text entered after that request was sent. Fields that did not change
+  after the snapshot take the server's normalized values. A photo chosen while
+  the previous profile save is in flight stays selected. Step changes, exit,
+  and submit lock input until the transition finishes and do not continue when
+  save fails. The open author cabinet refreshes that work's status, message,
+  and cover after the work is saved.
+- `Unchanged`: form layout, tokens, routes, and the canonical Pen file.
+  Chromium and WebKit were not run.
+
 ## 2026-09-28 — Approved author revision submit
 
 - `Needs verification` (mobile web behavior): an approved author can send an

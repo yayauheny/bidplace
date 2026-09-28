@@ -30,6 +30,7 @@ import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
 import { canWritePrivateCache, categoryKeys } from '../../lib/query-cache';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
+import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftAboutStep } from './product-draft-about';
 import {
   emptyProductDraftFormValues,
@@ -109,15 +110,15 @@ export function ProductDraftScreen({
     queryFn: () => api.categories.list(),
   });
   const productDetail = useQuery({
-    queryKey: ['seller', 'product', productId],
+    queryKey: productId
+      ? ownerWorkQueryKeys.detail(productId)
+      : ownerWorkQueryKeys.detailRoot,
     queryFn: async () => {
       const result = await api.sellers.getProduct(productId!);
       if (!canWritePrivateCache(queryClient)) {
-        const current = queryClient.getQueryData<SellerProductDetailResponse>([
-          'seller',
-          'product',
-          productId,
-        ]);
+        const current = queryClient.getQueryData<SellerProductDetailResponse>(
+          ownerWorkQueryKeys.detail(productId!),
+        );
         if (current) return current;
         throw new Error('Private cache is closed');
       }
@@ -210,11 +211,9 @@ export function ProductDraftScreen({
     submitted: ProductDraftFormValues,
   ) => {
     persistedProductId.current = product.id;
-    const cached = queryClient.getQueryData<SellerProductDetailResponse>([
-      'seller',
-      'product',
-      product.id,
-    ]);
+    const cached = queryClient.getQueryData<SellerProductDetailResponse>(
+      ownerWorkQueryKeys.detail(product.id),
+    );
     hydratedProductId.current = product.id;
     hydratedUpdatedAt.current =
       cached?.editingRevision?.updatedAt ??
@@ -240,15 +239,8 @@ export function ProductDraftScreen({
     }
   };
 
-  const invalidateSavedProduct = async (savedProductId: string) => {
-    if (!canWritePrivateCache(queryClient)) return;
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', savedProductId],
-      }),
-    ]);
-  };
+  const invalidateSavedProduct = (savedProductId: string) =>
+    invalidateOwnerWorks(queryClient, savedProductId);
 
   const save = useMutation({
     mutationFn: (currentValues: ProductDraftFormValues) => {
@@ -287,10 +279,9 @@ export function ProductDraftScreen({
       return api.images.add(id, images);
     },
     onSuccess: () => {
-      if (!canWritePrivateCache(queryClient)) return;
-      return queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', persistedProductId.current],
-      });
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
     },
   });
   const removeImage = useMutation({
@@ -300,10 +291,9 @@ export function ProductDraftScreen({
       return api.images.remove(id, imageId);
     },
     onSuccess: () => {
-      if (!canWritePrivateCache(queryClient)) return;
-      return queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', persistedProductId.current],
-      });
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
     },
   });
   const reorderImages = useMutation({
@@ -313,10 +303,9 @@ export function ProductDraftScreen({
       return api.images.reorder(id, imageIds);
     },
     onSuccess: () => {
-      if (!canWritePrivateCache(queryClient)) return;
-      return queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', persistedProductId.current],
-      });
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
     },
   });
 

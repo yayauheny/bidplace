@@ -22,6 +22,7 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
+import { canWritePrivateCache } from '../../lib/query-cache';
 import {
   isAuthorCabinetAvailable,
   useSellerCapability,
@@ -35,6 +36,7 @@ import {
   authorCabinetWorksFromPages,
   authorCabinetWorkState,
 } from './author-cabinet-state';
+import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 
 export function AuthorCabinetScreen() {
   const api = useApiClient();
@@ -43,13 +45,18 @@ export function AuthorCabinetScreen() {
   const capability = useSellerCapability();
   const [pendingHideId, setPendingHideId] = useState<string | null>(null);
   const query = useInfiniteQuery({
-    queryKey: ['seller', 'cabinet', 'works'],
+    queryKey: ownerWorkQueryKeys.cabinet,
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.listCabinetWorks({
+    queryFn: async ({ pageParam }) => {
+      const page = await api.portfolio.listCabinetWorks({
         page: pageParam,
         limit: AUTHOR_CABINET_PAGE_SIZE,
-      }),
+      });
+      if (!canWritePrivateCache(queryClient)) {
+        throw new Error('Private cache is closed');
+      }
+      return page;
+    },
     getNextPageParam: (page) =>
       page.pagination.page * page.pagination.limit < page.pagination.total
         ? page.pagination.page + 1
@@ -68,10 +75,7 @@ export function AuthorCabinetScreen() {
   }, [capability.isError, capability.isLoading, capability.status, router]);
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({
-      queryKey: ['seller', 'cabinet', 'works'],
-    });
-    void queryClient.invalidateQueries({ queryKey: ['seller', 'product'] });
+    void invalidateOwnerWorks(queryClient);
     void queryClient.invalidateQueries({ queryKey: ['public-author'] });
     void queryClient.invalidateQueries({ queryKey: ['portfolio-home'] });
     void queryClient.invalidateQueries({ queryKey: ['portfolio-work'] });

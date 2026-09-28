@@ -5,6 +5,24 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-28 — Owner editor save and cabinet refresh
+
+- `Needs verification` (mobile web): ordinary save of a work or author profile
+  keeps values changed after the request snapshot and applies server
+  normalization only to fields that still match that snapshot. A newer profile
+  photo selected during the previous save stays unsaved. Save before a step
+  change, exit, or submit locks the form and does not continue after a failure.
+  The retained author cabinet reads `['seller','cabinet','works']` and refreshes
+  status and cover after a work create, update, submit, or image change.
+  `{ product }` and `{ ok: true }` are not written over the detail envelope.
+- Coverage: `product-draft-save-race.spec.ts`, `seller-profile-submit.spec.ts`,
+  `seller-profile-logout.spec.ts`, and `author-cabinet-work-cache.spec.ts`.
+- Browser verification: work creation/edit, profile/revision, and retained
+  cabinet scenarios were not run. Chromium and WebKit are NOT RUN.
+  `prepare.mjs` was not allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: server contracts, revision transitions, publication, public cache
+  invalidation on hide/unhide, navigation history, and required profile fields.
+
 ## 2026-09-28 — Workspace test discovery
 
 - `Implemented` (tooling only): contracts Vitest discovers `src/**/*.spec.ts`
