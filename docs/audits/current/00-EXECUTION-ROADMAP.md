@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; scopes R04–R29 не запущены.
+**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; scopes R05–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -250,6 +250,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** contracts/database V-PACKAGE; root unit command после проверки безопасного env harness; V-DIFF.
 - **STOP:** database assertion не выражает реальный контракт — не сохранять его ради количества тестов; зафиксировать и удалить с объяснением, сохранив discovery остальных meaningful tests.
 - **Done/status:** T01 → `VERIFIED`.
+- **Actual:** T01 → `VERIFIED`. See the R04 evidence record.
 - **Отчёт:** G с discovered counts до/после и проверкой build output.
 
 ### R30. Вернуть доступный logout в живой account/profile flow
@@ -918,6 +919,29 @@ remaining limitations: Chromium and WebKit were not run, so D02 and T03 are not 
 blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
 ```
 
+### R04 evidence
+
+```text
+scope: R04
+finding IDs: T01
+status: VERIFIED
+base SHA: b4360edb472020c3e05b4cac9f4510cdb4cb46e5
+commit: implementation commit on fix/workspace-test-discovery
+changed contracts: none. Public package exports are unchanged.
+tests/scenarios: Before the change, contracts Vitest discovered 3 files and 30 tests under test/**/*.test.ts and did not run src/portfolio.spec.ts. A clean contracts/database build emitted portfolio.spec and index.spec JavaScript, declarations, and declaration maps. Database had no test script. Prisma.$Enums was undefined, so Object.keys(Prisma.$Enums ?? {}) passed without checking a public export. After the change, contracts discovers 4 files and 31 tests, including portfolio.spec.ts. Database runs one smoke test: PrismaClient is a function, Decimal is Prisma.Decimal, and new Decimal('10.50').plus(new Decimal('1.25')) equals 11.75. The test does not construct a client or connect to a database. The database test script runs prisma generate before Vitest. A separate noEmit tsconfig typechecks the test sources after they were excluded from production emit. A clean dist contains index.js and index.d.ts and no spec or test artifacts.
+validation commands and exit codes:
+  pnpm --filter @bidplace/contracts test → 0 (4 files, 31 tests) on Node v22.20.0
+  pnpm --filter @bidplace/database test → 0 (1 file, 1 test) on Node v22.20.0
+  pnpm exec turbo run typecheck build --filter='@bidplace/contracts...' --filter='@bidplace/database...' → 0 (4 tasks) on Node v22.20.0
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter=...@bidplace/contracts --filter=...@bidplace/database → 0 (14 tasks: api, api-client, config, contracts, database, design-tokens, mobile) on Node v22.20.0
+  env -u BIDPLACE_ENV_FILE pnpm test:unit → 0 after the existing workspace package builds (api 299, contracts 31, api-client 14, database 1, mobile 446) on Node v22.20.0
+  git diff --check → 0
+runtime environment: Node v22.20.0, matching root engines >=22 <23. No .env file was present in the worktree. BIDPLACE_ENV_FILE was unset. prisma migrate reset was not run. The database smoke test did not open a database connection.
+evidence links: packages/contracts/vitest.config.ts; packages/contracts/tsconfig.json; packages/contracts/tsconfig.typecheck.json; packages/database/src/index.spec.ts; packages/database/vitest.config.ts; packages/database/package.json; package.json
+remaining limitations: contracts and database have no lint script. A clean checkout must build workspace package entries such as @bidplace/config, @bidplace/api-client, and @bidplace/design-tokens before root test:unit, which is the same prerequisite pnpm typecheck already applies. tsc does not delete stale outputs, so this check removed dist before the clean build.
+blocked-by: none
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1006,7 +1030,7 @@ blocked-by: explicit user consent to prisma migrate reset of disposable bidplace
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | QUEUED             | согласовать включение с R07                                  | E0/E1; cancellation/error-classification tests                                 |
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |
 | S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
-| T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | QUEUED             | —                                                            | E0/E1; discovered tests + build output                                         |
+| T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | VERIFIED           | —                                                            | Current R04 evidence: discovery, database smoke, clean dist                    |
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; R03 submit UI is NEEDS_VERIFICATION; queue/save/S3/visibility открыты |

@@ -11,7 +11,8 @@
     "seed": "pnpm run build && node --env-file ../../.env prisma/seed.js",
     "db:seed": "pnpm run seed",
     "build": "pnpm run generate && tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "pnpm run generate && vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
