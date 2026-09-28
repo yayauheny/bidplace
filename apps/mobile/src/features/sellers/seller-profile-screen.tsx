@@ -236,14 +236,7 @@ export function SellerProfileScreen() {
       );
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
-      try {
-        await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
-      } catch (error) {
-        logInfrastructureError(error, 'seller-profile-submit');
-        queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
-          withSubmittedRevision(current, submitted) ?? current,
-        );
-      }
+      await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-submit');
     } finally {

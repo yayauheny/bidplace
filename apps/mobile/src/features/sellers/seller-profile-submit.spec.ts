@@ -704,6 +704,60 @@ describe('seller profile revision submit', () => {
     view.unmount();
   });
 
+  it.each(['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'] as const)(
+    'accepts a newer %s profile snapshot after the confirmed pending submit',
+    async (revisionStatus) => {
+      const delayed: Array<(value: ReturnType<typeof response>) => void> = [];
+      let profileCalls = 0;
+      harness.getMyProfile.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            profileCalls += 1;
+            if (profileCalls === 1) {
+              resolve(response('APPROVED', 'DRAFT'));
+              return;
+            }
+            delayed.push(resolve);
+          }),
+      );
+      const view = mount();
+      await until(
+        view.container,
+        () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+        'submit action',
+      );
+      click(view.container, 'Отправить на проверку');
+      await until(
+        view.container,
+        () => view.container.textContent?.includes('Заявка на проверке') === true,
+        'confirmed pending',
+      );
+      await act(async () => {
+        for (let pass = 0; pass < 4 && delayed.length > 0; pass += 1) {
+          for (const resolve of delayed.splice(0)) {
+            resolve(response('APPROVED', revisionStatus, '2026-09-29T00:00:00.000Z'));
+          }
+          await Promise.resolve();
+        }
+      });
+      await flush();
+      expect(view.container.textContent).not.toContain('Заявка на проверке');
+      expect(view.container.textContent).toContain('Одобрен');
+      expect(buttonDisabled(view.container, 'Сохранить')).toBe(false);
+      const city = view.container.querySelector('[aria-label="Город"]');
+      expect(city).toBeInstanceOf(HTMLInputElement);
+      expect((city as HTMLInputElement).disabled).toBe(false);
+      if (revisionStatus === 'APPROVED') {
+        expect(findButton(view.container, 'Отправить на проверку')).toBeUndefined();
+      } else {
+        expect(buttonDisabled(view.container, 'Отправить на проверку')).toBe(false);
+      }
+      expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
+      expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+      view.unmount();
+    },
+  );
+
   it('does not offer another submit when the profile refetch fails, and logout stays available', async () => {
     let profileCalls = 0;
     harness.getMyProfile.mockImplementation(() => {

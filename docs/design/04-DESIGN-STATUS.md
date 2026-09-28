@@ -11,7 +11,8 @@
   existing primary button and the same save-then-submit sequence as the last
   application step. The screen stays pending after the server accepts the
   revision, including when the following profile read is slow, stale, or
-  fails. A pending revision locks the form. Public profile content stays
+  fails. A newer approved, changes-requested, or rejected read replaces that
+  pending state. A pending revision locks the form. Public profile content stays
   published until approval.
 - `Unchanged`: form layout, tokens, and the canonical Pen file. Chromium and
   WebKit were not run.

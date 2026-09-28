@@ -13,8 +13,10 @@
   the initial application. It saves first, submits only after a saved result,
   and keeps one synchronous guard around the whole cycle. A successful submit
   response updates the owner profile cache to the confirmed revision before
-  that guard clears. A later profile refetch that fails, or an older snapshot,
-  does not reopen editing or a second submit. A pending revision hides the
+  that guard clears. The following profile read is not used to write that
+  snapshot again. A failed read or an older snapshot leaves the confirmed
+  pending revision in place. A newer approved, changes-requested, or rejected
+  revision replaces it. A pending revision hides the
   action and disables editing. The approved parent stays public until a
   moderator approves the revision.
 - Coverage: `seller-profile-submit.spec.ts` and the existing logout regressions
