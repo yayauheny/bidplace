@@ -7,7 +7,7 @@
 
 ## 2026-09-27 — Account logout
 
-- `Needs verification` (mobile web): an authenticated user can press «Выйти»
+- `Verified` (mobile web): an authenticated user can press «Выйти»
   on the live account destinations. The author cabinet, admin moderation, and
   email verification call `AuthProvider.logout()`. On the author profile, an
   ordinary save and logout cannot run together, so a delayed save cannot write
@@ -24,9 +24,10 @@
 - Coverage: `account-logout-button.spec.ts`, `seller-profile-logout.spec.ts`,
   `account-logout-reachability.spec.ts`, `verify-email-logout.spec.ts`, and
   `auth-provider-logout.spec.ts`.
-- `Needs verification`: Chromium/WebKit `e2e/account-logout.spec.ts` did not
-  start. The fenced default database rejected user `auction` on
-  `127.0.0.1:5432`. No other database was used.
+- Browser verification: `e2e/account-logout.spec.ts` passed Chromium 4/4 and
+  WebKit 4/4 against an explicitly disposable `bidplace_e2e` PostgreSQL
+  database. The history case `/profile → /cabinet → logout → Back` returned to
+  `/login` without restoring private author UI.
 - `Unchanged`: `AuthProvider.logout` still clears the local session in
   `finally`. The dock, onboarding, auth API, and route architecture are
   unchanged.
