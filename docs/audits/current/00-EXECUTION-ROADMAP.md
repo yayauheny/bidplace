@@ -843,9 +843,9 @@ blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5
 ```text
 scope: R30
 finding IDs: D08
-status: NEEDS_VERIFICATION
+status: VERIFIED
 base SHA: f276180b61822b5304b6b16d95a48370698651d1
-commit: implementation e49d3eec24444a6479486d70e559a25c5dd7c594; verify-email correction 7880ee2c92c085f2406f7cf58b65c01a400d2de3; save/logout correction is the current branch commit, parent 7880ee2c92c085f2406f7cf58b65c01a400d2de3
+commit: implementation e49d3eec24444a6479486d70e559a25c5dd7c594; verify-email correction 7880ee2c92c085f2406f7cf58b65c01a400d2de3; save/logout correction 3d722571643e9b5cfb0477d62343450fb4a89fc9
 changed contracts: none. AuthProvider.logout still clears the local session in finally. No auth API or route change.
 tests/scenarios: AccountLogoutButton — guest renders nothing; one logout call; a second press while pending does not call logout again; success and rejected server logout both router.replace('/'); rejection is logged with the infrastructure error policy and is not an unhandled rejection. Seller profile — dirty fields or a new photo open the existing exit dialog and do not call logout; a pending ordinary save cannot overlap logout and cannot repopulate the private cache after session cleanup; «Продолжить заполнение» does not logout; confirmed save runs before logout and then replace('/'); failed save stays on the form and does not logout; a clean profile logs out directly; clean «Закрыть» still goes home without logout; missing, draft, and pending-review profiles render «Выйти». Reachability — approved cabinet, suspended cabinet, admin moderation, and email verification render «Выйти». Verify email — a pending verification disables logout and does not call it; a pending logout disables confirm and request-code; a verify started after logout does not call refreshSession. AuthProvider — rejected api.auth.logout still clears the session and private seller cache, keeps public query data, and the protected route redirects to /login. Pre-existing defect, not a PR #12 regression.
 validation commands and exit codes:
@@ -853,11 +853,11 @@ validation commands and exit codes:
   pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
   pnpm --filter @bidplace/mobile test → 0 (418 tests) on Node v22.20.0
   pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
-  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/account-logout.spec.ts --project=chromium --project=webkit → 1
-runtime environment: Node v22.20.0, matching root engines >=22 <23. No new dependency. Specs use the jsdom environment already installed with vitest. Playwright used apps/mobile/playwright.config.ts and the default disposable database URL.
+  EXPO_NO_DOTENV=1 BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/mobile exec playwright test e2e/account-logout.spec.ts --project=chromium --project=webkit → 0 (Chromium 4/4, WebKit 4/4; 8 passed)
+runtime environment: Node v22.20.0, matching root engines >=22 <23. No new dependency. Specs use the jsdom environment already installed with vitest. Playwright used apps/mobile/playwright.config.ts against an explicitly disposable postgres:16-alpine container on 127.0.0.1:5432; prepare.mjs created/reset bidplace_e2e after the E2E database fence passed.
 evidence links: apps/mobile/src/features/auth/AccountLogoutButton.tsx; apps/mobile/src/features/auth/account-logout.ts; apps/mobile/src/features/sellers/seller-profile-screen.tsx; apps/mobile/src/features/sellers/author-cabinet-screen.tsx; apps/mobile/src/features/admin/admin-moderation-screen.tsx; apps/mobile/src/features/auth/verify-email-form.tsx; apps/mobile/e2e/account-logout.spec.ts
-remaining limitations: Playwright webServer exited before Chromium or WebKit ran a test. prepare.mjs failed with PrismaClientInitializationError: authentication failed for user auction at 127.0.0.1:5432. The fenced default URL was not replaced. Browser Back and role flows in e2e/account-logout.spec.ts are therefore not verified.
-blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5432/bidplace_e2e
+remaining limitations: none for D08. Chromium and WebKit both passed the maintained account logout scenarios, including /profile → /cabinet → logout → Back → /login without private UI restoration.
+blocked-by: none
 ```
 
 Для `VERIFIED` обязательны:
@@ -931,7 +931,7 @@ blocked-by: disposable database credentials for postgresql://auction@127.0.0.1:5
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
 | D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
-| D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | NEEDS_VERIFICATION | —                                                            | Behavioral logout passed; Chromium/WebKit blocked on disposable DB auth        |
+| D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | QUEUED             | R01/R04/R05–R07                                              | E0 graph+rg; повторный consumer inventory                                      |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | QUEUED             | R04; consumer verification                                   | E0/E1; export inventory и package builds                                       |
 | C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | QUEUED             | R09; Metro/native verification                               | E0/E1; clean install + bundles                                                 |
