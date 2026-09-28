@@ -1,101 +1,86 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
 import { moderateSeller } from './support/admin-moderation';
-import { e2eApiBaseURL } from './support/e2e-env';
 import {
   createAdminModerationFixture,
+  createApprovedAuthorFixture,
   createBuyerFixture,
 } from './support/e2e-fixtures';
 
-test('approved author edits a draft revision without changing the public page until approve', async ({
-  browser,
-}) => {
+async function completeAuthorApplication(page: Page, slug: string) {
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Добавить фото' }).click();
+  await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
+  await page.getByLabel('Имя или название').fill('Новый автор');
+  await page.getByLabel('Никнейм').fill(slug);
+  await page.getByLabel('Страна').fill('BY');
+  await page.getByLabel('Город').fill('Минск');
+  await page.getByRole('button', { name: 'Продолжить' }).click();
+  await expect(page).toHaveURL(/\/profile\?step=2/);
+  await expect(page.getByRole('progressbar').getByText('Шаг 2 из 4')).toBeVisible();
+  await page.getByRole('button', { name: 'Продолжить' }).click();
+  await expect(page).toHaveURL(/\/profile\?step=3/);
+  await page.getByRole('textbox', { name: 'Дисциплина *', exact: true }).last().fill('Керамика');
+  await page.getByRole('textbox', { name: 'Короткое описание *', exact: true }).last().fill('Первая биография.');
+  await page.getByRole('button', { name: 'Продолжить' }).click();
+  await expect(page).toHaveURL(/\/profile\?step=4/);
+  await page.getByRole('button', { name: 'Отправить на проверку' }).click();
+  await expect(page.getByText('На модерации')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Отправить на проверку' })).toHaveCount(0);
+}
+
+test('new author submits the four-step application', async ({ browser }) => {
   test.setTimeout(90_000);
   const { buyer } = await createBuyerFixture();
-  const { admin } = await createAdminModerationFixture();
   const { context, page } = await authenticatedPage(browser, buyer);
-  const slug = `revision-${Date.now()}`;
+  const slug = `onboard-${Date.now()}`;
 
   try {
     await page.goto('/profile');
-    const chooserPromise = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Добавить фото' }).click();
-    await (await chooserPromise).setFiles('e2e/fixtures/profile-photo.png');
-    await expect(page.getByRole('button', { name: 'Изменить фото' })).toBeVisible();
-    await page.getByLabel('Имя или название').fill('Опубликованное имя');
-    await page.getByLabel('URL-slug').fill(slug);
-    await page.getByLabel('Дисциплина').fill('Керамика');
-    await page.getByLabel('Страна').fill('BY');
-    await page.getByLabel('Город').fill('Минск');
-    await page.getByLabel('Публичная ссылка').fill(`https://example.com/${slug}`);
-    await page.getByLabel('Короткое описание').fill('Первая биография.');
-    await expect(page.getByLabel('Имя или название')).toHaveValue(
-      'Опубликованное имя',
-    );
-    await page.getByRole('button', { name: 'Продолжить' }).click();
-    await page
-      .getByLabel('Telegram')
-      .fill(`https://t.me/${slug.replaceAll('-', '_')}`);
-    await page.getByLabel('Instagram').fill(`https://instagram.com/${slug}`);
-    await page.getByLabel('Сайт').fill(`https://example.com/${slug}`);
-    await page
-      .getByLabel('Основная публичная ссылка')
-      .fill(`https://example.com/${slug}`);
-    await page.getByRole('button', { name: 'Продолжить' }).click();
-    await page.getByLabel('Контакт для передачи').fill('@handoff_creator');
-    await page.getByRole('button', { name: 'Создать профиль' }).click();
-    await expect(page.getByText('На модерации')).toBeVisible();
+    await completeAuthorApplication(page, slug);
+  } finally {
+    await context.close();
+  }
+});
 
-    const mine = await context.request.get(`${e2eApiBaseURL}/api/seller/profile`);
-    const created = (await mine.json()) as { sellerProfile: { id: string } };
-    const { context: adminContext } = await authenticatedPage(browser, admin);
-    expect(
-      (
-        await moderateSeller(
-          adminContext.request,
-          created.sellerProfile.id,
-        )
-      ).ok(),
-    ).toBeTruthy();
+test('approved author submits an editing revision without changing the public page until approve', async ({
+  browser,
+}) => {
+  test.setTimeout(90_000);
+  const { admin } = await createAdminModerationFixture();
+  const author = await createApprovedAuthorFixture();
+  const { context, page } = await authenticatedPage(browser, author.author);
+  const draftName = `Черновик имени ${author.slug}`;
 
-    await page.goto(`/authors/${slug}`);
-    await expect(page.getByText('Опубликованное имя')).toBeVisible();
-
+  try {
     await page.goto('/profile');
-    await page.getByLabel('Имя или название').fill('Черновик имени');
+    await expect(page.getByText('Одобрен')).toBeVisible();
+    await page.getByLabel('Имя или название').fill(draftName);
     await page.getByRole('button', { name: 'Сохранить', exact: true }).click();
-    await expect(page.getByLabel('Имя или название')).toHaveValue(
-      'Черновик имени',
-    );
-    await expect(
-      page.getByRole('button', { name: 'Отправить на проверку', exact: true }),
-    ).toBeVisible();
-    await page
-      .getByRole('button', { name: 'Отправить на проверку', exact: true })
-      .click();
-    await expect(
-      page.getByText('Заявка на проверке', { exact: false }),
-    ).toBeVisible();
+    await expect(page.getByLabel('Имя или название')).toHaveValue(draftName);
+    const submit = page.getByRole('button', { name: 'Отправить на проверку', exact: true });
+    await expect(submit).toBeVisible();
+    await submit.click();
+    await expect(page.getByText('Заявка на проверке')).toBeVisible();
+    await expect(page.getByText('Одобрен')).toBeVisible();
+    await expect(submit).toHaveCount(0);
+    await expect(page.getByLabel('Имя или название')).toBeDisabled();
 
     const guest = await browser.newPage();
-    await guest.goto(`/authors/${slug}`);
-    await expect(guest.getByText('Опубликованное имя')).toBeVisible();
-    await expect(guest.getByText('Черновик имени')).toHaveCount(0);
+    await guest.goto(`/authors/${author.slug}`);
+    await expect(guest.getByText(author.fullName)).toBeVisible();
+    await expect(guest.getByText(draftName)).toHaveCount(0);
     await guest.close();
 
+    const { context: adminContext } = await authenticatedPage(browser, admin);
     expect(
-      (
-        await moderateSeller(
-          adminContext.request,
-          created.sellerProfile.id,
-        )
-      ).ok(),
+      (await moderateSeller(adminContext.request, author.sellerProfileId)).ok(),
     ).toBeTruthy();
     await adminContext.close();
 
-    await page.goto(`/authors/${slug}`);
-    await expect(page.getByText('Черновик имени')).toBeVisible();
+    await page.goto(`/authors/${author.slug}`);
+    await expect(page.getByText(draftName)).toBeVisible();
   } finally {
     await context.close();
   }
