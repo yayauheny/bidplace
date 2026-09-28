@@ -8,6 +8,8 @@ import { getErrorStatus, getUserFacingErrorMessage } from '../../errors';
 import { useApiClient } from '../../providers/api-provider';
 import { useAuth } from '../../providers/auth-provider';
 import { type SafeRedirect } from './auth-redirect';
+import { useAccountLogout } from './account-logout';
+import { AccountLogoutButton } from './AccountLogoutButton';
 import { AuthCard } from './auth-card';
 import {
   emailVerificationRequestErrorMessage,
@@ -22,14 +24,20 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   const api = useApiClient();
   const auth = useAuth();
   const router = useRouter();
+  const accountLogout = useAccountLogout();
   const autoRequested = useRef(false);
+  const verificationLock = useRef(false);
+  const logoutStarted = useRef(false);
   const [code, setCode] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const logoutBusy = logoutStarted.current || accountLogout.busy;
 
   const requestCode = async () => {
+    if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
+    verificationLock.current = true;
     setRequesting(true);
     setError(null);
     try {
@@ -43,6 +51,7 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
         ),
       );
     } finally {
+      verificationLock.current = false;
       setRequesting(false);
     }
   };
@@ -54,10 +63,12 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
   }, [auth.user?.emailVerifiedAt, autoRequest]);
 
   const verify = async () => {
+    if (logoutStarted.current || accountLogout.busy || verificationLock.current) return;
     if (!/^\d{6}$/.test(code)) {
       setError('Введите шестизначный код.');
       return;
     }
+    verificationLock.current = true;
     setVerifying(true);
     setError(null);
     try {
@@ -77,8 +88,15 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
     } catch (verifyError) {
       setError(getUserFacingErrorMessage(verifyError, 'Не удалось подтвердить email.'));
     } finally {
+      verificationLock.current = false;
       setVerifying(false);
     }
+  };
+
+  const beginLogout = () => {
+    if (logoutStarted.current || accountLogout.busy || verificationLock.current || requesting || verifying) return;
+    logoutStarted.current = true;
+    void accountLogout.logout();
   };
 
   return (
@@ -98,8 +116,9 @@ export function VerifyEmailForm({ redirectTo, autoRequest }: VerifyEmailFormProp
           error={error ?? undefined}
         />
         {notice ? <AppText role="bodySmall" tone="secondary">{notice}</AppText> : null}
-        <PrimaryButton label="Подтвердить" width="full" loading={verifying} disabled={requesting} onPress={() => void verify()} />
-        <SecondaryButton label={requesting ? 'Отправляем код…' : 'Отправить код'} width="full" disabled={verifying || requesting} onPress={() => void requestCode()} />
+        <PrimaryButton label="Подтвердить" width="full" loading={verifying} disabled={requesting || verifying || logoutBusy} onPress={() => void verify()} />
+        <SecondaryButton label={requesting ? 'Отправляем код…' : 'Отправить код'} width="full" disabled={verifying || requesting || logoutBusy} onPress={() => void requestCode()} />
+        <AccountLogoutButton pending={requesting || verifying || logoutBusy} onPress={beginLogout} />
       </View>
     </AuthCard>
   );

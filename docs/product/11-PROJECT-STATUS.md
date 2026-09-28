@@ -5,6 +5,33 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-27 — Account logout
+
+- `Verified` (mobile web): an authenticated user can press «Выйти»
+  on the live account destinations. The author cabinet, admin moderation, and
+  email verification call `AuthProvider.logout()`. On the author profile, an
+  ordinary save and logout cannot run together, so a delayed save cannot write
+  the private profile cache back after session cleanup. On email verification, logout
+  and a new code request or confirmation cannot run together, so confirmation
+  cannot call `refreshSession` after logout has started. On the author profile, a
+  dirty form or a newly selected photo opens the existing exit dialog first.
+  «Продолжить заполнение» does not log out. When the draft can be saved, logout
+  runs only after that save succeeds. A failed save stays on the form. A clean
+  profile logs out immediately. Guests do not see the action. After logout,
+  local session and private query data are cleared and the app replaces `/`,
+  including when the server logout fails. That failure is not presented as a
+  confirmed server-session invalidation.
+- Coverage: `account-logout-button.spec.ts`, `seller-profile-logout.spec.ts`,
+  `account-logout-reachability.spec.ts`, `verify-email-logout.spec.ts`, and
+  `auth-provider-logout.spec.ts`.
+- Browser verification: `e2e/account-logout.spec.ts` passed Chromium 4/4 and
+  WebKit 4/4 against an explicitly disposable `bidplace_e2e` PostgreSQL
+  database. The history case `/profile → /cabinet → logout → Back` returned to
+  `/login` without restoring private author UI.
+- `Unchanged`: `AuthProvider.logout` still clears the local session in
+  `finally`. The dock, onboarding, auth API, and route architecture are
+  unchanged.
+
 ## 2026-09-27 — Overlay focus dismissal
 
 - `Needs verification` (mobile web): `useDismissibleOverlay` registers a
