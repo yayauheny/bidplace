@@ -148,6 +148,7 @@ vi.mock('../../components/ui', () => {
   };
 });
 
+import { clearAuthenticatedSession } from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profile(status: string) {
@@ -186,6 +187,7 @@ function mount() {
   });
   return {
     container,
+    queryClient,
     unmount() {
       act(() => {
         root.unmount();
@@ -209,13 +211,26 @@ async function until(container: HTMLElement, predicate: () => boolean, label: st
   throw new Error(`Timed out waiting for ${label}. Body: ${container.textContent}`);
 }
 
+function findButton(container: ParentNode, label: string) {
+  return [...container.querySelectorAll('button')].find((button) => button.textContent === label);
+}
+
 function click(container: ParentNode, label: string) {
-  const target = [...container.querySelectorAll('button')].find(
-    (button) => button.textContent === label,
-  );
+  const target = findButton(container, label);
   if (!target) throw new Error(`Missing button ${label}`);
   act(() => {
     target.click();
+  });
+}
+
+function clickInOneTurn(container: ParentNode, labels: string[]) {
+  const targets = labels.map((label) => {
+    const target = findButton(container, label);
+    if (!target) throw new Error(`Missing button ${label}`);
+    return target;
+  });
+  act(() => {
+    for (const target of targets) target.click();
   });
 }
 
@@ -374,6 +389,94 @@ describe('seller profile logout', () => {
     click(view.container, 'Закрыть');
     expect(harness.logout).not.toHaveBeenCalled();
     expect(harness.replace).toHaveBeenCalledWith('/');
+    view.unmount();
+  });
+
+  it('does not logout during a delayed ordinary save or restore the private cache afterwards', async () => {
+    let profileLoads = 0;
+    let resolveSave: (value: { sellerProfile: ReturnType<typeof profile>; editingRevision: null }) => void =
+      () => undefined;
+    const saved = {
+      sellerProfile: { ...profile('APPROVED'), city: 'Hrodna' },
+      editingRevision: null,
+    };
+    harness.getMyProfile.mockImplementation(() => {
+      profileLoads += 1;
+      if (profileLoads === 1) {
+        return Promise.resolve({ sellerProfile: profile('APPROVED'), editingRevision: null });
+      }
+      return new Promise(() => undefined);
+    });
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    harness.logout.mockImplementation(() => clearAuthenticatedSession(view.queryClient));
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      'city field',
+    );
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeDefined();
+    setCity(view.container, 'Hrodna');
+    clickInOneTurn(view.container, ['Сохранить', 'Выйти']);
+    expect(harness.logout).not.toHaveBeenCalled();
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.logout).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeDefined();
+    const confirm = findButton(view.container, 'Сохранить и выйти');
+    if (confirm) {
+      act(() => {
+        confirm.click();
+      });
+    }
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.logout).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveSave(saved);
+      await Promise.resolve();
+    });
+    await until(
+      view.container,
+      () => {
+        const current = view.queryClient.getQueryData<{ sellerProfile: { city: string | null } }>([
+          'seller',
+          'profile',
+        ]);
+        return current?.sellerProfile.city === 'Hrodna';
+      },
+      'saved profile cache',
+    );
+    click(view.container, 'Выйти');
+    await act(async () => {
+      const pending = harness.logout.mock.results.at(-1)?.value;
+      if (pending instanceof Promise) await pending;
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not start a profile save after logout has started in the same turn', async () => {
+    harness.logout.mockImplementation(() => new Promise(() => undefined));
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      'city field',
+    );
+    clickInOneTurn(view.container, ['Выйти', 'Сохранить']);
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.createProfile).not.toHaveBeenCalled();
     view.unmount();
   });
 

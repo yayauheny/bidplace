@@ -55,6 +55,8 @@ export function SellerProfileScreen() {
   const [exitOpen, setExitOpen] = useState(false);
   const [exitIntent, setExitIntent] = useState<'home' | 'logout'>('home');
   const leaving = useRef(false);
+  const saveInFlight = useRef(false);
+  const logoutStarted = useRef(false);
   const accountLogout = useAccountLogout();
   const hydrationToken = editingRevision?.updatedAt ?? profile?.updatedAt;
   const requestedStep = resolveSellerProfileStep(step, profile);
@@ -120,9 +122,18 @@ export function SellerProfileScreen() {
   });
   const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication(), onSuccess: invalidate });
 
-  const save = async () => saveMutation.mutateAsync();
+  const save = async () => {
+    if (logoutStarted.current || saveInFlight.current) return null;
+    saveInFlight.current = true;
+    try {
+      return await saveMutation.mutateAsync();
+    } finally {
+      saveInFlight.current = false;
+    }
+  };
   const continueFromStep = async (visibleStep: 2 | 3) => {
     const saved = await save();
+    if (!saved) return;
     if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
       await advanceMutation.mutateAsync();
     }
@@ -149,11 +160,16 @@ export function SellerProfileScreen() {
       ? 'Заполнили первый шаг — сохраним его как черновик перед выходом.'
       : 'Данные первого шага ещё не сохранены и будут потеряны при выходе.';
   const exit = async () => {
-    if (leaving.current || accountLogout.busy) return;
+    if (saveInFlight.current) return;
+    if (leaving.current || logoutStarted.current || accountLogout.busy) return;
     leaving.current = true;
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) {
       try {
-        await save();
+        const saved = await save();
+        if (!saved) {
+          leaving.current = false;
+          return;
+        }
       } catch (error) {
         leaving.current = false;
         logInfrastructureError(error, 'seller-profile-exit');
@@ -161,6 +177,7 @@ export function SellerProfileScreen() {
       }
     }
     if (exitIntent === 'logout') {
+      logoutStarted.current = true;
       await accountLogout.logout();
       return;
     }
@@ -170,14 +187,16 @@ export function SellerProfileScreen() {
     if (profileStep <= 1) return;
     if (shouldSaveBeforeSellerProfileBack(form.formState.isDirty, Boolean(photoBlob))) {
       if (!canSave) return;
-      await save();
+      const saved = await save();
+      if (!saved) return;
     }
     router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
   };
   const requestExit = (intent: 'home' | 'logout') => {
-    if (leaving.current || accountLogout.busy) return;
+    if (saveInFlight.current || leaving.current || logoutStarted.current || accountLogout.busy) return;
     if (!form.formState.isDirty && !photoBlob) {
       if (intent === 'logout') {
+        logoutStarted.current = true;
         void accountLogout.logout();
         return;
       }
@@ -194,7 +213,7 @@ export function SellerProfileScreen() {
   </AppDialog>;
   if (!missingProfile && pageStatus !== 'ready') return <AppShell>
     <InfrastructurePageStatus status={pageStatus} onRetry={() => void query.refetch()} />
-    <AccountLogoutButton width="content" pending={accountLogout.busy} onPress={() => requestExit('logout')} />
+    <AccountLogoutButton width="content" pending={saveMutation.isPending || accountLogout.busy} onPress={() => requestExit('logout')} />
     {exitDialog}
   </AppShell>;
 
@@ -205,11 +224,11 @@ export function SellerProfileScreen() {
           <PageHeader title="Профиль автора" description={!profile ? 'Заполните профиль и сохраните черновик до отправки на модерацию.' : undefined} />
         {profile ? <AppText role="caption" tone={profile.status === 'APPROVED' ? 'success' : profile.status === 'REJECTED' ? 'danger' : 'secondary'}>{presentEnum(profile.status, sellerStatusLabels, 'Неизвестный статус')}</AppText> : null}
         </View>
-        {introOpen ? null : <AccountLogoutButton width="content" pending={accountLogout.busy} onPress={() => requestExit('logout')} />}
+        {introOpen ? null : <AccountLogoutButton width="content" pending={saveMutation.isPending || accountLogout.busy} onPress={() => requestExit('logout')} />}
         {isApplicationWizard ? <SecondaryButton label="Закрыть" onPress={() => requestExit('home')} /> : null}
       </View>
       {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} /> : null}
-      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending} onPress={() => void goToPreviousStep()} /> : null}
+      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending || accountLogout.busy} onPress={() => void goToPreviousStep()} /> : null}
       {(!isApplicationWizard || profileStep === 1) ? <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
         <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!editable} width="block" onPress={() => void choosePhoto()} />
@@ -220,21 +239,21 @@ export function SellerProfileScreen() {
       {(isApplicationWizard && profileStep === 4) ? <SellerProfileVerificationSection fields={fields} /> : null}
       {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={editable} /> : null}
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
-      {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails} onPress={() => void save().then(() => router.push('/profile?step=2'))} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout} onPress={() => void continueFromStep(3)} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy} onPress={() => void save().then((saved) => { if (saved) router.push('/profile?step=2'); })} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || accountLogout.busy} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout || accountLogout.busy} onPress={() => void continueFromStep(3)} label="Продолжить" width="block" /> : null}
       {isApplicationWizard && profileStep === 4 && editable ? <>
-        <PrimaryButton loading={saveMutation.isPending} disabled={!canSave} onPress={() => void save()} label="Сохранить черновик" width="block" />
-        {canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending} disabled={saveMutation.isPending || submitMutation.isPending || !canSave} onPress={() => void save().then(() => submitMutation.mutateAsync())} label="Отправить на проверку" width="block" /> : null}
+        <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || accountLogout.busy} onPress={() => void save()} label="Сохранить черновик" width="block" />
+        {canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending} disabled={saveMutation.isPending || submitMutation.isPending || !canSave || accountLogout.busy} onPress={() => void save().then((saved) => { if (saved) void submitMutation.mutateAsync(); })} label="Отправить на проверку" width="block" /> : null}
       </> : null}
-      {!isApplicationWizard && editable ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave} onPress={() => void save()} label="Сохранить" width="block" /> : null}
+      {!isApplicationWizard && editable ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || accountLogout.busy} onPress={() => void save()} label="Сохранить" width="block" /> : null}
       {profile?.status === 'APPROVED' ? <Link href="/products/new" asChild><PrimaryButton label="Создать предмет" width="block" onPress={() => undefined} /></Link> : null}
       {saveMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось сохранить профиль</AppText> : null}
       {submitMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось отправить заявку: заполните обязательные поля и попробуйте снова.</AppText> : null}
       <AppDialog open={introOpen} title="Стать автором на Bidplace" description="Создайте профиль автора, расскажите о себе и публикуйте свои работы." onClose={() => router.replace('/profile')}>
         <PrimaryButton label="Начать" width="block" onPress={() => router.replace('/profile?step=1')} />
         <SecondaryButton label="Позже" width="block" onPress={() => router.replace('/')} />
-        <AccountLogoutButton width="block" pending={accountLogout.busy} onPress={() => requestExit('logout')} />
+        <AccountLogoutButton width="block" pending={saveMutation.isPending || accountLogout.busy} onPress={() => requestExit('logout')} />
       </AppDialog>
       {exitDialog}
     </View>

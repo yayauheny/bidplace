@@ -9,7 +9,9 @@
 
 - `Needs verification` (mobile web): an authenticated user can press «Выйти»
   on the live account destinations. The author cabinet, admin moderation, and
-  email verification call `AuthProvider.logout()`. On email verification, logout
+  email verification call `AuthProvider.logout()`. On the author profile, an
+  ordinary save and logout cannot run together, so a delayed save cannot write
+  the private profile cache back after session cleanup. On email verification, logout
   and a new code request or confirmation cannot run together, so confirmation
   cannot call `refreshSession` after logout has started. On the author profile, a
   dirty form or a newly selected photo opens the existing exit dialog first.

@@ -21,14 +21,18 @@ test('approved author logout leaves the cabinet and a later visit requires auth'
 
   try {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/profile');
+    await expect(page.getByText('Профиль автора')).toBeVisible();
     await page.goto('/cabinet');
+    await expect(page.getByText('Кабинет автора')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible();
     await page.getByRole('button', { name: 'Выйти' }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText('Кабинет автора')).toHaveCount(0);
     await page.goBack();
     await expect(page.getByText('Кабинет автора')).toHaveCount(0);
+    await expect(page.getByText('Профиль автора')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/login/);
     await page.goto('/cabinet');
     await expect(page).toHaveURL(/\/login/);
   } finally {
