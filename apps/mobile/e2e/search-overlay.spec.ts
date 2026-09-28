@@ -511,10 +511,20 @@ async function publicSearchFixtures(
   ).json()) as {
     categories: Array<{ id: string; name: string }>;
   };
+  const work = worksPayload.works[0]?.work;
+  if (!work) throw new Error('Expected at least one published work for Search E2E');
+
+  const category = categoriesPayload.categories.find(
+    (candidate) => candidate.id === work.categoryId,
+  );
+  if (!category) {
+    throw new Error(`Expected category ${work.categoryId} for Search E2E work ${work.publicId}`);
+  }
+
   return {
-    work: worksPayload.works[0]!.work,
+    work,
     author: authorsPayload.authors[0]!.author,
-    category: categoriesPayload.categories[0]!,
+    category,
   };
 }
 
