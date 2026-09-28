@@ -228,6 +228,7 @@ function mount() {
   });
   return {
     container,
+    queryClient,
     unmount() {
       act(() => {
         root.unmount();
@@ -272,6 +273,34 @@ function clickInOneTurn(container: ParentNode, labels: string[]) {
   act(() => {
     for (const target of targets) target.click();
   });
+}
+
+function inputValue(container: ParentNode, label: string) {
+  const input = container.querySelector(`[aria-label="${label}"]`);
+  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
+  return input.value;
+}
+
+function setInput(container: ParentNode, label: string, value: string) {
+  const input = container.querySelector(`[aria-label="${label}"]`);
+  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing field ${label}`);
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  act(() => {
+    setter?.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+function savedProfile(overrides: { city?: string; fullName?: string; discipline?: string } = {}) {
+  return {
+    sellerProfile: {
+      ...profile('APPROVED'),
+      city: overrides.city ?? 'Minsk',
+      fullName: overrides.fullName ?? 'Author Name',
+      discipline: overrides.discipline ?? 'Painting',
+    },
+    editingRevision: revision('DRAFT'),
+  };
 }
 
 function buttonDisabled(container: ParentNode, label: string) {
@@ -784,6 +813,276 @@ describe('seller profile revision submit', () => {
     expect(harness.logout).toHaveBeenCalledTimes(1);
     expect(harness.submitAuthorApplication).toHaveBeenCalledTimes(1);
     expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+});
+
+describe('seller profile save reconciliation', () => {
+  it('keeps text entered after the snapshot and normalizes an untouched field', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    setInput(view.container, 'Город', 'Hrodna');
+    await act(async () => {
+      resolveSave(savedProfile({ city: 'Minsk', discipline: 'Oil painting' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    expect(inputValue(view.container, 'Дисциплина')).toBe('Oil painting');
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ city: 'Minsk', discipline: 'Painting' }),
+    );
+    click(view.container, 'Выйти');
+    expect(harness.logout).not.toHaveBeenCalled();
+    expect(view.container.querySelector('[role="dialog"]')).not.toBeNull();
+    setInput(view.container, 'Город', 'Minsk');
+    click(view.container, 'Продолжить заполнение');
+    click(view.container, 'Выйти');
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('clears a field that was dirty before the profile snapshot was saved', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    setInput(view.container, 'Город', 'Hrodna');
+    click(view.container, 'Сохранить');
+    await flush();
+    await act(async () => {
+      resolveSave(savedProfile({ city: 'Hrodna', discipline: 'Oil painting' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    expect(inputValue(view.container, 'Дисциплина')).toBe('Oil painting');
+    click(view.container, 'Выйти');
+    expect(harness.logout).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('keeps a photo chosen during an in-flight profile save', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    const nextPhoto = new Blob(['next'], { type: 'image/png' });
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:next-photo' }],
+    });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => nextPhoto })));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    click(view.container, 'Изменить фото');
+    await flush();
+    await act(async () => {
+      resolveSave(savedProfile());
+      await Promise.resolve();
+    });
+    await flush();
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBeUndefined();
+    expect(harness.updateProfile.mock.calls[1]?.[1]).toBe(nextPhoto);
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('does not submit or leave the profile when the save before submit fails', async () => {
+    let rejectSave: (error: Error) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement,
+      'submit',
+    );
+    click(view.container, 'Отправить на проверку');
+    click(view.container, 'Отправить на проверку');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect((view.container.querySelector('[aria-label="Город"]') as HTMLInputElement).disabled).toBe(true);
+    setInput(view.container, 'Город', 'During submit');
+    expect(inputValue(view.container, 'Город')).toBe('Minsk');
+    await act(async () => {
+      rejectSave(new Error('save failed'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect((view.container.querySelector('[aria-label="Город"]') as HTMLInputElement).disabled).toBe(false);
+    view.unmount();
+  });
+
+  it('keeps a local profile edit when the profile query refetches', async () => {
+    harness.getMyProfile.mockResolvedValueOnce(response('APPROVED', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      'city',
+    );
+    harness.getMyProfile.mockResolvedValueOnce(
+      response('APPROVED', 'DRAFT', '2026-09-29T00:00:00.000Z'),
+    );
+    setInput(view.container, 'Город', 'Hrodna');
+    await act(async () => {
+      await view.queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
+    });
+    await flush();
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    view.unmount();
+  });
+
+  it('does not restore the private profile cache after the session is cleared', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    view.queryClient.setQueryData(['user', 'me'], null);
+    view.queryClient.setQueryData(['portfolio-works'], { marker: true });
+    const reads = harness.getMyProfile.mock.calls.length;
+    click(view.container, 'Сохранить');
+    await flush();
+    await act(async () => {
+      resolveSave(savedProfile({ discipline: 'Oil painting' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.getMyProfile.mock.calls.length).toBe(reads);
+    expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({ marker: true });
+    view.unmount();
+  });
+
+  it('keeps typed profile text when save fails and retries that text', async () => {
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(savedProfile({ city: 'Hrodna' }));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Сохранить') instanceof HTMLButtonElement,
+      'save',
+    );
+    setInput(view.container, 'Город', 'Hrodna');
+    click(view.container, 'Сохранить');
+    await until(
+      view.container,
+      () => view.container.textContent?.includes('Не удалось сохранить профиль') === true,
+      'save error',
+    );
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(2);
+    expect(harness.updateProfile.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ city: 'Hrodna' }));
+    view.unmount();
+  });
+
+  it('ignores an older photo read after a newer selection', async () => {
+    const firstPhoto = new Blob(['first'], { type: 'image/png' });
+    const secondPhoto = new Blob(['second'], { type: 'image/png' });
+    let resolveFirst: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    let resolveSecond: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    harness.launchImageLibraryAsync
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (uri: string) => ({
+        blob: async () => (uri === 'blob:second' ? secondPhoto : firstPhoto),
+      })),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      'photo',
+    );
+    click(view.container, 'Изменить фото');
+    click(view.container, 'Изменить фото');
+    await act(async () => {
+      resolveSecond({ canceled: false, assets: [{ uri: 'blob:second' }] });
+      await Promise.resolve();
+    });
+    await flush();
+    await act(async () => {
+      resolveFirst({ canceled: false, assets: [{ uri: 'blob:first' }] });
+      await Promise.resolve();
+    });
+    await flush();
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
+    vi.unstubAllGlobals();
     view.unmount();
   });
 });
