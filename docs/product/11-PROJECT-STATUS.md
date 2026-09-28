@@ -5,6 +5,15 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-28 — Workspace test discovery
+
+- `Implemented` (tooling only): contracts Vitest discovers `src/**/*.spec.ts`
+  together with `test/**/*.test.ts`. `@bidplace/database` runs a public-export
+  smoke test for `PrismaClient` and `Decimal` without connecting to a database,
+  and root `test:unit` includes that package. Production emit for contracts and
+  database excludes test modules; those tests stay in a separate typecheck
+  project. Product behavior is unchanged.
+
 ## 2026-09-28 — Author revision submit
 
 - `Needs verification` (mobile web): an approved author sees «Отправить на проверку»

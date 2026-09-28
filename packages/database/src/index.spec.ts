@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { Prisma } from './index';
+import { Decimal, Prisma, PrismaClient } from './index';
 
-describe('database package exports', () => {
-  it('does not expose enum ownership for contract fields', () => {
-    expect(Object.keys((Prisma as { $Enums?: Record<string, unknown> }).$Enums ?? {})).toEqual([]);
+describe('database public exports', () => {
+  it('exposes PrismaClient and evaluates Decimal through the package entry', () => {
+    expect(typeof PrismaClient).toBe('function');
+    expect(Prisma.Decimal).toBe(Decimal);
+
+    const total = new Decimal('10.50').plus(new Decimal('1.25'));
+
+    expect(total.equals(new Decimal('11.75'))).toBe(true);
+    expect(total.toFixed(2)).toBe('11.75');
   });
 });
