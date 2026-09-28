@@ -16,6 +16,7 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
+import { sellerModerationRequest } from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -181,7 +182,11 @@ describe('author achievement editing revision HTTP contract', () => {
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.approved.profileId}/status`,
-          { status: 'APPROVED' },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.approved.profileId,
+            'APPROVED',
+          ),
         )
       ).status,
     ).toBe(200);

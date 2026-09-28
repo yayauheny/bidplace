@@ -50,6 +50,10 @@ Commerce routes/actions отсутствуют в First MVP navigation и fail-c
 | Work creation | Photos/title, details, optional plain-text story, moderation submit | Sale mode, price/currency/time, payment, delivery, buyer contact, AI, process blocks |
 | Admin | Author and Work moderation, user ban/session revoke | Commerce Orders/recovery as active First MVP workflow |
 
+The admin author card shows the revision approval publishes, including an
+achievement date at its stored month or day precision. A null date is omitted.
+The revision photo is the photo of that same review target.
+
 When a guest opens a protected internal route, Login receives its validated
 pathname and query as `redirectTo`; successful authentication returns to that
 route. External targets and auth routes are never restored.

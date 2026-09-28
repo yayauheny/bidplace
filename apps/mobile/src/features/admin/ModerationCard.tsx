@@ -9,10 +9,14 @@ import { AppText } from '../../components/ui';
 export function ModerationCard({
   title,
   status,
+  reviewStatus,
+  legacy = false,
   children,
 }: {
   title: string;
   status: string;
+  reviewStatus?: string | null;
+  legacy?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -26,8 +30,18 @@ export function ModerationCard({
     >
       <AppText role="label">{title}</AppText>
       <AppText role="bodySmall" tone="secondary">
-        {status}
+        Публикация: {status}
       </AppText>
+      {legacy ? (
+        <AppText role="bodySmall" tone="secondary">
+          Профиль без ревизии
+        </AppText>
+      ) : null}
+      {reviewStatus ? (
+        <AppText role="bodySmall" tone="secondary">
+          Проверка: {reviewStatus}
+        </AppText>
+      ) : null}
       {children}
     </View>
   );

@@ -217,6 +217,16 @@ both records in one transaction. A parent `DRAFT` is private and excluded from
 moderation and public author predicates; submission is the only transition to
 `PENDING_REVIEW`.
 
+Admin moderation reads that revision as an explicit review target and keeps the
+parent publication status separate. Review actions address the revision
+`{ id, updatedAt }` the moderator saw. Visibility actions address the parent.
+The admin seller photo uses the same identity plus the photo checksum, so a
+resubmitted revision replaces the displayed bytes. Work and achievement image
+reads use the existing endpoints. The mobile API client sends the session
+cookie with `credentials: 'include'` and does not attach an Authorization
+bearer token. `OptionalBearerAuthGuard` accepts that cookie or a bearer token.
+Public and owner projections stay on their existing records.
+
 The active API is an HTTP process. There is no scheduler or Socket.IO adapter on the boot graph. Do not add future sale types, payments, delivery or automatic winner replacement until a product decision requires them. Commerce application code is not restored from leftover Prisma tables; the archive branch is `feature/commerce-runtime-archive` @ `19eb40e`.
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):

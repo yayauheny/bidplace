@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
+import { moderateSeller } from './support/admin-moderation';
 import { e2eApiBaseURL } from './support/e2e-env';
 import {
   createAdminModerationFixture,
@@ -99,9 +100,9 @@ test('city application is approved and appears in the public authors catalog', a
     const body = (await mine.json()) as { sellerProfile: { id: string } };
 
     const { context: adminContext } = await authenticatedPage(browser, admin);
-    const approved = await adminContext.request.patch(
-      `${e2eApiBaseURL}/api/admin/seller-profiles/${body.sellerProfile.id}/status`,
-      { data: { status: 'APPROVED' } },
+    const approved = await moderateSeller(
+      adminContext.request,
+      body.sellerProfile.id,
     );
     expect(approved.ok()).toBeTruthy();
     await adminContext.close();

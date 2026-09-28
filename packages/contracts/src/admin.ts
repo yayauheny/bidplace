@@ -2,15 +2,21 @@ import { z } from 'zod';
 
 import { userRoleSchema, userStatusSchema } from './enums';
 import {
+  authorApplicationStageSchema,
   productStatusSchema,
+  sellerProfileRevisionStatusSchema,
   sellerStatusSchema,
+  sellerTypeSchema,
 } from './enums';
 import { isoDateTimeSchema, slugSchema, uuidSchema } from './primitives';
+import { portfolioAchievementSchema } from './portfolio';
+import { creationStepSchema, productImageSchema, productSchema } from './product';
 import {
+  sellerDisciplineSchema,
   sellerProfileResponseSchema,
-  sellerProfileSchema,
+  sellerPublicEmailSchema,
+  sellerPublicUrlSchema,
 } from './seller-profile';
-import { creationStepSchema, productSchema } from './product';
 
 const sellerModerationStatusSchema = sellerStatusSchema.extract([
   'APPROVED',
@@ -26,13 +32,51 @@ const productModerationStatusSchema = productStatusSchema.extract([
   'ARCHIVED',
 ]);
 
+const adminRevisionTargetSchema = z
+  .object({
+    kind: z.literal('revision'),
+    id: uuidSchema,
+    updatedAt: isoDateTimeSchema,
+  })
+  .strict();
+
+const adminSellerParentTargetSchema = z
+  .object({
+    kind: z.literal('parent'),
+    status: sellerStatusSchema,
+    updatedAt: isoDateTimeSchema,
+  })
+  .strict();
+
+const adminProductParentTargetSchema = z
+  .object({
+    kind: z.literal('parent'),
+    status: productStatusSchema,
+    updatedAt: isoDateTimeSchema,
+  })
+  .strict();
+
 export const adminSellerStatusUpdateRequestSchema = z
   .object({
+    target: z.discriminatedUnion('kind', [
+      adminRevisionTargetSchema,
+      adminSellerParentTargetSchema,
+    ]),
     status: sellerModerationStatusSchema,
     reason: z.string().trim().min(1).optional(),
   })
   .strict()
   .superRefine((value, context) => {
+    if (
+      value.target.kind === 'revision' &&
+      !['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(value.status)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['status'],
+        message: 'revision review only accepts approval, changes, or rejection',
+      });
+    }
     if (
       ['CHANGES_REQUESTED', 'REJECTED', 'SUSPENDED'].includes(value.status) &&
       !value.reason
@@ -47,11 +91,25 @@ export const adminSellerStatusUpdateRequestSchema = z
 
 export const adminProductStatusUpdateRequestSchema = z
   .object({
+    target: z.discriminatedUnion('kind', [
+      adminRevisionTargetSchema,
+      adminProductParentTargetSchema,
+    ]),
     status: productModerationStatusSchema,
     reason: z.string().trim().min(1).optional(),
   })
   .strict()
   .superRefine((value, context) => {
+    if (
+      value.target.kind === 'revision' &&
+      !['APPROVED', 'CHANGES_REQUESTED', 'REJECTED'].includes(value.status)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['status'],
+        message: 'revision review only accepts approval, changes, or rejection',
+      });
+    }
     if (
       ['CHANGES_REQUESTED', 'REJECTED', 'ARCHIVED'].includes(value.status) &&
       !value.reason
@@ -125,8 +183,104 @@ export const adminCuratorSelectionResponseSchema = z
   .strict();
 
 export const adminSellerStatusResponseSchema = sellerProfileResponseSchema;
-export const adminSellerProfileSchema = sellerProfileSchema
+
+const nullableText = z.string().trim().min(1).nullable();
+
+export const adminSellerContentSchema = z
+  .object({
+    slug: slugSchema,
+    fullName: z.string().trim().min(1),
+    discipline: sellerDisciplineSchema.nullable(),
+    country: z.string().trim().min(1),
+    city: nullableText,
+    practice: nullableText,
+    biography: nullableText,
+    socialLink: sellerPublicUrlSchema.nullable(),
+    telegramUrl: sellerPublicUrlSchema.nullable(),
+    instagramUrl: sellerPublicUrlSchema.nullable(),
+    websiteUrl: sellerPublicUrlSchema.nullable(),
+    publicEmail: sellerPublicEmailSchema.nullable(),
+    shortDescription: nullableText,
+  })
+  .strict();
+
+export const adminSellerRevisionPhotoSchema = z
+  .object({
+    url: z
+      .string()
+      .regex(
+        /^\/api\/admin\/seller-profiles\/[0-9a-f-]+\/revisions\/[0-9a-f-]+\/photo$/,
+      ),
+    mimeType: z.string().trim().min(1),
+    byteLength: z.number().int().positive(),
+    checksum: z.string().length(64),
+  })
+  .strict();
+
+export const adminSellerRevisionContentSchema = adminSellerContentSchema
   .extend({
+    profilePhoto: adminSellerRevisionPhotoSchema.nullable(),
+    achievements: z.array(portfolioAchievementSchema),
+  })
+  .strict();
+
+export const adminProductRevisionContentSchema = productSchema
+  .pick({
+    categoryId: true,
+    title: true,
+    story: true,
+    technique: true,
+    materials: true,
+    dimensions: true,
+    weight: true,
+    year: true,
+    condition: true,
+    uniqueness: true,
+    provenance: true,
+    city: true,
+    packaging: true,
+    deliveryInfo: true,
+    images: true,
+  })
+  .extend({
+    creationIntro: nullableText,
+    images: z.array(productImageSchema),
+  })
+  .strict();
+
+const adminSellerReviewTargetSchema = z
+  .object({
+    id: uuidSchema,
+    version: z.number().int().positive(),
+    status: sellerProfileRevisionStatusSchema,
+    updatedAt: isoDateTimeSchema,
+    submittedAt: isoDateTimeSchema.nullable(),
+    content: adminSellerRevisionContentSchema,
+  })
+  .strict();
+
+const adminProductReviewTargetSchema = z
+  .object({
+    id: uuidSchema,
+    version: z.number().int().positive(),
+    status: productStatusSchema,
+    updatedAt: isoDateTimeSchema,
+    submittedAt: isoDateTimeSchema.nullable(),
+    content: adminProductRevisionContentSchema,
+  })
+  .strict();
+
+export const adminSellerProfileSchema = z
+  .object({
+    id: uuidSchema,
+    userId: uuidSchema,
+    parentStatus: sellerStatusSchema,
+    parentUpdatedAt: isoDateTimeSchema,
+    sellerType: sellerTypeSchema,
+    applicationStage: authorApplicationStageSchema.nullable(),
+    createdAt: isoDateTimeSchema,
+    parent: adminSellerContentSchema,
+    reviewTarget: adminSellerReviewTargetSchema.nullable(),
     lastModerationReason: z.string().nullable(),
     hasBlockingListing: z.boolean(),
   })
@@ -134,8 +288,14 @@ export const adminSellerProfileSchema = sellerProfileSchema
 export const adminSellerProfilesResponseSchema = z
   .object({ sellerProfiles: z.array(adminSellerProfileSchema) })
   .strict();
-export const adminProductSchema = productSchema
-  .extend({
+export const adminProductSchema = z
+  .object({
+    id: uuidSchema,
+    publicId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+    sellerProfileId: uuidSchema,
+    parentStatus: productStatusSchema,
+    parentUpdatedAt: isoDateTimeSchema,
+    publishedAt: isoDateTimeSchema.nullable(),
     sellerProfile: z
       .object({
         slug: z.string().min(1),
@@ -143,8 +303,9 @@ export const adminProductSchema = productSchema
         status: sellerStatusSchema,
       })
       .strict(),
-    creationIntro: z.string().trim().min(1).nullable(),
+    parent: adminProductRevisionContentSchema,
     creationSteps: z.array(creationStepSchema),
+    reviewTarget: adminProductReviewTargetSchema.nullable(),
     hasBlockingListing: z.boolean(),
     lastModerationReason: z.string().nullable(),
   })
@@ -170,3 +331,5 @@ export type AdminUserStatusUpdateRequest = z.infer<
 export type AdminUserRevokeSessionsRequest = z.infer<
   typeof adminUserRevokeSessionsRequestSchema
 >;
+export type AdminSellerProfile = z.infer<typeof adminSellerProfileSchema>;
+export type AdminProduct = z.infer<typeof adminProductSchema>;

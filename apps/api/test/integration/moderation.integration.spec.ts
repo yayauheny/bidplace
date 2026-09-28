@@ -19,6 +19,10 @@ import {
   HttpTestClient,
   type HttpTestApp,
 } from './http-test-app';
+import {
+  productModerationRequest,
+  sellerModerationRequest,
+} from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -174,9 +178,10 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'APPROVED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+        )
       ).status,
     ).toBe(200);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toEqual([
@@ -204,10 +209,15 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'CHANGES_REQUESTED',
-          reason: 'Add a clearer provenance description',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'CHANGES_REQUESTED',
+            'Add a clearer provenance description',
+          ),
+        )
       ).status,
     ).toBe(200);
     expect(await auditFor('SELLER_PROFILE', profile.id)).toHaveLength(2);
@@ -221,10 +231,15 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
     const repeatBefore = await permissionState(prisma);
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'CHANGES_REQUESTED',
-          reason: 'Repeated request',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'CHANGES_REQUESTED',
+            'Repeated request',
+          ),
+        )
       ).status,
     ).toBe(409);
     expect(await permissionState(prisma)).toEqual(repeatBefore);
@@ -244,17 +259,19 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'APPROVED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'APPROVED'),
+        )
       ).status,
     ).toBe(200);
     const missingReasonBefore = await permissionState(prisma);
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'SUSPENDED',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(prisma, profile.id, 'SUSPENDED'),
+        )
       ).status,
     ).toBe(400);
     expect(await permissionState(prisma)).toEqual(missingReasonBefore);
@@ -262,10 +279,15 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
 
     expect(
       (
-        await adminClient.patch(`/admin/seller-profiles/${profile.id}/status`, {
-          status: 'SUSPENDED',
-          reason: 'Application is suspended for review',
-        })
+        await adminClient.patch(
+          `/admin/seller-profiles/${profile.id}/status`,
+          await sellerModerationRequest(
+            prisma,
+            profile.id,
+            'SUSPENDED',
+            'Application is suspended for review',
+          ),
+        )
       ).status,
     ).toBe(200);
     expect(
@@ -282,7 +304,11 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
-          { status: 'REJECTED' },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.pending.profileId,
+            'REJECTED',
+          ),
         )
       ).status,
     ).toBe(400);
@@ -295,10 +321,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.pending.profileId}/status`,
-          {
-            status: 'REJECTED',
-            reason: 'Application does not meet the creator criteria',
-          },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.pending.profileId,
+            'REJECTED',
+            'Application does not meet the creator criteria',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -335,10 +363,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/seller-profiles/${fixture.sellers.approved.profileId}/status`,
-          {
-            status: 'SUSPENDED',
-            reason: 'Attempted suspension during auction',
-          },
+          await sellerModerationRequest(
+            prisma,
+            fixture.sellers.approved.profileId,
+            'SUSPENDED',
+            'Attempted suspension during auction',
+          ),
         )
       ).status,
     ).toBe(409);
@@ -379,9 +409,11 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'APPROVED',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'APPROVED',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -422,10 +454,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Correct the item story',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'CHANGES_REQUESTED',
+            'Correct the item story',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -438,10 +472,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Repeated product request',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'CHANGES_REQUESTED',
+            'Repeated product request',
+          ),
         )
       ).status,
     ).toBe(409);
@@ -455,7 +491,11 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          { status: 'REJECTED' },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'REJECTED',
+          ),
         )
       ).status,
     ).toBe(400);
@@ -484,10 +524,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedDraftProductId}/status`,
-          {
-            status: 'REJECTED',
-            reason: 'The item provenance could not be confirmed',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedDraftProductId,
+            'REJECTED',
+            'The item provenance could not be confirmed',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -515,10 +557,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedProductId}/status`,
-          {
-            status: 'CHANGES_REQUESTED',
-            reason: 'Cannot change active product',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedProductId,
+            'CHANGES_REQUESTED',
+            'Cannot change active product',
+          ),
         )
       ).status,
     ).toBe(409);
@@ -531,10 +575,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${fixture.approvedProductId}/status`,
-          {
-            status: 'ARCHIVED',
-            reason: 'Cannot archive an active product',
-          },
+          await productModerationRequest(
+            prisma,
+            fixture.approvedProductId,
+            'ARCHIVED',
+            'Cannot archive an active product',
+          ),
         )
       ).status,
     ).toBe(200);
@@ -579,10 +625,12 @@ describe('seller application and moderation audit over HTTP and PostgreSQL', () 
       (
         await adminClient.patch(
           `/admin/products/${archivedProduct.id}/status`,
-          {
-            status: 'ARCHIVED',
-            reason: 'The item is no longer offered',
-          },
+          await productModerationRequest(
+            prisma,
+            archivedProduct.id,
+            'ARCHIVED',
+            'The item is no longer offered',
+          ),
         )
       ).status,
     ).toBe(200);

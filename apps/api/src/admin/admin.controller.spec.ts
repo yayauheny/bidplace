@@ -45,13 +45,21 @@ describe('AdminController', () => {
       controllerWith(moderation).updateProduct(
         { sub: 'admin-id' },
         'product-id',
-        { status: 'APPROVED' },
+        { status: 'APPROVED', target: {
+          kind: 'parent',
+          status: 'PENDING_REVIEW',
+          updatedAt: '2026-09-26T12:00:00.000Z',
+        } },
       ),
     ).resolves.toBe(response);
     expect(moderation.updateProductStatusAndReadback).toHaveBeenCalledWith(
       'admin-id',
       'product-id',
-      { status: 'APPROVED' },
+      { status: 'APPROVED', target: {
+        kind: 'parent',
+        status: 'PENDING_REVIEW',
+        updatedAt: '2026-09-26T12:00:00.000Z',
+      } },
     );
   });
 });

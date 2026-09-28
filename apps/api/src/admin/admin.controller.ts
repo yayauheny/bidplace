@@ -17,10 +17,12 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 
@@ -28,6 +30,7 @@ import { BearerAuthGuard, CurrentUser } from '../auth';
 import { Clock } from '../core/time';
 import { parseBody, parseQuery } from '../core/validation';
 import { PortfolioService } from '../portfolio/portfolio.service';
+import { PRIVATE_IMAGE_CACHE_CONTROL } from '../images/image-policy';
 import { toSellerProfileResponse } from '../sellers/seller-profile.mapper';
 import { AdminGuard } from './admin.guard';
 import { AdminAnalyticsService } from './admin-analytics.service';
@@ -56,6 +59,23 @@ export class AdminController {
   @Get('seller-profiles')
   async listSellers() {
     return this.moderation.listSellerProfiles();
+  }
+
+  @Get('seller-profiles/:id/revisions/:revisionId/photo')
+  async sellerRevisionPhoto(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Param('revisionId', new ParseUUIDPipe({ version: '4' })) revisionId: string,
+    @Res()
+    response: {
+      setHeader(name: string, value: string): void;
+      type(value: string): void;
+      send(value: Buffer): void;
+    },
+  ) {
+    const photo = await this.moderation.getSellerRevisionPhoto(id, revisionId);
+    response.setHeader('Cache-Control', PRIVATE_IMAGE_CACHE_CONTROL);
+    response.type(photo.mimeType);
+    response.send(Buffer.from(photo.bytes));
   }
 
   @Get('products')

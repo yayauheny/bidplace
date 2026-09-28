@@ -19,6 +19,7 @@ import {
   createIntegrationDatabaseContext,
   type IntegrationDatabaseContext,
 } from './test-database';
+import { sellerModerationRequest } from './admin-status-request';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -281,7 +282,14 @@ describe('author application HTTP contract', () => {
 
     const pendingQueue = (await (await admin.get('/admin/seller-profiles')).json()) as { sellerProfiles: Array<{ id: string }> };
     expect(pendingQueue.sellerProfiles.map((item) => item.id)).toContain(body.sellerProfile.id);
-    expect((await admin.patch(`/admin/seller-profiles/${body.sellerProfile.id}/status`, { status: 'APPROVED' })).status).toBe(200);
+    expect(
+      (
+        await admin.patch(
+          `/admin/seller-profiles/${body.sellerProfile.id}/status`,
+          await sellerModerationRequest(prisma, body.sellerProfile.id, 'APPROVED'),
+        )
+      ).status,
+    ).toBe(200);
     const published = await applicant.get(`/authors/${body.sellerProfile.slug}`);
     expect(published.status).toBe(200);
     expect(((await published.json()) as { author: { fullName: string; shortDescription: string; publicEmail: string | null } }).author).toMatchObject({ fullName: 'Latest draft author', shortDescription: 'Latest draft description', publicEmail: 'public@example.com' });

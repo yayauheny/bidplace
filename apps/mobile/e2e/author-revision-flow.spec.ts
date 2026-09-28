@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { authenticatedPage } from './support/auth-session';
+import { moderateSeller } from './support/admin-moderation';
 import { e2eApiBaseURL } from './support/e2e-env';
 import {
   createAdminModerationFixture,
@@ -51,9 +52,9 @@ test('approved author edits a draft revision without changing the public page un
     const { context: adminContext } = await authenticatedPage(browser, admin);
     expect(
       (
-        await adminContext.request.patch(
-          `${e2eApiBaseURL}/api/admin/seller-profiles/${created.sellerProfile.id}/status`,
-          { data: { status: 'APPROVED' } },
+        await moderateSeller(
+          adminContext.request,
+          created.sellerProfile.id,
         )
       ).ok(),
     ).toBeTruthy();
@@ -85,9 +86,9 @@ test('approved author edits a draft revision without changing the public page un
 
     expect(
       (
-        await adminContext.request.patch(
-          `${e2eApiBaseURL}/api/admin/seller-profiles/${created.sellerProfile.id}/status`,
-          { data: { status: 'APPROVED' } },
+        await moderateSeller(
+          adminContext.request,
+          created.sellerProfile.id,
         )
       ).ok(),
     ).toBeTruthy();
