@@ -616,4 +616,73 @@ describe('product draft submit lifecycle', () => {
     vi.unstubAllGlobals();
     view.unmount();
   });
+
+  it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
+    'stays locked when a %s snapshot saved before submit arrives after submit',
+    async (status) => {
+      const initial = detail(status, 'Needs changes', '2026-09-27T00:00:00.000Z');
+      harness.getProduct.mockResolvedValue(initial);
+      let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+      const reads: Array<(value: ReturnType<typeof detail>) => void> = [];
+      harness.submitProduct.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveSubmit = resolve;
+          }),
+      );
+      const view = mount();
+      await until(
+        view.container,
+        () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+        'resubmit',
+      );
+      harness.getProduct.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            reads.push(resolve);
+          }),
+      );
+      act(() => {
+        button(view.container, 'Обновить')?.click();
+      });
+      await flush();
+      act(() => {
+        button(view.container, 'Повторно отправить на модерацию')?.click();
+      });
+      await flush();
+      const savedDuringSubmit = detail(status, 'Needs changes', '2026-09-28T00:00:00.000Z');
+      await act(async () => {
+        resolveSubmit({ product: product('PENDING_REVIEW', 'Needs changes') });
+        reads[0]?.(savedDuringSubmit);
+        await Promise.resolve();
+      });
+      await flush();
+      await flush();
+      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(button(view.container, 'Сохранить изменения')).toBeNull();
+      expect(button(view.container, 'Повторно отправить на модерацию')).toBeNull();
+      const pending = detail('PENDING_REVIEW', 'Needs changes', '2026-09-29T00:00:00.000Z');
+      const pendingRead = reads.at(-1);
+      expect(pendingRead).toBeTypeOf('function');
+      await act(async () => {
+        pendingRead?.(pending);
+        await Promise.resolve();
+      });
+      await flush();
+      expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(pending);
+      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(button(view.container, 'Сохранить изменения')).toBeNull();
+      expect(button(view.container, 'Повторно отправить на модерацию')).toBeNull();
+      act(() => {
+        view.queryClient.setQueryData(
+          ownerWorkQueryKeys.detail(productId),
+          detail(status, 'Needs changes', '2026-09-30T00:00:00.000Z'),
+        );
+      });
+      await flush();
+      expect(button(view.container, 'Повторно отправить на модерацию')).toBeInstanceOf(HTMLButtonElement);
+      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+      view.unmount();
+    },
+  );
 });

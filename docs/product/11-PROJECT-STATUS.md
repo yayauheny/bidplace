@@ -5,6 +5,27 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Owner editor moderation hold after an intermediate save
+
+- `Needs verification` (mobile web): after a confirmed resubmit, a detail read
+  that started before or during save→submit does not reopen the form. An
+  intermediate `CHANGES_REQUESTED` or `REJECTED` snapshot with a newer revision
+  `updatedAt` stays locked. The hold floor is the settled editing revision
+  after submit, then the first trusted post-submit detail; it is not the
+  pre-save timestamp. Confirmed pending does not reopen Save or Submit. A later
+  `APPROVED`, `CHANGES_REQUESTED`, or `REJECTED` revision does. An older detail
+  does not roll that decision back. A failed reconciliation keeps the hold and
+  still releases Close. A session change drops the previous operation's detail
+  reads. Update and submit responses are still `{ product }` and are not
+  written over the detail envelope. Parent and revision clocks are not compared.
+- Coverage: `product-draft-submit-lifecycle.spec.ts` and
+  `product-draft-state.spec.ts`. Previous session, picker, route-guard, and
+  save-exclusion specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts and revision transitions are unchanged.
+
 ## 2026-09-29 — Owner editor picker, submit continuation, and moderation freshness
 
 - `Needs verification` (mobile web): a profile photo or work image selected

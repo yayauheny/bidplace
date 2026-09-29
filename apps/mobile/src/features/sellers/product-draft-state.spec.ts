@@ -4,6 +4,7 @@ import {
   canOwnerEditProduct,
   isNewerModerationDecision,
   isOlderProductRevision,
+  nextPostSubmitHold,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
   type ProductRevisionIdentity,
@@ -116,5 +117,34 @@ describe('product draft owner recovery', () => {
         updatedAt: '2026-09-01T00:00:00.000Z',
       }),
     ).toBe(true);
+  });
+
+  it('raises the post-submit floor without treating a non-decision as a release', () => {
+    const floor = { id: 'revision-1', version: 2, updatedAt: '2026-09-27T00:00:00.000Z' };
+    const pending = {
+      id: floor.id,
+      version: floor.version,
+      status: 'PENDING_REVIEW' as const,
+      updatedAt: '2026-09-29T00:00:00.000Z',
+    };
+    expect(nextPostSubmitHold(floor, pending)).toEqual({
+      open: false,
+      floor: { id: pending.id, version: pending.version, updatedAt: pending.updatedAt },
+    });
+    expect(
+      nextPostSubmitHold(
+        { id: pending.id, version: pending.version, updatedAt: pending.updatedAt },
+        { ...pending, status: 'CHANGES_REQUESTED', updatedAt: '2026-09-28T00:00:00.000Z' },
+      ),
+    ).toEqual({
+      open: false,
+      floor: { id: pending.id, version: pending.version, updatedAt: pending.updatedAt },
+    });
+    expect(
+      nextPostSubmitHold(
+        { id: pending.id, version: pending.version, updatedAt: pending.updatedAt },
+        { ...pending, status: 'APPROVED', updatedAt: '2026-09-30T00:00:00.000Z' },
+      ),
+    ).toEqual({ open: true });
   });
 });

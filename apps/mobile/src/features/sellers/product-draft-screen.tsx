@@ -7,7 +7,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { View } from 'react-native';
 
-import type { Product, SellerProductDetailResponse } from '@bidplace/contracts';
+import type { Product, ProductStatus, SellerProductDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
@@ -47,6 +47,7 @@ import { ProductDraftReviewStep } from './product-draft-review';
 import {
   canOwnerEditProduct,
   isNewerModerationDecision,
+  nextPostSubmitHold,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
   shouldKeepCachedProductRevision,
@@ -77,8 +78,9 @@ type ProductSubmitRequest = {
   currentValues: ProductDraftFormValues;
   authEpoch: number;
   generation: number;
-  submittedRevision: ProductRevisionIdentity | null;
 };
+
+type TrustedRevision = ProductRevisionIdentity & { status: ProductStatus };
 
 export function ProductDraftScreen({
   productId,
@@ -109,6 +111,10 @@ export function ProductDraftScreen({
   const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
   const sessionOperation = useRef(0);
+  const detailReads = useRef(0);
+  const ignoreDetailReadsBefore = useRef(0);
+  const holdFloor = useRef<ProductRevisionIdentity | null>(null);
+  const onTrustedDetail = useRef<(revision: TrustedRevision) => void>(() => undefined);
   const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
   const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
@@ -126,7 +132,23 @@ export function ProductDraftScreen({
   );
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
+  const [moderationHold, setModerationHold] = useState(false);
   const [submittedRevision, setSubmittedRevision] = useState<ProductRevisionIdentity | null>(null);
+  const [trustedRevision, setTrustedRevision] = useState<TrustedRevision | null>(null);
+  onTrustedDetail.current = (revision) => {
+    setTrustedRevision((current) => {
+      if (
+        current &&
+        current.id === revision.id &&
+        current.version === revision.version &&
+        current.status === revision.status &&
+        current.updatedAt === revision.updatedAt
+      ) {
+        return current;
+      }
+      return revision;
+    });
+  };
 
   const categories = useQuery({
     queryKey: categoryKeys.all,
@@ -136,18 +158,26 @@ export function ProductDraftScreen({
     queryKey: productId
       ? ownerWorkQueryKeys.detail(productId)
       : ownerWorkQueryKeys.detailRoot,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
+      detailReads.current += 1;
+      const readId = detailReads.current;
       const epoch = currentAuthEpoch(queryClient);
       const result = await api.sellers.getProduct(productId!);
       const current = queryClient.getQueryData<SellerProductDetailResponse>(
         ownerWorkQueryKeys.detail(productId!),
       );
-      if (!canWritePrivateCache(queryClient, epoch)) {
+      const staleRead =
+        signal.aborted || readId <= ignoreDetailReadsBefore.current;
+      if (!canWritePrivateCache(queryClient, epoch) || staleRead) {
         if (current) return current;
         throw new Error('Private cache is closed');
       }
-      if (current && shouldKeepCachedProductRevision(current, result)) return current;
-      return result;
+      const committed =
+        current && shouldKeepCachedProductRevision(current, result) ? current : result;
+      if (ignoreDetailReadsBefore.current > 0 && committed.editingRevision) {
+        onTrustedDetail.current(committed.editingRevision);
+      }
+      return committed;
     },
     enabled: Boolean(productId),
   });
@@ -243,9 +273,14 @@ export function ProductDraftScreen({
     sessionOperation.current += 1;
     saveGeneration.current += 1;
     imageSelection.current += 1;
+    detailReads.current += 1;
+    ignoreDetailReadsBefore.current = detailReads.current;
+    holdFloor.current = null;
     saveInFlight.current = false;
     endLockedTransition();
+    setModerationHold(false);
     setSubmittedRevision(null);
+    setTrustedRevision(null);
     setWizardSubmitted(false);
     hydratedProductId.current = null;
     hydratedUpdatedAt.current = null;
@@ -313,9 +348,32 @@ export function ProductDraftScreen({
       if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(result.product, request.currentValues);
-      setSubmittedRevision(request.submittedRevision);
+      ignoreDetailReadsBefore.current = detailReads.current;
+      setModerationHold(true);
+      setTrustedRevision(null);
       setWizardSubmitted(true);
-      await invalidateSavedProduct(result.product.id);
+      await queryClient.cancelQueries({
+        queryKey: ownerWorkQueryKeys.detail(result.product.id),
+      });
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      const settled = queryClient.getQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(result.product.id),
+      );
+      const settledRevision = settled?.editingRevision;
+      holdFloor.current = settledRevision
+        ? {
+            id: settledRevision.id,
+            version: settledRevision.version,
+            updatedAt: settledRevision.updatedAt,
+          }
+        : null;
+      setSubmittedRevision(holdFloor.current);
+      try {
+        await invalidateSavedProduct(result.product.id);
+      } catch {
+        return;
+      }
     },
   });
   const upload = useMutation({
@@ -485,12 +543,37 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty, productId]);
 
   useEffect(() => {
+    if (!moderationHold || !trustedRevision) return;
+    const decision = nextPostSubmitHold(holdFloor.current, trustedRevision);
+    if (decision.open) {
+      holdFloor.current = null;
+      setModerationHold(false);
+      setSubmittedRevision(null);
+      setTrustedRevision(null);
+      setWizardSubmitted(false);
+      return;
+    }
+    holdFloor.current = decision.floor;
+    setSubmittedRevision((current) =>
+      current &&
+      current.id === decision.floor.id &&
+      current.version === decision.floor.version &&
+      current.updatedAt === decision.floor.updatedAt
+        ? current
+        : decision.floor,
+    );
+  }, [moderationHold, trustedRevision]);
+
+  useEffect(() => {
+    if (!moderationHold || !submittedRevision) return;
     const incoming = productDetail.data?.editingRevision;
-    if (!submittedRevision || !incoming) return;
-    if (!isNewerModerationDecision(submittedRevision, incoming)) return;
+    if (!incoming || !isNewerModerationDecision(submittedRevision, incoming)) return;
+    holdFloor.current = null;
+    setModerationHold(false);
     setSubmittedRevision(null);
+    setTrustedRevision(null);
     setWizardSubmitted(false);
-  }, [productDetail.data?.editingRevision, submittedRevision]);
+  }, [moderationHold, productDetail.data?.editingRevision, submittedRevision]);
 
   const moveToWizardStep = async (nextStep: number) => {
     if (transitionLock.current) return;
@@ -567,7 +650,6 @@ export function ProductDraftScreen({
     const snapshot = form.getValues();
     const authEpochAtSubmit = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
-    const revision = productDetail.data?.editingRevision;
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
       if (sessionOperation.current !== operation) return;
@@ -581,9 +663,6 @@ export function ProductDraftScreen({
         currentValues: snapshot,
         authEpoch: authEpochAtSubmit,
         generation,
-        submittedRevision: revision
-          ? { id: revision.id, version: revision.version, updatedAt: revision.updatedAt }
-          : null,
       });
     } catch {
       // submit.isError keeps the author on this form.
@@ -682,7 +761,7 @@ export function ProductDraftScreen({
   );
   const editable =
     canOwnerEditProduct(existingProduct?.status, editingRevisionStatus) &&
-    (submittedRevision === null || moderationReopened);
+    (!moderationHold || moderationReopened);
   const moderationNotice = ownerModerationReasonNotice(
     editorStatus,
     productDetail.data?.lastModerationReason,

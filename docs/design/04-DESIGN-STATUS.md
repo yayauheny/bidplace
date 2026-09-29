@@ -4,6 +4,18 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-29 — Owner editor moderation hold after an intermediate save
+
+- `Needs verification` (mobile web behavior): a detail read started before or
+  during work save→submit does not reopen Save or Submit. An intermediate
+  changes-requested or rejected snapshot with a newer revision timestamp stays
+  locked. Confirmed pending stays locked. A later approval, changes-requested,
+  or rejected revision opens editing. A late older snapshot does not replace
+  that decision. Close stays available after a failed refetch.
+- `Unchanged`: form layout, tokens, routes, server contracts, and the canonical
+  Pen file. Chromium and WebKit were not run. D04 and D05 remain needs
+  verification. T04 remains partial.
+
 ## 2026-09-29 — Owner editor session ownership and moderation freshness
 
 - `Needs verification` (mobile web behavior): a photo or work image chosen in
