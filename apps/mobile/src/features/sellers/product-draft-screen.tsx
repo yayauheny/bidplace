@@ -67,12 +67,14 @@ const productDraftHistoryGuardKey = '__bidplaceProductDraftGuard';
 type ProductSaveRequest = {
   values: ProductDraftFormValues;
   authEpoch: number;
+  generation: number;
 };
 
 type ProductSubmitRequest = {
   id: string;
   currentValues: ProductDraftFormValues;
   authEpoch: number;
+  generation: number;
 };
 
 export function ProductDraftScreen({
@@ -100,6 +102,8 @@ export function ProductDraftScreen({
   const hydratedUpdatedAt = useRef<string | null>(null);
   const persistedProductId = useRef<string | null>(productId ?? null);
   const transitionLock = useRef(false);
+  const saveInFlight = useRef(false);
+  const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
   const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
@@ -281,6 +285,7 @@ export function ProductDraftScreen({
       return id ? api.products.update(id, body) : api.products.create(body);
     },
     onSuccess: ({ product }, request) => {
+      if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(product, request.values);
       void invalidateSavedProduct(product.id);
@@ -294,6 +299,7 @@ export function ProductDraftScreen({
         () => api.products.submit(id),
       ),
     onSuccess: async ({ product }, request) => {
+      if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(product, request.currentValues);
       setModerationHold(true);
@@ -359,21 +365,30 @@ export function ProductDraftScreen({
     });
   };
 
+  const releaseSave = (generation: number) => {
+    if (saveGeneration.current === generation) saveInFlight.current = false;
+  };
+
   const persistCurrentForm = useCallback(async (mode: 'ordinary' | 'transition' = 'ordinary') => {
+    if (saveInFlight.current) return false;
     if (mode === 'transition') {
       if (!beginLockedTransition()) return false;
     } else if (transitionLock.current) {
       return false;
     }
+    const generation = saveGeneration.current + 1;
+    saveGeneration.current = generation;
+    saveInFlight.current = true;
     const snapshot = form.getValues();
     const authEpochAtSave = currentAuthEpoch(queryClient);
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
+      releaseSave(generation);
       if (mode === 'transition') endLockedTransition();
       return false;
     }
     try {
-      await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave });
+      await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave, generation });
       if (!canWritePrivateCache(queryClient, authEpochAtSave)) {
         if (mode === 'transition') endLockedTransition();
         return false;
@@ -382,6 +397,8 @@ export function ProductDraftScreen({
     } catch {
       if (mode === 'transition') endLockedTransition();
       return false;
+    } finally {
+      releaseSave(generation);
     }
   }, [form, save]);
   persistCurrentFormRef.current = () => persistCurrentForm('transition');
@@ -516,9 +533,13 @@ export function ProductDraftScreen({
   };
 
   const submitCurrentForm = async () => {
-    if (!beginLockedTransition()) return;
+    if (saveInFlight.current || !beginLockedTransition()) return;
+    const generation = saveGeneration.current + 1;
+    saveGeneration.current = generation;
+    saveInFlight.current = true;
     const id = persistedProductId.current;
     if (!id) {
+      releaseSave(generation);
       endLockedTransition();
       return;
     }
@@ -526,6 +547,7 @@ export function ProductDraftScreen({
     const authEpochAtSubmit = currentAuthEpoch(queryClient);
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
+      releaseSave(generation);
       endLockedTransition();
       return;
     }
@@ -534,10 +556,12 @@ export function ProductDraftScreen({
         id,
         currentValues: snapshot,
         authEpoch: authEpochAtSubmit,
+        generation,
       });
     } catch {
       // submit.isError keeps the author on this form.
     } finally {
+      releaseSave(generation);
       if (!canWritePrivateCache(queryClient, authEpochAtSubmit)) {
         setModerationHold(false);
         setWizardSubmitted(false);

@@ -311,4 +311,39 @@ describe('product draft route removal', () => {
     expect(title?.value).toBe('Dirty title');
     view.unmount();
   });
+
+  it('does not leave during an ordinary save when route removal is requested', async () => {
+    let resolveSave: (value: { product: ReturnType<typeof detail>['product'] }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value === 'Saved title',
+      'title',
+    );
+    setInput(view.container, 'Название', 'Dirty title');
+    await flush();
+    const save = [...view.container.querySelectorAll('button')].find((node) => node.textContent === 'Сохранить изменения');
+    act(() => {
+      save?.click();
+    });
+    await flush();
+    expect(emitRouteRemoval()).toBe(true);
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    await act(async () => {
+      resolveSave({ product: { ...detail().product, title: 'Dirty title' } });
+      await Promise.resolve();
+    });
+    await flush();
+    await flush();
+    expect(harness.dispatch).not.toHaveBeenCalled();
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Dirty title');
+    view.unmount();
+  });
 });

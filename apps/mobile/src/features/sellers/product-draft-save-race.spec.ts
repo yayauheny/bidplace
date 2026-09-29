@@ -525,4 +525,46 @@ describe('product draft save reconciliation', () => {
     expect(harness.replace).not.toHaveBeenCalled();
     view.unmount();
   });
+
+  it('runs one ordinary save at a time and keeps text typed during that save', async () => {
+    const resolvers: Array<(value: { product: ReturnType<typeof product> }) => void> = [];
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve);
+        }),
+    );
+    const view = mount({ productId });
+    await until(view.container, () => findButton(view.container, 'Сохранить изменения') instanceof HTMLButtonElement, 'save');
+    setInput(view.container, 'Название', 'Title A');
+    act(() => {
+      const save = findButton(view.container, 'Сохранить изменения');
+      save?.click();
+      save?.click();
+      findButton(view.container, 'Отправить на модерацию')?.click();
+    });
+    await flush();
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    expect(resolvers).toHaveLength(1);
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    expect(harness.replace).not.toHaveBeenCalled();
+    setInput(view.container, 'Название', 'Title B');
+    await act(async () => {
+      resolvers[1]?.({ product: product('Title A', 'Second paint') });
+      resolvers[0]?.({ product: product('Title A', 'First paint') });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(inputValue(view.container, 'Название')).toBe('Title B');
+    expect(inputValue(view.container, 'Техника')).toBe('First paint');
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    expect(harness.updateProduct).toHaveBeenCalledTimes(2);
+    expect(harness.updateProduct).toHaveBeenLastCalledWith(
+      productId,
+      expect.objectContaining({ title: 'Title B' }),
+    );
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    view.unmount();
+  });
 });
