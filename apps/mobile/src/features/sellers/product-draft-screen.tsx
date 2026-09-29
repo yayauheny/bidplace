@@ -118,6 +118,7 @@ export function ProductDraftScreen({
   );
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
+  const [moderationHold, setModerationHold] = useState(false);
 
   const categories = useQuery({
     queryKey: categoryKeys.all,
@@ -144,6 +145,12 @@ export function ProductDraftScreen({
   const existingProduct = productDetail.data?.product;
   const persistedRevisionUpdatedAt =
     productDetail.data?.editingRevision?.updatedAt;
+  const editingRevisionStatus = productDetail.data?.editingRevision?.status;
+  const productStatus = existingProduct?.status;
+  const editorStatus =
+    productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
+      ? editingRevisionStatus
+      : productStatus;
   const isCreationFlow = flow === 'creation' || !productId;
   const wizardDraft = createProductWizardDraft(existingProduct ?? null);
   const requestedStep = parseProductWizardStepParam(stepParam);
@@ -225,6 +232,8 @@ export function ProductDraftScreen({
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
     endLockedTransition();
+    setModerationHold(false);
+    setWizardSubmitted(false);
     hydratedProductId.current = null;
     hydratedUpdatedAt.current = null;
   }, [authEpoch]);
@@ -287,8 +296,9 @@ export function ProductDraftScreen({
     onSuccess: async ({ product }, request) => {
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
       rememberSavedProduct(product, request.currentValues);
-      await invalidateSavedProduct(product.id);
+      setModerationHold(true);
       setWizardSubmitted(true);
+      await invalidateSavedProduct(product.id);
     },
   });
   const upload = useMutation({
@@ -444,6 +454,12 @@ export function ProductDraftScreen({
     };
   }, [form.formState.isDirty, productId]);
 
+  useEffect(() => {
+    if (editorStatus !== 'CHANGES_REQUESTED' && editorStatus !== 'REJECTED') return;
+    setModerationHold(false);
+    setWizardSubmitted(false);
+  }, [editorStatus]);
+
   const moveToWizardStep = async (nextStep: number) => {
     if (transitionLock.current) return;
     if (!existingProduct) return;
@@ -519,10 +535,13 @@ export function ProductDraftScreen({
         currentValues: snapshot,
         authEpoch: authEpochAtSubmit,
       });
-      if (!canWritePrivateCache(queryClient, authEpochAtSubmit)) {
-        endLockedTransition();
-      }
     } catch {
+      // submit.isError keeps the author on this form.
+    } finally {
+      if (!canWritePrivateCache(queryClient, authEpochAtSubmit)) {
+        setModerationHold(false);
+        setWizardSubmitted(false);
+      }
       endLockedTransition();
     }
   };
@@ -600,16 +619,11 @@ export function ProductDraftScreen({
     );
   }
 
-  const editingRevisionStatus = productDetail.data?.editingRevision?.status;
-  const editable = canOwnerEditProduct(
-    existingProduct?.status,
-    editingRevisionStatus,
-  );
-  const productStatus = existingProduct?.status;
-  const editorStatus =
-    productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
-      ? editingRevisionStatus
-      : productStatus;
+  const moderationReopened =
+    editorStatus === 'CHANGES_REQUESTED' || editorStatus === 'REJECTED';
+  const editable =
+    canOwnerEditProduct(existingProduct?.status, editingRevisionStatus) &&
+    !(moderationHold && !moderationReopened);
   const moderationNotice = ownerModerationReasonNotice(
     editorStatus,
     productDetail.data?.lastModerationReason,
