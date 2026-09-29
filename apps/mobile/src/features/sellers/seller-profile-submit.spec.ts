@@ -157,6 +157,7 @@ vi.mock('../../components/ui', () => {
   };
 });
 
+import { authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profile(status: string) {
@@ -214,10 +215,11 @@ function submitResponse(
   };
 }
 
-function mount() {
+function mount(sessionId = 'user-a') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  queryClient.setQueryData(authKeys.session, { id: sessionId });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -1083,6 +1085,117 @@ describe('seller profile save reconciliation', () => {
     await flush();
     expect(harness.updateProfile.mock.calls[0]?.[1]).toBe(secondPhoto);
     vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('drops a save from the previous session after logout and login', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      'profile A',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveSave(savedProfile({ city: 'Normalized' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(harness.replace).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('drops a save after the same account logs out and back in', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      'profile',
+    );
+    click(view.container, 'Сохранить');
+    await flush();
+    const restored = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    restored.sellerProfile = { ...restored.sellerProfile, city: 'Restored' };
+    harness.getMyProfile.mockResolvedValue(restored);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+      view.queryClient.setQueryData(['seller', 'profile'], restored);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveSave(savedProfile({ city: 'Normalized' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(restored);
+    expect(inputValue(view.container, 'Город')).toBe('Restored');
+    view.unmount();
+  });
+
+  it('does not continue a profile step after the session changes', async () => {
+    let resolveSave: (value: ReturnType<typeof savedProfile>) => void = () => undefined;
+    harness.params = { step: '1' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount('user-a');
+    await until(view.container, () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement, 'continue');
+    click(view.container, 'Продолжить');
+    await flush();
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveSave(savedProfile({ city: 'Normalized' }));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.push).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
     view.unmount();
   });
 });

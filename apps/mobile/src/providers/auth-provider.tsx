@@ -16,6 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useApiClient } from './api-provider';
 import {
+  advanceAuthEpoch,
   authKeys,
   clearAuthenticatedSession,
   clearAuthScopedDataExceptSession,
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (nextUser: User) => {
       await clearAuthScopedDataExceptSession(queryClient);
       queryClient.setQueryData(authKeys.session, nextUser);
+      advanceAuthEpoch(queryClient);
     },
     [queryClient],
   );

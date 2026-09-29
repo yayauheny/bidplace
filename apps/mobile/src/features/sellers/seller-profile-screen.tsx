@@ -14,7 +14,8 @@ import { infrastructurePageFetchStatus } from '../../components/shared/infrastru
 import { AppDialog, AppText, FormSection, ImagePlaceholder, PageHeader, PrimaryButton, ResilientRemoteImage, SecondaryButton } from '../../components/ui';
 import { logInfrastructureError } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache } from '../../lib/query-cache';
+import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { useAccountLogout } from '../auth/account-logout';
@@ -140,6 +141,7 @@ function profileFieldsToCreate(fields: ProfileFields) {
 type ProfileSaveVariables = {
   fields: ProfileFields;
   photo: Blob | null;
+  authEpoch: number;
 };
 
 function useProfileData() {
@@ -148,8 +150,9 @@ function useProfileData() {
   return useQuery({
     queryKey: sellerProfileQueryKey,
     queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
       const result = await api.sellers.getMyProfile();
-      if (!canWritePrivateCache(queryClient)) {
+      if (!canWritePrivateCache(queryClient, epoch)) {
         const current = queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey);
         if (current) return current;
         throw new Error('Private cache is closed');
@@ -187,20 +190,38 @@ export function SellerProfileScreen() {
   const [inputsLocked, setInputsLocked] = useState(false);
   const [revisionSubmitActive, setRevisionSubmitActive] = useState(false);
   const accountLogout = useAccountLogout();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const seenAuthEpoch = useRef(authEpoch);
+  const forceProfileHydration = useRef(false);
   const hydrationToken = editingRevision?.updatedAt ?? profile?.updatedAt;
   const requestedStep = resolveSellerProfileStep(step, profile);
   const isApplicationWizard = !profile || ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(profile.status);
   const profileStep = isApplicationWizard ? requestedStep : 1;
   const editable = isSellerProfileFormEditable(profile, editingRevision);
   const canSubmitRevision = canSubmitSellerProfileRevision(profile, editingRevision);
-  const applicationPhoto = useQuery({ queryKey: ['seller', 'application-photo', profile?.id, hydrationToken], queryFn: () => api.portfolio.getAuthorApplicationPhoto(), enabled: Boolean(profile) && !photoBlob, retry: false });
+  const applicationPhoto = useQuery({
+    queryKey: ['seller', 'application-photo', profile?.id, hydrationToken],
+    queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
+      const photo = await api.portfolio.getAuthorApplicationPhoto();
+      if (!canWritePrivateCache(queryClient, epoch)) {
+        throw new Error('Private cache is closed');
+      }
+      return photo;
+    },
+    enabled: Boolean(profile) && !photoBlob,
+    retry: false,
+  });
 
   const fieldsEditable = editable && !inputsLocked;
 
   useEffect(() => {
     if (!profile) return;
     const token = hydrationToken ?? null;
-    if (!token || form.formState.isDirty || hydratedProfileToken.current === token) return;
+    const forced = forceProfileHydration.current;
+    if (!token || hydratedProfileToken.current === token) return;
+    if (!forced && form.formState.isDirty) return;
+    forceProfileHydration.current = false;
     form.reset(toFields(profile));
     hydratedProfileToken.current = token;
   }, [form, form.formState.isDirty, hydrationToken, profile]);
@@ -241,6 +262,15 @@ export function SellerProfileScreen() {
     transitionLock.current = false;
     setInputsLocked(false);
   };
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    endLockedTransition();
+    photoBlobRef.current = null;
+    setPhotoBlob(null);
+    setPhotoUri(null);
+    forceProfileHydration.current = true;
+  }, [authEpoch]);
   const rememberSavedProfile = (saved: SellerProfileResponse, submitted: ProfileFields) => {
     const persisted = toFields(saved.sellerProfile);
     const overrides = persistedFieldOverrides(submitted, form.getValues(), persisted);
@@ -259,21 +289,24 @@ export function SellerProfileScreen() {
       return api.sellers.createProfile(profileFieldsToCreate(variables.fields), variables.photo);
     },
     onSuccess: (saved, variables) => {
+      if (!canWritePrivateCache(queryClient, variables.authEpoch)) return;
       rememberSavedProfile(saved, variables.fields);
       if (photoBlobRef.current === variables.photo) {
         photoBlobRef.current = null;
         setPhotoBlob(null);
       }
-      if (!canWritePrivateCache(queryClient)) return;
       queryClient.setQueryData(sellerProfileQueryKey, saved);
       hydratedProfileToken.current = saved.editingRevision?.updatedAt ?? saved.sellerProfile.updatedAt;
       invalidate();
     },
   });
   const advanceMutation = useMutation({
-    mutationFn: () => api.portfolio.advanceAuthorApplication(),
-    onSuccess: (saved) => {
-      if (!canWritePrivateCache(queryClient)) return;
+    mutationFn: async (epoch: number) => ({
+      saved: await api.portfolio.advanceAuthorApplication(),
+      epoch,
+    }),
+    onSuccess: ({ saved, epoch }) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
       queryClient.setQueryData(sellerProfileQueryKey, (current: SellerProfileResponse | undefined) => current ? { ...current, sellerProfile: { ...current.sellerProfile, applicationStage: saved.application.applicationStage } } : current);
@@ -289,10 +322,13 @@ export function SellerProfileScreen() {
     const variables: ProfileSaveVariables = {
       fields: form.getValues(),
       photo: photoBlobRef.current,
+      authEpoch: currentAuthEpoch(queryClient),
     };
     saveInFlight.current = true;
     try {
-      return await saveMutation.mutateAsync(variables);
+      const saved = await saveMutation.mutateAsync(variables);
+      if (!canWritePrivateCache(queryClient, variables.authEpoch)) return null;
+      return saved;
     } catch (error) {
       if (source === 'transition') endLockedTransition();
       throw error;
@@ -312,14 +348,16 @@ export function SellerProfileScreen() {
       return;
     }
     if (!beginLockedTransition()) return;
+    const submitEpoch = currentAuthEpoch(queryClient);
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
     try {
       const saved = await save('revision-submit');
-      if (!saved) return;
+      if (!saved || !canWritePrivateCache(queryClient, submitEpoch)) return;
       const submitted = await submitMutation.mutateAsync();
+      if (!canWritePrivateCache(queryClient, submitEpoch)) return;
       await queryClient.cancelQueries({ queryKey: sellerProfileQueryKey }, { revert: false });
-      if (canWritePrivateCache(queryClient)) {
+      if (canWritePrivateCache(queryClient, submitEpoch)) {
         queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
           withSubmittedRevision(current, submitted),
         );
@@ -339,10 +377,12 @@ export function SellerProfileScreen() {
   const continueFromStep = async (visibleStep: 2 | 3) => {
     if (transitionLock.current) return;
     try {
+      const epoch = currentAuthEpoch(queryClient);
       const saved = await save('transition');
-      if (!saved) return;
+      if (!saved || !canWritePrivateCache(queryClient, epoch)) return;
       if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
-        await advanceMutation.mutateAsync();
+        await advanceMutation.mutateAsync(epoch);
+        if (!canWritePrivateCache(queryClient, epoch)) return;
       }
       router.push(`/profile?step=${visibleStep + 1}`);
     } catch (error) {
@@ -473,8 +513,9 @@ export function SellerProfileScreen() {
       {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void (async () => {
         if (transitionLock.current) return;
         try {
+          const epoch = currentAuthEpoch(queryClient);
           const saved = await save('transition');
-          if (!saved) return;
+          if (!saved || !canWritePrivateCache(queryClient, epoch)) return;
           router.push('/profile?step=2');
         } catch (error) {
           logInfrastructureError(error, 'seller-profile-step');

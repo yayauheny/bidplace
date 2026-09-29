@@ -28,7 +28,8 @@ import {
 import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { canWritePrivateCache, categoryKeys } from '../../lib/query-cache';
+import { canWritePrivateCache, categoryKeys, currentAuthEpoch } from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftAboutStep } from './product-draft-about';
@@ -63,6 +64,17 @@ import {
 
 const productDraftHistoryGuardKey = '__bidplaceProductDraftGuard';
 
+type ProductSaveRequest = {
+  values: ProductDraftFormValues;
+  authEpoch: number;
+};
+
+type ProductSubmitRequest = {
+  id: string;
+  currentValues: ProductDraftFormValues;
+  authEpoch: number;
+};
+
 export function ProductDraftScreen({
   productId,
   flow,
@@ -76,6 +88,8 @@ export function ProductDraftScreen({
   const router = useRouter();
   const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const seenAuthEpoch = useRef(authEpoch);
   const form = useForm<ProductDraftFormValues>({
     defaultValues: emptyProductDraftFormValues,
     resolver: zodResolver(productDraftFormSchema),
@@ -114,8 +128,9 @@ export function ProductDraftScreen({
       ? ownerWorkQueryKeys.detail(productId)
       : ownerWorkQueryKeys.detailRoot,
     queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
       const result = await api.sellers.getProduct(productId!);
-      if (!canWritePrivateCache(queryClient)) {
+      if (!canWritePrivateCache(queryClient, epoch)) {
         const current = queryClient.getQueryData<SellerProductDetailResponse>(
           ownerWorkQueryKeys.detail(productId!),
         );
@@ -206,6 +221,14 @@ export function ProductDraftScreen({
     setInputsLocked(false);
   };
 
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    endLockedTransition();
+    hydratedProductId.current = null;
+    hydratedUpdatedAt.current = null;
+  }, [authEpoch]);
+
   const rememberSavedProduct = (
     product: Product,
     submitted: ProductDraftFormValues,
@@ -243,66 +266,71 @@ export function ProductDraftScreen({
     invalidateOwnerWorks(queryClient, savedProductId);
 
   const save = useMutation({
-    mutationFn: (currentValues: ProductDraftFormValues) => {
+    mutationFn: ({ values }: ProductSaveRequest) => {
       const id = persistedProductId.current;
-      const body = productDraftToWriteRequest(currentValues);
+      const body = productDraftToWriteRequest(values);
       return id ? api.products.update(id, body) : api.products.create(body);
     },
-    onSuccess: ({ product }, submitted) => {
-      rememberSavedProduct(product, submitted);
+    onSuccess: ({ product }, request) => {
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      rememberSavedProduct(product, request.values);
       void invalidateSavedProduct(product.id);
     },
   });
   const submit = useMutation({
-    mutationFn: ({
-      id,
-      currentValues,
-    }: {
-      id: string;
-      currentValues: ProductDraftFormValues;
-    }) =>
+    mutationFn: ({ id, currentValues }: ProductSubmitRequest) =>
       persistProductDraftBeforeSubmit(
         () =>
           api.products.update(id, productDraftToWriteRequest(currentValues)),
         () => api.products.submit(id),
       ),
-    onSuccess: async ({ product }, variables) => {
-      rememberSavedProduct(product, variables.currentValues);
+    onSuccess: async ({ product }, request) => {
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      rememberSavedProduct(product, request.currentValues);
       await invalidateSavedProduct(product.id);
       setWizardSubmitted(true);
     },
   });
   const upload = useMutation({
-    mutationFn: (images: Blob[]) => {
+    mutationFn: async (images: Blob[]) => {
+      const epoch = currentAuthEpoch(queryClient);
       const id = persistedProductId.current;
       if (!id) throw new Error('Product is not saved');
-      return api.images.add(id, images);
+      await api.images.add(id, images);
+      return epoch;
     },
-    onSuccess: () => {
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
       const id = persistedProductId.current;
       if (!id) return;
       return invalidateOwnerWorks(queryClient, id);
     },
   });
   const removeImage = useMutation({
-    mutationFn: (imageId: string) => {
+    mutationFn: async (imageId: string) => {
+      const epoch = currentAuthEpoch(queryClient);
       const id = persistedProductId.current;
       if (!id) throw new Error('Product is not saved');
-      return api.images.remove(id, imageId);
+      await api.images.remove(id, imageId);
+      return epoch;
     },
-    onSuccess: () => {
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
       const id = persistedProductId.current;
       if (!id) return;
       return invalidateOwnerWorks(queryClient, id);
     },
   });
   const reorderImages = useMutation({
-    mutationFn: (imageIds: string[]) => {
+    mutationFn: async (imageIds: string[]) => {
+      const epoch = currentAuthEpoch(queryClient);
       const id = persistedProductId.current;
       if (!id) throw new Error('Product is not saved');
-      return api.images.reorder(id, imageIds);
+      await api.images.reorder(id, imageIds);
+      return epoch;
     },
-    onSuccess: () => {
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
       const id = persistedProductId.current;
       if (!id) return;
       return invalidateOwnerWorks(queryClient, id);
@@ -328,13 +356,18 @@ export function ProductDraftScreen({
       return false;
     }
     const snapshot = form.getValues();
+    const authEpochAtSave = currentAuthEpoch(queryClient);
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
       if (mode === 'transition') endLockedTransition();
       return false;
     }
     try {
-      await save.mutateAsync(snapshot);
+      await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave });
+      if (!canWritePrivateCache(queryClient, authEpochAtSave)) {
+        if (mode === 'transition') endLockedTransition();
+        return false;
+      }
       return true;
     } catch {
       if (mode === 'transition') endLockedTransition();
@@ -474,13 +507,21 @@ export function ProductDraftScreen({
       return;
     }
     const snapshot = form.getValues();
+    const authEpochAtSubmit = currentAuthEpoch(queryClient);
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
       endLockedTransition();
       return;
     }
     try {
-      await submit.mutateAsync({ id, currentValues: snapshot });
+      await submit.mutateAsync({
+        id,
+        currentValues: snapshot,
+        authEpoch: authEpochAtSubmit,
+      });
+      if (!canWritePrivateCache(queryClient, authEpochAtSubmit)) {
+        endLockedTransition();
+      }
     } catch {
       endLockedTransition();
     }

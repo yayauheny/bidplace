@@ -168,6 +168,7 @@ function mount() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  queryClient.setQueryData(['user', 'me'], { id: 'user-a' });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);

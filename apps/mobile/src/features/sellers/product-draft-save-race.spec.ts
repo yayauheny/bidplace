@@ -126,6 +126,8 @@ vi.mock('../../components/ui', () => {
   };
 });
 
+import { authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import { ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftScreen } from './product-draft-screen';
 
 function product(title = 'Saved title', technique = 'Oil') {
@@ -181,10 +183,16 @@ function detail(title = 'Saved title', technique = 'Oil') {
   };
 }
 
-function mount(props: { productId?: string; flow?: string; stepParam?: '1' | '2' | '3' | '4' } = {}) {
+function mount(props: {
+  productId?: string;
+  flow?: string;
+  stepParam?: '1' | '2' | '3' | '4';
+  sessionId?: string;
+} = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  queryClient.setQueryData(authKeys.session, { id: props.sessionId ?? 'user-a' });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
@@ -477,6 +485,44 @@ describe('product draft save reconciliation', () => {
     await flush();
     expect(harness.getProduct.mock.calls.length).toBe(readsBeforeSave);
     expect(view.queryClient.getQueryData(['portfolio-works'])).toEqual({ marker: true });
+    view.unmount();
+  });
+
+  it('drops a work save from the previous session after logout and login', async () => {
+    let resolveSave: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount({ productId, sessionId: 'user-a' });
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value === 'Saved title',
+      'work A',
+    );
+    click(view.container, 'Сохранить изменения');
+    await flush();
+    const workB = detail('User B title');
+    workB.editingRevision.updatedAt = '2026-09-30T00:00:00.000Z';
+    workB.product.updatedAt = '2026-09-30T00:00:00.000Z';
+    harness.getProduct.mockResolvedValue(workB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+    });
+    await flush();
+    harness.getProduct.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveSave({ product: product('From user A', 'Oil paint') });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(workB);
+    expect(inputValue(view.container, 'Название')).toBe('User B title');
+    expect(harness.replace).not.toHaveBeenCalled();
     view.unmount();
   });
 });

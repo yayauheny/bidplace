@@ -22,7 +22,7 @@ import {
   SecondaryButton,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache } from '../../lib/query-cache';
+import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
 import {
   isAuthorCabinetAvailable,
   useSellerCapability,
@@ -48,11 +48,12 @@ export function AuthorCabinetScreen() {
     queryKey: ownerWorkQueryKeys.cabinet,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
+      const epoch = currentAuthEpoch(queryClient);
       const page = await api.portfolio.listCabinetWorks({
         page: pageParam,
         limit: AUTHOR_CABINET_PAGE_SIZE,
       });
-      if (!canWritePrivateCache(queryClient)) {
+      if (!canWritePrivateCache(queryClient, epoch)) {
         throw new Error('Private cache is closed');
       }
       return page;
