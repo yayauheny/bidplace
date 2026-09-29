@@ -4,13 +4,17 @@
 
 **Источник:** последний полный аудит в этой беседе, baseline `7d2d547`. Исходный аудит и существующие audit-файлы сохраняются.
 
-**Результат планирования:** 35 findings (28 исходных + D08 + 6 из дополнительного аудита) распределены по семи волнам и 34 scopes: 27 Implementation и 7 Plan.
+**Результат планирования:** 38 findings (28 исходных + D08 + 6 incremental + 3 simplification) распределены по семи волнам и 35 scopes: 28 Implementation и 7 Plan.
 
 **Дополнен:** 2026-09-29. Новые findings и границы проверки: [incremental audit](07-INCREMENTAL-AUDIT-2026-09-29.md). Дополнение не переносит незавершённую owner-editor ветку в release.
 
 **Исторический snapshot этого checkout от 2026-09-28 (не сводный текущий статус всех веток):** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; scopes R04–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
+
+**Проход на упрощение:** [evidence и commerce reuse inventory](08-SIMPLIFICATION-REVIEW-2026-09-29.md). C07/C08/L06 → R35; варианты изменения Save/submit/navigation → существующие R33/R24/R25, без автоматического разрешения менять UX.
+
+**Ограничение cleanup от пользователя, 2026-09-29:** сохранить задел аукционов и прямой продажи для переиспользования. R09/R10/R26 не удаляют commerce-модули, guards, contracts, schema, migrations или archive лишь из-за отсутствия текущих consumers. Archive `19eb40e` и current reuse inventory перечислены в дополнении. Не восстанавливать и не подключать dormant runtime этим аудитом; retirement требует отдельного endpoint-by-endpoint решения с учётом будущей commerce wave.
 
 ## 1. Правила исполнения и ведения roadmap
 
@@ -60,7 +64,7 @@ Canonical integration base — `feature/portfolio-mvp-release`. Каждый н�
 
 ### Общий implementation prompt G
 
-**Каждая карточка R01–R34 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
+**Каждая карточка R01–R35 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
 
 > Выполни только указанный scope.
 >
@@ -159,7 +163,7 @@ git -c core.fsmonitor=false status --short
 | Wave 1 | Correctness и небольшие проверки высокой ценности              | R01–R04, R30 |
 | Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08, R31–R32 |
 | Wave 3 | Подтверждённый dead code, dependencies и бесполезные параметры | R09–R13      |
-| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17, R34 |
+| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17, R34–R35 |
 | Wave 5 | Узкие read models и ограничение стоимости запросов             | R18–R21      |
 | Wave 6 | Отдельные архитектурные решения                                | R22–R27, R33 |
 | Wave 7 | Остаточный test cleanup                                        | R28–R29      |
@@ -678,6 +682,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Phase 0:** field ownership matrix для create/fork/update/submit/publish/read; карта routes→services→tables; inventory cross-feature helper imports.
 - **Варианты:** сохранить parent projection с одним writer; revision как canonical content с явными read models; staged extraction revision use cases без немедленной смены persistence.
 - **Сравнить:** migration/backfill, compatibility, write amplification, divergence risk, rollback, размер независимых scopes.
+- **Дополнение simplification:** сравнить additive editing-revision identity в Work submit response с общим owner detail envelope. Сервер уже читает submitted revision; клиент не должен выводить её identity из parent timestamp. До решения сохранить existing guards/hold и response compatibility.
 - **S01:** предложить владельца owner Work detail/cabinet/write responsibilities и нейтральное место реально общего SQL escaping helper.
 - **Не менять:** Product/Seller naming по всему repo, generic repositories, публичные URL, schema.
 - **Инварианты:** published revision стабильна до approval; owner видит editable revision; guards/locks остаются у write boundary.
@@ -697,6 +702,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Dependencies:** R05, R06, R14.
 - **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/sellers/product-draft-screen.tsx`; `/Users/yayauheny/projects/bidplace/patches/expo-router@57.0.4.patch`; `/Users/yayauheny/projects/bidplace/apps/mobile/e2e/back-navigation-lifecycle.spec.ts`.
 - **Phase 0:** проверить installed public navigation APIs; отделить route removal, browser Back/Forward, refresh, overlay history и exit-save.
+- **Дополнение simplification:** до создания нового adapter сравнить auto-save-on-exit с явным Save/Stay/Discard flow; это UX-решение, не утверждённая реализация. beforeunload не заменяет SPA Back guard.
 - **Варианты:** public supported prevent-remove integration; изолированный browser-history adapter с явной state machine; сохранение текущего механизма до доступного framework API.
 - **Сравнить:** web/native parity, history entry count, async save failure, double navigation, inactive-screen focus.
 - **Не менять:** Expo patch автоматически; framework version; Search URL session; back fallback.
@@ -1017,6 +1023,7 @@ Evidence всех новых findings: [дополнительный аудит]
 - **Модель / режим:** Sol High / сначала Plan, P. **Wave:** 6. **Branch:** `feature/query-session-ownership-plan`.
 - **Findings / статус:** A06 / `DECISION_REQUIRED`. **Dependencies:** R31/R32; существующие R03/R05–R07 invariants.
 - **Phase 0 / начать:** `use-seller-capability.ts`, `seller-profile-screen.tsx` (`useProfileData`, `keepConfirmedPendingProfile`), `lib/query-cache.ts`, `use-private-cache-epoch.ts`, `owner-work-query.ts`. Составить key→queryFn/options/writer/policy table; проверить installed TanStack APIs.
+- **Дополнение simplification / L02:** отдельно решить, нужен ли ввод во время ordinary Save. Вариант временно read-only формы может убрать reconciliation, но меняет закреплённый UX; до явного решения не реализовывать и не удалять guards. Session isolation, stale-response policy и pending locks сохраняются.
 - **Варианты:** feature-owned `queryOptions` factory с общей snapshot policy; один auth-owned external store через существующий QueryCache subscription; сохранить отдельный epoch store с централизованным transition API. Сравнить invalidation, observer policy, same-account relogin, SSR/native, стоимость миграции.
 - **Не менять:** production и contracts в Plan. Mutation scope лишь ставит запросы в очередь и не заменяет drop-repeat guards; AbortSignal не защищает от результата уже выполненной server mutation.
 - **Инварианты / acceptance:** одна политика на private resource; stale pending/decision snapshots не откатываются; same-user refresh не стирает dirty ввод; late callbacks не пересекают сессии. Описать rollout/rollback и маленькие implementation scopes в этом roadmap.
@@ -1034,6 +1041,20 @@ Evidence всех новых findings: [дополнительный аудит]
 - **Validation:** V-MOBILE, V-DIFF, admin-revision-moderation browser specs Chromium/WebKit. Без браузеров — `NEEDS_VERIFICATION`.
 - **STOP:** private cache lifecycle не определён или новый wrapper сложнее текущего; не добавлять dependency, предложить DEFERRED с причиной.
 - **Отчёт:** G + удалённый механизм→library API→сохранённые semantics. L05 не переводить в VERIFIED одним refactor diff.
+
+### R35. Малый пакет устранения лишних владельцев состояния и wrappers
+
+- **Модель / режим:** Terra Medium / Implementation. **Wave:** 4. **Branch:** `fix/runtime-simplification`.
+- **Findings / статус:** C07, C08, L06 / `QUEUED`. **Base:** актуальная `feature/portfolio-mvp-release`; Phase 0 сверяет наличие moderation R02 и текущего media runtime. Не переключать integration base молча. Пакет не зависит от принятия UX-вариантов R33.
+- **Phase 0 / начать:** `features/admin/admin-moderation-screen.tsx` (`productAction`, `mutateProductStatus`); `features/search/panes/search-pagination.ts`, Works/AuthorsSearchPane; `features/search/search-query.ts`; `components/ui/ResilientRemoteImage.tsx`; API `core/validation/parse-body.ts`, `parse-query.ts`. Повторно проверить consumers и установленный Query Core.
+- **Исправить отдельными commits в одном review:** C07 — error action брать из mutation variables, убрать дублирующий state/setters. C08 — прямые query flags в panes; timeout cleanup внутри debounce hook; одна реализация Zod parsing с прежними semantic exports, если это не увеличивает abstraction. L06 — сначала component prototype с keyed inner image; убрать только доказанно лишний uri reset lifecycle.
+- **Замена:** existing React Query variables, React keyed component lifetime, стандартный timeout, existing Zod. Новые зависимости, generic controller/form/query framework не нужны.
+- **Не менять:** retry delays/exhaustion/manual retry, image URLs/cache bust, error messages/envelopes, moderation targets, Apply/Cancel, public/private semantics; commerce inventory и archive не трогать.
+- **Инварианты:** callbacks изображения A не изменяют B; тот же uri не сбрасывает recovery; exact error copy соответствует последней mutation; debounce посылает актуальное значение и отменяется на unmount; parse output и validation response эквивалентны.
+- **Тесты:** реальный image component с fake timers и controlled callbacks; admin approve/reject/change failure/reset; pane load-more и hook rapid-input/unmount. Helper-only tests удалить только после production replacement. Сохранить unique regression coverage.
+- **Validation:** V-MOBILE, V-DIFF; при API validation правках V-API и существующие controller validation cases. Browser media/search/moderation regression по затронутому поведению в подтверждённо безопасном окружении; без browser L06 остаётся NEEDS_VERIFICATION.
+- **STOP:** keyed prototype требует новых синхронизируемых owners или нарушает recycling/visual behavior; оставить L06 с evidence/blocker, выполнить независимые C07/C08. Не выдавать prototype failure за VERIFIED.
+- **Done/status:** каждый finding закрывается отдельно после своих проверок; не закрывать весь пакет при незавершённом L06. Итог G + удалённые owners/helpers, replacement APIs, before/after scenarios и ограничения.
 
 ## 6. Полная coverage matrix
 
@@ -1076,10 +1097,13 @@ Evidence всех новых findings: [дополнительный аудит]
 | A06 | Несколько владельцев profile query policy и session generation | P2 / HIGH | W6 → R33 | DECISION_REQUIRED | R31/R32; выбор ownership | key/options/writer inventory, без заявления runtime race |
 | L05 | Admin media вручную ведёт request lifecycle | P3 / HIGH | W4 → R34 | BLOCKED | R08; решение R33 и необходимые prerequisites | useAdminObjectUrl production lifecycle; semantic comparison pending |
 | T06 | Дублированный harness и пропущенная parent/achievement граница | P2 / HIGH | W2/W7 → R32, R28 | QUEUED | R31/R32 прежде cleanup | Existing suites/mocks inventory; timings не измерены |
+| C07 | Admin productAction дублирует mutation variables | P3 / HIGH | W4 → R35 | QUEUED | Проверить R02 на base | 69c4aff consumers + Query Core 5.101.2 source |
+| C08 | Search helpers переупаковывают flags/timer; duplicated Zod parsing | P3 / HIGH | W4 → R35 | QUEUED | Повторный consumer inventory | Static paths; 3 files / 9 helper tests baseline passed |
+| L06 | Image uri reset вручную синхронизирует несколько состояний | P3 / MEDIUM | W4 → R35 | QUEUED | Component prototype с сохранением retry semantics | Static lifetime analysis; runtime equivalence ещё не проверена |
 
-**TOTAL FINDINGS: 35**
+**TOTAL FINDINGS: 38**
 
-**ASSIGNED: 35**
+**ASSIGNED: 38**
 
 **BLOCKED/DECISION: 10 — 8 требуют решения, T04 частично зависит от решений, L05 заблокирован prerequisites**
 
