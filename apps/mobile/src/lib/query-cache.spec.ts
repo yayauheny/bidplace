@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   authKeys,
+  canWritePrivateCache,
   categoryKeys,
   clearAuthenticatedSession,
   clearAuthScopedDataExceptSession,
+  currentAuthEpoch,
   isAuthScopedQueryKey,
+  replaceAuthenticatedSession,
 } from './query-cache';
 
 describe('query cache auth boundaries', () => {
@@ -64,5 +67,50 @@ describe('query cache auth boundaries', () => {
     });
     expect(queryClient.getQueryData(['user', 'profile'])).toBeUndefined();
     expect(queryClient.getQueryData(['seller', 'products'])).toBeUndefined();
+  });
+
+  it('closes private writes before cleanup awaits and drops a restored profile', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+    queryClient.setQueryData(['seller', 'profile'], { city: 'Minsk' });
+    queryClient.setQueryData(['products', 'list'], { page: 1 });
+    const started = currentAuthEpoch(queryClient);
+    expect(canWritePrivateCache(queryClient, started)).toBe(true);
+
+    let resolveRead: (value: { city: string }) => void = () => undefined;
+    const reading = queryClient.fetchQuery({
+      queryKey: authKeys.session,
+      queryFn: () =>
+        new Promise((resolve) => {
+          resolveRead = resolve;
+        }),
+    });
+    const clearing = clearAuthenticatedSession(queryClient);
+    expect(canWritePrivateCache(queryClient, started)).toBe(false);
+    expect(canWritePrivateCache(queryClient)).toBe(false);
+    resolveRead({ city: 'Late A' });
+    await Promise.allSettled([reading, clearing]);
+
+    expect(queryClient.getQueryData(authKeys.session)).toBeNull();
+    expect(queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(queryClient.getQueryData(['products', 'list'])).toEqual({ page: 1 });
+    expect(canWritePrivateCache(queryClient, started)).toBe(false);
+  });
+
+  it('keeps a newer published session when an older retirement finishes late', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+    queryClient.setQueryData(['seller', 'profile'], { city: 'A' });
+    const logout = clearAuthenticatedSession(queryClient);
+    const login = replaceAuthenticatedSession(queryClient, { id: 'user-b' });
+    await Promise.all([logout, login]);
+
+    expect(queryClient.getQueryData(authKeys.session)).toEqual({ id: 'user-b' });
+    expect(queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    expect(canWritePrivateCache(queryClient)).toBe(true);
   });
 });

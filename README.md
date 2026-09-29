@@ -127,7 +127,7 @@ pnpm docker:up
 pnpm verify
 ```
 
-`pnpm verify` выполняет `db:generate`, `typecheck`, `lint`, `test:unit`, `test:ops`, E2E database fence, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
+`pnpm verify` выполняет `typecheck` (включая Turbo `database#generate`), `lint`, `test:unit`, `test:ops`, E2E database fence, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
 
 Операционный runbook (deploy, backup, restore drill): [`docs/ops/00-RELEASE-AND-BACKUP.md`](docs/ops/00-RELEASE-AND-BACKUP.md).
 
@@ -169,7 +169,7 @@ ALLOW_DESTRUCTIVE_DEMO_SEED=true pnpm db:reset:demo
 
 Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
 
-Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Перед typecheck или build database package выполните `pnpm --filter @bidplace/database generate`; database build выполняет генерацию автоматически.
+Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Turbo task `generate` создаёт client один раз перед `build`, `typecheck` и `test`. Для прямого запуска package scripts сначала выполните `pnpm db:generate` или `pnpm exec turbo run build --filter=@bidplace/database`.
 
 ## Принципы разработки
 

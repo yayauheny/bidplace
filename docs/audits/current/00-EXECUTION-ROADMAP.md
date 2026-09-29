@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; scopes R05–R29 не запущены.
+**Сохранён:** 2026-09-29. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION`, включая две коррекции review; scopes R08–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -295,6 +295,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; `product-creation-wizard.spec.ts` и focused browser race scenario.
 - **STOP:** необходима переработка history ownership — R25.
 - **Done/status:** D04/T04 → `PARTIAL` до R06.
+- **Actual:** Реализовано вместе с R06 и R07 на `fix/owner-editor-state`. Коррекция 2026-09-29 оставляет guard включённым на время save-before-transition, снимает lock после submit и не пускает вторую ordinary-запись. Вторая коррекция не продолжает submit после смены сессии и открывает редактирование только по более новой editing revision. Третья коррекция не считает промежуточный snapshot сохранения новым решением модератора. D04 не `VERIFIED`: browser checks не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
 - **Отчёт:** G с временной последовательностью regression scenario.
 
 ### R06. Сохранение профиля не должно стирать новые поля или фото
@@ -315,6 +316,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; profile/revision browser scenarios.
 - **STOP:** требуется новый upload protocol либо изменение server contract.
 - **Done/status:** D04 → `VERIFIED` после R05+R06; T04 остаётся составным.
+- **Actual:** D04 → `NEEDS_VERIFICATION`. Обе формы сверены со snapshot. Коррекция 2026-09-29 не применяет ответ предыдущей сессии к профилю, фото или переходу новой сессии. Вторая коррекция не переносит выбранное фото или изображение работы в следующую сессию. Третья коррекция не открывает форму по snapshot сохранения. Chromium/WebKit не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
 - **Отчёт:** G, отдельно fields и photo evidence.
 
 ### R07. Единые query keys и invalidation для owner Work
@@ -335,6 +337,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; cabinet/editor browser scenario.
 - **STOP:** невозможно определить owner ресурса без изменения API.
 - **Done/status:** D05 → `VERIFIED`.
+- **Actual:** D05 → `NEEDS_VERIFICATION`. Cabinet обновляется по реальным owner keys в unit-тесте. Коррекция 2026-09-29 не даёт чтению профиля или работ записать private cache без текущей сессии. Вторая коррекция не даёт старому detail откатить более новое решение модератора. Третья коррекция отменяет detail reads, начатые до submit, и не пишет `{ product }` поверх envelope. Browser scenario не запускался. См. evidence R05–R07.
 - **Отчёт:** G с mutation→key matrix.
 
 ### R08. Протянуть cancellation до fetch
@@ -942,6 +945,34 @@ remaining limitations: contracts and database have no lint script. A clean check
 blocked-by: none
 ```
 
+### R05–R07 evidence
+
+```text
+scope: R05, R06, R07 as one package with separate commits and one review, plus four 2026-09-29 corrections of review findings
+finding IDs: D04, D05; save and owner-cache seams of T04
+status: NEEDS_VERIFICATION
+base SHA: 8e0dee2e0db20150542ff93375ceb2c1bbbee8d6
+correction base: dd1cffb82724c571c214042f21479645cb800dcd
+second correction base: dd4d7bc
+third correction base: 69c4aff
+fourth correction base: 7655d133c4c1b58000f956034e96d1279ac7f5bd
+commits: R05 5d9693d; R06 64b12d6; R07 dd1cffb; correction 8d41397 session, a502090 route guard, ac29a19 submit lock, 4fed821 save exclusion, fb37cf9 profile read; second correction af13a97 profile photo, 6cbb56a work submit and revision hold; third correction 7655d13 keeps the moderation hold after an intermediate save; fourth correction is the child of 7655d13 that closes private writes before session retirement awaits
+changed contracts: none. Product and profile write responses, revision transitions, and publication are unchanged. Submit still does not copy { product } over the detail envelope.
+tests/scenarios: Before the work fix, an ordinary save reset the title to the response and dropped text typed after the snapshot. After it, that text stays dirty, an untouched technique takes the normalized response, a field that was dirty only before send becomes clean, editing back to the baseline clears dirty, create then the next save updates the new id, a failed save keeps the text and retries, submit locks edits and a failed save does not submit or navigate, a refetch keeps a local edit, and a cleared session does not refetch the private product. Before the profile fix, the city typed during save was reset to Minsk. After it, that city stays dirty, an untouched discipline takes normalization, a saved dirty city becomes clean, a photo chosen during the save is sent by the next save, an older picker result does not replace a newer one, a failed save keeps the text, and a failed save-before-submit does not submit. R03 submit and R30 logout specs stayed green. Before the cabinet fix, a retained cabinet stayed on «Черновик» and the empty cover after a work save. After it, the same mounted cabinet shows «На модерации», the normalized title, the moderation message, and the cover. A public portfolio-works query is not refetched. A cleared session does not refetch the cabinet. Correction before/after, on production screens with a real QueryClient: a save from account A replaced B's profile and work after clearAuthenticatedSession and login B, including the same account logging in again, and a profile step continued; after the correction the cached profile, form, and route stay on B. During a delayed dirty-work save the route guard became false; after the correction a second removal stays prevented, navigation happens once after success, and a failed save does not navigate. After a successful work submit the title stayed locked when a newer CHANGES_REQUESTED arrived, and creation Close stayed disabled; after the correction Close is enabled, Save/Submit stay closed on the stale DRAFT, and CHANGES_REQUESTED or REJECTED can be edited. A failed post-submit refetch no longer leaves the transition lock set. Two ordinary saves plus submit in one turn sent three updates; after the correction one update is sent, typed text is kept, and the next save sends that text. A route removal during that ordinary save does not navigate. Second correction, on dd4d7bc before the fix: a profile picker and a late blob read from account A were saved by the next login, including the same account; a work image picker and a late blob read uploaded into the next session; a delayed work update still called submitProduct after logout and login; a resubmit from CHANGES_REQUESTED or REJECTED reopened when the refetch was the same revision; a newer APPROVED revision left the title disabled. After the fix those eleven regressions pass. Save and Submit stay closed on the submitted revision. A newer APPROVED, CHANGES_REQUESTED, or REJECTED editing revision opens editing even when the parent updatedAt does not move. A later older detail does not replace that decision. Previous R03, R30, route-guard, and save-exclusion regressions stayed green. Third correction, on 69c4aff before the fix: after CHANGES_REQUESTED or REJECTED, a detail read started before submit and resolved with the same status and a newer revision updatedAt made «Повторно отправить на модерацию» available again. After the fix that read is cancelled, its body is not applied, and the form stays locked through the later pending detail. A subsequent newer decision of the same status opens editing. The post-submit floor comes from the settled detail and the first trusted read after submit, not from the pre-save timestamp. Confirmed pending stays locked. A failed refetch still releases Close. A session change still drops the previous operation. Fourth correction, on 7655d13 before the fix: SellerProfileScreen save onSuccess restored ['seller','profile'] with city Late A after clearAuthenticatedSession had removed private queries and before it published session=null; that profile remained after cleanup finished. After the fix the same callback still completes, session is null, and the private profile is absent. Private writes are closed on the existing auth epoch before the first await. An in-flight session read does not leave an authenticated session. A newer replaceAuthenticatedSession is not erased by the older clear. Public ['products','list'] stays. Rejected server logout still clears the local session. Previous profile, work, picker, and navigation regressions stayed green.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks) on Node v22.20.0
+  pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (109 files, 492 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
+  git diff --check → 0
+  Chromium work/profile/cabinet scenarios → NOT RUN
+  WebKit work/profile/cabinet scenarios → NOT RUN
+runtime environment: Node v22.20.0, matching root engines >=22 <23. prisma migrate reset was not run. Disposable bidplace_e2e was not prepared.
+evidence links: apps/mobile/src/lib/query-cache.ts; apps/mobile/src/lib/query-cache.spec.ts; apps/mobile/src/lib/use-private-cache-epoch.ts; apps/mobile/src/providers/auth-provider.tsx; apps/mobile/src/hooks/use-seller-capability.ts; apps/mobile/src/features/sellers/product-draft-screen.tsx; apps/mobile/src/features/sellers/product-draft-state.ts; apps/mobile/src/features/sellers/product-draft-route-guard.spec.ts; apps/mobile/src/features/sellers/product-draft-submit-lifecycle.spec.ts; apps/mobile/src/features/sellers/product-draft-save-race.spec.ts; apps/mobile/src/features/sellers/seller-profile-screen.tsx; apps/mobile/src/features/sellers/seller-profile-logout.spec.ts; apps/mobile/src/features/sellers/seller-profile-submit.spec.ts; apps/mobile/src/features/sellers/author-cabinet-screen.tsx
+remaining limitations: Chromium and WebKit were not run, so D04 and D05 are not VERIFIED. T04 stays PARTIAL. D01, D02, D03, D08, and T03 were not changed. History ownership was not rewritten.
+blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1009,8 +1040,8 @@ blocked-by: none
 | D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | Current R02 evidence: NEEDS_VERIFICATION. Browser media scenario NOT RUN. |
 | D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.             |
 | D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
-| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | E0/E1; delayed-response regressions                                            |
-| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | E0/E1; retained cabinet scenario                                               |
+| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
+| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
 | D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
@@ -1033,7 +1064,7 @@ blocked-by: none
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | VERIFIED           | —                                                            | Current R04 evidence: discovery, database smoke, clean dist                    |
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
-| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; R03 submit UI is NEEDS_VERIFICATION; queue/save/S3/visibility открыты |
+| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; queue/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
 
 **TOTAL FINDINGS: 29**

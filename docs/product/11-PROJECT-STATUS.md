@@ -5,6 +5,103 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Owner editor private cache during session retirement
+
+- `Needs verification` (mobile web): session retirement closes private cache
+  writes before the first async gap. A profile save that finishes during
+  cancel, after private queries are removed, or before the anonymous session
+  is published does not restore `['seller','profile']`. After cleanup the
+  session is null. A newer login published during an older retirement stays.
+  An in-flight session read does not leave an authenticated session. Public
+  catalog cache stays. A rejected server logout still clears the local session.
+- Coverage: `seller-profile-logout.spec.ts` and `query-cache.spec.ts`. Previous
+  profile, work, session, picker, and navigation specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts, refresh identity, and product route lifetime are unchanged.
+
+## 2026-09-29 — Owner editor moderation hold after an intermediate save
+
+- `Needs verification` (mobile web): after a confirmed resubmit, a detail read
+  that started before or during save→submit does not reopen the form. An
+  intermediate `CHANGES_REQUESTED` or `REJECTED` snapshot with a newer revision
+  `updatedAt` stays locked. The hold floor is the settled editing revision
+  after submit, then the first trusted post-submit detail; it is not the
+  pre-save timestamp. Confirmed pending does not reopen Save or Submit. A later
+  `APPROVED`, `CHANGES_REQUESTED`, or `REJECTED` revision does. An older detail
+  does not roll that decision back. A failed reconciliation keeps the hold and
+  still releases Close. A session change drops the previous operation's detail
+  reads. Update and submit responses are still `{ product }` and are not
+  written over the detail envelope. Parent and revision clocks are not compared.
+- Coverage: `product-draft-submit-lifecycle.spec.ts` and
+  `product-draft-state.spec.ts`. Previous session, picker, route-guard, and
+  save-exclusion specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts and revision transitions are unchanged.
+
+## 2026-09-29 — Owner editor picker, submit continuation, and moderation freshness
+
+- `Needs verification` (mobile web): a profile photo or work image selected
+  before logout is not written into the next session, including a late file
+  read and a repeated login of the same account. A work save that resolves
+  after logout does not call submit. After a confirmed resubmit, the same
+  changes-requested or rejected revision stays locked. A newer editing
+  revision that is approved, changes-requested, or rejected can be edited.
+  Freshness uses that revision's id, version, and updatedAt. A late older
+  detail does not replace a newer decision, and `{ product }` is not written
+  over the detail envelope. Close stays available. A failed refetch still
+  offers retry.
+- Coverage: `seller-profile-submit.spec.ts`,
+  `product-draft-submit-lifecycle.spec.ts`, and `product-draft-state.spec.ts`.
+  Previous session, route-guard, and save-exclusion specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts and revision transitions are unchanged.
+
+## 2026-09-29 — Owner editor session, leave guard, and save exclusion
+
+- `Needs verification` (mobile web): a private profile or work response is
+  applied only for the session that started it. Logout and a later login,
+  including the same account, leave the new profile, work, form, and photo
+  selection unchanged, and do not continue a step or submit. While a dirty work
+  is saving before a route change, external removal stays blocked; a second
+  request does not start another save, success navigates once, and failure
+  stays on the form. After a confirmed work submit, Save and Submit stay closed
+  on a stale draft, Close is available, and a newer changes-requested or
+  rejected decision can be edited. A failed refetch does not leave the
+  transition locked. Ordinary saves still allow typing, and a second save or
+  submit in the same turn does not send a competing write or navigate.
+- Coverage: `seller-profile-submit.spec.ts`, `seller-profile-logout.spec.ts`,
+  `product-draft-save-race.spec.ts`, `product-draft-route-guard.spec.ts`,
+  `product-draft-submit-lifecycle.spec.ts`, `author-cabinet-work-cache.spec.ts`,
+  and `account-logout-reachability.spec.ts`.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts, revision transitions, and navigation history are unchanged.
+
+## 2026-09-28 — Owner editor save and cabinet refresh
+
+- `Needs verification` (mobile web): ordinary save of a work or author profile
+  keeps values changed after the request snapshot and applies server
+  normalization only to fields that still match that snapshot. A newer profile
+  photo selected during the previous save stays unsaved. Save before a step
+  change, exit, or submit locks the form and does not continue after a failure.
+  The retained author cabinet reads `['seller','cabinet','works']` and refreshes
+  status and cover after a work create, update, submit, or image change.
+  `{ product }` and `{ ok: true }` are not written over the detail envelope.
+- Coverage: `product-draft-save-race.spec.ts`, `seller-profile-submit.spec.ts`,
+  `seller-profile-logout.spec.ts`, and `author-cabinet-work-cache.spec.ts`.
+- Browser verification: work creation/edit, profile/revision, and retained
+  cabinet scenarios were not run. Chromium and WebKit are NOT RUN.
+  `prepare.mjs` was not allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: server contracts, revision transitions, publication, public cache
+  invalidation on hide/unhide, navigation history, and required profile fields.
+
 ## 2026-09-28 — Workspace test discovery
 
 - `Implemented` (tooling only): contracts Vitest discovers `src/**/*.spec.ts`

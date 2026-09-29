@@ -14,6 +14,8 @@ import { infrastructurePageFetchStatus } from '../../components/shared/infrastru
 import { AppDialog, AppText, FormSection, ImagePlaceholder, PageHeader, PrimaryButton, ResilientRemoteImage, SecondaryButton } from '../../components/ui';
 import { logInfrastructureError } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
+import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { useAccountLogout } from '../auth/account-logout';
@@ -24,6 +26,7 @@ import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
 import { previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { persistedFieldOverrides } from './reconcile-saved-fields';
 
 const emptyFields: ProfileFields = { slug: '', fullName: '', discipline: '', country: 'BY', city: '', practice: '', socialLink: '', telegramUrl: '', instagramUrl: '', websiteUrl: '', publicEmail: '', shortDescription: '' };
 const sellerProfileQueryKey = ['seller', 'profile'] as const;
@@ -109,11 +112,53 @@ function toFields(profile: {
   return { slug: profile.slug, fullName: profile.fullName, discipline: profile.discipline ?? '', country: profile.country, city: profile.city ?? '', practice: profile.practice ?? '', socialLink: profile.socialLink ?? '', telegramUrl: profile.telegramUrl ?? '', instagramUrl: profile.instagramUrl ?? '', websiteUrl: profile.websiteUrl ?? '', publicEmail: profile.publicEmail ?? '', shortDescription: profile.shortDescription ?? '' };
 }
 
+function profileFieldsToUpdate(fields: ProfileFields) {
+  return {
+    slug: fields.slug,
+    fullName: fields.fullName,
+    discipline: fields.discipline.trim() || undefined,
+    country: fields.country,
+    city: fields.city.trim(),
+    practice: fields.practice.trim() || null,
+    socialLink: fields.socialLink.trim() || null,
+    telegramUrl: normalizeTelegram(fields.telegramUrl) ?? null,
+    instagramUrl: normalizeInstagram(fields.instagramUrl) ?? null,
+    websiteUrl: fields.websiteUrl.trim() || null,
+    publicEmail: fields.publicEmail.trim() || null,
+    shortDescription: fields.shortDescription.trim() || undefined,
+  };
+}
+
+function profileFieldsToCreate(fields: ProfileFields) {
+  return {
+    slug: fields.slug,
+    fullName: fields.fullName,
+    country: fields.country,
+    city: fields.city.trim(),
+  };
+}
+
+type ProfileSaveVariables = {
+  fields: ProfileFields;
+  photo: Blob | null;
+  authEpoch: number;
+};
+
 function useProfileData() {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: sellerProfileQueryKey,
-    queryFn: () => api.sellers.getMyProfile(),
+    queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
+      const result = await api.sellers.getMyProfile();
+      if (!canWritePrivateCache(queryClient, epoch)) {
+        const current = queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey);
+        if (current) return current;
+        throw new Error('Private cache is closed');
+      }
+      return result;
+    },
     retry: false,
     structuralSharing: keepConfirmedPendingProfile,
   });
@@ -138,20 +183,49 @@ export function SellerProfileScreen() {
   const saveInFlight = useRef(false);
   const logoutStarted = useRef(false);
   const revisionSubmitInFlight = useRef(false);
+  const transitionLock = useRef(false);
+  const photoSelection = useRef(0);
+  const sessionOperation = useRef(0);
+  const photoBlobRef = useRef<Blob | null>(null);
+  const hydratedProfileToken = useRef<string | null>(null);
+  const [inputsLocked, setInputsLocked] = useState(false);
   const [revisionSubmitActive, setRevisionSubmitActive] = useState(false);
   const accountLogout = useAccountLogout();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const seenAuthEpoch = useRef(authEpoch);
+  const forceProfileHydration = useRef(false);
   const hydrationToken = editingRevision?.updatedAt ?? profile?.updatedAt;
   const requestedStep = resolveSellerProfileStep(step, profile);
   const isApplicationWizard = !profile || ['DRAFT', 'CHANGES_REQUESTED', 'REJECTED'].includes(profile.status);
   const profileStep = isApplicationWizard ? requestedStep : 1;
   const editable = isSellerProfileFormEditable(profile, editingRevision);
   const canSubmitRevision = canSubmitSellerProfileRevision(profile, editingRevision);
-  const applicationPhoto = useQuery({ queryKey: ['seller', 'application-photo', profile?.id, hydrationToken], queryFn: () => api.portfolio.getAuthorApplicationPhoto(), enabled: Boolean(profile) && !photoBlob, retry: false });
+  const applicationPhoto = useQuery({
+    queryKey: ['seller', 'application-photo', profile?.id, hydrationToken],
+    queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
+      const photo = await api.portfolio.getAuthorApplicationPhoto();
+      if (!canWritePrivateCache(queryClient, epoch)) {
+        throw new Error('Private cache is closed');
+      }
+      return photo;
+    },
+    enabled: Boolean(profile) && !photoBlob,
+    retry: false,
+  });
+
+  const fieldsEditable = editable && !inputsLocked;
 
   useEffect(() => {
     if (!profile) return;
-    if (!form.formState.isDirty) form.reset(toFields(profile));
-  }, [form, hydrationToken, profile]);
+    const token = hydrationToken ?? null;
+    const forced = forceProfileHydration.current;
+    if (!token || hydratedProfileToken.current === token) return;
+    if (!forced && form.formState.isDirty) return;
+    forceProfileHydration.current = false;
+    form.reset(toFields(profile));
+    hydratedProfileToken.current = token;
+  }, [form, form.formState.isDirty, hydrationToken, profile]);
 
   useEffect(() => {
     if (!profile || photoBlob || !applicationPhoto.data) return;
@@ -174,29 +248,73 @@ export function SellerProfileScreen() {
   }, [intro, profile, router]);
 
   const invalidate = () => {
+    if (!canWritePrivateCache(queryClient)) return;
     void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
   };
-  const payload = () => ({ slug: fields.slug, fullName: fields.fullName, discipline: fields.discipline.trim() || undefined, country: fields.country, city: fields.city.trim(), practice: fields.practice.trim() || null, socialLink: fields.socialLink.trim() || null, telegramUrl: normalizeTelegram(fields.telegramUrl) ?? null, instagramUrl: normalizeInstagram(fields.instagramUrl) ?? null, websiteUrl: fields.websiteUrl.trim() || null, publicEmail: fields.publicEmail.trim() || null, shortDescription: fields.shortDescription.trim() || undefined });
-  const createPayload = () => ({ slug: fields.slug, fullName: fields.fullName, country: fields.country, city: fields.city.trim() });
+  const beginLockedTransition = () => {
+    if (transitionLock.current) return false;
+    transitionLock.current = true;
+    setInputsLocked(true);
+    return true;
+  };
+  const endLockedTransition = () => {
+    transitionLock.current = false;
+    setInputsLocked(false);
+  };
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    sessionOperation.current += 1;
+    photoSelection.current += 1;
+    saveInFlight.current = false;
+    revisionSubmitInFlight.current = false;
+    leaving.current = false;
+    logoutStarted.current = false;
+    endLockedTransition();
+    setRevisionSubmitActive(false);
+    photoBlobRef.current = null;
+    setPhotoBlob(null);
+    setPhotoUri(null);
+    forceProfileHydration.current = true;
+  }, [authEpoch]);
+  const rememberSavedProfile = (saved: SellerProfileResponse, submitted: ProfileFields) => {
+    const persisted = toFields(saved.sellerProfile);
+    const overrides = persistedFieldOverrides(submitted, form.getValues(), persisted);
+    form.reset(persisted);
+    for (const field of Object.keys(overrides) as Array<keyof ProfileFields>) {
+      const value = overrides[field];
+      if (value === undefined) continue;
+      form.setValue(field, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    }
+  };
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (variables: ProfileSaveVariables) => {
       const current = queryClient.getQueryData<SellerProfileResponse>(sellerProfileQueryKey);
-      if (current?.sellerProfile) return api.sellers.updateProfile(payload(), photoBlob ?? undefined);
-      if (!photoBlob) throw new Error('Profile photo is required');
-      return api.sellers.createProfile(createPayload(), photoBlob);
+      if (current?.sellerProfile) return api.sellers.updateProfile(profileFieldsToUpdate(variables.fields), variables.photo ?? undefined);
+      if (!variables.photo) throw new Error('Profile photo is required');
+      return api.sellers.createProfile(profileFieldsToCreate(variables.fields), variables.photo);
     },
-    onSuccess: (saved) => {
+    onSuccess: (saved, variables) => {
+      if (!canWritePrivateCache(queryClient, variables.authEpoch)) return;
+      rememberSavedProfile(saved, variables.fields);
+      if (photoBlobRef.current === variables.photo) {
+        photoBlobRef.current = null;
+        setPhotoBlob(null);
+      }
       queryClient.setQueryData(sellerProfileQueryKey, saved);
-      form.reset(toFields(saved.sellerProfile));
-      setPhotoBlob(null);
+      hydratedProfileToken.current = saved.editingRevision?.updatedAt ?? saved.sellerProfile.updatedAt;
       invalidate();
     },
   });
   const advanceMutation = useMutation({
-    mutationFn: () => api.portfolio.advanceAuthorApplication(),
-    onSuccess: (saved) => {
+    mutationFn: async (epoch: number) => ({
+      saved: await api.portfolio.advanceAuthorApplication(),
+      epoch,
+    }),
+    onSuccess: ({ saved, epoch }) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
       queryClient.setQueryData(sellerProfileQueryKey, (current: SellerProfileResponse | undefined) => current ? { ...current, sellerProfile: { ...current.sellerProfile, applicationStage: saved.application.applicationStage } } : current);
@@ -204,14 +322,27 @@ export function SellerProfileScreen() {
   });
   const submitMutation = useMutation({ mutationFn: () => api.portfolio.submitAuthorApplication() });
 
-  const save = async (source?: 'revision-submit') => {
+  const save = async (source?: 'revision-submit' | 'transition') => {
     if (logoutStarted.current || saveInFlight.current) return null;
     if (revisionSubmitInFlight.current && source !== 'revision-submit') return null;
+    if (transitionLock.current && source !== 'revision-submit') return null;
+    if (source === 'transition' && !beginLockedTransition()) return null;
+    const variables: ProfileSaveVariables = {
+      fields: form.getValues(),
+      photo: photoBlobRef.current,
+      authEpoch: currentAuthEpoch(queryClient),
+    };
+    const operation = sessionOperation.current;
     saveInFlight.current = true;
     try {
-      return await saveMutation.mutateAsync();
+      const saved = await saveMutation.mutateAsync(variables);
+      if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, variables.authEpoch)) return null;
+      return saved;
+    } catch (error) {
+      if (source === 'transition' && sessionOperation.current === operation) endLockedTransition();
+      throw error;
     } finally {
-      saveInFlight.current = false;
+      if (sessionOperation.current === operation) saveInFlight.current = false;
     }
   };
   const submitRevision = async () => {
@@ -220,44 +351,83 @@ export function SellerProfileScreen() {
       logoutStarted.current ||
       saveInFlight.current ||
       leaving.current ||
-      accountLogout.busy
+      accountLogout.busy ||
+      transitionLock.current
     ) {
       return;
     }
+    if (!beginLockedTransition()) return;
+    const submitEpoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
+    const stillOwnsSubmit = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, submitEpoch);
     try {
       const saved = await save('revision-submit');
-      if (!saved) return;
+      if (!saved || !stillOwnsSubmit()) return;
       const submitted = await submitMutation.mutateAsync();
+      if (!stillOwnsSubmit()) return;
       await queryClient.cancelQueries({ queryKey: sellerProfileQueryKey }, { revert: false });
+      if (!stillOwnsSubmit()) return;
       queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
         withSubmittedRevision(current, submitted),
       );
+      hydratedProfileToken.current = submitted.editingRevision?.updatedAt ?? hydratedProfileToken.current;
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
       await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-submit');
     } finally {
-      revisionSubmitInFlight.current = false;
-      setRevisionSubmitActive(false);
+      if (sessionOperation.current === operation) {
+        revisionSubmitInFlight.current = false;
+        setRevisionSubmitActive(false);
+        endLockedTransition();
+      }
     }
   };
   const continueFromStep = async (visibleStep: 2 | 3) => {
-    const saved = await save();
-    if (!saved) return;
-    if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
-      await advanceMutation.mutateAsync();
+    if (transitionLock.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    const stillOwnsStep = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, epoch);
+    try {
+      const saved = await save('transition');
+      if (!saved || !stillOwnsStep()) return;
+      if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
+        await advanceMutation.mutateAsync(epoch);
+        if (!stillOwnsStep()) return;
+      }
+      router.push(`/profile?step=${visibleStep + 1}`);
+    } catch (error) {
+      logInfrastructureError(error, 'seller-profile-step');
+    } finally {
+      if (sessionOperation.current === operation) endLockedTransition();
     }
-    router.push(`/profile?step=${visibleStep + 1}`);
   };
   const choosePhoto = async () => {
-    if (!editable) return;
+    if (!fieldsEditable || transitionLock.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    const selection = photoSelection.current + 1;
+    photoSelection.current = selection;
+    const stillOwnsPhoto = () =>
+      selection === photoSelection.current &&
+      !transitionLock.current &&
+      sessionOperation.current === operation &&
+      canWritePrivateCache(queryClient, epoch);
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
+    if (!stillOwnsPhoto()) return;
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
-    setPhotoUri(asset.uri); setPhotoFailed(false); setPhotoBlob(await fetch(asset.uri).then((response) => response.blob()));
+    const blob = await fetch(asset.uri).then((response) => response.blob());
+    if (!stillOwnsPhoto()) return;
+    photoBlobRef.current = blob;
+    setPhotoUri(asset.uri);
+    setPhotoFailed(false);
+    setPhotoBlob(blob);
   };
   const errors = getProfileFieldErrors(fields);
   const hasRequiredDetails = Boolean(fields.slug.trim() && fields.fullName.trim() && fields.country.trim() && fields.city.trim() && (profile || photoBlob));
@@ -273,22 +443,26 @@ export function SellerProfileScreen() {
       ? 'Заполнили первый шаг — сохраним его как черновик перед выходом.'
       : 'Данные первого шага ещё не сохранены и будут потеряны при выходе.';
   const exit = async () => {
-    if (revisionSubmitInFlight.current || saveInFlight.current) return;
+    if (revisionSubmitInFlight.current || saveInFlight.current || transitionLock.current) return;
     if (leaving.current || logoutStarted.current || accountLogout.busy) return;
     leaving.current = true;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) {
       try {
-        const saved = await save();
-        if (!saved) {
-          leaving.current = false;
+        const saved = await save('transition');
+        if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
+          if (sessionOperation.current === operation) leaving.current = false;
           return;
         }
       } catch (error) {
-        leaving.current = false;
+        if (sessionOperation.current === operation) leaving.current = false;
         logInfrastructureError(error, 'seller-profile-exit');
         return;
       }
     }
+    if (sessionOperation.current !== operation) return;
+    endLockedTransition();
     if (exitIntent === 'logout') {
       logoutStarted.current = true;
       await accountLogout.logout();
@@ -297,16 +471,25 @@ export function SellerProfileScreen() {
     router.replace('/');
   };
   const goToPreviousStep = async () => {
-    if (revisionSubmitInFlight.current || profileStep <= 1) return;
+    if (transitionLock.current || revisionSubmitInFlight.current || profileStep <= 1) return;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (shouldSaveBeforeSellerProfileBack(form.formState.isDirty, Boolean(photoBlob))) {
       if (!canSave) return;
-      const saved = await save();
-      if (!saved) return;
+      try {
+        const saved = await save('transition');
+        if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
+      } catch (error) {
+        logInfrastructureError(error, 'seller-profile-step');
+        return;
+      }
     }
+    if (sessionOperation.current !== operation) return;
     router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
+    endLockedTransition();
   };
   const requestExit = (intent: 'home' | 'logout') => {
-    if (revisionSubmitInFlight.current || saveInFlight.current || leaving.current || logoutStarted.current || accountLogout.busy) return;
+    if (transitionLock.current || revisionSubmitInFlight.current || saveInFlight.current || leaving.current || logoutStarted.current || accountLogout.busy) return;
     if (!form.formState.isDirty && !photoBlob) {
       if (intent === 'logout') {
         logoutStarted.current = true;
@@ -318,6 +501,10 @@ export function SellerProfileScreen() {
     }
     setExitIntent(intent);
     setExitOpen(true);
+  };
+  const updateField = (key: keyof ProfileFields, value: string) => {
+    if (transitionLock.current) return;
+    form.setValue(key, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
   };
   const introOpen = intro === '1' && missingProfile;
   const exitDialog = <AppDialog open={exitOpen} title="Выйти из заявки?" description={profile ? (form.formState.isDirty || photoBlob ? 'Последние изменения ещё не сохранены. Сохранить их перед выходом?' : 'Ваш черновик сохранён. Вы сможете продолжить позже.') : exitDescription} onClose={() => setExitOpen(false)}>
@@ -338,29 +525,42 @@ export function SellerProfileScreen() {
         {profile ? <AppText role="caption" tone={profile.status === 'APPROVED' ? 'success' : profile.status === 'REJECTED' ? 'danger' : 'secondary'}>{presentEnum(profile.status, sellerStatusLabels, 'Неизвестный статус')}</AppText> : null}
         </View>
         {introOpen ? null : <AccountLogoutButton width="content" pending={saveMutation.isPending || accountLogout.busy || revisionSubmitActive} onPress={() => requestExit('logout')} />}
-        {isApplicationWizard ? <SecondaryButton label="Закрыть" disabled={revisionSubmitActive} onPress={() => requestExit('home')} /> : null}
+        {isApplicationWizard ? <SecondaryButton label="Закрыть" disabled={revisionSubmitActive || inputsLocked} onPress={() => requestExit('home')} /> : null}
       </View>
       {isApplicationWizard ? <SellerProfileCreationStepSelector profileStep={profileStep} /> : null}
-      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending || accountLogout.busy || revisionSubmitActive} onPress={() => void goToPreviousStep()} /> : null}
+      {isApplicationWizard && profileStep > 1 ? <SecondaryButton label="Назад" width="block" loading={saveMutation.isPending} disabled={saveMutation.isPending || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void goToPreviousStep()} /> : null}
       {(!isApplicationWizard || profileStep === 1) ? <FormPageColumns sidebarFirstOnCompact sidebar={<FormSection title="Фото профиля" description="Квадратный портрет или логотип автора.">
         {preview && !photoFailed ? photoBlob ? <LocalPreviewImage source={{ uri: preview }} resizeMode="cover" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} onError={() => setPhotoFailed(true)} /> : <ResilientRemoteImage uri={preview} component="AuthorPhoto" accessibilityLabel="Фото профиля" fallbackLabel="Фото профиля недоступно" style={{ width: '100%', aspectRatio: 1, borderRadius: designTokens.radius.image }} contentFit="cover" /> : <ImagePlaceholder ratio={1} label="Фото профиля недоступно или не выбрано" style={{ width: '100%', aspectRatio: 1 }} />}
-        <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!editable} width="block" onPress={() => void choosePhoto()} />
+        <SecondaryButton label={preview ? 'Изменить фото' : 'Добавить фото'} disabled={!fieldsEditable} width="block" onPress={() => void choosePhoto()} />
         {!profile ? <AppText role="bodySmall" tone="secondary">Фото обязательно для сохранения заявки.</AppText> : null}
       </FormSection>}>
-        <SellerProfileFormSteps profileStep={profileStep} showAllSteps={!isApplicationWizard} editable={editable} fields={fields} fieldErrors={errors} update={(key, value) => form.setValue(key, value, { shouldDirty: true })} />
-      </FormPageColumns> : <SellerProfileFormSteps profileStep={profileStep} showAllSteps={false} editable={editable} fields={fields} fieldErrors={errors} update={(key, value) => form.setValue(key, value, { shouldDirty: true })} />}
+        <SellerProfileFormSteps profileStep={profileStep} showAllSteps={!isApplicationWizard} editable={fieldsEditable} fields={fields} fieldErrors={errors} update={updateField} />
+      </FormPageColumns> : <SellerProfileFormSteps profileStep={profileStep} showAllSteps={false} editable={fieldsEditable} fields={fields} fieldErrors={errors} update={updateField} />}
       {(isApplicationWizard && profileStep === 4) ? <SellerProfileVerificationSection fields={fields} /> : null}
-      {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={editable} /> : null}
+      {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={fieldsEditable} /> : null}
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
-      {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy || revisionSubmitActive} onPress={() => void save().then((saved) => { if (saved) router.push('/profile?step=2'); })} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || accountLogout.busy || revisionSubmitActive} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}
-      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout || accountLogout.busy || revisionSubmitActive} onPress={() => void continueFromStep(3)} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void (async () => {
+        if (transitionLock.current) return;
+        const epoch = currentAuthEpoch(queryClient);
+        const operation = sessionOperation.current;
+        try {
+          const saved = await save('transition');
+          if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
+          router.push('/profile?step=2');
+        } catch (error) {
+          logInfrastructureError(error, 'seller-profile-step');
+        } finally {
+          if (sessionOperation.current === operation) endLockedTransition();
+        }
+      })()} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}
+      {isApplicationWizard && profileStep === 3 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || !hasRequiredAbout || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void continueFromStep(3)} label="Продолжить" width="block" /> : null}
       {isApplicationWizard && profileStep === 4 && editable ? <>
-        <PrimaryButton loading={saveMutation.isPending || revisionSubmitActive} disabled={!canSave || accountLogout.busy || revisionSubmitActive} onPress={() => void save()} label="Сохранить черновик" width="block" />
-        {canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending || revisionSubmitActive} disabled={revisionSubmitActive || saveMutation.isPending || submitMutation.isPending || !canSave || accountLogout.busy} onPress={() => void submitRevision()} label="Отправить на проверку" width="block" /> : null}
+        <PrimaryButton loading={saveMutation.isPending || revisionSubmitActive} disabled={!canSave || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void save().catch((error) => logInfrastructureError(error, 'seller-profile-save'))} label="Сохранить черновик" width="block" />
+        {canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending || revisionSubmitActive} disabled={revisionSubmitActive || saveMutation.isPending || submitMutation.isPending || !canSave || accountLogout.busy || inputsLocked} onPress={() => void submitRevision()} label="Отправить на проверку" width="block" /> : null}
       </> : null}
-      {!isApplicationWizard && editable ? <PrimaryButton loading={saveMutation.isPending || revisionSubmitActive} disabled={!canSave || accountLogout.busy || revisionSubmitActive} onPress={() => void save()} label="Сохранить" width="block" /> : null}
-      {!isApplicationWizard && canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending || revisionSubmitActive} disabled={revisionSubmitActive || saveMutation.isPending || submitMutation.isPending || !canSave || accountLogout.busy} onPress={() => void submitRevision()} label="Отправить на проверку" width="block" /> : null}
+      {!isApplicationWizard && editable ? <PrimaryButton loading={saveMutation.isPending || revisionSubmitActive} disabled={!canSave || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void save().catch((error) => logInfrastructureError(error, 'seller-profile-save'))} label="Сохранить" width="block" /> : null}
+      {!isApplicationWizard && canSubmitRevision ? <PrimaryButton loading={submitMutation.isPending || revisionSubmitActive} disabled={revisionSubmitActive || saveMutation.isPending || submitMutation.isPending || !canSave || accountLogout.busy || inputsLocked} onPress={() => void submitRevision()} label="Отправить на проверку" width="block" /> : null}
       {profile?.status === 'APPROVED' ? <Link href="/products/new" asChild><PrimaryButton label="Создать предмет" width="block" onPress={() => undefined} /></Link> : null}
       {saveMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось сохранить профиль</AppText> : null}
       {submitMutation.isError ? <AppText role="bodySmall" tone="danger">Не удалось отправить заявку: заполните обязательные поля и попробуйте снова.</AppText> : null}

@@ -2,7 +2,7 @@
   "name": "@bidplace/api",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter @bidplace/database build && nest start --watch",
+    "dev": "pnpm exec turbo run build --filter=@bidplace/database && nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
     "lint": "eslint .",

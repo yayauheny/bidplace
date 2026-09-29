@@ -1,8 +1,57 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-28
+Последнее обновление: 2026-09-29
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-29 — Owner editor moderation hold after an intermediate save
+
+- `Needs verification` (mobile web behavior): a detail read started before or
+  during work save→submit does not reopen Save or Submit. An intermediate
+  changes-requested or rejected snapshot with a newer revision timestamp stays
+  locked. Confirmed pending stays locked. A later approval, changes-requested,
+  or rejected revision opens editing. A late older snapshot does not replace
+  that decision. Close stays available after a failed refetch.
+- `Unchanged`: form layout, tokens, routes, server contracts, and the canonical
+  Pen file. Chromium and WebKit were not run. D04 and D05 remain needs
+  verification. T04 remains partial.
+
+## 2026-09-29 — Owner editor session ownership and moderation freshness
+
+- `Needs verification` (mobile web behavior): a photo or work image chosen in
+  the previous session is not applied after logout and login, including the
+  same account and a file read that finishes late. A work update that finishes
+  after the session changes does not continue into submit. After resubmit, a
+  stale changes-requested or rejected snapshot stays locked. A newer approval,
+  changes-requested, or rejected revision opens editing. A late older snapshot
+  does not replace that decision. Close stays available, and a failed refetch
+  still shows retry.
+- `Unchanged`: form layout, tokens, routes, server contracts, and the canonical
+  Pen file. Chromium and WebKit were not run.
+
+## 2026-09-29 — Owner editor leave guard and submit completion
+
+- `Needs verification` (mobile web behavior): leaving a dirty work stays
+  blocked until the in-flight save succeeds. A second leave does not save
+  again. After submit, Close is available and the stale draft does not reopen
+  Save or Submit. A newer changes-requested or rejected work can be edited.
+  Ordinary save still allows typing, and a repeated save does not send a second
+  request. A response from the previous session does not replace the new
+  profile or work.
+- `Unchanged`: form layout, tokens, routes, and the canonical Pen file.
+  Chromium and WebKit were not run.
+
+## 2026-09-28 — Owner editor save and cabinet refresh
+
+- `Needs verification` (mobile web behavior): an ordinary work or profile save
+  keeps text entered after that request was sent. Fields that did not change
+  after the snapshot take the server's normalized values. A photo chosen while
+  the previous profile save is in flight stays selected. Step changes, exit,
+  and submit lock input until the transition finishes and do not continue when
+  save fails. The open author cabinet refreshes that work's status, message,
+  and cover after the work is saved.
+- `Unchanged`: form layout, tokens, routes, and the canonical Pen file.
+  Chromium and WebKit were not run.
 
 ## 2026-09-28 — Approved author revision submit
 

@@ -7,6 +7,7 @@ import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { View } from 'react-native';
 
+import type { Product, ProductStatus, SellerProductDetailResponse } from '@bidplace/contracts';
 import { designTokens } from '@bidplace/design-tokens';
 
 import { AppShell, FormPageShell } from '../../components/layout';
@@ -27,11 +28,13 @@ import {
 import { isNotFoundError } from '../../errors';
 import { presentEnum, productStatusLabels } from '../../lib/presentation';
 import { useApiClient } from '../../providers/api-provider';
-import { categoryKeys } from '../../lib/query-cache';
+import { canWritePrivateCache, categoryKeys, currentAuthEpoch } from '../../lib/query-cache';
+import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
+import { persistedFieldOverrides } from './reconcile-saved-fields';
+import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftAboutStep } from './product-draft-about';
 import {
   emptyProductDraftFormValues,
-  persistProductDraftBeforeSubmit,
   productDraftFormSchema,
   productDraftRequiredErrors,
   productDraftToWriteRequest,
@@ -43,8 +46,12 @@ import { ProductDraftImagesStep } from './product-draft-images';
 import { ProductDraftReviewStep } from './product-draft-review';
 import {
   canOwnerEditProduct,
+  isNewerModerationDecision,
+  nextPostSubmitHold,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
+  shouldKeepCachedProductRevision,
+  type ProductRevisionIdentity,
 } from './product-draft-state';
 import { ProductDraftStoryStep } from './product-draft-story';
 import {
@@ -60,6 +67,21 @@ import {
 
 const productDraftHistoryGuardKey = '__bidplaceProductDraftGuard';
 
+type ProductSaveRequest = {
+  values: ProductDraftFormValues;
+  authEpoch: number;
+  generation: number;
+};
+
+type ProductSubmitRequest = {
+  id: string;
+  currentValues: ProductDraftFormValues;
+  authEpoch: number;
+  generation: number;
+};
+
+type TrustedRevision = ProductRevisionIdentity & { status: ProductStatus };
+
 export function ProductDraftScreen({
   productId,
   flow,
@@ -73,6 +95,8 @@ export function ProductDraftScreen({
   const router = useRouter();
   const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const authEpoch = usePrivateCacheEpoch(queryClient);
+  const seenAuthEpoch = useRef(authEpoch);
   const form = useForm<ProductDraftFormValues>({
     defaultValues: emptyProductDraftFormValues,
     resolver: zodResolver(productDraftFormSchema),
@@ -81,6 +105,17 @@ export function ProductDraftScreen({
   const values = form.watch();
   const hydratedProductId = useRef<string | null>(null);
   const hydratedUpdatedAt = useRef<string | null>(null);
+  const persistedProductId = useRef<string | null>(productId ?? null);
+  const transitionLock = useRef(false);
+  const saveInFlight = useRef(false);
+  const saveGeneration = useRef(0);
+  const imageSelection = useRef(0);
+  const sessionOperation = useRef(0);
+  const detailReads = useRef(0);
+  const ignoreDetailReadsBefore = useRef(0);
+  const holdFloor = useRef<ProductRevisionIdentity | null>(null);
+  const onTrustedDetail = useRef<(revision: TrustedRevision) => void>(() => undefined);
+  const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
   const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
   const browserNavigation = useRef<{
@@ -97,19 +132,64 @@ export function ProductDraftScreen({
   );
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
+  const [moderationHold, setModerationHold] = useState(false);
+  const [submittedRevision, setSubmittedRevision] = useState<ProductRevisionIdentity | null>(null);
+  const [trustedRevision, setTrustedRevision] = useState<TrustedRevision | null>(null);
+  onTrustedDetail.current = (revision) => {
+    setTrustedRevision((current) => {
+      if (
+        current &&
+        current.id === revision.id &&
+        current.version === revision.version &&
+        current.status === revision.status &&
+        current.updatedAt === revision.updatedAt
+      ) {
+        return current;
+      }
+      return revision;
+    });
+  };
 
   const categories = useQuery({
     queryKey: categoryKeys.all,
     queryFn: () => api.categories.list(),
   });
   const productDetail = useQuery({
-    queryKey: ['seller', 'product', productId],
-    queryFn: () => api.sellers.getProduct(productId!),
+    queryKey: productId
+      ? ownerWorkQueryKeys.detail(productId)
+      : ownerWorkQueryKeys.detailRoot,
+    queryFn: async ({ signal }) => {
+      detailReads.current += 1;
+      const readId = detailReads.current;
+      const epoch = currentAuthEpoch(queryClient);
+      const result = await api.sellers.getProduct(productId!);
+      const current = queryClient.getQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(productId!),
+      );
+      const staleRead =
+        signal.aborted || readId <= ignoreDetailReadsBefore.current;
+      if (!canWritePrivateCache(queryClient, epoch) || staleRead) {
+        if (current) return current;
+        throw new Error('Private cache is closed');
+      }
+      const committed =
+        current && shouldKeepCachedProductRevision(current, result) ? current : result;
+      if (ignoreDetailReadsBefore.current > 0 && committed.editingRevision) {
+        onTrustedDetail.current(committed.editingRevision);
+      }
+      return committed;
+    },
     enabled: Boolean(productId),
   });
   const existingProduct = productDetail.data?.product;
   const persistedRevisionUpdatedAt =
     productDetail.data?.editingRevision?.updatedAt;
+  const editingRevisionStatus = productDetail.data?.editingRevision?.status;
+  const productStatus = existingProduct?.status;
+  const editorStatus =
+    productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
+      ? editingRevisionStatus
+      : productStatus;
   const isCreationFlow = flow === 'creation' || !productId;
   const wizardDraft = createProductWizardDraft(existingProduct ?? null);
   const requestedStep = parseProductWizardStepParam(stepParam);
@@ -169,84 +249,184 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty]);
 
   useEffect(() => {
-    if (form.formState.isDirty || !pendingNavigation.current) return;
+    if (form.formState.isDirty || inputsLocked || !pendingNavigation.current) return;
     const navigate = pendingNavigation.current;
     pendingNavigation.current = null;
     navigate();
-  }, [form.formState.isDirty, pendingNavigationVersion]);
+  }, [form.formState.isDirty, inputsLocked, pendingNavigationVersion]);
+
+  const beginLockedTransition = () => {
+    if (transitionLock.current) return false;
+    transitionLock.current = true;
+    setInputsLocked(true);
+    return true;
+  };
+
+  const endLockedTransition = () => {
+    transitionLock.current = false;
+    setInputsLocked(false);
+  };
+
+  useEffect(() => {
+    if (seenAuthEpoch.current === authEpoch) return;
+    seenAuthEpoch.current = authEpoch;
+    sessionOperation.current += 1;
+    saveGeneration.current += 1;
+    imageSelection.current += 1;
+    detailReads.current += 1;
+    ignoreDetailReadsBefore.current = detailReads.current;
+    holdFloor.current = null;
+    saveInFlight.current = false;
+    endLockedTransition();
+    setModerationHold(false);
+    setSubmittedRevision(null);
+    setTrustedRevision(null);
+    setWizardSubmitted(false);
+    hydratedProductId.current = null;
+    hydratedUpdatedAt.current = null;
+  }, [authEpoch]);
+
+  const rememberSavedProduct = (
+    product: Product,
+    submitted: ProductDraftFormValues,
+  ) => {
+    persistedProductId.current = product.id;
+    const cached = queryClient.getQueryData<SellerProductDetailResponse>(
+      ownerWorkQueryKeys.detail(product.id),
+    );
+    hydratedProductId.current = product.id;
+    hydratedUpdatedAt.current =
+      cached?.editingRevision?.updatedAt ??
+      cached?.product.updatedAt ??
+      product.updatedAt;
+    const persisted = productToDraftFormValues(product);
+    const overrides = persistedFieldOverrides(
+      submitted,
+      form.getValues(),
+      persisted,
+    );
+    form.reset(persisted);
+    for (const field of Object.keys(overrides) as Array<
+      keyof ProductDraftFormValues
+    >) {
+      const value = overrides[field];
+      if (value === undefined) continue;
+      form.setValue(field, value, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    }
+  };
+
+  const invalidateSavedProduct = (savedProductId: string) =>
+    invalidateOwnerWorks(queryClient, savedProductId);
 
   const save = useMutation({
-    mutationFn: (currentValues: ProductDraftFormValues) =>
-      existingProduct
-        ? api.products.update(
-            existingProduct.id,
-            productDraftToWriteRequest(currentValues),
-          )
-        : api.products.create(productDraftToWriteRequest(currentValues)),
-    onSuccess: ({ product }) => {
-      form.reset(productToDraftFormValues(product));
-      hydratedProductId.current = product.id;
-      hydratedUpdatedAt.current = product.updatedAt;
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'products'] });
-      void queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', product.id],
-      });
+    mutationFn: ({ values }: ProductSaveRequest) => {
+      const id = persistedProductId.current;
+      const body = productDraftToWriteRequest(values);
+      return id ? api.products.update(id, body) : api.products.create(body);
+    },
+    onSuccess: ({ product }, request) => {
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      rememberSavedProduct(product, request.values);
+      void invalidateSavedProduct(product.id);
     },
   });
   const submit = useMutation({
-    mutationFn: ({
-      id,
-      currentValues,
-    }: {
-      id: string;
-      currentValues: ProductDraftFormValues;
-    }) =>
-      persistProductDraftBeforeSubmit(
-        () =>
-          api.products.update(id, productDraftToWriteRequest(currentValues)),
-        () => api.products.submit(id),
-      ),
-    onSuccess: async ({ product }) => {
-      form.reset(productToDraftFormValues(product));
-      hydratedProductId.current = product.id;
-      hydratedUpdatedAt.current = product.updatedAt;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'products'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['seller', 'product', product.id],
-        }),
-      ]);
+    mutationFn: async ({ id, currentValues, authEpoch: requestEpoch, generation }: ProductSubmitRequest) => {
+      await api.products.update(id, productDraftToWriteRequest(currentValues));
+      if (generation !== saveGeneration.current || !canWritePrivateCache(queryClient, requestEpoch)) {
+        return null;
+      }
+      return api.products.submit(id);
+    },
+    onSuccess: async (result, request) => {
+      if (!result) return;
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      rememberSavedProduct(result.product, request.currentValues);
+      ignoreDetailReadsBefore.current = detailReads.current;
+      setModerationHold(true);
+      setTrustedRevision(null);
       setWizardSubmitted(true);
+      await queryClient.cancelQueries({
+        queryKey: ownerWorkQueryKeys.detail(result.product.id),
+      });
+      if (request.generation !== saveGeneration.current) return;
+      if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
+      const settled = queryClient.getQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(result.product.id),
+      );
+      const settledRevision = settled?.editingRevision;
+      holdFloor.current = settledRevision
+        ? {
+            id: settledRevision.id,
+            version: settledRevision.version,
+            updatedAt: settledRevision.updatedAt,
+          }
+        : null;
+      setSubmittedRevision(holdFloor.current);
+      try {
+        await invalidateSavedProduct(result.product.id);
+      } catch {
+        return;
+      }
     },
   });
   const upload = useMutation({
-    mutationFn: (images: Blob[]) => api.images.add(existingProduct!.id, images),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: async (images: Blob[]) => {
+      const epoch = currentAuthEpoch(queryClient);
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      await api.images.add(id, images);
+      return epoch;
+    },
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
+    },
   });
   const removeImage = useMutation({
-    mutationFn: (imageId: string) =>
-      api.images.remove(existingProduct!.id, imageId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: async (imageId: string) => {
+      const epoch = currentAuthEpoch(queryClient);
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      await api.images.remove(id, imageId);
+      return epoch;
+    },
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
+    },
   });
   const reorderImages = useMutation({
-    mutationFn: (imageIds: string[]) =>
-      api.images.reorder(existingProduct!.id, imageIds),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: ['seller', 'product', existingProduct?.id],
-      }),
+    mutationFn: async (imageIds: string[]) => {
+      const epoch = currentAuthEpoch(queryClient);
+      const id = persistedProductId.current;
+      if (!id) throw new Error('Product is not saved');
+      await api.images.reorder(id, imageIds);
+      return epoch;
+    },
+    onSuccess: (epoch) => {
+      if (!canWritePrivateCache(queryClient, epoch)) return;
+      const id = persistedProductId.current;
+      if (!id) return;
+      return invalidateOwnerWorks(queryClient, id);
+    },
   });
 
   const setField = <K extends FieldPath<ProductDraftFormValues>>(
     field: K,
     value: FieldPathValue<ProductDraftFormValues, K>,
   ) => {
+    if (transitionLock.current) return;
     form.setValue(field, value, {
       shouldDirty: true,
       shouldTouch: true,
@@ -254,28 +434,56 @@ export function ProductDraftScreen({
     });
   };
 
-  const persistCurrentForm = useCallback(async () => {
-    const valid = await form.trigger();
-    if (!valid) return false;
-    try {
-      await save.mutateAsync(form.getValues());
-      return true;
-    } catch {
+  const releaseSave = (generation: number) => {
+    if (saveGeneration.current === generation) saveInFlight.current = false;
+  };
+
+  const persistCurrentForm = useCallback(async (mode: 'ordinary' | 'transition' = 'ordinary') => {
+    if (saveInFlight.current) return false;
+    if (mode === 'transition') {
+      if (!beginLockedTransition()) return false;
+    } else if (transitionLock.current) {
       return false;
     }
+    const operation = sessionOperation.current;
+    const generation = saveGeneration.current + 1;
+    saveGeneration.current = generation;
+    saveInFlight.current = true;
+    const snapshot = form.getValues();
+    const authEpochAtSave = currentAuthEpoch(queryClient);
+    const stillOwnsSave = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, authEpochAtSave);
+    if (!productDraftFormSchema.safeParse(snapshot).success) {
+      await form.trigger();
+      if (!stillOwnsSave()) return false;
+      releaseSave(generation);
+      if (mode === 'transition') endLockedTransition();
+      return false;
+    }
+    try {
+      await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave, generation });
+      if (!stillOwnsSave()) return false;
+      return true;
+    } catch {
+      if (stillOwnsSave() && mode === 'transition') endLockedTransition();
+      return false;
+    } finally {
+      if (sessionOperation.current === operation) releaseSave(generation);
+    }
   }, [form, save]);
-  persistCurrentFormRef.current = persistCurrentForm;
+  persistCurrentFormRef.current = () => persistCurrentForm('transition');
 
   const navigateAfterPersist = useCallback((navigate: () => void) => {
     pendingNavigation.current = navigate;
     setPendingNavigationVersion((version) => version + 1);
   }, []);
 
-  usePreventRemove(form.formState.isDirty, ({ data }) => {
-    void persistCurrentForm().then((persisted) => {
-      if (persisted) {
-        navigateAfterPersist(() => navigation.dispatch(data.action));
-      }
+  usePreventRemove(form.formState.isDirty || inputsLocked, ({ data }) => {
+    const operation = sessionOperation.current;
+    void persistCurrentForm('transition').then((persisted) => {
+      if (sessionOperation.current !== operation || !persisted) return;
+      navigateAfterPersist(() => navigation.dispatch(data.action));
+      endLockedTransition();
     });
   });
 
@@ -295,9 +503,11 @@ export function ProductDraftScreen({
     );
 
     const persistAndContinueBrowserBack = () => {
+      const operation = sessionOperation.current;
       void persistCurrentFormRef.current().then((persisted) => {
-        if (!persisted) return;
+        if (sessionOperation.current !== operation || !persisted) return;
         guard.allow = true;
+        endLockedTransition();
         window.history.go(-2);
       });
     };
@@ -332,62 +542,151 @@ export function ProductDraftScreen({
     };
   }, [form.formState.isDirty, productId]);
 
+  useEffect(() => {
+    if (!moderationHold || !trustedRevision) return;
+    const decision = nextPostSubmitHold(holdFloor.current, trustedRevision);
+    if (decision.open) {
+      holdFloor.current = null;
+      setModerationHold(false);
+      setSubmittedRevision(null);
+      setTrustedRevision(null);
+      setWizardSubmitted(false);
+      return;
+    }
+    holdFloor.current = decision.floor;
+    setSubmittedRevision((current) =>
+      current &&
+      current.id === decision.floor.id &&
+      current.version === decision.floor.version &&
+      current.updatedAt === decision.floor.updatedAt
+        ? current
+        : decision.floor,
+    );
+  }, [moderationHold, trustedRevision]);
+
+  useEffect(() => {
+    if (!moderationHold || !submittedRevision) return;
+    const incoming = productDetail.data?.editingRevision;
+    if (!incoming || !isNewerModerationDecision(submittedRevision, incoming)) return;
+    holdFloor.current = null;
+    setModerationHold(false);
+    setSubmittedRevision(null);
+    setTrustedRevision(null);
+    setWizardSubmitted(false);
+  }, [moderationHold, productDetail.data?.editingRevision, submittedRevision]);
+
   const moveToWizardStep = async (nextStep: number) => {
+    if (transitionLock.current) return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
-    if (form.formState.isDirty && !(await persistCurrentForm())) return;
+    const operation = sessionOperation.current;
+    if (form.formState.isDirty && !(await persistCurrentForm('transition'))) return;
+    if (sessionOperation.current !== operation) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
+    endLockedTransition();
   };
 
   const saveAbout = async () => {
+    if (transitionLock.current) return;
     setStepOneAttempted(true);
-    const requiredErrors = productDraftRequiredErrors(form.getValues());
+    const snapshot = form.getValues();
+    const requiredErrors = productDraftRequiredErrors(snapshot);
     if (
       isCreationFlow &&
       Object.values(requiredErrors).some((error) => error !== undefined)
     ) {
       return;
     }
-    if (!(await persistCurrentForm())) return;
-    const persistedId = existingProduct?.id ?? hydratedProductId.current;
-    if (!isCreationFlow || !persistedId) return;
+    const operation = sessionOperation.current;
+    if (!(await persistCurrentForm(isCreationFlow ? 'transition' : 'ordinary'))) return;
+    if (sessionOperation.current !== operation) return;
+    if (!isCreationFlow) return;
+    const persistedId = persistedProductId.current;
+    if (!persistedId) {
+      endLockedTransition();
+      return;
+    }
     if (!existingProduct) {
       navigateAfterPersist(() =>
         router.replace(
           createProductWizardHref(persistedId, productWizardStep.images),
         ),
       );
+      endLockedTransition();
       return;
     }
     router.setParams({
       flow: 'creation',
       step: String(productWizardStep.images),
     });
+    endLockedTransition();
   };
 
   const saveAndClose = async () => {
+    if (transitionLock.current) return;
+    const operation = sessionOperation.current;
     if (form.formState.isDirty) {
-      if (!(await persistCurrentForm())) return;
+      if (!(await persistCurrentForm('transition'))) return;
+      if (sessionOperation.current !== operation) return;
       navigateAfterPersist(() => router.replace('/profile'));
+      endLockedTransition();
       return;
     }
     router.replace('/profile');
   };
 
   const submitCurrentForm = async () => {
-    if (!existingProduct) return;
-    const valid = await form.trigger();
-    if (!valid) return;
-    submit.mutate({
-      id: existingProduct.id,
-      currentValues: form.getValues(),
-    });
+    if (saveInFlight.current || !beginLockedTransition()) return;
+    const generation = saveGeneration.current + 1;
+    saveGeneration.current = generation;
+    saveInFlight.current = true;
+    const id = persistedProductId.current;
+    if (!id) {
+      releaseSave(generation);
+      endLockedTransition();
+      return;
+    }
+    const snapshot = form.getValues();
+    const authEpochAtSubmit = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    if (!productDraftFormSchema.safeParse(snapshot).success) {
+      await form.trigger();
+      if (sessionOperation.current !== operation) return;
+      releaseSave(generation);
+      endLockedTransition();
+      return;
+    }
+    try {
+      await submit.mutateAsync({
+        id,
+        currentValues: snapshot,
+        authEpoch: authEpochAtSubmit,
+        generation,
+      });
+    } catch {
+      // submit.isError keeps the author on this form.
+    } finally {
+      if (sessionOperation.current === operation) {
+        releaseSave(generation);
+        endLockedTransition();
+      }
+    }
   };
 
   const chooseImages = async () => {
-    if (!existingProduct) return;
-    if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
+    if (transitionLock.current || !existingProduct) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    const selection = imageSelection.current + 1;
+    imageSelection.current = selection;
+    const stillOwnsImages = () =>
+      selection === imageSelection.current &&
+      !transitionLock.current &&
+      sessionOperation.current === operation &&
+      canWritePrivateCache(queryClient, epoch);
+    if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary'))) return;
+    if (!stillOwnsImages()) return;
     setImageSelectionError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -396,6 +695,7 @@ export function ProductDraftScreen({
         selectionLimit: 10,
         quality: 1,
       });
+      if (!stillOwnsImages()) return;
       if (result.canceled) return;
       const images = await Promise.all(
         result.assets.map(async (asset) => {
@@ -404,8 +704,10 @@ export function ProductDraftScreen({
           return response.blob();
         }),
       );
+      if (!stillOwnsImages()) return;
       upload.mutate(images);
     } catch {
+      if (!stillOwnsImages()) return;
       setImageSelectionError(
         'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
       );
@@ -452,16 +754,14 @@ export function ProductDraftScreen({
     );
   }
 
-  const editingRevisionStatus = productDetail.data?.editingRevision?.status;
-  const editable = canOwnerEditProduct(
-    existingProduct?.status,
-    editingRevisionStatus,
+  const moderationReopened = Boolean(
+    submittedRevision &&
+      productDetail.data?.editingRevision &&
+      isNewerModerationDecision(submittedRevision, productDetail.data.editingRevision),
   );
-  const productStatus = existingProduct?.status;
-  const editorStatus =
-    productStatus === 'APPROVED' || productStatus === 'ARCHIVED'
-      ? editingRevisionStatus
-      : productStatus;
+  const editable =
+    canOwnerEditProduct(existingProduct?.status, editingRevisionStatus) &&
+    (!moderationHold || moderationReopened);
   const moderationNotice = ownerModerationReasonNotice(
     editorStatus,
     productDetail.data?.lastModerationReason,
@@ -476,7 +776,10 @@ export function ProductDraftScreen({
 
   const reorder = async (imageId: string, direction: -1 | 1) => {
     if (!existingProduct) return;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
+    if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
     const ids = existingProduct.images.map((image) => image.id);
     const index = ids.indexOf(imageId);
     [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
@@ -527,7 +830,7 @@ export function ProductDraftScreen({
           <SecondaryButton
             label={form.formState.isDirty ? 'Сохранить и закрыть' : 'Закрыть'}
             loading={save.isPending}
-            disabled={submit.isPending}
+            disabled={submit.isPending || inputsLocked}
             onPress={() => void saveAndClose()}
           />
         </FormSection>
@@ -580,7 +883,7 @@ export function ProductDraftScreen({
             <PrimaryButton
               label={submitLabel}
               loading={submit.isPending}
-              disabled={existingProduct.images.length < 1 || save.isPending}
+              disabled={existingProduct.images.length < 1 || save.isPending || inputsLocked}
               onPress={() => void submitCurrentForm()}
             />
           ) : null}
@@ -602,7 +905,7 @@ export function ProductDraftScreen({
         <ProductDraftAboutStep
           isCreationFlow={isCreationFlow}
           wizardStep={wizardStep}
-          editable={editable}
+          editable={editable && !inputsLocked}
           categories={categories.data.categories}
           categoryId={values.categoryId}
           onChangeCategoryId={(value) => setField('categoryId', value)}
@@ -639,7 +942,7 @@ export function ProductDraftScreen({
         <ProductDraftImagesStep
           images={existingProduct.images}
           productStatus={editorStatus}
-          editable={editable}
+          editable={editable && !inputsLocked}
           isCreationFlow={isCreationFlow}
           wizardStep={wizardStep}
           wizardCanOpenStory={canOpenProductWizardStep(
@@ -666,7 +969,7 @@ export function ProductDraftScreen({
       wizardStep === productWizardStep.story &&
       existingProduct ? (
         <ProductDraftStoryStep
-          editable={editable}
+          editable={editable && !inputsLocked}
           story={values.story}
           onChangeStory={(value) => setField('story', value)}
           savePending={save.isPending}
@@ -674,13 +977,17 @@ export function ProductDraftScreen({
           onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
           onSaveAndContinue={() =>
             void (async () => {
-              if (form.formState.isDirty && !(await persistCurrentForm())) {
+              if (transitionLock.current) return;
+              const operation = sessionOperation.current;
+              if (form.formState.isDirty && !(await persistCurrentForm('transition'))) {
                 return;
               }
+              if (sessionOperation.current !== operation) return;
               router.setParams({
                 flow: 'creation',
                 step: String(productWizardStep.review),
               });
+              endLockedTransition();
             })()
           }
         />
@@ -690,7 +997,7 @@ export function ProductDraftScreen({
       wizardStep === productWizardStep.review &&
       existingProduct ? (
         <ProductDraftReviewStep
-          editable={editable}
+          editable={editable && !inputsLocked}
           title={values.title}
           existingProductImagesLength={existingProduct.images.length}
           hasStory={Boolean(values.story.trim())}
@@ -715,10 +1022,15 @@ export function ProductDraftScreen({
           onPress={() => {
             if (imagePendingDelete) {
               void (async () => {
+                const operation = sessionOperation.current;
+                const epoch = currentAuthEpoch(queryClient);
                 if (
                   editorStatus === 'APPROVED' &&
                   !(await persistCurrentForm())
                 ) {
+                  return;
+                }
+                if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
                   return;
                 }
                 removeImage.mutate(imagePendingDelete, {

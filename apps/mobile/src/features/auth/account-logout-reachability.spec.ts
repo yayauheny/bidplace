@@ -112,6 +112,7 @@ vi.mock('../../components/ui', () => {
   };
 });
 
+import { authKeys } from '../../lib/query-cache';
 import { VerifyEmailForm } from './verify-email-form';
 import { AdminModerationScreen } from '../admin/admin-moderation-screen';
 import { AuthorCabinetScreen } from '../sellers/author-cabinet-screen';
@@ -132,6 +133,7 @@ function mount(node: ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  queryClient.setQueryData(authKeys.session, { id: 'user-a' });
   const container = document.createElement('div');
   document.body.append(container);
   const root: Root = createRoot(container);
