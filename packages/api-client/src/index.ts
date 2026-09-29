@@ -19,11 +19,12 @@ import {
   createRequestContext,
   requestJson,
   type ApiClientOptions,
+  type ReadCallOptions,
   type RequestOptions,
 } from './request';
 import { createSellersClient } from './sellers';
 
-export type { ApiClientOptions, RequestOptions };
+export type { ApiClientOptions, ReadCallOptions, RequestOptions };
 
 export function createApiClient(options: ApiClientOptions) {
   const context = createRequestContext(options);

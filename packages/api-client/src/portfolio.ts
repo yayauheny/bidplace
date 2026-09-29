@@ -20,52 +20,73 @@ import {
   type PortfolioWorksQuery,
 } from '@bidplace/contracts';
 
-import { requestBlob, requestJson, type RequestContext } from './request';
+import {
+  requestBlob,
+  requestJson,
+  signalRequestOptions,
+  type ReadCallOptions,
+  type RequestContext,
+} from './request';
 
 export function createPortfolioClient(context: RequestContext) {
   return {
-    home() {
+    home(options?: ReadCallOptions) {
       return requestJson(
         context,
         '/api/portfolio/home',
         portfolioHomeResponseSchema,
+        signalRequestOptions(options),
       );
     },
-    listWorks(query?: Partial<PortfolioWorksQuery>) {
+    listWorks(query?: Partial<PortfolioWorksQuery>, options?: ReadCallOptions) {
       return requestJson(context, '/api/works', portfolioWorksResponseSchema, {
         query: portfolioWorksQuerySchema.parse(query ?? {}),
+        ...signalRequestOptions(options),
       });
     },
-    getWork(publicId: string) {
+    getWork(publicId: string, options?: ReadCallOptions) {
       return requestJson(
         context,
         `/api/works/${publicId}`,
         portfolioWorkDetailResponseSchema,
+        signalRequestOptions(options),
       );
     },
-    facets() {
+    facets(options?: ReadCallOptions) {
       return requestJson(
         context,
         '/api/portfolio/facets',
         portfolioDiscoveryFacetsResponseSchema,
+        signalRequestOptions(options),
       );
     },
-    listAuthors(query?: Partial<PortfolioAuthorsQuery>) {
+    listAuthors(
+      query?: Partial<PortfolioAuthorsQuery>,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         '/api/authors',
         portfolioAuthorsResponseSchema,
         {
           query: portfolioAuthorsQuerySchema.parse(query ?? {}),
+          ...signalRequestOptions(options),
         },
       );
     },
-    getAuthor(slug: string, query?: Partial<PortfolioWorksQuery>) {
+    getAuthor(
+      slug: string,
+      query?: Partial<PortfolioWorksQuery>,
+      options?: ReadCallOptions,
+    ) {
       return requestJson(
         context,
         `/api/authors/${slug}`,
         portfolioAuthorDetailResponseSchema,
-        { query: portfolioWorksQuerySchema.parse(query ?? {}) },
+        {
+          query: portfolioWorksQuerySchema.parse(query ?? {}),
+          ...signalRequestOptions(options),
+        },
       );
     },
     getAuthorApplication() {

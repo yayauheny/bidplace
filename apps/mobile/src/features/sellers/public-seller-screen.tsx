@@ -41,7 +41,7 @@ export function PublicSellerScreen({
   const [tab, setTab] = useState<AuthorPublicTab>('works');
   const categories = useQuery({
     queryKey: categoryKeys.all,
-    queryFn: () => api.categories.list(),
+    queryFn: ({ signal }) => api.categories.list({ signal }),
     retry: retryTransientPublicQuery,
   });
   const query = useAuthorWorks(

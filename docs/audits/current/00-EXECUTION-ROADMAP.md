@@ -973,6 +973,27 @@ remaining limitations: Chromium and WebKit were not run, so D04 and D05 are not 
 blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
 ```
 
+### R08 evidence
+
+```text
+scope: R08
+finding IDs: L04
+status: NEEDS_VERIFICATION
+base SHA: 74a48795f702e4d1d9d90f7960950749fd9d9ed2
+changed contracts: none. HTTP paths and response schemas are unchanged. Read methods accept an optional AbortSignal.
+tests/scenarios: listWorks passes the signal to fetch. Aborted JSON and image reads reject as AbortError and are not ApiClientError network failures. A thrown fetch stays kind network. A non-JSON catalog body stays unexpected_response. QueryClient cancelQueries aborts the in-flight works fetch and does not mark that query as error. Catalog, search, home, public work, and public author query functions pass the query signal. Mutations are unchanged.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 on Node v22.20.0
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 19 tests)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (111 files, 499 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git diff --check → 0
+  Chromium/WebKit search scenarios → NOT RUN
+remaining limitations: Chromium and WebKit search scenarios were not run, so L04 is not VERIFIED.
+blocked-by: none
+```
+
 ### R31 evidence
 
 ```text
@@ -1071,7 +1092,7 @@ blocked-by: none for the client transition. Browser session replacement was not 
 | L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | QUEUED             | R01/R09                                                      | E0/E1; focus/animation/browser regressions                                     |
 | L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
 | L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                                        |
-| L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | QUEUED             | согласовать включение с R07                                  | E0/E1; cancellation/error-classification tests                                 |
+| L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |
 | S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | VERIFIED           | —                                                            | Current R04 evidence: discovery, database smoke, clean dist                    |

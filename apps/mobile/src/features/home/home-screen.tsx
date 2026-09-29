@@ -20,7 +20,7 @@ export function HomeScreen() {
   const router = useRouter();
   const home = useQuery({
     queryKey: ['portfolio-home'],
-    queryFn: () => api.portfolio.home(),
+    queryFn: ({ signal }) => api.portfolio.home({ signal }),
   });
   const pageStatus = infrastructurePageFetchStatus(home);
   const plan = homeSectionPlan(home.data);

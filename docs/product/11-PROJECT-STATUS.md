@@ -5,6 +5,21 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Public read cancellation
+
+- `Needs verification` (mobile web): catalog, search, home, public work, and
+  public author reads pass the React Query `AbortSignal` through the API client
+  to `fetch`. Aborting a JSON or image read rejects with `AbortError` and is
+  not classified as a network failure. A failed fetch stays a network error. A
+  malformed catalog response stays an unexpected response. Cancelling a works
+  query aborts the in-flight fetch and does not store that query as an error.
+  Mutations do not receive a signal unless a caller passes one.
+- Coverage: `packages/api-client/test/request-cancellation.test.ts` and
+  `apps/mobile/src/lib/public-query-cancellation.spec.ts`.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. L04
+  remains needs verification. Server contracts are unchanged.
+
 ## 2026-09-29 — Refresh session identity
 
 - `Needs verification` (mobile web): `refreshSession` publishes a different

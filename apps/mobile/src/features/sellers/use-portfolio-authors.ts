@@ -24,8 +24,8 @@ export function usePortfolioAuthors(
   const query = useInfiniteQuery({
     queryKey: ['portfolio-authors', listQuery],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.listAuthors({ ...listQuery, page: pageParam }),
+    queryFn: ({ pageParam, signal }) =>
+      api.portfolio.listAuthors({ ...listQuery, page: pageParam }, { signal }),
     getNextPageParam: (page) => nextCatalogPage(page.pagination),
     enabled,
     retry: retryTransientPublicQuery,

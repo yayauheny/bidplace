@@ -29,7 +29,18 @@ export type RequestOptions = {
   >;
   headers?: HeadersInit;
   asFormData?: boolean;
+  signal?: AbortSignal;
 };
+
+export type ReadCallOptions = {
+  signal?: AbortSignal;
+};
+
+export function signalRequestOptions(
+  options?: ReadCallOptions,
+): { signal: AbortSignal } | Record<string, never> {
+  return options?.signal ? { signal: options.signal } : {};
+}
 
 export type RequestContext = {
   baseUrl: string;
@@ -40,6 +51,58 @@ export type RequestContext = {
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, '');
+}
+
+function isAbortError(cause: unknown): boolean {
+  return cause instanceof Error && cause.name === 'AbortError';
+}
+
+function requestUrl(
+  context: RequestContext,
+  path: string,
+  query?: RequestOptions['query'],
+): string {
+  const url = new URL(`${context.baseUrl}${path}`);
+  const queryString = normalizeQuery(query);
+
+  if (queryString) {
+    url.search = queryString.slice(1);
+  }
+
+  return url.toString();
+}
+
+function requestHeaders(
+  context: RequestContext,
+  headersInit?: HeadersInit,
+): Headers {
+  const headers = new Headers(headersInit);
+
+  if (context.getAccessToken) {
+    const accessToken = context.getAccessToken();
+
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+  }
+
+  return headers;
+}
+
+async function fetchApi(
+  context: RequestContext,
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await context.fetchImpl(url, init);
+  } catch (cause) {
+    if (isAbortError(cause)) {
+      throw cause;
+    }
+
+    throw createNetworkError(cause);
+  }
 }
 
 function normalizeQuery(
@@ -84,22 +147,8 @@ export async function requestJson<T>(
   schema: ZodType<T>,
   options: RequestOptions = {},
 ): Promise<T> {
-  const url = new URL(`${context.baseUrl}${path}`);
-  const queryString = normalizeQuery(options.query);
-
-  if (queryString) {
-    url.search = queryString.slice(1);
-  }
-
-  const headers = new Headers(options.headers);
-
-  if (context.getAccessToken) {
-    const accessToken = context.getAccessToken();
-
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
-    }
-  }
+  const url = requestUrl(context, path, options.query);
+  const headers = requestHeaders(context, options.headers);
 
   let body: BodyInit | undefined;
 
@@ -147,6 +196,10 @@ export async function requestJson<T>(
     headers,
   };
 
+  if (options.signal) {
+    init.signal = options.signal;
+  }
+
   if (context.credentials) {
     init.credentials = context.credentials;
   }
@@ -155,13 +208,7 @@ export async function requestJson<T>(
     init.body = body;
   }
 
-  let response: Response;
-
-  try {
-    response = await context.fetchImpl(url.toString(), init);
-  } catch (cause) {
-    throw createNetworkError(cause);
-  }
+  const response = await fetchApi(context, url, init);
 
   if (!response.ok) {
     await throwApiClientResponseError(response);
@@ -186,39 +233,22 @@ export async function requestBlob(
   path: string,
   options: RequestOptions = {},
 ): Promise<Blob> {
-  const url = new URL(`${context.baseUrl}${path}`);
-  const queryString = normalizeQuery(options.query);
-
-  if (queryString) {
-    url.search = queryString.slice(1);
-  }
-
-  const headers = new Headers(options.headers);
-
-  if (context.getAccessToken) {
-    const accessToken = context.getAccessToken();
-
-    if (accessToken) {
-      headers.set('Authorization', `Bearer ${accessToken}`);
-    }
-  }
-
+  const url = requestUrl(context, path, options.query);
+  const headers = requestHeaders(context, options.headers);
   const init: RequestInit = {
     method: options.method ?? 'GET',
     headers,
   };
 
+  if (options.signal) {
+    init.signal = options.signal;
+  }
+
   if (context.credentials) {
     init.credentials = context.credentials;
   }
 
-  let response: Response;
-
-  try {
-    response = await context.fetchImpl(url.toString(), init);
-  } catch (cause) {
-    throw createNetworkError(cause);
-  }
+  const response = await fetchApi(context, url, init);
 
   if (!response.ok) {
     await throwApiClientResponseError(response);

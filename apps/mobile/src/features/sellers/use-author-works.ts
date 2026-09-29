@@ -29,13 +29,17 @@ export function useAuthorWorks(
   return useInfiniteQuery({
     queryKey: publicAuthorKeys.detail(slug, sort, category),
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.getAuthor(slug, {
-        sort,
-        category,
-        page: pageParam,
-        limit: 20,
-      }),
+    queryFn: ({ pageParam, signal }) =>
+      api.portfolio.getAuthor(
+        slug,
+        {
+          sort,
+          category,
+          page: pageParam,
+          limit: 20,
+        },
+        { signal },
+      ),
     placeholderData: (previousData, previousQuery) =>
       canReusePreviousAuthorData(previousQuery, slug)
         ? previousData

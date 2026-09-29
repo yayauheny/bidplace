@@ -35,7 +35,7 @@ export function PublicAuthorsScreen({
   const [sortOpen, setSortOpen] = useState(false);
   const facets = useQuery({
     queryKey: ['portfolio-facets'],
-    queryFn: () => api.portfolio.facets(),
+    queryFn: ({ signal }) => api.portfolio.facets({ signal }),
     retry: retryTransientPublicQuery,
   });
   const result = usePortfolioAuthors(state);

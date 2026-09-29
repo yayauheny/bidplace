@@ -152,7 +152,7 @@ export function ProductDraftScreen({
 
   const categories = useQuery({
     queryKey: categoryKeys.all,
-    queryFn: () => api.categories.list(),
+    queryFn: ({ signal }) => api.categories.list({ signal }),
   });
   const productDetail = useQuery({
     queryKey: productId

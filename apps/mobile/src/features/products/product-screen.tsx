@@ -41,7 +41,7 @@ export function ProductScreen({ publicId }: { publicId: string }) {
   const [shareOpen, setShareOpen] = useState(false);
   const query = useQuery({
     queryKey: ['portfolio-work', publicId],
-    queryFn: () => api.portfolio.getWork(publicId),
+    queryFn: ({ signal }) => api.portfolio.getWork(publicId, { signal }),
     retry: retryTransientPublicQuery,
   });
   useEffect(() => {

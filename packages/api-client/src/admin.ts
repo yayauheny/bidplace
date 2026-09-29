@@ -23,7 +23,13 @@ import {
   type AdminUsersLookupQuery,
 } from '@bidplace/contracts';
 
-import { requestBlob, requestJson, type RequestContext } from './request';
+import {
+  requestBlob,
+  requestJson,
+  signalRequestOptions,
+  type ReadCallOptions,
+  type RequestContext,
+} from './request';
 
 export function createAdminClient(context: RequestContext) {
   return {
@@ -41,14 +47,23 @@ export function createAdminClient(context: RequestContext) {
         adminProductsResponseSchema,
       );
     },
-    getSellerRevisionPhoto(profileId: string, revisionId: string) {
+    getSellerRevisionPhoto(
+      profileId: string,
+      revisionId: string,
+      options?: ReadCallOptions,
+    ) {
       return requestBlob(
         context,
         `/api/admin/seller-profiles/${profileId}/revisions/${revisionId}/photo`,
+        signalRequestOptions(options),
       );
     },
-    getProductImage(imageId: string) {
-      return requestBlob(context, `/api/images/${imageId}`);
+    getProductImage(imageId: string, options?: ReadCallOptions) {
+      return requestBlob(
+        context,
+        `/api/images/${imageId}`,
+        signalRequestOptions(options),
+      );
     },
     getAnalyticsOverview(query: AdminAnalyticsQuery = { period: '7d' }) {
       const parsed = adminAnalyticsQuerySchema.parse(query);

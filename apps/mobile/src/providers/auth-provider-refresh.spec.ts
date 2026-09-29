@@ -53,7 +53,7 @@ const userB = {
   displayName: 'Author B',
 };
 
-let refreshSession: (() => Promise<typeof userA | null>) | null = null;
+let refreshSession: (() => Promise<unknown>) | null = null;
 let login: ((input: { email: string; password: string }) => Promise<unknown>) | null =
   null;
 

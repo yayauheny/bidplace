@@ -50,12 +50,12 @@ export function ProductListScreen({
   const [sortOpen, setSortOpen] = useState(false);
   const categories = useQuery({
     queryKey: categoryKeys.all,
-    queryFn: () => api.categories.list(),
+    queryFn: ({ signal }) => api.categories.list({ signal }),
     retry: retryTransientPublicQuery,
   });
   const facets = useQuery({
     queryKey: ['portfolio-facets'],
-    queryFn: () => api.portfolio.facets(),
+    queryFn: ({ signal }) => api.portfolio.facets({ signal }),
     retry: retryTransientPublicQuery,
   });
   const query = usePortfolioWorks(state);
