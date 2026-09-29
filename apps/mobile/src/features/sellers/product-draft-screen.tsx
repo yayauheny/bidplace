@@ -203,11 +203,11 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty]);
 
   useEffect(() => {
-    if (form.formState.isDirty || !pendingNavigation.current) return;
+    if (form.formState.isDirty || inputsLocked || !pendingNavigation.current) return;
     const navigate = pendingNavigation.current;
     pendingNavigation.current = null;
     navigate();
-  }, [form.formState.isDirty, pendingNavigationVersion]);
+  }, [form.formState.isDirty, inputsLocked, pendingNavigationVersion]);
 
   const beginLockedTransition = () => {
     if (transitionLock.current) return false;
@@ -381,7 +381,7 @@ export function ProductDraftScreen({
     setPendingNavigationVersion((version) => version + 1);
   }, []);
 
-  usePreventRemove(form.formState.isDirty && !inputsLocked, ({ data }) => {
+  usePreventRemove(form.formState.isDirty || inputsLocked, ({ data }) => {
     void persistCurrentForm('transition').then((persisted) => {
       if (persisted) {
         navigateAfterPersist(() => navigation.dispatch(data.action));
