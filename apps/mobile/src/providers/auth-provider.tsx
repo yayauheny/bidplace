@@ -14,10 +14,12 @@ import type {
 } from '@bidplace/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { shouldClearSessionForError } from '../errors';
 import { useApiClient } from './api-provider';
 import {
   authKeys,
   clearAuthenticatedSession,
+  currentAuthEpoch,
   replaceAuthenticatedSession,
 } from '../lib/query-cache';
 
@@ -95,8 +97,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       refreshSession: async () => {
-        const result = await sessionQuery.refetch();
-        return result.data ?? null;
+        const epoch = currentAuthEpoch(queryClient);
+        try {
+          const next = (await api.auth.me()).user;
+          if (currentAuthEpoch(queryClient) !== epoch) {
+            return queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          }
+          const current =
+            queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          if (current?.id === next.id) {
+            queryClient.setQueryData(authKeys.session, next);
+            return next;
+          }
+          await replaceAuthenticatedSession(queryClient, next);
+          return next;
+        } catch (error) {
+          if (currentAuthEpoch(queryClient) !== epoch) {
+            return queryClient.getQueryData<User | null>(authKeys.session) ?? null;
+          }
+          if (shouldClearSessionForError(error)) {
+            await clearAuthenticatedSession(queryClient);
+            return null;
+          }
+          throw error;
+        }
       },
       clearSession,
     }),

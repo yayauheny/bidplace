@@ -973,6 +973,19 @@ remaining limitations: Chromium and WebKit were not run, so D04 and D05 are not 
 blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
 ```
 
+### R31 evidence
+
+```text
+scope: R31
+finding IDs: D09
+status: NEEDS_VERIFICATION
+base SHA: 74a48795f702e4d1d9d90f7960950749fd9d9ed2
+changed contracts: none. /me, login, and logout responses are unchanged.
+tests/scenarios: AuthProvider plus a real QueryClient. Initial /me keeps public cache. Refresh A→B removes ['seller','profile'], keeps ['products','list'], and rejects the previous epoch. Same-user emailVerifiedAt refresh keeps the epoch and private profile. Network failure keeps the session. Unauthorized refresh clears the session and private cache. A late callback that still holds the previous epoch cannot restore the profile. Explicit login of the same account retires the previous private cache.
+remaining limitations: Chromium and WebKit were not run. A cross-tab cookie change was not executed, so D09 is not VERIFIED. D04 and D05 stay NEEDS_VERIFICATION. T04 stays PARTIAL.
+blocked-by: none for the client transition. Browser session replacement was not run.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.

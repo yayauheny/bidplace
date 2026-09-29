@@ -5,6 +5,23 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Refresh session identity
+
+- `Needs verification` (mobile web): `refreshSession` publishes a different
+  authenticated user only through the existing session retirement. Private
+  seller cache from the previous user is removed and that user's epoch cannot
+  write again. A same-user metadata refresh updates the session and leaves the
+  private profile and auth epoch in place. A network failure leaves the current
+  session. An unauthorized `/me` clears the local session and private cache.
+  Public catalog cache stays. An explicit login of the same account still
+  retires the previous private cache.
+- Coverage: `auth-provider-refresh.spec.ts`. Logout and owner-editor session
+  specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. Cross-tab cookie
+  replacement was not executed.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. D09
+  remains needs verification. Server auth contracts are unchanged.
+
 ## 2026-09-29 — Owner editor private cache during session retirement
 
 - `Needs verification` (mobile web): session retirement closes private cache
