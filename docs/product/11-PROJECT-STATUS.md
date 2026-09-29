@@ -5,6 +5,22 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Owner editor private cache during session retirement
+
+- `Needs verification` (mobile web): session retirement closes private cache
+  writes before the first async gap. A profile save that finishes during
+  cancel, after private queries are removed, or before the anonymous session
+  is published does not restore `['seller','profile']`. After cleanup the
+  session is null. A newer login published during an older retirement stays.
+  An in-flight session read does not leave an authenticated session. Public
+  catalog cache stays. A rejected server logout still clears the local session.
+- Coverage: `seller-profile-logout.spec.ts` and `query-cache.spec.ts`. Previous
+  profile, work, session, picker, and navigation specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts, refresh identity, and product route lifetime are unchanged.
+
 ## 2026-09-29 — Owner editor moderation hold after an intermediate save
 
 - `Needs verification` (mobile web): after a confirmed resubmit, a detail read

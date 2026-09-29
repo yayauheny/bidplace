@@ -481,6 +481,44 @@ describe('seller profile logout', () => {
     view.unmount();
   });
 
+  it('does not restore the private profile when a save finishes during session retirement', async () => {
+    const late = {
+      sellerProfile: { ...profile('APPROVED'), city: 'Late A' },
+      editingRevision: null,
+    };
+    let resolveSave: (value: typeof late) => void = () => undefined;
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector('[aria-label="Город"]') instanceof HTMLInputElement,
+      'city field',
+    );
+    setCity(view.container, 'Late A');
+    click(view.container, 'Сохранить');
+    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'save request');
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      const retiring = clearAuthenticatedSession(view.queryClient);
+      // This QueryClient removes private queries and publishes session=null
+      // on later microtasks. Releasing the save here lands its callback in
+      // that gap; the count is scheduler alignment, not product behavior.
+      for (let step = 0; step < 6; step += 1) await Promise.resolve();
+      resolveSave(late);
+      await retiring;
+    });
+    await flush();
+    expect(view.queryClient.getMutationCache().findAll().some((mutation) => mutation.state.status === 'success')).toBe(true);
+    expect(view.queryClient.getQueryData(['user', 'me'])).toBeNull();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toBeUndefined();
+    view.unmount();
+  });
+
   it('shows logout for a missing profile, a draft, and a profile in review', async () => {
     harness.params = { intro: '1' };
     harness.getMyProfile.mockRejectedValue(

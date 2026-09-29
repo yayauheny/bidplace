@@ -16,10 +16,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useApiClient } from './api-provider';
 import {
-  advanceAuthEpoch,
   authKeys,
   clearAuthenticatedSession,
-  clearAuthScopedDataExceptSession,
+  replaceAuthenticatedSession,
 } from '../lib/query-cache';
 
 type AuthStatus = 'anonymous' | 'authenticated' | 'error';
@@ -64,9 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setAuthenticatedSession = useCallback(
     async (nextUser: User) => {
-      await clearAuthScopedDataExceptSession(queryClient);
-      queryClient.setQueryData(authKeys.session, nextUser);
-      advanceAuthEpoch(queryClient);
+      await replaceAuthenticatedSession(queryClient, nextUser);
     },
     [queryClient],
   );
