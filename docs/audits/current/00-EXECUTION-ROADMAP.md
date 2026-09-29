@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION` с отдельными commits и одной review; scopes R08–R29 не запущены.
+**Сохранён:** 2026-09-29. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION`, включая коррекцию четырёх замечаний review; scopes R08–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -295,7 +295,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; `product-creation-wizard.spec.ts` и focused browser race scenario.
 - **STOP:** необходима переработка history ownership — R25.
 - **Done/status:** D04/T04 → `PARTIAL` до R06.
-- **Actual:** Реализовано вместе с R06 и R07 на `fix/owner-editor-state`. D04 не `VERIFIED`: browser checks не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
+- **Actual:** Реализовано вместе с R06 и R07 на `fix/owner-editor-state`. Коррекция 2026-09-29 оставляет guard включённым на время save-before-transition, снимает lock после submit и не пускает вторую ordinary-запись. D04 не `VERIFIED`: browser checks не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
 - **Отчёт:** G с временной последовательностью regression scenario.
 
 ### R06. Сохранение профиля не должно стирать новые поля или фото
@@ -316,7 +316,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; profile/revision browser scenarios.
 - **STOP:** требуется новый upload protocol либо изменение server contract.
 - **Done/status:** D04 → `VERIFIED` после R05+R06; T04 остаётся составным.
-- **Actual:** D04 → `NEEDS_VERIFICATION`. Обе формы сверены со snapshot, но Chromium/WebKit не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
+- **Actual:** D04 → `NEEDS_VERIFICATION`. Обе формы сверены со snapshot. Коррекция 2026-09-29 не применяет ответ предыдущей сессии к профилю, фото или переходу новой сессии. Chromium/WebKit не запускались. T04 остаётся `PARTIAL`. См. evidence R05–R07.
 - **Отчёт:** G, отдельно fields и photo evidence.
 
 ### R07. Единые query keys и invalidation для owner Work
@@ -337,7 +337,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** V-MOBILE; cabinet/editor browser scenario.
 - **STOP:** невозможно определить owner ресурса без изменения API.
 - **Done/status:** D05 → `VERIFIED`.
-- **Actual:** D05 → `NEEDS_VERIFICATION`. Cabinet обновляется по реальным owner keys в unit-тесте; browser scenario не запускался. См. evidence R05–R07.
+- **Actual:** D05 → `NEEDS_VERIFICATION`. Cabinet обновляется по реальным owner keys в unit-тесте. Коррекция 2026-09-29 не даёт чтению профиля или работ записать private cache без текущей сессии. Browser scenario не запускался. См. evidence R05–R07.
 - **Отчёт:** G с mutation→key matrix.
 
 ### R08. Протянуть cancellation до fetch
@@ -948,24 +948,25 @@ blocked-by: none
 ### R05–R07 evidence
 
 ```text
-scope: R05, R06, R07 as one package with separate commits and one review
+scope: R05, R06, R07 as one package with separate commits and one review, plus the 2026-09-29 correction of four review findings
 finding IDs: D04, D05; save and owner-cache seams of T04
 status: NEEDS_VERIFICATION
 base SHA: 8e0dee2e0db20150542ff93375ceb2c1bbbee8d6
-commits: R05 5d9693d; R06 64b12d6; R07 commit on fix/owner-editor-state
-changed contracts: none. Product and profile write responses, revision transitions, and publication are unchanged.
-tests/scenarios: Before the work fix, an ordinary save reset the title to the response and dropped text typed after the snapshot. After it, that text stays dirty, an untouched technique takes the normalized response, a field that was dirty only before send becomes clean, editing back to the baseline clears dirty, create then the next save updates the new id, a failed save keeps the text and retries, submit locks edits and a failed save does not submit or navigate, a refetch keeps a local edit, and a cleared session does not refetch the private product. Before the profile fix, the city typed during save was reset to Minsk. After it, that city stays dirty, an untouched discipline takes normalization, a saved dirty city becomes clean, a photo chosen during the save is sent by the next save, an older picker result does not replace a newer one, a failed save keeps the text, and a failed save-before-submit does not submit. R03 submit and R30 logout specs stayed green. Before the cabinet fix, a retained cabinet stayed on «Черновик» and the empty cover after a work save. After it, the same mounted cabinet shows «На модерации», the normalized title, the moderation message, and the cover. A public portfolio-works query is not refetched. A cleared session does not refetch the cabinet.
+correction base: dd1cffb82724c571c214042f21479645cb800dcd
+commits: R05 5d9693d; R06 64b12d6; R07 dd1cffb; correction 8d41397 session, a502090 route guard, ac29a19 submit lock, 4fed821 save exclusion, fb37cf9 profile read
+changed contracts: none. Product and profile write responses, revision transitions, and publication are unchanged. Submit still does not copy { product } over the detail envelope.
+tests/scenarios: Before the work fix, an ordinary save reset the title to the response and dropped text typed after the snapshot. After it, that text stays dirty, an untouched technique takes the normalized response, a field that was dirty only before send becomes clean, editing back to the baseline clears dirty, create then the next save updates the new id, a failed save keeps the text and retries, submit locks edits and a failed save does not submit or navigate, a refetch keeps a local edit, and a cleared session does not refetch the private product. Before the profile fix, the city typed during save was reset to Minsk. After it, that city stays dirty, an untouched discipline takes normalization, a saved dirty city becomes clean, a photo chosen during the save is sent by the next save, an older picker result does not replace a newer one, a failed save keeps the text, and a failed save-before-submit does not submit. R03 submit and R30 logout specs stayed green. Before the cabinet fix, a retained cabinet stayed on «Черновик» and the empty cover after a work save. After it, the same mounted cabinet shows «На модерации», the normalized title, the moderation message, and the cover. A public portfolio-works query is not refetched. A cleared session does not refetch the cabinet. Correction before/after, on production screens with a real QueryClient: a save from account A replaced B's profile and work after clearAuthenticatedSession and login B, including the same account logging in again, and a profile step continued; after the correction the cached profile, form, and route stay on B. During a delayed dirty-work save the route guard became false; after the correction a second removal stays prevented, navigation happens once after success, and a failed save does not navigate. After a successful work submit the title stayed locked when a newer CHANGES_REQUESTED arrived, and creation Close stayed disabled; after the correction Close is enabled, Save/Submit stay closed on the stale DRAFT, and CHANGES_REQUESTED or REJECTED can be edited. A failed post-submit refetch no longer leaves the transition lock set. Two ordinary saves plus submit in one turn sent three updates; after the correction one update is sent, typed text is kept, and the next save sends that text. A route removal during that ordinary save does not navigate.
 validation commands and exit codes:
-  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 on Node v22.20.0 after @bidplace/database dist existed; a forced mobile typecheck also → 0
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks) on Node v22.20.0
   pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
-  pnpm --filter @bidplace/mobile test → 0 (107 files, 463 tests) on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (109 files, 474 tests) on Node v22.20.0
   pnpm --filter @bidplace/mobile test:e2e-fence → 0 on Node v22.20.0
   git diff --check → 0
   Chromium work/profile/cabinet scenarios → NOT RUN
   WebKit work/profile/cabinet scenarios → NOT RUN
 runtime environment: Node v22.20.0, matching root engines >=22 <23. prisma migrate reset was not run. Disposable bidplace_e2e was not prepared.
-evidence links: apps/mobile/src/features/sellers/product-draft-screen.tsx; apps/mobile/src/features/sellers/reconcile-saved-fields.ts; apps/mobile/src/features/sellers/seller-profile-screen.tsx; apps/mobile/src/features/sellers/owner-work-query.ts; apps/mobile/src/features/sellers/author-cabinet-screen.tsx
-remaining limitations: Chromium and WebKit were not run, so D04 and D05 are not VERIFIED. T04 stays PARTIAL. D01, D02, and T03 were not changed.
+evidence links: apps/mobile/src/lib/query-cache.ts; apps/mobile/src/lib/use-private-cache-epoch.ts; apps/mobile/src/hooks/use-seller-capability.ts; apps/mobile/src/features/sellers/product-draft-screen.tsx; apps/mobile/src/features/sellers/product-draft-route-guard.spec.ts; apps/mobile/src/features/sellers/product-draft-submit-lifecycle.spec.ts; apps/mobile/src/features/sellers/product-draft-save-race.spec.ts; apps/mobile/src/features/sellers/seller-profile-screen.tsx; apps/mobile/src/features/sellers/author-cabinet-screen.tsx
+remaining limitations: Chromium and WebKit were not run, so D04 and D05 are not VERIFIED. T04 stays PARTIAL. D01, D02, D03, D08, and T03 were not changed. History ownership was not rewritten.
 blocked-by: explicit user consent to prisma migrate reset of disposable bidplace_e2e in apps/mobile/e2e/prepare.mjs. This task did not grant that consent.
 ```
 

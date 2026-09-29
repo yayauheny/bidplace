@@ -5,6 +5,28 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Owner editor session, leave guard, and save exclusion
+
+- `Needs verification` (mobile web): a private profile or work response is
+  applied only for the session that started it. Logout and a later login,
+  including the same account, leave the new profile, work, form, and photo
+  selection unchanged, and do not continue a step or submit. While a dirty work
+  is saving before a route change, external removal stays blocked; a second
+  request does not start another save, success navigates once, and failure
+  stays on the form. After a confirmed work submit, Save and Submit stay closed
+  on a stale draft, Close is available, and a newer changes-requested or
+  rejected decision can be edited. A failed refetch does not leave the
+  transition locked. Ordinary saves still allow typing, and a second save or
+  submit in the same turn does not send a competing write or navigate.
+- Coverage: `seller-profile-submit.spec.ts`, `seller-profile-logout.spec.ts`,
+  `product-draft-save-race.spec.ts`, `product-draft-route-guard.spec.ts`,
+  `product-draft-submit-lifecycle.spec.ts`, `author-cabinet-work-cache.spec.ts`,
+  and `account-logout-reachability.spec.ts`.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts, revision transitions, and navigation history are unchanged.
+
 ## 2026-09-28 — Owner editor save and cabinet refresh
 
 - `Needs verification` (mobile web): ordinary save of a work or author profile

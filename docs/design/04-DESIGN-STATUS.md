@@ -1,8 +1,20 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-28
+Последнее обновление: 2026-09-29
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-29 — Owner editor leave guard and submit completion
+
+- `Needs verification` (mobile web behavior): leaving a dirty work stays
+  blocked until the in-flight save succeeds. A second leave does not save
+  again. After submit, Close is available and the stale draft does not reopen
+  Save or Submit. A newer changes-requested or rejected work can be edited.
+  Ordinary save still allows typing, and a repeated save does not send a second
+  request. A response from the previous session does not replace the new
+  profile or work.
+- `Unchanged`: form layout, tokens, routes, and the canonical Pen file.
+  Chromium and WebKit were not run.
 
 ## 2026-09-28 — Owner editor save and cabinet refresh
 
