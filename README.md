@@ -169,7 +169,7 @@ ALLOW_DESTRUCTIVE_DEMO_SEED=true pnpm db:reset:demo
 
 Seed создаёт одного admin и три BYN Product Listings: scheduled, live и ended.
 
-Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Перед typecheck или build database package выполните `pnpm --filter @bidplace/database generate`; database build выполняет генерацию автоматически.
+Prisma Client в `packages/database/src/generated/prisma/` является локальным generated output и не коммитится. Turbo task `generate` создаёт client один раз перед `build`, `typecheck` и `test`. Для прямого запуска package scripts сначала выполните `pnpm db:generate` или `pnpm exec turbo run build --filter=@bidplace/database`.
 
 ## Принципы разработки
 

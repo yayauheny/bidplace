@@ -8,11 +8,11 @@
     "db:generate": "pnpm run generate",
     "migrate": "node --env-file ../../.env ./node_modules/prisma/build/index.js migrate deploy --schema=prisma/schema.prisma",
     "db:migrate": "pnpm run migrate",
-    "seed": "pnpm run build && node --env-file ../../.env prisma/seed.js",
+    "seed": "pnpm run generate && pnpm run build && node --env-file ../../.env prisma/seed.js",
     "db:seed": "pnpm run seed",
-    "build": "pnpm run generate && tsc -p tsconfig.json",
-    "typecheck": "pnpm run generate && tsc -p tsconfig.typecheck.json --noEmit",
-    "test": "pnpm run generate && vitest run",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
