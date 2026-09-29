@@ -35,7 +35,6 @@ import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftAboutStep } from './product-draft-about';
 import {
   emptyProductDraftFormValues,
-  persistProductDraftBeforeSubmit,
   productDraftFormSchema,
   productDraftRequiredErrors,
   productDraftToWriteRequest,
@@ -47,8 +46,11 @@ import { ProductDraftImagesStep } from './product-draft-images';
 import { ProductDraftReviewStep } from './product-draft-review';
 import {
   canOwnerEditProduct,
+  isNewerModerationDecision,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
+  shouldKeepCachedProductRevision,
+  type ProductRevisionIdentity,
 } from './product-draft-state';
 import { ProductDraftStoryStep } from './product-draft-story';
 import {
@@ -75,6 +77,7 @@ type ProductSubmitRequest = {
   currentValues: ProductDraftFormValues;
   authEpoch: number;
   generation: number;
+  submittedRevision: ProductRevisionIdentity | null;
 };
 
 export function ProductDraftScreen({
@@ -105,6 +108,7 @@ export function ProductDraftScreen({
   const saveInFlight = useRef(false);
   const saveGeneration = useRef(0);
   const imageSelection = useRef(0);
+  const sessionOperation = useRef(0);
   const [inputsLocked, setInputsLocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
   const persistCurrentFormRef = useRef<() => Promise<boolean>>(async () => false);
@@ -122,7 +126,7 @@ export function ProductDraftScreen({
   );
   const [stepOneAttempted, setStepOneAttempted] = useState(false);
   const [wizardSubmitted, setWizardSubmitted] = useState(false);
-  const [moderationHold, setModerationHold] = useState(false);
+  const [submittedRevision, setSubmittedRevision] = useState<ProductRevisionIdentity | null>(null);
 
   const categories = useQuery({
     queryKey: categoryKeys.all,
@@ -135,13 +139,14 @@ export function ProductDraftScreen({
     queryFn: async () => {
       const epoch = currentAuthEpoch(queryClient);
       const result = await api.sellers.getProduct(productId!);
+      const current = queryClient.getQueryData<SellerProductDetailResponse>(
+        ownerWorkQueryKeys.detail(productId!),
+      );
       if (!canWritePrivateCache(queryClient, epoch)) {
-        const current = queryClient.getQueryData<SellerProductDetailResponse>(
-          ownerWorkQueryKeys.detail(productId!),
-        );
         if (current) return current;
         throw new Error('Private cache is closed');
       }
+      if (current && shouldKeepCachedProductRevision(current, result)) return current;
       return result;
     },
     enabled: Boolean(productId),
@@ -235,8 +240,12 @@ export function ProductDraftScreen({
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
+    sessionOperation.current += 1;
+    saveGeneration.current += 1;
+    imageSelection.current += 1;
+    saveInFlight.current = false;
     endLockedTransition();
-    setModerationHold(false);
+    setSubmittedRevision(null);
     setWizardSubmitted(false);
     hydratedProductId.current = null;
     hydratedUpdatedAt.current = null;
@@ -292,19 +301,21 @@ export function ProductDraftScreen({
     },
   });
   const submit = useMutation({
-    mutationFn: ({ id, currentValues }: ProductSubmitRequest) =>
-      persistProductDraftBeforeSubmit(
-        () =>
-          api.products.update(id, productDraftToWriteRequest(currentValues)),
-        () => api.products.submit(id),
-      ),
-    onSuccess: async ({ product }, request) => {
+    mutationFn: async ({ id, currentValues, authEpoch: requestEpoch, generation }: ProductSubmitRequest) => {
+      await api.products.update(id, productDraftToWriteRequest(currentValues));
+      if (generation !== saveGeneration.current || !canWritePrivateCache(queryClient, requestEpoch)) {
+        return null;
+      }
+      return api.products.submit(id);
+    },
+    onSuccess: async (result, request) => {
+      if (!result) return;
       if (request.generation !== saveGeneration.current) return;
       if (!canWritePrivateCache(queryClient, request.authEpoch)) return;
-      rememberSavedProduct(product, request.currentValues);
-      setModerationHold(true);
+      rememberSavedProduct(result.product, request.currentValues);
+      setSubmittedRevision(request.submittedRevision);
       setWizardSubmitted(true);
-      await invalidateSavedProduct(product.id);
+      await invalidateSavedProduct(result.product.id);
     },
   });
   const upload = useMutation({
@@ -376,29 +387,30 @@ export function ProductDraftScreen({
     } else if (transitionLock.current) {
       return false;
     }
+    const operation = sessionOperation.current;
     const generation = saveGeneration.current + 1;
     saveGeneration.current = generation;
     saveInFlight.current = true;
     const snapshot = form.getValues();
     const authEpochAtSave = currentAuthEpoch(queryClient);
+    const stillOwnsSave = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, authEpochAtSave);
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
+      if (!stillOwnsSave()) return false;
       releaseSave(generation);
       if (mode === 'transition') endLockedTransition();
       return false;
     }
     try {
       await save.mutateAsync({ values: snapshot, authEpoch: authEpochAtSave, generation });
-      if (!canWritePrivateCache(queryClient, authEpochAtSave)) {
-        if (mode === 'transition') endLockedTransition();
-        return false;
-      }
+      if (!stillOwnsSave()) return false;
       return true;
     } catch {
-      if (mode === 'transition') endLockedTransition();
+      if (stillOwnsSave() && mode === 'transition') endLockedTransition();
       return false;
     } finally {
-      releaseSave(generation);
+      if (sessionOperation.current === operation) releaseSave(generation);
     }
   }, [form, save]);
   persistCurrentFormRef.current = () => persistCurrentForm('transition');
@@ -409,11 +421,11 @@ export function ProductDraftScreen({
   }, []);
 
   usePreventRemove(form.formState.isDirty || inputsLocked, ({ data }) => {
+    const operation = sessionOperation.current;
     void persistCurrentForm('transition').then((persisted) => {
-      if (persisted) {
-        navigateAfterPersist(() => navigation.dispatch(data.action));
-        endLockedTransition();
-      }
+      if (sessionOperation.current !== operation || !persisted) return;
+      navigateAfterPersist(() => navigation.dispatch(data.action));
+      endLockedTransition();
     });
   });
 
@@ -433,8 +445,9 @@ export function ProductDraftScreen({
     );
 
     const persistAndContinueBrowserBack = () => {
+      const operation = sessionOperation.current;
       void persistCurrentFormRef.current().then((persisted) => {
-        if (!persisted) return;
+        if (sessionOperation.current !== operation || !persisted) return;
         guard.allow = true;
         endLockedTransition();
         window.history.go(-2);
@@ -472,17 +485,21 @@ export function ProductDraftScreen({
   }, [form.formState.isDirty, productId]);
 
   useEffect(() => {
-    if (editorStatus !== 'CHANGES_REQUESTED' && editorStatus !== 'REJECTED') return;
-    setModerationHold(false);
+    const incoming = productDetail.data?.editingRevision;
+    if (!submittedRevision || !incoming) return;
+    if (!isNewerModerationDecision(submittedRevision, incoming)) return;
+    setSubmittedRevision(null);
     setWizardSubmitted(false);
-  }, [editorStatus]);
+  }, [productDetail.data?.editingRevision, submittedRevision]);
 
   const moveToWizardStep = async (nextStep: number) => {
     if (transitionLock.current) return;
     if (!existingProduct) return;
     if (!canOpenProductWizardStep(nextStep, wizardDraft)) return;
     if (nextStep === wizardStep) return;
+    const operation = sessionOperation.current;
     if (form.formState.isDirty && !(await persistCurrentForm('transition'))) return;
+    if (sessionOperation.current !== operation) return;
     router.setParams({ flow: 'creation', step: String(nextStep) });
     endLockedTransition();
   };
@@ -498,7 +515,9 @@ export function ProductDraftScreen({
     ) {
       return;
     }
+    const operation = sessionOperation.current;
     if (!(await persistCurrentForm(isCreationFlow ? 'transition' : 'ordinary'))) return;
+    if (sessionOperation.current !== operation) return;
     if (!isCreationFlow) return;
     const persistedId = persistedProductId.current;
     if (!persistedId) {
@@ -523,8 +542,10 @@ export function ProductDraftScreen({
 
   const saveAndClose = async () => {
     if (transitionLock.current) return;
+    const operation = sessionOperation.current;
     if (form.formState.isDirty) {
       if (!(await persistCurrentForm('transition'))) return;
+      if (sessionOperation.current !== operation) return;
       navigateAfterPersist(() => router.replace('/profile'));
       endLockedTransition();
       return;
@@ -545,8 +566,11 @@ export function ProductDraftScreen({
     }
     const snapshot = form.getValues();
     const authEpochAtSubmit = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    const revision = productDetail.data?.editingRevision;
     if (!productDraftFormSchema.safeParse(snapshot).success) {
       await form.trigger();
+      if (sessionOperation.current !== operation) return;
       releaseSave(generation);
       endLockedTransition();
       return;
@@ -557,25 +581,33 @@ export function ProductDraftScreen({
         currentValues: snapshot,
         authEpoch: authEpochAtSubmit,
         generation,
+        submittedRevision: revision
+          ? { id: revision.id, version: revision.version, updatedAt: revision.updatedAt }
+          : null,
       });
     } catch {
       // submit.isError keeps the author on this form.
     } finally {
-      releaseSave(generation);
-      if (!canWritePrivateCache(queryClient, authEpochAtSubmit)) {
-        setModerationHold(false);
-        setWizardSubmitted(false);
+      if (sessionOperation.current === operation) {
+        releaseSave(generation);
+        endLockedTransition();
       }
-      endLockedTransition();
     }
   };
 
   const chooseImages = async () => {
     if (transitionLock.current || !existingProduct) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
     const selection = imageSelection.current + 1;
     imageSelection.current = selection;
+    const stillOwnsImages = () =>
+      selection === imageSelection.current &&
+      !transitionLock.current &&
+      sessionOperation.current === operation &&
+      canWritePrivateCache(queryClient, epoch);
     if (editorStatus === 'APPROVED' && !(await persistCurrentForm('ordinary'))) return;
-    if (selection !== imageSelection.current || transitionLock.current) return;
+    if (!stillOwnsImages()) return;
     setImageSelectionError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -584,7 +616,7 @@ export function ProductDraftScreen({
         selectionLimit: 10,
         quality: 1,
       });
-      if (selection !== imageSelection.current || transitionLock.current) return;
+      if (!stillOwnsImages()) return;
       if (result.canceled) return;
       const images = await Promise.all(
         result.assets.map(async (asset) => {
@@ -593,10 +625,10 @@ export function ProductDraftScreen({
           return response.blob();
         }),
       );
-      if (selection !== imageSelection.current || transitionLock.current) return;
+      if (!stillOwnsImages()) return;
       upload.mutate(images);
     } catch {
-      if (selection !== imageSelection.current || transitionLock.current) return;
+      if (!stillOwnsImages()) return;
       setImageSelectionError(
         'Не удалось прочитать выбранные изображения. Выберите файлы ещё раз.',
       );
@@ -643,11 +675,14 @@ export function ProductDraftScreen({
     );
   }
 
-  const moderationReopened =
-    editorStatus === 'CHANGES_REQUESTED' || editorStatus === 'REJECTED';
+  const moderationReopened = Boolean(
+    submittedRevision &&
+      productDetail.data?.editingRevision &&
+      isNewerModerationDecision(submittedRevision, productDetail.data.editingRevision),
+  );
   const editable =
     canOwnerEditProduct(existingProduct?.status, editingRevisionStatus) &&
-    !(moderationHold && !moderationReopened);
+    (submittedRevision === null || moderationReopened);
   const moderationNotice = ownerModerationReasonNotice(
     editorStatus,
     productDetail.data?.lastModerationReason,
@@ -662,7 +697,10 @@ export function ProductDraftScreen({
 
   const reorder = async (imageId: string, direction: -1 | 1) => {
     if (!existingProduct) return;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (editorStatus === 'APPROVED' && !(await persistCurrentForm())) return;
+    if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
     const ids = existingProduct.images.map((image) => image.id);
     const index = ids.indexOf(imageId);
     [ids[index], ids[index + direction]] = [ids[index + direction], ids[index]];
@@ -861,9 +899,11 @@ export function ProductDraftScreen({
           onSaveAndContinue={() =>
             void (async () => {
               if (transitionLock.current) return;
+              const operation = sessionOperation.current;
               if (form.formState.isDirty && !(await persistCurrentForm('transition'))) {
                 return;
               }
+              if (sessionOperation.current !== operation) return;
               router.setParams({
                 flow: 'creation',
                 step: String(productWizardStep.review),
@@ -903,10 +943,15 @@ export function ProductDraftScreen({
           onPress={() => {
             if (imagePendingDelete) {
               void (async () => {
+                const operation = sessionOperation.current;
+                const epoch = currentAuthEpoch(queryClient);
                 if (
                   editorStatus === 'APPROVED' &&
                   !(await persistCurrentForm())
                 ) {
+                  return;
+                }
+                if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
                   return;
                 }
                 removeImage.mutate(imagePendingDelete, {

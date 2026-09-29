@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canOwnerEditProduct,
+  isNewerModerationDecision,
+  isOlderProductRevision,
   ownerModerationReasonNotice,
   ownerProductSubmitLabel,
+  type ProductRevisionIdentity,
 } from './product-draft-state';
 
 describe('product draft owner recovery', () => {
@@ -49,5 +52,69 @@ describe('product draft owner recovery', () => {
       'Повторно отправить на модерацию',
     );
     expect(ownerProductSubmitLabel('DRAFT')).toBe('Отправить на модерацию');
+  });
+
+  it('treats revision identity as the moderation clock', () => {
+    const submitted: ProductRevisionIdentity = {
+      id: 'revision-1',
+      version: 2,
+      updatedAt: '2026-09-27T00:00:00.000Z',
+    };
+    expect(
+      isOlderProductRevision(submitted, {
+        ...submitted,
+        updatedAt: '2026-09-26T00:00:00.000Z',
+      }),
+    ).toBe(true);
+    expect(isOlderProductRevision(submitted, submitted)).toBe(false);
+    expect(
+      isOlderProductRevision(submitted, {
+        id: 'revision-2',
+        version: 2,
+        updatedAt: '2026-09-26T00:00:00.000Z',
+      }),
+    ).toBe(false);
+    expect(
+      isNewerModerationDecision(submitted, {
+        ...submitted,
+        status: 'APPROVED',
+        updatedAt: '2026-09-30T00:00:00.000Z',
+      }),
+    ).toBe(true);
+    expect(
+      isNewerModerationDecision(submitted, {
+        ...submitted,
+        status: 'CHANGES_REQUESTED',
+        updatedAt: '2026-09-30T00:00:00.000Z',
+      }),
+    ).toBe(true);
+    expect(
+      isNewerModerationDecision(submitted, {
+        ...submitted,
+        status: 'REJECTED',
+        updatedAt: '2026-09-30T00:00:00.000Z',
+      }),
+    ).toBe(true);
+    expect(
+      isNewerModerationDecision(submitted, {
+        ...submitted,
+        status: 'PENDING_REVIEW',
+        updatedAt: '2026-09-30T00:00:00.000Z',
+      }),
+    ).toBe(false);
+    expect(
+      isNewerModerationDecision(submitted, {
+        ...submitted,
+        status: 'CHANGES_REQUESTED',
+      }),
+    ).toBe(false);
+    expect(
+      isNewerModerationDecision(submitted, {
+        id: 'revision-9',
+        version: 3,
+        status: 'APPROVED',
+        updatedAt: '2026-09-01T00:00:00.000Z',
+      }),
+    ).toBe(true);
   });
 });

@@ -18,6 +18,48 @@ export function canOwnerEditProduct(
   );
 }
 
+export type ProductRevisionIdentity = {
+  id: string;
+  version: number;
+  updatedAt: string;
+};
+
+const moderationDecisionStatuses = new Set<ProductStatus>([
+  'APPROVED',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+]);
+
+export function isOlderProductRevision(
+  current: ProductRevisionIdentity,
+  incoming: ProductRevisionIdentity,
+): boolean {
+  if (incoming.version !== current.version) return incoming.version < current.version;
+  if (incoming.id !== current.id) return false;
+  return incoming.updatedAt < current.updatedAt;
+}
+
+export function shouldKeepCachedProductRevision(
+  cached: { editingRevision: ProductRevisionIdentity | null } | undefined,
+  incoming: { editingRevision: ProductRevisionIdentity | null },
+): boolean {
+  const current = cached?.editingRevision;
+  if (!current) return false;
+  if (!incoming.editingRevision) return true;
+  return isOlderProductRevision(current, incoming.editingRevision);
+}
+
+export function isNewerModerationDecision(
+  submitted: ProductRevisionIdentity,
+  incoming: ProductRevisionIdentity & { status: ProductStatus },
+): boolean {
+  const newer =
+    incoming.version !== submitted.version
+      ? incoming.version > submitted.version
+      : incoming.id === submitted.id && incoming.updatedAt > submitted.updatedAt;
+  return newer && moderationDecisionStatuses.has(incoming.status);
+}
+
 export function ownerProductSubmitLabel(status?: ProductStatus): string {
   return status === 'CHANGES_REQUESTED' || status === 'REJECTED'
     ? 'Повторно отправить на модерацию'

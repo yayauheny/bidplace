@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { authKeys } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
 import { ownerWorkQueryKeys } from './owner-work-query';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -22,6 +22,8 @@ const harness = vi.hoisted(() => ({
   getProduct: vi.fn(),
   updateProduct: vi.fn(),
   submitProduct: vi.fn(),
+  addImages: vi.fn(),
+  launchImageLibraryAsync: vi.fn(),
 }));
 
 vi.mock('react-native', () => ({
@@ -39,7 +41,7 @@ vi.mock('expo-router/build/react-navigation/core', () => ({
 }));
 
 vi.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: vi.fn(),
+  launchImageLibraryAsync: harness.launchImageLibraryAsync,
 }));
 
 vi.mock('../../providers/api-provider', () => ({
@@ -51,7 +53,7 @@ vi.mock('../../providers/api-provider', () => ({
       update: harness.updateProduct,
       submit: harness.submitProduct,
     },
-    images: { add: vi.fn(), remove: vi.fn(), reorder: vi.fn() },
+    images: { add: harness.addImages, remove: vi.fn(), reorder: vi.fn() },
   }),
 }));
 
@@ -239,6 +241,10 @@ beforeEach(() => {
   harness.getProduct.mockReset();
   harness.updateProduct.mockReset();
   harness.submitProduct.mockReset();
+  harness.addImages.mockReset();
+  harness.launchImageLibraryAsync.mockReset();
+  harness.addImages.mockResolvedValue({ ok: true });
+  harness.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
   harness.listCategories.mockResolvedValue({
     categories: [{ id: categoryId, slug: 'painting', name: 'Painting' }],
   });
@@ -247,6 +253,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
 
@@ -361,6 +368,252 @@ describe('product draft submit lifecycle', () => {
     );
     expect(button(view.container, 'Повторно отправить на модерацию')?.hasAttribute('disabled')).toBe(false);
     expect(button(view.container, 'Закрыть')?.hasAttribute('disabled')).toBe(false);
+    view.unmount();
+  });
+
+  it.each([
+    ['another account', 'user-b'],
+    ['the same account', 'user-a'],
+  ] as const)('does not submit a work update that finishes after login of %s', async (_label, nextUserId) => {
+    let resolveUpdate: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.updateProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const view = mount();
+    await until(view.container, () => button(view.container, 'Отправить на модерацию') instanceof HTMLButtonElement, 'submit');
+    act(() => {
+      button(view.container, 'Отправить на модерацию')?.click();
+    });
+    await flush();
+    expect(harness.updateProduct).toHaveBeenCalledTimes(1);
+    const workB = detail('DRAFT', 'User B title', '2026-09-30T00:00:00.000Z');
+    harness.getProduct.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
+      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    await act(async () => {
+      resolveUpdate({ product: product('DRAFT', 'From user A') });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.submitProduct).not.toHaveBeenCalled();
+    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(workB);
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('User B title');
+    view.unmount();
+  });
+
+  it.each(['CHANGES_REQUESTED', 'REJECTED'] as const)(
+    'keeps a resubmitted %s work locked when the refetch is the previous snapshot',
+    async (status) => {
+      const initial = detail(status, 'Needs changes', '2026-09-27T00:00:00.000Z');
+      harness.getProduct.mockResolvedValue(initial);
+      let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+      harness.submitProduct.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveSubmit = resolve;
+          }),
+      );
+      const view = mount();
+      await until(
+        view.container,
+        () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+        'resubmit',
+      );
+      act(() => {
+        button(view.container, 'Повторно отправить на модерацию')?.click();
+      });
+      await flush();
+      await act(async () => {
+        resolveSubmit({ product: product('PENDING_REVIEW', 'Needs changes') });
+        await Promise.resolve();
+      });
+      await flush();
+      await flush();
+      expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(true);
+      expect(button(view.container, 'Сохранить изменения')).toBeNull();
+      expect(button(view.container, 'Повторно отправить на модерацию')?.hasAttribute('disabled')).not.toBe(false);
+      view.unmount();
+    },
+  );
+
+  it('opens editing after a newer approval even when the parent clock did not move', async () => {
+    const initial = detail('CHANGES_REQUESTED', 'Needs changes', '2026-09-27T00:00:00.000Z');
+    harness.getProduct.mockResolvedValue(initial);
+    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    harness.submitProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+      'resubmit',
+    );
+    act(() => {
+      button(view.container, 'Повторно отправить на модерацию')?.click();
+    });
+    await flush();
+    const approved = detail('APPROVED', 'Approved title', '2026-09-27T00:00:00.000Z');
+    approved.editingRevision.updatedAt = '2026-09-30T00:00:00.000Z';
+    approved.editingRevision.status = 'APPROVED';
+    harness.getProduct.mockResolvedValue(approved);
+    await act(async () => {
+      resolveSubmit({ product: product('PENDING_REVIEW', 'Needs changes') });
+      await Promise.resolve();
+    });
+    await flush();
+    await flush();
+    setInput(view.container, 'Название', 'Edited after approval');
+    await flush();
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe(
+      'Edited after approval',
+    );
+    view.unmount();
+  });
+
+  it('does not let a stale moderation snapshot replace a newer decision', async () => {
+    const initial = detail('CHANGES_REQUESTED', 'Needs changes', '2026-09-27T00:00:00.000Z');
+    harness.getProduct.mockResolvedValue(initial);
+    let resolveSubmit: (value: { product: ReturnType<typeof product> }) => void = () => undefined;
+    let resolveRefetch: (value: ReturnType<typeof detail>) => void = () => undefined;
+    harness.submitProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => button(view.container, 'Повторно отправить на модерацию') instanceof HTMLButtonElement,
+      'resubmit',
+    );
+    harness.getProduct.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRefetch = resolve;
+        }),
+    );
+    act(() => {
+      button(view.container, 'Повторно отправить на модерацию')?.click();
+    });
+    await flush();
+    await act(async () => {
+      resolveSubmit({ product: product('PENDING_REVIEW', 'Needs changes') });
+      await Promise.resolve();
+    });
+    await flush();
+    const approved = detail('APPROVED', 'Approved title', '2026-09-27T00:00:00.000Z');
+    approved.editingRevision.updatedAt = '2026-09-30T00:00:00.000Z';
+    approved.editingRevision.status = 'APPROVED';
+    act(() => {
+      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), approved);
+    });
+    await flush();
+    await act(async () => {
+      resolveRefetch(initial);
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(ownerWorkQueryKeys.detail(productId))).toEqual(approved);
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.value).toBe('Approved title');
+    expect(view.container.querySelector<HTMLInputElement>('[aria-label="Название"]')?.disabled).toBe(false);
+    view.unmount();
+  });
+
+  it('does not upload a work image chosen by the previous session', async () => {
+    const imageA = new Blob(['image-a'], { type: 'image/png' });
+    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePicker = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => imageA })));
+    const view = mount();
+    await until(
+      view.container,
+      () => button(view.container, 'Добавить изображения') instanceof HTMLButtonElement,
+      'images',
+    );
+    act(() => {
+      button(view.container, 'Добавить изображения')?.click();
+    });
+    await flush();
+    const workB = detail('DRAFT', 'User B title', '2026-09-30T00:00:00.000Z');
+    harness.getProduct.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    await act(async () => {
+      resolvePicker({ canceled: false, assets: [{ uri: 'blob:image-a' }] });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.addImages).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('does not upload a work image blob that finishes after the session changes', async () => {
+    const imageA = new Blob(['image-a'], { type: 'image/png' });
+    let resolveBlob: (value: Blob) => void = () => undefined;
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:image-a' }],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveBlob = () => resolve({ ok: true, blob: async () => imageA });
+          }),
+      ),
+    );
+    const view = mount();
+    await until(
+      view.container,
+      () => button(view.container, 'Добавить изображения') instanceof HTMLButtonElement,
+      'images',
+    );
+    act(() => {
+      button(view.container, 'Добавить изображения')?.click();
+    });
+    await flush();
+    const workB = detail('DRAFT', 'User B title', '2026-09-30T00:00:00.000Z');
+    harness.getProduct.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+      view.queryClient.setQueryData(ownerWorkQueryKeys.detail(productId), workB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    await act(async () => {
+      resolveBlob(imageA);
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.addImages).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
     view.unmount();
   });
 });
