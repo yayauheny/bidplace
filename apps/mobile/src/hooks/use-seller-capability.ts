@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ApiClientError, type ApiClient } from '@bidplace/api-client';
 
+import { canWritePrivateCache, currentAuthEpoch } from '../lib/query-cache';
 import { useApiClient } from '../providers/api-provider';
 import { useAuth } from '../providers/auth-provider';
 
@@ -25,9 +26,22 @@ export function authorProfileDestination(
 export function useSellerCapability() {
   const api = useApiClient();
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['seller', 'profile'],
-    queryFn: () => api.sellers.getMyProfile(),
+    queryFn: async () => {
+      const epoch = currentAuthEpoch(queryClient);
+      const result = await api.sellers.getMyProfile();
+      if (!canWritePrivateCache(queryClient, epoch)) {
+        const current = queryClient.getQueryData<Awaited<ReturnType<ApiClient['sellers']['getMyProfile']>>>([
+          'seller',
+          'profile',
+        ]);
+        if (current) return current;
+        throw new Error('Private cache is closed');
+      }
+      return result;
+    },
     enabled: auth.isAuthenticated && !auth.isAdmin,
     retry: false,
   });
