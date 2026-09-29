@@ -231,7 +231,7 @@ The active API is an HTTP process. There is no scheduler or Socket.IO adapter on
 
 Pilot operations are documented in [`docs/ops/00-RELEASE-AND-BACKUP.md`](../ops/00-RELEASE-AND-BACKUP.md):
 
-- `pnpm verify` — clean-checkout gate (`db:generate`, typecheck, lint, unit, integration, build);
+- `pnpm verify` — clean-checkout gate (typecheck with Turbo `database#generate`, lint, unit, integration, build);
 - GitHub Actions [`.github/workflows/verify.yml`](../../.github/workflows/verify.yml);
 - `GET /api/health` (liveness) and `GET /api/health/ready` (PostgreSQL `SELECT 1`);
 - `scripts/ops/` backup/restore/integrity with `pnpm ops:*` aliases.

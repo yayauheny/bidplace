@@ -127,7 +127,7 @@ pnpm docker:up
 pnpm verify
 ```
 
-`pnpm verify` выполняет `db:generate`, `typecheck`, `lint`, `test:unit`, `test:ops`, E2E database fence, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
+`pnpm verify` выполняет `typecheck` (включая Turbo `database#generate`), `lint`, `test:unit`, `test:ops`, E2E database fence, `test:integration` и `build`. Для integration нужен запущенный PostgreSQL (`pnpm docker:up`). GitHub Actions запускает тот же gate в [`.github/workflows/verify.yml`](.github/workflows/verify.yml).
 
 Операционный runbook (deploy, backup, restore drill): [`docs/ops/00-RELEASE-AND-BACKUP.md`](docs/ops/00-RELEASE-AND-BACKUP.md).
 

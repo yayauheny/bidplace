@@ -30,7 +30,7 @@ pnpm docker:up
 pnpm verify
 ```
 
-`pnpm verify` runs, in order: `db:generate`, `typecheck`, `lint`, all unit suites
+`pnpm verify` runs, in order: `typecheck` (Turbo runs `database#generate` first), `lint`, all unit suites
 (including mobile), the ops-script unit suite, the disposable E2E database
 fence, `test:integration`, and `build`. Maintained browser tests remain separate
 because they create a disposable database and start local services.
