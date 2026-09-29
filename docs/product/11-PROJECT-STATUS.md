@@ -5,6 +5,26 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-29 — Owner editor picker, submit continuation, and moderation freshness
+
+- `Needs verification` (mobile web): a profile photo or work image selected
+  before logout is not written into the next session, including a late file
+  read and a repeated login of the same account. A work save that resolves
+  after logout does not call submit. After a confirmed resubmit, the same
+  changes-requested or rejected revision stays locked. A newer editing
+  revision that is approved, changes-requested, or rejected can be edited.
+  Freshness uses that revision's id, version, and updatedAt. A late older
+  detail does not replace a newer decision, and `{ product }` is not written
+  over the detail envelope. Close stays available. A failed refetch still
+  offers retry.
+- Coverage: `seller-profile-submit.spec.ts`,
+  `product-draft-submit-lifecycle.spec.ts`, and `product-draft-state.spec.ts`.
+  Previous session, route-guard, and save-exclusion specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. `prepare.mjs` was not
+  allowed to reset disposable `bidplace_e2e`.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial.
+  Server contracts and revision transitions are unchanged.
+
 ## 2026-09-29 — Owner editor session, leave guard, and save exclusion
 
 - `Needs verification` (mobile web): a private profile or work response is

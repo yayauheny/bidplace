@@ -4,6 +4,19 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-09-29 — Owner editor session ownership and moderation freshness
+
+- `Needs verification` (mobile web behavior): a photo or work image chosen in
+  the previous session is not applied after logout and login, including the
+  same account and a file read that finishes late. A work update that finishes
+  after the session changes does not continue into submit. After resubmit, a
+  stale changes-requested or rejected snapshot stays locked. A newer approval,
+  changes-requested, or rejected revision opens editing. A late older snapshot
+  does not replace that decision. Close stays available, and a failed refetch
+  still shows retry.
+- `Unchanged`: form layout, tokens, routes, server contracts, and the canonical
+  Pen file. Chromium and WebKit were not run.
+
 ## 2026-09-29 — Owner editor leave guard and submit completion
 
 - `Needs verification` (mobile web behavior): leaving a dirty work stays
