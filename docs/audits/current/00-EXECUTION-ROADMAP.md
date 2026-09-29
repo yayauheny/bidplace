@@ -4,9 +4,11 @@
 
 **Источник:** последний полный аудит в этой беседе, baseline `7d2d547`. Исходный аудит и существующие audit-файлы сохраняются.
 
-**Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
+**Результат планирования:** 35 findings (28 исходных + D08 + 6 из дополнительного аудита) распределены по семи волнам и 34 scopes: 27 Implementation и 7 Plan.
 
-**Сохранён:** 2026-09-28. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; scopes R04–R29 не запущены.
+**Дополнен:** 2026-09-29. Новые findings и границы проверки: [incremental audit](07-INCREMENTAL-AUDIT-2026-09-29.md). Дополнение не переносит незавершённую owner-editor ветку в release.
+
+**Исторический snapshot этого checkout от 2026-09-28 (не сводный текущий статус всех веток):** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; scopes R04–R29 не запущены.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -58,7 +60,7 @@ Canonical integration base — `feature/portfolio-mvp-release`. Каждый н�
 
 ### Общий implementation prompt G
 
-**Каждая карточка R01–R30 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
+**Каждая карточка R01–R34 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
 
 > Выполни только указанный scope.
 >
@@ -155,11 +157,11 @@ git -c core.fsmonitor=false status --short
 | Волна  | Назначение                                                     | Scopes       |
 | ------ | -------------------------------------------------------------- | ------------ |
 | Wave 1 | Correctness и небольшие проверки высокой ценности              | R01–R04, R30 |
-| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08      |
+| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08, R31–R32 |
 | Wave 3 | Подтверждённый dead code, dependencies и бесполезные параметры | R09–R13      |
-| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17      |
+| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17, R34 |
 | Wave 5 | Узкие read models и ограничение стоимости запросов             | R18–R21      |
-| Wave 6 | Отдельные архитектурные решения                                | R22–R27      |
+| Wave 6 | Отдельные архитектурные решения                                | R22–R27, R33 |
 | Wave 7 | Остаточный test cleanup                                        | R28–R29      |
 
 Волны задают приоритет, а не обязательный глобальный барьер. Явные зависимости карточек обязательны. Тесты нового поведения входят в production scope сразу; Wave 7 не является местом для откладывания regression coverage.
@@ -364,11 +366,12 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Режим:** Implementation.
 - **Base:** B.
 - **Branch:** `fix/mobile-unused-code`.
-- **Findings:** mobile часть C01; dead-helper часть T02.
+- **Findings:** mobile часть C01; dead-helper часть T02; C06.
 - **Dependencies:** R01, R05–R07.
 - **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/CatalogGrid.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/features/products/product-about.tsx`; `/Users/yayauheny/projects/bidplace/apps/mobile/src/components/layout/SessionAlert.tsx` и platform variant.
 - **Phase 0:** повторить route/import/export graph с platform resolution и dynamic references. По targeted review PR #12 отдельно перепроверить `OverlayPortal` и его positioning helpers в `overlay-geometry.ts`, а также subtree `FilterMenu` → `focusable-anchor`. Различать barrel/module import и реальный render/call path; смонтированный `OverlayHost` не считать unreachable целиком из-за отсутствия consumers `OverlayPortal`.
 - **Разрешённые кандидаты:** перечисленные компоненты; `lib/formatters.ts`, `lib/canonical-share-url.ts`, `lib/media.ts`; `button-layout.ts`, `ambient-image-background-style.ts` и `ambient-image-background-style.spec.ts`; старые `auth-layout`, `form-page-layout`, `author-layout`, `catalog-layout`; неиспользуемый direct re-export `CreatorCardGrid`; `OverlayPortal`, `getBottomEndPosition`/`getBottomStartPosition` из `overlay-geometry.ts` и относящиеся к ним tests; `FilterMenu` → `focusable-anchor` (`assignFocusableAnchorRef`, `FocusableAnchor`), если повторная проверка подтверждает unreachable status. Сейчас это только кандидаты R09: никаких удалений при обновлении roadmap.
+- **Дополнение Phase 0 — C06:** на `69c4aff` у `persistProductDraftBeforeSubmit` в `product-draft-form.ts` остались только собственные tests. Повторно проверить consumers на интеграционной базе; удалить helper и только его tests после подтверждения. Новую inline submit coordination не заменять старым helper.
 - **Исправить:** удалить только подтверждённые unreachable symbols/files и ставшие бессмысленными тесты/barrel exports.
 - **Замена:** отсутствует — ответственность уже отсутствует либо выполняется действующим кодом.
 - **Не менять:** routes, active error UI, Figma masters, runtime-compatible adapters.
@@ -752,10 +755,11 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Режим:** Implementation.
 - **Base:** B.
 - **Branch:** `fix/behavior-test-coverage`.
-- **Findings:** оставшаяся часть T02.
-- **Dependencies:** R09, R10, R13–R16.
+- **Findings:** оставшаяся часть T02; T06.
+- **Dependencies:** R09, R10, R13–R16; для T06 — R31/R32.
 - **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/lib/category-query-identity.spec.ts`; source-reading specs для FigmaTabs, ProductListScreen, ProductScreen, product-list-catalog, catalog-intro-style и Search overlay surface.
 - **Phase 0:** для каждого assertion назвать реальный риск; проверить, не закрыт ли он production PR этой roadmap.
+- **Дополнение T06:** после production regressions R31/R32 сократить повторение typed fixtures, DOM/deferred helpers и setup QueryClient. Сохранить реальные screen tests, fresh client на тест и уникальные сценарии; добавить real parent/achievement seam в R32 до cleanup. Не подавлять act warnings.
 - **Исправить:** удалить проверки уже удалённого кода; source-string assertions заменить behavioral/unit tests либо одним browser scenario, если риск связан с DOM/navigation. Геометрию проверять visual evidence, а не наличием style literal.
 - **Не менять:** production code ради удобства теста, не переносить всё в E2E, не удалять уникальную regression coverage.
 - **Инварианты:** test failure соответствует пользовательскому/контрактному нарушению, а не переименованию локального символа.
@@ -976,6 +980,61 @@ blocked-by: explicit user consent to prisma migrate reset of disposable bidplace
 - Production code, тесты, manifests, исходные audit-файлы и canonical product/design documents не изменены. Product statuses не обновлялись, поскольку поведение системы не менялось.
 - Verification evidence будущих scopes пока отсутствует; ни один finding не помечен выполненным сохранением этого roadmap.
 
+## Дополнение 2026-09-29: R31–R34
+
+Evidence всех новых findings: [дополнительный аудит](07-INCREMENTAL-AUDIT-2026-09-29.md), production snapshot `69c4aff`. Старые findings сохраняют ID. Новые карточки используют G/P и validation profiles выше.
+
+**База новых scopes:** актуальная `feature/portfolio-mvp-release`, только после проверки наличия R04 и исправлений R05–R07. В этом проходе local tracking = `8e0dee2`, owner-editor corrections ещё в отдельной ветке. Не использовать старое B автоматически, не начинать stacked implementation без решения. Это prerequisite запуска, а не утверждение, что corrections уже интегрированы.
+
+### R31. Единый retirement private state при смене auth identity
+
+- **Модель / режим:** Sol High / Implementation. **Wave:** 2. **Branch:** `fix/auth-refresh-identity`.
+- **Findings / статус:** D09 / `QUEUED`. **Dependencies:** интегрированный session epoch механизм R05–R07; широкое решение R33 не требуется для correctness fix.
+- **Phase 0 / начать:** `apps/mobile/src/providers/auth-provider.tsx` (`sessionQuery`, `refreshSession`, `setAuthenticatedSession`), `lib/query-cache.ts`, `use-private-cache-epoch.ts`, email verification и ProtectedRoute callers. Повторить A → refresh B с real QueryClient.
+- **Исправить:** identity change проходит через один auth-owned transition: retire private queries и epoch до разрешения старых callbacks. Обработать initial session и anonymous; отличить network error от подтверждённого logout. Same-user metadata refresh не должен сбрасывать dirty form.
+- **Механизм:** existing QueryClient cancellation/removal и текущая session generation; без новой библиотеки. Не объединять с масштабным query refactor.
+- **Не менять / инварианты:** серверный auth, cookie contracts, public cache, R30 logout finally, guards и revision transitions. Клиентская отмена не отменяет server mutation.
+- **Тесты / done:** real provider + QueryClient: A→B, A→anonymous, same-user email refresh, initial load, failed refresh, late save A, same-account explicit relogin. Private A не показывается B и не восстанавливается callback; public cache остаётся.
+- **Validation:** V-MOBILE, V-DIFF; targeted browser session/guard checks в безопасном окружении. Без браузера сохранить `NEEDS_VERIFICATION` для межвкладочного сценария.
+- **STOP:** identity/session contract нельзя определить без server change; не трактовать любую ошибку `/me` как anonymous.
+- **Отчёт:** G + transition matrix и before/after failing regression. D09 → `VERIFIED` только после обязательных проверок.
+
+### R32. Achievement editor: async selection, save и parent transition
+
+- **Модель / режим:** Sol High / Implementation. **Wave:** 2. **Branch:** `fix/achievement-editor-lifecycle`.
+- **Findings / статус:** D10; behavioral часть T06/T04 / `QUEUED`. **Dependencies:** R31 и R06 на интеграционной базе.
+- **Phase 0 / начать:** `apps/mobile/src/features/sellers/AuthorApplicationAchievements.tsx`, caller в `seller-profile-screen.tsx`, API achievement methods и guards. Воспроизвести add A → ввод B → success A; picker A → session B. Проверить, какие transitions реально разрешены во время child mutation.
+- **Исправить:** submitted snapshot и conditional reconciliation либо явная блокировка полей на время add; выбрать по действующему UX. Picker и callbacks проверяют epoch и selection identity. Родитель учитывает незавершённый child write перед submit/logout/exit, не отправляет параллельную конфликтующую операцию.
+- **Механизм:** существующие React Query mutation variables и session epoch; без нового store. Выбранную field policy явно записать и протестировать.
+- **Не менять / инварианты:** publication/privacy, server revision guard, порядок achievement, нормализация даты, обычный save других полей. Поздний A не очищает форму и не загружает файл B.
+- **Тесты / done:** production parent + настоящий child, real QueryClient; delayed add, edit during save, failure/retry, picker out of order, account switch/relogin, submit/logout during add/delete. Не скрывать child mock-ом null в этих regressions.
+- **Validation:** V-MOBILE, V-DIFF, targeted achievement browser privacy/transition scenarios; без браузеров D10 → `NEEDS_VERIFICATION`.
+- **STOP:** требуется новый продуктовый выбор discard/save exit или изменение server protocol; остановить только зависимую часть.
+- **Отчёт:** G + before/after сценарии. T04 остаётся PARTIAL; T06 не закрывать до R28.
+
+### R33. Query и session ownership после editor corrections
+
+- **Модель / режим:** Sol High / сначала Plan, P. **Wave:** 6. **Branch:** `feature/query-session-ownership-plan`.
+- **Findings / статус:** A06 / `DECISION_REQUIRED`. **Dependencies:** R31/R32; существующие R03/R05–R07 invariants.
+- **Phase 0 / начать:** `use-seller-capability.ts`, `seller-profile-screen.tsx` (`useProfileData`, `keepConfirmedPendingProfile`), `lib/query-cache.ts`, `use-private-cache-epoch.ts`, `owner-work-query.ts`. Составить key→queryFn/options/writer/policy table; проверить installed TanStack APIs.
+- **Варианты:** feature-owned `queryOptions` factory с общей snapshot policy; один auth-owned external store через существующий QueryCache subscription; сохранить отдельный epoch store с централизованным transition API. Сравнить invalidation, observer policy, same-account relogin, SSR/native, стоимость миграции.
+- **Не менять:** production и contracts в Plan. Mutation scope лишь ставит запросы в очередь и не заменяет drop-repeat guards; AbortSignal не защищает от результата уже выполненной server mutation.
+- **Инварианты / acceptance:** одна политика на private resource; stale pending/decision snapshots не откатываются; same-user refresh не стирает dirty ввод; late callbacks не пересекают сессии. Описать rollout/rollback и маленькие implementation scopes в этом roadmap.
+- **Validation:** read-only consumer graph, установленный library source, существующие focused regressions при безопасном запуске. Не считать разные options доказанным runtime bug без воспроизведения.
+- **STOP / отчёт:** P; отсутствие принятого решения оставляет A06 `DECISION_REQUIRED`, Plan сам finding не закрывает.
+
+### R34. Admin media request lifecycle средствами React Query
+
+- **Модель / режим:** Terra Medium / Implementation. **Wave:** 4, выполнение позже prerequisites. **Branch:** `fix/admin-media-query-lifecycle`.
+- **Findings / статус:** L05 / `BLOCKED`. **Dependencies:** R08, принятое R33 и необходимая реализация session/cache ownership. Не выполнять раньше лишь из-за номера волны.
+- **Phase 0 / начать:** `features/admin/AdminRevisionPhoto.tsx` (`useAdminObjectUrl`, `AdminRevisionPhoto`, `AdminReviewImage`), admin screen consumers, requestBlob. Сравнить объём и lifecycle до/после; сохранить вариант только если реально проще.
+- **Удалить / заменить:** ручной request loading/error/race lifecycle — на установленный `useQuery` с media identity, signal и bounded private Blob cache. Object URL создать/отозвать локальным effect: это lifecycle browser resource, его не удалять вместе с fetch effect.
+- **Не менять / инварианты:** cookie/bearer transport, server visibility, checksum/update identity, image decode failure, layout. Session retirement очищает private blobs, старый response не подменяет новое фото; unmount отзывает URL.
+- **Тесты / done:** changed checksum, out-of-order fetch, decode error, retry, unmount, logout/relogin, pending-only image admin/public visibility. Нет утечки private cache между сессиями.
+- **Validation:** V-MOBILE, V-DIFF, admin-revision-moderation browser specs Chromium/WebKit. Без браузеров — `NEEDS_VERIFICATION`.
+- **STOP:** private cache lifecycle не определён или новый wrapper сложнее текущего; не добавлять dependency, предложить DEFERRED с причиной.
+- **Отчёт:** G + удалённый механизм→library API→сохранённые semantics. L05 не переводить в VERIFIED одним refactor diff.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1011,11 +1070,17 @@ blocked-by: explicit user consent to prisma migrate reset of disposable bidplace
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 закрыл overlay hook + browser seam; R03 submit UI is NEEDS_VERIFICATION; queue/save/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
+| D09 | Refresh auth identity сохраняет private cache/epoch прежнего user | P1 / HIGH | W2 → R31 | QUEUED | Интеграционная база с epoch corrections | 69c4aff: real AuthProvider/QueryClient regression failed |
+| D10 | Achievement add очищает более новый ввод; child lifecycle вне coordination | P2 / HIGH (input), MEDIUM (coordination) | W2 → R32 | QUEUED | R31/R06 | Static delayed-add/picker/parent call paths; runtime pending |
+| C06 | persistProductDraftBeforeSubmit имеет только test consumers | P3 / HIGH | W3 → R09 | QUEUED | R05–R07; повторный consumer graph | 69c4aff rg + удаление production call в 6cbb56a |
+| A06 | Несколько владельцев profile query policy и session generation | P2 / HIGH | W6 → R33 | DECISION_REQUIRED | R31/R32; выбор ownership | key/options/writer inventory, без заявления runtime race |
+| L05 | Admin media вручную ведёт request lifecycle | P3 / HIGH | W4 → R34 | BLOCKED | R08; решение R33 и необходимые prerequisites | useAdminObjectUrl production lifecycle; semantic comparison pending |
+| T06 | Дублированный harness и пропущенная parent/achievement граница | P2 / HIGH | W2/W7 → R32, R28 | QUEUED | R31/R32 прежде cleanup | Existing suites/mocks inventory; timings не измерены |
 
-**TOTAL FINDINGS: 29**
+**TOTAL FINDINGS: 35**
 
-**ASSIGNED: 29**
+**ASSIGNED: 35**
 
-**BLOCKED/DECISION: 8 — 7 требуют решения, T04 частично зависит от этих решений**
+**BLOCKED/DECISION: 10 — 8 требуют решения, T04 частично зависит от решений, L05 заблокирован prerequisites**
 
 **UNASSIGNED: 0**
