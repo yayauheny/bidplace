@@ -185,6 +185,7 @@ export function SellerProfileScreen() {
   const revisionSubmitInFlight = useRef(false);
   const transitionLock = useRef(false);
   const photoSelection = useRef(0);
+  const sessionOperation = useRef(0);
   const photoBlobRef = useRef<Blob | null>(null);
   const hydratedProfileToken = useRef<string | null>(null);
   const [inputsLocked, setInputsLocked] = useState(false);
@@ -265,7 +266,14 @@ export function SellerProfileScreen() {
   useEffect(() => {
     if (seenAuthEpoch.current === authEpoch) return;
     seenAuthEpoch.current = authEpoch;
+    sessionOperation.current += 1;
+    photoSelection.current += 1;
+    saveInFlight.current = false;
+    revisionSubmitInFlight.current = false;
+    leaving.current = false;
+    logoutStarted.current = false;
     endLockedTransition();
+    setRevisionSubmitActive(false);
     photoBlobRef.current = null;
     setPhotoBlob(null);
     setPhotoUri(null);
@@ -324,16 +332,17 @@ export function SellerProfileScreen() {
       photo: photoBlobRef.current,
       authEpoch: currentAuthEpoch(queryClient),
     };
+    const operation = sessionOperation.current;
     saveInFlight.current = true;
     try {
       const saved = await saveMutation.mutateAsync(variables);
-      if (!canWritePrivateCache(queryClient, variables.authEpoch)) return null;
+      if (sessionOperation.current !== operation || !canWritePrivateCache(queryClient, variables.authEpoch)) return null;
       return saved;
     } catch (error) {
-      if (source === 'transition') endLockedTransition();
+      if (source === 'transition' && sessionOperation.current === operation) endLockedTransition();
       throw error;
     } finally {
-      saveInFlight.current = false;
+      if (sessionOperation.current === operation) saveInFlight.current = false;
     }
   };
   const submitRevision = async () => {
@@ -349,58 +358,72 @@ export function SellerProfileScreen() {
     }
     if (!beginLockedTransition()) return;
     const submitEpoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
     revisionSubmitInFlight.current = true;
     setRevisionSubmitActive(true);
+    const stillOwnsSubmit = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, submitEpoch);
     try {
       const saved = await save('revision-submit');
-      if (!saved || !canWritePrivateCache(queryClient, submitEpoch)) return;
+      if (!saved || !stillOwnsSubmit()) return;
       const submitted = await submitMutation.mutateAsync();
-      if (!canWritePrivateCache(queryClient, submitEpoch)) return;
+      if (!stillOwnsSubmit()) return;
       await queryClient.cancelQueries({ queryKey: sellerProfileQueryKey }, { revert: false });
-      if (canWritePrivateCache(queryClient, submitEpoch)) {
-        queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
-          withSubmittedRevision(current, submitted),
-        );
-        hydratedProfileToken.current = submitted.editingRevision?.updatedAt ?? hydratedProfileToken.current;
-        void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
-        void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
-        await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
-      }
+      if (!stillOwnsSubmit()) return;
+      queryClient.setQueryData<SellerProfileResponse>(sellerProfileQueryKey, (current) =>
+        withSubmittedRevision(current, submitted),
+      );
+      hydratedProfileToken.current = submitted.editingRevision?.updatedAt ?? hydratedProfileToken.current;
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
+      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-submit');
     } finally {
-      revisionSubmitInFlight.current = false;
-      setRevisionSubmitActive(false);
-      endLockedTransition();
+      if (sessionOperation.current === operation) {
+        revisionSubmitInFlight.current = false;
+        setRevisionSubmitActive(false);
+        endLockedTransition();
+      }
     }
   };
   const continueFromStep = async (visibleStep: 2 | 3) => {
     if (transitionLock.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
+    const stillOwnsStep = () =>
+      sessionOperation.current === operation && canWritePrivateCache(queryClient, epoch);
     try {
-      const epoch = currentAuthEpoch(queryClient);
       const saved = await save('transition');
-      if (!saved || !canWritePrivateCache(queryClient, epoch)) return;
+      if (!saved || !stillOwnsStep()) return;
       if (shouldAdvanceSellerApplication(saved.sellerProfile, visibleStep)) {
         await advanceMutation.mutateAsync(epoch);
-        if (!canWritePrivateCache(queryClient, epoch)) return;
+        if (!stillOwnsStep()) return;
       }
       router.push(`/profile?step=${visibleStep + 1}`);
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-step');
     } finally {
-      endLockedTransition();
+      if (sessionOperation.current === operation) endLockedTransition();
     }
   };
   const choosePhoto = async () => {
     if (!fieldsEditable || transitionLock.current) return;
+    const epoch = currentAuthEpoch(queryClient);
+    const operation = sessionOperation.current;
     const selection = photoSelection.current + 1;
     photoSelection.current = selection;
+    const stillOwnsPhoto = () =>
+      selection === photoSelection.current &&
+      !transitionLock.current &&
+      sessionOperation.current === operation &&
+      canWritePrivateCache(queryClient, epoch);
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1 });
-    if (selection !== photoSelection.current || transitionLock.current) return;
+    if (!stillOwnsPhoto()) return;
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
     const blob = await fetch(asset.uri).then((response) => response.blob());
-    if (selection !== photoSelection.current || transitionLock.current) return;
+    if (!stillOwnsPhoto()) return;
     photoBlobRef.current = blob;
     setPhotoUri(asset.uri);
     setPhotoFailed(false);
@@ -423,19 +446,22 @@ export function SellerProfileScreen() {
     if (revisionSubmitInFlight.current || saveInFlight.current || transitionLock.current) return;
     if (leaving.current || logoutStarted.current || accountLogout.busy) return;
     leaving.current = true;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) {
       try {
         const saved = await save('transition');
-        if (!saved) {
-          leaving.current = false;
+        if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
+          if (sessionOperation.current === operation) leaving.current = false;
           return;
         }
       } catch (error) {
-        leaving.current = false;
+        if (sessionOperation.current === operation) leaving.current = false;
         logInfrastructureError(error, 'seller-profile-exit');
         return;
       }
     }
+    if (sessionOperation.current !== operation) return;
     endLockedTransition();
     if (exitIntent === 'logout') {
       logoutStarted.current = true;
@@ -446,16 +472,19 @@ export function SellerProfileScreen() {
   };
   const goToPreviousStep = async () => {
     if (transitionLock.current || revisionSubmitInFlight.current || profileStep <= 1) return;
+    const operation = sessionOperation.current;
+    const epoch = currentAuthEpoch(queryClient);
     if (shouldSaveBeforeSellerProfileBack(form.formState.isDirty, Boolean(photoBlob))) {
       if (!canSave) return;
       try {
         const saved = await save('transition');
-        if (!saved) return;
+        if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
       } catch (error) {
         logInfrastructureError(error, 'seller-profile-step');
         return;
       }
     }
+    if (sessionOperation.current !== operation) return;
     router.push(`/profile?step=${previousSellerProfileStep(profileStep)}`);
     endLockedTransition();
   };
@@ -512,15 +541,16 @@ export function SellerProfileScreen() {
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
       {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void (async () => {
         if (transitionLock.current) return;
+        const epoch = currentAuthEpoch(queryClient);
+        const operation = sessionOperation.current;
         try {
-          const epoch = currentAuthEpoch(queryClient);
           const saved = await save('transition');
-          if (!saved || !canWritePrivateCache(queryClient, epoch)) return;
+          if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;
           router.push('/profile?step=2');
         } catch (error) {
           logInfrastructureError(error, 'seller-profile-step');
         } finally {
-          endLockedTransition();
+          if (sessionOperation.current === operation) endLockedTransition();
         }
       })()} label="Продолжить" width="block" /> : null}
       {isApplicationWizard && profileStep === 2 && editable ? <PrimaryButton loading={saveMutation.isPending || advanceMutation.isPending} disabled={!canSave || accountLogout.busy || revisionSubmitActive || inputsLocked} onPress={() => void continueFromStep(2)} label="Продолжить" width="block" /> : null}

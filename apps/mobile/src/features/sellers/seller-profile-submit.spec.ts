@@ -157,7 +157,7 @@ vi.mock('../../components/ui', () => {
   };
 });
 
-import { authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
+import { advanceAuthEpoch, authKeys, clearAuthenticatedSession } from '../../lib/query-cache';
 import { SellerProfileScreen } from './seller-profile-screen';
 
 function profile(status: string) {
@@ -333,6 +333,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   document.body.replaceChildren();
 });
 
@@ -1196,6 +1197,104 @@ describe('seller profile save reconciliation', () => {
     expect(harness.push).not.toHaveBeenCalled();
     expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
     expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    view.unmount();
+  });
+
+  it.each([
+    ['another account', 'user-b'],
+    ['the same account', 'user-a'],
+  ] as const)('does not save a photo chosen by the previous session after login of %s', async (_label, nextUserId) => {
+    const photoA = new Blob(['photo-a'], { type: 'image/png' });
+    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string }> }) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile({ city: 'Hrodna' }));
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePicker = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => photoA })));
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      'photo',
+    );
+    click(view.container, 'Изменить фото');
+    await flush();
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: nextUserId });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolvePicker({ canceled: false, assets: [{ uri: 'blob:photo-a' }] });
+      await Promise.resolve();
+    });
+    await flush();
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBeUndefined();
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    vi.unstubAllGlobals();
+    view.unmount();
+  });
+
+  it('does not apply a photo blob read that finishes after the session changes', async () => {
+    const photoA = new Blob(['photo-a'], { type: 'image/png' });
+    let resolveBlob: (value: Blob) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile({ city: 'Hrodna' }));
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:photo-a' }],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveBlob = () => resolve({ blob: async () => photoA });
+          }),
+      ),
+    );
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () => findButton(view.container, 'Изменить фото') instanceof HTMLButtonElement,
+      'photo',
+    );
+    click(view.container, 'Изменить фото');
+    await flush();
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna' };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-a' });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveBlob(photoA);
+      await Promise.resolve();
+    });
+    await flush();
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[1]).toBeUndefined();
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    vi.unstubAllGlobals();
     view.unmount();
   });
 });
