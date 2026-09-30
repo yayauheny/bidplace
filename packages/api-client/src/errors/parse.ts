@@ -3,6 +3,7 @@ import {
   type ApiErrorResponse,
 } from '@bidplace/contracts';
 
+import { rethrowIfAbort } from './abort';
 import { ApiClientError } from './api-client-error';
 import { classifyApiError } from './classify';
 
@@ -23,7 +24,8 @@ async function readErrorPayload(
   try {
     const payload = (await response.json()) as unknown;
     return parseApiError(payload);
-  } catch {
+  } catch (cause) {
+    rethrowIfAbort(cause);
     return null;
   }
 }

@@ -1,5 +1,6 @@
 import { type ZodType } from 'zod';
 
+import { rethrowIfAbort } from './errors/abort';
 import {
   createNetworkError,
   createUnexpectedResponseError,
@@ -53,10 +54,6 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, '');
 }
 
-function isAbortError(cause: unknown): boolean {
-  return cause instanceof Error && cause.name === 'AbortError';
-}
-
 function requestUrl(
   context: RequestContext,
   path: string,
@@ -97,10 +94,7 @@ async function fetchApi(
   try {
     return await context.fetchImpl(url, init);
   } catch (cause) {
-    if (isAbortError(cause)) {
-      throw cause;
-    }
-
+    rethrowIfAbort(cause);
     throw createNetworkError(cause);
   }
 }
@@ -224,6 +218,7 @@ export async function requestJson<T>(
     const payload = (await response.json()) as unknown;
     return schema.parse(payload);
   } catch (cause) {
+    rethrowIfAbort(cause);
     throw createUnexpectedResponseError(response.status, cause);
   }
 }
@@ -260,5 +255,10 @@ export async function requestBlob(
     throw createUnexpectedResponseError(response.status);
   }
 
-  return response.blob();
+  try {
+    return await response.blob();
+  } catch (cause) {
+    rethrowIfAbort(cause);
+    throw cause;
+  }
 }

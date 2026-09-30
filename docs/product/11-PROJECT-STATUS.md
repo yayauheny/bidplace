@@ -5,6 +5,24 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-30 — Abort during response body reads
+
+- `Needs verification` (mobile web): cancelling a public read after response
+  headers preserves `AbortError` for a successful JSON body, an error JSON
+  body, and an image blob. Malformed JSON and a payload that fails schema
+  validation stay unexpected responses. An ordinary HTTP error keeps its
+  status classification. A failed fetch stays a network error. An aborted
+  signal does not turn a different body error into cancellation. Mutations
+  stay uncancelled unless a caller passes a signal.
+- Coverage: `packages/api-client/src/errors/abort.ts`,
+  `packages/api-client/src/request.ts`, `packages/api-client/src/errors/parse.ts`,
+  and `packages/api-client/test/request-cancellation.test.ts`.
+  `apps/mobile/src/lib/public-query-cancellation.spec.ts` still covers
+  QueryClient cancellation.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. L04
+  remains needs verification. Server contracts are unchanged.
+
 ## 2026-09-30 — Protected route refresh rejection
 
 - `Needs verification` (mobile web): `ProtectedRoute` handles a rejected
