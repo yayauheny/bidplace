@@ -981,12 +981,12 @@ finding IDs: L04
 status: NEEDS_VERIFICATION
 base SHA: 74a48795f702e4d1d9d90f7960950749fd9d9ed2
 changed contracts: none. HTTP paths and response schemas are unchanged. Read methods accept an optional AbortSignal.
-tests/scenarios: listWorks passes the signal to fetch. Aborted JSON and image reads reject as AbortError and are not ApiClientError network failures. A thrown fetch stays kind network. A non-JSON catalog body stays unexpected_response. QueryClient cancelQueries aborts the in-flight works fetch and does not mark that query as error. Catalog, search, home, public work, and public author query functions pass the query signal. Mutations are unchanged. Correction on parent ae04983: before the fix, a Response whose body stayed pending after headers turned an abort into ApiClientError. HTTP 200 JSON became unexpected_response. HTTP 503 JSON became a status error because readErrorPayload swallowed AbortError. After the fix those reads, and an image blob read in the same state, reject with AbortError. Malformed application/json and a schema validation failure stay unexpected_response. HTTP 404 stays not_found. A thrown fetch stays network. A SyntaxError after abort stays unexpected_response. The existing QueryClient cancellation regression still passes.
+tests/scenarios: listWorks passes the signal to fetch. Aborted JSON and image reads reject as AbortError and are not ApiClientError network failures. A thrown fetch stays kind network. A non-JSON catalog body stays unexpected_response. QueryClient cancelQueries aborts the in-flight works fetch and does not mark that query as error. Catalog, search, home, public work, and public author query functions pass the query signal. Mutations are unchanged. Correction commit d6f8681, parent 95545d5: before the fix, a Response whose body stayed pending after headers turned an abort into ApiClientError. HTTP 200 JSON became unexpected_response. HTTP 503 JSON became a status error because readErrorPayload swallowed AbortError. After the fix those reads, and an image blob read in the same state, reject with AbortError. Malformed application/json and a schema validation failure stay unexpected_response. HTTP 404 stays not_found. A thrown fetch stays network. A SyntaxError after abort stays unexpected_response. The existing QueryClient cancellation regression still passes.
 validation commands and exit codes:
   EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 on Node v22.20.0
-  pnpm --filter @bidplace/api-client test → 0 (5 files, 19 tests)
-  pnpm --filter @bidplace/mobile lint → 0
-  pnpm --filter @bidplace/mobile test → 0 (111 files, 499 tests)
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 26 tests) on Node v22.20.0, pnpm 11.7.0
+  pnpm --filter @bidplace/mobile lint → 0 on Node v22.20.0
+  pnpm --filter @bidplace/mobile test → 0 (112 files, 502 tests) on Node v22.20.0
   pnpm --filter @bidplace/mobile test:e2e-fence → 0
   git diff --check → 0
   Chromium/WebKit search scenarios → NOT RUN
@@ -1003,7 +1003,15 @@ status: NEEDS_VERIFICATION
 base SHA: 74a48795f702e4d1d9d90f7960950749fd9d9ed2
 changed contracts: none. /me, login, and logout responses are unchanged.
 tests/scenarios: AuthProvider plus a real QueryClient. Initial /me keeps public cache. Refresh A→B removes ['seller','profile'], keeps ['products','list'], and rejects the previous epoch. Same-user emailVerifiedAt refresh keeps the epoch and private profile. Network failure keeps the session. Unauthorized refresh clears the session and private cache. A late callback that still holds the previous epoch cannot restore the profile. Explicit login of the same account retires the previous private cache. Correction commit 95545d5, parent ae04983: ProtectedRoute retry used void refreshSession().finally(), so a second network failure left an unhandled ApiClientError while the error page returned. After the correction the same real ProtectedRoute, AuthProvider, and QueryClient path records that rejection, returns data-status=error with Повторить, and a following successful retry shows private content. Unauthorized refresh from that error page redirects to /login. A network failure of an existing session keeps the session and surfaces kind network to the caller. verify-email already awaits refreshSession and shows the error, so it was left unchanged.
-remaining limitations: Chromium and WebKit were not run. A cross-tab cookie change was not executed, so D09 is not VERIFIED. D04 and D05 stay NEEDS_VERIFICATION. T04 stays PARTIAL. Validation commands for this correction are recorded after the shared pass.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks) on Node v22.20.0, pnpm 11.7.0
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 26 tests)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (112 files, 502 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git diff --check → 0
+  Chromium/WebKit session scenarios → NOT RUN
+remaining limitations: Chromium and WebKit were not run. A cross-tab cookie change was not executed, so D09 is not VERIFIED. D04 and D05 stay NEEDS_VERIFICATION. T04 stays PARTIAL. Unit tests do not make D09 VERIFIED.
 blocked-by: none for the client transition. Browser session replacement was not run.
 ```
 
