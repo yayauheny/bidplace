@@ -58,7 +58,7 @@ Canonical integration base — `feature/portfolio-mvp-release`. Каждый н�
 
 ### Общий implementation prompt G
 
-**Каждая карточка R01–R30 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
+**Каждая карточка R01–R35 ниже является prompt вместе с этим блоком.** Для запуска передавать G и выбранную карточку; зависимости не считать выполненными только по названию ветки.
 
 > Выполни только указанный scope.
 >
@@ -155,11 +155,11 @@ git -c core.fsmonitor=false status --short
 | Волна  | Назначение                                                     | Scopes       |
 | ------ | -------------------------------------------------------------- | ------------ |
 | Wave 1 | Correctness и небольшие проверки высокой ценности              | R01–R04, R30 |
-| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08      |
+| Wave 2 | Lifecycle, сохранение формы, query ownership и cancellation    | R05–R08, R31–R32 |
 | Wave 3 | Подтверждённый dead code, dependencies и бесполезные параметры | R09–R13      |
-| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17      |
+| Wave 4 | Упрощение средствами установленных libraries/framework         | R14–R17, R34–R35 |
 | Wave 5 | Узкие read models и ограничение стоимости запросов             | R18–R21      |
-| Wave 6 | Отдельные архитектурные решения                                | R22–R27      |
+| Wave 6 | Отдельные архитектурные решения                                | R22–R27, R33 |
 | Wave 7 | Остаточный test cleanup                                        | R28–R29      |
 
 Волны задают приоритет, а не обязательный глобальный барьер. Явные зависимости карточек обязательны. Тесты нового поведения входят в production scope сразу; Wave 7 не является местом для откладывания regression coverage.
@@ -756,10 +756,11 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Режим:** Implementation.
 - **Base:** B.
 - **Branch:** `fix/behavior-test-coverage`.
-- **Findings:** оставшаяся часть T02.
-- **Dependencies:** R09, R10, R13–R16.
+- **Findings:** оставшаяся часть T02; T06.
+- **Dependencies:** R09, R10, R13–R16; для T06 — R31/R32.
 - **Начать:** `/Users/yayauheny/projects/bidplace/apps/mobile/src/lib/category-query-identity.spec.ts`; source-reading specs для FigmaTabs, ProductListScreen, ProductScreen, product-list-catalog, catalog-intro-style и Search overlay surface.
 - **Phase 0:** для каждого assertion назвать реальный риск; проверить, не закрыт ли он production PR этой roadmap.
+- **Дополнение T06:** после production regressions R31/R32 сократить повторение typed fixtures, DOM/deferred helpers и setup QueryClient. Сохранить реальные screen tests, fresh client на тест и уникальные сценарии; добавить real parent/achievement seam в R32 до cleanup. Не подавлять act warnings.
 - **Исправить:** удалить проверки уже удалённого кода; source-string assertions заменить behavioral/unit tests либо одним browser scenario, если риск связан с DOM/navigation. Геометрию проверять visual evidence, а не наличием style literal.
 - **Не менять:** production code ради удобства теста, не переносить всё в E2E, не удалять уникальную regression coverage.
 - **Инварианты:** test failure соответствует пользовательскому/контрактному нарушению, а не переименованию локального символа.
@@ -1033,6 +1034,72 @@ blocked-by: none for the client transition. Browser session replacement was not 
 - T02 — после удаления dead tests и обработки оставшегося source-text inventory.
 - T04 не закрывается после одних UI unit tests: storage/concurrency части ожидают решений R22/R23 и последующей реализации.
 - Архитектурный Plan не переводит A*/S* автоматически в `VERIFIED`.
+- D09 и L04 без браузерной проверки остаются `NEEDS_VERIFICATION`.
+- D10 без браузерной проверки остаётся `NEEDS_VERIFICATION`.
+- T06 не закрывается production regressions R32: оставшаяся test-infrastructure часть принадлежит R28.
+
+## Дополнение 2026-09-29: R31–R35
+
+Карточки ниже перенесены из обновления на 38 findings (`0ef712c`) 2026-09-30. Evidence R01–R08 и R31 на этой базе сохранены и не заменены тем snapshot. Исторический `QUEUED` не возвращён на уже выполненные scopes.
+
+**База новых scopes:** `origin/feature/portfolio-mvp-release` `9932104`, включая PR #20 (`74a4879`) и PR #21 (`c1f6ebe` и родительские R31/R08 corrections).
+
+### R31. Единый retirement private state при смене auth identity
+
+- **Модель / режим:** Sol High / Implementation. **Wave:** 2. **Branch:** `fix/session-query-lifecycle`.
+- **Findings / статус:** D09 / `NEEDS_VERIFICATION`. **Dependencies:** session epoch R05–R07; R33 для этого correctness fix не требуется.
+- **Evidence:** раздел R31 evidence выше. Browser и cross-tab cookie replacement не выполнялись, поэтому D09 не `VERIFIED`.
+
+### R32. Achievement editor: async selection, save и parent transition
+
+- **Модель / режим:** Sol High / Implementation. **Wave:** 2. **Branch:** `fix/achievement-editor-lifecycle`.
+- **Findings / статус:** D10; behavioral часть T06/T04 / `QUEUED`. **Dependencies:** R31 и R06 на интеграционной базе.
+- **Phase 0 / начать:** `apps/mobile/src/features/sellers/AuthorApplicationAchievements.tsx`, caller в `seller-profile-screen.tsx`, API achievement methods и guards. Воспроизвести add A → ввод B → success A; picker A → session B. Проверить, какие transitions реально разрешены во время child mutation.
+- **Исправить:** submitted snapshot и conditional reconciliation либо явная блокировка полей на время add; выбрать по действующему UX. Picker и callbacks проверяют epoch и selection identity. Родитель учитывает незавершённый child write перед submit/logout/exit, не отправляет параллельную конфликтующую операцию.
+- **Механизм:** существующие React Query mutation variables и session epoch; без нового store. Выбранную field policy явно записать и протестировать.
+- **Не менять / инварианты:** publication/privacy, server revision guard, порядок achievement, нормализация даты, обычный save других полей. Поздний A не очищает форму и не загружает файл B.
+- **Тесты / done:** production parent + настоящий child, real QueryClient; delayed add, edit during save, failure/retry, picker out of order, account switch/relogin, submit/logout during add/delete. Не скрывать child mock-ом null в этих regressions.
+- **Validation:** V-MOBILE, V-DIFF, targeted achievement browser privacy/transition scenarios; без браузеров D10 → `NEEDS_VERIFICATION`.
+- **STOP:** требуется новый продуктовый выбор discard/save exit или изменение server protocol; остановить только зависимую часть.
+- **Отчёт:** G + before/after сценарии. T04 остаётся PARTIAL; T06 не закрывать до R28.
+
+### R33. Query и session ownership после editor corrections
+
+- **Модель / режим:** Sol High / сначала Plan, P. **Wave:** 6. **Branch:** `feature/query-session-ownership-plan`.
+- **Findings / статус:** A06 / `DECISION_REQUIRED`. **Dependencies:** R31/R32; существующие R03/R05–R07 invariants.
+- **Phase 0 / начать:** `use-seller-capability.ts`, `seller-profile-screen.tsx` (`useProfileData`, `keepConfirmedPendingProfile`), `lib/query-cache.ts`, `use-private-cache-epoch.ts`, `owner-work-query.ts`. Составить key→queryFn/options/writer/policy table; проверить installed TanStack APIs.
+- **Дополнение simplification / L02:** отдельно решить, нужен ли ввод во время ordinary Save. Вариант временно read-only формы может убрать reconciliation, но меняет закреплённый UX; до явного решения не реализовывать и не удалять guards. Session isolation, stale-response policy и pending locks сохраняются.
+- **Варианты:** feature-owned `queryOptions` factory с общей snapshot policy; один auth-owned external store через существующий QueryCache subscription; сохранить отдельный epoch store с централизованным transition API. Сравнить invalidation, observer policy, same-account relogin, SSR/native, стоимость миграции.
+- **Не менять:** production и contracts в Plan. Mutation scope лишь ставит запросы в очередь и не заменяет drop-repeat guards; AbortSignal не защищает от результата уже выполненной server mutation.
+- **Инварианты / acceptance:** одна политика на private resource; stale pending/decision snapshots не откатываются; same-user refresh не стирает dirty ввод; late callbacks не пересекают сессии. Описать rollout/rollback и маленькие implementation scopes в этом roadmap.
+- **Validation:** read-only consumer graph, установленный library source, существующие focused regressions при безопасном запуске. Не считать разные options доказанным runtime bug без воспроизведения.
+- **STOP / отчёт:** P; отсутствие принятого решения оставляет A06 `DECISION_REQUIRED`, Plan сам finding не закрывает.
+
+### R34. Admin media request lifecycle средствами React Query
+
+- **Модель / режим:** Terra Medium / Implementation. **Wave:** 4, выполнение позже prerequisites. **Branch:** `fix/admin-media-query-lifecycle`.
+- **Findings / статус:** L05 / `BLOCKED`. **Dependencies:** R08, принятое R33 и необходимая реализация session/cache ownership. Не выполнять раньше лишь из-за номера волны.
+- **Phase 0 / начать:** `features/admin/AdminRevisionPhoto.tsx` (`useAdminObjectUrl`, `AdminRevisionPhoto`, `AdminReviewImage`), admin screen consumers, requestBlob. Сравнить объём и lifecycle до/после; сохранить вариант только если реально проще.
+- **Удалить / заменить:** ручной request loading/error/race lifecycle — на установленный `useQuery` с media identity, signal и bounded private Blob cache. Object URL создать/отозвать локальным effect: это lifecycle browser resource, его не удалять вместе с fetch effect.
+- **Не менять / инварианты:** cookie/bearer transport, server visibility, checksum/update identity, image decode failure, layout. Session retirement очищает private blobs, старый response не подменяет новое фото; unmount отзывает URL.
+- **Тесты / done:** changed checksum, out-of-order fetch, decode error, retry, unmount, logout/relogin, pending-only image admin/public visibility. Нет утечки private cache между сессиями.
+- **Validation:** V-MOBILE, V-DIFF, admin-revision-moderation browser specs Chromium/WebKit. Без браузеров — `NEEDS_VERIFICATION`.
+- **STOP:** private cache lifecycle не определён или новый wrapper сложнее текущего; не добавлять dependency, предложить DEFERRED с причиной.
+- **Отчёт:** G + удалённый механизм→library API→сохранённые semantics. L05 не переводить в VERIFIED одним refactor diff.
+
+### R35. Малый пакет устранения лишних владельцев состояния и wrappers
+
+- **Модель / режим:** Terra Medium / Implementation. **Wave:** 4. **Branch:** `fix/runtime-simplification`.
+- **Findings / статус:** C07, C08, L06 / `QUEUED`. **Base:** актуальная `feature/portfolio-mvp-release`; Phase 0 сверяет наличие moderation R02 и текущего media runtime. Не переключать integration base молча. Пакет не зависит от принятия UX-вариантов R33.
+- **Phase 0 / начать:** `features/admin/admin-moderation-screen.tsx` (`productAction`, `mutateProductStatus`); `features/search/panes/search-pagination.ts`, Works/AuthorsSearchPane; `features/search/search-query.ts`; `components/ui/ResilientRemoteImage.tsx`; API `core/validation/parse-body.ts`, `parse-query.ts`. Повторно проверить consumers и установленный Query Core.
+- **Исправить отдельными commits в одном review:** C07 — error action брать из mutation variables, убрать дублирующий state/setters. C08 — прямые query flags в panes; timeout cleanup внутри debounce hook; одна реализация Zod parsing с прежними semantic exports, если это не увеличивает abstraction. L06 — сначала component prototype с keyed inner image; убрать только доказанно лишний uri reset lifecycle.
+- **Замена:** existing React Query variables, React keyed component lifetime, стандартный timeout, existing Zod. Новые зависимости, generic controller/form/query framework не нужны.
+- **Не менять:** retry delays/exhaustion/manual retry, image URLs/cache bust, error messages/envelopes, moderation targets, Apply/Cancel, public/private semantics; commerce inventory и archive не трогать.
+- **Инварианты:** callbacks изображения A не изменяют B; тот же uri не сбрасывает recovery; exact error copy соответствует последней mutation; debounce посылает актуальное значение и отменяется на unmount; parse output и validation response эквивалентны.
+- **Тесты:** реальный image component с fake timers и controlled callbacks; admin approve/reject/change failure/reset; pane load-more и hook rapid-input/unmount. Helper-only tests удалить только после production replacement. Сохранить unique regression coverage.
+- **Validation:** V-MOBILE, V-DIFF; при API validation правках V-API и существующие controller validation cases. Browser media/search/moderation regression по затронутому поведению в подтверждённо безопасном окружении; без browser L06 остаётся NEEDS_VERIFICATION.
+- **STOP:** keyed prototype требует новых синхронизируемых owners или нарушает recycling/visual behavior; оставить L06 с evidence/blocker, выполнить независимые C07/C08. Не выдавать prototype failure за VERIFIED.
+- **Done/status:** каждый finding закрывается отдельно после своих проверок; не закрывать весь пакет при незавершённом L06. Итог G + удалённые owners/helpers, replacement APIs, before/after scenarios и ограничения.
 
 ## 5. Что объединять и что оставить отдельным
 
@@ -1067,7 +1134,7 @@ blocked-by: none for the client transition. Browser session replacement was not 
 
 ### Проверка документа — 2026-09-27
 
-- Сохранены все 28 исходных ID; после targeted review PR #12 добавлен D08. Итого 29 findings и 30 prompts; 24 Implementation и 6 Plan. Существующие scopes не перенумерованы; дополнены только кандидаты R09 и новый Wave 1 scope R30.
+- Сохранены все 28 исходных ID; после targeted review PR #12 добавлен D08. Плановый проход 2026-09-27 зафиксировал 29 findings. Дополнение 2026-09-29, согласованное 2026-09-30 без замены evidence этой базы, добавляет D09, D10, C06, A06, L05, T06, C07, C08 и L06. Итого 38 findings. Карточки R31–R35 присутствуют. R31 остаётся `NEEDS_VERIFICATION`, а не исторический `QUEUED`.
 - Проверены обязательные поля prompts, существование явно указанных абсолютных путей, соответствие coverage matrix карточкам и отсутствие циклов prerequisites.
 - Проверки документа: структурная проверка Python, `pnpm exec prettier --check docs/audits/current/00-EXECUTION-ROADMAP.md`, `git diff --check`.
 - Production code, тесты, manifests, исходные audit-файлы и canonical product/design documents не изменены. Product statuses не обновлялись, поскольку поведение системы не менялось.
@@ -1079,11 +1146,11 @@ blocked-by: none for the client transition. Browser session replacement was not 
 
 | Finding | Original finding                                                             | Severity / confidence | Wave → task/PR                       | Начальный статус   | Dependencies / blocked-by                                    | Verification evidence                                                          |
 | ------- | ---------------------------------------------------------------------------- | --------------------- | ------------------------------------ | ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | QUEUED             | —                                                            | Current R02 evidence: NEEDS_VERIFICATION. Browser media scenario NOT RUN. |
+| D01     | Moderation list показывает parent, review меняет revision                    | P1 / HIGH             | W1 → R02                             | NEEDS_VERIFICATION | —                                                            | Current R02 evidence: NEEDS_VERIFICATION. Browser media scenario NOT RUN. |
 | D02     | Approved автор не видит submit editing revision                              | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.             |
 | D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
-| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | QUEUED             | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
-| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | QUEUED             | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
+| D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
+| D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
 | D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
@@ -1108,11 +1175,20 @@ blocked-by: none for the client transition. Browser session replacement was not 
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
 | T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; queue/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
+| D09     | Refresh auth identity сохраняет private cache/epoch прежнего user            | P1 / HIGH             | W2 → R31                             | NEEDS_VERIFICATION | Интеграционная база с epoch corrections                      | Current R31 evidence. Chromium/WebKit and cross-tab cookie replacement NOT RUN. |
+| D10     | Achievement add очищает более новый ввод; child lifecycle вне coordination   | P2 / HIGH (input), MEDIUM (coordination) | W2 → R32                  | QUEUED             | R31/R06                                                      | Static delayed-add/picker/parent call paths; runtime pending                   |
+| C06     | persistProductDraftBeforeSubmit имеет только test consumers                  | P3 / HIGH             | W3 → R09                             | QUEUED             | R05–R07; повторный consumer graph                            | 69c4aff rg + удаление production call в 6cbb56a                               |
+| A06     | Несколько владельцев profile query policy и session generation               | P2 / HIGH             | W6 → R33                             | DECISION_REQUIRED  | R31/R32; выбор ownership                                     | key/options/writer inventory, без заявления runtime race                       |
+| L05     | Admin media вручную ведёт request lifecycle                                  | P3 / HIGH             | W4 → R34                             | BLOCKED            | R08; решение R33 и необходимые prerequisites                 | useAdminObjectUrl production lifecycle; semantic comparison pending            |
+| T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | QUEUED             | R31/R32 прежде cleanup                                       | Existing suites/mocks inventory; timings не измерены                           |
+| C07     | Admin productAction дублирует mutation variables                             | P3 / HIGH             | W4 → R35                             | QUEUED             | Проверить R02 на base                                        | 69c4aff consumers + Query Core 5.101.2 source                                  |
+| C08     | Search helpers переупаковывают flags/timer; duplicated Zod parsing           | P3 / HIGH             | W4 → R35                             | QUEUED             | Повторный consumer inventory                                 | Static paths; 3 files / 9 helper tests baseline passed                         |
+| L06     | Image uri reset вручную синхронизирует несколько состояний                   | P3 / MEDIUM           | W4 → R35                             | QUEUED             | Component prototype с сохранением retry semantics            | Static lifetime analysis; runtime equivalence ещё не проверена                 |
 
-**TOTAL FINDINGS: 29**
+**TOTAL FINDINGS: 38**
 
-**ASSIGNED: 29**
+**ASSIGNED: 38**
 
-**BLOCKED/DECISION: 8 — 7 требуют решения, T04 частично зависит от этих решений**
+**BLOCKED/DECISION: 10 — 8 требуют решения, T04 частично зависит от решений, L05 заблокирован prerequisites**
 
 **UNASSIGNED: 0**
