@@ -5,6 +5,30 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-30 — Achievement editor lifecycle
+
+- `Needs verification` (mobile web): an achievement add locks year, month,
+  day, description, and photo selection until that request finishes. Success
+  clears only the draft of the operation that started it. A failed add keeps
+  the text and selected photo for retry. A later picker result does not replace
+  a newer choice, and a result that finishes after the form locks, the session
+  changes, or editing closes is not applied. Submit, step change, exit, and
+  logout do not start during an achievement add or delete. An achievement write
+  does not start after one of those parent transitions has started. Profile
+  text typed after an ordinary save snapshot is still kept. A stale profile
+  read does not reopen a pending revision or the achievement editor. Switching
+  accounts, including login of the same account, drops the previous draft,
+  photo, error, and private application read.
+- Coverage: `AuthorApplicationAchievements.tsx`, `seller-profile-screen.tsx`,
+  and `author-application-achievements.spec.ts` with the real profile screen,
+  achievement editor, and QueryClient. Existing profile save, submit, and
+  logout specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: achievement order, date precision, publication, and server
+  revision guards. D09, L04, D04, and D05 remain needs verification. D10
+  remains needs verification. T04 remains partial. T06 remains partial until
+  the test-harness cleanup in R28. Server contracts are unchanged.
+
 ## 2026-09-30 — Abort during response body reads
 
 - `Needs verification` (mobile web): cancelling a public read after response

@@ -1,8 +1,21 @@
 # bidplace — статус дизайна и UI-реализации
 
-Последнее обновление: 2026-09-29
+Последнее обновление: 2026-09-30
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
+
+## 2026-09-30 — Achievement draft lock and parent actions
+
+- `Needs verification` (mobile web behavior): while an achievement is being
+  added or deleted, the date, description, photo choice, and delete action are
+  unavailable. The description stays visible. A failed add keeps the entered
+  text and photo. Submit, step change, exit, and logout wait until that write
+  finishes. A photo chosen after the form locks or after the session changes
+  is not applied. Ordinary profile save still keeps text typed after the
+  request snapshot.
+- `Unchanged`: achievement date precision, publication after approval, shared
+  tokens, routes, and the canonical Pen file. Chromium and WebKit were not
+  run. D10 remains needs verification. T04 remains partial.
 
 ## 2026-09-29 — Owner editor moderation hold after an intermediate save
 

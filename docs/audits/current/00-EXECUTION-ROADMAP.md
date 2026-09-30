@@ -6,7 +6,7 @@
 
 **Результат планирования:** 29 findings (28 исходных + D08 из targeted review PR #12) распределены по семи волнам и 30 небольшим scopes: 24 Implementation и 6 Plan.
 
-**Сохранён:** 2026-09-29. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION`, включая две коррекции review; scopes R08–R29 не запущены.
+**Сохранён:** 2026-09-29. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION`, включая две коррекции review; R08 — `NEEDS_VERIFICATION`; R31 — `NEEDS_VERIFICATION`; R32 — `NEEDS_VERIFICATION`. Остальные scopes R09–R29 и R33–R35 этим пакетом не запускались.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -1016,6 +1016,31 @@ remaining limitations: Chromium and WebKit were not run. A cross-tab cookie chan
 blocked-by: none for the client transition. Browser session replacement was not run.
 ```
 
+### R32 evidence
+
+```text
+scope: R32
+finding IDs: D10; behavioral parent/child seam of T06 and T04
+status: NEEDS_VERIFICATION
+base SHA: 9932104
+changed contracts: none. Achievement add/delete, profile save, and revision submit stay on the existing API. Server revision locks are unchanged.
+field policy: while an achievement add or delete is in flight, year, month, day, description, photo selection, and delete are locked. The mutation receives an immutable body, date, image, and auth epoch. Success clears that draft only when the same operation token and epoch can still write. Failure keeps the text and photo. An open picker and an application refetch are not server writes. A picker result is applied only when the selection is still current, editing is allowed, the parent is not in a conflicting transition, and the epoch can write.
+parent coordination: the child reports a numeric write token. Submit, step, exit, and logout check that token in the handler. A child write checks the parent transition, save, submit, leave, and logout refs before its first await. A late release clears only the matching token. Same-turn presses do not bypass the refs. Profile save is included because its success replaces the cached profile that contains achievements. Ordinary profile fields typed after a save snapshot are still reconciled. Clicks are dropped, not queued.
+session: account A→B and logout→login of the same account retire the epoch. A late application read, add, delete, or picker does not publish into the next session. Forced profile hydration also resets dirty profile fields when the revision timestamp is unchanged. Same-user metadata refresh is unchanged and does not force that reset.
+before: on the unmodified editor, a delayed add of Alpha accepted a description change to Beta before success. The regression expected Alpha and received Beta.
+after: the description stays Alpha while that add is pending and clears when it succeeds. A failed add keeps Alpha and the selected photo; the retry sends that same body and blob. Duplicate add/delete in one turn call the API once. An older picker does not replace a newer photo. A blob that resolves after profile save has started is dropped. Picker cancel shows no error; a failed read shows the existing photo error and leaves the button usable. Parent submit, logout, close, and back do not start during add/delete, including two presses in one turn. A parent save or submit that has started rejects a following achievement add/delete. Success, failure, and unmount release the parent. A stale profile read after submit does not reopen moderation or the achievement editor.
+tests/scenarios: apps/mobile/src/features/sellers/author-application-achievements.spec.ts mounts SellerProfileScreen, AuthorApplicationAchievements, and a real QueryClient. Existing seller-profile-submit.spec.ts and seller-profile-logout.spec.ts stay in place and still mock the child as null.
+validation commands and exit codes:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks) on Node v22.20.0, pnpm 11.7.0
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (113 files, 515 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git diff --check → 0
+  Chromium/WebKit achievement scenarios → NOT RUN
+remaining limitations: Chromium and WebKit were not run, so D10 is not VERIFIED. D09 and L04 stay NEEDS_VERIFICATION. D04 and D05 stay NEEDS_VERIFICATION. T04 stays PARTIAL. T06 is not closed; the remaining harness cleanup is R28. No server, migration, or browser run.
+blocked-by: none for the client lifecycle. Browser achievement privacy and transition scenarios were not run.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1053,7 +1078,8 @@ blocked-by: none for the client transition. Browser session replacement was not 
 ### R32. Achievement editor: async selection, save и parent transition
 
 - **Модель / режим:** Sol High / Implementation. **Wave:** 2. **Branch:** `fix/achievement-editor-lifecycle`.
-- **Findings / статус:** D10; behavioral часть T06/T04 / `QUEUED`. **Dependencies:** R31 и R06 на интеграционной базе.
+- **Findings / статус:** D10; behavioral часть T06/T04 / `NEEDS_VERIFICATION`. **Dependencies:** R31 и R06 на интеграционной базе.
+- **Actual:** поля черновика достижения, включая описание, блокируются на время add/delete. Родитель и ребёнок удерживают один token. Поздний picker, чтение и callback не пишут в новую сессию. Browser не запускался, поэтому D10 не `VERIFIED`. T06 остаётся `PARTIAL` до R28. См. R32 evidence.
 - **Phase 0 / начать:** `apps/mobile/src/features/sellers/AuthorApplicationAchievements.tsx`, caller в `seller-profile-screen.tsx`, API achievement methods и guards. Воспроизвести add A → ввод B → success A; picker A → session B. Проверить, какие transitions реально разрешены во время child mutation.
 - **Исправить:** submitted snapshot и conditional reconciliation либо явная блокировка полей на время add; выбрать по действующему UX. Picker и callbacks проверяют epoch и selection identity. Родитель учитывает незавершённый child write перед submit/logout/exit, не отправляет параллельную конфликтующую операцию.
 - **Механизм:** существующие React Query mutation variables и session epoch; без нового store. Выбранную field policy явно записать и протестировать.
@@ -1173,14 +1199,14 @@ blocked-by: none for the client transition. Browser session replacement was not 
 | T01     | Contracts/database tests выпадают из discovery/build boundaries              | P2 / HIGH             | W1 → R04                             | VERIFIED           | —                                                            | Current R04 evidence: discovery, database smoke, clean dist                    |
 | T02     | Dead-helper и source-text tests с низкой доказательной ценностью             | P2 / HIGH             | W3/W7 → R09, R10, R28                | QUEUED             | соответствующий production cleanup                           | E0; assertion→behavior matrix                                                  |
 | T03     | Maintained author E2E описывают старый flow                                  | P1 / HIGH             | W1 → R03                             | NEEDS_VERIFICATION | R02                                                          | Current R03 evidence: specs updated; Chromium/WebKit NOT RUN.                  |
-| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; queue/S3/visibility открыты |
+| T04     | Не покрыты реальные seams: queue, submit, save race, overlay, S3, visibility | P1 / HIGH             | W1/W2/W6 → R01–R03, R05–R06, R22–R23 | PARTIAL            | UI части готовы к работе; полное закрытие зависит от A01/A02 | R01 overlay verified; R03 submit and R05–R07 save/cache are NEEDS_VERIFICATION; R32 achievement parent seam is NEEDS_VERIFICATION; queue/S3/visibility открыты |
 | T05     | Дублирование browser сценариев и дорогого setup                              | P3 / MEDIUM           | W7 → R29                             | QUEUED             | R03/R14/R28; сохранить A04 coverage                          | E0 static overlap; требуются timings/full matrix                               |
 | D09     | Refresh auth identity сохраняет private cache/epoch прежнего user            | P1 / HIGH             | W2 → R31                             | NEEDS_VERIFICATION | Интеграционная база с epoch corrections                      | Current R31 evidence. Chromium/WebKit and cross-tab cookie replacement NOT RUN. |
-| D10     | Achievement add очищает более новый ввод; child lifecycle вне coordination   | P2 / HIGH (input), MEDIUM (coordination) | W2 → R32                  | QUEUED             | R31/R06                                                      | Static delayed-add/picker/parent call paths; runtime pending                   |
+| D10     | Achievement add очищает более новый ввод; child lifecycle вне coordination   | P2 / HIGH (input), MEDIUM (coordination) | W2 → R32                  | NEEDS_VERIFICATION | R31/R06                                                      | Current R32 evidence. Chromium/WebKit achievement scenarios NOT RUN.          |
 | C06     | persistProductDraftBeforeSubmit имеет только test consumers                  | P3 / HIGH             | W3 → R09                             | QUEUED             | R05–R07; повторный consumer graph                            | 69c4aff rg + удаление production call в 6cbb56a                               |
 | A06     | Несколько владельцев profile query policy и session generation               | P2 / HIGH             | W6 → R33                             | DECISION_REQUIRED  | R31/R32; выбор ownership                                     | key/options/writer inventory, без заявления runtime race                       |
 | L05     | Admin media вручную ведёт request lifecycle                                  | P3 / HIGH             | W4 → R34                             | BLOCKED            | R08; решение R33 и необходимые prerequisites                 | useAdminObjectUrl production lifecycle; semantic comparison pending            |
-| T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | QUEUED             | R31/R32 прежде cleanup                                       | Existing suites/mocks inventory; timings не измерены                           |
+| T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | PARTIAL            | R28 harness cleanup                                          | R32 covers the real parent/achievement seam. Harness cleanup remains R28.     |
 | C07     | Admin productAction дублирует mutation variables                             | P3 / HIGH             | W4 → R35                             | QUEUED             | Проверить R02 на base                                        | 69c4aff consumers + Query Core 5.101.2 source                                  |
 | C08     | Search helpers переупаковывают flags/timer; duplicated Zod parsing           | P3 / HIGH             | W4 → R35                             | QUEUED             | Повторный consumer inventory                                 | Static paths; 3 files / 9 helper tests baseline passed                         |
 | L06     | Image uri reset вручную синхронизирует несколько состояний                   | P3 / MEDIUM           | W4 → R35                             | QUEUED             | Component prototype с сохранением retry semantics            | Static lifetime analysis; runtime equivalence ещё не проверена                 |
