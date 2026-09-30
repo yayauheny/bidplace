@@ -24,8 +24,8 @@ export function usePortfolioWorks(
   const query = useInfiniteQuery({
     queryKey: ['portfolio-works', listQuery],
     initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      api.portfolio.listWorks({ ...listQuery, page: pageParam }),
+    queryFn: ({ pageParam, signal }) =>
+      api.portfolio.listWorks({ ...listQuery, page: pageParam }, { signal }),
     getNextPageParam: (page) => nextCatalogPage(page.pagination),
     enabled,
     retry: retryTransientPublicQuery,

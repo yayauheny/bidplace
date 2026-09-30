@@ -20,7 +20,7 @@ export function CategoriesSearchPane({
   const api = useApiClient();
   const categories = useQuery({
     queryKey: categoryKeys.all,
-    queryFn: () => api.categories.list(),
+    queryFn: ({ signal }) => api.categories.list({ signal }),
     retry: retryTransientPublicQuery,
   });
   const items = filterCategoriesByQuery(

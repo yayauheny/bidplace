@@ -13,6 +13,10 @@ export function retryTransientPublicQuery(
   failureCount: number,
   error: unknown,
 ): boolean {
+  if (error instanceof Error && error.name === 'AbortError') {
+    return false;
+  }
+
   if (error instanceof ApiClientError && nonRetryableKinds.has(error.kind)) {
     return false;
   }

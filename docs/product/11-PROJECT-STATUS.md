@@ -5,6 +5,72 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-30 — Abort during response body reads
+
+- `Needs verification` (mobile web): cancelling a public read after response
+  headers preserves `AbortError` for a successful JSON body, an error JSON
+  body, and an image blob. Malformed JSON and a payload that fails schema
+  validation stay unexpected responses. An ordinary HTTP error keeps its
+  status classification. A failed fetch stays a network error. An aborted
+  signal does not turn a different body error into cancellation. Mutations
+  stay uncancelled unless a caller passes a signal.
+- Coverage: `packages/api-client/src/errors/abort.ts`,
+  `packages/api-client/src/request.ts`, `packages/api-client/src/errors/parse.ts`,
+  and `packages/api-client/test/request-cancellation.test.ts`.
+  `apps/mobile/src/lib/public-query-cancellation.spec.ts` still covers
+  QueryClient cancellation.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. L04
+  remains needs verification. Server contracts are unchanged.
+
+## 2026-09-30 — Protected route refresh rejection
+
+- `Needs verification` (mobile web): `ProtectedRoute` handles a rejected
+  `refreshSession` on retry. A second network failure returns the error/retry
+  page and releases the refreshing state. The rejection is recorded with the
+  existing infrastructure logger. It does not clear the session. An unauthorized
+  refresh still clears the local session. A network failure while a session
+  exists keeps that session. A later successful retry opens the protected
+  content.
+- Coverage: `apps/mobile/src/components/shared/protected-route.tsx` and
+  `apps/mobile/src/components/shared/protected-route-refresh.spec.ts`, with the
+  real `AuthProvider` and `QueryClient`.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. D09
+  remains needs verification. Server auth contracts are unchanged.
+
+## 2026-09-29 — Public read cancellation
+
+- `Needs verification` (mobile web): catalog, search, home, public work, and
+  public author reads pass the React Query `AbortSignal` through the API client
+  to `fetch`. Aborting a JSON or image read rejects with `AbortError` and is
+  not classified as a network failure. A failed fetch stays a network error. A
+  malformed catalog response stays an unexpected response. Cancelling a works
+  query aborts the in-flight fetch and does not store that query as an error.
+  Mutations do not receive a signal unless a caller passes one.
+- Coverage: `packages/api-client/test/request-cancellation.test.ts` and
+  `apps/mobile/src/lib/public-query-cancellation.spec.ts`.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. L04
+  remains needs verification. Server contracts are unchanged.
+
+## 2026-09-29 — Refresh session identity
+
+- `Needs verification` (mobile web): `refreshSession` publishes a different
+  authenticated user only through the existing session retirement. Private
+  seller cache from the previous user is removed and that user's epoch cannot
+  write again. A same-user metadata refresh updates the session and leaves the
+  private profile and auth epoch in place. A network failure leaves the current
+  session. An unauthorized `/me` clears the local session and private cache.
+  Public catalog cache stays. An explicit login of the same account still
+  retires the previous private cache.
+- Coverage: `auth-provider-refresh.spec.ts`. Logout and owner-editor session
+  specs stay in place.
+- Browser verification: Chromium and WebKit are NOT RUN. Cross-tab cookie
+  replacement was not executed.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. D09
+  remains needs verification. Server auth contracts are unchanged.
+
 ## 2026-09-29 — Owner editor private cache during session retirement
 
 - `Needs verification` (mobile web): session retirement closes private cache
