@@ -11,8 +11,11 @@
   unavailable. The description stays visible. A failed add keeps the entered
   text and photo. Submit, step change, exit, and logout wait until that write
   finishes. A photo chosen after the form locks or after the session changes
-  is not applied. Ordinary profile save still keeps text typed after the
-  request snapshot.
+  is not applied. A selection started before the achievement is saved, or
+  before the profile save or lock finishes, does not attach to the next draft.
+  A new selection after editing resumes applies. A successful achievement write
+  replaces a list read that started earlier. Ordinary profile save still keeps
+  text typed after the request snapshot.
 - `Unchanged`: achievement date precision, publication after approval, shared
   tokens, routes, and the canonical Pen file. Chromium and WebKit were not
   run. D10 remains needs verification. T04 remains partial.

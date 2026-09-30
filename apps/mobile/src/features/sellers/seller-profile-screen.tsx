@@ -193,6 +193,7 @@ export function SellerProfileScreen() {
   const [revisionSubmitActive, setRevisionSubmitActive] = useState(false);
   const [achievementWriteActive, setAchievementWriteActive] = useState(false);
   const achievementWriteToken = useRef(0);
+  const parentOperationId = useRef(0);
   const accountLogout = useAccountLogout();
   const authEpoch = usePrivateCacheEpoch(queryClient);
   const seenAuthEpoch = useRef(authEpoch);
@@ -258,10 +259,15 @@ export function SellerProfileScreen() {
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
     void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
   };
+  const bumpParentOperation = () => {
+    parentOperationId.current += 1;
+  };
+  const currentParentOperation = () => parentOperationId.current;
   const beginLockedTransition = () => {
     if (transitionLock.current) return false;
     transitionLock.current = true;
     setInputsLocked(true);
+    bumpParentOperation();
     return true;
   };
   const endLockedTransition = () => {
@@ -302,6 +308,7 @@ export function SellerProfileScreen() {
     logoutStarted.current = false;
     endLockedTransition();
     setRevisionSubmitActive(false);
+    parentOperationId.current += 1;
     achievementWriteToken.current = 0;
     setAchievementWriteActive(false);
     photoBlobRef.current = null;
@@ -358,6 +365,7 @@ export function SellerProfileScreen() {
     if (revisionSubmitInFlight.current && source !== 'revision-submit') return null;
     if (transitionLock.current && source !== 'revision-submit') return null;
     if (source === 'transition' && !beginLockedTransition()) return null;
+    bumpParentOperation();
     const variables: ProfileSaveVariables = {
       fields: form.getValues(),
       photo: photoBlobRef.current,
@@ -485,6 +493,7 @@ export function SellerProfileScreen() {
     }
     if (leaving.current || logoutStarted.current || accountLogout.busy) return;
     leaving.current = true;
+    bumpParentOperation();
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) {
@@ -550,6 +559,7 @@ export function SellerProfileScreen() {
     if (!form.formState.isDirty && !photoBlob) {
       if (intent === 'logout') {
         logoutStarted.current = true;
+        bumpParentOperation();
         void accountLogout.logout();
         return;
       }
@@ -597,7 +607,7 @@ export function SellerProfileScreen() {
         <SellerProfileFormSteps profileStep={profileStep} showAllSteps={!isApplicationWizard} editable={fieldsEditable} fields={fields} fieldErrors={errors} update={updateField} />
       </FormPageColumns> : <SellerProfileFormSteps profileStep={profileStep} showAllSteps={false} editable={fieldsEditable} fields={fields} fieldErrors={errors} update={updateField} />}
       {(isApplicationWizard && profileStep === 4) ? <SellerProfileVerificationSection fields={fields} /> : null}
-      {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={fieldsEditable} parentBusy={parentBlocksAchievement} onChildWrite={setAchievementWrite} /> : null}
+      {shouldShowSellerProfileAchievements(Boolean(profile), isApplicationWizard, profileStep) ? <AuthorApplicationAchievements editable={fieldsEditable} parentBusy={parentBlocksAchievement} parentOperation={currentParentOperation} onChildWrite={setAchievementWrite} /> : null}
       {!editable ? <AppText role="bodySmall" tone="secondary">{editingRevision?.status === 'PENDING_REVIEW' ? 'Заявка на проверке. Редактирование откроется, если модератор запросит правки.' : 'Сейчас профиль нельзя редактировать.'}</AppText> : null}
       {isApplicationWizard && profileStep === 1 ? <PrimaryButton loading={saveMutation.isPending} disabled={!canSave || !hasRequiredDetails || accountLogout.busy || revisionSubmitActive || inputsLocked || achievementWriteActive} onPress={() => void (async () => {
         if (transitionLock.current || achievementWriteBlocksParent()) return;

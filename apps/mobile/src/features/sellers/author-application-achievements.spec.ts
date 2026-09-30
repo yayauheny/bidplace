@@ -528,54 +528,165 @@ describe('Author application achievement lifecycle', () => {
     view.unmount();
   });
 
-  it('drops a blob that resolves after the parent save has started', async () => {
+  it('drops a blob that resolves after the parent save has finished', async () => {
     let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
       () => undefined;
     let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
-    let resolveSave: (value: ReturnType<typeof profileResponse>) => void = () => undefined;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveBlob = resolve;
+        }),
+    );
     harness.launchImageLibraryAsync.mockImplementation(
       () =>
         new Promise((resolve) => {
           resolvePicker = resolve;
         }),
     );
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveBlob = resolve;
-          }),
-      ),
-    );
-    harness.updateProfile.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveSave = resolve;
-        }),
-    );
+    vi.stubGlobal('fetch', fetchMock);
     const view = mount();
     await openEditor(view);
     click(view.container, 'Добавить фото (необязательно)');
     await flush();
-    click(view.container, 'Сохранить');
     await act(async () => {
       resolvePicker({ canceled: false, assets: [{ uri: 'blob:late', fileName: 'late.png' }] });
       await Promise.resolve();
     });
+    await until(view.container, () => fetchMock.mock.calls.length === 1, 'achievement blob read');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
     await act(async () => {
       resolveBlob({ blob: async () => new Blob(['late'], { type: 'image/png' }) });
       await Promise.resolve();
     });
     await flush();
     expect(view.container.textContent).not.toContain('Фото: late.png');
+    view.unmount();
+  });
+
+  it('does not attach an earlier photo to the draft created after an achievement add', async () => {
+    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
+      () => undefined;
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePicker = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', vi.fn(async () => ({ blob: async () => new Blob(['old'], { type: 'image/png' }) })));
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await flush();
+    fillAchievement(view.container, 'Alpha');
+    click(view.container, 'Сохранить достижение');
+    await flush();
+    fillAchievement(view.container, 'Beta');
     await act(async () => {
-      resolveSave(profileResponse());
+      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
       await Promise.resolve();
     });
     await flush();
-    expect(findButton(view.container, 'Добавить фото (необязательно)')).toBeTruthy();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Фото: old.png');
     view.unmount();
+  });
+
+  it('drops a blob that finishes after the achievement add that interrupted it', async () => {
+    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
+      () => undefined;
+    let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveBlob = resolve;
+        }),
+    );
+    const pendingAdd = deferred<{ achievement: { id: string; body: string } }>();
+    harness.addAuthorAchievement.mockReturnValue(pendingAdd.promise);
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePicker = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await flush();
+    await act(async () => {
+      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
+      await Promise.resolve();
+    });
+    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob read before add');
+    fillAchievement(view.container, 'Alpha');
+    click(view.container, 'Сохранить достижение');
+    await act(async () => {
+      pendingAdd.resolve({ achievement: { id: 'new', body: 'Alpha' } });
+      await pendingAdd.promise;
+    });
+    await flush();
+    fillAchievement(view.container, 'Beta');
+    await act(async () => {
+      resolveBlob({ blob: async () => new Blob(['old'], { type: 'image/png' }) });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Фото: old.png');
+    view.unmount();
+  });
+
+  it('does not revive an old photo after the form locks and unlocks', async () => {
+    let resolvePicker: (value: { canceled: boolean; assets: Array<{ uri: string; fileName: string }> }) => void =
+      () => undefined;
+    let resolveBlob: (value: { blob: () => Promise<Blob> }) => void = () => undefined;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveBlob = resolve;
+        }),
+    );
+    harness.launchImageLibraryAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePicker = resolve;
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    harness.params = { step: '4' };
+    harness.getMyProfile.mockResolvedValue(wizardProfile());
+    harness.updateProfile.mockRejectedValueOnce(new Error('save failed'));
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await flush();
+    await act(async () => {
+      resolvePicker({ canceled: false, assets: [{ uri: 'blob:old', fileName: 'old.png' }] });
+      await Promise.resolve();
+    });
+    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob read before submit');
+    click(view.container, 'Отправить на проверку');
+    await flush();
+    expect(findButton(view.container, 'Отправить на проверку') instanceof HTMLButtonElement).toBe(true);
+    await act(async () => {
+      resolveBlob({ blob: async () => new Blob(['old'], { type: 'image/png' }) });
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Фото: old.png');
+    harness.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'blob:new', fileName: 'new.png' }],
+    });
+    fetchMock.mockResolvedValue({ blob: async () => new Blob(['new'], { type: 'image/png' }) });
+    click(view.container, 'Добавить фото (необязательно)');
+    await until(view.container, () => view.container.textContent?.includes('Фото: new.png') === true, 'new photo');
+    view.unmount();
+    harness.params = {};
   });
 
   it('reports a failed photo read and ignores a cancelled picker', async () => {

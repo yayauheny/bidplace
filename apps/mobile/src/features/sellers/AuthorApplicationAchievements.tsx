@@ -43,10 +43,12 @@ type AchievementDelete = {
 export function AuthorApplicationAchievements({
   editable,
   parentBusy,
+  parentOperation,
   onChildWrite,
 }: {
   editable: boolean;
   parentBusy: () => boolean;
+  parentOperation: () => number;
   onChildWrite: (token: number, active: boolean) => void;
 }) {
   const api = useApiClient();
@@ -57,9 +59,11 @@ export function AuthorApplicationAchievements({
   const imageSelection = useRef(0);
   const writeToken = useRef(0);
   const parentBusyRef = useRef(parentBusy);
+  const parentOperationRef = useRef(parentOperation);
   const onChildWriteRef = useRef(onChildWrite);
   const editableRef = useRef(editable);
   parentBusyRef.current = parentBusy;
+  parentOperationRef.current = parentOperation;
   onChildWriteRef.current = onChildWrite;
   editableRef.current = editable;
 
@@ -164,6 +168,7 @@ export function AuthorApplicationAchievements({
 
   const beginWrite = () => {
     if (writeToken.current !== 0 || parentBusyRef.current() || !editableRef.current) return null;
+    imageSelection.current += 1;
     const token = nextChildWriteToken();
     writeToken.current = token;
     setWriteActive(true);
@@ -203,10 +208,12 @@ export function AuthorApplicationAchievements({
     const epoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
     const selection = imageSelection.current + 1;
+    const operationId = parentOperationRef.current();
     imageSelection.current = selection;
     setPickerError(null);
     const stillOwns = () =>
       selection === imageSelection.current &&
+      parentOperationRef.current() === operationId &&
       writeToken.current === 0 &&
       !parentBusyRef.current() &&
       editableRef.current &&

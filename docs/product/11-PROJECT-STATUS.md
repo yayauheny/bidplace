@@ -18,7 +18,12 @@
   text typed after an ordinary save snapshot is still kept. A stale profile
   read does not reopen a pending revision or the achievement editor. Switching
   accounts, including login of the same account, drops the previous draft,
-  photo, error, and private application read.
+  photo, error, and private application read. A successful add or delete
+  replaces an application read that started before that write, so a late empty
+  or pre-delete response does not stay on screen. A photo selection started
+  before that write, or before a profile save or lock, is not applied after the
+  operation finishes. A new selection after the form is editable again applies.
+  A failed refresh shows retry and releases the profile actions.
 - Coverage: `AuthorApplicationAchievements.tsx`, `seller-profile-screen.tsx`,
   and `author-application-achievements.spec.ts` with the real profile screen,
   achievement editor, and QueryClient. Existing profile save, submit, and
