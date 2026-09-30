@@ -5,6 +5,22 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-09-30 — Protected route refresh rejection
+
+- `Needs verification` (mobile web): `ProtectedRoute` handles a rejected
+  `refreshSession` on retry. A second network failure returns the error/retry
+  page and releases the refreshing state. The rejection is recorded with the
+  existing infrastructure logger. It does not clear the session. An unauthorized
+  refresh still clears the local session. A network failure while a session
+  exists keeps that session. A later successful retry opens the protected
+  content.
+- Coverage: `apps/mobile/src/components/shared/protected-route.tsx` and
+  `apps/mobile/src/components/shared/protected-route-refresh.spec.ts`, with the
+  real `AuthProvider` and `QueryClient`.
+- Browser verification: Chromium and WebKit are NOT RUN.
+- `Unchanged`: D04 and D05 remain needs verification. T04 remains partial. D09
+  remains needs verification. Server auth contracts are unchanged.
+
 ## 2026-09-29 — Public read cancellation
 
 - `Needs verification` (mobile web): catalog, search, home, public work, and

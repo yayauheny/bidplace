@@ -7,6 +7,7 @@ import {
 } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 
+import { logInfrastructureError } from '../../errors';
 import { AppShell } from '../layout';
 import { InfrastructurePageStatus } from './InfrastructurePageStatus';
 import { useAuth } from '../../providers/auth-provider';
@@ -43,9 +44,15 @@ export function ProtectedRoute({
           status={pageStatus}
           onRetry={() => {
             setRefreshing(true);
-            void auth.refreshSession().finally(() => {
-              setRefreshing(false);
-            });
+            void auth.refreshSession().then(
+              () => {
+                setRefreshing(false);
+              },
+              (error: unknown) => {
+                logInfrastructureError(error, 'protected-route');
+                setRefreshing(false);
+              },
+            );
           }}
         />
       </AppShell>
