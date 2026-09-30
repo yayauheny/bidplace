@@ -14,7 +14,7 @@ import {
   TextField,
 } from '../../components/ui';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import { canWritePrivateCache, currentAuthEpoch, refreshPrivateQuery } from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { useApiClient } from '../../providers/api-provider';
 import { formatAchievementDate } from './achievement-date';
@@ -113,10 +113,9 @@ export function AuthorApplicationAchievements({
         setImageLabel(null);
         setPickerError(null);
       }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'application'] }),
-        queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
-      ]);
+      await refreshPrivateQuery(queryClient, ['seller', 'application'], variables.epoch);
+      if (!canWritePrivateCache(queryClient, variables.epoch)) return;
+      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
     },
     onSettled: (_saved, _error, variables) => {
       releaseWrite(variables.token);
@@ -127,10 +126,9 @@ export function AuthorApplicationAchievements({
     mutationFn: (variables: AchievementDelete) => api.portfolio.deleteAuthorAchievement(variables.id),
     onSuccess: async (_saved, variables) => {
       if (!canWritePrivateCache(queryClient, variables.epoch)) return;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['seller', 'application'] }),
-        queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] }),
-      ]);
+      await refreshPrivateQuery(queryClient, ['seller', 'application'], variables.epoch);
+      if (!canWritePrivateCache(queryClient, variables.epoch)) return;
+      await queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
     },
     onSettled: (_saved, _error, variables) => {
       releaseWrite(variables.token);

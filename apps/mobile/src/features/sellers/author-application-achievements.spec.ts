@@ -939,4 +939,117 @@ describe('Author application achievement lifecycle', () => {
     expect(harness.getAuthorApplication.mock.calls.length).toBe(readsAfterLogin);
     view.unmount();
   });
+
+  it('shows Alpha after the initial empty application read finishes late', async () => {
+    const reads: Array<(value: ReturnType<typeof applicationResponse>) => void> = [];
+    harness.getAuthorApplication.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          reads.push(resolve);
+        }),
+    );
+    const view = mount();
+    await openEditor(view);
+    expect(reads).toHaveLength(1);
+    fillAchievement(view.container, 'Alpha');
+    click(view.container, 'Сохранить достижение');
+    await flush();
+    await flush();
+    expect(reads.length).toBeGreaterThan(1);
+    await act(async () => {
+      reads[0]?.(applicationResponse([]));
+      reads[1]?.(applicationResponse(['Alpha']));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Alpha');
+    expect(inputValue(view.container, 'Описание достижения')).toBe('');
+    view.unmount();
+  });
+
+  it('does not restore a deleted achievement from a read started before the delete', async () => {
+    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    harness.getAuthorApplication.mockImplementation(() => {
+      const next = deferred<ReturnType<typeof applicationResponse>>();
+      reads.push(next);
+      return next.promise;
+    });
+    const view = mount();
+    await until(view.container, () => reads.length === 1, 'initial application read');
+    await act(async () => {
+      reads[0]?.resolve(applicationResponse(['Listed']));
+      await reads[0]?.promise;
+    });
+    await until(view.container, () => findButton(view.container, 'Удалить') instanceof HTMLButtonElement, 'delete');
+    void view.queryClient.refetchQueries({ queryKey: ['seller', 'application'] });
+    await until(view.container, () => reads.length === 2, 'application refetch');
+    click(view.container, 'Удалить');
+    await flush();
+    await until(view.container, () => reads.length > 2, 'read after delete');
+    await act(async () => {
+      reads[1]?.resolve(applicationResponse(['Listed']));
+      await reads[1]?.promise.catch(() => undefined);
+      reads[reads.length - 1]?.resolve(applicationResponse([]));
+      await reads[reads.length - 1]?.promise;
+    });
+    await flush();
+    expect(view.container.textContent).not.toContain('Listed');
+    expect(harness.deleteAuthorAchievement).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('shows a retry and releases the profile when the read after add fails', async () => {
+    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    harness.getAuthorApplication.mockImplementation(() => {
+      const next = deferred<ReturnType<typeof applicationResponse>>();
+      reads.push(next);
+      return next.promise;
+    });
+    const view = mount();
+    await openEditor(view);
+    fillAchievement(view.container, 'Alpha');
+    click(view.container, 'Сохранить достижение');
+    await until(view.container, () => reads.length > 1, 'read after add');
+    await act(async () => {
+      reads[1]?.reject(new Error('refresh failed'));
+      await reads[1]?.promise.catch(() => undefined);
+    });
+    await flush();
+    expect(view.container.textContent).toContain('application-error');
+    expect(inputValue(view.container, 'Описание достижения')).toBe('');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.addAuthorAchievement).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
+  it('does not publish an achievement refresh into the next session', async () => {
+    const reads: Array<ReturnType<typeof deferred<ReturnType<typeof applicationResponse>>>> = [];
+    harness.getAuthorApplication.mockImplementation(() => {
+      const next = deferred<ReturnType<typeof applicationResponse>>();
+      reads.push(next);
+      return next.promise;
+    });
+    const view = mount();
+    await openEditor(view);
+    fillAchievement(view.container, 'Alpha');
+    click(view.container, 'Сохранить достижение');
+    await until(view.container, () => reads.length > 1, 'read after add');
+    const refresh = reads.length - 1;
+    await switchAccount(view, userB);
+    await until(view.container, () => reads.length > refresh + 1, 'next session read');
+    await act(async () => {
+      reads[0]?.resolve(applicationResponse([]));
+      await reads[0]?.promise.catch(() => undefined);
+      reads[refresh]?.resolve(applicationResponse(['Alpha']));
+      await reads[refresh]?.promise.catch(() => undefined);
+      reads[reads.length - 1]?.resolve(applicationResponse(['Visible B']));
+      await reads[reads.length - 1]?.promise;
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Visible B');
+    expect(view.container.textContent).not.toContain('Alpha');
+    view.unmount();
+  });
 });

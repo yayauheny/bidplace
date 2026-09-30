@@ -14,7 +14,7 @@ import { infrastructurePageFetchStatus } from '../../components/shared/infrastru
 import { AppDialog, AppText, FormSection, ImagePlaceholder, PageHeader, PrimaryButton, ResilientRemoteImage, SecondaryButton } from '../../components/ui';
 import { logInfrastructureError } from '../../errors';
 import { getApiAssetUrl } from '../../lib/environment';
-import { canWritePrivateCache, currentAuthEpoch } from '../../lib/query-cache';
+import { canWritePrivateCache, currentAuthEpoch, refreshPrivateQuery } from '../../lib/query-cache';
 import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { presentEnum, sellerStatusLabels } from '../../lib/presentation';
 import { AccountLogoutButton } from '../auth/AccountLogoutButton';
@@ -253,9 +253,10 @@ export function SellerProfileScreen() {
 
   const invalidate = () => {
     if (!canWritePrivateCache(queryClient)) return;
+    const epoch = currentAuthEpoch(queryClient);
     void queryClient.invalidateQueries({ queryKey: sellerProfileQueryKey });
     void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
-    void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+    void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
   };
   const beginLockedTransition = () => {
     if (transitionLock.current) return false;
@@ -344,7 +345,7 @@ export function SellerProfileScreen() {
     }),
     onSuccess: ({ saved, epoch }) => {
       if (!canWritePrivateCache(queryClient, epoch)) return;
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      void refreshPrivateQuery(queryClient, ['seller', 'application'], epoch);
       void queryClient.invalidateQueries({ queryKey: ['seller', 'profile'] });
       queryClient.setQueryData(sellerProfileQueryKey, (current: SellerProfileResponse | undefined) => current ? { ...current, sellerProfile: { ...current.sellerProfile, applicationStage: saved.application.applicationStage } } : current);
     },
@@ -406,7 +407,7 @@ export function SellerProfileScreen() {
       );
       hydratedProfileToken.current = submitted.editingRevision?.updatedAt ?? hydratedProfileToken.current;
       void queryClient.invalidateQueries({ queryKey: ['seller', 'application-photo'] });
-      void queryClient.invalidateQueries({ queryKey: ['seller', 'application'] });
+      void refreshPrivateQuery(queryClient, ['seller', 'application'], submitEpoch);
       await queryClient.refetchQueries({ queryKey: sellerProfileQueryKey });
     } catch (error) {
       logInfrastructureError(error, 'seller-profile-submit');
