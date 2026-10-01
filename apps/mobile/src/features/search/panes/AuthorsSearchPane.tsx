@@ -6,7 +6,6 @@ import { usePortfolioAuthors } from '../../sellers/use-portfolio-authors';
 import { AuthorSearchRow } from '../AuthorSearchRow';
 import { FigmaButton } from '../../../components/figma/FigmaButton';
 import { SearchPaneStatus } from './search-pane-status';
-import { searchPaginationView } from './search-pagination';
 
 export function AuthorsSearchPane({
   query,
@@ -19,8 +18,6 @@ export function AuthorsSearchPane({
       sort: 'added',
     },
   );
-  const pagination = searchPaginationView(authors);
-
   return (
     <SearchPaneStatus
       isPending={authors.isPending}
@@ -31,7 +28,7 @@ export function AuthorsSearchPane({
       loading={<AuthorSkeleton />}
     >
       <View style={{ width: '100%', gap: figmaTokens.space.identityGap }}>
-        {pagination.items.map((item) => (
+        {authors.items.map((item) => (
           <AuthorSearchRow
             key={item.author.slug}
             slug={item.author.slug}
@@ -39,12 +36,12 @@ export function AuthorsSearchPane({
             shortDescription={item.author.shortDescription}
           />
         ))}
-        {pagination.nextPage ? (
+        {authors.hasNextPage ? (
           <FigmaButton
-            label={pagination.nextPage.label}
+            label="Показать ещё"
             variant="outline"
             width="full"
-            loading={pagination.nextPage.loading}
+            loading={authors.isFetchingNextPage}
             onPress={() => void authors.fetchNextPage()}
           />
         ) : null}

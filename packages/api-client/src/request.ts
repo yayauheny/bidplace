@@ -255,10 +255,5 @@ export async function requestBlob(
     throw createUnexpectedResponseError(response.status);
   }
 
-  try {
-    return await response.blob();
-  } catch (cause) {
-    rethrowIfAbort(cause);
-    throw cause;
-  }
+  return response.blob();
 }

@@ -11,23 +11,12 @@ export function searchRequestQuery(value: string): string | undefined {
   return query.length > 0 ? query : undefined;
 }
 
-export function scheduleDebouncedCallback(
-  callback: () => void,
-  delayMs: number,
-): () => void {
-  const timer = setTimeout(callback, delayMs);
-  return () => clearTimeout(timer);
-}
-
 export function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
-    const cancel = scheduleDebouncedCallback(
-      () => setDebounced(value),
-      delayMs,
-    );
-    return cancel;
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
   }, [delayMs, value]);
 
   return debounced;
