@@ -3,8 +3,8 @@ import { portfolioWorksQuerySchema } from '@bidplace/contracts';
 
 import { ProductsService } from './products.service';
 import {
-  publicCatalogProductWhere,
-  publicProductContentWhere,
+  portfolioCatalogProductWhere,
+  portfolioProductContentWhere,
 } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import { productImageMetadataSelect } from './products.mapper';
@@ -159,14 +159,15 @@ function ownerProduct(
 
 describe('ProductsService', () => {
   it('keeps public portfolio visibility independent from listings', () => {
-    expect(publicCatalogProductWhere.sellerProfile).toEqual({
+    expect(portfolioCatalogProductWhere.sellerProfile).toEqual({
       status: 'APPROVED',
+      city: { not: '' },
     });
-    expect(publicCatalogProductWhere).not.toHaveProperty('listings');
-    expect(publicCatalogProductWhere).toEqual(
-      expect.objectContaining(publicProductContentWhere),
+    expect(portfolioCatalogProductWhere).not.toHaveProperty('listings');
+    expect(portfolioCatalogProductWhere).toEqual(
+      expect.objectContaining(portfolioProductContentWhere),
     );
-    expect(publicProductContentWhere).toHaveProperty('publishedRevisionId', {
+    expect(portfolioProductContentWhere).toHaveProperty('publishedRevisionId', {
       not: null,
     });
   });

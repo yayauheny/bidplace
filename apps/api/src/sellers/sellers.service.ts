@@ -14,7 +14,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
@@ -26,7 +25,6 @@ import {
 import {
   emptyImageBytes,
   ImageStore,
-  RevisionMediaStorageError,
   imageKey,
 } from '../core/image-store';
 import { type ValidatedImageUpload } from '../images/image-policy';
@@ -85,22 +83,6 @@ function assertProfileRevisionReadyToSubmit(revision: {
     !revision.profilePhotoObjectKey
   ) {
     throw new ConflictException('Author profile is missing required fields');
-  }
-}
-
-async function putStoredImage(
-  imageStore: ImageStore,
-  key: string,
-  object: { bytes: Uint8Array; mimeType: string },
-  client?: Parameters<ImageStore['put']>[2],
-) {
-  try {
-    await imageStore.put(key, object, client);
-  } catch (error) {
-    if (error instanceof RevisionMediaStorageError) {
-      throw new ServiceUnavailableException(error.message);
-    }
-    throw error;
   }
 }
 
@@ -247,8 +229,7 @@ export class SellersService {
           select: sellerProfileOwnerSelect,
         });
 
-        await putStoredImage(
-          this.imageStore,
+        await this.imageStore.put(
           imageKey.sellerPhoto(created.id),
           {
             bytes: profilePhoto.buffer,
@@ -364,8 +345,7 @@ export class SellersService {
             },
           });
           if (profilePhoto) {
-            await putStoredImage(
-              this.imageStore,
+            await this.imageStore.put(
               imageKey.sellerProfileRevision(editing.revisionId),
               { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
               tx,
@@ -416,8 +396,7 @@ export class SellersService {
             data: { ...publicProfileRevisionData(input), ...profilePhotoData },
           });
           if (profilePhoto) {
-            await putStoredImage(
-              this.imageStore,
+            await this.imageStore.put(
               imageKey.sellerPhoto(editing.profileId),
               { bytes: profilePhoto.buffer, mimeType: profilePhoto.mimeType },
               tx,
@@ -545,8 +524,7 @@ export class SellersService {
           where: { id: achievement.id },
           data: { objectKey },
         });
-        await putStoredImage(
-          this.imageStore,
+        await this.imageStore.put(
           objectKey,
           { bytes: image.buffer, mimeType: image.mimeType },
           tx,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  getPrismaUniqueConstraintTargets,
   isPrismaSerializableConflictError,
   isPrismaUniqueConstraintError,
 } from './prisma-error';
@@ -15,22 +14,6 @@ describe('prisma error helpers', () => {
   it('detects serializable conflict errors', () => {
     expect(isPrismaSerializableConflictError({ code: 'P2034' })).toBe(true);
     expect(isPrismaSerializableConflictError({ code: 'P2002' })).toBe(false);
-  });
-
-  it('reads unique constraint targets', () => {
-    expect(
-      getPrismaUniqueConstraintTargets({
-        code: 'P2002',
-        meta: { target: ['public_id'] },
-      }),
-    ).toEqual(['public_id']);
-    expect(
-      getPrismaUniqueConstraintTargets({
-        code: 'P2002',
-        meta: { target: 'source_bid_id' },
-      }),
-    ).toEqual(['source_bid_id']);
-    expect(getPrismaUniqueConstraintTargets({ code: 'P2034' })).toEqual([]);
   });
 
   it('returns false for non-prisma values', () => {

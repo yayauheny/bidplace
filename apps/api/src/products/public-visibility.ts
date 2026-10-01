@@ -1,32 +1,4 @@
 import { Prisma } from '@bidplace/database';
-export const publicProductContentWhere = {
-  publishedRevisionId: { not: null },
-  categoryId: { not: null },
-  title: { not: '' },
-  images: { some: {} },
-} satisfies Prisma.ProductWhereInput;
-
-export const publicProductContentSql: Prisma.Sql = Prisma.sql`
-  p."published_revision_id" IS NOT NULL
-  AND
-  p."category_id" IS NOT NULL
-  AND NULLIF(BTRIM(p."title"), '') IS NOT NULL
-  AND EXISTS (
-    SELECT 1 FROM "product_images" pi WHERE pi."product_id" = p."id"
-  )
-`;
-
-export const publicCatalogProductWhere = {
-  status: 'APPROVED',
-  sellerProfile: { status: 'APPROVED' },
-  ...publicProductContentWhere,
-} satisfies Prisma.ProductWhereInput;
-
-export const publicDirectProductWhere = {
-  status: 'APPROVED',
-  sellerProfile: { status: 'APPROVED' },
-  ...publicProductContentWhere,
-} satisfies Prisma.ProductWhereInput;
 
 export const publicAuthorCityWhere = {
   not: '',

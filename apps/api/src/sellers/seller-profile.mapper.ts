@@ -107,14 +107,6 @@ export const sellerProfileAuthSelect = {
   status: true,
 } satisfies Prisma.SellerProfileSelect;
 
-export const sellerProfileHandoffSelect = {
-  userId: true,
-  status: true,
-  handoffContactType: true,
-  handoffContactValue: true,
-  handoffInitiator: true,
-} satisfies Prisma.SellerProfileSelect;
-
 export const sellerProfilePhotoSelect = {
   id: true,
   slug: true,

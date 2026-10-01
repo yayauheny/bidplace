@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import {
   assertProductRevisionTransition,
   canAuthorEditRevision,
-  hasPublishedRevision,
 } from './product-revision-state';
 
 describe('product revision state', () => {
@@ -37,8 +36,5 @@ describe('product revision state', () => {
   it('keeps author editing separate from published visibility', () => {
     expect(canAuthorEditRevision('DRAFT')).toBe(true);
     expect(canAuthorEditRevision('APPROVED')).toBe(false);
-    expect(hasPublishedRevision('APPROVED')).toBe(true);
-    expect(hasPublishedRevision('ARCHIVED')).toBe(true);
-    expect(hasPublishedRevision('PENDING_REVIEW')).toBe(false);
   });
 });

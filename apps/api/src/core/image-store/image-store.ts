@@ -11,13 +11,6 @@ export type ImageStoreClient = Prisma.TransactionClient | PrismaService;
 
 export const emptyImageBytes = new Uint8Array(0) as Uint8Array<ArrayBuffer>;
 
-export class RevisionMediaStorageError extends Error {
-  constructor(message = 'Revision media requires S3 image storage') {
-    super(message);
-    this.name = 'RevisionMediaStorageError';
-  }
-}
-
 export abstract class ImageStore {
   abstract put(
     key: string,

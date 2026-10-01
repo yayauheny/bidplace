@@ -42,10 +42,6 @@ export class ImagesService {
       this.prisma,
       userId,
       productId,
-      {
-        position: true,
-        byteLength: true,
-      },
     );
 
     assertProductImageCapacity(
@@ -65,10 +61,6 @@ export class ImagesService {
         tx,
         userId,
         productId,
-        {
-          position: true,
-          byteLength: true,
-        },
       );
 
       assertProductImageCapacity(
@@ -127,10 +119,6 @@ export class ImagesService {
       this.prisma,
       userId,
       productId,
-      {
-        id: true,
-        position: true,
-      },
     );
 
     if (!product.images.some((image) => image.id === imageId)) {
@@ -142,10 +130,6 @@ export class ImagesService {
         tx,
         userId,
         productId,
-        {
-          id: true,
-          position: true,
-        },
       );
       if (!locked.images.some((image) => image.id === imageId)) {
         throw new NotFoundException('Image not found');
@@ -214,7 +198,6 @@ export class ImagesService {
       this.prisma,
       userId,
       productId,
-      { id: true },
     );
 
     const knownIds = new Set(product.images.map((image) => image.id));
@@ -233,9 +216,6 @@ export class ImagesService {
         tx,
         userId,
         productId,
-        {
-          id: true,
-        },
       );
       const knownLockedIds = new Set(locked.images.map((image) => image.id));
       if (
@@ -290,9 +270,6 @@ export class ImagesService {
       this.prisma,
       userId,
       productId,
-      {
-        id: true,
-      },
       'creation-story',
     );
     const step = await this.prisma.productCreationStep.findFirst({
@@ -314,7 +291,6 @@ export class ImagesService {
         tx,
         userId,
         productId,
-        { id: true },
         'creation-story',
       );
       const currentStep = await tx.productCreationStep.findFirst({
@@ -446,11 +422,10 @@ export class ImagesService {
     tx: Prisma.TransactionClient,
     userId: string,
     productId: string,
-    imageSelect: { id?: true; position?: true; byteLength?: true },
     kind: ProductWriteGuardKind = 'images',
   ) {
     await lockProductRowForUpdate(tx, productId);
-    return this.requireEditableOwner(tx, userId, productId, imageSelect, kind);
+    return this.requireEditableOwner(tx, userId, productId, kind);
   }
 
   private async reindexRevisionImages(
@@ -482,7 +457,6 @@ export class ImagesService {
     client: Pick<Prisma.TransactionClient, 'product'>,
     userId: string,
     productId: string,
-    _imageSelect: { id?: true; position?: true; byteLength?: true },
     kind: ProductWriteGuardKind = 'images',
   ) {
     const product = await client.product.findUnique({
