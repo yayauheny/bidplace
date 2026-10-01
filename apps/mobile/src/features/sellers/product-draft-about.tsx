@@ -1,55 +1,32 @@
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+
 import { FormPageColumns } from '../../components/layout';
 import {
   AppText,
   FormSection,
   PrimaryButton,
   SecondaryButton,
-  TextField,
 } from '../../components/ui';
+import { ProductDraftTextField, useProductDraftWriteGuard } from './product-draft-fields';
+import {
+  emptyProductDraftFormValues,
+  productDraftRequiredErrors,
+  type ProductDraftFormValues,
+} from './product-draft-form';
 import {
   productWizardStep,
   productWizardStepOneIncompleteMessage,
 } from './product-draft-wizard';
 
-type StepOneErrors = {
-  categoryId?: string;
-  title?: string;
-  year?: string;
-};
-
 export type ProductDraftAboutStepProps = {
   isCreationFlow: boolean;
   wizardStep: number;
-
   editable: boolean;
   categories: Array<{ id: string; name: string }>;
-
-  categoryId: string;
-  onChangeCategoryId: (id: string) => void;
-
-  technique: string;
-  onChangeTechnique: (value: string) => void;
-  materials: string;
-  onChangeMaterials: (value: string) => void;
-  dimensions: string;
-  onChangeDimensions: (value: string) => void;
-  year: string;
-  onChangeYear: (value: string) => void;
-
-  title: string;
-  onChangeTitle: (value: string) => void;
-  uniqueness: string;
-  onChangeUniqueness: (value: string) => void;
-
   stepOneAttempted: boolean;
-  stepOneErrors: StepOneErrors;
-  canSaveStepOne: boolean;
-
   saveIsPending: boolean;
   saveIsError: boolean;
-
   onSavePress: () => void;
-
   wizardCanOpenImages: boolean;
   onContinueToImages: () => void;
 };
@@ -59,93 +36,86 @@ export function ProductDraftAboutStep({
   wizardStep,
   editable,
   categories,
-  categoryId,
-  onChangeCategoryId,
-  technique,
-  onChangeTechnique,
-  materials,
-  onChangeMaterials,
-  dimensions,
-  onChangeDimensions,
-  year,
-  onChangeYear,
-  title,
-  onChangeTitle,
-  uniqueness,
-  onChangeUniqueness,
   stepOneAttempted,
-  stepOneErrors,
-  canSaveStepOne,
   saveIsPending,
   saveIsError,
   onSavePress,
   wizardCanOpenImages,
   onContinueToImages,
 }: ProductDraftAboutStepProps) {
-  const titleLabel = isCreationFlow
-    ? 'Сохранить и продолжить'
-    : 'Сохранить изменения';
+  const guard = useProductDraftWriteGuard();
+  const { control, setValue } = useFormContext<ProductDraftFormValues>();
+  const [categoryId = '', title = ''] = useWatch({
+    control,
+    name: ['categoryId', 'title'],
+  });
+  const { errors } = useFormState({ control, name: 'year' });
+  const requiredErrors = productDraftRequiredErrors({
+    ...emptyProductDraftFormValues,
+    categoryId,
+    title,
+  });
+  const yearError = typeof errors.year?.message === 'string' ? errors.year.message : undefined;
+  const canSaveStepOne = !requiredErrors.categoryId && !requiredErrors.title && !yearError;
+  const titleLabel = isCreationFlow ? 'Сохранить и продолжить' : 'Сохранить изменения';
 
   return (
     <>
       <FormPageColumns
         sidebar={
-          <>
-            <FormSection
-              title="Характеристики"
-              description="Параметры помогают точно описать работу."
-            >
-              <TextField
-                label="Техника"
-                value={technique}
-                onChangeText={onChangeTechnique}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Материал"
-                value={materials}
-                onChangeText={onChangeMaterials}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Размеры"
-                value={dimensions}
-                onChangeText={onChangeDimensions}
-                placeholder="Необязательно"
-                editable={editable}
-              />
-              <TextField
-                label="Год создания"
-                value={year}
-                onChangeText={onChangeYear}
-                placeholder="Необязательно"
-                keyboardType="number-pad"
-                editable={editable}
-                error={stepOneAttempted ? stepOneErrors.year : undefined}
-              />
-            </FormSection>
-          </>
+          <FormSection
+            title="Характеристики"
+            description="Параметры помогают точно описать работу."
+          >
+            <ProductDraftTextField
+              name="technique"
+              label="Техника"
+              placeholder="Необязательно"
+              editable={editable}
+            />
+            <ProductDraftTextField
+              name="materials"
+              label="Материал"
+              placeholder="Необязательно"
+              editable={editable}
+            />
+            <ProductDraftTextField
+              name="dimensions"
+              label="Размеры"
+              placeholder="Необязательно"
+              editable={editable}
+            />
+            <ProductDraftTextField
+              name="year"
+              label="Год создания"
+              placeholder="Необязательно"
+              keyboardType="number-pad"
+              editable={editable}
+              error={stepOneAttempted ? yearError : undefined}
+            />
+          </FormSection>
         }
       >
         <FormSection title="Категория">
           {categories.map((category) => (
             <SecondaryButton
               key={category.id}
-              label={
-                categoryId === category.id
-                  ? `✓ ${category.name}`
-                  : category.name
-              }
+              label={categoryId === category.id ? `✓ ${category.name}` : category.name}
               disabled={!editable}
               width="block"
-              onPress={() => onChangeCategoryId(category.id)}
+              onPress={() => {
+                if (guard.current) return;
+                setValue('categoryId', category.id, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
             />
           ))}
-          {stepOneAttempted && stepOneErrors.categoryId ? (
+          {stepOneAttempted && requiredErrors.categoryId ? (
             <AppText role="bodySmall" tone="danger">
-              {stepOneErrors.categoryId}
+              {requiredErrors.categoryId}
             </AppText>
           ) : null}
         </FormSection>
@@ -154,34 +124,30 @@ export function ProductDraftAboutStep({
           title="О работе"
           description="Основная информация для каталога и страницы предмета."
         >
-          <TextField
+          <ProductDraftTextField
+            name="title"
             label="Название"
-            value={title}
-            onChangeText={onChangeTitle}
             placeholder="Название"
             editable={editable}
             required
-            error={stepOneAttempted ? stepOneErrors.title : undefined}
+            error={stepOneAttempted ? requiredErrors.title : undefined}
           />
-          <TextField
+          <ProductDraftTextField
+            name="uniqueness"
             label="Уникальность или тираж"
-            value={uniqueness}
-            onChangeText={onChangeUniqueness}
-            editable={editable}
             placeholder="Необязательно"
+            editable={editable}
           />
         </FormSection>
       </FormPageColumns>
 
       {!isCreationFlow || wizardStep === productWizardStep.about ? (
         <AppText role="bodySmall" tone="secondary">
-          Дата размещения установится автоматически при первой публичной
-          публикации.
+          Дата размещения установится автоматически при первой публичной публикации.
         </AppText>
       ) : null}
 
-      {editable &&
-      (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {editable && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <PrimaryButton
           label={titleLabel}
           loading={saveIsPending}
@@ -199,9 +165,7 @@ export function ProductDraftAboutStep({
         </AppText>
       ) : null}
 
-      {isCreationFlow &&
-      wizardStep === productWizardStep.about &&
-      wizardCanOpenImages ? (
+      {isCreationFlow && wizardStep === productWizardStep.about && wizardCanOpenImages ? (
         <SecondaryButton
           label="Продолжить к изображениям"
           width="block"
@@ -209,8 +173,7 @@ export function ProductDraftAboutStep({
         />
       ) : null}
 
-      {saveIsError &&
-      (!isCreationFlow || wizardStep === productWizardStep.about) ? (
+      {saveIsError && (!isCreationFlow || wizardStep === productWizardStep.about) ? (
         <AppText role="bodySmall" tone="danger">
           Не удалось сохранить предмет.
         </AppText>

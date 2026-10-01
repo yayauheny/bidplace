@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { productWriteRequestSchema, type Product } from '@bidplace/contracts';
 
 import {
+  emptyProductDraftFormValues,
+  productDraftFormSchema,
   productDraftToWriteRequest,
   productToDraftFormValues,
   shouldHydrateProductDraft,
@@ -34,6 +36,18 @@ const persistedProduct = {
 } satisfies Product;
 
 describe('product draft form lifecycle', () => {
+  it('accepts an incomplete draft and rejects a year outside 0..9999', () => {
+    expect(productDraftFormSchema.parse(emptyProductDraftFormValues)).toEqual(
+      emptyProductDraftFormValues,
+    );
+    expect(
+      productDraftFormSchema.safeParse({ ...emptyProductDraftFormValues, year: '10000' }).success,
+    ).toBe(false);
+    expect(
+      productDraftFormSchema.safeParse({ ...emptyProductDraftFormValues, year: '2024' }).success,
+    ).toBe(true);
+  });
+
   it('hydrates the editable portfolio fields from a persisted Work', () => {
     expect(productToDraftFormValues(persistedProduct)).toEqual({
       categoryId: persistedProduct.categoryId,
