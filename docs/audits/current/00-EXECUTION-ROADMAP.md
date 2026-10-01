@@ -12,6 +12,8 @@
 
 **Дополнение 2026-10-01, post-cleanup leftovers:** на `fix/post-cleanup-leftovers` от `76ebd1b` удалены девять подтверждённых остатков после R09–R12. Этот пакет не закрывает C02, C03 или C04. C03 остаётся `NEEDS_VERIFICATION`. R13–R29, R33 и R34 не запускались. R32 остаётся `NEEDS_VERIFICATION`. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
 
+**Дополнение 2026-10-01, shared UI lifecycle:** на `fix/shared-ui-lifecycle` от `d375179` выполнены R13, R14 и L06 из R35. C04, L01 и L06 → `NEEDS_VERIFICATION`: браузеры не запускались. R35 не закрыт, C07 остаётся `QUEUED`, C08 остаётся `VERIFIED`. R15–R17, R25, R28, R29, R32–R34 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -466,6 +468,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** canonical design не допускает compact у реального consumer.
 - **Done/status:** C04 → `VERIFIED` после R10+R13.
 - **Отчёт:** G с проверенными callers и сохранёнными semantics.
+- **Actual (2026-10-01):** `PrimaryButton`, `SecondaryButton`, and `DestructiveButton` pass `size={compact ? 'compact' : size}` into the existing `FigmaButton`. `compact=true` selects that compact size, including when an explicit size is also passed. Omitted or `false` keeps the explicit size, and neither keeps the primitive default `regular`. Disabled and loading still block the action. Tokens, variants, width, and call sites are unchanged. Real callers are the admin moderation approve, request-changes, reject, and suspend actions. `TextButton` still does not read `compact`. The canonical buttons package `292:5058` shows the outline/black primary set; the compact measurements already exist on `FigmaButton` and were not invented here. `Button.spec.ts` renders the real `FigmaButton` style path: 6 tests passed. Browser checks at 390/1024/1440 were not run, so C04 → `NEEDS_VERIFICATION`, not `VERIFIED`.
 
 ### Wave 4 — framework/library simplification
 
@@ -489,6 +492,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** primitive не сохраняет обязательные semantics — Plan для затронутого consumer, без временных таймерных обходов.
 - **Done/status:** L01 → `VERIFIED` только при отсутствии конкурирующих owners внутри мигрированного dialog.
 - **Отчёт:** G с removed mechanism → primitive API → semantic tests.
+- **Actual (2026-10-01):** `AppDialog` no longer searches `document.querySelector('[role="dialog"] …')` and no longer runs its own autofocus or restore timers. `@rn-primitives/dialog` `1.5.2` owns initial focus, the Tab loop, Escape, and outside dismiss. These dialogs open without `Dialog.Trigger`, and the installed modal content cancels the scope's previous-element restore, so `onCloseAutoFocus` prevents that default and focuses the captured opener with `{ preventScroll: true }` only while this instance is still closed. A reopen before that unmount callback does not steal focus. `useOverlayFocusTrap` stays for Search and `FilterSheet`. Search URL, history, positioning, and portal were not changed. Web tests load `dialog.web.mjs` and native tests load `dialog.mjs` in jsdom: 8 web tests and 1 native test passed. Sheet exit remains `SlideOutDown` with `ReduceMotion.System`. Chromium, WebKit, and a native device were not run, so L01 → `NEEDS_VERIFICATION`.
 
 ### R15. Упростить author form средствами RHF/Zod
 
@@ -1125,6 +1129,32 @@ remaining limitations: the unrestricted API test command was not run as one proc
 blocked-by: none for these nine removals. Font rendering, browsers, and the deferred sweep remain unchecked.
 ```
 
+### Shared UI lifecycle evidence
+
+```text
+scope: R13 compact button API, R14 dialog focus lifecycle, L06 keyed image recovery. Not a closure of R35, C07, T04, or T06.
+status: R13 implemented; C04 NEEDS_VERIFICATION. R14 implemented; L01 NEEDS_VERIFICATION. L06 implemented; L06 NEEDS_VERIFICATION. C07 QUEUED. C08 VERIFIED. R35 open. D04, D05, D09, D10, L04, R32 NEEDS_VERIFICATION. T04 and T06 PARTIAL.
+branch: fix/shared-ui-lifecycle
+base SHA: d375179f8ed9435bdb5e14a0124f448dcfa5b8b7
+commits: R13 aeb86e9; R14 66688e4; L06 6a608e5; dialog fixture types 4d821a9
+removed → replacement:
+  R13: void compact → existing FigmaButton size="compact" when compact is true. Explicit size and the regular default stay otherwise. TextButton is unchanged.
+  R14: document querySelector('[role="dialog"] …') and recursive autofocus/restore timers → @rn-primitives/dialog 1.5.2 onOpenAutoFocus/onCloseAutoFocus, FocusScope trap, and Escape/outside dismiss. Return focus is one scoped callback because no consumer uses Dialog.Trigger; it calls focus({ preventScroll: true }) only while that instance is closed.
+  L06: URI reset effect, currentUriRef, and visibleRecovery for a different URI → RemoteImageLifetime keyed by uri. requestVersion stays inside that lifetime. The recovery ref and mounted guard stay for synchronous callbacks of that instance.
+preserved: button variants, disabled/loading, width; dialog initial focus, Tab loop, one close, reopen, disconnected opener, sheet SlideOutDown with ReduceMotion.System; image delays 1000/3000/8000, fourth-failure exhaustion, manual retry, cache-bust query/hash, placeholder, «Повторить», contentFit/contentPosition/transition/blurRadius, recyclingKey.
+meaningful checks:
+  Button.spec.ts 6 passed, including the real FigmaButton compact/regular/large path, disabled/loading, and TextButton.
+  AppDialog.spec.ts 8 passed and AppDialog.native.spec.ts 1 passed against dialog.web.mjs and dialog.mjs. jsdom does not move focus on an intermediate Tab, so the trap test wraps at the first and last controls. Outside dismiss follows the primitive: pointerdown is deferred until click.
+  ResilientRemoteImage.spec.ts 9 passed with fake timers and controlled expo-image callbacks. media-recovery.spec.ts still covers the pure helpers.
+skipped: Chromium, WebKit, 390/1024/1440 screenshots, native device, API server, database, migrations, seed. No .env was read.
+validation commands and exit codes:
+  First pass, after L06 and before the fixture type fix: EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 2. Mobile typecheck failed on dialog fixture children and the vitest esbuild type. Lint → 0. Mobile test → 0 (106 files, 506 tests). test:e2e-fence → 0. git diff --check → 0.
+  After 4d821a9, same commands on Node v22.20.0 / pnpm 11.7.0: turbo → 0 (8 tasks). Lint → 0. Mobile test → 0 (106 files, 506 tests). test:e2e-fence → 0. git diff --check → 0.
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining limitations: C04, L01, and L06 are not VERIFIED without browsers. The first mobile turbo typecheck after L06 exited 2 because the dialog fixtures and vitest config did not typecheck; lint 0, mobile test 0 (106 files, 506 tests), e2e fence 0, and diff check 0 still ran. Commit 4d821a9 fixes those types. useOverlayFocusTrap remains. C07 remains the known productAction counterexample and was not edited.
+blocked-by: none for these three scopes. Browser and device confirmation remains.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1200,7 +1230,7 @@ blocked-by: none for these nine removals. Font rendering, browsers, and the defe
 ### R35. Малый пакет устранения лишних владельцев состояния и wrappers
 
 - **Модель / режим:** Terra Medium / Implementation. **Wave:** 4. **Branch:** `fix/runtime-simplification`.
-- **Findings / статус:** C08 — `VERIFIED`; C07 — `QUEUED`; L06 — `QUEUED`. R35 не закрыт. **Base:** актуальная `feature/portfolio-mvp-release`; Phase 0 сверяет наличие moderation R02 и текущего media runtime. Не переключать integration base молча. Пакет не зависит от принятия UX-вариантов R33.
+- **Findings / статус:** C08 — `VERIFIED`; C07 — `QUEUED`; L06 — `NEEDS_VERIFICATION`. R35 не закрыт. **Base:** актуальная `feature/portfolio-mvp-release`; Phase 0 сверяет наличие moderation R02 и текущего media runtime. Не переключать integration base молча. Пакет не зависит от принятия UX-вариантов R33.
 - **Phase 0 / начать:** `features/admin/admin-moderation-screen.tsx` (`productAction`, `mutateProductStatus`); `features/search/panes/search-pagination.ts`, Works/AuthorsSearchPane; `features/search/search-query.ts`; `components/ui/ResilientRemoteImage.tsx`; API `core/validation/parse-body.ts`, `parse-query.ts`. Повторно проверить consumers и установленный Query Core.
 - **Исправить отдельными commits в одном review:** C07 — error action брать из mutation variables, убрать дублирующий state/setters. C08 — прямые query flags в panes; timeout cleanup внутри debounce hook; одна реализация Zod parsing с прежними semantic exports, если это не увеличивает abstraction. L06 — сначала component prototype с keyed inner image; убрать только доказанно лишний uri reset lifecycle.
 - **Замена:** existing React Query variables, React keyed component lifetime, стандартный timeout, existing Zod. Новые зависимости, generic controller/form/query framework не нужны.
@@ -1210,7 +1240,8 @@ blocked-by: none for these nine removals. Font rendering, browsers, and the defe
 - **Validation:** V-MOBILE, V-DIFF; при API validation правках V-API и существующие controller validation cases. Browser media/search/moderation regression по затронутому поведению в подтверждённо безопасном окружении; без browser L06 остаётся NEEDS_VERIFICATION.
 - **STOP:** keyed prototype требует новых синхронизируемых owners или нарушает recycling/visual behavior; оставить L06 с evidence/blocker, выполнить независимые C07/C08. Не выдавать prototype failure за VERIFIED.
 - **Done/status:** каждый finding закрывается отдельно после своих проверок; не закрывать весь пакет при незавершённом L06. Итог G + удалённые owners/helpers, replacement APIs, before/after scenarios и ограничения.
-- **Actual (2026-10-01):** C08 выполнен. Panes читают `items`, `hasNextPage`, `isFetchingNextPage` и `fetchNextPage` напрямую; подпись load-more остаётся «Показать ещё». `useDebouncedValue` владеет `setTimeout` и cleanup; `scheduleDebouncedCallback` удалён. `parseQuery` — alias `parseBody`, envelope и `z.output` прежние. В том же безопасном пакете `ImagesController` использует `acceptSupportedUploadMimeType`, `toContractProduct` использует `toImageContracts`, а `requestBlob` возвращает `response.blob()` без catch, который пробрасывал ту же причину. Sellers `fileFilter` с `done(null, false)` не объединялся. C07 не выполнен: после неудачной Work action успешная Author action сбрасывает `productAction`, но не прежнюю product mutation error. Замена только на `mutation.variables` меняет видимое сообщение при возврате к Work. L06 не начат: отдельного keyed prototype с retry semantics нет. Браузеры не запускались.
+- **Actual (2026-10-01):** C08 выполнен. Panes читают `items`, `hasNextPage`, `isFetchingNextPage` и `fetchNextPage` напрямую; подпись load-more остаётся «Показать ещё». `useDebouncedValue` владеет `setTimeout` и cleanup; `scheduleDebouncedCallback` удалён. `parseQuery` — alias `parseBody`, envelope и `z.output` прежние. В том же безопасном пакете `ImagesController` использует `acceptSupportedUploadMimeType`, `toContractProduct` использует `toImageContracts`, а `requestBlob` возвращает `response.blob()` без catch, который пробрасывал ту же причину. Sellers `fileFilter` с `done(null, false)` не объединялся. C07 не выполнен: после неудачной Work action успешная Author action сбрасывает `productAction`, но не прежнюю product mutation error. Замена только на `mutation.variables` меняет видимое сообщение при возврате к Work. Браузеры не запускались.
+- **Actual (2026-10-01, L06):** `ResilientRemoteImage` keeps its public props and mounts `RemoteImageLifetime` with `key={uri}`. The URI reset effect, `currentUriRef`, and the interim `visibleRecovery` for a different URI are gone. A closed lifetime cannot update the next one. `requestVersion` is not part of the key, so a retry does not start a new history. Delays stay 1000/3000/8000, exhaustion still follows the fourth failure, and manual retry, cache-bust, placeholder, «Повторить», recycling key, and presentation props stay. The sync recovery ref and a mounted guard remain because timers and image callbacks need the latest state of that lifetime. `ResilientRemoteImage.spec.ts` drives the real component with fake timers and controlled `expo-image` callbacks: 9 tests passed. `media-recovery.spec.ts` still covers the pure helpers. Browsers were not run, so L06 → `NEEDS_VERIFICATION`. R35 stays open because C07 is still `QUEUED`.
 
 ## 5. Что объединять и что оставить отдельным
 
@@ -1266,6 +1297,14 @@ blocked-by: none for these nine removals. Font rendering, browsers, and the defe
 - R32 остаётся `NEEDS_VERIFICATION`. D04, D05, D09, D10 и L04 не переводились в `VERIFIED`. T04 и T06 остаются `PARTIAL`.
 - Браузеры, API bootstrap, БД, migrations и seed не запускались. `10-CODE-ARCHITECTURE.md` не менялся: граница пакетов не изменилась.
 
+### Проверка документа — 2026-10-01 shared UI lifecycle
+
+- R13 wires the existing compact button size. C04 → `NEEDS_VERIFICATION` without a browser pass. The backend `_imageSelect` removal from R10 stays.
+- R14 removes AppDialog's document search and focus timers. L01 → `NEEDS_VERIFICATION`. `useOverlayFocusTrap` still serves Search and `FilterSheet`.
+- L06 keys image recovery by URI. L06 → `NEEDS_VERIFICATION`. C07 stays `QUEUED`, so R35 is not closed. C08 stays `VERIFIED`.
+- D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` was not changed: Search still uses `useOverlayFocusTrap` with `FilterSheet`. The canonical Pen file was not edited.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1283,14 +1322,14 @@ blocked-by: none for these nine removals. Font rendering, browsers, and the defe
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |
 | C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | NEEDS_VERIFICATION | Font rendering not executed                                  | 2026-10-01: unused font registrations and indirect web declarations removed. Frozen install and web/iOS/Android export passed. Runtime font rendering NOT RUN. |
-| C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | PARTIAL            | R04/R09                                                      | `_imageSelect` argument and forwarding removed; select and authz guards remain. Button `compact` stays until R13. |
+| C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | NEEDS_VERIFICATION | R04/R09                                                      | 2026-10-01: `_imageSelect` stays removed. Shared action buttons pass the existing compact size. `Button.spec.ts` 6 tests passed. Browser 390/1024/1440 NOT RUN. |
 | C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | VERIFIED           | R11                                                          | 2026-10-01: api-client declares Zod 3. React 19.2 types replace React 18 types on root and mobile. Isolated deploy and typecheck passed. |
 | A01     | S3 side effects внутри retryable DB transaction                              | P1 / HIGH             | W6 → R22                             | DECISION_REQUIRED  | R10/R18; consistency decision                                | E0; fake-store failure matrix, затем implementation                            |
 | A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | DECISION_REQUIRED  | R18/R21; consistency guarantee                               | E0 static risk; требуется controlled concurrency                               |
 | A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                                    |
 | A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
-| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | QUEUED             | R01/R09                                                      | E0/E1; focus/animation/browser regressions                                     |
+| L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. |
 | L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
 | L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                                        |
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |
@@ -1309,7 +1348,7 @@ blocked-by: none for these nine removals. Font rendering, browsers, and the defe
 | T06     | Дублированный harness и пропущенная parent/achievement граница               | P2 / HIGH             | W2/W7 → R32, R28                     | PARTIAL            | R28 harness cleanup                                          | R32 covers the real parent/achievement seam. Harness cleanup remains R28.     |
 | C07     | Admin productAction дублирует mutation variables                             | P3 / HIGH             | W4 → R35                             | QUEUED             | Проверить R02 на base                                        | Left open 2026-10-01. After a failed Work action, a successful Author action clears `productAction` but not the previous product mutation error. `mutation.variables` alone changes the message shown on return to Work. |
 | C08     | Search helpers переупаковывают flags/timer; duplicated Zod parsing           | P3 / HIGH             | W4 → R35                             | VERIFIED           | Повторный consumer inventory                                 | 2026-10-01: panes use query flags, debounce owns its timer, `parseQuery` aliases `parseBody`. Unit checks passed. Browser search NOT RUN. |
-| L06     | Image uri reset вручную синхронизирует несколько состояний                   | P3 / MEDIUM           | W4 → R35                             | QUEUED             | Component prototype с сохранением retry semantics            | Not started 2026-10-01. Keyed image prototype with retry semantics is still required. |
+| L06     | Image uri reset вручную синхронизирует несколько состояний                   | P3 / MEDIUM           | W4 → R35                             | NEEDS_VERIFICATION | Component prototype с сохранением retry semantics            | 2026-10-01: recovery lifetime is `key={uri}`. Retry delays, exhaustion, cache-bust, and recycling stay. Real component 9 tests passed. Browser media NOT RUN. |
 
 **TOTAL FINDINGS: 38**
 

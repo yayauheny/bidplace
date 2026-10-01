@@ -5,6 +5,38 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Shared button, dialog, and image lifetimes
+
+- `Needs verification` (mobile): `PrimaryButton`, `SecondaryButton`, and
+  `DestructiveButton` pass `compact` through to the existing `FigmaButton`
+  size. Admin moderation already passes `compact` on approve, request-changes,
+  reject, and suspend. Omitted or false `compact` keeps an explicit size.
+  Disabled and loading still block the press. `TextButton` does not use
+  `compact`. Tokens and variants are unchanged.
+- `Needs verification` (mobile web and native): `AppDialog` no longer searches
+  the document for a dialog control and no longer retries focus on its own
+  timers. `@rn-primitives/dialog` 1.5.2 owns initial focus, the Tab loop,
+  Escape, and outside close. Return focus uses `focus({ preventScroll: true })`
+  only when that dialog is still closed, because these dialogs have no
+  `Dialog.Trigger`. Sheet exit stays `SlideOutDown` with system reduced motion.
+  `useOverlayFocusTrap` still serves Search and `FilterSheet`.
+- `Needs verification` (mobile): `ResilientRemoteImage` mounts one recovery
+  lifetime per URI. A later image does not see the previous URI's load or
+  error. The same URI rerender keeps the retry count. Delays stay
+  1000/3000/8000 ms, the fourth failure still shows «Повторить», and
+  cache-bust plus `recyclingKey` still follow `requestVersion`.
+- Coverage: `Button.tsx`, `Button.spec.ts` (6), `AppDialog.tsx`,
+  `AppDialog.spec.ts` (8), `AppDialog.native.spec.ts` (1),
+  `ResilientRemoteImage.tsx`, `ResilientRemoteImage.spec.ts` (9), on Node
+  v22.20.0 / pnpm 11.7.0. The mobile suite, lint, e2e fence, and diff check
+  are recorded in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: routes, auth, server contracts, admin `productAction`, Search
+  URL and history, and the canonical Pen file. C07 stays open, so R35 stays
+  open. C08 stays verified. D04, D05, D09, D10, L04, and R32 stay needs
+  verification. T04 and T06 stay partial.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run. C04, L01, and L06 stay needs verification.
+
 ## 2026-10-01 — Post-cleanup leftovers after R09–R12
 
 - `Implemented`: six unused source objects were removed after a fresh
