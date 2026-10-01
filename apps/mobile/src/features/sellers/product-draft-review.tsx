@@ -1,15 +1,16 @@
+import { useWatch } from 'react-hook-form';
+
 import {
   AppText,
   FormSection,
   PrimaryButton,
   SecondaryButton,
 } from '../../components/ui';
+import type { ProductDraftFormValues } from './product-draft-form';
 
 export type ProductDraftReviewStepProps = {
   editable: boolean;
-  title: string;
   existingProductImagesLength: number;
-  hasStory: boolean;
   submitLabel: string;
 
   wizardSubmitted: boolean;
@@ -21,9 +22,7 @@ export type ProductDraftReviewStepProps = {
 
 export function ProductDraftReviewStep({
   editable,
-  title,
   existingProductImagesLength,
-  hasStory,
   submitLabel,
   wizardSubmitted,
   submitPending,
@@ -31,6 +30,10 @@ export function ProductDraftReviewStep({
   onSubmitPress,
   onBackToStory,
 }: ProductDraftReviewStepProps) {
+  const [title = '', story = ''] = useWatch<ProductDraftFormValues, ['title', 'story']>({
+    name: ['title', 'story'],
+  });
+  const hasStory = Boolean(story.trim());
   return (
     <FormSection
       title="Проверка перед модерацией"

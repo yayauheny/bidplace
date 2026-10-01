@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useForm, type FieldPath, type FieldPathValue } from 'react-hook-form';
+import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/build/react-navigation/core';
 import { View } from 'react-native';
@@ -33,6 +33,7 @@ import { usePrivateCacheEpoch } from '../../lib/use-private-cache-epoch';
 import { persistedFieldOverrides } from './reconcile-saved-fields';
 import { invalidateOwnerWorks, ownerWorkQueryKeys } from './owner-work-query';
 import { ProductDraftAboutStep } from './product-draft-about';
+import { ProductDraftWriteGuard } from './product-draft-fields';
 import {
   emptyProductDraftFormValues,
   productDraftFormSchema,
@@ -101,8 +102,9 @@ export function ProductDraftScreen({
     defaultValues: emptyProductDraftFormValues,
     resolver: zodResolver(productDraftFormSchema),
     mode: 'onChange',
+    shouldUnregister: false,
   });
-  const values = form.watch();
+  const draftTitle = useWatch({ control: form.control, name: 'title' });
   const hydratedProductId = useRef<string | null>(null);
   const hydratedUpdatedAt = useRef<string | null>(null);
   const persistedProductId = useRef<string | null>(productId ?? null);
@@ -421,18 +423,6 @@ export function ProductDraftScreen({
       return invalidateOwnerWorks(queryClient, id);
     },
   });
-
-  const setField = <K extends FieldPath<ProductDraftFormValues>>(
-    field: K,
-    value: FieldPathValue<ProductDraftFormValues, K>,
-  ) => {
-    if (transitionLock.current) return;
-    form.setValue(field, value, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-  };
 
   const releaseSave = (generation: number) => {
     if (saveGeneration.current === generation) saveInFlight.current = false;
@@ -767,13 +757,6 @@ export function ProductDraftScreen({
     productDetail.data?.lastModerationReason,
   );
   const submitLabel = ownerProductSubmitLabel(editorStatus);
-  const requiredErrors = productDraftRequiredErrors(values);
-  const yearError = form.formState.errors.year?.message;
-  const stepOneErrors = { ...requiredErrors, year: yearError };
-  const canSaveStepOne =
-    Object.values(requiredErrors).every((error) => error === undefined) &&
-    !yearError;
-
   const reorder = async (imageId: string, direction: -1 | 1) => {
     if (!existingProduct) return;
     const operation = sessionOperation.current;
@@ -787,6 +770,8 @@ export function ProductDraftScreen({
   };
 
   return (
+    <FormProvider {...form}>
+    <ProductDraftWriteGuard guard={transitionLock}>
     <FormPageShell hideDock>
       {isCreationFlow ? (
         <FormSection
@@ -824,7 +809,7 @@ export function ProductDraftScreen({
           </View>
           {existingProduct ? (
             <AppText role="metadata" tone="secondary">
-              Шаг {wizardStep} из 4 · {values.title.trim() || 'Без названия'}
+              Шаг {wizardStep} из 4 · {draftTitle.trim() || 'Без названия'}
             </AppText>
           ) : null}
           <SecondaryButton
@@ -907,23 +892,7 @@ export function ProductDraftScreen({
           wizardStep={wizardStep}
           editable={editable && !inputsLocked}
           categories={categories.data.categories}
-          categoryId={values.categoryId}
-          onChangeCategoryId={(value) => setField('categoryId', value)}
-          technique={values.technique}
-          onChangeTechnique={(value) => setField('technique', value)}
-          materials={values.materials}
-          onChangeMaterials={(value) => setField('materials', value)}
-          dimensions={values.dimensions}
-          onChangeDimensions={(value) => setField('dimensions', value)}
-          year={values.year}
-          onChangeYear={(value) => setField('year', value)}
-          title={values.title}
-          onChangeTitle={(value) => setField('title', value)}
-          uniqueness={values.uniqueness}
-          onChangeUniqueness={(value) => setField('uniqueness', value)}
           stepOneAttempted={stepOneAttempted}
-          stepOneErrors={stepOneErrors}
-          canSaveStepOne={canSaveStepOne}
           saveIsPending={save.isPending}
           saveIsError={save.isError}
           onSavePress={() => void saveAbout()}
@@ -970,8 +939,6 @@ export function ProductDraftScreen({
       existingProduct ? (
         <ProductDraftStoryStep
           editable={editable && !inputsLocked}
-          story={values.story}
-          onChangeStory={(value) => setField('story', value)}
           savePending={save.isPending}
           saveError={save.isError}
           onBackToImages={() => void moveToWizardStep(productWizardStep.images)}
@@ -998,9 +965,7 @@ export function ProductDraftScreen({
       existingProduct ? (
         <ProductDraftReviewStep
           editable={editable && !inputsLocked}
-          title={values.title}
           existingProductImagesLength={existingProduct.images.length}
-          hasStory={Boolean(values.story.trim())}
           submitLabel={submitLabel}
           wizardSubmitted={wizardSubmitted}
           submitPending={submit.isPending || save.isPending}
@@ -1047,5 +1012,7 @@ export function ProductDraftScreen({
         />
       </AppDialog>
     </FormPageShell>
+    </ProductDraftWriteGuard>
+    </FormProvider>
   );
 }
