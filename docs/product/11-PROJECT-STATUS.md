@@ -5,6 +5,28 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — R19 moderation read correction
+
+- `Partial`: the admin moderation shell keeps search, filters, and tabs mounted
+  while a new list query is loading or has failed. The results area shows
+  loading, error, empty, retry, and a search longer than 200 characters. That
+  over-limit value is not sent and is not truncated. Refresh cancels in-flight
+  seller and product pages before it trims the cache. Search matches the
+  previous joined display text, and `%`, `_`, and `\` are literal.
+- Coverage: `admin-moderation-screen.tsx`, `admin-moderation-list.ts`,
+  `admin-moderation.service.ts`, and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 85 tests on local disposable
+  `bidplace_integration` schemas. Mobile tests are 108 files and 543 tests.
+  Commands are in the R19 correction evidence of
+  `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: page size, keyset order, latest-reason scope, permissions,
+  moderation transitions, append-only audit, public list APIs, and
+  `productAction`. R20 and R21 were not started. D07 stays partial. Browsers
+  were not run. This correction is not accepted by this record. No `.pen`
+  file was changed.
+
 ## 2026-10-01 — Bounded admin moderation reads
 
 - `Implemented`: admin seller and product lists are cursor pages. The default
