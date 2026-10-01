@@ -112,6 +112,6 @@ export function getProfileFieldErrors(fields: {
   return errors;
 }
 
-export function profileDraftBlocksSave(errors: Partial<Record<keyof ProfileFieldErrors, unknown>>) {
-  return profileDraftErrorFields.some((field) => errors[field] !== undefined);
+export function profileDraftAllowsSave(fields: z.input<typeof profileDraftSchema>): boolean {
+  return profileDraftSchema.safeParse(fields).success;
 }

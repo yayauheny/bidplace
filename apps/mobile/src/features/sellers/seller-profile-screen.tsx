@@ -22,7 +22,7 @@ import { AccountLogoutButton } from '../auth/AccountLogoutButton';
 import { useAccountLogout } from '../auth/account-logout';
 import { useApiClient } from '../../providers/api-provider';
 import { AuthorApplicationAchievements } from './AuthorApplicationAchievements';
-import { profileDraftBlocksSave, profileDraftSchema } from './profile-validation';
+import { profileDraftAllowsSave, profileDraftSchema } from './profile-validation';
 import { normalizeInstagram, normalizeTelegram } from './contact-normalization';
 import { canSubmitSellerProfileRevision, isSellerProfileFormEditable } from './seller-profile-editable';
 import { ProfileFieldWriteGuard, SellerProfileCreationStepSelector, SellerProfileFormSteps, SellerProfileVerificationSection, type ProfileFields } from './seller-profile-steps';
@@ -181,9 +181,20 @@ export function SellerProfileScreen() {
   });
   const [slug, fullName, country, city, discipline, shortDescription] = useWatch({
     control: form.control,
-    name: ['slug', 'fullName', 'country', 'city', 'discipline', 'shortDescription'],
+    name: [
+      'slug',
+      'fullName',
+      'country',
+      'city',
+      'discipline',
+      'shortDescription',
+      'telegramUrl',
+      'instagramUrl',
+      'websiteUrl',
+      'publicEmail',
+      'socialLink',
+    ],
   });
-  const profileFieldErrors = form.formState.errors;
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -406,10 +417,12 @@ export function SellerProfileScreen() {
     if (logoutStarted.current || saveInFlight.current) return null;
     if (revisionSubmitInFlight.current && source !== 'revision-submit') return null;
     if (transitionLock.current && source !== 'revision-submit') return null;
+    const fields = form.getValues();
+    if (!profileDraftAllowsSave(fields)) return null;
     if (source === 'transition' && !beginLockedTransition()) return null;
     bumpParentOperation();
     const variables: ProfileSaveVariables = {
-      fields: form.getValues(),
+      fields,
       photo: photoBlobRef.current,
       authEpoch: currentAuthEpoch(queryClient),
     };
@@ -438,6 +451,7 @@ export function SellerProfileScreen() {
     ) {
       return;
     }
+    if (!profileDraftAllowsSave(form.getValues())) return;
     if (!beginLockedTransition()) return;
     const submitEpoch = currentAuthEpoch(queryClient);
     const operation = sessionOperation.current;
@@ -513,7 +527,8 @@ export function SellerProfileScreen() {
   };
   const hasRequiredDetails = Boolean(slug.trim() && fullName.trim() && country.trim() && city.trim() && (profile || photoBlob));
   const hasRequiredAbout = Boolean(discipline.trim() && shortDescription.trim());
-  const canSave = editable && !profileDraftBlocksSave(profileFieldErrors);
+  const draftAllowsSave = profileDraftAllowsSave(form.getValues());
+  const canSave = editable && draftAllowsSave;
   const pageStatus = infrastructurePageFetchStatus(query);
   const preview = photoUri ?? (profile ? getApiAssetUrl(profile.profilePhotoUrl) : null);
   const canPersistBeforeExit = canSave && (Boolean(profile) || hasRequiredDetails);
@@ -536,7 +551,11 @@ export function SellerProfileScreen() {
     bumpParentOperation();
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
-    if (canPersistBeforeExit && (form.formState.isDirty || photoBlob)) {
+    const persistBeforeExit =
+      editable &&
+      profileDraftAllowsSave(form.getValues()) &&
+      (Boolean(profile) || hasRequiredDetails);
+    if (persistBeforeExit && (form.formState.isDirty || photoBlob)) {
       try {
         const saved = await save('transition');
         if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) {
@@ -576,7 +595,7 @@ export function SellerProfileScreen() {
     const operation = sessionOperation.current;
     const epoch = currentAuthEpoch(queryClient);
     if (shouldSaveBeforeSellerProfileBack(form.formState.isDirty, Boolean(photoBlob))) {
-      if (!canSave) return;
+      if (!editable || !profileDraftAllowsSave(form.getValues())) return;
       try {
         const saved = await save('transition');
         if (!saved || sessionOperation.current !== operation || !canWritePrivateCache(queryClient, epoch)) return;

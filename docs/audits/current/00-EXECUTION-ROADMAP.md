@@ -18,6 +18,8 @@
 
 **Дополнение 2026-10-01, form field ownership:** на `fix/form-field-ownership` от `6c0fac7` выполнены R15 и R16. L02 → `NEEDS_VERIFICATION`: локальные проверки прошли, браузеры не запускались. R17, R33, R34 и C07 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
 
+**Дополнение 2026-10-01, R15 validation freshness:** на `fix/form-field-ownership` после `65b0801` Save и выход из формы автора проверяют актуальный raw draft через `profileDraftSchema`, а не ошибки предыдущего resolver. L02 остаётся `NEEDS_VERIFICATION`: браузеры не запускались. R16 не переоткрывался. R17, R33, R34 и C07 не запускались. D04, D05, D09, D10, L04 и R32 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -519,6 +521,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Done/status:** L02 → `PARTIAL` до R16.
 - **Отчёт:** G с удалёнными параллельными owners формы.
 - **Actual (2026-10-01):** `seller-profile-screen.tsx` no longer watches the whole profile draft or derives field errors with `getProfileFieldErrors`. `profileDraftSchema` and `zodResolver` own those errors. `SellerProfileFormSteps` subscribes with `useController`. The screen watches only slug, full name, country, city, discipline, and short description for step gating. Writes call `setValue` after `transitionLock.current` is checked, because `field.onChange` awaits the resolver and the rendered dirty snapshot lags. `getProfileFieldErrors` remains a spec adapter over the same schema. Save, submit, step, exit, logout, photo, and achievements stay on the screen. `handleSubmit` was not introduced. Commit `8b8d7ba`. That commit left L02 partial. R16 below moves it to `NEEDS_VERIFICATION`.
+- **Correction (2026-10-01):** Save and exit on `8b8d7ba` still followed `formState.errors` from the previous resolver pass. A saved Telegram replaced by `bad handle` was sent as `telegramUrl: null`. A corrected `@maker_art`, closed before that pass finished, left without `updateProfile`. `profileDraftAllowsSave` now runs `profileDraftSchema.safeParse` on the raw snapshot that save sends and on the snapshot that chooses save-before-exit. Displayed field errors stay on `zodResolver`. The screen also subscribes to Telegram, Instagram, website, public email, and `socialLink` so that gate re-renders with the draft. Ordinary Save still does not take the transition lock. No await was added before the mutation. L02 stays `NEEDS_VERIFICATION`.
 
 ### R16. Убрать Work form prop drilling
 
@@ -1225,6 +1228,34 @@ remaining limitations: L02 is not VERIFIED without browsers. react-hook-form 7.8
 blocked-by: none for R15 and R16. Browser confirmation remains.
 ```
 
+### R15 validation freshness correction
+
+```text
+scope: R15 author profile save and exit only. Not R16, R17, R33, R34, C07, or R28.
+status: correction implemented. L02 remains NEEDS_VERIFICATION. D04, D05, D09, D10, L04, and R32 remain NEEDS_VERIFICATION. T04 and T06 remain PARTIAL. C07 remains QUEUED. C08 remains VERIFIED.
+branch: fix/form-field-ownership
+base of this correction: 65b08018994a0d5380bb72748ebfaa8bea006483
+package base: 6c0fac75dc3557ffbe2aad1824c6b0585028a1b3
+before → after:
+  Saved Telegram https://t.me/original_author, type "bad handle", Save before the resolver settles. Before: updateProfile received telegramUrl null. After: updateProfile is not called and the field stays "bad handle".
+  Step 2, invalid Telegram, wait for the error, replace it with @maker_art, close and confirm before the resolver settles. Before: the confirm action was "Выйти без сохранения" and router.replace('/') ran without updateProfile. After: the confirm action is "Сохранить и выйти", updateProfile receives telegramUrl https://t.me/maker_art, then router.replace('/').
+preserved: RHF field errors; raw contact text until profileFieldsToUpdate; empty optional contacts become null; blank city still blocks save; explicit exit without save for a draft the schema rejects; ordinary Save accepts input after the request snapshot; session epoch after the mutation await; transition lock only for transition saves; achievement and moderation guards.
+not done: resolver mode sync, handleSubmit, a second errors store, form.watch() of the whole draft, API, normalization, media, routes, layout, and R16.
+meaningful checks:
+  seller-profile-submit.spec.ts validation freshness: invalid immediate save, corrected close, invalid discard, failed exit save, repeated save and exit, session change during that save, empty contacts, blank city, back, and step 2 with empty contacts.
+  profile-validation.spec.ts covers profileDraftAllowsSave. Existing achievement, logout, field, and Work specs stayed in the mobile suite.
+skipped: Chromium, WebKit, creator-profile and Work editor E2E, native device, API server, database, migrations, seed. No .env was read.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks, 6 cache hits)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (108 files, 527 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining limitations: L02 is not VERIFIED without browsers. The dirty-profile exit description still asks to save even when the schema rejects the draft and the button discards it. socialLink can still block save and still has no input.
+blocked-by: none for this correction. Browser confirmation remains.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1382,6 +1413,13 @@ blocked-by: none for R15 and R16. Browser confirmation remains.
 - D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
 - Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md`, flow docs, and the design system were not changed. The canonical Pen file was not edited.
 
+### Проверка документа — 2026-10-01 R15 validation freshness
+
+- Save and exit now parse the current raw author draft with `profileDraftSchema`. L02 stays `NEEDS_VERIFICATION`.
+- R16 was not reopened. R17, R33, R34, and C07 were not started.
+- D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1407,7 +1445,7 @@ blocked-by: none for R15 and R16. Browser confirmation remains.
 | A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
 | L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. Correction: rapid second close and unmount-while-open restore the connected opener with preventScroll. Targeted web 11 + native 1 passed. Browsers still NOT RUN. |
-| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | NEEDS_VERIFICATION | R03/R05/R06                                                  | 2026-10-01: author and Work text fields subscribe through the form. Draft schemas stay loose. Mobile test 108 files / 517 tests. Chromium/WebKit NOT RUN. |
+| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | NEEDS_VERIFICATION | R03/R05/R06                                                  | 2026-10-01: author and Work text fields subscribe through the form. Save and exit parse the current raw author draft. Draft schemas stay loose. Mobile test 108 files / 527 tests. Chromium/WebKit NOT RUN. |
 | L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | QUEUED             | R04                                                          | E0/E1; synthetic config/security matrix                                        |
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |

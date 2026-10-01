@@ -5,6 +5,37 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Author draft validation before save and exit
+
+- `Needs verification` (mobile): save, submit, step, back, and exit read the
+  current raw author draft through `profileDraftSchema` before they write or
+  decide to save. Displayed field errors still come from `zodResolver`.
+  `profileFieldsToUpdate` still normalizes Telegram and Instagram only after
+  that check. An invalid contact is not sent as null. A corrected valid draft
+  is saved before exit. A draft the schema rejects can still leave without a
+  write. Empty optional contacts still become null. A blank city still blocks
+  the write.
+- Before: typing `bad handle` over a saved Telegram and pressing Save sent
+  `telegramUrl: null`. Correcting that field to `@maker_art` and confirming
+  exit before the resolver finished left with `router.replace('/')` and no
+  `updateProfile`.
+- After: the first case does not call `updateProfile`. The second case shows
+  «Сохранить и выйти», sends `https://t.me/maker_art`, then navigates.
+  Ordinary Save still keeps text typed after the request snapshot. A session
+  change during that save does not publish the old result. A failed exit save
+  keeps the author on the form.
+- Coverage: `seller-profile-screen.tsx`, `profile-validation.ts`,
+  `seller-profile-submit.spec.ts`, and `profile-validation.spec.ts`, on Node
+  v22.20.0 / pnpm 11.7.0. The mobile suite is 108 files and 527 tests. Lint,
+  the mobile graph typecheck and build, the e2e fence, and diff check passed.
+  Commands are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: routes, layout, API contracts, normalization of a valid
+  contact, server authorization, and the canonical Pen file. L02 stays needs
+  verification. D04, D05, D09, D10, L04, and R32 stay needs verification. T04
+  and T06 stay partial.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run.
+
 ## 2026-10-01 — Author and Work form field ownership
 
 - `Needs verification` (mobile): the author profile form keeps values, dirty

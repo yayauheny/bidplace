@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getProfileFieldErrors, getPublicLinkError, profileDraftSchema } from './profile-validation';
+import {
+  getProfileFieldErrors,
+  getPublicLinkError,
+  profileDraftAllowsSave,
+  profileDraftSchema,
+} from './profile-validation';
 
 describe('seller profile field validation', () => {
   it.each([
@@ -75,5 +80,26 @@ describe('seller profile field validation', () => {
     expect(parsed.telegramUrl).toBe('@maker_art');
     expect(parsed.instagramUrl).toBe('maker.art');
     expect(parsed.publicEmail).toBe('Hello@Example.com');
+  });
+
+  it('accepts the raw snapshot that can be saved and rejects an invalid contact', () => {
+    const draft = {
+      slug: 'maker',
+      fullName: 'Maker',
+      discipline: '',
+      country: 'BY',
+      city: 'Минск',
+      practice: '',
+      socialLink: '',
+      telegramUrl: '',
+      instagramUrl: '',
+      websiteUrl: '',
+      publicEmail: '',
+      shortDescription: '',
+    };
+    expect(profileDraftAllowsSave(draft)).toBe(true);
+    expect(profileDraftAllowsSave({ ...draft, telegramUrl: 'bad handle' })).toBe(false);
+    expect(profileDraftAllowsSave({ ...draft, telegramUrl: '@maker_art' })).toBe(true);
+    expect(profileDraftAllowsSave({ ...draft, city: '   ' })).toBe(false);
   });
 });
