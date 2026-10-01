@@ -5,6 +5,36 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Post-cleanup leftovers after R09–R12
+
+- `Implemented`: six unused source objects were removed after a fresh
+  consumer search on `76ebd1b`. The private `sellerProfileBaseWriteSchema`,
+  `PUBLIC_ID_LENGTH`, `LatestRulesAcceptanceRecord`,
+  `SellerProfilePhotoRecord`, `ModerationTarget`, and
+  `CREATOR_HANDOFF_HYSTERESIS` are gone, along with the sticky hysteresis
+  import that only served that alias. Create and update seller schemas, handoff
+  validators, the public-id generator, the rules-acceptance select, the seller
+  photo select, moderation filters and targets, and the shared sticky
+  hysteresis stay.
+- `Implemented`: the root manifest no longer declares `zod` or
+  `@types/react-dom`. Mobile no longer declares `jsqr`. Root `@types/react`,
+  mobile `@types/react-dom`, `qrcode`, `@types/qrcode`, and the Zod
+  declarations in api, mobile, api-client, config, and contracts stay. The
+  lockfile dropped those three importer edges and the unused `jsqr` package.
+  Zod `3.25.76` and `@types/react-dom` `19.2.7` remain for their owners.
+  React, React Native, Expo, and TypeScript versions are unchanged.
+- Coverage: frozen install, typecheck and build of the mobile and API graphs
+  (15 tasks), API and mobile lint, contracts 30 tests, api-client 26 tests,
+  API unit 269 tests plus 33 env tests, mobile 482 tests, and the mobile e2e
+  fence, on Node v22.20.0 / pnpm 11.7.0. The contracts unused-local typecheck
+  passed.
+- `Unchanged`: product behavior, public contracts, auth epoch, `productAction`,
+  button `compact`, image lifecycle, and the canonical Pen file. Browser
+  checks, API bootstrap, database connections, migrations, and seed were not
+  run. D04, D05, D09, D10, and L04 stay needs verification. R32 stays needs
+  verification. T04 and T06 stay partial. C02, C03, and C04 stay open. C07 and
+  L06 stay open.
+
 ## 2026-10-01 — Font loading and dependency ownership
 
 - `Implemented`: the root layout loads Inter 400/500/600 through `useFonts`.

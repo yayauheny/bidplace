@@ -10,6 +10,8 @@
 
 **Дополнение 2026-10-01:** R09 и R10 выполнены на `fix/audit-unused-code` от `5ca9657`. Из R35 выполнен C08 и соседние безопасные wrappers. C07 и L06 не начаты, R35 не закрыт. R11 и R12 выполнены на `fix/dependency-ownership` от `46122e4`. C03 остаётся `NEEDS_VERIFICATION`: export прошёл, runtime font rendering не проверялся. C05 → `VERIFIED`. R13–R29, R33 и R34 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`: браузеры не запускались. T04 и T06 остаются `PARTIAL`.
 
+**Дополнение 2026-10-01, post-cleanup leftovers:** на `fix/post-cleanup-leftovers` от `76ebd1b` удалены девять подтверждённых остатков после R09–R12. Этот пакет не закрывает C02, C03 или C04. C03 остаётся `NEEDS_VERIFICATION`. R13–R29, R33 и R34 не запускались. R32 остаётся `NEEDS_VERIFICATION`. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -1081,6 +1083,48 @@ remaining limitations: C03 is not VERIFIED because font rendering was not checke
 blocked-by: none for the dependency changes. Font rendering remains unchecked.
 ```
 
+### Post-cleanup leftovers evidence
+
+```text
+scope: leftovers after R09–R12; not a new finding and not a closure of C02, C03, or C04
+status: removals done; C02 PARTIAL; C03 NEEDS_VERIFICATION; C04 PARTIAL; C07 QUEUED; L06 QUEUED; R32 NEEDS_VERIFICATION; D04, D05, D09, D10, L04 NEEDS_VERIFICATION; T04 and T06 PARTIAL
+branch: fix/post-cleanup-leftovers
+base SHA: 76ebd1bd6b5878c826d3643db34a60374ecb9619
+commits: source 429ac036c11198f6cf309b2ba2b0417c911a977a; dependencies b72f55e408e2252dacf725abe15e3c4462ff37ce
+changed contracts: none. Create and update seller request schemas, handoff validators, exported contract types, public-id generation, moderation filters, and sticky header behavior are unchanged.
+removed:
+  sellerProfileBaseWriteSchema — private, unexported, no readers; contracts noUnusedLocals no longer reports TS6133
+  PUBLIC_ID_LENGTH — declaration only; generator still uses randomBytes(8)
+  LatestRulesAcceptanceRecord — declaration only; latestRulesAcceptanceSelect and getAcceptedRulesVersion remain
+  SellerProfilePhotoRecord — declaration only; sellerProfilePhotoSelect and ownership checks remain
+  ModerationTarget — declaration only; revisionTarget, parentTarget, filters, and moderation contracts remain; productAction unchanged
+  CREATOR_HANDOFF_HYSTERESIS — unused alias; its STICKY_HANDOFF_HYSTERESIS import was removed from that file only. The shared constant and creator wrappers remain
+  root zod devDependency — no root script or config consumer; api, mobile, api-client, config, and contracts still declare zod
+  root @types/react-dom — no root consumer; mobile declaration remains. Root @types/react remains
+  mobile jsqr — no source, test, e2e, script, or config consumer. qrcode and @types/qrcode remain
+lockfile: pnpm 11.7.0 on Node v22.20.0 removed the three importer edges and the jsqr package and snapshot. No other dependency edges referenced jsqr. zod@3.25.76 stays for the workspace owners and @expo/cli@57.0.6. @types/react-dom@19.2.7 stays for mobile and existing Expo/Radix peers. No peer snapshot keys changed. React, React Native, Expo, and TypeScript versions did not change.
+validation checkout: /private/tmp/bidplace-post-cleanup-validation at b72f55e, cloned without node_modules or .env. No .env on the walk from that checkout to /.
+validation commands and exit codes:
+  CI=1 pnpm install --frozen-lockfile → 0. Root links zod and @types/react-dom absent. Mobile jsqr absent. Root @types/react and workspace zod present. Mobile @types/react-dom, qrcode, and @types/qrcode present.
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' --filter='@bidplace/api...' → 0 (15 tasks). Prisma generate ran as the existing database prerequisite and did not migrate or connect.
+  pnpm --filter @bidplace/api lint → 0
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/contracts test → 0 (4 files, 30 tests)
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 26 tests)
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (47 files, 269 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 33 tests). The spec stubs a missing env path and injects fileExists.
+  pnpm --filter @bidplace/mobile test → 0 (102 files, 482 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  pnpm --filter @bidplace/contracts exec tsc -p tsconfig.typecheck.json --noEmit --noUnusedLocals --noUnusedParameters --incremental false → 0
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining KEEP: root @types/react; mobile @types/react-dom; qrcode and @types/qrcode; workspace Zod declarations; live seller schemas and handoff validators; public-id generator; rules and seller-photo selects; moderation targets and productAction; shared sticky hysteresis and creator wrappers; public exports without a known external consumer.
+remaining DEFER for a later test sweep, not removed here: figmaDeferredIconNames; figmaDeferredDockItemIds; figmaUnusedDockVariantIds; source-text assertions such as category-query-identity and catalog-intro-style; orphan fixtures, helpers, and mocks after a future harness merge.
+not started: R33, C07, L06, R13, R28, R29, auth epoch and session ownership, navigation refactor, commerce restoration or retirement, public contract cleanup, and wrapper or alias cleanup.
+remaining limitations: the unrestricted API test command was not run as one process, so env loading could not walk to a real .env. Browser, API server, database, migration, and seed checks were not run. No product behavior changed. No finding count changed.
+blocked-by: none for these nine removals. Font rendering, browsers, and the deferred sweep remain unchecked.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1214,6 +1258,13 @@ blocked-by: none for the dependency changes. Font rendering remains unchecked.
 - T02 остаётся `PARTIAL`: helper-only tests удалённых symbols сняты, source-text inventory и R28 не выполнены. T04 и T06 остаются `PARTIAL`.
 - D04, D05, D09, D10 и L04 не переводились в `VERIFIED`. Браузеры, API bootstrap, БД, migrations и seed не запускались.
 - Исторические evidence rows не заменены на `QUEUED`.
+
+### Проверка документа — 2026-10-01 post-cleanup leftovers
+
+- Девять остатков удалены на `fix/post-cleanup-leftovers` от `76ebd1b`. Исторические evidence R09–R12 не переписаны. Число findings не менялось.
+- C02 и C04 остаются `PARTIAL`. C03 остаётся `NEEDS_VERIFICATION`. C07 и L06 остаются `QUEUED`, поэтому R35 не закрыт. R13 не начат.
+- R32 остаётся `NEEDS_VERIFICATION`. D04, D05, D09, D10 и L04 не переводились в `VERIFIED`. T04 и T06 остаются `PARTIAL`.
+- Браузеры, API bootstrap, БД, migrations и seed не запускались. `10-CODE-ARCHITECTURE.md` не менялся: граница пакетов не изменилась.
 
 ## 6. Полная coverage matrix
 
