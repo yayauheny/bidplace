@@ -5,6 +5,35 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Server config loaded once per application
+
+- `Implemented`: env files are parsed with Node `util.parseEnv` in
+  `packages/config`. HTTP bootstrap validates the merged environment once,
+  freezes it, and passes that object through Nest `SERVER_ENV`
+  (`apps/api/src/core/config/env.ts`, `server-env.module.ts`, `main.ts`,
+  `AppModule.forRoot`). Analytics, auth, OTP, password reset, mail, image
+  storage, and rate limits read that snapshot. Request handlers do not reread
+  the env file or rerun schema validation. Unset `process.env` keys are still
+  filled so Prisma can read `DATABASE_URL` when `PrismaService` constructs
+  `PrismaClient`.
+- Node parser differences, locked by synthetic fixtures: an unquoted `#`
+  starts a comment, double quotes interpret escapes, an optional `export`
+  prefix is accepted, only outer quotes are removed, and a leading UTF-8 BOM
+  stays on the first key. Process env still overrides the file. A missing
+  file stays empty. The last duplicate key still wins.
+- The `NODE_ENV` × `APP_ENV` security matrix is unchanged, including
+  production SMTP, service rules, reset URL, S3, JWT length, and the
+  `TEST_EMAIL_BYPASS` prohibition. Bypass remains `NODE_ENV=test` with
+  `APP_ENV=local`.
+- Coverage: `@bidplace/config` 7 tests; API unit 275 tests plus 33 env tests;
+  API integration 76 tests on local disposable `bidplace_integration` schemas.
+  Node v22.20.0 / pnpm 11.7.0. Commands and exit codes are in the R17 evidence
+  of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: auth, OTP, reset, analytics, media, and rate-limit rules;
+  mobile, contracts, schema, and migrations. R15, R16, and R18 evidence is
+  unchanged. L03 is verified. No founder decision was added. Browsers were
+  not run. Root migrate and seed were not run.
+
 ## 2026-10-01 — Dialog return focus after reopen and unmount
 
 - `Needs verification` (mobile web): `AppDialog` still uses `@rn-primitives/dialog`
