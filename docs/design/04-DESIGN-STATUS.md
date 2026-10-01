@@ -4,6 +4,17 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Author and Work form fields
+
+- `Needs verification` (mobile web): the author wizard and the Work editor
+  keep the same fields, labels, placeholders, required marks, and error copy.
+  Field values and those errors now come from the form. Empty public contacts
+  stay optional. An incomplete Work draft stays savable. Title, category, and
+  year messages still wait for the creation about attempt.
+- `Unchanged`: layout, step order, canonical Pen file, design tokens, and
+  Figma source packages. Chromium, WebKit, and 390/1024/1440 screenshots were
+  not run. This does not visually accept either form.
+
 ## 2026-10-01 — Dialog return focus after reopen and unmount
 
 - `Needs verification` (mobile web): `AppDialog` still takes initial focus, the

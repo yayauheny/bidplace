@@ -5,6 +5,37 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Author and Work form field ownership
+
+- `Needs verification` (mobile): the author profile form keeps values, dirty
+  state, and field errors in react-hook-form 7.81.0. `profileDraftSchema`
+  with `zodResolver` is the field-error source. Sections use `useController`.
+  The screen watches slug, name, country, city, discipline, and short
+  description for step gating. City, Telegram, Instagram, website, and public
+  email messages are unchanged. Raw contact text stays in the field;
+  `profileFieldsToUpdate` still normalizes Telegram and Instagram on write.
+  Empty public contacts stay allowed. Auth email stays private.
+- `Needs verification` (mobile): Work about, story, and review subscribe to
+  the existing draft form. Empty title and category remain savable.
+  `productDraftRequiredErrors` still blocks only the creation about action,
+  and the year message still appears after that attempt. The write request
+  still turns blank text into null and a blank year into null.
+- Writes check `transitionLock` before `setValue`. Ordinary Save still accepts
+  input after the request snapshot. Session epoch, moderation hold,
+  achievements, and the image picker were not given a second owner.
+- Coverage: `seller-profile-screen.tsx`, `seller-profile-steps.tsx`,
+  `profile-validation.ts`, `product-draft-screen.tsx`,
+  `product-draft-fields.tsx`, `product-draft-about.tsx`,
+  `product-draft-story.tsx`, `product-draft-review.tsx`, on Node v22.20.0 /
+  pnpm 11.7.0. The mobile suite is 108 files and 517 tests. Lint, the mobile
+  graph typecheck and build, the e2e fence, and diff check passed. Commands
+  are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: routes, copy, layout, API contracts, server authorization, and
+  the canonical Pen file. L02 stays needs verification. D04, D05, D09, D10,
+  L04, and R32 stay needs verification. T04 and T06 stay partial.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run.
+
 ## 2026-10-01 — Dialog return focus after reopen and unmount
 
 - `Needs verification` (mobile web): `AppDialog` still uses `@rn-primitives/dialog`
