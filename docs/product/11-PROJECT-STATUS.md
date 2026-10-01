@@ -5,6 +5,39 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Admin analytics aggregates in PostgreSQL
+
+- `Implemented`: `GET /api/admin/analytics/overview` still returns the same
+  overview contract. Active users are `COUNT(DISTINCT user_id)` for non-null
+  ids in the period. Acquisition groups `AcquisitionAttribution` by
+  `coalesce(source, 'direct')` in the database. Growth reads UTC day counts
+  and the service fills the zero buckets. `apps/api/src/admin/admin-analytics.query.ts`
+  and `admin-analytics.service.ts`.
+- Signup counts stay inside the captured-at cohort: a row counts only when
+  `capturedAt` is in the period and `userId` plus `linkedAt` are also in that
+  period. `docs/product/analytics-metrics.md` does not explicitly require
+  counting a linked row whose capture is outside the period, so that metric
+  was not redefined.
+- Equal visitor counts are ordered by source after the visitor count. The
+  previous read had no order, so tied sources were not a defined sequence.
+  The checked 7-day fixture has distinct visitor counts, and its full JSON
+  matches the overview from before this change.
+- Recent lists stay at 8 rows. Drilldowns stay at 50. Stuck moderation is
+  still `PENDING_REVIEW` with `updatedAt` strictly older than seven days.
+  No new transaction snapshot was added.
+- Coverage: `admin-analytics.service.spec.ts`, `admin.guard.spec.ts`,
+  `admin.controller.spec.ts`, and
+  `test/integration/admin-analytics-aggregation.integration.spec.ts`, on
+  Node v22.20.0 / pnpm 11.7.0 / PostgreSQL 16.14. API unit tests are 49 files
+  and 286 tests, plus 37 env tests. Integration is 24 files and 84 tests on
+  local disposable `bidplace_integration` schemas. Commands are in the R20
+  evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Partial`: D07. Moderation reads (R19) and catalog facets (R21) are still
+  open. `05-MVP-RFC.md` §16 leftover event names stay DB-derived or deferred.
+- `Unchanged`: analytics ingestion, attribution writes, admin permissions,
+  contracts, schema, and migrations. Browsers were not run. No founder
+  decision was added.
+
 ## 2026-10-01 — Leading env BOM and config unit discovery
 
 - `Implemented`: `loadEnvFile` removes one leading U+FEFF and then calls Node

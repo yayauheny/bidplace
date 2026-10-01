@@ -26,6 +26,8 @@
 
 **Дополнение 2026-10-01, R17 BOM:** один начальный U+FEFF снимается до `util.parseEnv`, поэтому production-файл не читается как development/local. `@bidplace/config` test входит в root `test:unit`. L03 остаётся `VERIFIED`. См. R17 evidence.
 
+**Дополнение 2026-10-01, R20:** на `fix/analytics-database-aggregation` от `95dac4c` admin overview считает active users, acquisition и UTC growth в PostgreSQL. D07 → `PARTIAL`: R19 и R21 не начаты. См. R20 evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -634,6 +636,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** обнаружена неоднозначность metric semantics — отдельное решение, без «оптимизации» смысла.
 - **Done/status:** D07 → `PARTIAL`.
 - **Отчёт:** G с semantic equivalence и объёмом выбранных строк.
+- **Actual (2026-10-01):** выполнено на `fix/analytics-database-aggregation` от `95dac4c11a66f0e2e2931b1c3f45e86e52514ec0`. Code commit `fc9e369c6b010b05c226a55ec47f6b461b7c0eaa`. Active users, acquisition и UTC growth больше не читают сырые строки ради JS-группировки. Recent и drilldown остаются `take` 8 и 50. Контракт overview, ingestion, attribution writes и admin permissions не менялись. D07 → `PARTIAL`. См. R20 evidence.
 
 ### R21. Убрать full-table загрузки для facets
 
@@ -1490,6 +1493,45 @@ blocked-by: none for this correction. Browser confirmation remains.
 - D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
 - Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
 
+### R20 evidence
+
+```text
+scope: R20 admin analytics aggregation only. Not R19, R21, or R22–R27.
+finding IDs: analytics part of D07
+status: PARTIAL. D07 stays open until R19 and R21.
+branch: fix/analytics-database-aggregation
+base SHA: 95dac4c11a66f0e2e2931b1c3f45e86e52514ec0
+ancestor checked before this branch: f5d8b0ac80ced03e3155ea130955b596e312d762
+code commit: fc9e369c6b010b05c226a55ec47f6b461b7c0eaa
+changed contracts: none
+semantic parity: the 7-day synthetic fixture JSON matches the overview produced by the previous service before this change. Active users are COUNT DISTINCT non-null user ids. Acquisition counts attribution rows captured in the period, coalesces null source to direct, and counts a signup only when that same row has a user and linkedAt inside the period. Growth returns UTC day counts; the service still fills every UTC date from the period start through the period end, including zero days. today is UTC midnight through now. 7d/30d/90d are now minus exactly 7/30/90 days through now, inclusive. custom uses the requested from/to. Stuck moderation stays PENDING_REVIEW with updatedAt strictly before now minus 7 days. A zero visitor total still yields a null rate; visitors with zero signups yield 0. Recent reads stay at 8 and drilldowns at 50. No transaction snapshot was added.
+signup reading: analytics-metrics.md says signups are attributions with a linked user and linkedAt in the period. It does not explicitly require counting a row whose capturedAt is outside the period. The previous intersection is unchanged. That metric was not stopped.
+tie order: equal visitor counts now sort by source using UTF-16 code unit order. The previous findMany had no ORDER BY, so tied sources were not a defined sequence. The parity fixture has visitor counts 3, 2, and 1, so its full JSON does not depend on the tie-break.
+row volume, no timing claim:
+  Parity fixture: 9 analytics events and 7 attribution rows stored. Aggregate queries returned 1 active-user row, 3 source rows, 3 user-day rows, 4 listing-day rows, 2 seller-day rows, and 2 work-day rows. The previous reads would have returned 2 distinct user rows, 6 in-period attribution rows, 3 user timestamps, 6 listing timestamps, 2 seller timestamps, and 2 work timestamps.
+  Volume fixture: 48 listing_viewed events, 20 attribution rows, and 3 users created on one UTC day. Aggregate queries returned 1, 4, 1, 5, 0, and 0 rows. The growth array is still 8 buckets. The sum of listing views is 48. Active users are 3.
+tests/scenarios: empty data; repeated events and null userId; exact from/to and rows outside the range; UTC midnight and partial first/last days; today, 7d, 30d, 90d, and custom, including zero buckets; null/direct merge, empty source, several anonymous rows of one source, capturedAt outside with linkedAt inside and the reverse; zero denominator; admin 401/403/200; full JSON comparison; Europe/Minsk and America/Los_Angeles session zones.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (49 files, 286 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (37 tests). Lookups stay on /repo/missing.env and synthetic files. No real .env was read.
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (24 files, 84 tests) on local disposable bidplace_integration, isolated itest_ schemas. PostgreSQL 16.14. Prisma 6.19.3.
+  git diff --check → 0
+runtime environment: Node v22.20.0, pnpm 11.7.0, PostgreSQL 16.14, Prisma 6.19.3
+evidence links: apps/api/src/admin/admin-analytics.query.ts; admin-analytics.service.ts; admin-analytics.service.spec.ts; admin.guard.spec.ts; test/integration/admin-analytics-aggregation.integration.spec.ts; admin-analytics-seven-day.json
+remaining limitations: D07 is PARTIAL. R19 moderation reads and R21 facet reads are not done. Equal-visitor source order is now deterministic; it was previously the unordered scan order. userId on acquisition_attributions is unique, so two linked rows for one user cannot be stored; row counting is proven with multiple anonymous rows of one source. No timing claim.
+blocked-by: none for R20. D07 remains blocked on R19 and R21.
+browser: NOT RUN
+root migrate/seed: NOT RUN
+```
+
+### Проверка документа — 2026-10-01 R20
+
+- R20 выполнен на `fix/analytics-database-aggregation` от `95dac4c`. D07 → `PARTIAL`.
+- R19, R21 и R22–R27 не менялись. Контракт overview, ingestion и permissions не менялись.
+- Браузеры не запускались. Root migrate и seed не запускались. Integration harness мигрировал только изолированные `itest_` schemas в `bidplace_integration`. Канонический Pen не менялся. `10-CODE-ARCHITECTURE.md` не менялся: граница admin overview та же.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1502,7 +1544,7 @@ blocked-by: none for this correction. Browser confirmation remains.
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18; R19 и R21 ещё открыты                               | 2026-10-01 R20: analytics aggregates in PostgreSQL. Full 7d JSON matched the previous overview. R19 moderation and R21 facets remain. |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |
