@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ACCOUNT_AUTHOR_APPLICATION,
-  ACCOUNT_BECOME_AUTHOR,
   AUTHORS_CATALOG_INTRO,
   RESET_PASSWORD_SUCCESS_DESCRIPTION,
   WORKS_CATALOG_INTRO,
@@ -16,8 +14,6 @@ describe('portfolio public copy', () => {
     const strings = [
       WORKS_CATALOG_INTRO,
       AUTHORS_CATALOG_INTRO,
-      ACCOUNT_BECOME_AUTHOR,
-      ACCOUNT_AUTHOR_APPLICATION,
       RESET_PASSWORD_SUCCESS_DESCRIPTION,
     ];
 

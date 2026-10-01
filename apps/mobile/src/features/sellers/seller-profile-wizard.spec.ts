@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canOpenSellerProfileStep, previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
+import { previousSellerProfileStep, resolveSellerProfileStep, shouldAdvanceSellerApplication, shouldSaveBeforeSellerProfileBack, shouldShowSellerProfileAchievements } from './seller-profile-wizard';
 
 describe('seller profile draft wizard', () => {
   it('keeps Step 1 for malformed and unpersisted Step 2 URLs', () => {
@@ -11,7 +11,6 @@ describe('seller profile draft wizard', () => {
   it('keeps persisted drafts on Step 2 and does not relock it after returning to Step 1', () => {
     const draft = { status: 'DRAFT', applicationStage: 'CONTACTS' as const };
     expect(resolveSellerProfileStep('2', draft)).toBe(2);
-    expect(canOpenSellerProfileStep(2, draft)).toBe(true);
   });
 
   it('resumes and clamps draft URLs at the server-owned onboarding boundary', () => {

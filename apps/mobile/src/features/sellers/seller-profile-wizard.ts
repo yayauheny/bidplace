@@ -22,13 +22,6 @@ export function resolveSellerProfileStep(
   return Math.min(parsed, resume) as 1 | 2 | 3 | 4;
 }
 
-export function canOpenSellerProfileStep(
-  step: 1 | 2 | 3 | 4,
-  profile: ProfileState,
-): boolean {
-  return step <= resumeSellerProfileStep(profile);
-}
-
 export function previousSellerProfileStep(
   step: 1 | 2 | 3 | 4,
 ): 1 | 2 | 3 {

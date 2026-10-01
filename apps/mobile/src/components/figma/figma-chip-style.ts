@@ -73,17 +73,6 @@ export function figmaChipOutsideGradientRingStyle(colors: {
   };
 }
 
-export function figmaChipLayoutHeight(size: FigmaChipSize) {
-  const typography = figmaChipTypography(size);
-  if (size === 'profile') {
-    return figmaTokens.space.authorChipY * 2 + typography.lineHeight;
-  }
-  if (size === 'work') {
-    return figmaTokens.space.workChipY * 2 + typography.lineHeight;
-  }
-  return figmaTokens.space.chipY * 2 + typography.lineHeight;
-}
-
 export function figmaChipStyle(tone: FigmaChipTone = 'onLight') {
   if (tone === 'onGlass') {
     return {

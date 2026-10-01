@@ -5,7 +5,6 @@ import { figmaTokens } from '@bidplace/design-tokens';
 import {
   figmaChipGradientColors,
   figmaChipGradientPlacement,
-  figmaChipLayoutHeight,
   figmaChipOutsideGradientRingStyle,
   figmaChipSizeStyle,
   figmaChipStyle,
@@ -70,7 +69,6 @@ describe('Figma chip styles', () => {
     });
     expect(figmaTokens.space.workChipX).toBe(12);
     expect(figmaTokens.space.workChipY).toBe(6);
-    expect(figmaChipLayoutHeight('work')).toBe(29);
     expect(figmaChipTypography('work')).toBe(figmaTokens.typography.workChip);
     expect(figmaChipTextColor('onGlass', 'work')).toBe(
       figmaTokens.color.textSubdued,
@@ -85,7 +83,6 @@ describe('Figma chip styles', () => {
       paddingHorizontal: 16,
       paddingVertical: 6,
     });
-    expect(figmaChipLayoutHeight('profile')).toBe(35);
     expect(figmaChipTypography('profile')).toBe(
       figmaTokens.typography.profileChip,
     );

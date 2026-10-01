@@ -28,7 +28,6 @@ export {
 export {
   figmaDeferredDockItemIds,
   figmaDockItems,
-  figmaDockSurfaceSize,
   figmaUnusedDockVariantIds,
 } from './floating-dock';
 export { getWorkCoverOverlay } from './work-cover-fields';

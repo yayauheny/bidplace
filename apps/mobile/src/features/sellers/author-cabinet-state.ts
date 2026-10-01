@@ -1,13 +1,6 @@
-import type {
-  PortfolioCabinetWorksQuery,
-  PortfolioCabinetWorksResponse,
-} from '@bidplace/contracts';
+import type { PortfolioCabinetWorksResponse } from '@bidplace/contracts';
 
 export const AUTHOR_CABINET_PAGE_SIZE = 20;
-
-export function authorCabinetQuery(page: number): PortfolioCabinetWorksQuery {
-  return { page, limit: AUTHOR_CABINET_PAGE_SIZE };
-}
 
 export function authorCabinetWorksFromPages(
   pages: PortfolioCabinetWorksResponse[],

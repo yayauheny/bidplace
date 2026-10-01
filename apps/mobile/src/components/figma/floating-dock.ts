@@ -1,5 +1,3 @@
-import { figmaTokens } from '@bidplace/design-tokens';
-
 export const SEARCH_DOCK_BUTTON_ID = 'search-dock-button';
 
 export const figmaDockItemIds = ['home', 'search', 'plus', 'profile'] as const;
@@ -25,18 +23,6 @@ export const figmaDockItems: readonly FigmaDockItem[] = [
   { id: 'plus', label: 'Добавить', icon: 'plus' },
   { id: 'profile', label: 'Профиль', icon: 'user' },
 ];
-
-export function figmaDockSurfaceSize(
-  itemCount: number = figmaDockItems.length,
-) {
-  return {
-    width:
-      figmaTokens.space.dockPad * 2 +
-      figmaTokens.size.control * itemCount +
-      figmaTokens.space.dockGap * Math.max(itemCount - 1, 0),
-    height: figmaTokens.space.dockPad * 2 + figmaTokens.size.control,
-  };
-}
 
 export function dockItemAccessibility(
   id: FigmaDockItemId,

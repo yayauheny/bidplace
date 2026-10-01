@@ -91,11 +91,3 @@ export function shouldHydrateProductDraft(input: {
   if (input.hydratedProductId !== input.nextProductId) return true;
   return !input.isDirty && input.hydratedUpdatedAt !== input.nextUpdatedAt;
 }
-
-export async function persistProductDraftBeforeSubmit<T>(
-  persist: () => Promise<unknown>,
-  submit: () => Promise<T>,
-): Promise<T> {
-  await persist();
-  return submit();
-}

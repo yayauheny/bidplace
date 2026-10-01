@@ -8,7 +8,6 @@ import {
   figmaButtonGradientPlacement,
   figmaButtonUsesOutsidePaintWrapper,
   figmaButtonLabelColor,
-  figmaButtonLabelTypography,
   figmaButtonSurfaceFill,
   figmaButtonStyle,
   figmaButtonUsesGradientBorder,
@@ -99,11 +98,6 @@ describe('Figma button styles', () => {
       figmaTokens.color.quietFill,
     );
     expect(figmaButtonLabelColor('quiet')).toBe(figmaTokens.color.ink);
-    expect(figmaButtonLabelTypography('compact')).toMatchObject({
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: '500',
-    });
   });
 
   it('keeps danger visually distinct from the primary solid pill', () => {
