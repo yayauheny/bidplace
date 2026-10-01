@@ -112,6 +112,10 @@ function moderationLikePattern(search: string): string {
   return `%${escapeLikePattern(search)}%`;
 }
 
+function moderationCursorInstant(createdAt: Date): Prisma.Sql {
+  return Prisma.sql`(${createdAt}::timestamptz AT TIME ZONE 'UTC')`;
+}
+
 export function sellerModerationSearchSql(
   search: string,
   query: AdminModerationListQuery,
@@ -150,9 +154,9 @@ export function sellerModerationSearchSql(
   if (cursor) {
     const createdAt = new Date(cursor.createdAt);
     filters.push(Prisma.sql`(
-      sp."created_at" > ${createdAt}
+      sp."created_at" > ${moderationCursorInstant(createdAt)}
       OR (
-        sp."created_at" = ${createdAt}
+        sp."created_at" = ${moderationCursorInstant(createdAt)}
         AND sp."id" > ${cursor.id}::uuid
       )
     )`);
@@ -195,9 +199,9 @@ export function productModerationSearchSql(
   if (cursor) {
     const createdAt = new Date(cursor.createdAt);
     filters.push(Prisma.sql`(
-      p."created_at" > ${createdAt}
+      p."created_at" > ${moderationCursorInstant(createdAt)}
       OR (
-        p."created_at" = ${createdAt}
+        p."created_at" = ${moderationCursorInstant(createdAt)}
         AND p."id" > ${cursor.id}::uuid
       )
     )`);

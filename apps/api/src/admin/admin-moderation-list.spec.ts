@@ -175,6 +175,10 @@ describe('admin moderation list queries', () => {
     expect(sellerText).toContain(`ILIKE`);
     expect(sellerText).toContain(`ESCAPE '\\'`);
     expect(sellerText).toContain('ORDER BY sp."created_at" ASC, sp."id" ASC');
+    expect(sellerText).toContain(`sp."created_at" >`);
+    expect(sellerText).toContain(`sp."created_at" =`);
+    expect(sellerText).toContain(`::timestamptz AT TIME ZONE 'UTC'`);
+    expect(sellerText).not.toContain(`sp."created_at" AT TIME ZONE`);
     expect(sellerText).not.toContain('Alpha%');
     expect(sellerSql.values).toContain('%Alpha\\%\\_\\\\ parent%');
     expect(
@@ -190,7 +194,10 @@ describe('admin moderation list queries', () => {
     const productSql = productModerationSearchSql(
       products.search ?? '',
       products,
-      null,
+      {
+        createdAt: '2026-09-26T12:00:00.000Z',
+        id: '00000000-0000-4000-8000-000000000010',
+      },
     );
     const productText = productSql.strings.join(' ');
     expect(productText).toContain(`COALESCE(rev."title", '')`);
@@ -200,6 +207,10 @@ describe('admin moderation list queries', () => {
     expect(productText).toContain(`ESCAPE '\\'`);
     expect(productText).not.toContain('Vessel_title');
     expect(productSql.values).toContain('%Vessel\\_title%');
+    expect(productText).toContain(`p."created_at" >`);
+    expect(productText).toContain(`p."created_at" =`);
+    expect(productText).toContain(`::timestamptz AT TIME ZONE 'UTC'`);
+    expect(productText).not.toContain(`p."created_at" AT TIME ZONE`);
   });
 
   it('bounds the latest-reason query to the page targets', () => {

@@ -30,6 +30,8 @@
 
 **Дополнение 2026-10-01, коррекция R19:** на той же ветке от `6e74b02` исправлены четыре замечания review. Поиск не снимает controls. Refresh отменяет незавершённые страницы до trim. Поиск снова идёт по прежней склеенной строке, а `%`, `_` и `\` остаются буквальными. Коррекция не принята самостоятельно. D07 остаётся `PARTIAL`. См. R19 correction evidence.
 
+**Дополнение 2026-10-02, cursor TimeZone:** поисковый keyset сравнивает параметр курсора как UTC wall time, а не через TimeZone сессии. D07 остаётся `PARTIAL`. См. R19 search cursor timezone evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -620,6 +622,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Отчёт:** G с bounded query evidence.
 - **Actual (2026-10-01):** выполнено на `fix/moderation-bounded-reads` от `95dac4c11a66f0e2e2931b1c3f45e86e52514ec0`. Contracts и API — commit `b468c7a`. Client и admin UI — commit `cd32197`. D07 остаётся `PARTIAL`. См. R19 evidence. R20, R21, C07 и соседние статусы не изменялись.
 - **Correction (2026-10-01):** четыре замечания review исправлены на той же ветке от `6e74b0229e3ab7c6a430f502898d5d371b7499db`. D07 остаётся `PARTIAL`. Коррекция подготовлена к следующему review и не отмечена принятой. См. R19 correction evidence.
+- **Cursor timezone (2026-10-02):** поисковый keyset больше не зависит от TimeZone сессии PostgreSQL. D07 остаётся `PARTIAL`. Эта поправка не отмечена принятой. См. R19 search cursor timezone evidence.
 
 ### R20. Перенести analytics aggregation в БД
 
@@ -1344,6 +1347,32 @@ remaining limitations: D07 stays PARTIAL. R20 and R21 were not started. Moderati
 blocked-by: the next review. Browser confirmation for the moderation screen remains open. R20 and R21 remain for the rest of D07.
 ```
 
+### R19 search cursor timezone evidence
+
+```text
+scope: search keyset timestamp predicate only. Not R20, R21, C07, R33, migrations, or a shared query framework.
+finding IDs: P2 on the R19 correction. Search pagination depended on the PostgreSQL session TimeZone.
+status: prepared for the next review. Not self-accepted. D07 stays PARTIAL.
+branch: fix/moderation-bounded-reads
+base SHA: 95dac4c11a66f0e2e2931b1c3f45e86e52514ec0
+starting SHA: 51cbfddaca8f4a25c2928b1bb32d097c9d18c48f
+before:
+  sellerModerationSearchSql and productModerationSearchSql compared created_at, a timestamp(3) without time zone that stores UTC wall time, with a Prisma Date parameter. That parameter is a timestamptz. PostgreSQL converted it with the session TimeZone. UTC kept createdAt ASC, id ASC. Europe/Minsk dropped the remainder of a three-row page. America/Los_Angeles repeated the first page. The review matrix was authors and products, each in UTC, Europe/Minsk, and America/Los_Angeles: three rows, the first two sharing a timestamp, the third one millisecond later, limit 1.
+after:
+  Both comparisons use (${createdAt}::timestamptz AT TIME ZONE 'UTC') for > and for =. The created_at column is not converted. The value stays a Prisma parameter, and the id tie-break stays a uuid parameter. The same six combinations each return the three rows once, in createdAt then id order, and nextCursor ends. TimeZone is set with set_config(..., true) inside the transaction that runs the production list queries. PostgreSQL globals are unchanged.
+unchanged: the four earlier R19 corrections, literal %, _, and backslash, joined display text, revision filters, parent visibility, limit 50 and maximum 100, limit+1, latest reasons for the current page only, permissions, moderation transitions, and public contracts.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks; 7 cache hits; fresh: api typecheck, api build)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (49 files, 288 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 37 tests). Lookups stay on /repo/missing.env or a temporary synthetic.env.
+  env -u INTEGRATION_DATABASE_URL BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 on the rerun (24 files, 91 tests). The first attempt left product-write-atomicity skipped after a 10s beforeAll migrate timeout; that file is unrelated and passed on the rerun. Disposable bidplace_integration, isolated itest_ schemas. No root migrate or seed. No real .env.
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0. Browsers were not run.
+remaining limitations: D07 stays PARTIAL. R20 and R21 were not started. Moderation browser evidence is NOT RUN. This timezone correction is not accepted by the record itself.
+blocked-by: the next review. Browser confirmation for the moderation screen remains open. R20 and R21 remain for the rest of D07.
+```
+
 ### Form field ownership evidence
 
 ```text
@@ -1591,7 +1620,7 @@ blocked-by: none for this correction. Browser confirmation remains.
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18                                                      | 2026-10-01 R19 on `fix/moderation-bounded-reads` from `95dac4c`. Admin lists are cursor pages. Latest reason SQL returns one row per page target. R20 and R21 not started. Moderation browser NOT RUN. The same-day R19 review correction is prepared on that branch and is not accepted. |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18                                                      | 2026-10-01 R19 on `fix/moderation-bounded-reads` from `95dac4c`. Admin lists are cursor pages. Latest reason SQL returns one row per page target. R20 and R21 not started. Moderation browser NOT RUN. The R19 review correction and the 2026-10-02 search-cursor TimeZone predicate are prepared on that branch and are not accepted. |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |

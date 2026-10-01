@@ -5,6 +5,29 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-02 — R19 search cursor time zone
+
+- `Partial`: admin search pages compare the cursor instant as UTC wall time.
+  `created_at` stays a `timestamp(3)` without time zone. The bound parameter is
+  `timestamptz AT TIME ZONE 'UTC'` for both the greater-than and the equal
+  check, for authors and works. A session TimeZone no longer drops or repeats
+  a later page.
+- Before: UTC returned three tied and one-millisecond rows once. Europe/Minsk
+  stopped after the first row. America/Los_Angeles repeated the first page.
+- After: UTC, Europe/Minsk, and America/Los_Angeles each return those three
+  rows once for both lists, and `nextCursor` ends. The TimeZone is set only
+  inside the transaction that runs the list query.
+- Coverage: `admin-moderation-list.ts` and
+  `admin-moderation-pagination.integration.spec.ts`. Node v22.20.0 / pnpm
+  11.7.0. API unit tests are 49 files and 288 tests, plus 37 env tests.
+  Integration is 24 files and 91 tests on local disposable
+  `bidplace_integration` schemas. Commands are in the R19 search cursor
+  timezone evidence of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: literal search, joined display text, revision filters, page
+  size, reason reads, permissions, and public contracts. R20 and R21 were not
+  started. D07 stays partial. Browsers were not run. This correction is not
+  accepted by this record.
+
 ## 2026-10-01 — R19 moderation read correction
 
 - `Partial`: the admin moderation shell keeps search, filters, and tabs mounted

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { PrismaClient } from '@bidplace/database';
+import { Prisma, type PrismaClient } from '@bidplace/database';
+import { adminModerationListQuerySchema } from '@bidplace/contracts';
 
+import { AdminModerationService } from '../../src/admin/admin-moderation.service';
 import { latestModerationReasonSql } from '../../src/admin/admin-moderation-list';
 import {
   createHttpTestApp,
@@ -932,4 +934,91 @@ describe('admin moderation pagination', () => {
       revisedWorkId,
     );
   });
+});
+
+describe('admin moderation search cursor time zones', () => {
+  const zones = ['UTC', 'Europe/Minsk', 'America/Los_Angeles'] as const;
+
+  for (const zone of zones) {
+    for (const resource of ['seller-profiles', 'products'] as const) {
+      it(`pages ${resource} in ${zone} once each and ends the cursor`, async () => {
+        const seed = randomUUID().slice(0, 8);
+        const marker = `TimezoneProbe-${seed}`;
+        const ids = [randomUUID(), randomUUID(), randomUUID()].sort();
+        const createdAt = new Date('2026-09-26T12:00:00.000Z');
+        const laterAt = new Date(createdAt.getTime() + 1);
+        let profileId = ids[0]!;
+        if (resource === 'products') {
+          profileId = randomUUID();
+          await createSeller({
+            id: profileId,
+            fullName: 'Timezone owner',
+            slug: `tz-owner-${seed}`,
+            status: 'APPROVED',
+            createdAt,
+          });
+        }
+        for (let index = 0; index < ids.length; index += 1) {
+          const rowCreatedAt = index < 2 ? createdAt : laterAt;
+          if (resource === 'seller-profiles') {
+            await createSeller({
+              id: ids[index]!,
+              fullName: marker,
+              slug: `tz-${seed}-${index}`,
+              status: 'APPROVED',
+              createdAt: rowCreatedAt,
+            });
+          } else {
+            await createProduct({
+              id: ids[index]!,
+              publicId: `tz${seed}${index}`,
+              sellerProfileId: profileId,
+              title: marker,
+              status: 'APPROVED',
+              createdAt: rowCreatedAt,
+            });
+          }
+        }
+
+        const seen = await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw(
+            Prisma.sql`SELECT set_config('TimeZone', ${zone}, true)`,
+          );
+          const service = new AdminModerationService(
+            tx as never,
+            {} as never,
+          );
+          const received: string[] = [];
+          let cursor: string | undefined;
+          let ended = false;
+          for (let page = 0; page < 4; page += 1) {
+            const query = adminModerationListQuerySchema.parse({
+              search: marker,
+              filter: 'APPROVED',
+              limit: 1,
+              cursor,
+            });
+            const result =
+              resource === 'seller-profiles'
+                ? await service.listSellerProfiles(query)
+                : await service.listProducts(query);
+            const rows =
+              'sellerProfiles' in result
+                ? result.sellerProfiles
+                : result.products;
+            received.push(...rows.map((row) => row.id));
+            if (!result.nextCursor) {
+              ended = true;
+              break;
+            }
+            cursor = result.nextCursor;
+          }
+          return { received, ended };
+        });
+
+        expect(seen.received).toEqual(ids);
+        expect(seen.ended).toBe(true);
+      });
+    }
+  }
 });
