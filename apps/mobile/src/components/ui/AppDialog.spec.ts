@@ -524,4 +524,109 @@ describe('AppDialog web focus lifecycle', () => {
     expect(dialogLookups).toEqual([]);
     view.unmount();
   });
+
+  it('returns focus to the original opener after a rapid reopen and a second close', async () => {
+    const opener = document.createElement('button');
+    opener.textContent = 'Исходный';
+    document.body.append(opener);
+    opener.focus();
+    const props = {
+      title: 'Повтор',
+      onClose: () => undefined,
+      children: dialogChildren(),
+    };
+    const view = mount(createElement(AppDialog, { ...props, open: true }));
+    await flush();
+    const focus = vi.spyOn(opener, 'focus');
+
+    view.render(createElement(AppDialog, { ...props, open: false }));
+    view.render(createElement(AppDialog, { ...props, open: true }));
+    await flush();
+
+    const reopened = dialogByTitle('Повтор');
+    if (!reopened) throw new Error('missing reopened dialog');
+    expect(reopened.contains(document.activeElement)).toBe(true);
+    expect(focus).not.toHaveBeenCalled();
+
+    view.render(createElement(AppDialog, { ...props, open: false }));
+    await flush();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    });
+
+    expect(document.activeElement).toBe(opener);
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    view.unmount();
+  });
+
+  it('returns focus to a live opener when an open dialog unmounts', async () => {
+    const opener = document.createElement('button');
+    opener.textContent = 'Исходный';
+    document.body.append(opener);
+    opener.focus();
+    const view = mount(
+      createElement(AppDialog, {
+        open: true,
+        title: 'Снятие',
+        onClose: () => undefined,
+        children: dialogChildren(),
+      }),
+    );
+    await flush();
+    const focus = vi.spyOn(opener, 'focus');
+
+    view.render(null);
+    await flush();
+
+    expect(opener.isConnected).toBe(true);
+    expect(dialogByTitle('Снятие')).toBeUndefined();
+    expect(document.activeElement).toBe(opener);
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    view.unmount();
+  });
+
+  it('returns focus to a new opener after a completed close and a later cycle', async () => {
+    const first = document.createElement('button');
+    first.textContent = 'Первый opener';
+    const second = document.createElement('button');
+    second.textContent = 'Второй opener';
+    document.body.append(first, second);
+    first.focus();
+    const props = {
+      title: 'Смена',
+      onClose: () => undefined,
+      children: dialogChildren(),
+    };
+    const view = mount(createElement(AppDialog, { ...props, open: true }));
+    await flush();
+
+    view.render(createElement(AppDialog, { ...props, open: false }));
+    await flush();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    expect(document.activeElement).toBe(first);
+
+    second.focus();
+    const secondFocus = vi.spyOn(second, 'focus');
+    view.render(createElement(AppDialog, { ...props, open: true }));
+    await flush();
+    const dialog = dialogByTitle('Смена');
+    if (!dialog) throw new Error('missing dialog');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    view.render(createElement(AppDialog, { ...props, open: false }));
+    await flush();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+
+    expect(document.activeElement).toBe(second);
+    expect(document.activeElement).not.toBe(first);
+    expect(secondFocus).toHaveBeenCalledTimes(1);
+    expect(secondFocus).toHaveBeenCalledWith({ preventScroll: true });
+    view.unmount();
+  });
 });

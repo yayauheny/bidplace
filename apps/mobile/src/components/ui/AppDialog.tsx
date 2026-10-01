@@ -1,6 +1,6 @@
 import * as Dialog from '@rn-primitives/dialog';
 import type { ReactNode } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -27,6 +27,15 @@ type AppDialogProps = {
   children: ReactNode;
 };
 
+function connectedDialogOpener(active: Element | null, scope: EventTarget | null) {
+  if (!(active instanceof HTMLElement)) return null;
+  if (scope instanceof Node && scope.contains(active)) return null;
+  if (!active.isConnected) return null;
+  const root = active.ownerDocument;
+  if (active === root.body || active === root.documentElement) return null;
+  return active;
+}
+
 export function AppDialog({
   open,
   presentation = 'dialog',
@@ -39,7 +48,14 @@ export function AppDialog({
   const viewportGutter = designTokens.space.x5;
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const openRef = useRef(open);
+  const instanceMountedRef = useRef(false);
   openRef.current = open;
+  useEffect(() => {
+    instanceMountedRef.current = true;
+    return () => {
+      instanceMountedRef.current = false;
+    };
+  }, []);
 
   const isSheet = presentation === 'sheet';
   const overlay = (
@@ -62,18 +78,18 @@ export function AppDialog({
         ? {
             onOpenAutoFocus: (event: Event) => {
               if (typeof document === 'undefined') return;
-              const active = document.activeElement;
-              const scope = event.currentTarget;
-              if (!(active instanceof HTMLElement)) return;
-              if (scope instanceof Node && scope.contains(active)) return;
-              returnFocusRef.current = active;
+              const opener = connectedDialogOpener(document.activeElement, event.currentTarget);
+              if (!opener) return;
+              returnFocusRef.current = opener;
             },
             onCloseAutoFocus: (event: Event) => {
               // The installed dialog focuses its trigger and cancels the
               // scope's previous-element restore. These dialogs open without
               // Dialog.Trigger, so return focus stays on this callback.
+              // A deferred close must not steal focus from this same live
+              // instance after it opens again. Unmount leaves `open` true.
               event.preventDefault();
-              if (openRef.current) return;
+              if (openRef.current && instanceMountedRef.current) return;
               const element = returnFocusRef.current;
               returnFocusRef.current = null;
               if (!element?.isConnected) return;
