@@ -5,6 +5,30 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Font loading and dependency ownership
+
+- `Implemented`: the root layout loads Inter 400/500/600 through `useFonts`.
+  Onest and `Inter_700Bold` are no longer registered. Current typography
+  tokens use only those three Inter faces. Mobile no longer declares
+  `@expo-google-fonts/onest`, `fbjs`, `inline-style-prefixer`, `memoize-one`,
+  `nullthrows`, `postcss-value-parser`, `styleq`, or
+  `@react-native/normalize-colors`. `react-native-web@0.21.2` still depends
+  on those helper packages.
+- `Implemented`: `@bidplace/api-client` declares `zod` `^3.24.2`. Root and
+  mobile use `@types/react` `~19.2.18` and `@types/react-dom` `~19.2.7`.
+  Runtime React `19.2.3`, React Native `0.86.0`, and Expo `~57.0.4` are
+  unchanged. Mobile typecheck needed no source edits.
+- `Needs verification`: a fresh install and `expo export` for web, iOS, and
+  Android completed. That export is not a font-rendering check. The Inter
+  package barrel still copies unused weight files, including
+  `Inter_700Bold`, into the export.
+- Coverage: isolated api-client deploy, mobile 482 tests, api-client 26
+  tests, contracts 30 tests, API unit 269 tests plus 33 env tests, on Node
+  v22.20.0 / pnpm 11.7.0.
+- `Unchanged`: token sizes, routes, session ownership, and the canonical Pen
+  file. Browser checks were not run. D04, D05, D09, D10, and L04 stay needs
+  verification. T04 and T06 stay partial. C04, C07, and L06 stay open.
+
 ## 2026-10-01 — Confirmed unused code and duplicate helpers
 
 - `Implemented`: confirmed mobile files and helpers with no production caller

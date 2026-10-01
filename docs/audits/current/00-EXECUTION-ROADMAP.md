@@ -8,7 +8,7 @@
 
 **Сохранён:** 2026-09-29. **Статус документа:** R01 — `NEEDS_VERIFICATION`; R30 — `NEEDS_VERIFICATION`; R02 — `NEEDS_VERIFICATION`; R03 — `NEEDS_VERIFICATION`; R04 — `VERIFIED`; R05, R06 и R07 — один пакет `NEEDS_VERIFICATION`, включая две коррекции review; R08 — `NEEDS_VERIFICATION`; R31 — `NEEDS_VERIFICATION`; R32 — `NEEDS_VERIFICATION`. Остальные scopes R09–R29 и R33–R35 этим пакетом не запускались.
 
-**Дополнение 2026-10-01:** R09 и R10 выполнены на `fix/audit-unused-code` от `5ca9657`. Из R35 выполнен C08 и соседние безопасные wrappers. C07 и L06 не начаты, R35 не закрыт. R11–R29, R33 и R34 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`: браузеры не запускались. T04 и T06 остаются `PARTIAL`.
+**Дополнение 2026-10-01:** R09 и R10 выполнены на `fix/audit-unused-code` от `5ca9657`. Из R35 выполнен C08 и соседние безопасные wrappers. C07 и L06 не начаты, R35 не закрыт. R11 и R12 выполнены на `fix/dependency-ownership` от `46122e4`. C03 остаётся `NEEDS_VERIFICATION`: export прошёл, runtime font rendering не проверялся. C05 → `VERIFIED`. R13–R29, R33 и R34 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`: браузеры не запускались. T04 и T06 остаются `PARTIAL`.
 
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
@@ -424,6 +424,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** Metro/native resolution требует direct dependency — сохранить и задокументировать причину.
 - **Done/status:** C03 → `VERIFIED` после проверки всех кандидатов; оставленные обоснованные dependencies не считаются потерянным scope.
 - **Отчёт:** G с removed/retained dependency matrix.
+- **Actual (2026-10-01):** Onest 400/500/600/700 and `Inter_700Bold` are removed from `useFonts`. `@expo-google-fonts/onest` is removed. Inter 400/500/600 stay registered under the same family names. Direct `fbjs`, `inline-style-prefixer`, `memoize-one`, `nullthrows`, `postcss-value-parser`, `styleq`, and `@react-native/normalize-colors` are removed from the mobile manifest; `react-native-web@0.21.2` still depends on them. The Inter package barrel still emits unused weight files, including `Inter_700Bold`, into the export. C03 → `NEEDS_VERIFICATION`: frozen install and web/iOS/Android export passed; font rendering was not checked.
 
 ### R12. Исправить dependency ownership и React types
 
@@ -443,6 +444,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** обновление types требует широкого runtime refactor — отдельный разбор конкретного incompatibility.
 - **Done/status:** C05 → `VERIFIED`.
 - **Отчёт:** G с versions до/после и без скрытых type errors.
+- **Actual (2026-10-01):** `@bidplace/api-client` declares `zod` `^3.24.2`, resolved as `3.25.76`. Root and mobile use `@types/react` `~19.2.18` and `@types/react-dom` `~19.2.7`. Runtime React, React Native, and Expo versions are unchanged. Mobile typecheck passed with no source edits. `@types/react@18.3.31` remains only because `@types/react-test-renderer@19.1.0`, a dependency of `react-native-gesture-handler`, depends on it. C05 → `VERIFIED`.
 
 ### R13. Сделать `compact` работающим button API
 
@@ -1047,6 +1049,38 @@ remaining limitations: Chromium and WebKit were not run, so D10 is not VERIFIED.
 blocked-by: none for the client lifecycle. Browser achievement privacy and transition scenarios were not run.
 ```
 
+### R11–R12 evidence
+
+```text
+scope: R11, R12
+finding IDs: C03, C05
+status: C03 NEEDS_VERIFICATION; C05 VERIFIED
+base SHA: 46122e4a77b48f999f9404e545159a57c3e91cf3
+commits: R11 d45bcd02f185465b5ccafe9efce2ba1ff89976f2; R12 zod 214cbd2e1c4732e2ab81604f8827e447feacd5b4; R12 types 7c8465804b2af5f0106571341f9cd6140b5e9a56
+changed contracts: none. Public api-client exports, schemas, error classification, AbortError preservation, and mutation cancellation are unchanged. Font family names in tokens are unchanged.
+tests/scenarios: no new source-string tests. Existing mobile, api-client, contracts, and API unit suites passed. Isolated `pnpm deploy --legacy --prod` of `@bidplace/api-client` resolved zod@3.25.76 and `@bidplace/contracts` inside `/tmp/bidplace-api-client-deploy`, not the repo node_modules. A valid JSON body parsed, an invalid body became `ApiClientError` `unexpected_response`, and an aborted fetch stayed `AbortError`.
+validation commands and exit codes:
+  baseline: CI=1 pnpm install --frozen-lockfile in a detached worktree of 46122e4 → 0. No node_modules or .env in that worktree before install. Prisma postinstall warned that it could not find a schema from the package directory. pnpm peers check on that tree → 1: @types/react 18.3.31 does not satisfy react-native ^19.1.1 or @react-native/virtualized-lists ^19.2.0.
+  final: CI=1 pnpm install --frozen-lockfile in a detached worktree of 7c84658 → 0. pnpm peers check → 0. Installed root devDependencies include @types/react 19.2.18 and @types/react-dom 19.2.7.
+  First EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' --force → 2. Mobile tsc failed only on the two pre-existing e2e imports of packages/database/dist/index.js, and that command used Homebrew Node 24's pnpm. The same missing database dist fails tsc on the baseline worktree before workspace packages are built.
+  After pnpm --filter @bidplace/database db:generate and build, with Node v22.20.0 and pnpm 11.7.0: EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' --force → 0 (8 tasks). expo export default --platform all wrote web, android, and ios bundles. No Onest string in those bundles.
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (102 files, 482 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  pnpm exec turbo run typecheck build --filter='@bidplace/api-client...' --force → 0 (4 tasks)
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 26 tests)
+  pnpm --filter @bidplace/contracts test → 0 (4 files, 30 tests)
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' --force → 0 (9 tasks)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (47 files, 269 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 33 tests). The spec stubs a missing env path and injects fileExists. The isolated worktree had no .env.
+  Browser, simulator, device, and font-rendering checks → NOT RUN
+runtime environment: Node v22.20.0 and pnpm 11.7.0 for the passing checks. The first failed mobile turbo invocation used /opt/homebrew/opt/node@24/bin/pnpm. Database generate and build were prerequisites for mobile tsc; migrate, seed, and API bootstrap were not run.
+evidence links: apps/mobile/src/app/_layout.tsx; apps/mobile/package.json; packages/api-client/package.json; package.json
+remaining limitations: C03 is not VERIFIED because font rendering was not checked. The Inter package barrel still places Inter_700Bold and other unused faces in the export even though useFonts does not register them. @types/react@18.3.31 remains a dependency of @types/react-test-renderer. Expo and shared package tsconfig files already set skipLibCheck; this change did not add or widen it. D04, D05, D09, D10, and L04 stay NEEDS_VERIFICATION. T04 and T06 stay PARTIAL.
+blocked-by: none for the dependency changes. Font rendering remains unchecked.
+```
+
 Для `VERIFIED` обязательны:
 
 1. Проблема устранена либо Phase 0 доказал, что она уже устранена на новой базе.
@@ -1176,6 +1210,7 @@ blocked-by: none for the client lifecycle. Browser achievement privacy and trans
 ### Проверка документа — 2026-10-01
 
 - C01 и C06 закрыты по выполненным спискам R09/R10 и удалению `persistProductDraftBeforeSubmit`. C02 и C04 остаются `PARTIAL`. C08 закрыт отдельно. C07 и L06 остаются `QUEUED`, поэтому R35 не закрыт.
+- C03 остаётся `NEEDS_VERIFICATION`: кандидаты R11 удалены, export трёх платформ прошёл, runtime font rendering не запускался. C05 закрыт по isolated Zod closure и React 19 types.
 - T02 остаётся `PARTIAL`: helper-only tests удалённых symbols сняты, source-text inventory и R28 не выполнены. T04 и T06 остаются `PARTIAL`.
 - D04, D05, D09, D10 и L04 не переводились в `VERIFIED`. Браузеры, API bootstrap, БД, migrations и seed не запускались.
 - Исторические evidence rows не заменены на `QUEUED`.
@@ -1196,9 +1231,9 @@ blocked-by: none for the client lifecycle. Browser achievement privacy and trans
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |
-| C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | QUEUED             | R09; Metro/native verification                               | E0/E1; clean install + bundles                                                 |
+| C03     | Неиспользуемые fonts и лишние direct dependencies                            | P3 / HIGH–MEDIUM      | W3 → R11                             | NEEDS_VERIFICATION | Font rendering not executed                                  | 2026-10-01: unused font registrations and indirect web declarations removed. Frozen install and web/iOS/Android export passed. Runtime font rendering NOT RUN. |
 | C04     | Ignored `compact` и `_imageSelect`                                           | P2 / HIGH             | W3 → R10, R13                        | PARTIAL            | R04/R09                                                      | `_imageSelect` argument and forwarding removed; select and authz guards remain. Button `compact` stays until R13. |
-| C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | QUEUED             | R11                                                          | E0/E1 manifests; isolated builds/typecheck                                     |
+| C05     | Zod отсутствует в api-client manifest; React types mismatch                  | P2 / HIGH             | W3 → R12                             | VERIFIED           | R11                                                          | 2026-10-01: api-client declares Zod 3. React 19.2 types replace React 18 types on root and mobile. Isolated deploy and typecheck passed. |
 | A01     | S3 side effects внутри retryable DB transaction                              | P1 / HIGH             | W6 → R22                             | DECISION_REQUIRED  | R10/R18; consistency decision                                | E0; fake-store failure matrix, затем implementation                            |
 | A02     | Двухфазный public catalog read допускает visibility race                     | P1 / MEDIUM           | W6 → R23                             | DECISION_REQUIRED  | R18/R21; consistency guarantee                               | E0 static risk; требуется controlled concurrency                               |
 | A03     | Parent/revision field ownership и ручное копирование                         | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | R02/R18–R21; ownership decision                              | E0; field/write/read matrix                                                    |

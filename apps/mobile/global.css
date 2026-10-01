@@ -5,7 +5,7 @@
 /*
  * expo-font registers one @font-face per weight family (Inter_600SemiBold…)
  * without a font-weight descriptor, so every face is "normal" while styles
- * request 600/700. WebKit then synthesizes bold on top of the real SemiBold
+ * request 400/500/600. WebKit then synthesizes bold on top of the real face
  * file (+19 % ink, wider glyphs); Chromium reads the file's weight class and
  * does not. The registered file is already the intended weight, so faux
  * weight/style must never be added. No italic faces are used in the app.
