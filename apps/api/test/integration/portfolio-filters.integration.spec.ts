@@ -1,6 +1,10 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import type { PrismaClient } from '@bidplace/database';
+import { Prisma, type PrismaClient } from '@bidplace/database';
 
+import { portfolioCatalogCte } from '../../src/products/products-catalog.query';
+import { ProductsService } from '../../src/products/products.service';
+import { SellersService } from '../../src/sellers/sellers.service';
+import { publicAuthorCte } from '../../src/sellers/sellers-catalog.query';
 import {
   createHttpTestApp,
   HttpTestClient,
@@ -8,6 +12,7 @@ import {
 } from './http-test-app';
 import {
   createPermissionFixture,
+  fixturePasswordHash,
   permissionImage,
   resetPermissionFixture,
 } from './permission-fixtures';
@@ -102,6 +107,148 @@ async function publishWork(
   return product;
 }
 
+async function createFacetAuthor(input: {
+  slug: string;
+  city: string | null;
+  discipline: string | null;
+  status?: 'APPROVED' | 'DRAFT' | 'PENDING_REVIEW' | 'SUSPENDED';
+}) {
+  const user = await prisma.user.create({
+    data: {
+      email: `${input.slug}@facet.test`,
+      passwordHash: fixturePasswordHash,
+      displayName: input.slug,
+    },
+    select: { id: true },
+  });
+  return prisma.sellerProfile.create({
+    data: {
+      userId: user.id,
+      slug: input.slug,
+      sellerType: 'creator',
+      fullName: input.slug,
+      country: 'BY',
+      city: input.city,
+      discipline: input.discipline,
+      profilePhotoMimeType: 'image/png',
+      profilePhotoByteLength: permissionImage.byteLength,
+      profilePhotoChecksum: 'b'.repeat(64),
+      profilePhotoData: permissionImage,
+      status: input.status ?? 'APPROVED',
+    },
+    select: { id: true },
+  });
+}
+
+async function createFacetWork(input: {
+  sellerProfileId: string;
+  categoryId: string;
+  publicId: string;
+  materials?: string | null;
+  parentMaterials?: string | null;
+  title?: string | null;
+  status?: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'ARCHIVED' | 'REJECTED';
+  publishedAt?: Date | null;
+  linkPublishedRevision?: boolean;
+  withRevisionImage?: boolean;
+  revisionCategoryId?: string | null;
+  editingMaterials?: string;
+}) {
+  const status = input.status ?? 'APPROVED';
+  const linkPublishedRevision = input.linkPublishedRevision ?? true;
+  const withRevisionImage = input.withRevisionImage ?? true;
+  const title = input.title === undefined ? input.publicId : input.title;
+  const publishedAt =
+    input.publishedAt === undefined
+      ? new Date('2026-09-01T00:00:00.000Z')
+      : input.publishedAt;
+  const product = await prisma.product.create({
+    data: {
+      publicId: input.publicId,
+      sellerProfileId: input.sellerProfileId,
+      categoryId: input.categoryId,
+      title: title ?? input.publicId,
+      story: 'Facet fixture',
+      materials:
+        input.parentMaterials === undefined
+          ? (input.materials ?? null)
+          : input.parentMaterials,
+      status,
+      publishedAt,
+      ...(withRevisionImage
+        ? {
+            images: {
+              create: {
+                position: 0,
+                mimeType: 'image/png',
+                byteLength: permissionImage.byteLength,
+                data: permissionImage,
+                checksum: 'a'.repeat(64),
+              },
+            },
+          }
+        : {}),
+    },
+    select: { id: true, images: { select: { id: true } } },
+  });
+  const revision = await prisma.productRevision.create({
+    data: {
+      productId: product.id,
+      version: 1,
+      status,
+      categoryId:
+        input.revisionCategoryId === undefined
+          ? input.categoryId
+          : input.revisionCategoryId,
+      title,
+      story: 'Facet fixture',
+      materials: input.materials,
+      ...(withRevisionImage && product.images[0]
+        ? {
+            images: {
+              create: {
+                imageId: product.images[0].id,
+                position: 0,
+              },
+            },
+          }
+        : {}),
+    },
+  });
+  let editingRevisionId = revision.id;
+  if (input.editingMaterials !== undefined) {
+    const editing = await prisma.productRevision.create({
+      data: {
+        productId: product.id,
+        version: 2,
+        status: 'DRAFT',
+        categoryId: input.categoryId,
+        title: `${input.publicId} edit`,
+        story: 'Editing revision',
+        materials: input.editingMaterials,
+      },
+    });
+    editingRevisionId = editing.id;
+  }
+  await prisma.product.update({
+    where: { id: product.id },
+    data: {
+      editingRevisionId,
+      publishedRevisionId: linkPublishedRevision ? revision.id : null,
+    },
+  });
+  return product;
+}
+
+const previousMaterialFacetSql = Prisma.sql`
+  SELECT "materials"
+  FROM filtered
+  WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`;
+
+const previousAuthorFacetSql = Prisma.sql`
+  SELECT "city", "discipline"
+  FROM filtered`;
+
 describe('portfolio catalog SQL filters and pagination', () => {
   it('returns normalized facets from public authors and published works only', async () => {
     const fixture = await createPermissionFixture(prisma);
@@ -149,11 +296,18 @@ describe('portfolio catalog SQL filters and pagination', () => {
 
     const response = await guest.get('/portfolio/facets');
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({
-      materials: ['Холст'],
-      cities: ['Гродно', 'Минск'],
-      tags: ['Живопись', 'Керамика'],
-    });
+    const body = (await response.json()) as {
+      materials: string[];
+      cities: string[];
+      tags: string[];
+    };
+    // 'Холст' and ' холст ' share one locale key. Which spelling is kept is
+    // the first unordered DISTINCT row, the same rule as the previous scan.
+    expect(body.materials).toHaveLength(1);
+    expect(body.materials[0]?.toLocaleLowerCase('ru-RU')).toBe('холст');
+    expect(['Холст', 'холст']).toContain(body.materials[0]);
+    expect(body.cities).toEqual(['Гродно', 'Минск']);
+    expect(body.tags).toEqual(['Живопись', 'Керамика']);
     const publishedFilter = await guest.get('/works?materials=Холст');
     const draftFilter = await guest.get(
       '/works?materials=Непубличный%20черновик',
@@ -448,5 +602,369 @@ describe('portfolio catalog SQL filters and pagination', () => {
       'Newer Added',
       'Older Added',
     ]);
+  });
+
+  it('returns empty facet arrays when no public records exist', async () => {
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+
+    const response = await guest.get('/portfolio/facets');
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      materials: [],
+      cities: [],
+      tags: [],
+    });
+  });
+
+  it('keeps public facet values and drops private, blank, and non-published ones', async () => {
+    const category = await prisma.category.create({
+      data: { slug: 'facet-visibility', name: 'Facet visibility' },
+      select: { id: true },
+    });
+    const visible = await createFacetAuthor({
+      slug: 'facet-minsk',
+      city: 'Минск',
+      discipline: 'Живопись',
+    });
+    await createFacetAuthor({
+      slug: 'facet-minsk-pad',
+      city: ' Минск ',
+      discipline: 'живопись',
+    });
+    await createFacetAuthor({
+      slug: 'facet-grodno',
+      city: 'Гродно',
+      discipline: 'Керамика',
+    });
+    await createFacetAuthor({
+      slug: 'facet-gomel',
+      city: 'Гомель',
+      discipline: 'керамика',
+    });
+    await createFacetAuthor({
+      slug: 'facet-brest',
+      city: 'Брест',
+      discipline: 'Стекло',
+    });
+    await createFacetAuthor({
+      slug: 'facet-vitebsk',
+      city: 'Витебск',
+      discipline: null,
+    });
+    await createFacetAuthor({
+      slug: 'facet-vitebsk-blank',
+      city: 'Витебск',
+      discipline: '   ',
+    });
+    await createFacetAuthor({
+      slug: 'facet-nbsp-city',
+      city: '\u00A0',
+      discipline: 'Неразрывный',
+    });
+    await createFacetAuthor({
+      slug: 'facet-blank-city',
+      city: '   ',
+      discipline: 'Пробельный город',
+    });
+    await createFacetAuthor({
+      slug: 'facet-null-city',
+      city: null,
+      discipline: 'Без города',
+    });
+    const suspended = await createFacetAuthor({
+      slug: 'facet-suspended',
+      city: 'Секретный город',
+      discipline: 'Секрет',
+      status: 'SUSPENDED',
+    });
+    await createFacetAuthor({
+      slug: 'facet-draft-author',
+      city: 'Черновик автора',
+      discipline: 'Черновик',
+      status: 'DRAFT',
+    });
+    const blankCity = await createFacetAuthor({
+      slug: 'facet-work-blank-city',
+      city: '   ',
+      discipline: 'Материал без города',
+    });
+
+    for (const [index, materials] of (
+      ['Холст', 'Холст', 'Холст', ' холст ', '\u00A0Холст\u00A0'] as const
+    ).entries()) {
+      await createFacetWork({
+        sellerProfileId: visible.id,
+        categoryId: category.id,
+        publicId: `facetMat${index}`,
+        materials,
+        parentMaterials: 'Родительский материал',
+      });
+    }
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetWood1',
+      materials: 'Дерево',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetWood2',
+      materials: 'дерево',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetBronz',
+      materials: 'Бронза',
+      editingMaterials: 'Черновик материала',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetTab01',
+      materials: '\t',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetSpace1',
+      materials: '   ',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetEmpty1',
+      materials: '',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetNull01',
+      materials: null,
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetDraft1',
+      materials: 'Материал черновика',
+      status: 'DRAFT',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetArchv1',
+      materials: 'Материал архива',
+      status: 'ARCHIVED',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetPend01',
+      materials: 'Материал модерации',
+      status: 'PENDING_REVIEW',
+    });
+    await createFacetWork({
+      sellerProfileId: suspended.id,
+      categoryId: category.id,
+      publicId: 'facetSusp01',
+      materials: 'Материал суспенда',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetTitle1',
+      materials: 'Материал без названия',
+      title: '   ',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetPhoto1',
+      materials: 'Материал без фото',
+      withRevisionImage: false,
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetRev001',
+      materials: 'Материал без ревизии',
+      linkPublishedRevision: false,
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetDate01',
+      materials: 'Материал без даты',
+      publishedAt: null,
+    });
+    await createFacetWork({
+      sellerProfileId: blankCity.id,
+      categoryId: category.id,
+      publicId: 'facetCity01',
+      materials: 'Материал без города',
+    });
+    await createFacetWork({
+      sellerProfileId: visible.id,
+      categoryId: category.id,
+      publicId: 'facetCat001',
+      materials: 'Материал без категории',
+      revisionCategoryId: null,
+    });
+
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const response = await guest.get('/portfolio/facets');
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      materials: string[];
+      cities: string[];
+      tags: string[];
+    };
+    expect(body.materials.map((value) => value.toLocaleLowerCase('ru-RU'))).toEqual([
+      'бронза',
+      'дерево',
+      'холст',
+    ]);
+    expect(body.materials[0]).toBe('Бронза');
+    expect(['Дерево', 'дерево']).toContain(body.materials[1]);
+    expect(['Холст', 'холст']).toContain(body.materials[2]);
+    expect(body.cities).toEqual([
+      'Брест',
+      'Витебск',
+      'Гомель',
+      'Гродно',
+      'Минск',
+    ]);
+    expect(body.tags.map((value) => value.toLocaleLowerCase('ru-RU'))).toEqual([
+      'живопись',
+      'керамика',
+      'неразрывный',
+      'стекло',
+    ]);
+    expect(['Живопись', 'живопись']).toContain(body.tags[0]);
+    expect(['Керамика', 'керамика']).toContain(body.tags[1]);
+    expect(body.tags[2]).toBe('Неразрывный');
+    expect(body.tags[3]).toBe('Стекло');
+    const privateValues = [
+      'Родительский материал',
+      'Черновик материала',
+      'Материал черновика',
+      'Материал архива',
+      'Материал модерации',
+      'Материал суспенда',
+      'Материал без названия',
+      'Материал без фото',
+      'Материал без ревизии',
+      'Материал без даты',
+      'Материал без города',
+      'Материал без категории',
+      'Пробельный город',
+      'Без города',
+      'Секрет',
+      'Секретный город',
+      'Черновик',
+      'Черновик автора',
+    ];
+    expect(
+      [...body.materials, ...body.cities, ...body.tags].some((value) =>
+        privateValues.includes(value),
+      ),
+    ).toBe(false);
+
+    const materialRows = await http.app
+      .get(ProductsService)
+      .listPortfolioMaterialFacets();
+    const authorRows = await http.app.get(SellersService).listPublicFacets();
+    const fullMaterials = await prisma.$queryRaw<Array<{ materials: string | null }>>(
+      Prisma.sql`${portfolioCatalogCte({ page: 1, limit: 1, sort: 'newest' })}
+        ${previousMaterialFacetSql}`,
+    );
+    const fullAuthors = await prisma.$queryRaw<
+      Array<{ city: string | null; discipline: string | null }>
+    >(
+      Prisma.sql`${publicAuthorCte({ page: 1, limit: 1, sort: 'added' }, { requireCity: true })}
+        ${previousAuthorFacetSql}`,
+    );
+    expect(fullMaterials).toHaveLength(9);
+    expect(materialRows).toHaveLength(7);
+    expect(new Set(materialRows)).toEqual(
+      new Set(fullMaterials.map((row) => row.materials)),
+    );
+    expect(fullAuthors).toHaveLength(8);
+    expect(authorRows.cities).toHaveLength(7);
+    expect(authorRows.tags).toHaveLength(8);
+    expect(new Set(authorRows.cities)).toEqual(
+      new Set(fullAuthors.map((row) => row.city)),
+    );
+    expect(new Set(authorRows.tags)).toEqual(
+      new Set(fullAuthors.map((row) => row.discipline)),
+    );
+    expect(materialRows).toContain('\t');
+    expect(materialRows).not.toContain('   ');
+    expect(authorRows.tags).toContain('Неразрывный');
+    expect(authorRows.cities).toContain('\u00A0');
+    expect(body.cities).not.toContain('\u00A0');
+  });
+
+  it('returns the same facet JSON from distinct rows when many records share values', async () => {
+    const category = await prisma.category.create({
+      data: { slug: 'facet-volume', name: 'Facet volume' },
+      select: { id: true },
+    });
+    const primary = await createFacetAuthor({
+      slug: 'facet-volume-primary',
+      city: 'Минск',
+      discipline: 'Живопись',
+    });
+    for (let index = 0; index < 24; index += 1) {
+      await createFacetAuthor({
+        slug: `facet-volume-author-${index}`,
+        city: index < 16 ? 'Минск' : 'Гродно',
+        discipline: index < 16 ? 'Живопись' : 'Керамика',
+      });
+    }
+    for (let index = 0; index < 36; index += 1) {
+      await createFacetWork({
+        sellerProfileId: primary.id,
+        categoryId: category.id,
+        publicId: `facetVol${index.toString().padStart(2, '0')}`,
+        materials: index < 24 ? 'Холст' : 'Дерево',
+      });
+    }
+
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081');
+    const response = await guest.get('/portfolio/facets');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      materials: ['Дерево', 'Холст'],
+      cities: ['Гродно', 'Минск'],
+      tags: ['Живопись', 'Керамика'],
+    });
+
+    const materialRows = await http.app
+      .get(ProductsService)
+      .listPortfolioMaterialFacets();
+    const authorRows = await http.app.get(SellersService).listPublicFacets();
+    const fullMaterials = await prisma.$queryRaw<Array<{ materials: string | null }>>(
+      Prisma.sql`${portfolioCatalogCte({ page: 1, limit: 1, sort: 'newest' })}
+        ${previousMaterialFacetSql}`,
+    );
+    const fullAuthors = await prisma.$queryRaw<
+      Array<{ city: string | null; discipline: string | null }>
+    >(
+      Prisma.sql`${publicAuthorCte({ page: 1, limit: 1, sort: 'added' }, { requireCity: true })}
+        ${previousAuthorFacetSql}`,
+    );
+    expect(fullMaterials).toHaveLength(36);
+    expect(materialRows).toHaveLength(2);
+    expect(new Set(materialRows)).toEqual(new Set(['Холст', 'Дерево']));
+    expect(fullAuthors).toHaveLength(25);
+    expect(authorRows.cities).toHaveLength(2);
+    expect(authorRows.tags).toHaveLength(2);
+    expect(new Set(authorRows.cities)).toEqual(new Set(['Минск', 'Гродно']));
+    expect(new Set(authorRows.tags)).toEqual(
+      new Set(['Живопись', 'Керамика']),
+    );
   });
 });

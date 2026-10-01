@@ -4,10 +4,6 @@ import { Prisma } from '@bidplace/database';
 import { escapeLikePattern } from '../products/products-catalog.query';
 
 export type PublicAuthorPageRow = { id: string; total: number | bigint };
-export type PublicAuthorFacetRow = {
-  city: string | null;
-  discipline: string;
-};
 
 export function publicAuthorOrderBy(
   sort: PortfolioAuthorsQuery['sort'],

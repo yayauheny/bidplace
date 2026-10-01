@@ -1177,4 +1177,34 @@ describe('ProductsService', () => {
     });
     expect(tx.auditEvent.create).toHaveBeenCalled();
   });
+
+  it('reads distinct published materials without collapsing case in SQL', async () => {
+    const queryRaw = vi.fn().mockResolvedValue([
+      { materials: 'Холст' },
+      { materials: ' холст ' },
+      { materials: '\t' },
+    ]);
+    const service = new ProductsService(
+      { $queryRaw: queryRaw } as never,
+      {} as never,
+    );
+
+    await expect(service.listPortfolioMaterialFacets()).resolves.toEqual([
+      'Холст',
+      ' холст ',
+      '\t',
+    ]);
+
+    const sql = String(queryRaw.mock.calls[0]?.[0]?.sql);
+    expect(sql).toContain('SELECT DISTINCT "materials"');
+    expect(sql).toContain(`p."status" = 'APPROVED'`);
+    expect(sql).toContain(`sp."status" = 'APPROVED'`);
+    expect(sql).toContain('p."published_revision_id" IS NOT NULL');
+    expect(sql).toContain('published."id" = p."published_revision_id"');
+    expect(sql).toContain(`NULLIF(BTRIM(sp."city"), '') IS NOT NULL`);
+    expect(sql).toContain(`NULLIF(BTRIM("materials"), '') IS NOT NULL`);
+    expect(sql).not.toContain('LOWER(');
+    expect(sql).not.toContain('unnest');
+    expect(sql).not.toContain('SELECT "id"');
+  });
 });

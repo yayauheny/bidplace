@@ -740,13 +740,11 @@ export class ProductsService {
     });
     const rows = await this.prisma.$queryRaw<PublicWorkFacetRow[]>(
       Prisma.sql`${cte}
-        SELECT "materials"
+        SELECT DISTINCT "materials"
         FROM filtered
         WHERE NULLIF(BTRIM("materials"), '') IS NOT NULL`,
     );
-    return rows.flatMap((row) =>
-      row.materials?.trim() ? [row.materials.trim()] : [],
-    );
+    return rows.map((row) => row.materials);
   }
 
   private async loadPortfolioCatalogPage(query: PortfolioWorksQuery) {

@@ -42,7 +42,6 @@ import {
 import {
   publicAuthorCte,
   publicAuthorOrderBy,
-  type PublicAuthorFacetRow,
   type PublicAuthorPageRow,
 } from './sellers-catalog.query';
 import {
@@ -832,11 +831,22 @@ export class SellersService {
       { page: 1, limit: 1, sort: 'added' },
       { requireCity: true },
     );
-    return this.prisma.$queryRaw<PublicAuthorFacetRow[]>(
-      Prisma.sql`${cte}
-        SELECT "city", "discipline"
-        FROM filtered`,
-    );
+    const [cities, tags] = await Promise.all([
+      this.prisma.$queryRaw<Array<{ city: string | null }>>(
+        Prisma.sql`${cte}
+          SELECT DISTINCT "city"
+          FROM filtered`,
+      ),
+      this.prisma.$queryRaw<Array<{ discipline: string | null }>>(
+        Prisma.sql`${cte}
+          SELECT DISTINCT "discipline"
+          FROM filtered`,
+      ),
+    ]);
+    return {
+      cities: cities.map((row) => row.city),
+      tags: tags.map((row) => row.discipline),
+    };
   }
 
   async getApprovedPublicAuthor(
