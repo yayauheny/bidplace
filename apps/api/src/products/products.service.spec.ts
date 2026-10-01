@@ -7,7 +7,7 @@ import {
   portfolioProductContentWhere,
 } from './public-visibility';
 import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
-import { productImageMetadataSelect } from './products.mapper';
+import { portfolioCatalogProductSelect } from './products.mapper';
 
 const product = {
   id: 'a0d82a10-3170-49eb-904f-a8bc87d311a5',
@@ -154,6 +154,90 @@ function ownerProduct(
     packaging: approvedProduct.packaging,
     deliveryInfo: approvedProduct.deliveryInfo,
     images: approvedProduct.images.map((image) => ({ id: image.id })),
+  };
+}
+
+function projectSelected(
+  select: Record<string, unknown>,
+  value: unknown,
+): unknown {
+  if (value == null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => projectSelected(select, item));
+  }
+  const source = value as Record<string, unknown>;
+  const projected: Record<string, unknown> = {};
+  for (const [key, spec] of Object.entries(select)) {
+    if (spec === true) {
+      projected[key] = source[key];
+      continue;
+    }
+    if (
+      spec &&
+      typeof spec === 'object' &&
+      'select' in spec &&
+      spec.select &&
+      typeof spec.select === 'object'
+    ) {
+      projected[key] = projectSelected(
+        spec.select as Record<string, unknown>,
+        source[key],
+      );
+    }
+  }
+  return projected;
+}
+
+function portfolioReadRow(input: {
+  id: string;
+  publicId: string;
+  publishedAt: Date;
+}) {
+  return {
+    id: input.id,
+    publicId: input.publicId,
+    publishedAt: input.publishedAt,
+    sellerProfile: {
+      id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      slug: 'seller-slug',
+      sellerType: 'creator' as const,
+      discipline: 'Керамика',
+      fullName: 'Seller',
+      country: 'BY',
+      city: 'Минск',
+      practice: null,
+      biography: null,
+      socialLink: null,
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      publicEmail: null,
+      shortDescription: 'Short',
+      publishedRevision: { achievements: [] },
+    },
+    publishedRevision: {
+      title: input.publicId,
+      story: null,
+      categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
+      technique: null,
+      materials: null,
+      dimensions: null,
+      year: null,
+      uniqueness: null,
+      images: [
+        {
+          position: 0,
+          image: {
+            id: 'b0d82a10-3170-49eb-904f-a8bc87d311a6',
+            mimeType: 'image/png',
+            byteLength: 10,
+            checksum: 'a'.repeat(64),
+            width: null,
+            height: null,
+          },
+        },
+      ],
+    },
   };
 }
 
@@ -670,18 +754,17 @@ describe('ProductsService', () => {
 
     expect(prisma.product.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        select: expect.objectContaining({
-          sellerProfile: {
-            select: publicSellerProfileSelect,
-          },
-          images: {
-            orderBy: { position: 'asc' },
-            select: productImageMetadataSelect,
-          },
-        }),
+        select: portfolioCatalogProductSelect,
       }),
     );
-    expect(productImageMetadataSelect).not.toHaveProperty('data');
+    expect(portfolioCatalogProductSelect).not.toHaveProperty('images');
+    expect(portfolioCatalogProductSelect).not.toHaveProperty('story');
+    expect(portfolioCatalogProductSelect.sellerProfile.select).toBe(
+      publicSellerProfileSelect,
+    );
+    expect(portfolioCatalogProductSelect.publishedRevision.select).not.toHaveProperty(
+      'weight',
+    );
   });
 
   it('paginates public catalog rows before hydrating narrow image metadata', async () => {
@@ -745,13 +828,13 @@ describe('ProductsService', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: { in: [product.id] } },
-        select: expect.objectContaining({
-          images: expect.objectContaining({
-            select: expect.not.objectContaining({ data: expect.anything() }),
-          }),
-        }),
+        select: portfolioCatalogProductSelect,
       }),
     );
+    expect(
+      portfolioCatalogProductSelect.publishedRevision.select.images.select.image
+        .select,
+    ).not.toHaveProperty('data');
   });
 
   it('orders newest public works by publishedAt in the database query', async () => {
@@ -788,6 +871,267 @@ describe('ProductsService', () => {
     const pageQueryText = String(pageQuery.sql);
     expect(pageQueryText).toContain('sp."slug"');
     expect(pageQueryText).toContain('published."materials"');
+  });
+
+  it('keeps published Work JSON and drops unread parent data', async () => {
+    const parentStory = `PARENT_STORY_MARKER${'п'.repeat(60_000)}`;
+    const publishedStory = 'Published story';
+    const publishedImage = {
+      id: 'b0d82a10-3170-49eb-904f-a8bc87d311a6',
+      mimeType: 'image/png',
+      byteLength: 10,
+      checksum: 'a'.repeat(64),
+      width: 1200,
+      height: 1600,
+    };
+    const parentOnlyImage = {
+      id: 'c0d82a10-3170-49eb-904f-a8bc87d311a7',
+      mimeType: 'image/jpeg',
+      byteLength: 99,
+      checksum: 'b'.repeat(64),
+      width: 10,
+      height: 10,
+    };
+    const sellerProfile = {
+      id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+      slug: 'seller-slug',
+      sellerType: 'creator' as const,
+      discipline: 'Керамика',
+      fullName: 'Seller',
+      country: 'BY',
+      city: 'Минск',
+      practice: 'Студия',
+      biography: `BIOGRAPHY_MARKER${'б'.repeat(40_000)}`,
+      socialLink: 'https://example.com/seller',
+      telegramUrl: null,
+      instagramUrl: null,
+      websiteUrl: null,
+      publicEmail: null,
+      shortDescription: 'Short',
+      publishedRevision: {
+        achievements: [
+          {
+            id: 'f0d82a10-3170-49eb-904f-a8bc87d311a9',
+            occurredAt: new Date('2020-05-01T00:00:00.000Z'),
+            occurredAtPrecision: 'MONTH' as const,
+            body: `ACHIEVEMENT_MARKER${'а'.repeat(8_000)}`,
+            mimeType: null,
+            byteLength: null,
+            checksum: null,
+            objectKey: null,
+          },
+        ],
+      },
+    };
+    const publishedRevision = {
+      title: 'Published title',
+      story: publishedStory,
+      categoryId: 'd0d82a10-3170-49eb-904f-a8bc87d311a8',
+      technique: 'Published technique',
+      materials: 'Published material',
+      dimensions: '10 cm',
+      year: 2024,
+      uniqueness: ' published-unique ',
+      images: [{ position: 0, image: publishedImage }],
+    };
+    const wideRow = {
+      id: product.id,
+      publicId: 'publicId001',
+      sellerProfileId: product.sellerProfileId,
+      categoryId: null,
+      title: 'Parent title',
+      story: parentStory,
+      technique: 'Parent technique',
+      materials: 'Parent material',
+      dimensions: '99 cm',
+      weight: '9 kg',
+      year: 1999,
+      condition: 'Parent condition',
+      uniqueness: 'parent-unique',
+      provenance: `PARENT_PROVENANCE_MARKER${'п'.repeat(20_000)}`,
+      city: 'Parent city',
+      packaging: 'Parent packaging',
+      deliveryInfo: 'Parent delivery',
+      creationIntro: `PARENT_INTRO_MARKER${'и'.repeat(20_000)}`,
+      publishedAt: new Date('2026-07-19T00:00:00.000Z'),
+      status: 'APPROVED' as const,
+      editingRevisionId: 'editing-revision',
+      publishedRevisionId: 'published-revision',
+      createdAt: new Date('2020-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      sellerProfile,
+      images: [
+        { ...parentOnlyImage, position: 0 },
+        { ...publishedImage, position: 1 },
+      ],
+      publishedRevision,
+    };
+    const baselineSelect = {
+      id: true,
+      publicId: true,
+      sellerProfileId: true,
+      categoryId: true,
+      title: true,
+      story: true,
+      technique: true,
+      materials: true,
+      dimensions: true,
+      weight: true,
+      year: true,
+      condition: true,
+      uniqueness: true,
+      provenance: true,
+      city: true,
+      packaging: true,
+      deliveryInfo: true,
+      creationIntro: true,
+      publishedAt: true,
+      status: true,
+      editingRevisionId: true,
+      publishedRevisionId: true,
+      createdAt: true,
+      updatedAt: true,
+      sellerProfile: { select: publicSellerProfileSelect },
+      images: {
+        orderBy: { position: 'asc' as const },
+        select: {
+          id: true,
+          mimeType: true,
+          byteLength: true,
+          checksum: true,
+          width: true,
+          height: true,
+          position: true,
+        },
+      },
+      publishedRevision: {
+        select: portfolioCatalogProductSelect.publishedRevision.select,
+      },
+    };
+    const narrowPayload = projectSelected(
+      portfolioCatalogProductSelect,
+      wideRow,
+    );
+    const baselinePayload = projectSelected(baselineSelect, wideRow);
+    const narrowBytes = Buffer.byteLength(JSON.stringify(narrowPayload));
+    const baselineBytes = Buffer.byteLength(JSON.stringify(baselinePayload));
+    expect(narrowBytes).toBeLessThan(baselineBytes);
+    expect(baselineBytes - narrowBytes).toBeGreaterThan(90_000);
+    expect(JSON.stringify(narrowPayload).includes('PARENT_STORY_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(narrowPayload).includes(parentOnlyImage.id)).toBe(
+      false,
+    );
+    expect(JSON.stringify(baselinePayload).includes('PARENT_STORY_MARKER')).toBe(
+      true,
+    );
+
+    const prisma = {
+      product: {
+        findFirst: vi.fn(async () => narrowPayload),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+    const item = await service.getPortfolio('publicId001');
+    const fromWide = service.toPortfolioItem(
+      wideRow as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
+    );
+
+    expect(item).toEqual(fromWide);
+    expect(item?.product).toMatchObject({
+      id: product.id,
+      publicId: 'publicId001',
+      title: 'Published title',
+      story: publishedStory,
+      categoryId: publishedRevision.categoryId,
+      technique: 'Published technique',
+      materials: 'Published material',
+      dimensions: '10 cm',
+      year: 2024,
+      uniqueness: 'published-unique',
+      publishedAt: '2026-07-19T00:00:00.000Z',
+      images: [
+        {
+          id: publishedImage.id,
+          position: 0,
+          url: `/api/images/${publishedImage.id}`,
+          mimeType: 'image/png',
+          byteLength: 10,
+          checksum: publishedImage.checksum,
+          width: 1200,
+          height: 1600,
+        },
+      ],
+    });
+    expect(item?.sellerProfile.biography).toContain('BIOGRAPHY_MARKER');
+    expect(item?.sellerProfile.achievements).toHaveLength(1);
+    expect(item?.sellerProfile.city).toBe('Минск');
+
+    const incomplete = {
+      ...wideRow,
+      publishedRevision: { ...publishedRevision, images: [] },
+    };
+    expect(
+      service.toPortfolioItem(
+        projectSelected(
+          portfolioCatalogProductSelect,
+          incomplete,
+        ) as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
+      ),
+    ).toBeNull();
+    expect(
+      service.toPortfolioItem(
+        projectSelected(portfolioCatalogProductSelect, {
+          ...wideRow,
+          publishedRevision: null,
+        }) as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
+      ),
+    ).toBeNull();
+    expect(
+      service.toPortfolioItem(
+        projectSelected(portfolioCatalogProductSelect, {
+          ...wideRow,
+          sellerProfile: { ...sellerProfile, city: '   ' },
+        }) as unknown as Parameters<ProductsService['toPortfolioItem']>[0],
+      ),
+    ).toBeNull();
+  });
+
+  it('keeps portfolio page order from the catalog query', async () => {
+    const older = portfolioReadRow({
+      id: 'a0d82a10-3170-49eb-904f-a8bc87d311a1',
+      publicId: 'olderWork01',
+      publishedAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    const newer = portfolioReadRow({
+      id: 'a0d82a10-3170-49eb-904f-a8bc87d311a2',
+      publicId: 'newerWork01',
+      publishedAt: new Date('2026-06-01T00:00:00.000Z'),
+    });
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { id: newer.id, total: 2 },
+        { id: older.id, total: 2 },
+      ]),
+      product: {
+        findMany: vi.fn().mockResolvedValue([older, newer]),
+      },
+    };
+    const service = new ProductsService(prisma as never, {} as never);
+
+    const page = await service.listPortfolio(
+      portfolioWorksQuerySchema.parse({ sort: 'newest', limit: 2 }),
+    );
+
+    expect(page.items.map((item) => item.product.publicId)).toEqual([
+      'newerWork01',
+      'olderWork01',
+    ]);
+    expect(page.pagination).toEqual({ page: 1, limit: 2, total: 2 });
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ select: portfolioCatalogProductSelect }),
+    );
   });
 
   it('refuses hide when a scheduled or live listing exists', async () => {

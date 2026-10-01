@@ -198,40 +198,11 @@ export function toProductResponse(product: ProductRecord) {
   return productResponseSchema.parse({ product: toContractProduct(product) });
 }
 
-export const publicCatalogProductSelect = {
+export const portfolioCatalogProductSelect = {
   id: true,
   publicId: true,
-  sellerProfileId: true,
-  categoryId: true,
-  title: true,
-  story: true,
-  technique: true,
-  materials: true,
-  dimensions: true,
-  weight: true,
-  year: true,
-  condition: true,
-  uniqueness: true,
-  provenance: true,
-  city: true,
-  packaging: true,
-  deliveryInfo: true,
-  creationIntro: true,
   publishedAt: true,
-  status: true,
-  editingRevisionId: true,
-  publishedRevisionId: true,
-  createdAt: true,
-  updatedAt: true,
   sellerProfile: { select: publicSellerProfileSelect },
-  images: {
-    orderBy: { position: 'asc' as const },
-    select: productImageMetadataSelect,
-  },
-} satisfies Prisma.ProductSelect;
-
-export const portfolioCatalogProductSelect = {
-  ...publicCatalogProductSelect,
   publishedRevision: { select: productRevisionGallerySelect },
 } satisfies Prisma.ProductSelect;
 
