@@ -12,6 +12,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Post,
   Res,
   UnauthorizedException,
@@ -26,7 +27,11 @@ import { AuthService } from './auth.service';
 import { BearerAuthGuard } from './bearer-auth.guard';
 import { LogoutAuthGuard } from './logout-auth.guard';
 import { CurrentUser } from './current-user.decorator';
-import { requiresProductionSecurity } from '../core/config';
+import {
+  SERVER_ENV,
+  type ServerEnv,
+  requiresProductionSecurity,
+} from '../core/config';
 import { parseBody } from '../core/validation';
 import { RateLimit, RateLimitGuard } from '../core/rate-limit';
 
@@ -55,7 +60,10 @@ type AuthCookieResponse = {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
+  ) {}
 
   @Get('rules')
   async getRules() {
@@ -159,7 +167,7 @@ export class AuthController {
     response.cookie(AUTH_TOKEN_COOKIE_NAME, accessToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: requiresProductionSecurity(process.env),
+      secure: requiresProductionSecurity(this.env),
       path: '/',
       maxAge: AUTH_TOKEN_TTL_SECONDS * 1000,
     });
@@ -169,7 +177,7 @@ export class AuthController {
     response.clearCookie(AUTH_TOKEN_COOKIE_NAME, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: requiresProductionSecurity(process.env),
+      secure: requiresProductionSecurity(this.env),
       path: '/',
     });
   }

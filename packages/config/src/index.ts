@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { parseEnv as parseEnvFile } from 'node:util';
 
 import { z } from 'zod';
 
@@ -8,29 +9,14 @@ export function loadEnvFile(filePath: string): Record<string, string> {
   }
 
   const contents = readFileSync(filePath, 'utf8');
+  const parsed = parseEnvFile(
+    contents.charCodeAt(0) === 0xfeff ? contents.slice(1) : contents,
+  );
   const entries: Record<string, string> = {};
 
-  for (const line of contents.split(/\r?\n/)) {
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine || trimmedLine.startsWith('#')) {
-      continue;
-    }
-
-    const separatorIndex = trimmedLine.indexOf('=');
-
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const key = trimmedLine.slice(0, separatorIndex).trim();
-    const rawValue = trimmedLine.slice(separatorIndex + 1).trim();
-    const unquotedValue = rawValue
-      .replace(/^"(.*)"$/, '$1')
-      .replace(/^'(.*)'$/, '$1');
-
-    if (key) {
-      entries[key] = unquotedValue;
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value === 'string') {
+      entries[key] = value;
     }
   }
 

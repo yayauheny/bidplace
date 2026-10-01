@@ -9,7 +9,7 @@ import { LogoutAuthGuard } from './logout-auth.guard';
 import { OptionalBearerAuthGuard } from './optional-bearer-auth.guard';
 import { PasswordHasherService } from './password-hasher.service';
 import { VerifiedEmailGuard } from './verified-email.guard';
-import { loadServerEnv } from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { DatabaseModule } from '../core/database';
 import { RateLimitModule } from '../core/rate-limit';
 
@@ -26,7 +26,8 @@ import { RateLimitModule } from '../core/rate-limit';
     VerifiedEmailGuard,
     {
       provide: AUTH_TOKEN_SECRET,
-      useFactory: () => loadServerEnv().JWT_SECRET,
+      useFactory: (env: ServerEnv) => env.JWT_SECRET,
+      inject: [SERVER_ENV],
     },
   ],
   exports: [

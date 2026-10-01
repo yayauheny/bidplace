@@ -3,9 +3,9 @@ import {
   type AnalyticsIngestResponse,
 } from '@bidplace/contracts';
 import { type Prisma } from '@bidplace/database';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import { loadServerEnv } from '../core/config';
+import { SERVER_ENV, type ServerEnv } from '../core/config';
 import { PrismaService } from '../core/database';
 import { Clock } from '../core/time';
 
@@ -16,6 +16,7 @@ export class AnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    @Inject(SERVER_ENV) private readonly env: ServerEnv,
   ) {}
 
   async ingest(
@@ -24,7 +25,7 @@ export class AnalyticsService {
   ): Promise<AnalyticsIngestResponse> {
     const accepted = input.events.length;
 
-    if (!loadServerEnv().ANALYTICS_INGEST_ENABLED) {
+    if (!this.env.ANALYTICS_INGEST_ENABLED) {
       return { accepted };
     }
 

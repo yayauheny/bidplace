@@ -15,7 +15,6 @@ import {
   type RateLimitOptions,
 } from './rate-limit.decorator';
 import { RateLimitService } from './rate-limit.service';
-import { loadServerEnv } from '../config';
 
 type RateLimitedRequest = {
   auth?: AuthTokenPayload;
@@ -34,7 +33,7 @@ export class RateLimitGuard implements CanActivate {
     private readonly rateLimitService: RateLimitService,
     @Optional() @Inject('RATE_LIMIT_TRUST_PROXY') trustProxy?: boolean,
   ) {
-    this.trustProxy = trustProxy ?? loadServerEnv().TRUST_PROXY;
+    this.trustProxy = trustProxy ?? false;
   }
 
   private readonly trustProxy: boolean;

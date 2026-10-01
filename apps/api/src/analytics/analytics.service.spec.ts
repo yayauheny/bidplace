@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { syntheticServerEnv } from '../core/config/synthetic-server-env';
 import { AnalyticsService } from './analytics.service';
 
 afterEach(() => {
@@ -11,17 +12,17 @@ const userId = '22222222-2222-4222-8222-222222222222';
 const otherUserId = '33333333-3333-4333-8333-333333333333';
 const now = new Date('2026-08-20T12:00:00.000Z');
 
-function createService(prisma: object) {
-  return new AnalyticsService(prisma as never, { now: () => now });
+function createService(prisma: object, overrides: NodeJS.ProcessEnv = {}) {
+  return new AnalyticsService(
+    prisma as never,
+    { now: () => now },
+    syntheticServerEnv(overrides),
+  );
 }
 
 describe('AnalyticsService', () => {
   it('returns accepted without writing when ingest is disabled', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'false');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
+    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
 
     const prisma = {
       acquisitionAttribution: {
@@ -32,7 +33,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn(),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'false',
+    });
 
     const result = await service.ingest({
       anonymousId,
@@ -51,12 +55,6 @@ describe('AnalyticsService', () => {
   });
 
   it('creates first-touch attribution and inserts events', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
-
     const prisma = {
       acquisitionAttribution: {
         findUnique: vi.fn().mockResolvedValue(null),
@@ -68,7 +66,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
 
     const result = await service.ingest(
       {
@@ -114,12 +115,6 @@ describe('AnalyticsService', () => {
   });
 
   it('never overwrites first-touch attribution fields', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
-
     const prisma = {
       acquisitionAttribution: {
         findUnique: vi.fn().mockResolvedValue({
@@ -136,7 +131,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
 
     await service.ingest({
       anonymousId,
@@ -160,12 +158,6 @@ describe('AnalyticsService', () => {
   });
 
   it('claims acquisition when authenticated and unlinked', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
-
     const prisma = {
       acquisitionAttribution: {
         findUnique: vi.fn().mockResolvedValue({
@@ -181,7 +173,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
 
     await service.ingest(
       {
@@ -200,12 +195,6 @@ describe('AnalyticsService', () => {
   });
 
   it('does not claim when attribution belongs to another user', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
-
     const prisma = {
       acquisitionAttribution: {
         findUnique: vi.fn().mockResolvedValue({
@@ -221,7 +210,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
 
     await service.ingest(
       {
@@ -237,12 +229,6 @@ describe('AnalyticsService', () => {
   });
 
   it('skips claim when userId is already linked on another row', async () => {
-    vi.stubEnv('ANALYTICS_INGEST_ENABLED', 'true');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('DATABASE_URL', 'postgresql://test:test@127.0.0.1:5432/bidplace_test');
-    vi.stubEnv('JWT_SECRET', 'test-only-jwt-secret');
-    vi.stubEnv('BIDPLACE_ENV_FILE', '/repo/missing.env');
-
     const prisma = {
       acquisitionAttribution: {
         findUnique: vi.fn().mockResolvedValue({
@@ -258,7 +244,10 @@ describe('AnalyticsService', () => {
         createMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
-    const service = createService(prisma);
+    const service = createService(prisma, {
+      NODE_ENV: 'development',
+      ANALYTICS_INGEST_ENABLED: 'true',
+    });
 
     await service.ingest(
       {

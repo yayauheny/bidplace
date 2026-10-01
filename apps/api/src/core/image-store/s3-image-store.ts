@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 
-import { loadServerEnv } from '../config/env';
+import { type ServerEnv } from '../config';
 import type { ImageObject } from './image-store';
 import { ImageStore } from './image-store';
 
@@ -15,9 +15,8 @@ export class S3ImageStore extends ImageStore {
   private readonly bucket: string;
   private readonly client: S3Client;
 
-  constructor() {
+  constructor(env: ServerEnv) {
     super();
-    const env = loadServerEnv();
     if (
       env.MEDIA_STORAGE_PROVIDER !== 's3' ||
       !env.S3_ENDPOINT ||

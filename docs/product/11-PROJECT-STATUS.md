@@ -5,6 +5,56 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Leading env BOM and config unit discovery
+
+- `Implemented`: `loadEnvFile` removes one leading U+FEFF and then calls Node
+  `util.parseEnv`. A production file no longer loses its first key, so
+  `NODE_ENV=production` or `APP_ENV=production` still fails closed when the
+  rest of the production profile is absent. A complete production profile that
+  starts with a BOM stays production. A BOM inside a quoted value stays. Explicit
+  env still overrides the file.
+- `Implemented`: root `test:unit` runs `@bidplace/config` test before the
+  existing API, contracts, api-client, database, and mobile stages, and still
+  stops on the first failure. `pnpm verify` and the current CI workflows call
+  that script.
+- Coverage: `@bidplace/config` 8 tests; `env.spec.ts` 37 tests, including both
+  production BOM rejections through `loadServerEnv`. Node v22.20.0 / pnpm
+  11.7.0. Commands are in the R17 evidence.
+- `Unchanged`: the frozen `SERVER_ENV` snapshot, Nest DI, Prisma
+  `DATABASE_URL` fill, and the auth, OTP, reset, mail, and rate-limit rules.
+  L03 stays verified after these regressions. Browsers were not run.
+
+## 2026-10-01 — Server config loaded once per application
+
+- `Implemented`: env files are parsed with Node `util.parseEnv` in
+  `packages/config`. HTTP bootstrap validates the merged environment once,
+  freezes it, and passes that object through Nest `SERVER_ENV`
+  (`apps/api/src/core/config/env.ts`, `server-env.module.ts`, `main.ts`,
+  `AppModule.forRoot`). Analytics, auth, OTP, password reset, mail, image
+  storage, and rate limits read that snapshot. Request handlers do not reread
+  the env file or rerun schema validation. Unset `process.env` keys are still
+  filled so Prisma can read `DATABASE_URL` when `PrismaService` constructs
+  `PrismaClient`.
+- Node parser differences, locked by synthetic fixtures: an unquoted `#`
+  starts a comment, double quotes interpret escapes, an optional `export`
+  prefix is accepted, and only outer quotes are removed. One leading U+FEFF
+  is removed before parsing, so the first key stays visible. A BOM later in
+  the file, including inside a quoted value, is preserved. Process env still
+  overrides the file. A missing file stays empty. The last duplicate key
+  still wins.
+- The `NODE_ENV` × `APP_ENV` security matrix is unchanged, including
+  production SMTP, service rules, reset URL, S3, JWT length, and the
+  `TEST_EMAIL_BYPASS` prohibition. Bypass remains `NODE_ENV=test` with
+  `APP_ENV=local`.
+- Coverage: `@bidplace/config` 7 tests; API unit 275 tests plus 33 env tests;
+  API integration 76 tests on local disposable `bidplace_integration` schemas.
+  Node v22.20.0 / pnpm 11.7.0. Commands and exit codes are in the R17 evidence
+  of `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: auth, OTP, reset, analytics, media, and rate-limit rules;
+  mobile, contracts, schema, and migrations. R15, R16, and R18 evidence is
+  unchanged. L03 is verified. No founder decision was added. Browsers were
+  not run. Root migrate and seed were not run.
+
 ## 2026-10-01 — Narrow image authorization and portfolio Work reads
 
 - `Implemented`: `ImagesService.get` authorizes a Product image from revision
