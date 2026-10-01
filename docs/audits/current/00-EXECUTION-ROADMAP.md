@@ -26,6 +26,8 @@
 
 **Дополнение 2026-10-01, R17 BOM:** один начальный U+FEFF снимается до `util.parseEnv`, поэтому production-файл не читается как development/local. `@bidplace/config` test входит в root `test:unit`. L03 остаётся `VERIFIED`. См. R17 evidence.
 
+**Дополнение 2026-10-01, R19:** на `fix/moderation-bounded-reads` от `95dac4c` списки модерации читаются страницами `createdAt,id` (default 50, maximum 100). Фильтры и поиск считаются на сервере. Последняя причина — один SQL-ряд на target текущей страницы. D07 → `PARTIAL`: R20 и R21 не начинались, moderation browser NOT RUN. См. R19 evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -614,6 +616,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** найден независимый admin consumer, которому нужен compatibility rollout.
 - **Done/status:** D07 → `PARTIAL`.
 - **Отчёт:** G с bounded query evidence.
+- **Actual (2026-10-01):** выполнено на `fix/moderation-bounded-reads` от `95dac4c11a66f0e2e2931b1c3f45e86e52514ec0`. Contracts и API — commit `b468c7a`. Client и admin UI — commit `cd32197`. D07 остаётся `PARTIAL`. См. R19 evidence. R20, R21, C07 и соседние статусы не изменялись.
 
 ### R20. Перенести analytics aggregation в БД
 
@@ -1255,6 +1258,48 @@ remaining limitations: unquoted values that contain # are truncated by Node pars
 blocked-by: none
 ```
 
+### R19 evidence
+
+```text
+scope: R19
+finding IDs: D07 moderation scope only
+status: PARTIAL
+branch: fix/moderation-bounded-reads
+base SHA: 95dac4c11a66f0e2e2931b1c3f45e86e52514ec0
+ancestor checked: f5d8b0ac80ced03e3155ea130955b596e312d762
+commits: b468c7a28f4e01dc084c1de2361356831d5a801e contracts and API; cd321973fdf9793100db84b3f592d6df7daf298a API client and admin UI
+changed contracts: adminModerationListQuerySchema (cursor, limit default 50, maximum 100, filter, search); admin seller and product list responses keep sellerProfiles/products and add nextCursor. An invalid cursor is rejected. Empty search is omitted. The omitted filter is ALL, which preserves unfiltered callers; the admin UI sends PENDING_REVIEW explicitly.
+before:
+  listSellerProfiles and listProducts loaded every matching row, ordered only by createdAt. latestModerationReasons loaded every non-null audit reason for every target and picked one in JavaScript. The admin screen filtered and searched that full payload on the client.
+after:
+  Both lists use keyset pagination on createdAt ASC, id ASC, with take limit+1. nextCursor is the last returned row, or null when the page is complete. Seller review filters use the editing revision when one exists and the parent status otherwise; APPROVED stays the parent status; DRAFT parents stay excluded. Product review filters use the editing revision only; ALL still includes drafts. Search uses the revision content when a revision exists, otherwise the parent, plus the seller name and slug for products. Case-insensitive Prisma contains. Latest non-empty reason is one DISTINCT ON query for the current page ids, ordered by target_id, created_at DESC, id DESC. An empty page does not query audit rows. An empty string is skipped; whitespace is kept. The admin UI uses useInfiniteQuery. Filter and trimmed search are part of the query key. Load more uses the existing secondary button, stays disabled while the next page is in flight, and retries after a next-page error. Approve, reject, changes, suspend, and conflict refresh drop cached pages after the first and then invalidate, so a stale later page is not kept. productAction and its error text are unchanged. Moderation transitions and append-only audit are unchanged.
+query volume on the synthetic fixture, no timing claim:
+  limit 1 returns one seller. Five audit rows exist for that target (older, tied-low, tied-high at the same timestamp, empty string, null) plus an off-page reason. The latest-reason SQL result length is 1. The HTTP body contains tied-high and does not contain older, tied-low, or off-page. Three sellers that share a timestamp, read with limit 1, each appear once and the cursor ends.
+tests/scenarios:
+  contracts 4 files, 31 tests.
+  API unit excluding env.spec.ts: 49 files, 287 tests.
+  env.spec.ts 37 tests with BIDPLACE_ENV_FILE unset. Loads use /repo/missing.env, a mocked exists check, or a temporary synthetic.env. No real env file.
+  API integration 24 files, 83 tests, including admin-moderation-pagination: guest 401, user 403, admin page, invalid cursor 400, limit 101 rejected, tied timestamps, review versus visibility, search past the first page, and the one-row reason query. Harness database name bidplace_integration on 127.0.0.1, isolated itest_ schemas, existing prisma migrate deploy. INTEGRATION_DATABASE_URL was unset. No root migrate or seed. No real .env.
+  api-client 5 files, 28 tests.
+  mobile 108 files, 532 tests, including load more, in-flight lock, next-page retry, search restart, a next-page seller conflict refresh, and a next-page product approve.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
+  pnpm --filter @bidplace/api lint → 0
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (49 files, 287 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 37 tests)
+  pnpm --filter @bidplace/contracts test → 0 (4 files, 31 tests)
+  pnpm --filter @bidplace/api-client test → 0 (5 files, 28 tests)
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (108 files, 532 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  env -u INTEGRATION_DATABASE_URL BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (24 files, 83 tests)
+  git diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0. Browsers were not run.
+remaining limitations: D07 stays PARTIAL. R20 and R21 were not started. Moderation browser evidence is NOT RUN, so R19 is not fully VERIFIED. No timing speedup is claimed.
+blocked-by: browser confirmation for the moderation screen. R20 and R21 remain for the rest of D07.
+```
+
 ### Form field ownership evidence
 
 ```text
@@ -1502,7 +1547,7 @@ blocked-by: none for this correction. Browser confirmation remains.
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
 | D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
-| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
+| D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | PARTIAL            | R02/R18                                                      | 2026-10-01 R19 on `fix/moderation-bounded-reads` from `95dac4c`. Admin lists are cursor pages. Latest reason SQL returns one row per page target. R20 and R21 not started. Moderation browser NOT RUN. |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
 | C02     | Legacy exports и never-thrown compatibility error                            | P3 / HIGH–MEDIUM      | W3 → R10                             | PARTIAL            | R04; consumer verification                                   | Never-thrown `RevisionMediaStorageError` and confirmed unused exports removed. Seller/Product/Listing persistence parsers retained: HEAD and archive `19eb40e` consumers are spec and barrel only. |
