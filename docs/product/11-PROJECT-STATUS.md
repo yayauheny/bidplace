@@ -5,6 +5,25 @@
 > commerce-schema references below do not mean that Listing, Bid, Order,
 > lifecycle, realtime, discovery or activity modules are currently booted.
 
+## 2026-10-01 — Leading env BOM and config unit discovery
+
+- `Implemented`: `loadEnvFile` removes one leading U+FEFF and then calls Node
+  `util.parseEnv`. A production file no longer loses its first key, so
+  `NODE_ENV=production` or `APP_ENV=production` still fails closed when the
+  rest of the production profile is absent. A complete production profile that
+  starts with a BOM stays production. A BOM inside a quoted value stays. Explicit
+  env still overrides the file.
+- `Implemented`: root `test:unit` runs `@bidplace/config` test before the
+  existing API, contracts, api-client, database, and mobile stages, and still
+  stops on the first failure. `pnpm verify` and the current CI workflows call
+  that script.
+- Coverage: `@bidplace/config` 8 tests; `env.spec.ts` 37 tests, including both
+  production BOM rejections through `loadServerEnv`. Node v22.20.0 / pnpm
+  11.7.0. Commands are in the R17 evidence.
+- `Unchanged`: the frozen `SERVER_ENV` snapshot, Nest DI, Prisma
+  `DATABASE_URL` fill, and the auth, OTP, reset, mail, and rate-limit rules.
+  L03 stays verified after these regressions. Browsers were not run.
+
 ## 2026-10-01 — Server config loaded once per application
 
 - `Implemented`: env files are parsed with Node `util.parseEnv` in
@@ -18,9 +37,11 @@
   `PrismaClient`.
 - Node parser differences, locked by synthetic fixtures: an unquoted `#`
   starts a comment, double quotes interpret escapes, an optional `export`
-  prefix is accepted, only outer quotes are removed, and a leading UTF-8 BOM
-  stays on the first key. Process env still overrides the file. A missing
-  file stays empty. The last duplicate key still wins.
+  prefix is accepted, and only outer quotes are removed. One leading U+FEFF
+  is removed before parsing, so the first key stays visible. A BOM later in
+  the file, including inside a quoted value, is preserved. Process env still
+  overrides the file. A missing file stays empty. The last duplicate key
+  still wins.
 - The `NODE_ENV` × `APP_ENV` security matrix is unchanged, including
   production SMTP, service rules, reset URL, S3, JWT length, and the
   `TEST_EMAIL_BYPASS` prohibition. Bypass remains `NODE_ENV=test` with

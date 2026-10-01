@@ -18,6 +18,8 @@
 
 **Дополнение 2026-10-01, R17:** на `fix/config-bootstrap-ownership` от `6c0fac75` env-файл разбирается Node `util.parseEnv`, а серверная конфигурация валидируется один раз на application context и передаётся через Nest DI. L03 → `VERIFIED`. R15, R16 и R18 этим пакетом не менялись. D06 остаётся `QUEUED`. Остальные verification статусы не повышены. См. R17 evidence.
 
+**Дополнение 2026-10-01, R17 BOM:** один начальный U+FEFF снимается до `util.parseEnv`, поэтому production-файл не читается как development/local. `@bidplace/config` test входит в root `test:unit`. L03 остаётся `VERIFIED`. См. R17 evidence.
+
 Текущая задача сохраняет roadmap и prompts, не запускает production-изменения и не создаёт PR. Утверждение roadmap не является выбором архитектурных вариантов R22–R27.
 
 ## 1. Правила исполнения и ведения roadmap
@@ -558,7 +560,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **Validation:** config V-PACKAGE с добавленным test script при необходимости; V-API; auth/OTP/reset integration regression.
 - **STOP:** обнаружено неоговорённое различие parser semantics для поддерживаемого input — описать compatibility решение до замены.
 - **Done/status:** L03 → `VERIFIED`.
-- **Actual (2026-10-01):** выполнено на `fix/config-bootstrap-ownership` от `6c0fac75`. Parser — commit `5da6564`. Ownership и DI — commit `df145ad`. L03 → `VERIFIED`. См. R17 evidence. R15, R16 и R18 не изменялись.
+- **Actual (2026-10-01):** выполнено на `fix/config-bootstrap-ownership` от `6c0fac75`. Parser — commit `5da6564`. Ownership и DI — commit `df145ad`. Ведущий BOM — commit `662a9fe`. L03 → `VERIFIED`. См. R17 evidence. R15, R16 и R18 не изменялись.
 - **Отчёт:** G с precedence matrix и security checks.
 
 ### Wave 5 — performance/read models
@@ -1202,7 +1204,7 @@ finding IDs: L03
 status: VERIFIED
 branch: fix/config-bootstrap-ownership
 base SHA: 6c0fac75dc3557ffbe2aad1824c6b0585028a1b3
-commits: 5da65649a73708a8c35ff1da0cfe9fe412aabe91 parser; df145ad43c3a23ae975ce5abc89c2983eba2a1b2 ownership and DI
+commits: 5da65649a73708a8c35ff1da0cfe9fe412aabe91 parser; df145ad43c3a23ae975ce5abc89c2983eba2a1b2 ownership and DI; 662a9fe8f04548929ff28d9dc08e7f24c4b91ee6 leading BOM
 changed contracts: none. No schema, migration, mobile, or lockfile change. @nestjs/config was not added.
 before:
   packages/config parsed env lines by hand. loadServerEnv read the file, filled unset process.env keys, and validated on every call. Analytics ingest, OTP request, password-reset request, auth rules, local mail send, S3 construction, JWT factory, and rate-limit construction each called that loader. Auth cookies read NODE_ENV and APP_ENV from process.env.
@@ -1213,7 +1215,7 @@ parser differences adopted, with no compatibility shim:
   double quotes interpret escapes; single quotes stay literal.
   an optional export prefix is stripped.
   only the outer quotes are removed.
-  a leading UTF-8 BOM stays on the first key and required keys fail closed.
+  one leading U+FEFF is removed before util.parseEnv. A later BOM, including a BOM inside a quoted value, stays. A production file therefore keeps its first key and does not fall through to development/local.
   CRLF values, empty values, blank lines, full-line comments, and last-duplicate-key precedence are unchanged.
 security matrix unchanged:
   APP_ENV=production requires NODE_ENV=production.
@@ -1222,22 +1224,24 @@ security matrix unchanged:
   TEST_EMAIL_BYPASS is allowed only for NODE_ENV=test and APP_ENV=local.
   local CORS fallback stays NODE_ENV=development and APP_ENV=local.
 tests/scenarios:
-  packages/config 1 file, 7 tests, synthetic temp files only.
+  packages/config 1 file, 8 tests, synthetic temp files only. The leading-BOM case expects the first key without U+FEFF, keeps a quoted BOM, and leaves a second leading BOM on the key.
   API unit 48 files, 275 tests, with BIDPLACE_ENV_FILE=/dev/null, excluding env.spec.ts.
-  env.spec.ts 33 tests with BIDPLACE_ENV_FILE unset. Every load points at /repo/missing.env or a mocked exists check. Path fixtures are /repo and /tmp, not a real env file.
+  env.spec.ts 37 tests with BIDPLACE_ENV_FILE unset at the process. Matrix loads point at /repo/missing.env or a mocked exists check. BOM loads use a temporary synthetic file and call loadServerEnv. Path fixtures are /repo, /tmp, and that temporary file, not a real env file. Without a BOM, NODE_ENV=production and APP_ENV=production are rejected when the other variable is absent. The same files with a leading BOM are rejected the same way. A complete production profile with a leading BOM stays production and requiresProductionSecurity is true. Explicit env still overrides the file.
   ownership spec: invalid config throws before Nest; rewriting the synthetic file does not change the running snapshot; a second load sees the new file value and does not overwrite an already set process.env.DATABASE_URL; Prisma datasource fromEnvVar is DATABASE_URL and the inline value is null; two contexts differ for JWT, cookies, mail adapter, image store, trust proxy, and rate-limit capacity.
   API integration 23 files, 76 tests. Harness database name bidplace_integration on 127.0.0.1, isolated itest_ schemas, existing prisma migrate deploy. No root migrate or seed. No real .env. Test profile uses the local mail transport and postgres media adapter.
 validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
   BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/config...' → 0
-  pnpm --filter @bidplace/config test → 0 (1 file, 7 tests)
+  pnpm --filter @bidplace/config test → 0 (1 file, 8 tests)
+  root test:unit first stage, taken from package.json and run alone: pnpm --filter @bidplace/config test → 0. The rest of test:unit and pnpm verify were not run.
   BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...' → 0 (9 tasks)
   pnpm --filter @bidplace/api lint → 0
   BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test --exclude src/core/config/env.spec.ts → 0 (48 files, 275 tests)
-  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 33 tests)
-  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (23 files, 76 tests)
+  env -u BIDPLACE_ENV_FILE pnpm --filter @bidplace/api test src/core/config/env.spec.ts → 0 (1 file, 37 tests)
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api test:integration → 0 (23 files, 76 tests) on the ownership commit.
+  BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/auth-transport.integration.spec.ts test/integration/password-reset.integration.spec.ts → 0 (2 files, 8 tests) on the local disposable database. There is no OTP integration spec; OTP regressions stay in the API unit suite.
   git -c core.fsmonitor=false diff --check → 0
 runtime environment: Node v22.20.0 and pnpm 11.7.0. The worktree had no .env. Browsers were not run.
-remaining limitations: unquoted values that contain # are truncated by Node parseEnv; quote them. A leading BOM is not stripped. Prisma still reads DATABASE_URL from process.env at construction. Object.freeze is shallow. R15, R16, and R18 were not part of this change. D06 stays QUEUED.
+remaining limitations: unquoted values that contain # are truncated by Node parseEnv; quote them. Only one leading U+FEFF is removed, so a second leading BOM still hides the first key. Prisma still reads DATABASE_URL from process.env at construction. Object.freeze is shallow. R15, R16, and R18 were not part of this change. D06 stays QUEUED.
 blocked-by: none
 ```
 
@@ -1398,6 +1402,12 @@ blocked-by: none
 - D04, D05, D09, D10, L01, L04, L06 и R32 не переводились в `VERIFIED`. T04 и T06 остаются `PARTIAL`. C07 остаётся `QUEUED`, поэтому R35 не закрыт. C08 остаётся `VERIFIED`.
 - Браузеры не запускались. Root migrate и seed не запускались. Канонический Pen не менялся.
 
+### Проверка документа — 2026-10-01 R17 BOM
+
+- Один начальный U+FEFF снимается до Node `util.parseEnv`. Production-файл с BOM больше не становится development/local. Регрессии идут через `loadServerEnv`.
+- Root `test:unit` запускает `@bidplace/config` test первой стадией и сохраняет `&&`. `verify` и CI workflows не переписывались.
+- L03 остаётся `VERIFIED`. R15, R16 и R18 не менялись. D06 остаётся `QUEUED`.
+
 ## 6. Полная coverage matrix
 
 `E0` — исходный аудит; `E1` — повторная статическая проверка в этом planning pass; `E2` — targeted review PR #12 (`014711fa2ef4f78ad28e4759168d42ef04d5b794` → `7d2d5479f1087835271c1eb23985f2886049abb6`): logout UI отсутствовал уже на base. Это evidence наличия finding, не его исправления.
@@ -1424,7 +1434,7 @@ blocked-by: none
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
 | L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. Correction: rapid second close and unmount-while-open restore the connected opener with preventScroll. Targeted web 11 + native 1 passed. Browsers still NOT RUN. |
 | L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
-| L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | VERIFIED           | R04                                                          | 2026-10-01 R17 evidence: Node parseEnv, one snapshot per app, integration 76. |
+| L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | VERIFIED           | R04                                                          | 2026-10-01 R17 evidence: Node parseEnv, one snapshot, leading BOM stripped, config tests in test:unit. |
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |
 | S02     | Исторические ui/figma имена скрывают реальный master ownership               | P3 / HIGH             | W6 → R27                             | DECISION_REQUIRED  | R09/R13/R14; cost/value decision                             | E0; master/wrapper/export inventory                                            |
