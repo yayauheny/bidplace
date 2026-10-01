@@ -194,6 +194,7 @@ export function SellerProfileScreen() {
   const [achievementWriteActive, setAchievementWriteActive] = useState(false);
   const achievementWriteToken = useRef(0);
   const parentOperationId = useRef(0);
+  const fieldsEditableSeen = useRef<boolean | null>(null);
   const accountLogout = useAccountLogout();
   const authEpoch = usePrivateCacheEpoch(queryClient);
   const seenAuthEpoch = useRef(authEpoch);
@@ -219,6 +220,10 @@ export function SellerProfileScreen() {
   });
 
   const fieldsEditable = editable && !inputsLocked;
+  if (fieldsEditableSeen.current === true && !fieldsEditable) {
+    parentOperationId.current += 1;
+  }
+  fieldsEditableSeen.current = fieldsEditable;
 
   useEffect(() => {
     if (!profile) return;

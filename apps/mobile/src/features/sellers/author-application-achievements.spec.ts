@@ -203,6 +203,24 @@ function profileResponse(city = 'Minsk') {
   };
 }
 
+function revisionSnapshot(status: string, updatedAt: string) {
+  const current = profileResponse();
+  return {
+    ...current,
+    editingRevision: {
+      ...current.editingRevision,
+      status,
+      updatedAt,
+    },
+  };
+}
+
+function publishProfile(view: ReturnType<typeof mount>, snapshot: ReturnType<typeof revisionSnapshot>) {
+  act(() => {
+    view.queryClient.setQueryData(['seller', 'profile'], snapshot);
+  });
+}
+
 function applicationResponse(bodies: string[]) {
   return {
     application: { status: 'APPROVED', applicationStage: 'ACHIEVEMENTS' },
@@ -1161,6 +1179,138 @@ describe('Author application achievement lifecycle', () => {
     await flush();
     expect(view.container.textContent).toContain('Visible B');
     expect(view.container.textContent).not.toContain('Alpha');
+    view.unmount();
+  });
+
+  it('does not apply a photo chosen before a server lock after the form opens again', async () => {
+    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
+    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => new Blob(['old'], { type: 'image/png' }) })),
+    );
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 1, 'picker opened');
+    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
+    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
+    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
+    fillAchievement(view.container, 'Beta');
+    await act(async () => {
+      picker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
+      await picker.promise;
+    });
+    await flush();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Фото: old.png');
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('does not apply a blob that finishes after a server lock and unlock', async () => {
+    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
+    const blob = deferred<Blob>();
+    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
+    const fetchMock = vi.fn(() => Promise.resolve({ blob: () => blob.promise }));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await act(async () => {
+      picker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
+      await picker.promise;
+    });
+    await until(view.container, () => fetchMock.mock.calls.length === 1, 'blob requested');
+    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
+    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
+    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
+    fillAchievement(view.container, 'Beta');
+    await act(async () => {
+      blob.resolve(new Blob(['old']));
+      await blob.promise;
+    });
+    await flush();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Фото: old.png');
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('does not publish a picker or blob error that arrives after a server lock and unlock', async () => {
+    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
+    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
+    const view = mount();
+    await openEditor(view);
+    click(view.container, 'Добавить фото (необязательно)');
+    await until(view.container, () => harness.launchImageLibraryAsync.mock.calls.length === 1, 'picker opened');
+    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
+    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
+    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
+    fillAchievement(view.container, 'Beta');
+    await act(async () => {
+      picker.reject(new Error('picker failed'));
+      await picker.promise.catch(() => undefined);
+    });
+    await flush();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Не удалось выбрать фото');
+
+    const latePicker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
+    const blob = deferred<Blob>();
+    harness.launchImageLibraryAsync.mockReturnValueOnce(latePicker.promise);
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ blob: () => blob.promise })));
+    click(view.container, 'Добавить фото (необязательно)');
+    await act(async () => {
+      latePicker.resolve({ canceled: false, assets: [{ uri: 'file:///old.png', fileName: 'old.png' }] });
+      await latePicker.promise;
+    });
+    await until(view.container, () => vi.mocked(fetch).mock.calls.length === 1, 'blob requested');
+    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-30T00:00:00.000Z'));
+    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'second server lock');
+    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-10-01T00:00:00.000Z'));
+    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'second server unlock');
+    setInput(view.container, 'Описание достижения', 'Beta');
+    await act(async () => {
+      blob.reject(new Error('blob failed'));
+      await blob.promise.catch(() => undefined);
+    });
+    await flush();
+    expect(inputValue(view.container, 'Описание достижения')).toBe('Beta');
+    expect(view.container.textContent).not.toContain('Не удалось выбрать фото');
+    expect(view.container.textContent).not.toContain('Фото: old.png');
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('applies a new photo chosen after a server lock and unlock', async () => {
+    const view = mount();
+    await openEditor(view);
+    publishProfile(view, revisionSnapshot('PENDING_REVIEW', '2026-09-28T00:00:00.000Z'));
+    await until(view.container, () => view.container.textContent?.includes('Заявка на проверке') === true, 'server lock');
+    publishProfile(view, revisionSnapshot('CHANGES_REQUESTED', '2026-09-29T00:00:00.000Z'));
+    await until(view.container, () => findButton(view.container, 'Сохранить достижение') !== undefined, 'server unlock');
+    const picker = deferred<{ canceled: boolean; assets: Array<{ uri: string; fileName: string }> }>();
+    harness.launchImageLibraryAsync.mockReturnValueOnce(picker.promise);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ blob: async () => new Blob(['new'], { type: 'image/png' }) })),
+    );
+    click(view.container, 'Добавить фото (необязательно)');
+    await act(async () => {
+      picker.resolve({ canceled: false, assets: [{ uri: 'file:///new.png', fileName: 'new.png' }] });
+      await picker.promise;
+    });
+    await flush();
+    expect(view.container.textContent).toContain('Фото: new.png');
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.submitAuthorApplication).not.toHaveBeenCalled();
     view.unmount();
   });
 });
