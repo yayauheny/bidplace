@@ -1,7 +1,11 @@
 import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ImagesService } from './images.service';
+import {
+  ImagesService,
+  productImageAuthorizationSelect,
+} from './images.service';
+import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import * as imagePolicy from './image-policy';
 
 vi.mock('./image-policy', async (importOriginal) => {
@@ -69,6 +73,56 @@ function createPrismaForAdd(options: {
 
   return { prisma, tx, create };
 }
+
+function projectSelected(
+  select: Record<string, unknown>,
+  value: unknown,
+): unknown {
+  if (value == null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => projectSelected(select, item));
+  }
+  const source = value as Record<string, unknown>;
+  const projected: Record<string, unknown> = {};
+  for (const [key, spec] of Object.entries(select)) {
+    if (spec === true) {
+      projected[key] = source[key];
+      continue;
+    }
+    if (
+      spec &&
+      typeof spec === 'object' &&
+      'select' in spec &&
+      spec.select &&
+      typeof spec.select === 'object'
+    ) {
+      projected[key] = projectSelected(
+        spec.select as Record<string, unknown>,
+        source[key],
+      );
+    }
+  }
+  return projected;
+}
+
+const baselineProductImageAuthorizationSelect = {
+  id: true,
+  mimeType: true,
+  revisions: { select: { revisionId: true } },
+  product: {
+    select: {
+      status: true,
+      publishedRevisionId: true,
+      sellerProfile: {
+        select: {
+          userId: true,
+          status: true,
+          ...publicSellerProfileSelect,
+        },
+      },
+    },
+  },
+};
 
 function createImageStoreMock() {
   return {
@@ -359,6 +413,154 @@ describe('ImagesService', () => {
       isPublic: true,
     });
     expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
+  });
+
+  it('authorizes product bytes without reading the public seller profile', async () => {
+    const biography = `BIOGRAPHY_MARKER${'б'.repeat(80_000)}`;
+    const storedBytes = Uint8Array.from([9, 8, 7]);
+    const wideRow = {
+      id: 'image-id',
+      mimeType: 'image/jpeg',
+      revisions: [{ revisionId: 'published-revision' }],
+      product: {
+        status: 'APPROVED',
+        publishedRevisionId: 'published-revision',
+        sellerProfile: {
+          userId: 'owner-id',
+          status: 'APPROVED',
+          id: '1e14b6f1-e63b-4f6b-8131-a01f6ab4dc61',
+          slug: 'seller-slug',
+          sellerType: 'creator',
+          discipline: 'Керамика',
+          fullName: 'Seller',
+          country: 'BY',
+          city: 'Минск',
+          practice: null,
+          biography,
+          socialLink: null,
+          telegramUrl: null,
+          instagramUrl: null,
+          websiteUrl: null,
+          publicEmail: null,
+          shortDescription: 'Short',
+          publishedRevision: {
+            achievements: Array.from({ length: 12 }, (_, index) => ({
+              id: `achievement-${index}`,
+              occurredAt: null,
+              occurredAtPrecision: null,
+              body: `ACHIEVEMENT_MARKER${'а'.repeat(4_000)}`,
+              mimeType: null,
+              byteLength: null,
+              checksum: null,
+              objectKey: null,
+            })),
+          },
+        },
+      },
+    };
+    const narrowPayload = projectSelected(
+      productImageAuthorizationSelect,
+      wideRow,
+    );
+    const baselinePayload = projectSelected(
+      baselineProductImageAuthorizationSelect,
+      wideRow,
+    );
+    const narrowBytes = Buffer.byteLength(JSON.stringify(narrowPayload));
+    const baselineBytes = Buffer.byteLength(JSON.stringify(baselinePayload));
+    expect(narrowBytes).toBeLessThan(baselineBytes);
+    expect(baselineBytes - narrowBytes).toBeGreaterThan(80_000);
+    expect(JSON.stringify(narrowPayload).includes('BIOGRAPHY_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(narrowPayload).includes('ACHIEVEMENT_MARKER')).toBe(
+      false,
+    );
+    expect(JSON.stringify(baselinePayload).includes('BIOGRAPHY_MARKER')).toBe(
+      true,
+    );
+
+    const imageStore = createImageStoreMock();
+    imageStore.get.mockResolvedValue({
+      bytes: storedBytes,
+      mimeType: 'image/png',
+    });
+    const findUnique = vi.fn(async (args: { select: Record<string, unknown> }) =>
+      projectSelected(args.select, wideRow),
+    );
+    const service = new ImagesService(
+      { productImage: { findUnique } } as never,
+      imageStore as never,
+    );
+
+    await expect(service.get('image-id')).resolves.toEqual({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: true,
+    });
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'image-id' },
+      select: productImageAuthorizationSelect,
+    });
+    expect(imageStore.get).toHaveBeenCalledWith('product-image:image-id');
+
+    findUnique.mockClear();
+    imageStore.get.mockClear();
+    await expect(service.get('image-id', 'stranger-id', 'user')).resolves.toEqual({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: true,
+    });
+
+    const privateRow = {
+      ...wideRow,
+      revisions: [{ revisionId: 'editing-revision' }],
+    };
+    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
+      projectSelected(args.select, privateRow),
+    );
+    imageStore.get.mockClear();
+    await expect(service.get('image-id')).rejects.toThrow('Image not found');
+    await expect(service.get('image-id', 'stranger-id', 'user')).rejects.toThrow(
+      'Image not found',
+    );
+    expect(imageStore.get).not.toHaveBeenCalled();
+    await expect(service.get('image-id', 'owner-id', 'user')).resolves.toMatchObject({
+      mimeType: 'image/png',
+      data: storedBytes,
+      isPublic: false,
+    });
+    await expect(service.get('image-id', 'admin-id', 'admin')).resolves.toMatchObject({
+      isPublic: false,
+    });
+
+    const pendingProduct = {
+      ...wideRow,
+      product: { ...wideRow.product, status: 'PENDING_REVIEW' },
+    };
+    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
+      projectSelected(args.select, pendingProduct),
+    );
+    imageStore.get.mockClear();
+    await expect(service.get('image-id')).rejects.toThrow('Image not found');
+    await expect(service.get('image-id', 'owner-id', 'user')).resolves.toMatchObject({
+      isPublic: false,
+    });
+
+    findUnique.mockResolvedValue(null);
+    imageStore.get.mockClear();
+    await expect(service.get('missing-id', 'owner-id', 'user')).rejects.toThrow(
+      'Image not found',
+    );
+    expect(imageStore.get).not.toHaveBeenCalled();
+
+    findUnique.mockImplementation(async (args: { select: Record<string, unknown> }) =>
+      projectSelected(args.select, wideRow),
+    );
+    imageStore.get.mockResolvedValue(null);
+    await expect(service.get('image-id', 'owner-id', 'admin')).rejects.toThrow(
+      'Image not found',
+    );
   });
 
   it('reorders images through temporary positions before final positions', async () => {

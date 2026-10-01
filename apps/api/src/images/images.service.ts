@@ -17,7 +17,6 @@ import {
   type RawImageUpload,
   validateAndNormalizeProductImageUploads,
 } from './image-policy';
-import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import {
   assertProductWritable,
   lockProductRowForUpdate,
@@ -25,6 +24,26 @@ import {
 } from '../products/product-write-guard';
 import { canAuthorEditRevision } from '../products/product-revision-state';
 import { assertApprovedSeller } from '../sellers/seller-capability';
+
+export const productImageAuthorizationSelect = {
+  revisions: { select: { revisionId: true } },
+  product: {
+    select: {
+      status: true,
+      publishedRevisionId: true,
+      sellerProfile: {
+        select: {
+          userId: true,
+          status: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProductImageSelect;
+
+export type ProductImageAuthorizationRecord = Prisma.ProductImageGetPayload<{
+  select: typeof productImageAuthorizationSelect;
+}>;
 
 @Injectable()
 export class ImagesService {
@@ -366,27 +385,11 @@ export class ImagesService {
   }
 
   async get(imageId: string, userId?: string, role?: string) {
-    const image = await this.prisma.productImage.findUnique({
-      where: { id: imageId },
-      select: {
-        id: true,
-        mimeType: true,
-        revisions: { select: { revisionId: true } },
-        product: {
-          select: {
-            status: true,
-            publishedRevisionId: true,
-            sellerProfile: {
-              select: {
-                userId: true,
-                status: true,
-                ...publicSellerProfileSelect,
-              },
-            },
-          },
-        },
-      },
-    });
+    const image: ProductImageAuthorizationRecord | null =
+      await this.prisma.productImage.findUnique({
+        where: { id: imageId },
+        select: productImageAuthorizationSelect,
+      });
 
     if (!image) {
       throw new NotFoundException('Image not found');
