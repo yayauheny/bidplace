@@ -4,6 +4,20 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Unused font registrations removed
+
+- `Implemented` (loader only): `useFonts` registers `Inter_400Regular`,
+  `Inter_500Medium`, and `Inter_600SemiBold`. Onest and `Inter_700Bold` are
+  not registered. Token family names, sizes, line heights, and letter
+  spacing are unchanged. The splash gate still waits for `fontsLoaded`.
+- `Needs verification`: web, iOS, and Android export bundles contain the
+  three registered Inter faces and no Onest registration. The Inter package
+  barrel still emits other weight files, including `Inter_700Bold`. Runtime
+  font rendering was not checked. `docs/design/03-DESIGN-SYSTEM.md` still
+  describes an older Onest/Inter split; current tokens do not.
+- `Unchanged`: canonical Pen and Figma sources. Chromium and WebKit were
+  not run.
+
 ## 2026-10-01 — Unused alert and filter dropdown removed
 
 - `Implemented` (code only): `SessionAlert` and its web variant had no mounted
