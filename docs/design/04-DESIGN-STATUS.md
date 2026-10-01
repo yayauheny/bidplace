@@ -4,6 +4,33 @@
 
 Общий статус: **Mobile-web 390 Figma public surfaces are Partial; native, desktop, RFC §10 and launch-ready are not claimed**
 
+## 2026-10-01 — Author exit follows the current draft
+
+- `Needs verification` (mobile web behavior): the author exit confirm button
+  says «Сохранить и выйти» when the current draft passes the existing profile
+  schema, and «Выйти без сохранения» when it does not. The press follows that
+  same choice. Field labels, placeholders, and error copy are unchanged.
+  React Hook Form still shows those errors.
+- Before: a corrected Telegram could offer «Выйти без сохранения» and leave
+  without a write. An invalid Telegram could be saved as an empty contact.
+- After: the corrected contact is saved, then the screen leaves. The invalid
+  contact is not written. The dirty-profile dialog description still asks to
+  save even when the button discards an invalid draft.
+- `Unchanged`: layout, step order, canonical Pen file, design tokens, and
+  Figma source packages. Chromium, WebKit, and 390/1024/1440 screenshots were
+  not run. This does not visually accept the author form.
+
+## 2026-10-01 — Author and Work form fields
+
+- `Needs verification` (mobile web): the author wizard and the Work editor
+  keep the same fields, labels, placeholders, required marks, and error copy.
+  Field values and those errors now come from the form. Empty public contacts
+  stay optional. An incomplete Work draft stays savable. Title, category, and
+  year messages still wait for the creation about attempt.
+- `Unchanged`: layout, step order, canonical Pen file, design tokens, and
+  Figma source packages. Chromium, WebKit, and 390/1024/1440 screenshots were
+  not run. This does not visually accept either form.
+
 ## 2026-10-01 — Dialog return focus after reopen and unmount
 
 - `Needs verification` (mobile web): `AppDialog` still takes initial focus, the

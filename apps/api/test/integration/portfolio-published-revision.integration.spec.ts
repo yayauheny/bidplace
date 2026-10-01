@@ -1,5 +1,7 @@
+import { randomUUID } from 'node:crypto';
+
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import type { PrismaClient } from '@bidplace/database';
+import type { Prisma, PrismaClient } from '@bidplace/database';
 
 import {
   createIntegrationDatabaseContext,
@@ -17,6 +19,13 @@ import {
   type HttpTestApp,
 } from './http-test-app';
 import { productModerationRequest } from './admin-status-request';
+import { productImageAuthorizationSelect } from '../../src/images/images.service';
+import {
+  portfolioCatalogProductSelect,
+  productImageMetadataSelect,
+  productRevisionGallerySelect,
+} from '../../src/products/products.mapper';
+import { publicSellerProfileSelect } from '../../src/sellers/seller-profile.mapper';
 
 let database: IntegrationDatabaseContext;
 let http: HttpTestApp;
@@ -350,4 +359,342 @@ describe('portfolio published revision HTTP transport', () => {
     );
     expect(ownerPhotoBytes).not.toEqual(permissionImage);
   });
+
+  it('keeps public Work and media parity while reading less unused data', async () => {
+    const fixture = await createPermissionFixture(prisma);
+    const author = await prisma.sellerProfile.findUniqueOrThrow({
+      where: { id: fixture.sellers.approved.profileId },
+      select: { slug: true, publishedRevisionId: true },
+    });
+    const existing = await prisma.product.findUniqueOrThrow({
+      where: { id: fixture.approvedProductId },
+      select: { publicId: true },
+    });
+    const biography = `BIOGRAPHY_MARKER${'б'.repeat(80_000)}`;
+    const parentStory = `PARENT_STORY_MARKER${'п'.repeat(60_000)}`;
+    const publishedStory = 'Published story for the public work';
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.approved.profileId },
+      data: { biography },
+    });
+    await prisma.sellerProfileRevisionAchievement.createMany({
+      data: Array.from({ length: 8 }, (_, position) => ({
+        revisionId: author.publishedRevisionId!,
+        position,
+        body: `ACHIEVEMENT_MARKER ${position} ${'а'.repeat(4_000)}`,
+      })),
+    });
+
+    const publicId = `n${randomUUID().replaceAll('-', '').slice(0, 10)}`;
+    const work = await prisma.product.create({
+      data: {
+        publicId,
+        sellerProfileId: fixture.sellers.approved.profileId,
+        categoryId: null,
+        title: 'Parent title hidden',
+        story: parentStory,
+        technique: 'Parent technique',
+        materials: 'Parent material',
+        year: 1999,
+        uniqueness: 'parent-unique',
+        provenance: `PARENT_PROVENANCE_MARKER${'п'.repeat(10_000)}`,
+        status: 'APPROVED',
+        publishedAt: new Date('2026-09-01T00:00:00.000Z'),
+        images: {
+          create: [
+            {
+              position: 0,
+              mimeType: 'image/png',
+              byteLength: permissionImage.byteLength,
+              data: permissionImage,
+              checksum: 'b'.repeat(64),
+              width: 640,
+              height: 480,
+            },
+            {
+              position: 1,
+              mimeType: 'image/png',
+              byteLength: permissionImage.byteLength,
+              data: permissionImage,
+              checksum: 'c'.repeat(64),
+            },
+            {
+              position: 2,
+              mimeType: 'image/png',
+              byteLength: permissionImage.byteLength,
+              data: permissionImage,
+              checksum: 'd'.repeat(64),
+            },
+          ],
+        },
+      },
+      select: {
+        id: true,
+        images: { orderBy: { position: 'asc' }, select: { id: true } },
+      },
+    });
+    const [publishedWorkImage, pendingImage, parentOnlyImage] = work.images;
+    const publishedRevision = await prisma.productRevision.create({
+      data: {
+        productId: work.id,
+        version: 1,
+        status: 'APPROVED',
+        categoryId: fixture.categoryId,
+        title: 'Published ceramic bowl',
+        story: publishedStory,
+        technique: 'Published technique',
+        materials: 'Published material',
+        year: 2024,
+        uniqueness: 'published-unique',
+        images: {
+          create: { imageId: publishedWorkImage!.id, position: 0 },
+        },
+      },
+      select: { id: true },
+    });
+    const editingRevision = await prisma.productRevision.create({
+      data: {
+        productId: work.id,
+        version: 2,
+        status: 'PENDING_REVIEW',
+        categoryId: fixture.categoryId,
+        title: 'Editing title hidden',
+        story: 'Editing story hidden',
+        images: { create: { imageId: pendingImage!.id, position: 0 } },
+      },
+      select: { id: true },
+    });
+    await prisma.product.update({
+      where: { id: work.id },
+      data: {
+        publishedRevisionId: publishedRevision.id,
+        editingRevisionId: editingRevision.id,
+      },
+    });
+
+    const admin = await prisma.user.create({
+      data: {
+        email: `admin.narrow.${fixture.categoryId.slice(0, 8)}@wave3.test`,
+        passwordHash: fixturePasswordHash,
+        displayName: 'Narrow admin',
+        role: 'admin',
+      },
+      select: { email: true },
+    });
+    const guest = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.8.0.1');
+    const owner = new HttpTestClient(http.baseUrl, 'http://localhost:8081', '10.8.0.2');
+    const stranger = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.8.0.3',
+    );
+    const adminClient = new HttpTestClient(
+      http.baseUrl,
+      'http://localhost:8081',
+      '10.8.0.4',
+    );
+    await login(owner, fixture.sellers.approved.email, fixture.sellers.approved.password);
+    await login(
+      stranger,
+      fixture.sellers.otherApproved.email,
+      fixture.sellers.otherApproved.password,
+    );
+    await login(adminClient, admin.email, 'password123');
+
+    const detail = await guest.get(`/works/${publicId}`);
+    expect(detail.status).toBe(200);
+    const detailBody = (await detail.json()) as {
+      work: {
+        title: string;
+        story: string | null;
+        year: number | null;
+        uniqueness: string | null;
+        materials: string | null;
+        categoryId: string;
+        images: Array<{ id: string; position: number; url: string }>;
+        publishedAt: string;
+      };
+      author: { biography: string | null; achievements: unknown[]; slug: string };
+      relatedWorks: Array<{ work: { publicId: string } }>;
+    };
+    expect(detailBody.work).toMatchObject({
+      title: 'Published ceramic bowl',
+      story: publishedStory,
+      year: 2024,
+      uniqueness: 'published-unique',
+      materials: 'Published material',
+      categoryId: fixture.categoryId,
+      publishedAt: '2026-09-01T00:00:00.000Z',
+    });
+    expect(detailBody.work.images).toEqual([
+      expect.objectContaining({
+        id: publishedWorkImage!.id,
+        position: 0,
+        url: `/api/images/${publishedWorkImage!.id}`,
+      }),
+    ]);
+    expect(detailBody.work.story?.includes('PARENT_STORY_MARKER')).toBe(false);
+    expect(detailBody.author.slug).toBe(author.slug);
+    expect(detailBody.author.biography?.includes('BIOGRAPHY_MARKER')).toBe(true);
+    expect(detailBody.author.achievements).toHaveLength(8);
+    expect(detailBody.relatedWorks.map((item) => item.work.publicId)).toEqual([
+      existing.publicId,
+    ]);
+
+    const oldest = await guest.get(
+      `/works?author=${author.slug}&sort=oldest&limit=10`,
+    );
+    const newest = await guest.get(
+      `/works?author=${author.slug}&sort=newest&limit=10`,
+    );
+    expect(oldest.status).toBe(200);
+    expect(newest.status).toBe(200);
+    const oldestIds = (
+      (await oldest.json()) as { works: Array<{ work: { publicId: string } }> }
+    ).works.map((item) => item.work.publicId);
+    const newestIds = (
+      (await newest.json()) as { works: Array<{ work: { publicId: string } }> }
+    ).works.map((item) => item.work.publicId);
+    expect(oldestIds).toEqual([existing.publicId, publicId]);
+    expect(newestIds).toEqual([publicId, existing.publicId]);
+
+    const home = await guest.get('/portfolio/home');
+    expect(home.status).toBe(200);
+    const homeIds = (
+      (await home.json()) as { newWorks: Array<{ work: { publicId: string } }> }
+    ).newWorks.map((item) => item.work.publicId);
+    expect(homeIds.slice(0, 2)).toEqual([publicId, existing.publicId]);
+
+    const publishedResponse = await guest.get(`/images/${publishedWorkImage!.id}`);
+    expect(publishedResponse.status).toBe(200);
+    expect(publishedResponse.headers.get('content-type')).toMatch(/^image\/png/);
+    expect(publishedResponse.headers.get('cache-control')).toBe(
+      'public, max-age=31536000, immutable',
+    );
+    expect(Buffer.from(await publishedResponse.arrayBuffer())).toEqual(
+      permissionImage,
+    );
+    expect((await guest.get(`/images/${pendingImage!.id}`)).status).toBe(404);
+    expect((await guest.get(`/images/${parentOnlyImage!.id}`)).status).toBe(404);
+    expect((await stranger.get(`/images/${pendingImage!.id}`)).status).toBe(404);
+    expect((await guest.get(`/images/${randomUUID()}`)).status).toBe(404);
+
+    const ownerPending = await owner.get(`/images/${pendingImage!.id}`);
+    expect(ownerPending.status).toBe(200);
+    expect(ownerPending.headers.get('cache-control')).toBe('private, no-store');
+    expect(Buffer.from(await ownerPending.arrayBuffer())).toEqual(permissionImage);
+    const adminPending = await adminClient.get(`/images/${pendingImage!.id}`);
+    expect(adminPending.status).toBe(200);
+    expect(adminPending.headers.get('cache-control')).toBe('private, no-store');
+    expect(Buffer.from(await adminPending.arrayBuffer())).toEqual(permissionImage);
+
+    const narrowImage = await prisma.productImage.findUnique({
+      where: { id: publishedWorkImage!.id },
+      select: productImageAuthorizationSelect,
+    });
+    const wideImage = await prisma.productImage.findUnique({
+      where: { id: publishedWorkImage!.id },
+      select: baselineProductImageAuthorizationSelect,
+    });
+    const narrowImageBytes = Buffer.byteLength(JSON.stringify(narrowImage));
+    const wideImageBytes = Buffer.byteLength(JSON.stringify(wideImage));
+    expect(narrowImageBytes).toBeLessThan(wideImageBytes);
+    expect(wideImageBytes - narrowImageBytes).toBeGreaterThan(80_000);
+    expect(JSON.stringify(narrowImage).includes('BIOGRAPHY_MARKER')).toBe(false);
+    expect(JSON.stringify(narrowImage).includes('ACHIEVEMENT_MARKER')).toBe(false);
+    expect(JSON.stringify(wideImage).includes('BIOGRAPHY_MARKER')).toBe(true);
+
+    const narrowWork = await prisma.product.findUnique({
+      where: { id: work.id },
+      select: portfolioCatalogProductSelect,
+    });
+    const wideWork = await prisma.product.findUnique({
+      where: { id: work.id },
+      select: baselinePortfolioCatalogProductSelect,
+    });
+    const narrowWorkBytes = Buffer.byteLength(JSON.stringify(narrowWork));
+    const wideWorkBytes = Buffer.byteLength(JSON.stringify(wideWork));
+    expect(narrowWorkBytes).toBeLessThan(wideWorkBytes);
+    expect(wideWorkBytes - narrowWorkBytes).toBeGreaterThan(50_000);
+    expect(JSON.stringify(narrowWork).includes('PARENT_STORY_MARKER')).toBe(false);
+    expect(JSON.stringify(narrowWork).includes(parentOnlyImage!.id)).toBe(false);
+    expect(JSON.stringify(wideWork).includes('PARENT_STORY_MARKER')).toBe(true);
+    expect(JSON.stringify(narrowWork).includes(publishedWorkImage!.id)).toBe(true);
+
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.approved.profileId },
+      data: { status: 'SUSPENDED' },
+    });
+    expect((await guest.get(`/works/${publicId}`)).status).toBe(404);
+    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(404);
+    const ownerSuspended = await owner.get(`/images/${publishedWorkImage!.id}`);
+    expect(ownerSuspended.status).toBe(200);
+    expect(ownerSuspended.headers.get('cache-control')).toBe('private, no-store');
+
+    await prisma.sellerProfile.update({
+      where: { id: fixture.sellers.approved.profileId },
+      data: { status: 'APPROVED' },
+    });
+    await prisma.product.update({
+      where: { id: work.id },
+      data: { status: 'ARCHIVED' },
+    });
+    expect((await guest.get(`/works/${publicId}`)).status).toBe(404);
+    expect((await guest.get(`/images/${publishedWorkImage!.id}`)).status).toBe(404);
+    const ownerHidden = await owner.get(`/images/${publishedWorkImage!.id}`);
+    expect(ownerHidden.status).toBe(200);
+    expect(ownerHidden.headers.get('cache-control')).toBe('private, no-store');
+  });
 });
+
+const baselineProductImageAuthorizationSelect = {
+  id: true,
+  mimeType: true,
+  revisions: { select: { revisionId: true } },
+  product: {
+    select: {
+      status: true,
+      publishedRevisionId: true,
+      sellerProfile: {
+        select: {
+          userId: true,
+          status: true,
+          ...publicSellerProfileSelect,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProductImageSelect;
+
+const baselinePortfolioCatalogProductSelect = {
+  id: true,
+  publicId: true,
+  sellerProfileId: true,
+  categoryId: true,
+  title: true,
+  story: true,
+  technique: true,
+  materials: true,
+  dimensions: true,
+  weight: true,
+  year: true,
+  condition: true,
+  uniqueness: true,
+  provenance: true,
+  city: true,
+  packaging: true,
+  deliveryInfo: true,
+  creationIntro: true,
+  publishedAt: true,
+  status: true,
+  editingRevisionId: true,
+  publishedRevisionId: true,
+  createdAt: true,
+  updatedAt: true,
+  sellerProfile: { select: publicSellerProfileSelect },
+  images: {
+    orderBy: { position: 'asc' as const },
+    select: productImageMetadataSelect,
+  },
+  publishedRevision: { select: productRevisionGallerySelect },
+} satisfies Prisma.ProductSelect;

@@ -1,7 +1,9 @@
 import { productSchema } from '@bidplace/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { publicSellerProfileSelect } from '../sellers/seller-profile.mapper';
 import {
+  portfolioCatalogProductSelect,
   toContractProduct,
   toOwnerContractProduct,
   type ProductRecord,
@@ -147,5 +149,34 @@ describe('product image contracts', () => {
       },
     ]);
     expect(product.title).toBe('Черновик');
+  });
+});
+
+describe('portfolioCatalogProductSelect', () => {
+  it('reads identity, the public author, and the published gallery', () => {
+    expect(Object.keys(portfolioCatalogProductSelect).sort()).toEqual([
+      'id',
+      'publicId',
+      'publishedAt',
+      'publishedRevision',
+      'sellerProfile',
+    ]);
+    expect(portfolioCatalogProductSelect.sellerProfile.select).toBe(
+      publicSellerProfileSelect,
+    );
+    expect(
+      portfolioCatalogProductSelect.publishedRevision.select.images.orderBy,
+    ).toEqual({ position: 'asc' });
+    expect(
+      portfolioCatalogProductSelect.publishedRevision.select.images.select.image
+        .select,
+    ).toEqual({
+      id: true,
+      mimeType: true,
+      byteLength: true,
+      checksum: true,
+      width: true,
+      height: true,
+    });
   });
 });

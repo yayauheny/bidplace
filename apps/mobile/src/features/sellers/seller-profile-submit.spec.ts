@@ -1297,4 +1297,342 @@ describe('seller profile save reconciliation', () => {
     vi.unstubAllGlobals();
     view.unmount();
   });
+
+  it('keeps raw contact text in the field and normalizes it only in the save payload', async () => {
+    harness.getMyProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(savedProfile());
+    const view = mount();
+    await until(
+      view.container,
+      () => view.container.querySelector<HTMLInputElement>('[aria-label="Город"]')?.value === 'Minsk',
+      'profile',
+    );
+    setInput(view.container, 'Telegram', '@maker_art');
+    setInput(view.container, 'Instagram', '@maker.art');
+    setInput(view.container, 'Сайт', 'https://example.com/studio');
+    expect(inputValue(view.container, 'Telegram')).toBe('@maker_art');
+    expect(inputValue(view.container, 'Instagram')).toBe('@maker.art');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        telegramUrl: 'https://t.me/maker_art',
+        instagramUrl: 'https://instagram.com/maker.art',
+        websiteUrl: 'https://example.com/studio',
+      }),
+    );
+    view.unmount();
+  });
+});
+
+describe('seller profile validation freshness', () => {
+  function profileWithTelegram(status = 'APPROVED') {
+    const initial = response(status, 'DRAFT');
+    return {
+      ...initial,
+      sellerProfile: {
+        ...initial.sellerProfile,
+        telegramUrl: 'https://t.me/original_author',
+      },
+    };
+  }
+
+  function changeAndClick(container: HTMLElement, label: string, value: string, button: string) {
+    const input = container.querySelector(`[aria-label="${label}"]`);
+    const target = findButton(container, button);
+    if (!(input instanceof HTMLInputElement) || !target) {
+      throw new Error(`Missing ${label} or ${button}`);
+    }
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    act(() => {
+      setter?.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      target.click();
+    });
+  }
+
+  it('does not send an invalid Telegram typed over a saved contact', async () => {
+    harness.getMyProfile.mockResolvedValue(profileWithTelegram());
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
+        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+      'saved telegram',
+    );
+    expect(buttonDisabled(view.container, 'Сохранить')).toBe(false);
+    changeAndClick(view.container, 'Telegram', 'bad handle', 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(inputValue(view.container, 'Telegram')).toBe('bad handle');
+    setInput(view.container, 'Telegram', 'bad handle');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('saves a corrected Telegram when the application closes before the resolver settles', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement,
+      'continue',
+    );
+    setInput(view.container, 'Telegram', 'bad handle');
+    await flush();
+    expect(buttonDisabled(view.container, 'Продолжить')).toBe(true);
+    setInput(view.container, 'Telegram', '@maker_art');
+    expect(buttonDisabled(view.container, 'Продолжить')).toBe(false);
+    click(view.container, 'Закрыть');
+    expect(findButton(view.container, 'Сохранить и выйти')).toBeTruthy();
+    expect(findButton(view.container, 'Выйти без сохранения')).toBeUndefined();
+    click(view.container, 'Сохранить и выйти');
+    await flush();
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
+    );
+    expect(harness.replace).toHaveBeenCalledWith('/');
+    view.unmount();
+  });
+
+  it('leaves an invalid draft without saving', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Закрыть') instanceof HTMLButtonElement,
+      'close',
+    );
+    setInput(view.container, 'Telegram', 'bad handle');
+    click(view.container, 'Закрыть');
+    expect(findButton(view.container, 'Выйти без сохранения')).toBeTruthy();
+    expect(findButton(view.container, 'Сохранить и выйти')).toBeUndefined();
+    click(view.container, 'Выйти без сохранения');
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.replace).toHaveBeenCalledWith('/');
+    view.unmount();
+  });
+
+  it('keeps the author and the corrected contact when the exit save fails', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockRejectedValue(new Error('save failed'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Закрыть') instanceof HTMLButtonElement,
+      'close',
+    );
+    setInput(view.container, 'Telegram', 'bad handle');
+    await flush();
+    setInput(view.container, 'Telegram', '@maker_art');
+    click(view.container, 'Закрыть');
+    click(view.container, 'Сохранить и выйти');
+    await flush();
+    await flush();
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(inputValue(view.container, 'Telegram')).toBe('@maker_art');
+    expect(view.container.textContent).toContain('Не удалось сохранить профиль');
+    expect(view.container.querySelector('[role="dialog"]')).not.toBeNull();
+    view.unmount();
+  });
+
+  it('records one profile write when save or exit is repeated', async () => {
+    harness.getMyProfile.mockResolvedValue(profileWithTelegram());
+    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const saving = mount();
+    await until(
+      saving.container,
+      () =>
+        saving.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
+        inputValue(saving.container, 'Telegram') === 'https://t.me/original_author',
+      'saved telegram',
+    );
+    setInput(saving.container, 'Telegram', '@maker_art');
+    clickInOneTurn(saving.container, ['Сохранить', 'Сохранить']);
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
+    );
+    await act(async () => {
+      resolveSave(response('APPROVED', 'DRAFT'));
+      await Promise.resolve();
+    });
+    saving.unmount();
+
+    harness.params = { step: '2' };
+    harness.updateProfile.mockReset();
+    harness.replace.mockReset();
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const leaving = mount();
+    await until(
+      leaving.container,
+      () => findButton(leaving.container, 'Закрыть') instanceof HTMLButtonElement,
+      'close',
+    );
+    setInput(leaving.container, 'Telegram', '@maker_art');
+    click(leaving.container, 'Закрыть');
+    clickInOneTurn(leaving.container, ['Сохранить и выйти', 'Сохранить и выйти']);
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveSave(response('DRAFT', 'DRAFT'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(harness.replace).toHaveBeenCalledTimes(1);
+    expect(harness.replace).toHaveBeenCalledWith('/');
+    leaving.unmount();
+  });
+
+  it('does not publish a freshness save after the session changes', async () => {
+    let resolveSave: (value: ReturnType<typeof response>) => void = () => undefined;
+    harness.getMyProfile.mockResolvedValue(profileWithTelegram());
+    harness.updateProfile.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const view = mount('user-a');
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
+        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+      'saved telegram',
+    );
+    setInput(view.container, 'Telegram', '@maker_art');
+    click(view.container, 'Сохранить');
+    await until(view.container, () => harness.updateProfile.mock.calls.length === 1, 'fresh save');
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
+    );
+    const profileB = response('APPROVED', 'DRAFT', '2026-09-30T00:00:00.000Z');
+    profileB.sellerProfile = { ...profileB.sellerProfile, city: 'Hrodna', telegramUrl: null };
+    harness.getMyProfile.mockResolvedValue(profileB);
+    await act(async () => {
+      await clearAuthenticatedSession(view.queryClient);
+      view.queryClient.setQueryData(authKeys.session, { id: 'user-b' });
+      view.queryClient.setQueryData(['seller', 'profile'], profileB);
+      advanceAuthEpoch(view.queryClient);
+    });
+    await flush();
+    harness.getMyProfile.mockImplementation(() => new Promise(() => undefined));
+    await act(async () => {
+      resolveSave(response('APPROVED', 'DRAFT'));
+      await Promise.resolve();
+    });
+    await flush();
+    expect(view.queryClient.getQueryData(['seller', 'profile'])).toEqual(profileB);
+    expect(inputValue(view.container, 'Город')).toBe('Hrodna');
+    expect(harness.replace).not.toHaveBeenCalled();
+    expect(harness.push).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('saves empty optional contacts and still blocks a blank city', async () => {
+    harness.getMyProfile.mockResolvedValue(profileWithTelegram());
+    harness.updateProfile.mockResolvedValue(response('APPROVED', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () =>
+        view.container.querySelector('[aria-label="Telegram"]') instanceof HTMLInputElement &&
+        inputValue(view.container, 'Telegram') === 'https://t.me/original_author',
+      'saved telegram',
+    );
+    setInput(view.container, 'Telegram', '');
+    setInput(view.container, 'Instagram', '');
+    setInput(view.container, 'Сайт', '');
+    setInput(view.container, 'Публичный email', '');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        publicEmail: null,
+      }),
+    );
+    harness.updateProfile.mockClear();
+    setInput(view.container, 'Город', '   ');
+    click(view.container, 'Сохранить');
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
+  it('saves a corrected contact when leaving the contacts step', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(view.container, () => findButton(view.container, 'Назад') instanceof HTMLButtonElement, 'back');
+    setInput(view.container, 'Telegram', 'bad handle');
+    await flush();
+    click(view.container, 'Назад');
+    await flush();
+    expect(harness.updateProfile).not.toHaveBeenCalled();
+    expect(harness.push).not.toHaveBeenCalled();
+    setInput(view.container, 'Telegram', '@maker_art');
+    click(view.container, 'Назад');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ telegramUrl: 'https://t.me/maker_art' }),
+    );
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=1');
+    view.unmount();
+  });
+
+  it('continues a contacts step that still has empty optional contacts', async () => {
+    harness.params = { step: '2' };
+    harness.getMyProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    harness.updateProfile.mockResolvedValue(response('DRAFT', 'DRAFT'));
+    const view = mount();
+    await until(
+      view.container,
+      () => findButton(view.container, 'Продолжить') instanceof HTMLButtonElement && !buttonDisabled(view.container, 'Продолжить'),
+      'enabled continue',
+    );
+    click(view.container, 'Продолжить');
+    await flush();
+    expect(harness.updateProfile).toHaveBeenCalledTimes(1);
+    expect(harness.updateProfile.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        telegramUrl: null,
+        instagramUrl: null,
+        websiteUrl: null,
+        publicEmail: null,
+      }),
+    );
+    expect(harness.push).toHaveBeenCalledWith('/profile?step=3');
+    view.unmount();
+  });
 });

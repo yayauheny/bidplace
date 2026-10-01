@@ -16,7 +16,13 @@
 
 **Дополнение 2026-10-01, R14 return focus:** на `fix/shared-ui-lifecycle` исправлены два возврата фокуса `AppDialog` после R14. `@rn-primitives/dialog` 1.5.2 остаётся единственным владельцем focus lifecycle. L01 остаётся `NEEDS_VERIFICATION`: браузеры не запускались. Остальные verification статусы не повышены. См. evidence ниже.
 
-**Дополнение 2026-10-01, R17:** на `fix/config-bootstrap-ownership` от `6c0fac75` env-файл разбирается Node `util.parseEnv`, а серверная конфигурация валидируется один раз на application context и передаётся через Nest DI. L03 → `VERIFIED`. R15, R16 и R18 этим пакетом не менялись. D06 остаётся `QUEUED`. Остальные verification статусы не повышены. См. R17 evidence.
+**Дополнение 2026-10-01, form field ownership:** на `fix/form-field-ownership` от `6c0fac7` выполнены R15 и R16. L02 → `NEEDS_VERIFICATION`: локальные проверки прошли, браузеры не запускались. R17, R33, R34 и C07 не запускались. D04, D05, D09, D10 и L04 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
+
+**Дополнение 2026-10-01, R15 validation freshness:** на `fix/form-field-ownership` после `65b0801` Save и выход из формы автора проверяют актуальный raw draft через `profileDraftSchema`, а не ошибки предыдущего resolver. L02 остаётся `NEEDS_VERIFICATION`: браузеры не запускались. R16 не переоткрывался. R17, R33, R34 и C07 не запускались. D04, D05, D09, D10, L04 и R32 остаются `NEEDS_VERIFICATION`. T04 и T06 остаются `PARTIAL`. См. evidence ниже.
+
+**Дополнение 2026-10-01, R18:** на `fix/narrow-read-selectors` от `6c0fac7` сужены read models image authorization и portfolio Work. D06 → `VERIFIED`. R19–R21 и R23 не начинались. См. evidence ниже.
+
+**Дополнение 2026-10-01, R17:** на `fix/config-bootstrap-ownership` от `6c0fac75` env-файл разбирается Node `util.parseEnv`, а серверная конфигурация валидируется один раз на application context и передаётся через Nest DI. L03 → `VERIFIED`. Этот пакет сам не менял R15, R16 и R18. См. R17 evidence.
 
 **Дополнение 2026-10-01, R17 BOM:** один начальный U+FEFF снимается до `util.parseEnv`, поэтому production-файл не читается как development/local. `@bidplace/config` test входит в root `test:unit`. L03 остаётся `VERIFIED`. См. R17 evidence.
 
@@ -520,6 +526,8 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** reuse server schema запрещает допустимый промежуточный draft — не ужесточать form contract.
 - **Done/status:** L02 → `PARTIAL` до R16.
 - **Отчёт:** G с удалёнными параллельными owners формы.
+- **Actual (2026-10-01):** `seller-profile-screen.tsx` no longer watches the whole profile draft or derives field errors with `getProfileFieldErrors`. `profileDraftSchema` and `zodResolver` own those errors. `SellerProfileFormSteps` subscribes with `useController`. The screen watches only slug, full name, country, city, discipline, and short description for step gating. Writes call `setValue` after `transitionLock.current` is checked, because `field.onChange` awaits the resolver and the rendered dirty snapshot lags. `getProfileFieldErrors` remains a spec adapter over the same schema. Save, submit, step, exit, logout, photo, and achievements stay on the screen. `handleSubmit` was not introduced. Commit `8b8d7ba`. That commit left L02 partial. R16 below moves it to `NEEDS_VERIFICATION`.
+- **Correction (2026-10-01):** Save and exit on `8b8d7ba` still followed `formState.errors` from the previous resolver pass. A saved Telegram replaced by `bad handle` was sent as `telegramUrl: null`. A corrected `@maker_art`, closed before that pass finished, left without `updateProfile`. `profileDraftAllowsSave` now runs `profileDraftSchema.safeParse` on the raw snapshot that save sends and on the snapshot that chooses save-before-exit. Displayed field errors stay on `zodResolver`. The screen also subscribes to Telegram, Instagram, website, public email, and `socialLink` so that gate re-renders with the draft. Ordinary Save still does not take the transition lock. No await was added before the mutation. L02 stays `NEEDS_VERIFICATION`.
 
 ### R16. Убрать Work form prop drilling
 
@@ -540,6 +548,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** extraction требует объединения разных forms или новой abstraction layer.
 - **Done/status:** L02 → `VERIFIED` после R15+R16.
 - **Отчёт:** G с сокращением field plumbing без изменения поведения.
+- **Actual (2026-10-01):** About, story, and review no longer take value or change props. `ProductDraftTextField` subscribes with `useController` and writes through `setValue` after the same transition lock. Review watches title and story. The screen watches title for the step header. Empty title and category stay valid in `productDraftFormSchema`; `productDraftRequiredErrors` still gates the creation about action, and the year message still appears only after that attempt. Payload builder, media list, hydration, and save-before-submit stay on the screen. No shared form engine. Commit `3066bd4`. Browser and Work editor E2E were not run, so L02 → `NEEDS_VERIFICATION`, not `VERIFIED`.
 
 ### R17. Разбирать config стандартным Node API один раз
 
@@ -583,6 +592,7 @@ T01 находится в Wave 1, потому что исправляет **о�
 - **STOP:** mapper неявно зависит от удаляемого поля — сначала выяснить реальный owner.
 - **Done/status:** D06 → `VERIFIED`.
 - **Отчёт:** G с полями до/после и semantic equivalence.
+- **Actual (2026-10-01):** `ImagesService.get` selects `productImageAuthorizationSelect`: revision membership, product status, `publishedRevisionId`, and seller `userId`/`status`. It no longer spreads `publicSellerProfileSelect`. `portfolioCatalogProductSelect` is now its own read: `id`, `publicId`, `publishedAt`, `publicSellerProfileSelect`, and `publishedRevision` gallery. The unused wide `publicCatalogProductSelect` spread is gone. Owner `productSelect` is unchanged. Visibility predicates, published-revision content, cache headers, and DTO mapping are unchanged. `sellerType` and `socialLink` stay in the seller select because `toPublicSellerProfile` still reads them; the public Work schema still omits them. Before the change, image authorization also loaded biography and published achievements, and portfolio hydration also loaded parent scalars and the parent image relation. After: a synthetic fixture with an 80_000-character biography, eight 4_000-character achievements, a 60_000-character parent story, and a parent gallery distinct from the published gallery kept the same public Work JSON and media decisions. Prisma JSON for the image authorization select was more than 80_000 bytes smaller and did not contain the biography or achievement markers. Prisma JSON for the portfolio select was more than 50_000 bytes smaller, omitted the parent story marker and the parent-only image id, and still contained the published image id. No timing claim. Node v22.20.0 / pnpm 11.7.0. `BIDPLACE_ENV_FILE=/dev/null pnpm exec turbo run typecheck build --filter='@bidplace/api...'` exit 0. `pnpm --filter @bidplace/api lint` exit 0. Unit tests excluding `env.spec.ts`: 47 files, 273 tests, exit 0. `env.spec.ts` with `BIDPLACE_ENV_FILE` unset: 33 tests, exit 0; lookups stay on `/repo/missing.env` and synthetic paths. Integration on local disposable `bidplace_integration` isolated `itest_` schemas: 23 files, 77 tests, exit 0. `git diff --check` exit 0. Browser not run. R23 remains open.
 
 ### R19. Ограничить moderation reads
 
@@ -1241,8 +1251,66 @@ validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
   BIDPLACE_ENV_FILE=/dev/null pnpm --filter @bidplace/api exec vitest run --config vitest.integration.config.ts test/integration/auth-transport.integration.spec.ts test/integration/password-reset.integration.spec.ts → 0 (2 files, 8 tests) on the local disposable database. There is no OTP integration spec; OTP regressions stay in the API unit suite.
   git -c core.fsmonitor=false diff --check → 0
 runtime environment: Node v22.20.0 and pnpm 11.7.0. The worktree had no .env. Browsers were not run.
-remaining limitations: unquoted values that contain # are truncated by Node parseEnv; quote them. Only one leading U+FEFF is removed, so a second leading BOM still hides the first key. Prisma still reads DATABASE_URL from process.env at construction. Object.freeze is shallow. R15, R16, and R18 were not part of this change. D06 stays QUEUED.
+remaining limitations: unquoted values that contain # are truncated by Node parseEnv; quote them. Only one leading U+FEFF is removed, so a second leading BOM still hides the first key. Prisma still reads DATABASE_URL from process.env at construction. Object.freeze is shallow. R15, R16, and R18 were not part of this change. D06 is verified by the merged R18 record, not by R17.
 blocked-by: none
+```
+
+### Form field ownership evidence
+
+```text
+scope: R15 author profile fields and R16 Work draft fields. Not R17, R33, R34, C07, or R28.
+status: R15 and R16 implemented. L02 NEEDS_VERIFICATION. D04, D05, D09, D10, L04, and R32 remain NEEDS_VERIFICATION. T04 and T06 remain PARTIAL. C07 remains QUEUED. C08 remains VERIFIED.
+branch: fix/form-field-ownership
+base SHA: 6c0fac75dc3557ffbe2aad1824c6b0585028a1b3
+commits: R15 8b8d7ba1342cacdddca0e811d9fa2a9d0e651ac1; R16 3066bd440940dcdc6e58fbb72b76fcd370749fae
+removed → replacement:
+  R15: form.watch() plus getProfileFieldErrors(fields) on each render, and fields/fieldErrors/update props → FormProvider, useController, useWatch of the six step-gating fields, and zodResolver(profileDraftSchema). getProfileFieldErrors stays as a spec adapter over that schema. The screen no longer calls it.
+  R16: form.watch() and the about/story/review value and onChange props, including setField → ProductDraftTextField, useWatch for category, title, year errors, and review title/story. The screen watches title for the wizard header.
+preserved: raw contact text until profileFieldsToUpdate; Telegram and Instagram username or HTTPS; optional public contacts; auth email stays private; city, link, and email messages; step requiredness; ordinary Save without the transition lock; post-snapshot input; session epoch; moderation hold; achievement tokens; picker and blob lifetime; productDraftToWriteRequest; empty title and category remain savable; year 0..9999; required title and category only after the creation about attempt; media list ownership.
+writes: setValue({ shouldDirty, shouldTouch, shouldValidate }) after transitionLock.current. field.onChange was not used, because it awaits the resolver and the rendered isDirty snapshot stays stale inside the next act(). The lock is still synchronous. shouldUnregister is false, so a step change does not clear values.
+not done: handleSubmit, a shared form engine, and any change to save or submit orchestration. The R15 card names handleSubmit; this scope kept the existing guarded chains.
+meaningful checks:
+  seller-profile-fields.spec.ts, profile-validation.spec.ts, seller-profile-submit.spec.ts, seller-profile-logout.spec.ts, author-application-achievements.spec.ts.
+  product-draft-fields.spec.ts, product-draft-form.spec.ts, product-draft-save-race.spec.ts, product-draft-submit-lifecycle.spec.ts, product-draft-route-guard.spec.ts, product-draft-wizard.spec.ts, product-draft-state.spec.ts, author-cabinet-work-cache.spec.ts.
+  Focused route-guard run printed two React act warnings on ProductDraftScreen and still passed. Those tests type into a field that validates through the resolver.
+skipped: Chromium, WebKit, creator-profile and Work editor E2E, native device, API server, database, migrations, seed. No .env was read.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks, 6 cache hits)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (108 files, 517 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining limitations: L02 is not VERIFIED without browsers. react-hook-form 7.81.0, @hookform/resolvers 5.4.0, and Zod 3 were already installed. socialLink remains in the author schema and can block save, and it still has no input.
+blocked-by: none for R15 and R16. Browser confirmation remains.
+```
+
+### R15 validation freshness correction
+
+```text
+scope: R15 author profile save and exit only. Not R16, R17, R33, R34, C07, or R28.
+status: correction implemented. L02 remains NEEDS_VERIFICATION. D04, D05, D09, D10, L04, and R32 remain NEEDS_VERIFICATION. T04 and T06 remain PARTIAL. C07 remains QUEUED. C08 remains VERIFIED.
+branch: fix/form-field-ownership
+base of this correction: 65b08018994a0d5380bb72748ebfaa8bea006483
+package base: 6c0fac75dc3557ffbe2aad1824c6b0585028a1b3
+before → after:
+  Saved Telegram https://t.me/original_author, type "bad handle", Save before the resolver settles. Before: updateProfile received telegramUrl null. After: updateProfile is not called and the field stays "bad handle".
+  Step 2, invalid Telegram, wait for the error, replace it with @maker_art, close and confirm before the resolver settles. Before: the confirm action was "Выйти без сохранения" and router.replace('/') ran without updateProfile. After: the confirm action is "Сохранить и выйти", updateProfile receives telegramUrl https://t.me/maker_art, then router.replace('/').
+preserved: RHF field errors; raw contact text until profileFieldsToUpdate; empty optional contacts become null; blank city still blocks save; explicit exit without save for a draft the schema rejects; ordinary Save accepts input after the request snapshot; session epoch after the mutation await; transition lock only for transition saves; achievement and moderation guards.
+not done: resolver mode sync, handleSubmit, a second errors store, form.watch() of the whole draft, API, normalization, media, routes, layout, and R16.
+meaningful checks:
+  seller-profile-submit.spec.ts validation freshness: invalid immediate save, corrected close, invalid discard, failed exit save, repeated save and exit, session change during that save, empty contacts, blank city, back, and step 2 with empty contacts.
+  profile-validation.spec.ts covers profileDraftAllowsSave. Existing achievement, logout, field, and Work specs stayed in the mobile suite.
+skipped: Chromium, WebKit, creator-profile and Work editor E2E, native device, API server, database, migrations, seed. No .env was read.
+validation commands and exit codes on Node v22.20.0 / pnpm 11.7.0:
+  EXPO_NO_DOTENV=1 pnpm exec turbo run typecheck build --filter='@bidplace/mobile...' → 0 (8 tasks, 6 cache hits)
+  pnpm --filter @bidplace/mobile lint → 0
+  pnpm --filter @bidplace/mobile test → 0 (108 files, 527 tests)
+  pnpm --filter @bidplace/mobile test:e2e-fence → 0
+  git -c core.fsmonitor=false diff --check → 0
+runtime environment: Node v22.20.0 and pnpm 11.7.0
+remaining limitations: L02 is not VERIFIED without browsers. The dirty-profile exit description still asks to save even when the schema rejects the draft and the button discards it. socialLink can still block save and still has no input.
+blocked-by: none for this correction. Browser confirmation remains.
 ```
 
 Для `VERIFIED` обязательны:
@@ -1259,7 +1327,7 @@ blocked-by: none
 - D07 — после R19, R20 и R21.
 - C01 — после R09 и R10.
 - C04 — после R10 и R13.
-- L02 — после R15 и R16.
+- L02 — после R15 и R16. Без браузерной проверки L02 остаётся `NEEDS_VERIFICATION`.
 - T02 — после удаления dead tests и обработки оставшегося source-text inventory.
 - T04 не закрывается после одних UI unit tests: storage/concurrency части ожидают решений R22/R23 и последующей реализации.
 - Архитектурный Plan не переводит A*/S* автоматически в `VERIFIED`.
@@ -1398,7 +1466,7 @@ blocked-by: none
 ### Проверка документа — 2026-10-01 R17
 
 - R17 выполнен на `fix/config-bootstrap-ownership` от `6c0fac75`. L03 → `VERIFIED`.
-- Исторические evidence R15, R16 и R18 не переписаны. R15 и R16 остаются `QUEUED`. D06 остаётся `QUEUED`.
+- Этот пакет сам не менял R15, R16 и R18.
 - D04, D05, D09, D10, L01, L04, L06 и R32 не переводились в `VERIFIED`. T04 и T06 остаются `PARTIAL`. C07 остаётся `QUEUED`, поэтому R35 не закрыт. C08 остаётся `VERIFIED`.
 - Браузеры не запускались. Root migrate и seed не запускались. Канонический Pen не менялся.
 
@@ -1406,7 +1474,21 @@ blocked-by: none
 
 - Один начальный U+FEFF снимается до Node `util.parseEnv`. Production-файл с BOM больше не становится development/local. Регрессии идут через `loadServerEnv`.
 - Root `test:unit` запускает `@bidplace/config` test первой стадией и сохраняет `&&`. `verify` и CI workflows не переписывались.
-- L03 остаётся `VERIFIED`. R15, R16 и R18 не менялись. D06 остаётся `QUEUED`.
+- L03 остаётся `VERIFIED`.
+
+### Проверка документа — 2026-10-01 form field ownership
+
+- R15 and R16 move author and Work text fields onto the existing form. L02 → `NEEDS_VERIFICATION`. The historical R16 card still says `VERIFIED` after both; browsers and editor E2E were not run, so that gate is not met.
+- Save, session, moderation, and achievement orchestration were not rewritten. `handleSubmit` was not added. R17, R33, R34, and C07 were not started.
+- D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md`, flow docs, and the design system were not changed. The canonical Pen file was not edited.
+
+### Проверка документа — 2026-10-01 R15 validation freshness
+
+- Save and exit now parse the current raw author draft with `profileDraftSchema`. L02 stays `NEEDS_VERIFICATION`.
+- R16 was not reopened. R17, R33, R34, and C07 were not started.
+- D04, D05, D09, D10, L04, and R32 were not moved to `VERIFIED`. T04 and T06 stay `PARTIAL`.
+- Browsers, API bootstrap, database, migrations, and seed were not run. `10-CODE-ARCHITECTURE.md` and the canonical Pen file were not changed.
 
 ## 6. Полная coverage matrix
 
@@ -1419,7 +1501,7 @@ blocked-by: none
 | D03     | Shadowing `closeOnFocusIn` делает false неработающим                         | P2 / HIGH             | W1 → R01                             | VERIFIED           | —                                                            | Hook lifecycle + Chromium 17/17 + WebKit 17/17                                 |
 | D04     | Save response стирает новые поля/фото                                        | P1 / HIGH             | W2 → R05, R06                        | NEEDS_VERIFICATION | R03/R04; R06 после R05                                       | Current R05+R06 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.        |
 | D05     | Invalidation использует obsolete owner keys                                  | P2 / HIGH             | W2 → R07                             | NEEDS_VERIFICATION | R05                                                          | Current R07 evidence: NEEDS_VERIFICATION. Chromium/WebKit NOT RUN.            |
-| D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | QUEUED             | R10                                                          | E0; auth/DTO parity + query evidence                                           |
+| D06     | Избыточные image-auth и portfolio selectors                                  | P2 / HIGH             | W5 → R18                             | VERIFIED           | R10                                                          | 2026-10-01 `fix/narrow-read-selectors` from `6c0fac7`. Auth and portfolio selects narrowed. V-API and V-INTEGRATION passed. Synthetic selected JSON shrank with the same public Work and media results. |
 | D07     | Неограниченные moderation/history/analytics/facets reads                     | P2 / HIGH             | W5 → R19, R20, R21                   | QUEUED             | R02/R18                                                      | E0; bounded reads и semantic parity по трём scopes                             |
 | D08     | AuthProvider/API logout есть, но нет доступного пользователю UI              | P1 / HIGH             | W1 → R30                             | VERIFIED           | —                                                            | Behavioral logout + Chromium 4/4 + WebKit 4/4, including private-history Back |
 | C01     | Unreachable mobile/API files, helpers и exports                              | P2 / HIGH             | W3 → R09, R10                        | VERIFIED           | R01/R04/R05–R07                                              | 2026-10-01 inventory on `fix/audit-unused-code`. Confirmed unreachable files removed. Live OverlayHost, CreatorCardGrid, share URL, reduced motion, and portfolio predicates retained. Browser NOT RUN. |
@@ -1433,7 +1515,7 @@ blocked-by: none
 | A04     | Два владельца navigation: Router и browser history                           | P2 / HIGH             | W6 → R25                             | DECISION_REQUIRED  | R05/R06/R14; navigation decision                             | E0/E1; transition/browser matrix                                               |
 | A05     | Старые активные API без текущих UI consumers                                 | P2 / HIGH             | W6 → R26                             | DECISION_REQUIRED  | R10/R24; retirement decision                                 | E0; endpoint/consumer compatibility inventory                                  |
 | L01     | Ручные focus timers/global lookup конкурируют с dialog primitive             | P2 / HIGH             | W4 → R14                             | NEEDS_VERIFICATION | R01/R09                                                      | 2026-10-01: AppDialog uses `@rn-primitives/dialog` 1.5.2. Document search and recursive focus timers removed. Web 8 + native jsdom 1 passed. Chromium/WebKit/device NOT RUN. Correction: rapid second close and unmount-while-open restore the connected opener with preventScroll. Targeted web 11 + native 1 passed. Browsers still NOT RUN. |
-| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | QUEUED             | R03/R05/R06                                                  | E0/E1; form/state regressions                                                  |
+| L02     | RHF используется частично, остаются manual errors и field plumbing           | P2 / HIGH             | W4 → R15, R16                        | NEEDS_VERIFICATION | R03/R05/R06                                                  | 2026-10-01: author and Work text fields subscribe through the form. Save and exit parse the current raw author draft. Draft schemas stay loose. Mobile test 108 files / 527 tests. Chromium/WebKit NOT RUN. |
 | L03     | Handwritten env parser и repeated request-time loading                       | P2 / HIGH             | W4 → R17                             | VERIFIED           | R04                                                          | 2026-10-01 R17 evidence: Node parseEnv, one snapshot, leading BOM stripped, config tests in test:unit. |
 | L04     | Нет AbortSignal; дублируется request setup JSON/blob                         | P2 / HIGH             | W2 → R08                             | NEEDS_VERIFICATION | согласовать включение с R07                                  | Public reads pass AbortSignal; browser search scenario NOT RUN.               |
 | S01     | Work ownership разбросан по Sellers/Products/Portfolio                       | P2 / HIGH             | W6 → R24                             | DECISION_REQUIRED  | A03 decision                                                 | E0; module/route/data ownership graph                                          |

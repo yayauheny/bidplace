@@ -1,8 +1,9 @@
+import { createContext, useContext, type ReactNode, type RefObject } from 'react';
+import { useController, useFormContext, useWatch } from 'react-hook-form';
 import { View } from 'react-native';
 
 import { designTokens } from '@bidplace/design-tokens';
 
-import type { ProfileFieldErrors } from './profile-validation';
 import { AppText, FormSection, TextField } from '../../components/ui';
 
 export type ProfileFields = {
@@ -20,6 +21,64 @@ export type ProfileFields = {
   shortDescription: string;
 };
 
+const ProfileFieldWriteGuardContext = createContext<RefObject<boolean> | null>(null);
+
+export function ProfileFieldWriteGuard({
+  guard,
+  children,
+}: {
+  guard: RefObject<boolean>;
+  children: ReactNode;
+}) {
+  return (
+    <ProfileFieldWriteGuardContext.Provider value={guard}>
+      {children}
+    </ProfileFieldWriteGuardContext.Provider>
+  );
+}
+
+function ProfileDraftField({
+  name,
+  label,
+  placeholder,
+  autoCapitalize,
+  editable,
+  required,
+  multiline,
+}: {
+  name: keyof ProfileFields;
+  label: string;
+  placeholder?: string;
+  autoCapitalize?: 'none' | 'characters';
+  editable: boolean;
+  required?: boolean;
+  multiline?: boolean;
+}) {
+  const guard = useContext(ProfileFieldWriteGuardContext);
+  if (!guard) {
+    throw new Error('Profile field write guard is missing');
+  }
+  const { control, setValue } = useFormContext<ProfileFields>();
+  const { field, fieldState } = useController({ control, name });
+  const message = fieldState.error?.message;
+  return (
+    <TextField
+      label={label}
+      value={field.value}
+      onChangeText={(value) => {
+        if (guard.current) return;
+        setValue(name, value, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+      }}
+      placeholder={placeholder}
+      autoCapitalize={autoCapitalize}
+      editable={editable}
+      required={required}
+      multiline={multiline}
+      error={typeof message === 'string' ? message : undefined}
+    />
+  );
+}
+
 export function SellerProfileCreationStepSelector({ profileStep }: { profileStep: number }) {
   return <View accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: 4, now: profileStep }} style={{ alignItems: 'center', gap: designTokens.space.x2 }}>
     <View style={{ flexDirection: 'row', gap: designTokens.space.x2 }}>
@@ -29,31 +88,45 @@ export function SellerProfileCreationStepSelector({ profileStep }: { profileStep
   </View>;
 }
 
-export function SellerProfileFormSteps({ profileStep, showAllSteps, editable, fields, fieldErrors, update }: { profileStep: number; showAllSteps: boolean; editable: boolean; fields: ProfileFields; fieldErrors: ProfileFieldErrors; update: (key: keyof ProfileFields, value: string) => void }) {
+export function SellerProfileFormSteps({
+  profileStep,
+  showAllSteps,
+  editable,
+}: {
+  profileStep: number;
+  showAllSteps: boolean;
+  editable: boolean;
+}) {
   return <>
     {(showAllSteps || profileStep === 1) && <FormSection title="Основная информация" description="Эти данные увидят посетители после одобрения заявки.">
-      <TextField label="Никнейм" value={fields.slug} onChangeText={(value) => update('slug', value)} placeholder="my-store" autoCapitalize="none" editable={editable} required />
-      <TextField label="Имя или название" value={fields.fullName} onChangeText={(value) => update('fullName', value)} placeholder="Иван Иванов" editable={editable} required />
-      <TextField label="Страна" value={fields.country} onChangeText={(value) => update('country', value)} placeholder="BY" autoCapitalize="characters" editable={editable} required />
-      <TextField label="Город" value={fields.city} onChangeText={(value) => update('city', value)} placeholder="Минск" editable={editable} required error={fieldErrors.city} />
+      <ProfileDraftField name="slug" label="Никнейм" placeholder="my-store" autoCapitalize="none" editable={editable} required />
+      <ProfileDraftField name="fullName" label="Имя или название" placeholder="Иван Иванов" editable={editable} required />
+      <ProfileDraftField name="country" label="Страна" placeholder="BY" autoCapitalize="characters" editable={editable} required />
+      <ProfileDraftField name="city" label="Город" placeholder="Минск" editable={editable} required />
     </FormSection>}
     {(showAllSteps || profileStep === 2) && <FormSection title="Контакты" description="Все контакты необязательны и станут публичными только после одобрения.">
-      <TextField label="Telegram" value={fields.telegramUrl} onChangeText={(value) => update('telegramUrl', value)} placeholder="@username" autoCapitalize="none" editable={editable} error={fieldErrors.telegramUrl} />
-      <TextField label="Instagram" value={fields.instagramUrl} onChangeText={(value) => update('instagramUrl', value)} placeholder="@username" autoCapitalize="none" editable={editable} error={fieldErrors.instagramUrl} />
-      <TextField label="Сайт" value={fields.websiteUrl} onChangeText={(value) => update('websiteUrl', value)} placeholder="https://example.com" autoCapitalize="none" editable={editable} error={fieldErrors.websiteUrl} />
-      <TextField label="Публичный email" value={fields.publicEmail} onChangeText={(value) => update('publicEmail', value)} placeholder="hello@example.com" autoCapitalize="none" editable={editable} error={fieldErrors.publicEmail} />
+      <ProfileDraftField name="telegramUrl" label="Telegram" placeholder="@username" autoCapitalize="none" editable={editable} />
+      <ProfileDraftField name="instagramUrl" label="Instagram" placeholder="@username" autoCapitalize="none" editable={editable} />
+      <ProfileDraftField name="websiteUrl" label="Сайт" placeholder="https://example.com" autoCapitalize="none" editable={editable} />
+      <ProfileDraftField name="publicEmail" label="Публичный email" placeholder="hello@example.com" autoCapitalize="none" editable={editable} />
     </FormSection>}
     {(showAllSteps || profileStep === 3) && <FormSection title="Раскройте себя как автора" description="Расскажите посетителям о вашем направлении и подходе.">
-      <TextField label="Дисциплина" value={fields.discipline} onChangeText={(value) => update('discipline', value)} placeholder="Керамика, живопись, текстиль" editable={editable} required />
-      <TextField label="Практика" value={fields.practice} onChangeText={(value) => update('practice', value)} placeholder="Авторская керамика" editable={editable} />
-      <TextField label="Короткое описание" value={fields.shortDescription} onChangeText={(value) => update('shortDescription', value)} placeholder="Расскажите о себе и своих работах" multiline editable={editable} required />
+      <ProfileDraftField name="discipline" label="Дисциплина" placeholder="Керамика, живопись, текстиль" editable={editable} required />
+      <ProfileDraftField name="practice" label="Практика" placeholder="Авторская керамика" editable={editable} />
+      <ProfileDraftField name="shortDescription" label="Короткое описание" placeholder="Расскажите о себе и своих работах" multiline editable={editable} required />
     </FormSection>}
   </>;
 }
 
-export function SellerProfileVerificationSection({ fields }: { fields: ProfileFields }) {
+export function SellerProfileVerificationSection() {
+  const [fullName, slug, discipline, country, city] = useWatch<
+    ProfileFields,
+    ['fullName', 'slug', 'discipline', 'country', 'city']
+  >({
+    name: ['fullName', 'slug', 'discipline', 'country', 'city'],
+  });
   return <FormSection title="Проверка заявки" description="Проверьте данные перед отправкой на модерацию.">
-    <AppText role="label">{fields.fullName || 'Имя автора'} · @{fields.slug || 'profile-address'}</AppText>
-    <AppText role="bodySmall" tone="secondary">{fields.discipline || 'Дисциплина не заполнена'} · {fields.country || 'Страна не заполнена'}{fields.city.trim() ? ` · ${fields.city.trim()}` : ''}</AppText>
+    <AppText role="label">{fullName || 'Имя автора'} · @{slug || 'profile-address'}</AppText>
+    <AppText role="bodySmall" tone="secondary">{discipline || 'Дисциплина не заполнена'} · {country || 'Страна не заполнена'}{(city ?? '').trim() ? ` · ${(city ?? '').trim()}` : ''}</AppText>
   </FormSection>;
 }

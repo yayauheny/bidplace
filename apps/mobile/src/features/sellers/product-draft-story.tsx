@@ -3,13 +3,11 @@ import {
   FormSection,
   PrimaryButton,
   SecondaryButton,
-  TextField,
 } from '../../components/ui';
+import { ProductDraftTextField } from './product-draft-fields';
 
 export type ProductDraftStoryStepProps = {
   editable: boolean;
-  story: string;
-  onChangeStory: (value: string) => void;
   savePending: boolean;
   saveError: boolean;
   onBackToImages: () => void;
@@ -18,8 +16,6 @@ export type ProductDraftStoryStepProps = {
 
 export function ProductDraftStoryStep({
   editable,
-  story,
-  onChangeStory,
   savePending,
   saveError,
   onBackToImages,
@@ -30,10 +26,9 @@ export function ProductDraftStoryStep({
       title="История создания"
       description="Расскажите о замысле и процессе обычным текстом. Этот шаг можно оставить пустым."
     >
-      <TextField
+      <ProductDraftTextField
+        name="story"
         label="История создания"
-        value={story}
-        onChangeText={onChangeStory}
         placeholder="Необязательно"
         multiline
         editable={editable}

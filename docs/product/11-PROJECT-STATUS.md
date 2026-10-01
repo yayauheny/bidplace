@@ -55,6 +55,93 @@
   unchanged. L03 is verified. No founder decision was added. Browsers were
   not run. Root migrate and seed were not run.
 
+## 2026-10-01 — Narrow image authorization and portfolio Work reads
+
+- `Implemented`: `ImagesService.get` authorizes a Product image from revision
+  membership, product status, `publishedRevisionId`, and the seller's user id
+  and status. The read no longer includes biography or achievements.
+  Owner, admin, and public approved membership still receive the stored bytes.
+  Anonymous and stranger reads of private or pending images stay 404.
+  `isPublic` and Cache-Control are unchanged.
+- `Implemented`: public portfolio Work hydration selects product id, public id,
+  `publishedAt`, the public seller profile, and the published revision gallery.
+  Parent product fields and the parent image relation are not selected.
+  Published revision content, image order, completeness checks, and page order
+  stay in place. Owner and moderation reads still use `productSelect`.
+- Coverage: `images.service.ts`, `products.mapper.ts`, `products.service.ts`,
+  `images.service.spec.ts`, `products.mapper.spec.ts`,
+  `products.service.spec.ts`, and
+  `portfolio-published-revision.integration.spec.ts`, on Node v22.20.0 /
+  pnpm 11.7.0. API unit tests are 48 files and 306 tests. Integration is
+  23 files and 77 tests. Lint, the API graph typecheck and build, and diff
+  check passed. Commands are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: upload selectors, row locks, storage transactions, visibility
+  predicates, response contracts, and the canonical Pen file. D06 is verified.
+  The two-phase catalog visibility race stays open for R23.
+- Browser checks were not run.
+
+## 2026-10-01 — Author draft validation before save and exit
+
+- `Needs verification` (mobile): save, submit, step, back, and exit read the
+  current raw author draft through `profileDraftSchema` before they write or
+  decide to save. Displayed field errors still come from `zodResolver`.
+  `profileFieldsToUpdate` still normalizes Telegram and Instagram only after
+  that check. An invalid contact is not sent as null. A corrected valid draft
+  is saved before exit. A draft the schema rejects can still leave without a
+  write. Empty optional contacts still become null. A blank city still blocks
+  the write.
+- Before: typing `bad handle` over a saved Telegram and pressing Save sent
+  `telegramUrl: null`. Correcting that field to `@maker_art` and confirming
+  exit before the resolver finished left with `router.replace('/')` and no
+  `updateProfile`.
+- After: the first case does not call `updateProfile`. The second case shows
+  «Сохранить и выйти», sends `https://t.me/maker_art`, then navigates.
+  Ordinary Save still keeps text typed after the request snapshot. A session
+  change during that save does not publish the old result. A failed exit save
+  keeps the author on the form.
+- Coverage: `seller-profile-screen.tsx`, `profile-validation.ts`,
+  `seller-profile-submit.spec.ts`, and `profile-validation.spec.ts`, on Node
+  v22.20.0 / pnpm 11.7.0. The mobile suite is 108 files and 527 tests. Lint,
+  the mobile graph typecheck and build, the e2e fence, and diff check passed.
+  Commands are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: routes, layout, API contracts, normalization of a valid
+  contact, server authorization, and the canonical Pen file. L02 stays needs
+  verification. D04, D05, D09, D10, L04, and R32 stay needs verification. T04
+  and T06 stay partial.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run.
+
+## 2026-10-01 — Author and Work form field ownership
+
+- `Needs verification` (mobile): the author profile form keeps values, dirty
+  state, and field errors in react-hook-form 7.81.0. `profileDraftSchema`
+  with `zodResolver` is the field-error source. Sections use `useController`.
+  The screen watches slug, name, country, city, discipline, and short
+  description for step gating. City, Telegram, Instagram, website, and public
+  email messages are unchanged. Raw contact text stays in the field;
+  `profileFieldsToUpdate` still normalizes Telegram and Instagram on write.
+  Empty public contacts stay allowed. Auth email stays private.
+- `Needs verification` (mobile): Work about, story, and review subscribe to
+  the existing draft form. Empty title and category remain savable.
+  `productDraftRequiredErrors` still blocks only the creation about action,
+  and the year message still appears after that attempt. The write request
+  still turns blank text into null and a blank year into null.
+- Writes check `transitionLock` before `setValue`. Ordinary Save still accepts
+  input after the request snapshot. Session epoch, moderation hold,
+  achievements, and the image picker were not given a second owner.
+- Coverage: `seller-profile-screen.tsx`, `seller-profile-steps.tsx`,
+  `profile-validation.ts`, `product-draft-screen.tsx`,
+  `product-draft-fields.tsx`, `product-draft-about.tsx`,
+  `product-draft-story.tsx`, `product-draft-review.tsx`, on Node v22.20.0 /
+  pnpm 11.7.0. The mobile suite is 108 files and 517 tests. Lint, the mobile
+  graph typecheck and build, the e2e fence, and diff check passed. Commands
+  are in `docs/audits/current/00-EXECUTION-ROADMAP.md`.
+- `Unchanged`: routes, copy, layout, API contracts, server authorization, and
+  the canonical Pen file. L02 stays needs verification. D04, D05, D09, D10,
+  L04, and R32 stay needs verification. T04 and T06 stay partial.
+- Browser, device, API bootstrap, database, migration, and seed checks were
+  not run.
+
 ## 2026-10-01 — Dialog return focus after reopen and unmount
 
 - `Needs verification` (mobile web): `AppDialog` still uses `@rn-primitives/dialog`
