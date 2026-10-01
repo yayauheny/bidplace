@@ -338,8 +338,13 @@ function mount(node: ReactNode) {
   };
 }
 
+type DeferredModerationPage = {
+  nextCursor: string | null;
+  sellerProfiles?: unknown[];
+};
+
 function deferredPage() {
-  let resolvePage: (value: unknown) => void = () => undefined;
+  let resolvePage: (value: DeferredModerationPage) => void = () => undefined;
   const signal = { current: undefined as AbortSignal | undefined };
   return {
     get signal() {
@@ -347,11 +352,11 @@ function deferredPage() {
     },
     promise(next: AbortSignal | undefined) {
       signal.current = next;
-      return new Promise((resolve) => {
+      return new Promise<DeferredModerationPage>((resolve) => {
         resolvePage = resolve;
       });
     },
-    resolve(value: unknown) {
+    resolve(value: DeferredModerationPage) {
       resolvePage(value);
     },
   };
@@ -1203,15 +1208,15 @@ describe('admin moderation revision projection', () => {
       queryKey: filterKey,
       initialPageParam: 'page-3',
       queryFn: ({ signal }) => filterFetch.promise(signal),
-      getNextPageParam: (page: { nextCursor: string | null }) =>
-        page.nextCursor ?? undefined,
+      getNextPageParam: (page: unknown) =>
+        (page as DeferredModerationPage).nextCursor ?? undefined,
     });
     const searchRead = view.queryClient.fetchInfiniteQuery({
       queryKey: searchKey,
       initialPageParam: 'page-3',
       queryFn: ({ signal }) => searchFetch.promise(signal),
-      getNextPageParam: (page: { nextCursor: string | null }) =>
-        page.nextCursor ?? undefined,
+      getNextPageParam: (page: unknown) =>
+        (page as DeferredModerationPage).nextCursor ?? undefined,
     });
     await flush();
     expect(filterFetch.signal?.aborted).toBe(false);
